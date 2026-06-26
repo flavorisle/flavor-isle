@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
             state: 'PROPOSED',
             pickup_details: orderType === 'pickup' ? {
               recipient: { display_name: customer.name, phone_number: customer.phone || '' },
+              pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
               note: instructions || '',
             } : undefined,
             delivery_details: orderType === 'delivery' ? {

@@ -10,7 +10,17 @@ Deno.serve(async (req) => {
     // Get Square access token via connector
     const connection = await base44.asServiceRole.connectors.getConnection('square');
     const accessToken = connection.accessToken;
-    const merchantId = connection.connectionConfig?.merchantId;
+
+    // Resolve actual location ID
+    let locationId = connection.connectionConfig?.locationId;
+    if (!locationId) {
+      const locRes = await fetch('https://connect.squareup.com/v2/locations', {
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
+      });
+      const locData = await locRes.json();
+      locationId = locData.locations?.[0]?.id;
+    }
+    if (!locationId) return Response.json({ error: 'Could not resolve Square location ID' }, { status: 500 });
 
     const idempotencyKey = crypto.randomUUID();
 
@@ -32,7 +42,7 @@ Deno.serve(async (req) => {
     const squareOrder = {
       idempotency_key: idempotencyKey,
       order: {
-        location_id: connection.connectionConfig?.locationId || merchantId,
+        location_id: locationId,
         fulfillments: [{
           type: orderTypeMap[orderType] || 'PICKUP',
           state: 'PROPOSED',
@@ -41,6 +51,7 @@ Deno.serve(async (req) => {
               display_name: customer.name,
               phone_number: customer.phone || '',
             },
+            pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
             note: instructions || '',
           } : undefined,
           delivery_details: orderType === 'delivery' ? {
