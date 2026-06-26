@@ -16,6 +16,7 @@ import OrderConfirmation from './pages/OrderConfirmation';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Account from './pages/Account';
+import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
 import AdminMedia from './pages/AdminMedia';
 import AdminPhoneOrders from './pages/AdminPhoneOrders';
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/account" element={<AccountNew />} />
+      <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/menu" element={<AdminMenu />} />
       <Route path="/admin/media" element={<AdminMedia />} />
       <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
