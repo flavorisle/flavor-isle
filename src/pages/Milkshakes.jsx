@@ -1,40 +1,136 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowDown, Check, Plus, Minus, ShoppingBag, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 
-const SHAKE_FLAVORS = [
-  { name: 'Vanilla Malt', desc: 'Classic soft-serve blended with real malt powder. Creamy, dreamy, timeless.', emoji: '🤍', color: 'from-yellow-50 to-amber-100', tag: 'Classic' },
-  { name: 'Chocolate Fudge', desc: 'Rich dark chocolate ice cream, thick fudge swirl. Pure indulgence in a cup.', emoji: '🍫', color: 'from-amber-800/20 to-stone-200', tag: 'Fan Fave' },
-  { name: 'Strawberry', desc: 'Fresh strawberry blended with real ice cream. Sweet, fruity, and totally refreshing.', emoji: '🍓', color: 'from-pink-100 to-rose-100', tag: 'Fresh' },
-  { name: 'Banana', desc: 'Ripe banana blended smooth with creamy vanilla. A diner throwback that never gets old.', emoji: '🍌', color: 'from-yellow-100 to-yellow-200', tag: 'Throwback' },
-  { name: 'Mint Chocolate Chip', desc: 'Cool mint meets rich chocolate chips. Refreshing and indulgent at the same time.', emoji: '🌿', color: 'from-green-100 to-emerald-100', tag: 'Refreshing' },
-  { name: 'Hot Fudge Sundae Shake', desc: 'Shake meets sundae. Vanilla base, hot fudge, whipped cream, cherry on top.', emoji: '🍒', color: 'from-red-100 to-rose-200', tag: 'Signature' },
+const BASE_OPTIONS = [
+  { id: 'OA4CSYLKWX2OSAOQ7O32ISR4', name: 'Vanilla Ice Cream', price: 0, emoji: '🤍', color: 'from-amber-50 to-yellow-100', border: 'border-yellow-300' },
+  { id: 'U6JB3OHHQ6S7JVSXSCNZANKP', name: 'Chocolate Ice Cream', price: 0, emoji: '🍫', color: 'from-amber-900/10 to-stone-200', border: 'border-amber-700' },
+  { id: '5ZUG7P26ILVVC4Y5PJ3FC7HZ', name: 'Swirl Ice Cream', price: 0, emoji: '🌀', color: 'from-yellow-50 to-amber-200', border: 'border-orange-400' },
 ];
 
-const FACTS = [
-  { icon: '🥛', title: 'Real Ice Cream Only', desc: 'We never use soft-serve mix. Every shake starts with scoops of real ice cream.' },
-  { icon: '⚡', title: 'Blended to Order', desc: 'Each shake is made fresh when you order — no sitting around getting watery.' },
-  { icon: '🥄', title: 'Thick Enough to Stand a Spoon', desc: "If a spoon won't stand up in it, we start over. That's the Flavor Isle standard." },
-  { icon: '🏆', title: 'Award-Winning Malts', desc: 'Our malts have been called the best in Warren County. We take that seriously.' },
+const FLAVOR_OPTIONS = [
+  { id: 'XYPZBSDCXU2Y4EYATSMQPMQZ', name: 'Vanilla Syrup', price: 0.75, emoji: '🍦' },
+  { id: '2765T2EK2M53XOZNFZF7VZCS', name: 'Cherry Syrup', price: 0.75, emoji: '🍒' },
+  { id: 'BVTIWFPYZ5FH4UDLNTYPW2MD', name: 'Chocolate Syrup', price: 0.75, emoji: '🍫' },
+  { id: '4DTD5UMBRABS3GN6SIXRS4OE', name: 'Strawberry Syrup', price: 0.75, emoji: '🍓' },
+  { id: 'UDZBA6WXJEWLACC3Y2E7ZUQ5', name: 'Orange Syrup', price: 0.75, emoji: '🍊' },
+  { id: '2KJFHKWBOAW25X2P7FHHNGYQ', name: 'Real Bananas', price: 0.75, emoji: '🍌' },
+  { id: 'RHZJZ3DQRVV66WJP374E3GYB', name: 'Peanut Butter', price: 0.75, emoji: '🥜' },
+  { id: 'YYN2LUOXY75OODDBUTUQOSTE', name: 'Caramel Sauce', price: 0.75, emoji: '🍯' },
+  { id: 'ST36CGTUEJ27R6ZE5A3SHDHG', name: 'Cherry Sauce', price: 0.75, emoji: '🍒' },
+  { id: 'AXAVKQDGGTXQS4OD7SXYTP3I', name: 'Hot Fudge Sauce', price: 0.75, emoji: '🔥' },
+  { id: 'ZXUGHRNO7K6USPGGAHXFZD7S', name: 'Pineapple Sauce', price: 0.75, emoji: '🍍' },
+  { id: 'ZA6WXV2M6V6NIPOGIYG73RCW', name: 'Strawberry Sauce', price: 0.75, emoji: '🍓' },
+  { id: 'WARHR4DAXOSAL5MO3H47NQFB', name: 'Blueberry Sauce', price: 0.75, emoji: '🫐' },
+  { id: 'YRYN47I4LLDXEFCNE3KZPULJ', name: 'Raspberry Sauce', price: 0.75, emoji: '🍇' },
+  { id: 'G2KJEQLO5WRP65NHA3LDAY7S', name: 'Peach Sauce', price: 0.75, emoji: '🍑' },
 ];
+
+const MIXIN_OPTIONS = [
+  { id: 'KQCFHD42URDCIQLCBHYQFZDO', name: 'Rainbow Sprinkles', price: 0.4, emoji: '🌈' },
+  { id: '6IH2RXI3CTRHDKR3R3SDTVPV', name: 'Chopped Nuts', price: 0.4, emoji: '🥜' },
+  { id: 'L53NHSZP7MPQCDC4I6KWCRHK', name: 'Circus Animal Cookies', price: 0.4, emoji: '🍪' },
+  { id: 'GQMTMFQNLKW27Y27XAMSDLHA', name: 'Oreo Cookies', price: 0.4, emoji: '⚫' },
+  { id: 'OL4F7K5UDXCZYOAVBNVQJ2DS', name: 'Butterfinger Cookies', price: 0.4, emoji: '🍬' },
+  { id: 'UQHGNPLSQ23GD5JZHET5OPK7', name: 'Graham Crackers', price: 0.4, emoji: '🍘' },
+  { id: '5O5XRBDGJQRGPFUCV7IT7ZLC', name: 'Chocolate Chips', price: 0.4, emoji: '🍫' },
+  { id: 'QCKMNMJUXQ7JRRXNBB36R3LM', name: 'Peanut Butter Chips', price: 0.4, emoji: '🥜' },
+];
+
+const CROWN_OPTIONS = [
+  { id: '6SRGB4BVFVP5CVGN4RLCTKDY', name: 'Whipped Cream', price: 0, emoji: '☁️' },
+  { id: 'KR7G2IIKBEA4FAMQF6JRTD7Y', name: 'Caramel Drizzle', price: 0, emoji: '🍯' },
+  { id: 'X3LQNLZKFJB7ICJ62K5AU4DB', name: 'Chocolate Drizzle', price: 0, emoji: '🍫' },
+];
+
+const BUILD_A_SHAKE_ID = '6a3e3807a18b44ca4d34f85b';
+const BASE_PRICE = 4.79;
+
+const STEPS = [
+  { num: '01', label: 'BASE', sub: 'Choose your ice cream' },
+  { num: '02', label: 'FLAVOR', sub: '+$0.75 each' },
+  { num: '03', label: 'THROW-INS', sub: '+$0.40 each' },
+  { num: '04', label: 'CROWN IT', sub: 'The finishing touch' },
+];
+
+function OptionChip({ option, selected, onToggle, single }) {
+  const isSelected = single ? selected?.id === option.id : selected?.some(s => s.id === option.id);
+  return (
+    <button
+      onClick={() => onToggle(option)}
+      className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all font-body text-sm font-semibold
+        ${isSelected
+          ? 'border-midnight-cherry bg-midnight-cherry text-white shadow-float'
+          : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+        }`}
+    >
+      <span className="text-lg leading-none">{option.emoji}</span>
+      <span className="leading-snug">{option.name}</span>
+      {option.price > 0 && (
+        <span className={`text-xs ml-auto ${isSelected ? 'text-red-200' : 'text-muted-foreground'}`}>
+          +${option.price.toFixed(2)}
+        </span>
+      )}
+      {isSelected && <Check size={14} className="ml-1 flex-shrink-0" />}
+    </button>
+  );
+}
 
 export default function Milkshakes() {
   const { addItem, setIsCartOpen } = useCart();
-  const [shakeItems, setShakeItems] = useState([]);
+  const [step, setStep] = useState(0);
+  const [selectedBase, setSelectedBase] = useState(null);
+  const [selectedFlavors, setSelectedFlavors] = useState([]);
+  const [selectedMixins, setSelectedMixins] = useState([]);
+  const [selectedCrown, setSelectedCrown] = useState([]);
+  const [added, setAdded] = useState(false);
+  const builderRef = useRef(null);
 
-  useEffect(() => {
-    base44.entities.MenuItem.filter({ category: 'Shakes', is_available: true }).then(setShakeItems).catch(() => {});
-  }, []);
-
-  const handleAdd = (item) => {
-    addItem(item);
-    setIsCartOpen(true);
+  const toggleMulti = (list, setList, option) => {
+    setList(prev => prev.some(s => s.id === option.id) ? prev.filter(s => s.id !== option.id) : [...prev, option]);
   };
+
+  const totalPrice = BASE_PRICE
+    + selectedFlavors.reduce((s, f) => s + f.price, 0)
+    + selectedMixins.reduce((s, m) => s + m.price, 0)
+    + selectedCrown.reduce((s, c) => s + c.price, 0);
+
+  const allModifiers = [
+    ...(selectedBase ? [{ name: selectedBase.name, price: 0 }] : []),
+    ...selectedFlavors.map(f => ({ name: f.name, price: f.price })),
+    ...selectedMixins.map(m => ({ name: m.name, price: m.price })),
+    ...selectedCrown.map(c => ({ name: c.name, price: c.price })),
+  ];
+
+  const nameLabel = [
+    selectedBase ? selectedBase.name.split(' ')[0] : '',
+    ...selectedFlavors.slice(0, 2).map(f => f.name.split(' ')[0]),
+  ].filter(Boolean).join(' + ') || 'Build a Shake';
+
+  const handleAddToCart = () => {
+    if (!selectedBase) return;
+    addItem({
+      id: BUILD_A_SHAKE_ID,
+      name: `Build a Shake — ${nameLabel}`,
+      price: totalPrice,
+      category: 'Shakes',
+      selectedModifiers: allModifiers,
+    });
+    setAdded(true);
+    setIsCartOpen(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
+  const scrollToBuilder = () => {
+    builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const canProceed = step === 0 ? !!selectedBase : true;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -42,104 +138,270 @@ export default function Milkshakes() {
       <CartDrawer />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-obsidian-roast py-24 px-4 sm:px-6">
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, #C0392B 0%, transparent 50%), radial-gradient(circle at 80% 50%, #1A3A5C 0%, transparent 50%)`
+      <section className="relative overflow-hidden bg-obsidian-roast min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 text-center">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 15% 50%, rgba(192,57,43,0.3) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(26,58,92,0.4) 0%, transparent 50%)`
         }} />
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="text-8xl mb-6 animate-bounce">🥤</div>
-          <div className="inline-flex items-center gap-2 bg-midnight-cherry/20 border border-midnight-cherry/40 text-red-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-            <Sparkles size={14} />
-            Blended Fresh Every Time
+        {/* Subtle swirl bg pattern */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }} />
+
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-midnight-cherry/20 border border-midnight-cherry/40 text-red-300 px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
+            "They Not Like Us"
           </div>
-          <h1 className="font-heading text-5xl sm:text-7xl text-white mb-6 leading-tight">
-            SHAKES &<br />
-            <span style={{ color: '#FF6B6B' }}>MALTS</span>
+
+          <h1 className="font-heading leading-none mb-4">
+            <span className="block text-7xl sm:text-9xl text-white">SHAKE</span>
+            <span className="block text-7xl sm:text-9xl" style={{ color: '#4EE3C8' }}>ISLE</span>
           </h1>
-          <p className="text-gray-300 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-            Thick, creamy, made with real ice cream. The kind of shake that makes you slow down and actually enjoy it.
+
+          <p className="text-gray-300 text-lg mb-3 leading-relaxed">
+            Introducing the <span className="text-white font-semibold">Build Your Own Shake</span> experience.
           </p>
-          <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm">
-            Order a Shake Now <ArrowRight size={16} />
-          </Link>
+          <p className="text-gray-400 text-base mb-12">
+            Your rules. Your flavors. Your masterpiece.
+          </p>
+
+          <button
+            onClick={scrollToBuilder}
+            className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base"
+          >
+            Build Yours Now <ArrowDown size={18} />
+          </button>
+        </div>
+
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-500 text-xs font-heading uppercase tracking-widest flex flex-col items-center gap-2">
+          <span>Scroll to explore</span>
+          <ArrowDown size={14} className="animate-bounce" />
         </div>
       </section>
 
-      {/* Facts */}
-      <section className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-          {FACTS.map(f => (
-            <div key={f.title} className="card-diner p-6 text-center">
-              <div className="text-4xl mb-3">{f.icon}</div>
-              <h3 className="font-heading text-sm text-obsidian-roast mb-2">{f.title}</h3>
-              <p className="text-muted-foreground text-xs leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Flavor Showcase */}
-      <section className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">The Lineup</p>
-          <h2 className="font-heading text-4xl text-obsidian-roast">Our Shake Flavors</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {SHAKE_FLAVORS.map(flavor => (
-            <div key={flavor.name} className={`card-diner p-7 bg-gradient-to-br ${flavor.color} border border-white/60`}>
-              <div className="flex items-start justify-between mb-4">
-                <div className="text-5xl">{flavor.emoji}</div>
-                <span className="bg-white/80 text-obsidian-roast text-xs font-heading px-3 py-1 rounded-full">{flavor.tag}</span>
+      {/* Process overview */}
+      <section className="py-20 px-4 sm:px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-3">The Process</p>
+            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast">BUILD YOUR OWN SHAKE</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {STEPS.map((s, i) => (
+              <div key={s.num} className="text-center">
+                <div className="w-14 h-14 rounded-full bg-obsidian-roast text-white font-heading text-xl flex items-center justify-center mx-auto mb-4">
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <h3 className="font-heading text-obsidian-roast text-lg mb-1">{s.label}</h3>
+                <p className="text-muted-foreground text-sm">{s.sub}</p>
               </div>
-              <h3 className="font-heading text-xl text-obsidian-roast mb-2">{flavor.name}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{flavor.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Live menu items */}
-      {shakeItems.length > 0 && (
-        <section className="py-16 bg-obsidian-roast px-4 sm:px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10">
-              <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Order Now</p>
-              <h2 className="font-heading text-4xl text-white">From the Menu</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {shakeItems.map(item => (
-                <div key={item.id} className="bg-white/5 border border-white/10 rounded-3xl p-5 flex gap-4 hover:border-midnight-cherry/40 transition-all">
-                  {item.image_url && (
-                    <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-2xl flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-heading text-white text-sm mb-1">{item.name}</h3>
-                    <p className="text-gray-400 text-xs mb-3 leading-relaxed line-clamp-2">{item.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-midnight-cherry font-heading">${item.price?.toFixed(2)}</span>
-                      <button
-                        onClick={() => handleAdd(item)}
-                        className="btn-cherry px-3 py-1.5 text-xs"
-                      >
-                        Add to Order
-                      </button>
+      {/* Builder */}
+      <section ref={builderRef} className="py-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-3">Mix It Your Way</p>
+            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast">OVER 25+ INGREDIENTS</h2>
+          </div>
+
+          {/* Step tabs */}
+          <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2 scrollbar-hide">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.num}
+                onClick={() => i <= step || (i === step + 1 && canProceed) ? setStep(i) : null}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl font-heading text-sm transition-all
+                  ${step === i ? 'bg-obsidian-roast text-white shadow-float' :
+                    i < step ? 'bg-midnight-cherry/10 text-midnight-cherry border border-midnight-cherry/30' :
+                    'bg-white/60 text-muted-foreground'}`}
+              >
+                <span className="opacity-60 text-xs">{s.num}</span>
+                {s.label}
+                {i < step && <Check size={12} />}
+              </button>
+            ))}
+          </div>
+
+          {/* Step panels */}
+          <div className="card-diner p-8 mb-8">
+            {/* Step 1: Base */}
+            {step === 0 && (
+              <div>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Choose Your Base</h3>
+                <p className="text-muted-foreground text-sm mb-8">Start with the foundation of your masterpiece.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {BASE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSelectedBase(opt)}
+                      className={`relative p-6 rounded-2xl border-2 transition-all text-center bg-gradient-to-br ${opt.color}
+                        ${selectedBase?.id === opt.id ? `border-midnight-cherry shadow-float` : `${opt.border} hover:shadow-float`}`}
+                    >
+                      <div className="text-5xl mb-3">{opt.emoji}</div>
+                      <p className="font-heading text-obsidian-roast text-sm">{opt.name}</p>
+                      {selectedBase?.id === opt.id && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-midnight-cherry rounded-full flex items-center justify-center">
+                          <Check size={12} className="text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Flavors */}
+            {step === 1 && (
+              <div>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Add Flavors</h3>
+                <p className="text-muted-foreground text-sm mb-8">Inject your shake with signature flavors. Each one unlocks a new dimension. <span className="text-midnight-cherry font-semibold">+$0.75 each</span></p>
+                <div className="flex flex-wrap gap-3">
+                  {FLAVOR_OPTIONS.map(opt => (
+                    <OptionChip
+                      key={opt.id}
+                      option={opt}
+                      selected={selectedFlavors}
+                      onToggle={(o) => toggleMulti(selectedFlavors, setSelectedFlavors, o)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Mixins */}
+            {step === 2 && (
+              <div>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Throw-Ins</h3>
+                <p className="text-muted-foreground text-sm mb-8">Add texture and crunch with premium mix-ins. <span className="text-midnight-cherry font-semibold">+$0.40 each</span></p>
+                <div className="flex flex-wrap gap-3">
+                  {MIXIN_OPTIONS.map(opt => (
+                    <OptionChip
+                      key={opt.id}
+                      option={opt}
+                      selected={selectedMixins}
+                      onToggle={(o) => toggleMulti(selectedMixins, setSelectedMixins, o)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Crown */}
+            {step === 3 && (
+              <div>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Crown It</h3>
+                <p className="text-muted-foreground text-sm mb-8">The grand finale. Top your creation to perfection.</p>
+                <div className="flex flex-wrap gap-3 mb-10">
+                  {CROWN_OPTIONS.map(opt => (
+                    <OptionChip
+                      key={opt.id}
+                      option={opt}
+                      selected={selectedCrown}
+                      onToggle={(o) => toggleMulti(selectedCrown, setSelectedCrown, o)}
+                    />
+                  ))}
+                </div>
+
+                {/* Order summary */}
+                <div className="border-t border-border pt-8">
+                  <h4 className="font-heading text-obsidian-roast text-lg mb-4">Your Shake</h4>
+                  <div className="space-y-2 mb-6">
+                    {selectedBase && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-obsidian-roast font-semibold">🍦 {selectedBase.name}</span>
+                        <span className="text-muted-foreground">Included</span>
+                      </div>
+                    )}
+                    {selectedFlavors.map(f => (
+                      <div key={f.id} className="flex justify-between text-sm">
+                        <span className="text-obsidian-roast">{f.emoji} {f.name}</span>
+                        <span className="text-midnight-cherry">+${f.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {selectedMixins.map(m => (
+                      <div key={m.id} className="flex justify-between text-sm">
+                        <span className="text-obsidian-roast">{m.emoji} {m.name}</span>
+                        <span className="text-midnight-cherry">+${m.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {selectedCrown.map(c => (
+                      <div key={c.id} className="flex justify-between text-sm">
+                        <span className="text-obsidian-roast">{c.emoji} {c.name}</span>
+                        <span className="text-muted-foreground">Included</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-4">
+                    <div>
+                      <p className="font-heading text-2xl text-obsidian-roast">${totalPrice.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">Build a Shake</p>
                     </div>
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={!selectedBase}
+                      className={`btn-cherry chrome-hover flex items-center gap-2 px-8 py-4 font-heading text-sm transition-all
+                        ${!selectedBase ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      {added ? <><Check size={16} /> Added!</> : <><ShoppingBag size={16} /> Add to Order</>}
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
-        </section>
-      )}
+
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setStep(s => Math.max(0, s - 1))}
+              className={`px-6 py-3 rounded-2xl border border-border font-heading text-sm text-obsidian-roast hover:bg-white transition-all
+                ${step === 0 ? 'invisible' : ''}`}
+            >
+              ← Back
+            </button>
+
+            {step < 3 ? (
+              <button
+                onClick={() => { if (canProceed) setStep(s => s + 1); }}
+                disabled={!canProceed}
+                className={`btn-cherry chrome-hover flex items-center gap-2 px-8 py-3 font-heading text-sm
+                  ${!canProceed ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                {step === 0 ? 'Add Flavors' : step === 1 ? 'Add Throw-Ins' : 'Crown It'} <ChevronRight size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={!selectedBase}
+                className={`btn-cherry chrome-hover flex items-center gap-2 px-8 py-3 font-heading text-sm
+                  ${!selectedBase ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                {added ? <><Check size={16} /> Added to Cart!</> : <><ShoppingBag size={16} /> Add to Cart — ${totalPrice.toFixed(2)}</>}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 sm:px-6 bg-midnight-cherry">
+      <section className="py-20 px-4 sm:px-6 bg-obsidian-roast">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-heading text-4xl text-white mb-4">Life's Too Short for Bad Shakes.</h2>
-          <p className="text-red-200 mb-8">Come see why people drive from all over Warren County just for one of ours.</p>
-          <Link to="/menu" className="bg-white text-midnight-cherry font-heading px-8 py-4 rounded-2xl hover:bg-vanilla-malt transition-colors chrome-hover inline-flex items-center gap-2">
-            Order Your Shake <ArrowRight size={16} />
-          </Link>
+          <h2 className="font-heading text-4xl sm:text-5xl text-white mb-4 leading-tight">
+            Your Creation<br /><span style={{ color: '#4EE3C8' }}>Awaits.</span>
+          </h2>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            Pick your base. Layer in flavors. Load up on throw-ins. Crown it all.<br />
+            <span className="text-white font-semibold">Your shake. Your rules.</span>
+          </p>
+          <button
+            onClick={scrollToBuilder}
+            className="btn-cherry chrome-hover inline-flex items-center gap-2 px-10 py-5 font-heading text-base"
+          >
+            Build Yours Now <ArrowRight size={18} />
+          </button>
         </div>
       </section>
 
