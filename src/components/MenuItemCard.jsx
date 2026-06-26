@@ -3,6 +3,7 @@ import { Plus, Zap, X, Check, Heart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
+import ItemRatings from './ItemRatings';
 
 function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -283,8 +284,10 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             <p className="text-xs text-muted-foreground mb-3">{item.calories} cal</p>
           )}
 
+          <ItemRatings itemName={item.name} />
+
           {hasModifiers && (
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-muted-foreground mb-2 mt-3">
               {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
             </p>
           )}
