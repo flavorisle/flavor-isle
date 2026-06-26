@@ -25,12 +25,13 @@ Deno.serve(async (req) => {
     const idempotencyKey = crypto.randomUUID();
 
     const lineItems = items.map(item => ({
-      name: item.name,
-      quantity: String(item.quantity),
+      name: item.name || item.catalog_object_id,
+      quantity: String(item.quantity || 1),
       base_price_money: {
-        amount: Math.round(item.price * 100),
+        amount: Math.round((item.price || item.base_price_money?.amount / 100 || 0) * 100),
         currency: 'USD',
       },
+      catalog_object_id: item.catalog_object_id,
     }));
 
     // Format note based on order type for kitchen printing

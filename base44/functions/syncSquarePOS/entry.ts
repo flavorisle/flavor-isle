@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const connection = await base44.asServiceRole.connectors.getConnection('square');
     
-    if (!connection?.access_token) {
+    if (!connection?.accessToken) {
       return Response.json({ error: 'Square not connected' }, { status: 400 });
     }
 
@@ -13,9 +13,9 @@ Deno.serve(async (req) => {
     const squareResponse = await fetch('https://connect.squareup.com/v2/orders', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${connection.access_token}`,
+        'Authorization': `Bearer ${connection.accessToken}`,
         'Content-Type': 'application/json',
-        'Square-Version': '2024-06-20'
+        'Square-Version': '2024-01-18'
       },
       body: JSON.stringify({
         query: {
