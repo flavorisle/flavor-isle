@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, MessageCircle, Send, Bot, Loader2 } from 'lucide-react';
+import { X, Send, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
+
+const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 
 export default function SmashieChat() {
   const [open, setOpen] = useState(false);
@@ -81,7 +84,7 @@ export default function SmashieChat() {
                 <p className="font-heading text-obsidian-roast mb-1">Hey there, I'm Smashie!</p>
                 <p className="text-sm text-muted-foreground">Ask me about the menu, place a phone order, or just say hi!</p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                  {["What's good today?", "Take my order", "What are your hours?"].map(q => (
+                  {["What's good today?", "Build a shake 🥤", "Take my order", "What are your hours?"].map(q => (
                     <button
                       key={q}
                       onClick={() => { setInput(q); }}
@@ -102,15 +105,26 @@ export default function SmashieChat() {
                   {!isUser && (
                     <div className="w-7 h-7 bg-midnight-cherry rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-1 text-sm">🤖</div>
                   )}
-                  <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
-                    isUser
-                      ? 'bg-midnight-cherry text-white rounded-br-sm'
-                      : 'bg-muted text-obsidian-roast rounded-bl-sm'
-                  }`}>
-                    {isUser ? (
-                      <p>{msg.content}</p>
-                    ) : (
-                      <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{msg.content}</ReactMarkdown>
+                  <div className="flex flex-col gap-2 max-w-[80%]">
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm ${
+                      isUser
+                        ? 'bg-midnight-cherry text-white rounded-br-sm'
+                        : 'bg-muted text-obsidian-roast rounded-bl-sm'
+                    }`}>
+                      {isUser ? (
+                        <p>{msg.content}</p>
+                      ) : (
+                        <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{msg.content}</ReactMarkdown>
+                      )}
+                    </div>
+                    {!isUser && SHAKE_KEYWORDS.test(msg.content) && (
+                      <Link
+                        to="/milkshakes"
+                        className="flex items-center gap-2 bg-obsidian-roast text-white text-xs font-heading px-4 py-2.5 rounded-2xl hover:bg-midnight-cherry transition-colors"
+                      >
+                        <span className="text-base">🥤</span>
+                        Build Your Shake →
+                      </Link>
                     )}
                   </div>
                 </div>
