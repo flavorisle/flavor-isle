@@ -176,10 +176,10 @@ export default function Home() {
                 tag: 'Must Try'
               },
               {
-                name: 'Grilled Chicken Sandwich',
-                desc: 'Juicy grilled chicken breast with crisp lettuce on a toasted bun. Light & delicious.',
-                price: '$8.99',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/34f1bfc0b_IMG_5541_Original.jpg',
+                name: 'Hot Fudge Cake',
+                desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
+                price: '$5.99',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d0687b02c_IMG_0368.png',
                 tag: 'Fan Fave'
               }
             ].map(item => (
