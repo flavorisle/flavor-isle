@@ -4,14 +4,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    // Get all active orders from past 24 hours
+    // Get all orders from past 24 hours (all statuses to show actual throughput)
     const allOrders = await base44.asServiceRole.entities.Order.list();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const activeStatuses = ['pending', 'confirmed', 'preparing', 'ready'];
     
     const recentOrders = (allOrders || []).filter(o => 
-      new Date(o.created_date) > oneDayAgo &&
-      activeStatuses.includes(o.status)
+      new Date(o.created_date) > oneDayAgo
     );
 
     // Group by hour and date
