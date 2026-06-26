@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MessageCircle, Sparkles, Zap, Heart } from 'lucide-react';
+
+const SMASHIE_POSES = [
+  'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png', // waving
+  'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png', // hands up
+  'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c08ec5331_IMG_9970.png', // peace sign
+];
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -25,6 +31,19 @@ const FAQS = [
 
 export default function MeetSmashie() {
   const [openFaq, setOpenFaq] = useState(null);
+  const [poseIndex, setPoseIndex] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setPoseIndex(i => (i + 1) % SMASHIE_POSES.length);
+        setFading(false);
+      }, 300);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -37,13 +56,17 @@ export default function MeetSmashie() {
           backgroundImage: `radial-gradient(circle at 20% 60%, #C0392B 0%, transparent 60%), radial-gradient(circle at 80% 40%, #1A3A5C 0%, transparent 60%)`
         }} />
         <div className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
-          {/* Avatar */}
-          <div className="flex-shrink-0">
-            <img
-              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/239a9f758_Copilot_20260610_121144.png"
-              alt="Smashie mascot"
-              className="w-56 md:w-72 drop-shadow-2xl"
-            />
+          {/* Avatar — cycling poses */}
+          <div className="flex-shrink-0 relative w-56 md:w-72 h-72 md:h-96">
+            {SMASHIE_POSES.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt="Smashie mascot"
+                className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300"
+                style={{ opacity: i === poseIndex ? (fading ? 0 : 1) : 0 }}
+              />
+            ))}
           </div>
 
           {/* Text */}
@@ -96,7 +119,12 @@ export default function MeetSmashie() {
       {/* How to reach Smashie */}
       <section className="py-16 bg-patina-mint px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 flex flex-col items-center">
+            <img
+              src={SMASHIE_POSES[0]}
+              alt="Smashie waving"
+              className="w-28 mb-2 drop-shadow-lg"
+            />
             <h2 className="font-heading text-4xl text-white mb-3">How to Reach Smashie</h2>
             <p className="text-teal-200">Three ways to connect. Smashie's ready for all of them.</p>
           </div>
@@ -128,7 +156,7 @@ export default function MeetSmashie() {
 
       {/* His faves */}
       <section className="py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <Heart size={32} className="mx-auto mb-4 text-midnight-cherry" />
+        <img src={SMASHIE_POSES[2]} alt="Smashie peace sign" className="w-24 mx-auto mb-2 drop-shadow-lg" />
         <h2 className="font-heading text-4xl text-obsidian-roast mb-4">Smashie's Personal Top Picks</h2>
         <p className="text-muted-foreground mb-10">Ask him for a recommendation. This is usually where he starts.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
