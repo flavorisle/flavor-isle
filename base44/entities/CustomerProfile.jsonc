@@ -17,6 +17,10 @@
     "delivery_address": {
       "type": "string"
     },
+    "no_contact_delivery": {
+      "type": "boolean",
+      "default": false
+    },
     "curbside_address": {
       "type": "string"
     },
@@ -28,6 +32,15 @@
     },
     "car_color": {
       "type": "string"
+    },
+    "preferred_communication": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone",
+        "sms"
+      ],
+      "default": "email"
     },
     "favorite_order": {
       "type": "string"

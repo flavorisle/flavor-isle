@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -84,7 +84,18 @@ function OrderCard({ order, onReorder }) {
   );
 }
 
-const EMPTY_FORM = { name: '', phone: '', address: '', delivery_address: '', curbside_address: '', car_make: '', car_model: '', car_color: '' };
+const EMPTY_FORM = { 
+  name: '', 
+  phone: '', 
+  address: '', 
+  delivery_address: '', 
+  curbside_address: '', 
+  car_make: '', 
+  car_model: '', 
+  car_color: '',
+  no_contact_delivery: false,
+  preferred_communication: 'email'
+};
 
 // ── Logged-in account view ──
 function LoggedInAccount({ user, logout }) {
@@ -106,7 +117,18 @@ function LoggedInAccount({ user, logout }) {
       if (profiles && profiles.length > 0) {
         const p = profiles[0];
         setProfile(p);
-        setForm({ name: p.name || '', phone: p.phone || '', address: p.address || '', delivery_address: p.delivery_address || '', curbside_address: p.curbside_address || '', car_make: p.car_make || '', car_model: p.car_model || '', car_color: p.car_color || '' });
+        setForm({ 
+          name: p.name || '', 
+          phone: p.phone || '', 
+          address: p.address || '', 
+          delivery_address: p.delivery_address || '', 
+          curbside_address: p.curbside_address || '', 
+          car_make: p.car_make || '', 
+          car_model: p.car_model || '', 
+          car_color: p.car_color || '',
+          no_contact_delivery: p.no_contact_delivery || false,
+          preferred_communication: p.preferred_communication || 'email'
+        });
       } else {
         // Auto-create profile for new users
         const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
@@ -148,11 +170,17 @@ function LoggedInAccount({ user, logout }) {
   const activeOrders = orders.filter(o => ACTIVE_STATUSES.includes(o.status));
   const pastOrders = orders.filter(o => !ACTIVE_STATUSES.includes(o.status));
 
-  const profileFields = [
+  const personalFields = [
     { label: 'Full Name', key: 'name', icon: User, placeholder: 'Jane Smith' },
     { label: 'Phone', key: 'phone', icon: Phone, placeholder: '(270) 555-0000', type: 'tel' },
-    { label: 'Home / Billing Address', key: 'address', icon: MapPin, placeholder: '123 Main St, City, KY' },
+    { label: 'Billing Address', key: 'address', icon: MapPin, placeholder: '123 Main St, City, KY' },
+  ];
+
+  const deliveryFields = [
     { label: 'Delivery Address', key: 'delivery_address', icon: MapPin, placeholder: 'Delivery address if different' },
+  ];
+
+  const pickupFields = [
     { label: 'Curbside Pickup Spot', key: 'curbside_address', icon: MapPin, placeholder: 'e.g. Spot #3, parking lot' },
     { label: 'Car Make', key: 'car_make', icon: Car, placeholder: 'Toyota' },
     { label: 'Car Model', key: 'car_model', icon: Car, placeholder: 'Camry' },
@@ -241,23 +269,26 @@ function LoggedInAccount({ user, logout }) {
         )}
 
         {tab === 'profile' && (
-          <div className="max-w-lg space-y-6">
-            <div className="card-diner p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-heading text-lg text-obsidian-roast">Personal Info & Preferences</h2>
-                {!editing ? (
-                  <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors">
-                    <Edit2 size={14} /> Edit
+          <div className="max-w-2xl space-y-6">
+            {/* Top action bar */}
+            <div className="flex items-center justify-between">
+              {!editing ? (
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors">
+                  <Edit2 size={14} /> Edit Profile
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
+                  <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 text-sm btn-cherry px-4 py-1.5 font-heading disabled:opacity-60">
+                    <Save size={14} /> {saving ? 'Saving…' : 'Save Changes'}
                   </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
-                    <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 text-sm btn-cherry px-4 py-1.5 font-heading disabled:opacity-60">
-                      <Save size={14} /> {saving ? 'Saving…' : 'Save'}
-                    </button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
+
+            {/* Personal Information */}
+            <div className="card-diner p-6">
+              <h3 className="font-heading text-lg text-obsidian-roast mb-4">Personal Information</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Mail size={15} className="text-midnight-cherry" /></div>
@@ -266,7 +297,7 @@ function LoggedInAccount({ user, logout }) {
                     <p className="text-sm text-obsidian-roast">{user.email}</p>
                   </div>
                 </div>
-                {profileFields.map(({ label, key, icon: Icon, placeholder, type }) => (
+                {personalFields.map(({ label, key, icon: Icon, placeholder, type }) => (
                   <div key={key} className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
                     <div className="flex-1">
@@ -280,6 +311,93 @@ function LoggedInAccount({ user, logout }) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Delivery Preferences */}
+            <div className="card-diner p-6">
+              <h3 className="font-heading text-lg text-obsidian-roast mb-4">Delivery Preferences</h3>
+              <div className="space-y-4">
+                {deliveryFields.map(({ label, key, icon: Icon, placeholder, type }) => (
+                  <div key={key} className="flex items-start gap-3">
+                    <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+                      {editing ? (
+                        <input type={type || 'text'} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      ) : (
+                        <p className="text-sm text-obsidian-roast">{profile?.[key] || <span className="text-muted-foreground italic">Not set</span>}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {editing && (
+                  <div className="flex items-start gap-3 pt-2">
+                    <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Bell size={15} className="text-midnight-cherry" /></div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">No-Contact Delivery</p>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.no_contact_delivery} onChange={e => setForm(f => ({ ...f, no_contact_delivery: e.target.checked }))} className="w-4 h-4 rounded accent-midnight-cherry" />
+                        <span className="text-sm text-obsidian-roast">Leave delivery at door, no signature required</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pickup Preferences */}
+            <div className="card-diner p-6">
+              <h3 className="font-heading text-lg text-obsidian-roast mb-4">Pickup Preferences</h3>
+              <div className="space-y-4">
+                {pickupFields.map(({ label, key, icon: Icon, placeholder, type }) => (
+                  <div key={key} className="flex items-start gap-3">
+                    <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+                      {editing ? (
+                        <input type={type || 'text'} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      ) : (
+                        <p className="text-sm text-obsidian-roast">{profile?.[key] || <span className="text-muted-foreground italic">Not set</span>}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Communication Preferences */}
+            <div className="card-diner p-6">
+              <h3 className="font-heading text-lg text-obsidian-roast mb-4">Communication Preferences</h3>
+              {editing ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferred Contact Method</p>
+                    <div className="space-y-2">
+                      {['email', 'phone', 'sms'].map(method => (
+                        <label key={method} className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="communication" 
+                            value={method} 
+                            checked={form.preferred_communication === method}
+                            onChange={e => setForm(f => ({ ...f, preferred_communication: e.target.value }))}
+                            className="w-4 h-4 accent-midnight-cherry"
+                          />
+                          <span className="text-sm text-obsidian-roast capitalize">{method}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Bell size={15} className="text-midnight-cherry" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Preferred Contact Method</p>
+                    <p className="text-sm text-obsidian-roast capitalize">{form.preferred_communication || 'email'}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
