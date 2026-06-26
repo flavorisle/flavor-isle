@@ -23,6 +23,7 @@ export default function AdminPhoneOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('active');
+  const [orderTypeFilter, setOrderTypeFilter] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -50,43 +51,85 @@ export default function AdminPhoneOrders() {
   };
 
   const ACTIVE = ['pending', 'confirmed', 'preparing', 'ready'];
-  const filtered = filter === 'active'
+  let filtered = filter === 'active'
     ? orders.filter(o => ACTIVE.includes(o.status))
     : orders.filter(o => !ACTIVE.includes(o.status));
+  
+  if (orderTypeFilter !== 'all') {
+    filtered = filtered.filter(o => o.order_type === orderTypeFilter);
+  }
+
+  const dineInActive = orders.filter(o => o.order_type === 'dine_in' && ACTIVE.includes(o.status));
+  const busynessLevel = dineInActive.length > 10 ? 'Packed' : dineInActive.length > 5 ? 'Busy' : dineInActive.length > 0 ? 'Moderate' : 'Quiet';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-midnight-cherry rounded-2xl flex items-center justify-center">
-              <ShoppingBag size={22} className="text-white" />
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-midnight-cherry rounded-2xl flex items-center justify-center">
+                <ShoppingBag size={22} className="text-white" />
+              </div>
+              <div>
+                <h1 className="font-heading text-2xl text-obsidian-roast">All Orders</h1>
+                <p className="text-sm text-muted-foreground">Live orders, phone orders & Square POS</p>
+              </div>
             </div>
+            <button onClick={load} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors">
+              <RefreshCw size={14} /> Refresh
+            </button>
+          </div>
+          
+          {/* Restaurant Busyness Indicator */}
+          <div className="card-diner p-4 flex items-center justify-between">
             <div>
-              <h1 className="font-heading text-2xl text-obsidian-roast">All Orders</h1>
-              <p className="text-sm text-muted-foreground">Live orders, phone orders & Square POS</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Restaurant Status</p>
+              <p className="font-heading text-lg text-obsidian-roast">
+                {dineInActive.length} Active Dine-In {dineInActive.length === 1 ? 'Order' : 'Orders'}
+              </p>
+            </div>
+            <div className="text-right">
+              <span className={`text-sm font-heading px-3 py-1 rounded-full ${
+                dineInActive.length > 10 ? 'bg-red-100 text-red-700' :
+                dineInActive.length > 5 ? 'bg-orange-100 text-orange-700' :
+                dineInActive.length > 0 ? 'bg-yellow-100 text-yellow-700' :
+                'bg-green-100 text-green-700'
+              }`}>
+                {busynessLevel}
+              </span>
             </div>
           </div>
-          <button onClick={load} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors">
-            <RefreshCw size={14} /> Refresh
-          </button>
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-2 mb-6">
-          {[{ key: 'active', label: 'Active' }, { key: 'past', label: 'Past' }].map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-5 py-2 rounded-full text-sm font-heading transition-all ${filter === f.key ? 'bg-midnight-cherry text-white' : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
-            >
-              {f.label}
-              {f.key === 'active' && orders.filter(o => ACTIVE.includes(o.status)).length > 0 && (
-                <span className="ml-2 bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{orders.filter(o => ACTIVE.includes(o.status)).length}</span>
-              )}
-            </button>
-          ))}
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex gap-2">
+            {[{ key: 'active', label: 'Active' }, { key: 'past', label: 'Past' }].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`px-5 py-2 rounded-full text-sm font-heading transition-all ${filter === f.key ? 'bg-midnight-cherry text-white' : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
+              >
+                {f.label}
+                {f.key === 'active' && orders.filter(o => ACTIVE.includes(o.status)).length > 0 && (
+                  <span className="ml-2 bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{orders.filter(o => ACTIVE.includes(o.status)).length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {[{ key: 'all', label: 'All Orders' }, { key: 'dine_in', label: 'Dine-In' }, { key: 'pickup', label: 'Pickup' }, { key: 'delivery', label: 'Delivery' }].map(t => (
+              <button
+                key={t.key}
+                onClick={() => setOrderTypeFilter(t.key)}
+                className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${orderTypeFilter === t.key ? 'bg-patina-mint text-white' : 'bg-white text-muted-foreground border border-border hover:border-patina-mint/40'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
