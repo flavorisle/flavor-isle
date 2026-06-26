@@ -42,10 +42,10 @@ export default function Contact() {
           <div className="space-y-8">
             <div className="card-diner p-8 space-y-6">
               {[
-                { icon: MapPin, label: 'Address', value: 'Main Street, Smiths Grove, Kentucky 42171', href: 'https://maps.google.com/?q=Smiths+Grove+KY' },
-                { icon: Phone, label: 'Phone', value: '(270) 563-5000', href: 'tel:+12705635000' },
+                { icon: MapPin, label: 'Address', value: '103 N Main St, Smiths Grove, Kentucky 42171', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
+                { icon: Phone, label: 'Phone', value: '(280) 563-4618', href: 'tel:+12805634618' },
                 { icon: Mail, label: 'Email', value: 'hello@flavor-isle.com', href: 'mailto:hello@flavor-isle.com' },
-                { icon: Clock, label: 'Hours', value: 'Mon–Fri 7AM–10PM · Sat 8AM–11PM · Sun 8AM–9PM', href: null },
+                { icon: Clock, label: 'Hours', value: 'Mon–Sat 10:30AM–8PM · Sun 11AM–8PM', href: null },
               ].map(info => (
                 <div key={info.label} className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -69,7 +69,7 @@ export default function Contact() {
                 <MapPin size={32} className="mx-auto mb-2 text-red-300" />
                 <p className="font-heading">Flavor Isle · Smiths Grove, KY</p>
                 <a
-                  href="https://maps.google.com/?q=Smiths+Grove+KY"
+                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-block bg-white text-patina-mint px-4 py-1.5 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors"

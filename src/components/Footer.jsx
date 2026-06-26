@@ -37,16 +37,12 @@ export default function Footer() {
           <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Hours</h4>
           <div className="space-y-2 text-sm text-gray-400">
             <div className="flex justify-between gap-4">
-              <span>Monday – Friday</span>
-              <span>7AM – 10PM</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span>Saturday</span>
-              <span>8AM – 11PM</span>
+              <span>Monday – Saturday</span>
+              <span>10:30AM – 8PM</span>
             </div>
             <div className="flex justify-between gap-4">
               <span>Sunday</span>
-              <span>8AM – 9PM</span>
+              <span>11AM – 8PM</span>
             </div>
           </div>
         </div>
@@ -59,8 +55,7 @@ export default function Footer() {
             <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
             <Link to="/about" className="hover:text-white transition-colors">Our Story</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
           </div>
         </div>
 
@@ -70,11 +65,11 @@ export default function Footer() {
           <div className="space-y-3 text-sm text-gray-400">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="text-patina-mint mt-0.5 flex-shrink-0" />
-              <span>Main Street, Smiths Grove<br />Kentucky, KY 42171</span>
+              <a href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">103 N Main St, Smiths Grove<br />Kentucky, KY 42171</a>
             </div>
             <div className="flex items-center gap-2">
               <Phone size={16} className="text-patina-mint flex-shrink-0" />
-              <a href="tel:+12705635000" className="hover:text-white transition-colors">(270) 563-5000</a>
+              <a href="tel:+12805634618" className="hover:text-white transition-colors">(280) 563-4618</a>
             </div>
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-patina-mint flex-shrink-0" />
@@ -87,8 +82,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
-          <span>© 2024 Flavor Isle. All rights reserved. | flavor-isle.com</span>
-          <span>Powered by Square & Stripe</span>
+          <span>© 2024 Flavor Isle. All rights reserved.</span>
         </div>
       </div>
     </footer>

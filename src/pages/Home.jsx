@@ -215,7 +215,7 @@ export default function Home() {
                     <MapPin size={18} className="text-midnight-cherry" />
                   </div>
                   <div>
-                    <p className="font-semibold text-obsidian-roast">Main Street, Smiths Grove</p>
+                    <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
                     <p className="text-sm">Kentucky, KY 42171</p>
                   </div>
                 </div>
@@ -224,8 +224,8 @@ export default function Home() {
                     <Clock size={18} className="text-midnight-cherry" />
                   </div>
                   <div>
-                    <p className="font-semibold text-obsidian-roast">Open Daily</p>
-                    <p className="text-sm">Mon–Fri: 7AM–10PM · Sat: 8AM–11PM · Sun: 8AM–9PM</p>
+                    <p className="font-semibold text-obsidian-roast">Hours</p>
+                    <p className="text-sm">Mon–Sat: 10:30AM–8PM · Sun: 11AM–8PM</p>
                   </div>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default function Home() {
                   <p className="font-heading text-xl">FLAVOR ISLE</p>
                   <p className="text-sm opacity-80">Smiths Grove, KY</p>
                   <a
-                    href="https://maps.google.com/?q=Smiths+Grove+KY"
+                    href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors"
@@ -270,7 +270,7 @@ export default function Home() {
             <Link to="/menu" className="bg-white text-midnight-cherry font-heading px-8 py-4 rounded-2xl hover:bg-vanilla-malt transition-colors chrome-hover">
               Order Now
             </Link>
-            <a href="tel:+12705635000" className="border-2 border-white text-white font-heading px-8 py-4 rounded-2xl hover:bg-white/10 transition-colors">
+            <a href="tel:+12805634618" className="border-2 border-white text-white font-heading px-8 py-4 rounded-2xl hover:bg-white/10 transition-colors">
               Call Us
             </a>
           </div>
