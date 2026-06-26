@@ -8,6 +8,7 @@ export default function OrderConfirmation() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const sessionId = params.get('session_id');
+  const orderNumber = params.get('order_number');
   const [confetti, setConfetti] = useState(false);
 
   useEffect(() => {
@@ -46,10 +47,10 @@ export default function OrderConfirmation() {
             Get ready for something delicious.
           </p>
 
-          {sessionId && (
+          {(orderNumber || sessionId) && (
             <div className="bg-muted rounded-2xl p-3 mb-8">
-              <p className="text-xs text-muted-foreground">Confirmation ID</p>
-              <p className="font-mono text-sm text-obsidian-roast truncate">{sessionId.slice(0, 30)}…</p>
+              <p className="text-xs text-muted-foreground">Order Number</p>
+              <p className="font-mono text-sm text-obsidian-roast">{orderNumber || sessionId?.slice(0, 30)}</p>
             </div>
           )}
 

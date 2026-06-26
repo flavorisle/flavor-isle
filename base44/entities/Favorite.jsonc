@@ -1,0 +1,29 @@
+{
+  "name": "Favorite",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "menu_item_id": {
+      "type": "string"
+    },
+    "menu_item_name": {
+      "type": "string"
+    },
+    "menu_item_price": {
+      "type": "number"
+    },
+    "menu_item_image": {
+      "type": "string"
+    },
+    "menu_item_category": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "menu_item_id",
+    "menu_item_name"
+  ]
+}
