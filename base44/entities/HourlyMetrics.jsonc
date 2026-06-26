@@ -1,0 +1,48 @@
+{
+  "name": "HourlyMetrics",
+  "type": "object",
+  "properties": {
+    "hour": {
+      "type": "number",
+      "description": "Hour of day (0-23)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date for the metric"
+    },
+    "order_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Total active orders in this hour"
+    },
+    "average_wait_time": {
+      "type": "number",
+      "default": 0,
+      "description": "Average wait time in minutes"
+    },
+    "busyness_level": {
+      "type": "string",
+      "enum": [
+        "Running Smooth",
+        "A Little Busy",
+        "Expecting a Short Wait"
+      ],
+      "description": "Computed busyness level"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "square_pos",
+        "online",
+        "phone"
+      ],
+      "description": "Order source"
+    }
+  },
+  "required": [
+    "hour",
+    "date",
+    "order_count"
+  ]
+}

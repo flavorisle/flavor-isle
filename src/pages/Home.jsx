@@ -10,6 +10,7 @@ import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import KitchenBusyness from '@/components/KitchenBusyness';
 import BusynessStatus from '@/components/BusynessStatus';
+import BusynessTracker from '@/components/BusynessTracker';
 import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
@@ -205,6 +206,13 @@ export default function Home() {
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
+
+      {/* ── HOURLY BUSYNESS TRACKER ── */}
+      <section className="py-16 px-4 sm:px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <BusynessTracker />
+        </div>
+      </section>
 
       {/* ── COMBO BUILDER ── */}
       <ComboBuilderSection />
