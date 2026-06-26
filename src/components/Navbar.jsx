@@ -16,11 +16,11 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: 'Menu', to: '/menu' },
-    { label: 'About', to: '/about' },
-    { label: 'Contact', to: '/contact' },
-    { label: 'My Account', to: '/account' },
-  ];
+  { label: 'Menu', to: '/menu' },
+  { label: 'About', to: '/about' },
+  { label: 'Contact', to: '/contact' },
+  { label: 'My Account', to: '/account' }];
+
 
   return (
     <>
@@ -33,7 +33,7 @@ export default function Navbar() {
           </span>
           <span className="flex items-center gap-1">
             <Phone size={12} className="text-patina-mint" />
-            <a href="tel:+12805634618" className="hover:text-patina-mint transition-colors">(280) 563-4618</a>
+            <a href="tel:+12805634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
         <div className="text-xs text-gray-400">Mon–Sat: 10:30AM–8PM · Sun: 11AM–8PM</div>
@@ -53,68 +53,68 @@ export default function Navbar() {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`font-body font-semibold text-sm tracking-wide transition-colors hover:text-midnight-cherry ${location.pathname === link.to ? 'text-midnight-cherry' : 'text-obsidian-roast'}`}
-              >
+            {navLinks.map((link) =>
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`font-body font-semibold text-sm tracking-wide transition-colors hover:text-midnight-cherry ${location.pathname === link.to ? 'text-midnight-cherry' : 'text-obsidian-roast'}`}>
+              
                 {link.label}
               </Link>
-            ))}
+            )}
           </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <Link
               to="/menu"
-              className="hidden md:flex btn-cherry chrome-hover px-5 py-2.5 text-sm font-heading items-center gap-2"
-            >
+              className="hidden md:flex btn-cherry chrome-hover px-5 py-2.5 text-sm font-heading items-center gap-2">
+              
               Order Now
             </Link>
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 bg-midnight-cherry text-white rounded-full hover:bg-red-800 transition-colors"
-            >
+              className="relative p-2.5 bg-midnight-cherry text-white rounded-full hover:bg-red-800 transition-colors">
+              
               <ShoppingBag size={18} />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-patina-mint text-white text-xs font-heading w-5 h-5 rounded-full flex items-center justify-center animate-float-up">
+              {totalItems > 0 &&
+              <span className="absolute -top-1 -right-1 bg-patina-mint text-white text-xs font-heading w-5 h-5 rounded-full flex items-center justify-center animate-float-up">
                   {totalItems}
                 </span>
-              )}
+              }
             </button>
             <button
               className="md:hidden p-2 text-obsidian-roast"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
+              onClick={() => setMobileOpen(!mobileOpen)}>
+              
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
-            {navLinks.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setMobileOpen(false)}
-                className="font-body font-semibold text-obsidian-roast hover:text-midnight-cherry transition-colors"
-              >
+        {mobileOpen &&
+        <div className="md:hidden bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
+            {navLinks.map((link) =>
+          <Link
+            key={link.to}
+            to={link.to}
+            onClick={() => setMobileOpen(false)}
+            className="font-body font-semibold text-obsidian-roast hover:text-midnight-cherry transition-colors">
+            
                 {link.label}
               </Link>
-            ))}
+          )}
             <Link
-              to="/menu"
-              onClick={() => setMobileOpen(false)}
-              className="btn-cherry chrome-hover px-5 py-3 text-center text-sm font-heading"
-            >
+            to="/menu"
+            onClick={() => setMobileOpen(false)}
+            className="btn-cherry chrome-hover px-5 py-3 text-center text-sm font-heading">
+            
               Order Now
             </Link>
           </div>
-        )}
+        }
       </nav>
-    </>
-  );
+    </>);
+
 }
