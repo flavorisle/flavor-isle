@@ -1,0 +1,157 @@
+import React from 'react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { useNavigate } from 'react-router-dom';
+
+const ORDER_TYPE_LABELS = {
+  pickup: 'Pickup',
+  delivery: 'Delivery',
+  dine_in: 'Dine-In',
+};
+
+export default function CartDrawer() {
+  const {
+    cartItems, isCartOpen, setIsCartOpen,
+    updateQuantity, removeItem,
+    orderType, setOrderType,
+    subtotal, deliveryFee, tax, total, totalItems
+  } = useCart();
+  const navigate = useNavigate();
+
+  if (!isCartOpen) return null;
+
+  const handleCheckout = () => {
+    setIsCartOpen(false);
+    navigate('/checkout');
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+        onClick={() => setIsCartOpen(false)}
+      />
+
+      {/* Drawer */}
+      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-vanilla-malt z-50 flex flex-col shadow-float-lg animate-slide-in-right">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-midnight-cherry rounded-full flex items-center justify-center">
+              <ShoppingBag size={18} className="text-white" />
+            </div>
+            <div>
+              <h2 className="font-heading text-lg text-obsidian-roast">Your Order</h2>
+              <p className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-muted rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Order Type Selector */}
+        <div className="p-4 bg-white border-b border-border">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Order Type</p>
+          <div className="flex gap-2">
+            {['pickup', 'delivery', 'dine_in'].map(type => (
+              <button
+                key={type}
+                onClick={() => setOrderType(type)}
+                className={`flex-1 py-2 text-xs font-heading rounded-xl transition-all ${
+                  orderType === type
+                    ? 'bg-midnight-cherry text-white shadow-float'
+                    : 'bg-muted text-muted-foreground hover:bg-gray-200'
+                }`}
+              >
+                {ORDER_TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {cartItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+              <ShoppingBag size={48} strokeWidth={1} />
+              <p className="font-body">Your cart is empty</p>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="btn-cherry px-6 py-2.5 text-sm"
+              >
+                Browse Menu
+              </button>
+            </div>
+          ) : (
+            cartItems.map(item => (
+              <div key={item.id} className="card-diner p-3 flex gap-3">
+                {item.image_url && (
+                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
+                  <p className="text-patina-mint font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-midnight-cherry hover:text-white transition-colors"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="font-heading text-sm w-4 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-midnight-cherry hover:text-white transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="ml-auto p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer totals + checkout */}
+        {cartItems.length > 0 && (
+          <div className="p-4 bg-white border-t border-border space-y-3">
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              {deliveryFee > 0 && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Delivery Fee</span>
+                  <span>${deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Tax (6%)</span>
+                <span>${tax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              onClick={handleCheckout}
+              className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2"
+            >
+              Checkout <ArrowRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

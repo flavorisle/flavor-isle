@@ -1,0 +1,55 @@
+{
+  "name": "MenuItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Burgers",
+        "Chicken",
+        "Sides",
+        "Shakes",
+        "Drinks",
+        "Breakfast",
+        "Specials"
+      ]
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "is_available": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "square_item_id": {
+      "type": "string"
+    },
+    "calories": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "name",
+    "price",
+    "category"
+  ]
+}

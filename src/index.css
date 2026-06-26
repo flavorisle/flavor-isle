@@ -1,46 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --background: 40 33% 98%;
+    --foreground: 0 0% 8%;
+    --card: 40 33% 99%;
+    --card-foreground: 0 0% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 350 100% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 180 34% 47%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 180 34% 47%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --font-heading: ui-sans-serif, system-ui, sans-serif;
-    --font-body: ui-sans-serif, system-ui, sans-serif;
-    --font-display: ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 350 100% 32%;
+    --radius: 1.5rem;
+    --font-heading: 'Archivo Black', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Archivo Black', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Flavor Isle Custom Tokens */
+    --vanilla-malt: #FDFBF7;
+    --midnight-cherry: #A1001A;
+    --patina-mint: #4E9F9F;
+    --obsidian-roast: #141414;
+    --chrome-silver: #C0C0C0;
+    --cream-white: #FFFDF8;
+    --sidebar-background: 40 33% 98%;
+    --sidebar-foreground: 0 0% 8%;
+    --sidebar-primary: 350 100% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 20% 94%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 350 100% 32%;
   }
 
   .dark {
@@ -50,36 +55,29 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --primary: 350 100% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 180 34% 47%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 180 34% 47%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --ring: 350 100% 40%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 350 100% 40%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14.9%;
+    --sidebar-ring: 350 100% 40%;
   }
 }
-
-
 
 @layer base {
   * {
@@ -88,5 +86,105 @@
 
   body {
     @apply bg-background text-foreground font-body;
+    background-color: var(--vanilla-malt);
+    font-size: 18px;
+    line-height: 1.6;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .font-heading { font-family: var(--font-heading); }
+  .font-body { font-family: var(--font-body); }
+  .font-display { font-family: var(--font-display); }
+
+  .bg-vanilla-malt { background-color: var(--vanilla-malt); }
+  .bg-midnight-cherry { background-color: var(--midnight-cherry); }
+  .bg-patina-mint { background-color: var(--patina-mint); }
+  .text-midnight-cherry { color: var(--midnight-cherry); }
+  .text-patina-mint { color: var(--patina-mint); }
+  .text-obsidian-roast { color: var(--obsidian-roast); }
+  .border-midnight-cherry { border-color: var(--midnight-cherry); }
+  .border-patina-mint { border-color: var(--patina-mint); }
+
+  .shadow-float {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-float-lg {
+    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .chrome-hover {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chrome-hover::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.4s ease;
+  }
+
+  .chrome-hover:hover::after {
+    left: 120%;
+  }
+
+  .btn-cherry {
+    background-color: var(--midnight-cherry);
+    color: white;
+    border-radius: var(--radius);
+    font-family: var(--font-heading);
+    transition: all 0.2s ease;
+  }
+
+  .btn-cherry:hover {
+    background-color: #8a0016;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(161, 0, 26, 0.35);
+  }
+
+  .btn-mint {
+    background-color: var(--patina-mint);
+    color: white;
+    border-radius: var(--radius);
+    font-family: var(--font-heading);
+    transition: all 0.2s ease;
+  }
+
+  .btn-mint:hover {
+    background-color: #3d8888;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(78, 159, 159, 0.35);
+  }
+
+  .card-diner {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .card-diner:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.14);
+  }
+
+  .ticker-container {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
