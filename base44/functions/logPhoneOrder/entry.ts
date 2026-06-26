@@ -44,32 +44,30 @@ Deno.serve(async (req) => {
       }
 
       if (locationId) {
-        const orderTypeMap = { pickup: 'PICKUP', delivery: 'DELIVERY', dine_in: 'EAT_IN' };
         const lineItems = items.map(item => ({
           name: item.name,
           quantity: String(item.quantity),
           base_price_money: { amount: Math.round((item.price || 0) * 100), currency: 'USD' },
         }));
 
+        // Format note for kitchen
+        let pickupNote = `CALL IN\n${customer_name}\n${customer_phone || ''}`;
+
         const squareOrder = {
           idempotency_key: crypto.randomUUID(),
           order: {
             location_id: locationId,
             fulfillments: [{
-              type: orderTypeMap[order_type] || 'PICKUP',
+              type: 'PICKUP',
               state: 'PROPOSED',
-              pickup_details: order_type === 'pickup' || !order_type ? {
+              pickup_details: {
                 recipient: { display_name: customer_name, phone_number: customer_phone || '' },
                 pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
-                note: special_instructions || '',
-              } : undefined,
-              delivery_details: order_type === 'delivery' ? {
-                recipient: { display_name: customer_name, phone_number: customer_phone || '' },
-                note: special_instructions || '',
-              } : undefined,
+                note: pickupNote + (special_instructions ? '\n\nNOTES: ' + special_instructions : ''),
+              },
             }],
             line_items: lineItems,
-            metadata: { order_source: 'phone-order', order_number: orderNumber },
+            metadata: { order_source: 'phone-order', order_number: orderNumber, order_type: order_type || 'pickup' },
           },
         };
 

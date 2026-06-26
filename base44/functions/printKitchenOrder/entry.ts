@@ -17,7 +17,19 @@ Deno.serve(async (req) => {
       .map(item => `${item.quantity}x ${item.name}${item.selectedModifiers ? ' (' + item.selectedModifiers.map(m => m.name).join(', ') + ')' : ''}`)
       .join('\n');
 
-    const kitchenMessage = `🔔 CALL-IN ORDER #${order_number}\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
+    // Format header based on order type
+    let orderTypeLabel = 'ORDER';
+    if (order_type === 'pickup') {
+      orderTypeLabel = 'PICKUP';
+    } else if (order_type === 'dine_in') {
+      orderTypeLabel = 'DINE IN';
+    } else if (order_type === 'delivery') {
+      orderTypeLabel = 'DELIVERY';
+    } else if (order_type === 'call_in' || !order_type) {
+      orderTypeLabel = 'CALL IN';
+    }
+
+    const kitchenMessage = `🔔 ${orderTypeLabel} ORDER #${order_number}\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
 
     // Send to kitchen via Twilio SMS to kitchen phone
     const client = new Twilio(

@@ -24,12 +24,6 @@ Deno.serve(async (req) => {
 
     const idempotencyKey = crypto.randomUUID();
 
-    const orderTypeMap = {
-      pickup: 'PICKUP',
-      delivery: 'DELIVERY',
-      dine_in: 'EAT_IN',
-    };
-
     const lineItems = items.map(item => ({
       name: item.name,
       quantity: String(item.quantity),
@@ -39,36 +33,37 @@ Deno.serve(async (req) => {
       },
     }));
 
+    // Format note based on order type for kitchen printing
+    let pickupNote = '';
+    if (orderType === 'pickup') {
+      pickupNote = `PICKUP\n${customer.name}\n${customer.phone || ''}`;
+    } else if (orderType === 'delivery') {
+      pickupNote = `DELIVERY\n${customer.name}\n${customer.address || ''}\n${customer.phone || ''}`;
+    } else if (orderType === 'dine_in') {
+      pickupNote = `DINE IN\nTable: ${customer.table || 'N/A'}\n${customer.name}`;
+    }
+
     const squareOrder = {
       idempotency_key: idempotencyKey,
       order: {
         location_id: locationId,
         fulfillments: [{
-          type: orderTypeMap[orderType] || 'PICKUP',
+          type: 'PICKUP',
           state: 'PROPOSED',
-          pickup_details: orderType === 'pickup' ? {
+          pickup_details: {
             recipient: {
               display_name: customer.name,
               phone_number: customer.phone || '',
             },
             pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
-            note: instructions || '',
-          } : undefined,
-          delivery_details: orderType === 'delivery' ? {
-            recipient: {
-              display_name: customer.name,
-              phone_number: customer.phone || '',
-              address: {
-                address_line_1: customer.address || '',
-              }
-            },
-            note: instructions || '',
-          } : undefined,
+            note: pickupNote + (instructions ? '\n\nNOTES: ' + instructions : ''),
+          },
         }],
         line_items: lineItems,
         metadata: {
           customer_email: customer.email,
           order_source: 'flavor-isle-website',
+          order_type: orderType,
         },
       },
     };
