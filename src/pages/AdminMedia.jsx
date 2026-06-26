@@ -10,6 +10,9 @@ const FOLDER_LABELS = {
   'Desktop/flavor isle/Logo': '🎨 Logos',
   'Desktop/flavor isle/Advertising': '📢 Advertising',
   'Desktop/Graphics for flavor isle': '🖼️ Graphics',
+  'Flavor Isle/Flavor-Isle/attached_assets': '🗂️ Replit Assets',
+  'Flavor Isle/Flavor-Isle/artifacts/flavor-isle/src/assets': '⚡ Site Assets',
+  'Flavor Isle/Flavor-Isle/artifacts/flavor-isle/src/assets/smashie': '🍔 Smashie',
 };
 
 export default function AdminMedia() {

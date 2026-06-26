@@ -68,6 +68,9 @@ Deno.serve(async (req) => {
       'Desktop/flavor isle/Logo',
       'Desktop/flavor isle/Advertising',
       'Desktop/Graphics for flavor isle',
+      'Flavor Isle/Flavor-Isle/attached_assets',
+      'Flavor Isle/Flavor-Isle/artifacts/flavor-isle/src/assets',
+      'Flavor Isle/Flavor-Isle/artifacts/flavor-isle/src/assets/smashie',
     ];
 
     const results = await Promise.all(folders.map(f => getChildrenFlat(accessToken, f)));
