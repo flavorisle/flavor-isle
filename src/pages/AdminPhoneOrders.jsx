@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Phone, Clock, CheckCircle, X, ChefHat, RefreshCw, ShoppingBag } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
+import OccupancyTracker from '@/components/OccupancyTracker';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -65,6 +66,7 @@ export default function AdminPhoneOrders() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
+      <OccupancyTracker />
       <div className="max-w-5xl mx-auto px-4 py-10">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

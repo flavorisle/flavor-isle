@@ -1,0 +1,39 @@
+{
+  "name": "Occupancy",
+  "type": "object",
+  "properties": {
+    "customer_name": {
+      "type": "string"
+    },
+    "party_size": {
+      "type": "number"
+    },
+    "table_number": {
+      "type": "string"
+    },
+    "order_id": {
+      "type": "string"
+    },
+    "checked_in_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "checked_out_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "seated",
+        "checked_out"
+      ],
+      "default": "seated"
+    }
+  },
+  "required": [
+    "customer_name",
+    "party_size",
+    "checked_in_at"
+  ]
+}
