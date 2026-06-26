@@ -51,27 +51,8 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) =>
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`font-body font-semibold text-sm tracking-wide transition-colors hover:text-midnight-cherry ${location.pathname === link.to ? 'text-midnight-cherry' : 'text-obsidian-roast'}`}>
-              
-                {link.label}
-              </Link>
-            )}
-          </div>
-
           {/* Right actions */}
           <div className="flex items-center gap-3">
-            <Link
-              to="/menu"
-              className="hidden md:flex btn-cherry chrome-hover px-5 py-2.5 text-sm font-heading items-center gap-2">
-              
-              Order Now
-            </Link>
             <button
               onClick={() => setIsCartOpen(true)}
               className="relative p-2.5 bg-midnight-cherry text-white rounded-full hover:bg-red-800 transition-colors">
@@ -84,7 +65,7 @@ export default function Navbar() {
               }
             </button>
             <button
-              className="md:hidden p-2 text-obsidian-roast"
+              className="p-2 text-obsidian-roast"
               onClick={() => setMobileOpen(!mobileOpen)}>
               
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -92,9 +73,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Menu */}
         {mobileOpen &&
-        <div className="md:hidden bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
+        <div className="bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
             {navLinks.map((link) =>
           <Link
             key={link.to}
