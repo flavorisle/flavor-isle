@@ -105,13 +105,17 @@ Deno.serve(async (req) => {
       const priceAmount = baseVariation?.item_variation_data?.price_money?.amount;
       const price = priceAmount != null ? priceAmount / 100 : 0;
 
+      // Item is available if not archived AND not sold out at variation level
+      const isSoldOut = variations.every(v => v.item_variation_data?.sellable === false);
+      const is_available = !obj.is_archived && !itemData.is_archived && !isSoldOut;
+
       menuItems.push({
         name: itemData.name,
         description: itemData.description || '',
         price,
         category: mappedCategory,
         image_url,
-        is_available: !itemData.is_archived,
+        is_available,
         is_featured: false,
         tags: itemData.label_color ? [itemData.label_color] : [],
         square_item_id: obj.id,

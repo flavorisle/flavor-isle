@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ShoppingBag, Bike, Utensils, Search, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Bike, Utensils, Search } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -43,45 +43,17 @@ export default function Menu() {
   const [items, setItems] = useState(SAMPLE_ITEMS);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
-  const [syncing, setSyncing] = useState(false);
   const { orderType, setOrderType, setIsCartOpen, totalItems } = useCart();
   const categoryBarRef = useRef(null);
 
   useEffect(() => {
-    // First try loading from DB
     base44.entities.MenuItem.list()
-      .then(async data => {
-        if (data && data.length > 0) {
-          setItems(data);
-        } else {
-          // Nothing in DB yet — sync from Square
-          setSyncing(true);
-          try {
-            await base44.functions.invoke('syncSquareCatalog', {});
-            const fresh = await base44.entities.MenuItem.list();
-            if (fresh && fresh.length > 0) setItems(fresh);
-          } catch (e) {
-            console.error('Square sync failed', e);
-          } finally {
-            setSyncing(false);
-          }
-        }
+      .then(data => {
+        if (data && data.length > 0) setItems(data);
+        // else stay with SAMPLE_ITEMS until the scheduled sync populates DB
       })
       .catch(() => {});
   }, []);
-
-  const handleManualSync = async () => {
-    setSyncing(true);
-    try {
-      await base44.functions.invoke('syncSquareCatalog', {});
-      const fresh = await base44.entities.MenuItem.list();
-      if (fresh && fresh.length > 0) setItems(fresh);
-    } catch (e) {
-      console.error('Square sync failed', e);
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const filtered = items.filter(item => {
     const matchCat = activeCategory === 'All' || item.category === activeCategory;
@@ -97,16 +69,8 @@ export default function Menu() {
       {/* Page header */}
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2">
             <p className="text-patina-mint text-sm font-heading uppercase tracking-widest">Order Online</p>
-            <button
-              onClick={handleManualSync}
-              disabled={syncing}
-              className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-              {syncing ? 'Syncing…' : 'Sync from Square'}
-            </button>
           </div>
           <h1 className="font-heading text-5xl text-white mb-6">The Menu</h1>
 
