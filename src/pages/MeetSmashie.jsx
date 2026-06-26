@@ -96,12 +96,7 @@ export default function MeetSmashie() {
       {/* How to reach Smashie */}
       <section className="py-16 bg-patina-mint px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12 relative">
-            <img
-              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/05ab859ea_Copilot_20260615_175650.png"
-              alt="Smashie pointing"
-              className="hidden md:block absolute -left-16 -top-8 w-36 drop-shadow-lg"
-            />
+          <div className="text-center mb-12">
             <h2 className="font-heading text-4xl text-white mb-3">How to Reach Smashie</h2>
             <p className="text-teal-200">Three ways to connect. Smashie's ready for all of them.</p>
           </div>
