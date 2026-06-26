@@ -13,6 +13,7 @@ Deno.serve(async (req) => {
 
     const orderNumber = 'PH' + Date.now().toString().slice(-6);
 
+    // Log to Base44 database
     const order = await base44.asServiceRole.entities.Order.create({
       order_number: orderNumber,
       order_type: order_type || 'pickup',
@@ -27,6 +28,71 @@ Deno.serve(async (req) => {
       special_instructions: special_instructions || '',
       payment_status: 'pending',
     });
+
+    // Send to Square
+    try {
+      const connection = await base44.asServiceRole.connectors.getConnection('square');
+      const accessToken = connection.accessToken;
+
+      let locationId = connection.connectionConfig?.locationId;
+      if (!locationId) {
+        const locRes = await fetch('https://connect.squareup.com/v2/locations', {
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
+        });
+        const locData = await locRes.json();
+        locationId = locData.locations?.[0]?.id;
+      }
+
+      if (locationId) {
+        const orderTypeMap = { pickup: 'PICKUP', delivery: 'DELIVERY', dine_in: 'EAT_IN' };
+        const lineItems = items.map(item => ({
+          name: item.name,
+          quantity: String(item.quantity),
+          base_price_money: { amount: Math.round((item.price || 0) * 100), currency: 'USD' },
+        }));
+
+        const squareOrder = {
+          idempotency_key: crypto.randomUUID(),
+          order: {
+            location_id: locationId,
+            fulfillments: [{
+              type: orderTypeMap[order_type] || 'PICKUP',
+              state: 'PROPOSED',
+              pickup_details: order_type === 'pickup' || !order_type ? {
+                recipient: { display_name: customer_name, phone_number: customer_phone || '' },
+                pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+                note: special_instructions || '',
+              } : undefined,
+              delivery_details: order_type === 'delivery' ? {
+                recipient: { display_name: customer_name, phone_number: customer_phone || '' },
+                note: special_instructions || '',
+              } : undefined,
+            }],
+            line_items: lineItems,
+            metadata: { order_source: 'phone-order', order_number: orderNumber },
+          },
+        };
+
+        const sqRes = await fetch('https://connect.squareup.com/v2/orders', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Square-Version': '2024-01-18',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(squareOrder),
+        });
+
+        const sqData = await sqRes.json();
+        if (sqRes.ok) {
+          console.log('Phone order sent to Square:', sqData.order?.id);
+        } else {
+          console.error('Square error for phone order:', JSON.stringify(sqData));
+        }
+      }
+    } catch (squareErr) {
+      console.error('Square integration error:', squareErr.message);
+    }
 
     return Response.json({
       success: true,
