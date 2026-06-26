@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Clock, CheckCircle, X, ChefHat, RefreshCw } from 'lucide-react';
+import { Phone, Clock, CheckCircle, X, ChefHat, RefreshCw, ShoppingBag } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 
@@ -26,7 +26,7 @@ export default function AdminPhoneOrders() {
 
   const load = async () => {
     setLoading(true);
-    const all = await base44.entities.Order.filter({ customer_email: 'phone-order@flavorisle.com' });
+    const all = await base44.entities.Order.list();
     setOrders((all || []).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     setLoading(false);
   };
@@ -61,11 +61,11 @@ export default function AdminPhoneOrders() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-midnight-cherry rounded-2xl flex items-center justify-center">
-              <Phone size={22} className="text-white" />
+              <ShoppingBag size={22} className="text-white" />
             </div>
             <div>
-              <h1 className="font-heading text-2xl text-obsidian-roast">Phone Orders</h1>
-              <p className="text-sm text-muted-foreground">Orders taken via Smashie AI</p>
+              <h1 className="font-heading text-2xl text-obsidian-roast">All Orders</h1>
+              <p className="text-sm text-muted-foreground">Live orders, phone orders & Square POS</p>
             </div>
           </div>
           <button onClick={load} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors">
@@ -95,8 +95,8 @@ export default function AdminPhoneOrders() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
-            <Phone size={48} strokeWidth={1} className="mx-auto mb-4 text-muted-foreground" />
-            <p className="font-heading text-lg text-obsidian-roast">No {filter} phone orders</p>
+            <ShoppingBag size={48} strokeWidth={1} className="mx-auto mb-4 text-muted-foreground" />
+            <p className="font-heading text-lg text-obsidian-roast">No {filter} orders</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -108,6 +108,9 @@ export default function AdminPhoneOrders() {
                       <p className="font-heading text-obsidian-roast">#{order.order_number}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                         {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border font-semibold">
+                        {order.customer_email === 'phone-order@flavorisle.com' ? 'Phone Order' : order.square_order_id ? 'Square POS' : 'Online'}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-obsidian-roast">{order.customer_name}</p>
