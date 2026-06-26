@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu, X, MapPin, Phone } from 'lucide-react';
+import { ShoppingBag, Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
+  const { isAuthenticated, user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -17,6 +19,9 @@ export default function Navbar() {
 
   const navLinks = [
   { label: 'Menu', to: '/menu' },
+  { label: 'Milkshakes', to: '/milkshakes' },
+  { label: 'Promos', to: '/promos' },
+  { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];
@@ -93,6 +98,31 @@ export default function Navbar() {
             
               Order Now
             </Link>
+            
+            {/* Auth Section */}
+            <div className="border-t border-border pt-4 mt-2">
+              {isAuthenticated ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground font-body">Signed in as <span className="font-semibold text-obsidian-roast">{user?.full_name || user?.email}</span></p>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileOpen(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-body text-obsidian-roast hover:bg-muted rounded-lg transition-colors">
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center px-4 py-2.5 bg-patina-mint text-white rounded-lg text-sm font-heading hover:bg-opacity-90 transition-colors">
+                  Sign In
+                </Link>
+              )}
+            </div>
           </div>
         }
       </nav>
