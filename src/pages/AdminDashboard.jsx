@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Settings, UtensilsCrossed, Phone, Image } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
+import LiveOrdersFeed from '@/components/LiveOrdersFeed';
 
 const adminPages = [
   {
@@ -45,6 +46,9 @@ export default function AdminDashboard() {
           <p className="text-gray-300 mt-3 max-w-2xl">Manage your restaurant's menu, orders, and media from one place.</p>
         </div>
       </div>
+
+      {/* Live Orders Feed */}
+      <LiveOrdersFeed />
 
       {/* Admin Pages Grid */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
