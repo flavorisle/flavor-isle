@@ -108,8 +108,41 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Order.update(order.id, updates);
         console.log(`Order ${order.order_number} updated: payment_status=${updates.payment_status}, status=${updates.status || order.status}`);
 
-        if (paymentStatus === 'paid' && order.customer_email) {
-          await sendOrderConfirmationEmail(order);
+        if (paymentStatus === 'paid') {
+          // Send to Square POS
+          try {
+            await base44.functions.invoke('createSquareOrder', {
+              items: order.items || [],
+              orderType: order.order_type || 'pickup',
+              customer: {
+                name: order.customer_name,
+                phone: order.customer_phone,
+                email: order.customer_email,
+                address: order.delivery_address,
+              },
+              instructions: order.special_instructions || '',
+              total: order.total,
+            });
+            console.log(`Order ${order.order_number} sent to Square`);
+            
+            // Alert kitchen printer
+            try {
+              await base44.functions.invoke('printKitchenOrder', {
+                order_number: order.order_number,
+                items: order.items || [],
+                special_instructions: order.special_instructions || '',
+                order_type: order.order_type,
+              });
+            } catch (printerErr) {
+              console.warn('Kitchen printer alert failed:', printerErr.message);
+            }
+          } catch (squareErr) {
+            console.error('Failed to send order to Square:', squareErr.message);
+          }
+          
+          if (order.customer_email) {
+            await sendOrderConfirmationEmail(order);
+          }
         }
       } else {
         console.warn('No Order found for stripe_session_id:', stripeSessionId);
