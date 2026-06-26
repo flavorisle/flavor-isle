@@ -1,0 +1,40 @@
+{
+  "name": "Loyalty",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "points_balance": {
+      "type": "number",
+      "default": 0
+    },
+    "points_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "points_redeemed": {
+      "type": "number",
+      "default": 0
+    },
+    "last_order_id": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold"
+      ],
+      "default": "bronze"
+    }
+  },
+  "required": [
+    "user_id",
+    "email"
+  ]
+}

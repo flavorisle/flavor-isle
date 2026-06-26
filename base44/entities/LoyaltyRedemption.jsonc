@@ -1,0 +1,48 @@
+{
+  "name": "LoyaltyRedemption",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "loyalty_id": {
+      "type": "string"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed"
+      ]
+    },
+    "discount_value": {
+      "type": "number"
+    },
+    "points_cost": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_redeemed": {
+      "type": "boolean",
+      "default": false
+    },
+    "redeemed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "loyalty_id",
+    "discount_type",
+    "discount_value",
+    "points_cost",
+    "description"
+  ]
+}
