@@ -60,16 +60,16 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'vanilla-malt': '#FDFBF7',
-        'midnight-cherry': '#A1001A',
-        'patina-mint': '#4E9F9F',
+        'vanilla-malt': '#F5EDD6',
+        'midnight-cherry': '#C0392B',
+        'patina-mint': '#1A3A5C',
         'obsidian-roast': '#141414',
         'chrome-silver': '#C0C0C0',
   		},
   		fontFamily: {
-  			heading: ['Archivo Black', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			body: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			display: ['Archivo Black', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			heading: ['Oswald', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			body: ['Open Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			display: ['Oswald', 'ui-sans-serif', 'system-ui', 'sans-serif'],
   			mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
   		},
   		keyframes: {

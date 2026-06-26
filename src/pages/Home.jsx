@@ -49,8 +49,8 @@ export default function Home() {
         {/* Background image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1800&q=85&fit=crop"
-            alt="Signature burger"
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c655b439_IMG_8923.jpg"
+            alt="Flavor Isle exterior at night"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
@@ -161,24 +161,24 @@ export default function Home() {
             {[
               {
                 name: 'The Isle Smash Burger',
-                desc: 'Double smashed patties, American cheese, special sauce, pickles, on a brioche bun.',
+                desc: 'Double smashed patties, American cheese, special sauce on a classic bun. A Flavor Isle staple.',
                 price: '$10.99',
-                img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80&fit=crop',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9a7fa37aa_IMG_5372_Original.jpg',
                 tag: 'Best Seller'
               },
               {
-                name: 'Thick Vanilla Malt',
-                desc: 'Hand-spun with real vanilla ice cream and malted milk. Served with extra in the tin.',
-                price: '$5.49',
-                img: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&q=80&fit=crop',
-                tag: 'Fan Fave'
+                name: 'Famous Onion Rings',
+                desc: 'Crispy cornmeal-battered rings fried golden. The ones everyone raves about.',
+                price: '$4.99',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff2952347_IMG_5382_Original.jpg',
+                tag: 'Must Try'
               },
               {
-                name: 'Loaded Cheese Fries',
-                desc: 'Crinkle-cut fries smothered in cheddar cheese sauce, jalapeños, and bacon bits.',
-                price: '$4.99',
-                img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&q=80&fit=crop',
-                tag: 'Must Try'
+                name: 'Grilled Chicken Sandwich',
+                desc: 'Juicy grilled chicken breast with crisp lettuce on a toasted bun. Light & delicious.',
+                price: '$8.99',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/34f1bfc0b_IMG_5541_Original.jpg',
+                tag: 'Fan Fave'
               }
             ].map(item => (
               <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">

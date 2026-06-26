@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,13 +12,13 @@
     --card-foreground: 0 0% 8%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 8%;
-    --primary: 350 100% 32%;
+    --primary: 5 63% 47%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 180 34% 47%;
+    --secondary: 213 55% 23%;
     --secondary-foreground: 0 0% 100%;
     --muted: 40 20% 94%;
     --muted-foreground: 0 0% 45%;
-    --accent: 180 34% 47%;
+    --accent: 213 55% 23%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -26,15 +26,15 @@
     --input: 40 20% 88%;
     --ring: 350 100% 32%;
     --radius: 1.5rem;
-    --font-heading: 'Archivo Black', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Archivo Black', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Oswald', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Oswald', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
     /* Flavor Isle Custom Tokens */
-    --vanilla-malt: #FDFBF7;
-    --midnight-cherry: #A1001A;
-    --patina-mint: #4E9F9F;
+    --vanilla-malt: #F5EDD6;
+    --midnight-cherry: #C0392B;
+    --patina-mint: #1A3A5C;
     --obsidian-roast: #141414;
     --chrome-silver: #C0C0C0;
     --cream-white: #FFFDF8;
@@ -109,6 +109,7 @@
   .text-obsidian-roast { color: var(--obsidian-roast); }
   .border-midnight-cherry { border-color: var(--midnight-cherry); }
   .border-patina-mint { border-color: var(--patina-mint); }
+  .bg-navy { background-color: var(--patina-mint); }
 
   .shadow-float {
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04);

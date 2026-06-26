@@ -14,8 +14,8 @@ export default function About() {
       {/* Hero */}
       <div className="relative h-96 overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1800&q=85&fit=crop"
-          alt="Diner interior"
+          src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0c28555d1_IMG_8924.jpg"
+          alt="Flavor Isle exterior"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/50 flex items-end">
@@ -41,8 +41,8 @@ export default function About() {
           </div>
           <div className="rounded-3xl overflow-hidden shadow-float-lg">
             <img
-              src="https://images.unsplash.com/photo-1555992336-03a23c7b20ee?w=800&q=85&fit=crop"
-              alt="Diner food"
+              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/75533f8d0_IMG_8839.png"
+              alt="Customers dining at Flavor Isle"
               className="w-full h-80 object-cover"
             />
           </div>
