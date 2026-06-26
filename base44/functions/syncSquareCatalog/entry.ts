@@ -1,128 +1,133 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const SQUARE_VERSION = '2024-01-18';
-const CATEGORY_MAP = {
-  'burgers': 'Burgers',
-  'burger': 'Burgers',
-  'chicken': 'Chicken',
-  'sides': 'Sides',
-  'side': 'Sides',
-  'shakes': 'Shakes',
-  'shake': 'Shakes',
-  'milkshake': 'Shakes',
-  'drinks': 'Drinks',
-  'drink': 'Drinks',
-  'beverages': 'Drinks',
-  'beverage': 'Drinks',
-  'breakfast': 'Breakfast',
-  'specials': 'Specials',
-  'special': 'Specials',
-};
-const VALID_CATEGORIES = ['Burgers', 'Chicken', 'Sides', 'Shakes', 'Drinks', 'Breakfast', 'Specials'];
+
+async function squareFetch(accessToken, path) {
+  const res = await fetch(`https://connect.squareup.com/v2${path}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': SQUARE_VERSION }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Square API error on ${path}: ${JSON.stringify(data.errors)}`);
+  return data;
+}
+
+// Paginate through all catalog objects of given types
+async function fetchAllCatalog(accessToken, types) {
+  const objects = [];
+  let cursor = null;
+  do {
+    const url = `/catalog/list?types=${types}${cursor ? `&cursor=${cursor}` : ''}`;
+    const data = await squareFetch(accessToken, url);
+    objects.push(...(data.objects || []));
+    cursor = data.cursor || null;
+  } while (cursor);
+  return objects;
+}
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('square');
 
-    // 1. Fetch all catalog objects (items, images, categories, modifier lists)
-    const catalogRes = await fetch(
-      'https://connect.squareup.com/v2/catalog/list?types=ITEM,IMAGE,CATEGORY,MODIFIER_LIST',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Square-Version': SQUARE_VERSION,
-        },
-      }
-    );
-    const catalogData = await catalogRes.json();
-    if (!catalogRes.ok) {
-      console.error('Square catalog error:', JSON.stringify(catalogData));
-      return Response.json({ error: 'Failed to fetch Square catalog', details: catalogData }, { status: 500 });
-    }
+    // 1. Fetch all object types separately (Square returns empty for combined types in some API versions)
+    console.log('Fetching categories...');
+    const categoryObjects = await fetchAllCatalog(accessToken, 'CATEGORY');
 
-    const objects = catalogData.objects || [];
+    console.log('Fetching modifier lists...');
+    const modifierObjects = await fetchAllCatalog(accessToken, 'MODIFIER_LIST');
 
-    // Build lookup maps
-    const imageMap = {};
+    console.log('Fetching images...');
+    const imageObjects = await fetchAllCatalog(accessToken, 'IMAGE');
+
+    console.log('Fetching items...');
+    const itemObjects = await fetchAllCatalog(accessToken, 'ITEM');
+
+    console.log(`Fetched: ${categoryObjects.length} categories, ${modifierObjects.length} modifier lists, ${imageObjects.length} images, ${itemObjects.length} items`);
+
+    // 2. Build lookup maps
     const categoryMap = {};
-    const modifierListMap = {};
-
-    for (const obj of objects) {
-      if (obj.type === 'IMAGE') {
-        imageMap[obj.id] = obj.image_data?.url || null;
-      }
-      if (obj.type === 'CATEGORY') {
-        categoryMap[obj.id] = obj.category_data?.name || '';
-      }
-      if (obj.type === 'MODIFIER_LIST') {
-        modifierListMap[obj.id] = {
-          name: obj.modifier_list_data?.name || '',
-          selection_type: obj.modifier_list_data?.selection_type || 'SINGLE',
-          modifiers: (obj.modifier_list_data?.modifiers || []).map(m => ({
-            id: m.id,
-            name: m.modifier_data?.name || '',
-            price: m.modifier_data?.price_money
-              ? m.modifier_data.price_money.amount / 100
-              : 0,
-          })),
-        };
-      }
+    for (const obj of categoryObjects) {
+      categoryMap[obj.id] = obj.category_data?.name || '';
     }
 
-    // 2. Parse ITEM objects into menu items
+    const modifierListMap = {};
+    for (const obj of modifierObjects) {
+      modifierListMap[obj.id] = {
+        name: obj.modifier_list_data?.name || '',
+        selection_type: obj.modifier_list_data?.selection_type || 'SINGLE',
+        modifiers: (obj.modifier_list_data?.modifiers || []).map(m => ({
+          id: m.id,
+          name: m.modifier_data?.name || '',
+          price: m.modifier_data?.price_money ? m.modifier_data.price_money.amount / 100 : 0,
+        })),
+      };
+    }
+
+    const imageMap = {};
+    for (const obj of imageObjects) {
+      imageMap[obj.id] = obj.image_data?.url || null;
+    }
+
+    // 3. Parse ITEM objects
     const menuItems = [];
-    for (const obj of objects) {
+    for (const obj of itemObjects) {
       if (obj.type !== 'ITEM') continue;
       const itemData = obj.item_data || {};
       if (!itemData.name) continue;
 
-      // Resolve category — store raw Square name AND mapped enum
-      const rawCatName = itemData.category_id ? (categoryMap[itemData.category_id] || '') : '';
-      const mappedCategory = CATEGORY_MAP[rawCatName.toLowerCase()] || 'Specials';
+      // Use reporting_category as the primary category (Square's designated display category)
+      const primaryCatId = itemData.reporting_category?.id || itemData.categories?.[0]?.id || null;
+      const rawCatName = primaryCatId ? (categoryMap[primaryCatId] || '') : '';
+      // Normalize to title case so "WHIRL & TWIRL" and "Whirl & Twirl" merge into one
+      const squareCategory = rawCatName
+        .toLowerCase()
+        .replace(/\b\w/g, c => c.toUpperCase());
 
-      // Resolve image — use first image from item or variation
+      // Image: from item image_ids
       let image_url = null;
       if (itemData.image_ids && itemData.image_ids.length > 0) {
         image_url = imageMap[itemData.image_ids[0]] || null;
       }
 
-      // Resolve modifiers
+      // Modifiers: only enabled, non-hidden modifier lists
       const modifiers = [];
       if (itemData.modifier_list_info) {
         for (const mli of itemData.modifier_list_info) {
-          if (mli.modifier_list_id && modifierListMap[mli.modifier_list_id]) {
-            modifiers.push(modifierListMap[mli.modifier_list_id]);
+          if (!mli.enabled) continue;
+          if (mli.hidden_from_customer) continue;
+          const modList = modifierListMap[mli.modifier_list_id];
+          if (modList && modList.modifiers.length > 0) {
+            modifiers.push(modList);
           }
         }
       }
 
-      // Use first variation price as base price
+      // Price from first variation
       const variations = itemData.variations || [];
       const baseVariation = variations[0];
       const priceAmount = baseVariation?.item_variation_data?.price_money?.amount;
       const price = priceAmount != null ? priceAmount / 100 : 0;
 
-      // Item is available if not archived AND not sold out at variation level
-      const isSoldOut = variations.every(v => v.item_variation_data?.sellable === false);
+      // Availability
+      const isSoldOut = variations.length > 0 && variations.every(v => v.item_variation_data?.sellable === false);
       const is_available = !obj.is_archived && !itemData.is_archived && !isSoldOut;
 
       menuItems.push({
         name: itemData.name,
         description: itemData.description || '',
         price,
-        category: mappedCategory,
-        square_category: rawCatName || mappedCategory,
+        category: 'Specials', // kept for backwards compat; use square_category for display
+        square_category: squareCategory,
         image_url,
         is_available,
         is_featured: false,
-        tags: itemData.label_color ? [itemData.label_color] : [],
+        tags: [],
         square_item_id: obj.id,
         modifiers: modifiers.length > 0 ? modifiers : undefined,
       });
     }
 
-    // 3. Sync into MenuItem entity — upsert by square_item_id
+    // 4. Upsert into MenuItem entity
     const existing = await base44.asServiceRole.entities.MenuItem.list();
     const existingBySquareId = {};
     for (const e of existing) {
@@ -135,7 +140,12 @@ Deno.serve(async (req) => {
     for (const item of menuItems) {
       const existingItem = existingBySquareId[item.square_item_id];
       if (existingItem) {
-        await base44.asServiceRole.entities.MenuItem.update(existingItem.id, item);
+        // Preserve is_hidden and is_featured set manually by admin
+        await base44.asServiceRole.entities.MenuItem.update(existingItem.id, {
+          ...item,
+          is_hidden: existingItem.is_hidden ?? false,
+          is_featured: existingItem.is_featured ?? false,
+        });
         updated++;
       } else {
         await base44.asServiceRole.entities.MenuItem.create(item);
@@ -143,13 +153,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Square sync complete: ${created} created, ${updated} updated, ${menuItems.length} total`);
-    return Response.json({
-      success: true,
-      total: menuItems.length,
-      created,
-      updated,
-    });
+    console.log(`Sync complete: ${created} created, ${updated} updated. Categories: ${[...new Set(menuItems.map(i => i.square_category).filter(Boolean))].join(', ')}`);
+    return Response.json({ success: true, total: menuItems.length, created, updated });
+
   } catch (error) {
     console.error('Sync error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
