@@ -43,22 +43,35 @@ export default function Menu() {
   const [items, setItems] = useState(SAMPLE_ITEMS);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [dynamicCategories, setDynamicCategories] = useState(CATEGORIES);
   const { orderType, setOrderType, setIsCartOpen, totalItems } = useCart();
   const categoryBarRef = useRef(null);
 
   useEffect(() => {
     base44.entities.MenuItem.list()
       .then(data => {
-        if (data && data.length > 0) setItems(data);
-        // else stay with SAMPLE_ITEMS until the scheduled sync populates DB
+        if (data && data.length > 0) {
+          setItems(data);
+          // Build category list from Square categories present in data
+          const cats = ['All', ...Array.from(new Set(
+            data
+              .filter(i => !i.is_hidden && i.is_available !== false)
+              .map(i => i.square_category || i.category)
+              .filter(Boolean)
+          ))];
+          setDynamicCategories(cats);
+        }
       })
       .catch(() => {});
   }, []);
 
   const filtered = items.filter(item => {
-    const matchCat = activeCategory === 'All' || item.category === activeCategory;
+    if (item.is_hidden) return false;
+    if (item.is_available === false) return false;
+    const itemCat = item.square_category || item.category;
+    const matchCat = activeCategory === 'All' || itemCat === activeCategory;
     const matchSearch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || (item.description || '').toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch && item.is_available !== false;
+    return matchCat && matchSearch;
   });
 
   return (
@@ -107,7 +120,7 @@ export default function Menu() {
             ref={categoryBarRef}
             className="flex gap-2 overflow-x-auto scrollbar-hide py-4"
           >
-            {CATEGORIES.map(cat => (
+            {dynamicCategories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}

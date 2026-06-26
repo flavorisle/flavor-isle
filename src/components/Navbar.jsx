@@ -19,6 +19,7 @@ export default function Navbar() {
     { label: 'Menu', to: '/menu' },
     { label: 'About', to: '/about' },
     { label: 'Contact', to: '/contact' },
+    { label: 'My Account', to: '/account' },
   ];
 
   return (

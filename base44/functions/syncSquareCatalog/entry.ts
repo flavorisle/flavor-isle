@@ -77,11 +77,9 @@ Deno.serve(async (req) => {
       const itemData = obj.item_data || {};
       if (!itemData.name) continue;
 
-      // Resolve category
-      const squareCatName = itemData.category_id
-        ? (categoryMap[itemData.category_id] || '').toLowerCase()
-        : '';
-      const mappedCategory = CATEGORY_MAP[squareCatName] || 'Specials';
+      // Resolve category — store raw Square name AND mapped enum
+      const rawCatName = itemData.category_id ? (categoryMap[itemData.category_id] || '') : '';
+      const mappedCategory = CATEGORY_MAP[rawCatName.toLowerCase()] || 'Specials';
 
       // Resolve image — use first image from item or variation
       let image_url = null;
@@ -114,6 +112,7 @@ Deno.serve(async (req) => {
         description: itemData.description || '',
         price,
         category: mappedCategory,
+        square_category: rawCatName || mappedCategory,
         image_url,
         is_available,
         is_featured: false,

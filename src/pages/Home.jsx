@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, Star, MapPin, Utensils, ShoppingBag, Bike } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import ReviewSection from '@/components/ReviewSection';
 
 const SPECIALS_TICKER = [
   "🍔 Double Smash Burger — $10.99",
@@ -28,11 +29,6 @@ const FEATURES = [
   { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Sarah M.', text: 'Best burger in Smiths Grove — hands down. The smash burger is everything!', rating: 5 },
-  { name: 'James T.', text: 'The milkshakes are thick and creamy. My kids beg to come here every weekend.', rating: 5 },
-  { name: 'Linda K.', text: 'Classic diner vibes with amazing food. The all-day breakfast is a must!', rating: 5 },
-];
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -203,28 +199,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Reviews</p>
-            <h2 className="font-heading text-4xl text-obsidian-roast">Smiths Grove Loves Us</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map(t => (
-              <div key={t.name} className="card-diner p-6">
-                <div className="flex gap-1 mb-3">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-muted-foreground text-sm leading-relaxed mb-4">"{t.text}"</p>
-                <p className="font-heading text-sm text-obsidian-roast">— {t.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── REVIEWS ── */}
+      <ReviewSection />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">

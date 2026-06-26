@@ -23,6 +23,9 @@
         "Specials"
       ]
     },
+    "square_category": {
+      "type": "string"
+    },
     "image_url": {
       "type": "string"
     },
@@ -31,6 +34,10 @@
       "default": true
     },
     "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_hidden": {
       "type": "boolean",
       "default": false
     },
