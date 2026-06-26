@@ -9,6 +9,7 @@ import ReviewSection from '@/components/ReviewSection';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import KitchenBusyness from '@/components/KitchenBusyness';
+import BusynessStatus from '@/components/BusynessStatus';
 import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
@@ -121,8 +122,10 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Kitchen Busyness — live */}
-              <KitchenBusyness />
+              {/* Busyness Status — live */}
+              <div className="mt-6 pt-6 border-t border-white/20">
+                <BusynessStatus />
+              </div>
             </div>
           </div>
         </div>
