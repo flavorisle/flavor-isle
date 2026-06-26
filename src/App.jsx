@@ -20,6 +20,9 @@ import AdminMenu from './pages/AdminMenu';
 import AdminMedia from './pages/AdminMedia';
 import AdminPhoneOrders from './pages/AdminPhoneOrders';
 import AccountNew from './pages/Account.jsx';
+import Milkshakes from './pages/Milkshakes';
+import Promos from './pages/Promos';
+import MeetSmashie from './pages/MeetSmashie';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +59,9 @@ const AuthenticatedApp = () => {
       <Route path="/admin/menu" element={<AdminMenu />} />
       <Route path="/admin/media" element={<AdminMedia />} />
       <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
+      <Route path="/milkshakes" element={<Milkshakes />} />
+      <Route path="/promos" element={<Promos />} />
+      <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
