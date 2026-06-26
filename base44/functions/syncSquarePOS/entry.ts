@@ -64,12 +64,11 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.bulkCreate(newOrders);
     }
 
-    // Calculate hourly metrics for today
+    // Calculate hourly metrics for today (all statuses to show actual throughput)
     const today = new Date().toISOString().split('T')[0];
     const allOrders = await base44.asServiceRole.entities.Order.list();
     const todayOrders = (allOrders || []).filter(o => 
-      o.created_date.startsWith(today) && 
-      ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status)
+      o.created_date.startsWith(today)
     );
 
     // Group by hour
