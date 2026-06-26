@@ -17,6 +17,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminMenu from './pages/AdminMenu';
+import AdminMedia from './pages/AdminMedia';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/account" element={<Account />} />
       <Route path="/admin/menu" element={<AdminMenu />} />
+      <Route path="/admin/media" element={<AdminMedia />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
