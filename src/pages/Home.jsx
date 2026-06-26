@@ -8,6 +8,8 @@ import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
+import KitchenBusyness from '@/components/KitchenBusyness';
+import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
   "🍔 Double Smash Burger — $10.99",
@@ -119,11 +121,8 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Kitchen Status */}
-              <div className="mt-4 flex items-center gap-2 text-sm text-white/70">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Kitchen is open · ~20 min wait right now
-              </div>
+              {/* Kitchen Busyness — live */}
+              <KitchenBusyness />
             </div>
           </div>
         </div>
@@ -286,6 +285,7 @@ export default function Home() {
       </section>
 
       <Footer />
+      <SmashieChat />
     </div>
   );
 }

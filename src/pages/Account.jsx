@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderStatusTracker from '@/components/OrderStatusTracker';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
@@ -85,43 +86,38 @@ function OrderCard({ order, onReorder }) {
 
 const EMPTY_FORM = { name: '', phone: '', address: '', delivery_address: '', curbside_address: '', car_make: '', car_model: '', car_color: '' };
 
-export default function Account() {
+// ── Logged-in account view ──
+function LoggedInAccount({ user, logout }) {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [email, setEmail] = useState('');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('orders');
-  const [lookupDone, setLookupDone] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
-  const lookup = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    const results = await base44.entities.CustomerProfile.filter({ email: email.trim().toLowerCase() });
-    if (results && results.length > 0) {
-      const p = results[0];
-      setProfile(p);
-      setForm({
-        name: p.name || '',
-        phone: p.phone || '',
-        address: p.address || '',
-        delivery_address: p.delivery_address || '',
-        curbside_address: p.curbside_address || '',
-        car_make: p.car_make || '',
-        car_model: p.car_model || '',
-        car_color: p.car_color || '',
-      });
-      const ords = await base44.entities.Order.filter({ customer_email: email.trim().toLowerCase() });
+  useEffect(() => {
+    const load = async () => {
+      const [profiles, ords] = await Promise.all([
+        base44.entities.CustomerProfile.filter({ email: user.email }),
+        base44.entities.Order.filter({ customer_email: user.email }),
+      ]);
+      if (profiles && profiles.length > 0) {
+        const p = profiles[0];
+        setProfile(p);
+        setForm({ name: p.name || '', phone: p.phone || '', address: p.address || '', delivery_address: p.delivery_address || '', curbside_address: p.curbside_address || '', car_make: p.car_make || '', car_model: p.car_model || '', car_color: p.car_color || '' });
+      } else {
+        // Auto-create profile for new users
+        const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
+        setProfile(newProfile);
+        setForm({ ...EMPTY_FORM, name: user.full_name || '' });
+      }
       setOrders(ords || []);
-      setNotFound(false);
-    } else {
-      setNotFound(true);
-    }
-    setLookupDone(true);
-  };
+      setLoading(false);
+    };
+    load();
+  }, [user.email]);
 
   const saveProfile = async () => {
     setSaving(true);
@@ -141,39 +137,10 @@ export default function Account() {
     setIsCartOpen(true);
   };
 
-  if (!profile) {
+  if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
-        <Navbar />
-        <CartDrawer />
-        <div className="max-w-lg mx-auto py-24 px-4">
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 bg-midnight-cherry/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User size={36} className="text-midnight-cherry" />
-            </div>
-            <h1 className="font-heading text-3xl text-obsidian-roast mb-2">My Account</h1>
-            <p className="text-muted-foreground text-sm">Enter your email to view your orders and profile.</p>
-          </div>
-          <form onSubmit={lookup} className="card-diner p-8 space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="jane@example.com"
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
-              />
-            </div>
-            {lookupDone && notFound && (
-              <p className="text-sm text-muted-foreground">No account found. <Link to="/menu" className="text-midnight-cherry font-semibold">Place your first order</Link> to create one!</p>
-            )}
-            <button type="submit" className="btn-cherry chrome-hover w-full py-4 text-sm font-heading">
-              Look Up My Account
-            </button>
-          </form>
-        </div>
-        <Footer />
+      <div className="flex items-center justify-center py-32">
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
       </div>
     );
   }
@@ -186,36 +153,36 @@ export default function Account() {
     { label: 'Phone', key: 'phone', icon: Phone, placeholder: '(270) 555-0000', type: 'tel' },
     { label: 'Home / Billing Address', key: 'address', icon: MapPin, placeholder: '123 Main St, City, KY' },
     { label: 'Delivery Address', key: 'delivery_address', icon: MapPin, placeholder: 'Delivery address if different' },
-    { label: 'Curbside Pickup Address / Spot', key: 'curbside_address', icon: MapPin, placeholder: 'e.g. Spot #3, parking lot' },
+    { label: 'Curbside Pickup Spot', key: 'curbside_address', icon: MapPin, placeholder: 'e.g. Spot #3, parking lot' },
     { label: 'Car Make', key: 'car_make', icon: Car, placeholder: 'Toyota' },
     { label: 'Car Model', key: 'car_model', icon: Car, placeholder: 'Camry' },
     { label: 'Car Color', key: 'car_color', icon: Car, placeholder: 'Silver' },
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
-      <Navbar />
-      <CartDrawer />
-
+    <>
       {/* Header */}
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="w-16 h-16 bg-midnight-cherry rounded-full flex items-center justify-center flex-shrink-0">
             <User size={28} className="text-white" />
           </div>
-          <div>
-            <h1 className="font-heading text-3xl text-white">{profile.name}</h1>
-            <p className="text-gray-400 text-sm">{profile.email}</p>
+          <div className="flex-1">
+            <h1 className="font-heading text-3xl text-white">{profile?.name || user.full_name || 'Welcome!'}</h1>
+            <p className="text-gray-400 text-sm">{user.email}</p>
           </div>
-          <div className="sm:ml-auto flex gap-6 text-center">
-            <div>
-              <p className="font-heading text-2xl text-white">{profile.total_orders || orders.length}</p>
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="font-heading text-2xl text-white">{orders.length}</p>
               <p className="text-xs text-gray-400 uppercase tracking-wider">Orders</p>
             </div>
-            <div>
-              <p className="font-heading text-2xl text-midnight-cherry">${(profile.total_spent || orders.reduce((s, o) => s + (o.total || 0), 0)).toFixed(2)}</p>
+            <div className="text-center">
+              <p className="font-heading text-2xl text-midnight-cherry">${orders.reduce((s, o) => s + (o.total || 0), 0).toFixed(2)}</p>
               <p className="text-xs text-gray-400 uppercase tracking-wider">Spent</p>
             </div>
+            <button onClick={() => logout()} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors border border-white/20 px-4 py-2 rounded-xl">
+              <LogOut size={14} /> Sign Out
+            </button>
           </div>
         </div>
       </div>
@@ -230,17 +197,11 @@ export default function Account() {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-heading border-b-2 transition-colors ${
-                tab === key
-                  ? 'border-midnight-cherry text-midnight-cherry'
-                  : 'border-transparent text-muted-foreground hover:text-obsidian-roast'
-              }`}
+              className={`flex items-center gap-2 px-6 py-4 text-sm font-heading border-b-2 transition-colors ${tab === key ? 'border-midnight-cherry text-midnight-cherry' : 'border-transparent text-muted-foreground hover:text-obsidian-roast'}`}
             >
               <Icon size={16} /> {label}
               {key === 'orders' && activeOrders.length > 0 && (
-                <span className="ml-1 bg-midnight-cherry text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-heading">
-                  {activeOrders.length}
-                </span>
+                <span className="ml-1 bg-midnight-cherry text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-heading">{activeOrders.length}</span>
               )}
             </button>
           ))}
@@ -248,7 +209,6 @@ export default function Account() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-        {/* Orders Tab */}
         {tab === 'orders' && (
           <div className="space-y-6">
             {orders.length === 0 ? (
@@ -263,9 +223,7 @@ export default function Account() {
                   <div>
                     <h2 className="font-heading text-lg text-obsidian-roast mb-4">Active Orders</h2>
                     <div className="space-y-4">
-                      {activeOrders
-                        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-                        .map(o => <OrderCard key={o.id} order={o} onReorder={handleReorder} />)}
+                      {activeOrders.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).map(o => <OrderCard key={o.id} order={o} onReorder={handleReorder} />)}
                     </div>
                   </div>
                 )}
@@ -273,9 +231,7 @@ export default function Account() {
                   <div>
                     <h2 className="font-heading text-lg text-obsidian-roast mb-4">Past Orders</h2>
                     <div className="space-y-4">
-                      {pastOrders
-                        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-                        .map(o => <OrderCard key={o.id} order={o} onReorder={handleReorder} />)}
+                      {pastOrders.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).map(o => <OrderCard key={o.id} order={o} onReorder={handleReorder} />)}
                     </div>
                   </div>
                 )}
@@ -284,7 +240,6 @@ export default function Account() {
           </div>
         )}
 
-        {/* Profile Tab */}
         {tab === 'profile' && (
           <div className="max-w-lg space-y-6">
             <div className="card-diner p-6">
@@ -296,64 +251,185 @@ export default function Account() {
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditing(false); }} className="p-1.5 hover:bg-muted rounded-full transition-colors">
-                      <X size={16} />
-                    </button>
+                    <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
                     <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 text-sm btn-cherry px-4 py-1.5 font-heading disabled:opacity-60">
                       <Save size={14} /> {saving ? 'Saving…' : 'Save'}
                     </button>
                   </div>
                 )}
               </div>
-
               <div className="space-y-4">
-                {/* Email (read-only) */}
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Mail size={15} className="text-midnight-cherry" />
-                  </div>
+                  <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Mail size={15} className="text-midnight-cherry" /></div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
-                    <p className="text-sm text-obsidian-roast">{profile.email}</p>
+                    <p className="text-sm text-obsidian-roast">{user.email}</p>
                   </div>
                 </div>
-
                 {profileFields.map(({ label, key, icon: Icon, placeholder, type }) => (
                   <div key={key} className="flex items-start gap-3">
-                    <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <Icon size={15} className="text-midnight-cherry" />
-                    </div>
+                    <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
                       {editing ? (
-                        <input
-                          type={type || 'text'}
-                          value={form[key]}
-                          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                          placeholder={placeholder}
-                          className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
-                        />
+                        <input type={type || 'text'} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       ) : (
-                        <p className="text-sm text-obsidian-roast">
-                          {profile[key] || <span className="text-muted-foreground italic">Not set</span>}
-                        </p>
+                        <p className="text-sm text-obsidian-roast">{profile?.[key] || <span className="text-muted-foreground italic">Not set</span>}</p>
                       )}
                     </div>
                   </div>
                 ))}
-
-                {/* Car summary when not editing */}
-                {!editing && (profile.car_make || profile.car_model || profile.car_color) && (
-                  <div className="mt-2 p-3 bg-midnight-cherry/5 rounded-2xl text-sm text-obsidian-roast">
-                    <span className="font-semibold">Your car: </span>
-                    {[profile.car_color, profile.car_make, profile.car_model].filter(Boolean).join(' ')}
-                  </div>
-                )}
               </div>
             </div>
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+// ── Guest login/register ──
+function GuestAuth({ onSuccess }) {
+  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        await base44.auth.loginViaEmailPassword(email, password);
+        window.location.href = '/account';
+      } else {
+        await base44.auth.register({ email, password, full_name: name });
+        setStep('otp');
+      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const { access_token } = await base44.auth.verifyOtp({ email, otpCode });
+      base44.auth.setToken(access_token);
+      window.location.href = '/account';
+    } catch (err) {
+      setError(err.message || 'Invalid code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === 'otp') {
+    return (
+      <div className="max-w-md mx-auto py-24 px-4">
+        <div className="text-center mb-8">
+          <div className="text-4xl mb-3">📬</div>
+          <h2 className="font-heading text-2xl text-obsidian-roast mb-2">Check Your Email</h2>
+          <p className="text-muted-foreground text-sm">We sent a verification code to <strong>{email}</strong></p>
+        </div>
+        <form onSubmit={handleVerifyOtp} className="card-diner p-8 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Verification Code</label>
+            <input type="text" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="123456" className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 text-center text-lg font-heading tracking-widest" maxLength={6} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <button type="submit" disabled={loading} className="btn-cherry chrome-hover w-full py-4 text-sm font-heading disabled:opacity-60">{loading ? 'Verifying…' : 'Verify & Sign In'}</button>
+          <button type="button" onClick={() => base44.auth.resendOtp(email)} className="w-full text-center text-xs text-muted-foreground hover:text-obsidian-roast transition-colors">Resend code</button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto py-24 px-4">
+      <div className="text-center mb-8">
+        <div className="w-20 h-20 bg-midnight-cherry/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <User size={36} className="text-midnight-cherry" />
+        </div>
+        <h1 className="font-heading text-3xl text-obsidian-roast mb-2">My Account</h1>
+        <p className="text-muted-foreground text-sm">Sign in to track orders, save preferences, and reorder your favorites.</p>
+      </div>
+
+      {/* Toggle */}
+      <div className="flex bg-muted rounded-2xl p-1 mb-6">
+        <button onClick={() => setMode('login')} className={`flex-1 py-2.5 rounded-xl text-sm font-heading transition-all ${mode === 'login' ? 'bg-white shadow-float text-obsidian-roast' : 'text-muted-foreground'}`}>Sign In</button>
+        <button onClick={() => setMode('register')} className={`flex-1 py-2.5 rounded-xl text-sm font-heading transition-all ${mode === 'register' ? 'bg-white shadow-float text-obsidian-roast' : 'text-muted-foreground'}`}>Create Account</button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card-diner p-8 space-y-4">
+        {mode === 'register' && (
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Full Name</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+          </div>
+        )}
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email Address</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <button type="submit" disabled={loading} className="btn-cherry chrome-hover w-full py-4 text-sm font-heading disabled:opacity-60">
+          {loading ? (mode === 'login' ? 'Signing in…' : 'Creating account…') : (mode === 'login' ? 'Sign In' : 'Create Account')}
+        </button>
+        {mode === 'login' && (
+          <Link to="/forgot-password" className="block text-center text-xs text-muted-foreground hover:text-midnight-cherry transition-colors">Forgot password?</Link>
+        )}
+      </form>
+
+      {/* Google */}
+      <div className="mt-4">
+        <div className="relative flex items-center my-4">
+          <div className="flex-1 border-t border-border" />
+          <span className="px-3 text-xs text-muted-foreground">or</span>
+          <div className="flex-1 border-t border-border" />
+        </div>
+        <button
+          onClick={() => base44.auth.loginWithProvider('google', window.location.href)}
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-border rounded-2xl text-sm font-heading text-obsidian-roast hover:border-midnight-cherry/40 transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function Account() {
+  const { user, isLoadingAuth, logout } = useAuth();
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Navbar />
+      <CartDrawer />
+
+      {isLoadingAuth ? (
+        <div className="flex items-center justify-center py-32">
+          <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
+        </div>
+      ) : user ? (
+        <LoggedInAccount user={user} logout={logout} />
+      ) : (
+        <GuestAuth />
+      )}
 
       <Footer />
     </div>
