@@ -134,24 +134,28 @@ Deno.serve(async (req) => {
       if (e.square_item_id) existingBySquareId[e.square_item_id] = e;
     }
 
-    let created = 0;
-    let updated = 0;
+    const toCreate = [];
+    const toUpdate = [];
 
     for (const item of menuItems) {
       const existingItem = existingBySquareId[item.square_item_id];
       if (existingItem) {
-        // Preserve is_hidden and is_featured set manually by admin
-        await base44.asServiceRole.entities.MenuItem.update(existingItem.id, {
+        toUpdate.push({
+          id: existingItem.id,
           ...item,
           is_hidden: existingItem.is_hidden ?? false,
           is_featured: existingItem.is_featured ?? false,
         });
-        updated++;
       } else {
-        await base44.asServiceRole.entities.MenuItem.create(item);
-        created++;
+        toCreate.push(item);
       }
     }
+
+    if (toUpdate.length > 0) await base44.asServiceRole.entities.MenuItem.bulkUpdate(toUpdate);
+    if (toCreate.length > 0) await base44.asServiceRole.entities.MenuItem.bulkCreate(toCreate);
+
+    const created = toCreate.length;
+    const updated = toUpdate.length;
 
     console.log(`Sync complete: ${created} created, ${updated} updated. Categories: ${[...new Set(menuItems.map(i => i.square_category).filter(Boolean))].join(', ')}`);
     return Response.json({ success: true, total: menuItems.length, created, updated });
