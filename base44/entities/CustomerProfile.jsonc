@@ -14,6 +14,21 @@
     "address": {
       "type": "string"
     },
+    "delivery_address": {
+      "type": "string"
+    },
+    "curbside_address": {
+      "type": "string"
+    },
+    "car_make": {
+      "type": "string"
+    },
+    "car_model": {
+      "type": "string"
+    },
+    "car_color": {
+      "type": "string"
+    },
     "favorite_order": {
       "type": "string"
     },
