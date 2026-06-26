@@ -19,17 +19,28 @@ Deno.serve(async (req) => {
 
     // Format message based on order type with customer info
     let kitchenMessage = '';
-    if (order_type === 'pickup') {
-      kitchenMessage = `🔔 PICKUP #${order_number}\nName: ${customer_name || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
-    } else if (order_type === 'call_in' || !order_type) {
-      kitchenMessage = `🔔 CALL IN #${order_number}\nName: ${customer_name || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
-    } else if (order_type === 'dine_in') {
-      kitchenMessage = `🔔 DINE IN #${order_number}\nTable: ${table_number || 'N/A'}\nName: ${customer_name || 'N/A'}`;
-    } else if (order_type === 'delivery') {
-      kitchenMessage = `🔔 DELIVERY #${order_number}\nName: ${customer_name || 'N/A'}\nAddress: ${delivery_address || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
+    const normalizedType = order_type?.toLowerCase() || 'call_in';
+    
+    const orderTypeLabel = {
+      'pickup': '🚗 PICKUP',
+      'call_in': '☎️ CALL-IN',
+      'dine_in': '🍽️ DINE-IN',
+      'delivery': '🚚 DELIVERY'
+    }[normalizedType] || '☎️ CALL-IN';
+
+    kitchenMessage = `\n═══════════════════\n${orderTypeLabel} ORDER #${order_number}\n═══════════════════`;
+    
+    if (normalizedType === 'pickup') {
+      kitchenMessage += `\n👤 CUSTOMER: ${customer_name || 'N/A'}\n📞 PHONE: ${customer_phone || 'N/A'}\n⏰ READY FOR PICKUP`;
+    } else if (normalizedType === 'call_in') {
+      kitchenMessage += `\n👤 CUSTOMER: ${customer_name || 'N/A'}\n📞 PHONE: ${customer_phone || 'N/A'}\n⏰ CALL WHEN READY`;
+    } else if (normalizedType === 'dine_in') {
+      kitchenMessage += `\n👤 CUSTOMER: ${customer_name || 'N/A'}\n🪑 TABLE #: ${table_number || 'N/A'}\n⏰ SERVE AT TABLE`;
+    } else if (normalizedType === 'delivery') {
+      kitchenMessage += `\n👤 CUSTOMER: ${customer_name || 'N/A'}\n📞 PHONE: ${customer_phone || 'N/A'}\n📍 ADDRESS: ${delivery_address || 'N/A'}\n⏰ READY FOR DELIVERY`;
     }
 
-    kitchenMessage += `\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
+    kitchenMessage += `\n───────────────────\n${itemsText}${special_instructions ? '\n───────────────────\n⚠️  SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}\n═══════════════════`;
 
     // Send to kitchen via Twilio SMS to kitchen phone
     const client = new Twilio(
