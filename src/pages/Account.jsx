@@ -109,18 +109,23 @@ function LoggedInAccount({ user, logout }) {
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('orders');
   const [loading, setLoading] = useState(true);
+  const [loadTimeout, setLoadTimeout] = useState(null);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
-  const loadData = async () => {
+  const loadData = async (skipRedemptions = false) => {
     setLoading(true);
     try {
-      const [profiles, ords, favs, loyalties, rr] = await Promise.all([
+      const calls = [
         base44.entities.CustomerProfile.filter({ email: user.email }),
         base44.entities.Order.filter({ customer_email: user.email }),
         base44.entities.Favorite.filter({ user_id: user.id }),
         base44.entities.Loyalty.filter({ user_id: user.id }),
-        base44.entities.LoyaltyRedemption.filter({ user_id: user.id }),
-      ]);
+      ];
+      if (!skipRedemptions) calls.push(base44.entities.LoyaltyRedemption.filter({ user_id: user.id }));
+      
+      const results = await Promise.all(calls);
+      const [profiles, ords, favs, loyalties, rr] = skipRedemptions ? [...results, redemptions] : results;
+      
       if (profiles && profiles.length > 0) {
         const p = profiles[0];
         setProfile(p);
@@ -137,7 +142,6 @@ function LoggedInAccount({ user, logout }) {
           preferred_communication: p.preferred_communication || 'email'
         });
       } else {
-        // Auto-create profile for new users
         const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
         setProfile(newProfile);
         setForm({ ...EMPTY_FORM, name: user.full_name || '' });
@@ -150,14 +154,25 @@ function LoggedInAccount({ user, logout }) {
       } else {
         setLoyalty(loyalties[0]);
       }
-      setRedemptions(rr || []);
+      if (!skipRedemptions) setRedemptions(rr || []);
     } finally {
       setLoading(false);
     }
   };
 
+  const debouncedLoadRedemptions = () => {
+    if (loadTimeout) clearTimeout(loadTimeout);
+    const timer = setTimeout(() => {
+      base44.entities.LoyaltyRedemption.filter({ user_id: user.id }).then(rr => setRedemptions(rr || []));
+    }, 500);
+    setLoadTimeout(timer);
+  };
+
   useEffect(() => {
     loadData();
+    return () => {
+      if (loadTimeout) clearTimeout(loadTimeout);
+    };
   }, [user.email, user.id]);
 
   const saveProfile = async () => {
@@ -348,31 +363,36 @@ function LoggedInAccount({ user, logout }) {
                     key={idx}
                     onClick={async () => {
                       if ((loyalty?.points_balance || 0) >= reward.points) {
-                        const newBalance = (loyalty?.points_balance || 0) - reward.points;
-                        const newRedeemed = (loyalty?.points_redeemed || 0) + reward.points;
-                        
-                        // Update loyalty record
-                        await base44.entities.Loyalty.update(loyalty.id, {
-                          points_balance: newBalance,
-                          points_redeemed: newRedeemed,
-                        });
-                        
-                        // Create redemption record
-                        const expiresAt = new Date();
-                        expiresAt.setDate(expiresAt.getDate() + 30);
-                        await base44.entities.LoyaltyRedemption.create({
-                          user_id: user.id,
-                          loyalty_id: loyalty.id,
-                          discount_type: 'fixed',
-                          discount_value: reward.value,
-                          points_cost: reward.points,
-                          description: reward.desc,
-                          is_redeemed: false,
-                          expires_at: expiresAt.toISOString(),
-                        });
-                        
-                        // Reload data
-                        loadData();
+                        try {
+                          const newBalance = (loyalty?.points_balance || 0) - reward.points;
+                          const newRedeemed = (loyalty?.points_redeemed || 0) + reward.points;
+                          
+                          // Update loyalty record
+                          await base44.entities.Loyalty.update(loyalty.id, {
+                            points_balance: newBalance,
+                            points_redeemed: newRedeemed,
+                          });
+                          
+                          // Create redemption record
+                          const expiresAt = new Date();
+                          expiresAt.setDate(expiresAt.getDate() + 30);
+                          await base44.entities.LoyaltyRedemption.create({
+                            user_id: user.id,
+                            loyalty_id: loyalty.id,
+                            discount_type: 'fixed',
+                            discount_value: reward.value,
+                            points_cost: reward.points,
+                            description: reward.desc,
+                            is_redeemed: false,
+                            expires_at: expiresAt.toISOString(),
+                          });
+                          
+                          // Update local state
+                          setLoyalty(prev => ({ ...prev, points_balance: newBalance, points_redeemed: newRedeemed }));
+                          debouncedLoadRedemptions();
+                        } catch (err) {
+                          console.error('Error redeeming points:', err);
+                        }
                       }
                     }}
                     disabled={(loyalty?.points_balance || 0) < reward.points}
