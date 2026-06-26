@@ -1,0 +1,35 @@
+{
+  "name": "ComboConfig",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "main_category": {
+      "type": "string"
+    },
+    "side_category": {
+      "type": "string"
+    },
+    "drink_category": {
+      "type": "string"
+    },
+    "discount_percent": {
+      "type": "number",
+      "default": 12
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "main_category",
+    "side_category",
+    "drink_category"
+  ]
+}

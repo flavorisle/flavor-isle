@@ -6,6 +6,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
+import DailySpecialsSection from '@/components/DailySpecialsSection';
+import ComboBuilderSection from '@/components/ComboBuilderSection';
 
 const SPECIALS_TICKER = [
   "🍔 Double Smash Burger — $10.99",
@@ -198,6 +200,12 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── DAILY SPECIALS ── */}
+      <DailySpecialsSection />
+
+      {/* ── COMBO BUILDER ── */}
+      <ComboBuilderSection />
 
       {/* ── REVIEWS ── */}
       <ReviewSection />

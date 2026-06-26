@@ -1,0 +1,47 @@
+{
+  "name": "DailySpecial",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "menu_item_id": {
+      "type": "string"
+    },
+    "menu_item_name": {
+      "type": "string"
+    },
+    "menu_item_price": {
+      "type": "number"
+    },
+    "menu_item_image": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "day_of_week": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+        "Daily"
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "menu_item_id",
+    "menu_item_name",
+    "menu_item_price"
+  ]
+}
