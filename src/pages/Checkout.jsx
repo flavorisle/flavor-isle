@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
@@ -244,21 +244,13 @@ export default function Checkout() {
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <>Pay ${total.toFixed(2)} with Stripe</>
+                  <>Place Order · ${total.toFixed(2)}</>
                 )}
               </button>
 
               <p className="text-xs text-muted-foreground text-center mt-3">
-                Powered by Stripe · 256-bit SSL encryption
+                🔒 Secure checkout · 256-bit SSL encryption
               </p>
-
-              <div className="mt-4 bg-patina-mint/10 rounded-2xl p-3">
-                <div className="flex items-center gap-2 text-patina-mint text-xs font-semibold">
-                  <CheckCircle size={14} />
-                  Order processed via Square POS
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Your order will be sent directly to our kitchen through Square.</p>
-              </div>
             </div>
           </div>
         </div>
