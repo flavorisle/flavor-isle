@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
 
-    const { order_number, items, special_instructions, order_type } = body;
+    const { order_number, items, special_instructions, order_type, customer_name, customer_phone, table_number, delivery_address } = body;
 
     if (!order_number) {
       return Response.json({ error: 'Missing order_number' }, { status: 400 });
@@ -17,19 +17,19 @@ Deno.serve(async (req) => {
       .map(item => `${item.quantity}x ${item.name}${item.selectedModifiers ? ' (' + item.selectedModifiers.map(m => m.name).join(', ') + ')' : ''}`)
       .join('\n');
 
-    // Format header based on order type
-    let orderTypeLabel = 'ORDER';
+    // Format message based on order type with customer info
+    let kitchenMessage = '';
     if (order_type === 'pickup') {
-      orderTypeLabel = 'PICKUP';
-    } else if (order_type === 'dine_in') {
-      orderTypeLabel = 'DINE IN';
-    } else if (order_type === 'delivery') {
-      orderTypeLabel = 'DELIVERY';
+      kitchenMessage = `🔔 PICKUP #${order_number}\nName: ${customer_name || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
     } else if (order_type === 'call_in' || !order_type) {
-      orderTypeLabel = 'CALL IN';
+      kitchenMessage = `🔔 CALL IN #${order_number}\nName: ${customer_name || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
+    } else if (order_type === 'dine_in') {
+      kitchenMessage = `🔔 DINE IN #${order_number}\nTable: ${table_number || 'N/A'}\nName: ${customer_name || 'N/A'}`;
+    } else if (order_type === 'delivery') {
+      kitchenMessage = `🔔 DELIVERY #${order_number}\nName: ${customer_name || 'N/A'}\nAddress: ${delivery_address || 'N/A'}\nPhone: ${customer_phone || 'N/A'}`;
     }
 
-    const kitchenMessage = `🔔 ${orderTypeLabel} ORDER #${order_number}\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
+    kitchenMessage += `\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
 
     // Send to kitchen via Twilio SMS to kitchen phone
     const client = new Twilio(
