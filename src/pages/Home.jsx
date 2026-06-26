@@ -10,6 +10,7 @@ import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import KitchenBusyness from '@/components/KitchenBusyness';
 import BusynessStatus from '@/components/BusynessStatus';
+import HourlyBusynessChart from '@/components/HourlyBusynessChart';
 import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
@@ -208,6 +209,20 @@ export default function Home() {
 
       {/* ── COMBO BUILDER ── */}
       <ComboBuilderSection />
+
+      {/* ── HOURLY BUSYNESS ── */}
+      <section className="py-16 px-4 sm:px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">How Busy Are We?</p>
+            <h2 className="font-heading text-4xl text-obsidian-roast">Check Our Kitchen Status</h2>
+            <p className="text-muted-foreground max-w-lg mx-auto mt-3">See how many orders we're handling throughout the day — helps you plan your visit perfectly.</p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <HourlyBusynessChart />
+          </div>
+        </div>
+      </section>
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
