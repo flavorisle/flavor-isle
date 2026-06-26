@@ -200,6 +200,11 @@ export default function Checkout() {
                   <div key={item.id} className="flex justify-between items-start gap-3">
                     <div>
                       <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                      {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                        <p className="text-xs text-patina-mint mt-0.5">
+                          {item.selectedModifiers.map(m => m.name).join(', ')}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                     </div>
                     <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>

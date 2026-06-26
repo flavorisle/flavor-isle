@@ -92,6 +92,11 @@ export default function CartDrawer() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
+                  {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                    <p className="text-xs text-patina-mint leading-snug mb-0.5">
+                      {item.selectedModifiers.map(m => m.name).join(', ')}
+                    </p>
+                  )}
                   <p className="text-patina-mint font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <button
