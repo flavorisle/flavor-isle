@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Plus, Zap, X, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Zap, X, Check, Heart } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -134,12 +136,51 @@ function ModifierModal({ item, onClose, onConfirm }) {
   );
 }
 
-export default function MenuItemCard({ item }) {
+export default function MenuItemCard({ item, onFavoriteChange }) {
   const { addItem } = useCart();
+  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    base44.entities.Favorite.filter({ user_id: user.id, menu_item_id: item.id })
+      .then(favs => setIsFavorite((favs || []).length > 0))
+      .catch(() => {});
+  }, [item.id, user?.id]);
+
+  const toggleFavorite = async (e) => {
+    e?.stopPropagation();
+    if (!user?.id) return;
+    setSavingFavorite(true);
+    try {
+      if (isFavorite) {
+        const favs = await base44.entities.Favorite.filter({ user_id: user.id, menu_item_id: item.id });
+        if (favs?.length > 0) {
+          await base44.entities.Favorite.delete(favs[0].id);
+        }
+      } else {
+        await base44.entities.Favorite.create({
+          user_id: user.id,
+          menu_item_id: item.id,
+          menu_item_name: item.name,
+          menu_item_price: item.price,
+          menu_item_image: item.image_url,
+          menu_item_category: item.category,
+        });
+      }
+      setIsFavorite(!isFavorite);
+      onFavoriteChange?.();
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    } finally {
+      setSavingFavorite(false);
+    }
+  };
 
   const handleAdd = (e) => {
     e?.stopPropagation();
@@ -170,6 +211,17 @@ export default function MenuItemCard({ item }) {
       )}
 
       <div className="group relative card-diner overflow-hidden">
+        {/* Favorite button */}
+        {user && (
+          <button
+            onClick={toggleFavorite}
+            disabled={savingFavorite}
+            className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
+          >
+            <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
+          </button>
+        )}
+
         {/* Image */}
         <div className="relative h-48 overflow-hidden bg-gray-100">
           {item.image_url ? (

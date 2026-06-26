@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -101,6 +101,7 @@ const EMPTY_FORM = {
 function LoggedInAccount({ user, logout }) {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -108,11 +109,13 @@ function LoggedInAccount({ user, logout }) {
   const [loading, setLoading] = useState(true);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
-  useEffect(() => {
-    const load = async () => {
-      const [profiles, ords] = await Promise.all([
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [profiles, ords, favs] = await Promise.all([
         base44.entities.CustomerProfile.filter({ email: user.email }),
         base44.entities.Order.filter({ customer_email: user.email }),
+        base44.entities.Favorite.filter({ user_id: user.id }),
       ]);
       if (profiles && profiles.length > 0) {
         const p = profiles[0];
@@ -136,10 +139,15 @@ function LoggedInAccount({ user, logout }) {
         setForm({ ...EMPTY_FORM, name: user.full_name || '' });
       }
       setOrders(ords || []);
+      setFavorites(favs || []);
+    } finally {
       setLoading(false);
-    };
-    load();
-  }, [user.email]);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user.email, user.id]);
 
   const saveProfile = async () => {
     setSaving(true);
@@ -220,6 +228,7 @@ function LoggedInAccount({ user, logout }) {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex gap-0">
           {[
             { key: 'orders', label: 'My Orders', icon: ShoppingBag },
+            { key: 'favorites', label: 'Favorites', icon: Heart },
             { key: 'profile', label: 'Profile & Preferences', icon: User },
           ].map(({ key, label, icon: Icon }) => (
             <button
@@ -230,6 +239,9 @@ function LoggedInAccount({ user, logout }) {
               <Icon size={16} /> {label}
               {key === 'orders' && activeOrders.length > 0 && (
                 <span className="ml-1 bg-midnight-cherry text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-heading">{activeOrders.length}</span>
+              )}
+              {key === 'favorites' && favorites.length > 0 && (
+                <span className="ml-1 bg-midnight-cherry text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-heading">{favorites.length}</span>
               )}
             </button>
           ))}
@@ -264,6 +276,60 @@ function LoggedInAccount({ user, logout }) {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {tab === 'favorites' && (
+          <div className="space-y-6">
+            {favorites.length === 0 ? (
+              <div className="text-center py-20">
+                <Heart size={48} strokeWidth={1} className="mx-auto mb-4 text-muted-foreground" />
+                <p className="font-heading text-lg text-obsidian-roast mb-2">No favorites yet</p>
+                <p className="text-sm text-muted-foreground mb-4">Save your favorite menu items for quick reordering</p>
+                <Link to="/menu" className="btn-cherry chrome-hover px-8 py-3 text-sm font-heading inline-block">Browse Menu</Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {favorites.map(fav => (
+                  <div key={fav.id} className="card-diner overflow-hidden">
+                    {fav.menu_item_image && (
+                      <div className="h-40 overflow-hidden bg-gray-100">
+                        <img src={fav.menu_item_image} alt={fav.menu_item_name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-heading text-base text-obsidian-roast">{fav.menu_item_name}</h3>
+                        <span className="text-midnight-cherry font-heading text-lg flex-shrink-0">${fav.menu_item_price?.toFixed(2)}</span>
+                      </div>
+                      {fav.menu_item_category && (
+                        <p className="text-xs text-muted-foreground mb-3">{fav.menu_item_category}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            addItem({ id: fav.menu_item_id, name: fav.menu_item_name, price: fav.menu_item_price, image_url: fav.menu_item_image });
+                            setIsCartOpen(true);
+                          }}
+                          className="flex-1 btn-cherry chrome-hover py-3 text-sm font-heading rounded-xl"
+                        >
+                          Add to Order
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await base44.entities.Favorite.delete(fav.id);
+                            setFavorites(f => f.filter(x => x.id !== fav.id));
+                          }}
+                          className="px-4 py-3 bg-muted text-muted-foreground hover:bg-destructive hover:text-white rounded-xl transition-colors text-sm font-heading"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
