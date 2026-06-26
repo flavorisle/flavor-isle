@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       .map(item => `${item.quantity}x ${item.name}${item.selectedModifiers ? ' (' + item.selectedModifiers.map(m => m.name).join(', ') + ')' : ''}`)
       .join('\n');
 
-    const kitchenMessage = `🔔 NEW ORDER #${order_number}\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
+    const kitchenMessage = `🔔 CALL-IN ORDER #${order_number}\n\n${itemsText}${special_instructions ? '\n\n⚠️ SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}`;
 
     // Send to kitchen via Twilio SMS to kitchen phone
     const client = new Twilio(
