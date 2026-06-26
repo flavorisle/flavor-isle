@@ -165,10 +165,10 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               {
-                name: 'The Isle Smash Burger',
-                desc: 'Double smashed patties, American cheese, special sauce on a classic bun. A Flavor Isle staple.',
-                price: '$10.99',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9a7fa37aa_IMG_5372_Original.jpg',
+                name: 'Double Cheese Deluxe',
+                desc: 'Two thick patties stacked high with double American cheese, fresh lettuce, tomato, and our special sauce.',
+                price: '$12.99',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/12f340ef5_IMG_0375.png',
                 tag: 'Best Seller'
               },
               {
