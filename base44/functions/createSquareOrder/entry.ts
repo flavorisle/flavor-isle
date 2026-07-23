@@ -27,6 +27,63 @@ Deno.serve(async (req) => {
     }
     if (!locationId) return Response.json({ error: 'Could not resolve Square location ID' }, { status: 500 });
 
+    const sqHeaders = {
+      'Authorization': `Bearer ${accessToken}`,
+      'Square-Version': '2024-01-18',
+      'Content-Type': 'application/json',
+    };
+
+    // Find or create a Square customer (by phone first, then email) so the
+    // order links to their customer account like Square Online orders do.
+    let customerId = null;
+    const digits = (customer.phone || '').replace(/\D/g, '');
+    const e164Phone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : null;
+    const normalizedEmail = (customer.email || '').toLowerCase().trim();
+
+    const searchCustomer = async (filter) => {
+      const res = await fetch('https://connect.squareup.com/v2/customers/search', {
+        method: 'POST',
+        headers: sqHeaders,
+        body: JSON.stringify({ query: { filter }, limit: 1 }),
+      });
+      const data = await res.json();
+      return data?.customers?.[0]?.id || null;
+    };
+
+    try {
+      if (e164Phone) customerId = await searchCustomer({ phone_number: { exact: e164Phone } });
+      if (!customerId && normalizedEmail) customerId = await searchCustomer({ email_address: { exact: normalizedEmail } });
+
+      if (!customerId) {
+        const nameParts = (customer.name || '').trim().split(/\s+/);
+        const createCustomer = async (includePhone) => {
+          const res = await fetch('https://connect.squareup.com/v2/customers', {
+            method: 'POST',
+            headers: sqHeaders,
+            body: JSON.stringify({
+              idempotency_key: crypto.randomUUID(),
+              given_name: nameParts[0] || '',
+              family_name: nameParts.slice(1).join(' ') || undefined,
+              ...(normalizedEmail ? { email_address: normalizedEmail } : {}),
+              ...(includePhone && e164Phone ? { phone_number: e164Phone } : {}),
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) console.error('Square customer create error:', JSON.stringify(data.errors));
+          return data?.customer?.id || null;
+        };
+        customerId = await createCustomer(true);
+        // Square rejects some phone formats — retry without the phone so the
+        // customer still gets linked by name/email.
+        if (!customerId && e164Phone) customerId = await createCustomer(false);
+        if (customerId) console.log('Square customer created:', customerId);
+      } else {
+        console.log('Square customer matched:', customerId);
+      }
+    } catch (err) {
+      console.error('Square customer lookup/create failed:', err.message);
+    }
+
     const idempotencyKey = crypto.randomUUID();
 
     const lineItems = items.map(item => {
@@ -81,13 +138,16 @@ Deno.serve(async (req) => {
       order: {
         location_id: locationId,
         source: { name: orderTypeLabel },
+        ...(customerId ? { customer_id: customerId } : {}),
         fulfillments: [{
           type: 'PICKUP',
           state: 'PROPOSED',
           pickup_details: {
             recipient: {
               display_name: displayName,
-              phone_number: customer.phone || '',
+              phone_number: e164Phone || customer.phone || '',
+              ...(normalizedEmail ? { email_address: normalizedEmail } : {}),
+              ...(customerId ? { customer_id: customerId } : {}),
             },
             pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
             note: pickupNote + (instructions ? '\n\nNOTES: ' + instructions : ''),
@@ -140,6 +200,7 @@ Deno.serve(async (req) => {
           external_details: { type: 'CARD', source: 'Card' },
           order_id: data.order.id,
           location_id: locationId,
+          ...(customerId ? { customer_id: customerId } : {}),
           amount_money: { amount: netDue, currency: 'USD' },
           ...(tip > 0 ? { tip_money: { amount: Math.round(tip * 100), currency: 'USD' } } : {}),
         }),
