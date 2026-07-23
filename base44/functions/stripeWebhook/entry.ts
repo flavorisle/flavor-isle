@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
+import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -130,6 +131,11 @@ async function pushOrderToSquareAndKitchen(base44, order) {
 
   if (order.customer_email) {
     await sendOrderConfirmationEmail(order);
+  }
+
+  // Confirmed SMS — sent the moment payment lands and the order goes confirmed.
+  if (order.customer_phone) {
+    await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
   }
 }
 

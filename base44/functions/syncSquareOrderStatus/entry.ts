@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses
 function mapSquareStateToStatus(squareOrder) {
@@ -139,6 +140,11 @@ Deno.serve(async (req) => {
           body: `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
+
+        // Ready-for-pickup SMS so the customer can head out the moment it's done.
+        if (order.customer_phone) {
+          await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
+        }
       }
 
       if (newStatus === 'completed') {
