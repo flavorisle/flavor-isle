@@ -75,7 +75,7 @@ async function sendOrderConfirmationEmail(order) {
   `;
 
   const { error } = await resend.emails.send({
-    from: 'Smashie <onboarding@resend.dev>',
+    from: 'Smashie <smashie@order.flavor-isle.com>',
     to: order.customer_email,
     subject: `Order locked in — #${order.order_number} 🍔`,
     html,
