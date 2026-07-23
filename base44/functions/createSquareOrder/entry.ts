@@ -31,13 +31,13 @@ Deno.serve(async (req) => {
 
     const lineItems = items.map(item => {
       const mods = (item.selectedModifiers || []).map(m => m.name).filter(Boolean).join(', ');
-      // Fold modifier upcharges into the item price so the Square total matches what the customer paid.
-      const modUpcharge = (item.selectedModifiers || []).reduce((sum, m) => sum + (Number(m.price) || 0), 0);
+      // item.price already includes any modifier upcharges from the cart —
+      // do NOT add them again here or modified items get overcharged in Square.
       return {
         name: mods ? `${item.name || item.catalog_object_id} (${mods})` : (item.name || item.catalog_object_id),
         quantity: String(item.quantity || 1),
         base_price_money: {
-          amount: Math.round(((item.price || item.base_price_money?.amount / 100 || 0) + modUpcharge) * 100),
+          amount: Math.round((item.price || item.base_price_money?.amount / 100 || 0) * 100),
           currency: 'USD',
         },
         catalog_object_id: item.catalog_object_id,
