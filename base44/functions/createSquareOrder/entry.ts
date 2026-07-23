@@ -5,7 +5,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, customer, instructions, total } = body;
+    const { items, orderType, orderNumber, customer, instructions, total } = body;
+
+    const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[orderType] || 'Pickup';
+    const displayName = orderNumber
+      ? `${customer.name} (#${orderNumber}) ${orderTypeLabel}`
+      : `${customer.name} ${orderTypeLabel}`;
 
     // Get Square access token via connector
     const connection = await base44.asServiceRole.connectors.getConnection('square');
@@ -53,7 +58,7 @@ Deno.serve(async (req) => {
           state: 'PROPOSED',
           pickup_details: {
             recipient: {
-              display_name: customer.name,
+              display_name: displayName,
               phone_number: customer.phone || '',
             },
             pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
