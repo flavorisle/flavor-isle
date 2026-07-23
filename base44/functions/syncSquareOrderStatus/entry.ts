@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
           to: customerEmail,
           from_name: 'Smashie',
           subject: `✅ Order #${orderNum} is ready, fam!`,
-          body: `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\nThe Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+          body: `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
       }
