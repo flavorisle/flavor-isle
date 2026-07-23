@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           idempotency_key: crypto.randomUUID(),
           source_id: 'EXTERNAL',
-          external_details: { type: 'CARD', source: 'Stripe (Flavor Isle website)' },
+          external_details: { type: 'CARD', source: 'Card' },
           order_id: data.order.id,
           location_id: locationId,
           amount_money: { amount: netDue, currency: 'USD' },
