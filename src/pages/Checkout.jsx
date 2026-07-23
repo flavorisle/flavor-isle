@@ -109,7 +109,7 @@ export default function Checkout() {
     setLoading(true);
     try {
       const res = await base44.functions.invoke('createPaymentIntent', {
-        items: cartItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url })),
+        items: cartItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url, selectedModifiers: i.selectedModifiers || [] })),
         orderType,
         customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
         instructions: form.instructions,
