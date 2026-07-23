@@ -25,7 +25,7 @@ export default function Menu() {
   useEffect(() => {
     base44.entities.MenuItem.list()
       .then(data => {
-        const visible = (data || []).filter(i => !i.is_hidden && i.is_available !== false);
+        const visible = (data || []).filter(i => !i.is_hidden);
         setItems(visible);
 
         // Build sorted category list from real Square categories

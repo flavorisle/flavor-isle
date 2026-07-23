@@ -7,13 +7,24 @@ export function CartProvider({ children }) {
   const [orderType, setOrderType] = useState('pickup'); // pickup | delivery | dine_in
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Different modifier combos on the same menu item become separate lines,
+  // so each selection's modifiers are preserved and displayed.
+  const lineId = (item) => {
+    const mods = (item.selectedModifiers || [])
+      .map(m => `${m.name}:${m.price ?? 0}`)
+      .sort()
+      .join('|');
+    return mods ? `${item.id}__${mods}` : item.id;
+  };
+
   const addItem = useCallback((item) => {
+    const id = lineId(item);
     setCartItems(prev => {
-      const existing = prev.find(i => i.id === item.id);
+      const existing = prev.find(i => i.id === id);
       if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...item, id, quantity: 1 }];
     });
   }, []);
 

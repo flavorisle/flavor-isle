@@ -146,6 +146,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
   const [savingFavorite, setSavingFavorite] = useState(false);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
+  const soldOut = item.is_available === false;
 
   useEffect(() => {
     if (!user?.id) return;
@@ -229,7 +230,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             <img
               src={item.image_url}
               alt={item.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-amber-50 to-orange-100">
@@ -242,21 +243,27 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             </div>
           )}
 
-          {item.is_featured && (
+          {item.is_featured && !soldOut && (
             <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
               <Zap size={10} /> Special
             </div>
           )}
 
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-            <button
-              onClick={handleAdd}
-              className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ${added ? 'bg-patina-mint' : ''}`}
-            >
-              <Plus size={16} />
-              {added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
-            </button>
-          </div>
+          {soldOut ? (
+            <div className="absolute top-3 left-3 bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider">
+              Sold Out
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <button
+                onClick={handleAdd}
+                className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ${added ? 'bg-patina-mint' : ''}`}
+              >
+                <Plus size={16} />
+                {added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -294,14 +301,17 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
           <button
             onClick={handleAdd}
+            disabled={soldOut}
             className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${
-              added
-                ? 'bg-patina-mint text-white'
-                : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'
+              soldOut
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : added
+                  ? 'bg-patina-mint text-white'
+                  : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'
             }`}
           >
             <Plus size={16} />
-            {added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
+            {soldOut ? 'Sold Out' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
           </button>
         </div>
       </div>
