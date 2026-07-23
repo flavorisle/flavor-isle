@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
           id: m.id,
           name: m.modifier_data?.name || '',
           price: m.modifier_data?.price_money ? m.modifier_data.price_money.amount / 100 : 0,
+          sold_out: (m.modifier_data?.location_overrides || []).some(o => o.sold_out === true),
         })),
       };
     }
@@ -102,9 +103,15 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Base price = CHEAPEST variation, so size upcharges are never negative.
+      // Sold-out state comes from Square location overrides on each variation.
+      const isVariationSoldOut = (v) =>
+        v.item_variation_data?.sellable === false ||
+        (v.item_variation_data?.location_overrides || []).some(o => o.sold_out === true);
+
+      // Base price = CHEAPEST available variation, so size upcharges are never negative.
       const variations = itemData.variations || [];
-      const variationPrices = variations
+      const availableVariations = variations.filter(v => !isVariationSoldOut(v));
+      const variationPrices = (availableVariations.length > 0 ? availableVariations : variations)
         .map(v => v.item_variation_data?.price_money?.amount)
         .filter(a => a != null);
       const priceAmount = variationPrices.length > 0 ? Math.min(...variationPrices) : null;
@@ -122,13 +129,14 @@ Deno.serve(async (req) => {
               id: v.id,
               name: v.item_variation_data?.name || '',
               price: ((v.item_variation_data?.price_money?.amount ?? priceAmount ?? 0) - (priceAmount ?? 0)) / 100,
+              sold_out: isVariationSoldOut(v),
             }))
             .sort((a, b) => a.price - b.price),
         });
       }
 
-      // Availability
-      const isSoldOut = variations.length > 0 && variations.every(v => v.item_variation_data?.sellable === false);
+      // Availability: item is sold out when every variation is sold out on Square.
+      const isSoldOut = variations.length > 0 && variations.every(v => isVariationSoldOut(v));
       const is_available = !obj.is_archived && !itemData.is_archived && !isSoldOut;
 
       menuItems.push({

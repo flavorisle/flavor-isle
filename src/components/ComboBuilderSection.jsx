@@ -10,7 +10,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
       // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
-        : (group.name === 'Size' ? group.modifiers[0] : null);
+        : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
       return acc;
     }, {});
   };
@@ -75,8 +75,9 @@ function ModifierModal({ item, onClose, onConfirm }) {
                   return (
                     <button
                       key={mod.id}
+                      disabled={mod.sold_out}
                       onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${isSelected ? 'border-midnight-cherry bg-red-50' : 'border-border hover:border-gray-300 bg-white'}`}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${mod.sold_out ? 'border-border bg-muted opacity-50 cursor-not-allowed' : isSelected ? 'border-midnight-cherry bg-red-50' : 'border-border hover:border-gray-300 bg-white'}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'}`}>
@@ -84,7 +85,9 @@ function ModifierModal({ item, onClose, onConfirm }) {
                         </div>
                         <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
                       </div>
-                      {mod.price > 0 && <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>}
+                      {mod.sold_out ? (
+                        <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
+                      ) : mod.price > 0 && <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>}
                     </button>
                   );
                 })}
