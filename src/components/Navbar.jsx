@@ -49,7 +49,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-midnight-cherry rounded-full flex items-center justify-center text-white font-heading text-lg">FI</div>
+            <img src="https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/eaca79f48_flavor-isle-logo.png" alt="Flavor Isle logo" className="w-11 h-11 object-contain rounded-full flex-shrink-0" />
             <div>
               <div className="font-heading text-xl text-obsidian-roast leading-none">FLAVOR ISLE</div>
               <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
