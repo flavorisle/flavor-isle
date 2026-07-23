@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import BusynessStatus from '@/components/BusynessStatus';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED SINCE 1964' },
@@ -53,6 +54,11 @@ export default function HeroSection() {
             >
               <Phone size={16} /> Call Us
             </a>
+          </div>
+
+          {/* Live status card */}
+          <div className="mt-10 max-w-md mx-auto">
+            <BusynessStatus />
           </div>
         </div>
       </div>

@@ -12,8 +12,6 @@ import OurStory from '@/components/OurStory';
 import TestimonialsBanner from '@/components/TestimonialsBanner';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
-import KitchenBusyness from '@/components/KitchenBusyness';
-import BusynessStatus from '@/components/BusynessStatus';
 import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
