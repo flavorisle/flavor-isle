@@ -86,7 +86,7 @@ export default function Home() {
                 name: 'Onion Rings',
                 desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
                 price: '$3.25',
-                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/9ed39a14b2f79500f38fc8e21a188cf2086eee55/original.jpeg',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png',
                 tag: 'Must Try'
               },
               {
