@@ -191,7 +191,7 @@ export default function Home() {
             <Link to="/menu" className="bg-white text-midnight-cherry font-heading px-8 py-4 rounded-2xl hover:bg-vanilla-malt transition-colors chrome-hover">
               Order Now
             </Link>
-            <a href="tel:+12805634618" className="border-2 border-white text-white font-heading px-8 py-4 rounded-2xl hover:bg-white/10 transition-colors">
+            <a href="tel:+12705634618" className="border-2 border-white text-white font-heading px-8 py-4 rounded-2xl hover:bg-white/10 transition-colors">
               Call Us
             </a>
           </div>

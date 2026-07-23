@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     await client.messages.create({
       from: Deno.env.get('TWILIO_PHONE_NUMBER'),
-      to: '+12805634618', // Kitchen phone number (Flavor Isle main line)
+      to: '+12705634618', // Kitchen phone number (Flavor Isle main line)
       body: kitchenMessage,
     });
 

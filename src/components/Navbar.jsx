@@ -39,7 +39,7 @@ export default function Navbar() {
           </span>
           <span className="flex items-center gap-1">
             <Phone size={12} className="text-patina-mint" />
-            <a href="tel:+12805634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
+            <a href="tel:+12705634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
         <div className="text-xs text-gray-400">Mon–Sat: 10:30AM–8PM · Sun: 11AM–8PM</div>

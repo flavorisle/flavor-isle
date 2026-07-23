@@ -73,7 +73,7 @@ export default function HeroSection() {
               </button>
             ))}
             <a
-              href="tel:+12805634618"
+              href="tel:+12705634618"
               className="inline-flex items-center gap-2 border-2 border-white text-white font-heading px-5 sm:px-6 py-3.5 rounded-full text-sm sm:text-base hover:bg-white/10 transition-colors"
             >
               <Phone size={16} /> Call Us

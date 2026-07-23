@@ -43,7 +43,7 @@ export default function Contact() {
             <div className="card-diner p-8 space-y-6">
               {[
                 { icon: MapPin, label: 'Address', value: '103 N Main St, Smiths Grove, Kentucky 42171', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
-                { icon: Phone, label: 'Phone', value: '(280) 563-4618', href: 'tel:+12805634618' },
+                { icon: Phone, label: 'Phone', value: '(270) 563-4618', href: 'tel:+12705634618' },
                 { icon: Mail, label: 'Email', value: 'hello@flavor-isle.com', href: 'mailto:hello@flavor-isle.com' },
                 { icon: Clock, label: 'Hours', value: 'Mon–Sat 10:30AM–8PM · Sun 11AM–8PM', href: null },
               ].map(info => (
