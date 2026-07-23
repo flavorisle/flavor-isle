@@ -106,6 +106,9 @@ async function pushOrderToSquareAndKitchen(base44, order) {
       },
       instructions: order.special_instructions || '',
       total: order.total,
+      tax: order.tax || 0,
+      deliveryFee: order.delivery_fee || 0,
+      tip: order.tip || 0,
     });
     const squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
     if (squareOrderId) {

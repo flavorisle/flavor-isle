@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, customer, instructions, total } = body;
+    const { items, orderType, orderNumber, customer, instructions, total, tax, deliveryFee, tip } = body;
 
     const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[orderType] || 'Pickup';
     const displayName = orderNumber
@@ -31,16 +31,40 @@ Deno.serve(async (req) => {
 
     const lineItems = items.map(item => {
       const mods = (item.selectedModifiers || []).map(m => m.name).filter(Boolean).join(', ');
+      // Fold modifier upcharges into the item price so the Square total matches what the customer paid.
+      const modUpcharge = (item.selectedModifiers || []).reduce((sum, m) => sum + (Number(m.price) || 0), 0);
       return {
         name: mods ? `${item.name || item.catalog_object_id} (${mods})` : (item.name || item.catalog_object_id),
         quantity: String(item.quantity || 1),
         base_price_money: {
-          amount: Math.round((item.price || item.base_price_money?.amount / 100 || 0) * 100),
+          amount: Math.round(((item.price || item.base_price_money?.amount / 100 || 0) + modUpcharge) * 100),
           currency: 'USD',
         },
         catalog_object_id: item.catalog_object_id,
       };
     });
+
+    // Add tax and delivery fee as fixed-amount service charges so the Square
+    // order total matches the amount the customer was actually charged.
+    const serviceCharges = [];
+    if (tax > 0) {
+      serviceCharges.push({
+        uid: 'sales-tax',
+        name: 'Sales Tax',
+        amount_money: { amount: Math.round(tax * 100), currency: 'USD' },
+        calculation_phase: 'TOTAL_PHASE',
+        taxable: false,
+      });
+    }
+    if (deliveryFee > 0) {
+      serviceCharges.push({
+        uid: 'delivery-fee',
+        name: 'Delivery Fee',
+        amount_money: { amount: Math.round(deliveryFee * 100), currency: 'USD' },
+        calculation_phase: 'TOTAL_PHASE',
+        taxable: false,
+      });
+    }
 
     // Format note based on order type for kitchen printing
     let pickupNote = '';
@@ -70,6 +94,7 @@ Deno.serve(async (req) => {
           },
         }],
         line_items: lineItems,
+        ...(serviceCharges.length > 0 ? { service_charges: serviceCharges } : {}),
         metadata: {
           customer_email: customer.email,
           order_source: 'flavor-isle-website',
@@ -96,6 +121,37 @@ Deno.serve(async (req) => {
     }
 
     console.log('Square order created:', data.order?.id);
+
+    // Record the payment (already collected via Stripe) as an EXTERNAL payment.
+    // Square POS only surfaces PAID orders as active tickets, so without this
+    // step the order never appears on the register.
+    const netDue = data.order?.net_amount_due_money?.amount || 0;
+    if (netDue > 0) {
+      const payRes = await fetch('https://connect.squareup.com/v2/payments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Square-Version': '2024-01-18',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idempotency_key: crypto.randomUUID(),
+          source_id: 'EXTERNAL',
+          external_details: { type: 'CARD', source: 'Stripe (Flavor Isle website)' },
+          order_id: data.order.id,
+          location_id: locationId,
+          amount_money: { amount: netDue, currency: 'USD' },
+          ...(tip > 0 ? { tip_money: { amount: Math.round(tip * 100), currency: 'USD' } } : {}),
+        }),
+      });
+      const payData = await payRes.json();
+      if (!payRes.ok) {
+        console.error('Square payment recording failed:', JSON.stringify(payData));
+      } else {
+        console.log('Square payment recorded:', payData.payment?.id);
+      }
+    }
+
     return Response.json({ order_id: data.order?.id, order: data.order });
   } catch (error) {
     console.error('Square order error:', error.message);
