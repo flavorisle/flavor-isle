@@ -18,7 +18,8 @@ function ModifierModal({ item, onClose, onConfirm }) {
   const [selections, setSelections] = useState(initSelections);
 
   const toggleSingle = (groupName, mod) =>
-    setSelections(prev => ({ ...prev, [groupName]: prev[groupName]?.id === mod.id ? null : mod }));
+    // Size is required — tapping the selected size keeps it instead of clearing it.
+    setSelections(prev => ({ ...prev, [groupName]: prev[groupName]?.id === mod.id ? (groupName === 'Size' ? mod : null) : mod }));
 
   const toggleMultiple = (groupName, mod) =>
     setSelections(prev => {
@@ -65,7 +66,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
                   {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
                 </span>
               </div>
-              <div className="space-y-2">
+              <div className={group.modifiers.length > 10 ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
                 {group.modifiers.map(mod => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple

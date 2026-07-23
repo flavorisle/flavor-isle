@@ -102,23 +102,28 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Price from first variation
+      // Base price = CHEAPEST variation, so size upcharges are never negative.
       const variations = itemData.variations || [];
-      const baseVariation = variations[0];
-      const priceAmount = baseVariation?.item_variation_data?.price_money?.amount;
+      const variationPrices = variations
+        .map(v => v.item_variation_data?.price_money?.amount)
+        .filter(a => a != null);
+      const priceAmount = variationPrices.length > 0 ? Math.min(...variationPrices) : null;
       const price = priceAmount != null ? priceAmount / 100 : 0;
 
       // Multiple variations (e.g. drink sizes) → expose as a required "Size"
       // choice so the selection flows through to the Square order / kitchen ticket.
+      // Sorted cheapest-first so the default selection matches the displayed base price.
       if (variations.length > 1) {
         modifiers.unshift({
           name: 'Size',
           selection_type: 'SINGLE',
-          modifiers: variations.map(v => ({
-            id: v.id,
-            name: v.item_variation_data?.name || '',
-            price: ((v.item_variation_data?.price_money?.amount ?? priceAmount ?? 0) - (priceAmount ?? 0)) / 100,
-          })),
+          modifiers: variations
+            .map(v => ({
+              id: v.id,
+              name: v.item_variation_data?.name || '',
+              price: ((v.item_variation_data?.price_money?.amount ?? priceAmount ?? 0) - (priceAmount ?? 0)) / 100,
+            }))
+            .sort((a, b) => a.price - b.price),
         });
       }
 
