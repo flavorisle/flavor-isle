@@ -4,6 +4,7 @@ import { Settings, UtensilsCrossed, Phone, Image } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
+import StoreStatusCard from '@/components/StoreStatusCard';
 
 const adminPages = [
   {
@@ -46,6 +47,8 @@ export default function AdminDashboard() {
           <p className="text-gray-300 mt-3 max-w-2xl">Manage your restaurant's menu, orders, and media from one place.</p>
         </div>
       </div>
+
+      <StoreStatusCard />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />

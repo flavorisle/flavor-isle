@@ -15,7 +15,8 @@ export default function CartDrawer() {
     cartItems, isCartOpen, setIsCartOpen,
     updateQuantity, removeItem,
     orderType, setOrderType,
-    subtotal, deliveryFee, tax, total, totalItems
+    subtotal, deliveryFee, tax, total, totalItems,
+    orderingEnabled, orderingClosedMessage
   } = useCart();
   const navigate = useNavigate();
 
@@ -145,12 +146,18 @@ export default function CartDrawer() {
                 <span>${total.toFixed(2)}</span>
               </div>
             </div>
-            <button
-              onClick={handleCheckout}
-              className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2"
-            >
-              Checkout <ArrowRight size={16} />
-            </button>
+            {orderingEnabled ? (
+              <button
+                onClick={handleCheckout}
+                className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2"
+              >
+                Checkout <ArrowRight size={16} />
+              </button>
+            ) : (
+              <div className="rounded-2xl bg-muted text-center py-4 px-4 text-sm text-muted-foreground font-heading">
+                {orderingClosedMessage}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -27,3 +27,18 @@ export async function setCategorySortOrder(order) {
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_sort_order: order });
   return created.id;
 }
+
+export async function setOrderingEnabled(enabled, closedMessage) {
+  const setting = await getMenuSetting();
+  const updates = { ordering_enabled: enabled };
+  if (typeof closedMessage === 'string') updates.ordering_closed_message = closedMessage;
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, updates);
+    return { ...setting, ...updates };
+  }
+  return base44.entities.MenuSetting.create({
+    hidden_categories: [],
+    ordering_enabled: enabled,
+    ordering_closed_message: typeof closedMessage === 'string' ? closedMessage : 'Ordering is temporarily closed',
+  });
+}

@@ -138,7 +138,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
 }
 
 export default function MenuItemCard({ item, onFavoriteChange }) {
-  const { addItem } = useCart();
+  const { addItem, orderingEnabled, orderingClosedMessage } = useCart();
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -186,6 +186,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
   const handleAdd = (e) => {
     e?.stopPropagation();
+    if (!orderingEnabled) return;
     if (hasModifiers) {
       setShowModal(true);
     } else {
@@ -257,10 +258,12 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
               <button
                 onClick={handleAdd}
-                className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ${added ? 'bg-patina-mint' : ''}`}
+                disabled={!orderingEnabled}
+                className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${added ? 'bg-patina-mint' : ''}`}
+                title={!orderingEnabled ? orderingClosedMessage : ''}
               >
                 <Plus size={16} />
-                {added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
+                {!orderingEnabled ? 'Closed' : added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
               </button>
             </div>
           )}
@@ -301,9 +304,9 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
           <button
             onClick={handleAdd}
-            disabled={soldOut}
+            disabled={soldOut || !orderingEnabled}
             className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${
-              soldOut
+              (soldOut || !orderingEnabled)
                 ? 'bg-muted text-muted-foreground cursor-not-allowed'
                 : added
                   ? 'bg-patina-mint text-white'
@@ -311,7 +314,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             }`}
           >
             <Plus size={16} />
-            {soldOut ? 'Sold Out' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
+            {soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
           </button>
         </div>
       </div>

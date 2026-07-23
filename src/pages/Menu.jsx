@@ -21,7 +21,7 @@ export default function Menu() {
   const [search, setSearch] = useState('');
   const [hiddenCats, setHiddenCats] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
-  const { orderType, setOrderType, setIsCartOpen, totalItems } = useCart();
+  const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
   const categoryBarRef = useRef(null);
 
   useEffect(() => {
@@ -110,6 +110,12 @@ export default function Menu() {
           </div>
         </div>
       </div>
+
+      {!orderingEnabled && (
+        <div className="bg-midnight-cherry text-white text-center text-sm font-heading py-3 px-4 tracking-wide animate-float-up">
+          {orderingClosedMessage}
+        </div>
+      )}
 
       {/* Sticky category bar */}
       <div className="sticky top-[88px] z-40 bg-white/95 backdrop-blur-md border-b border-border shadow-float">

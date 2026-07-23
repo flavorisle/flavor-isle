@@ -15,6 +15,14 @@
         "type": "string"
       },
       "default": []
+    },
+    "ordering_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "ordering_closed_message": {
+      "type": "string",
+      "default": "Ordering is temporarily closed"
     }
   },
   "required": []
