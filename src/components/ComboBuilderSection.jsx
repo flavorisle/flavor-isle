@@ -7,7 +7,10 @@ function ModifierModal({ item, onClose, onConfirm }) {
   const initSelections = () => {
     if (!item.modifiers?.length) return {};
     return item.modifiers.reduce((acc, group) => {
-      acc[group.name] = group.selection_type === 'MULTIPLE' ? [] : null;
+      // Size groups default to the first option so every item carries a size.
+      acc[group.name] = group.selection_type === 'MULTIPLE'
+        ? []
+        : (group.name === 'Size' ? group.modifiers[0] : null);
       return acc;
     }, {});
   };
