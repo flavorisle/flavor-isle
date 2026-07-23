@@ -92,8 +92,8 @@ export default function ReviewSection() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 gap-4">
           <div>
-            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Reviews</p>
-            <h2 className="font-heading text-4xl text-obsidian-roast">Smiths Grove Loves Us</h2>
+            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Smiths Grove Loves Flavor Isle</p>
+            <h2 className="font-heading text-4xl text-obsidian-roast">What Our Neighbors Are Saying</h2>
           </div>
           {!submitted ? (
             <button
