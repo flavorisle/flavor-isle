@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import MenuItemCard from '@/components/MenuItemCard';
 import { useCart } from '@/context/CartContext';
+import { getMenuSetting } from '@/lib/menuSettings';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -18,27 +19,29 @@ export default function Menu() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
-  const [categories, setCategories] = useState(['All']);
+  const [hiddenCats, setHiddenCats] = useState([]);
   const { orderType, setOrderType, setIsCartOpen, totalItems } = useCart();
   const categoryBarRef = useRef(null);
 
   useEffect(() => {
+    getMenuSetting()
+      .then(s => setHiddenCats(s.hidden_categories || []))
+      .catch(() => {});
     base44.entities.MenuItem.list()
       .then(data => {
         const visible = (data || []).filter(i => !i.is_hidden);
         setItems(visible);
-
-        // Build sorted category list from real Square categories
-        const cats = ['All', ...Array.from(new Set(
-          visible.map(i => i.square_category).filter(Boolean)
-        )).sort()];
-        setCategories(cats);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  const categories = ['All', ...Array.from(new Set(
+    items.map(i => i.square_category).filter(c => c && !hiddenCats.includes(c))
+  )).sort()];
+
   const visibleItems = items.filter(item => {
+    if (hiddenCats.includes(item.square_category)) return false;
     const matchSearch = !search ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       (item.description || '').toLowerCase().includes(search.toLowerCase());

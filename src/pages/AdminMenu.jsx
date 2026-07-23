@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getMenuSetting, setHiddenCategories } from '@/lib/menuSettings';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 
@@ -19,6 +20,9 @@ export default function AdminMenu() {
   const [specialForm, setSpecialForm] = useState({ title: '', description: '', menu_item_id: '', day_of_week: 'Daily', is_active: true });
   const [savingSpecial, setSavingSpecial] = useState(false);
 
+  // Category visibility state
+  const [hiddenCats, setHiddenCats] = useState([]);
+
   // Combo state
   const [combos, setCombos] = useState([]);
   const [comboForm, setComboForm] = useState({ name: '', description: '', main_category: '', side_category: '', drink_category: '', is_active: true });
@@ -28,7 +32,25 @@ export default function AdminMenu() {
     loadItems();
     loadSpecials();
     loadCombos();
+    loadMenuSetting();
   }, []);
+
+  const loadMenuSetting = async () => {
+    try {
+      const setting = await getMenuSetting();
+      setHiddenCats(setting.hidden_categories || []);
+    } catch (e) { /* ignore */ }
+  };
+
+  const toggleCategoryVisible = async (cat) => {
+    const next = hiddenCats.includes(cat)
+      ? hiddenCats.filter(c => c !== cat)
+      : [...hiddenCats, cat];
+    setHiddenCats(next);
+    try {
+      await setHiddenCategories(next);
+    } catch (e) { /* ignore */ }
+  };
 
   const loadItems = async () => {
     setLoading(true);
@@ -146,7 +168,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }].map(t => (
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}
@@ -156,6 +178,34 @@ export default function AdminMenu() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+
+        {/* ── CATEGORIES TAB ── */}
+        {tab === 'categories' && (
+          <div className="card-diner p-6">
+            <h2 className="font-heading text-lg text-obsidian-roast mb-2">Display Categories</h2>
+            <p className="text-sm text-muted-foreground mb-5">Toggle which categories appear to customers on the menu. Hidden categories and their items are kept out of the menu until you turn them back on.</p>
+            {squareCategories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No categories found yet. Sync from Square first.</p>
+            ) : (
+              <div className="space-y-2">
+                {squareCategories.map(cat => {
+                  const hidden = hiddenCats.includes(cat);
+                  return (
+                    <div key={cat} className="flex items-center justify-between p-3 bg-muted rounded-2xl">
+                      <span className="font-heading text-sm text-obsidian-roast">{cat}</span>
+                      <button
+                        onClick={() => toggleCategoryVisible(cat)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-heading transition-colors ${hidden ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700'}`}
+                      >
+                        {hidden ? 'Hidden' : 'Visible'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── DAILY SPECIALS TAB ── */}
         {tab === 'specials' && (

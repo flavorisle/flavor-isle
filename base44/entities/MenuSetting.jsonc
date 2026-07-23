@@ -1,0 +1,14 @@
+{
+  "name": "MenuSetting",
+  "type": "object",
+  "properties": {
+    "hidden_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "required": []
+}
