@@ -1,6 +1,5 @@
 {
-  "name": "Square Menu Sync",
-  "description": "",
+  "description": "Syncs the Square catalog (items, prices, modifiers, sold-out status) to the website menu every 15 minutes.",
   "trigger": {
     "condition": null,
     "config": {
@@ -10,9 +9,9 @@
       "cron_expression": null,
       "one_time_date": null,
       "timezone": "UTC",
-      "interval_value": 6,
-      "interval_unit": "hours",
-      "interval_anchor": "2026-06-26T14:00:00",
+      "interval_value": 15,
+      "interval_unit": "minutes",
+      "interval_anchor": null,
       "ends_type": "never",
       "ends_on_date": null,
       "ends_after_count": null
@@ -33,9 +32,14 @@
             "function_name": "syncSquareCatalog",
             "args": {}
           },
-          "then": "end"
+          "then": "end",
+          "x-base44": {
+            "title": "Sync Square menu",
+            "description": "Items, sizes & sold-out status"
+          }
         }
       }
     ]
-  }
+  },
+  "name": "Square Menu Sync"
 }
