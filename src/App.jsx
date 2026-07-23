@@ -24,6 +24,7 @@ import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
 import Promos from './pages/Promos';
 import MeetSmashie from './pages/MeetSmashie';
+import OrderStatus from './pages/OrderStatus';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/promos" element={<Promos />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
+      <Route path="/order-status" element={<OrderStatus />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

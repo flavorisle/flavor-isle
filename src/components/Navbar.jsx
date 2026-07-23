@@ -22,6 +22,7 @@ export default function Navbar() {
   { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'Promos', to: '/promos' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
+  { label: 'Track Order', to: '/order-status' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];
