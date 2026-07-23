@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       line_items: lineItems,
       mode: 'payment',
       customer_email: customer.email,
-      success_url: `${origin}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/order-confirmation?session_id={CHECKOUT_SESSION_ID}&order_number=${orderNumber}`,
       cancel_url: `${origin}/checkout`,
       metadata: {
         base44_app_id: Deno.env.get('BASE44_APP_ID'),
@@ -85,82 +85,9 @@ Deno.serve(async (req) => {
       }
     });
 
-    // --- 2. Create Square Order ---
-    let squareOrderId = null;
-    try {
-      const connection = await base44.asServiceRole.connectors.getConnection('square');
-      const accessToken = connection.accessToken;
-      // Resolve actual location ID
-      let locationId = connection.connectionConfig?.locationId;
-      if (!locationId) {
-        const locRes = await fetch('https://connect.squareup.com/v2/locations', {
-          headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
-        });
-        const locData = await locRes.json();
-        locationId = locData.locations?.[0]?.id;
-      }
-
-      const orderTypeMap = { pickup: 'PICKUP', delivery: 'DELIVERY', dine_in: 'EAT_IN' };
-
-      const squareLineItems = items.map(item => ({
-        name: item.name,
-        quantity: String(item.quantity),
-        base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' },
-      }));
-
-      const squareOrder = {
-        idempotency_key: crypto.randomUUID(),
-        order: {
-          location_id: locationId,
-          reference_id: orderNumber,
-          fulfillments: [{
-            type: orderTypeMap[orderType] || 'PICKUP',
-            state: 'PROPOSED',
-            pickup_details: orderType === 'pickup' ? {
-              recipient: { display_name: customer.name, phone_number: customer.phone || '' },
-              pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
-              note: instructions || '',
-            } : undefined,
-            delivery_details: orderType === 'delivery' ? {
-              recipient: {
-                display_name: customer.name,
-                phone_number: customer.phone || '',
-                address: { address_line_1: customer.address || '' }
-              },
-              note: instructions || '',
-            } : undefined,
-          }],
-          line_items: squareLineItems,
-          metadata: {
-            customer_email: customer.email,
-            order_source: 'flavor-isle-website',
-            stripe_session_id: session.id,
-          },
-        },
-      };
-
-      const sqRes = await fetch('https://connect.squareup.com/v2/orders', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Square-Version': '2024-01-18',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(squareOrder),
-      });
-
-      const sqData = await sqRes.json();
-      if (sqRes.ok) {
-        squareOrderId = sqData.order?.id;
-        console.log('Square order created:', squareOrderId);
-      } else {
-        console.error('Square order error:', JSON.stringify(sqData));
-      }
-    } catch (sqError) {
-      console.error('Square integration error (non-fatal):', sqError.message);
-    }
-
-    // --- 3. Save Order entity to database ---
+    // --- 2. Save Order entity to database (pending until webhook confirms payment) ---
+    // Square order creation, kitchen printer alert, and confirmation email are
+    // handled by the stripeWebhook function once `checkout.session.completed` fires.
     try {
       await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
@@ -179,7 +106,6 @@ Deno.serve(async (req) => {
         special_instructions: instructions || '',
         table_number: customer.table || '',
         stripe_session_id: session.id,
-        square_order_id: squareOrderId || '',
       });
       console.log('Order entity created:', orderNumber);
     } catch (dbError) {
