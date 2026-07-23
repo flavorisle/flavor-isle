@@ -22,9 +22,9 @@ export default function TestimonialsBanner() {
     <section className="py-20 px-4 sm:px-6" style={{ background: '#0B355A' }}>
       <div className="text-center mb-12">
         <p className="font-heading uppercase tracking-widest text-sm mb-3" style={{ color: '#FFD700' }}>
-          What People Are Saying
+          Smiths Grove Loves Flavor Isle
         </p>
-        <h2 className="font-heading uppercase text-4xl sm:text-5xl text-white">Real Guests. Real Love.</h2>
+        <h2 className="font-heading uppercase text-4xl sm:text-5xl text-white">What Our Neighbors Are Saying</h2>
       </div>
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
