@@ -6,6 +6,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
+import HeroSection from '@/components/HeroSection';
+import WhyFlavorIsle from '@/components/WhyFlavorIsle';
+import OurStory from '@/components/OurStory';
+import TestimonialsBanner from '@/components/TestimonialsBanner';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import KitchenBusyness from '@/components/KitchenBusyness';
@@ -50,103 +54,13 @@ export default function Home() {
       <CartDrawer />
 
       {/* ── HERO ── */}
-      <section className="relative min-h-[92vh] flex items-center overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c655b439_IMG_8923.jpg"
-            alt="Flavor Isle exterior at night"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
-        </div>
+      <HeroSection />
 
-        {/* Vertical Ticker Sidebar */}
-        <div className="absolute right-0 top-0 h-full w-16 bg-midnight-cherry/90 z-10 hidden lg:flex flex-col items-center overflow-hidden py-4">
-          <div className="writing-mode-vertical text-white font-heading text-xs tracking-widest mb-4 opacity-60">FRESH OUT</div>
-          <div className="flex-1 overflow-hidden w-full">
-            <div className="animate-ticker flex flex-col items-center gap-6 py-4">
-              {SPECIALS_TICKER.map((s, i) => (
-                <div key={i} className="writing-mode-vertical text-white text-xs whitespace-nowrap font-body opacity-80 [writing-mode:vertical-rl] rotate-180 px-2">
-                  {s}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* ── WHY FLAVOR ISLE ── */}
+      <WhyFlavorIsle />
 
-        {/* Hero content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-20 lg:pr-20">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-patina-mint/20 border border-patina-mint/40 text-patina-mint px-4 py-2 rounded-full text-sm font-semibold mb-6 backdrop-blur-sm">
-              <div className="w-2 h-2 bg-patina-mint rounded-full animate-pulse" />
-              Now Open · Est. Smiths Grove, KY
-            </div>
-
-            <h1 className="font-heading text-5xl sm:text-7xl text-white leading-[1.05] mb-6">
-              REAL FOOD.<br />
-              <span className="text-midnight-cherry" style={{ WebkitTextStroke: '1px #A1001A', color: '#FF6B6B' }}>REAL GOOD.</span>
-            </h1>
-
-            <p className="text-gray-200 text-lg leading-relaxed mb-10 max-w-lg">
-              Smiths Grove's classic American diner. Hand-smashed burgers, thick shakes, and homestyle cooking made fresh every day.
-            </p>
-
-            {/* Command Center */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 max-w-lg">
-              <p className="text-white/70 text-sm font-semibold uppercase tracking-widest mb-4">How would you like to order?</p>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => handleOrder('pickup')}
-                  className="flex flex-col items-center gap-2 bg-midnight-cherry text-white p-4 rounded-2xl font-heading text-sm hover:bg-red-800 transition-all hover:scale-105 chrome-hover"
-                >
-                  <ShoppingBag size={24} />
-                  Pickup
-                  <span className="text-xs font-body opacity-75">15–25 min</span>
-                </button>
-                <button
-                  onClick={() => handleOrder('delivery')}
-                  className="flex flex-col items-center gap-2 bg-white/20 text-white p-4 rounded-2xl font-heading text-sm hover:bg-white/30 transition-all hover:scale-105 border border-white/30"
-                >
-                  <Bike size={24} />
-                  Delivery
-                  <span className="text-xs font-body opacity-75">35–50 min</span>
-                </button>
-                <button
-                  onClick={() => handleOrder('dine_in')}
-                  className="flex flex-col items-center gap-2 bg-patina-mint text-white p-4 rounded-2xl font-heading text-sm hover:bg-teal-600 transition-all hover:scale-105 chrome-hover"
-                >
-                  <Utensils size={24} />
-                  Dine-In
-                  <span className="text-xs font-body opacity-75">Seat yourself</span>
-                </button>
-              </div>
-
-              {/* Busyness Status — live */}
-              <div className="mt-6 pt-6 border-t border-white/20">
-                <BusynessStatus />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-14">
-          <h2 className="font-heading text-4xl text-obsidian-roast mb-3">Why Flavor Isle?</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">Everything made fresh, every day. That's the Flavor Isle promise.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {FEATURES.map(f => (
-            <div key={f.label} className="card-diner p-6 text-center">
-              <div className="text-4xl mb-3">{f.icon}</div>
-              <h3 className="font-heading text-sm text-obsidian-roast mb-1">{f.label}</h3>
-              <p className="text-muted-foreground text-xs">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── OUR STORY ── */}
+      <OurStory />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">
@@ -208,6 +122,9 @@ export default function Home() {
 
       {/* ── COMBO BUILDER ── */}
       <ComboBuilderSection />
+
+      {/* ── TESTIMONIALS BANNER ── */}
+      <TestimonialsBanner />
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
