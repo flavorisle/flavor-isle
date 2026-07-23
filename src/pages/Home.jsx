@@ -9,7 +9,6 @@ import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import OurStory from '@/components/OurStory';
-import TestimonialsBanner from '@/components/TestimonialsBanner';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
@@ -120,9 +119,6 @@ export default function Home() {
 
       {/* ── COMBO BUILDER ── */}
       <ComboBuilderSection />
-
-      {/* ── TESTIMONIALS BANNER ── */}
-      <TestimonialsBanner />
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
