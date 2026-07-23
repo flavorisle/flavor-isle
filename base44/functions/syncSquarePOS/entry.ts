@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -115,12 +116,3 @@ Deno.serve(async (req) => {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
-
-function mapSquareStatus(squareState) {
-  const map = {
-    'OPEN': 'pending',
-    'COMPLETED': 'completed',
-    'CANCELED': 'cancelled'
-  };
-  return map[squareState] || 'pending';
-}

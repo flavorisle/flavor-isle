@@ -45,6 +45,13 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
+      // Link the new account to Square: look up (or create) a Square customer
+      // and pull any historical POS orders into the account order history.
+      try {
+        await base44.functions.invoke("linkSquareCustomer", { email });
+      } catch (err) {
+        console.error("Square customer link failed:", err);
+      }
       window.location.href = "/";
     } catch (err) {
       setError(err.message || "Invalid verification code");
