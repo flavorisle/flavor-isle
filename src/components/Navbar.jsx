@@ -48,9 +48,9 @@ export default function Navbar() {
       <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <img src="https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/eaca79f48_flavor-isle-logo.png" alt="Flavor Isle logo" className="w-11 h-11 object-contain rounded-full flex-shrink-0" />
-            <div>
+          <Link to="/" className="flex items-center gap-2 min-w-0">
+            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-full" />
+            <div className="min-w-0 whitespace-nowrap">
               <div className="font-heading text-xl text-obsidian-roast leading-none">FLAVOR ISLE</div>
               <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
             </div>
