@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { base44 } from '@/api/base44Client';
 import BusynessStatus from '@/components/BusynessStatus';
 
 const STATS = [
@@ -14,6 +15,23 @@ const STATS = [
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
+  const [heroImage, setHeroImage] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke('getOneDriveMedia', {});
+        const imgs = res.data?.images || [];
+        const match = imgs.find(i => /flavor isle sign/i.test(i.name) && /\.jpe?g$/i.test(i.name))
+          || imgs.find(i => /flavor isle sign/i.test(i.name));
+        if (active && match?.downloadUrl) setHeroImage(match.downloadUrl);
+      } catch (e) {
+        // background gradient fallback stays in place
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleOrder = (type) => {
     setOrderType(type);
@@ -22,13 +40,19 @@ export default function HeroSection() {
 
   return (
     <section className="overflow-hidden">
-      {/* Orange hero block */}
-      <div style={{ background: '#E3481C' }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white">
-          <h1 className="font-heading uppercase leading-[1.05] text-5xl sm:text-6xl md:text-7xl mb-5">
+      {/* Hero block with storefront photo */}
+      <div
+        className="relative bg-cover bg-center"
+        style={{
+          backgroundImage: heroImage ? `url('${heroImage}')` : 'linear-gradient(135deg, #E3481C 0%, #C0392B 100%)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70" />
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white">
+          <h1 className="font-heading uppercase leading-[1.05] text-5xl sm:text-6xl md:text-7xl mb-5 drop-shadow-lg">
             Real Food.<br />Real Good.
           </h1>
-          <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body">
+          <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
             Smiths Grove's classic American diner. Hand-smashed burgers, thick shakes, and homestyle cooking made fresh every day.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
