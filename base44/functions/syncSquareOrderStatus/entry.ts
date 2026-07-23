@@ -117,17 +117,26 @@ Deno.serve(async (req) => {
 
       if (newStatus === 'ready') {
         const orderType = order.order_type;
-        const readyMsg = orderType === 'delivery'
-          ? `Your order's out for delivery — driver's en route, so stay posted.`
+        const itemSummary = (order.items || [])
+          .map(i => `${i.name || 'Item'}${i.quantity > 1 ? ` x${i.quantity}` : ''}`)
+          .join(', ');
+        const totalStr = `$${(order.total || 0).toFixed(2)}`;
+        const locationLine = orderType === 'delivery'
+          ? `Delivery To: ${order.delivery_address || 'on file'}`
           : orderType === 'dine_in'
-          ? `Your order's ready at your table — dig in, you earned it.`
-          : `Your order is hot and ready — pull up and grab it, we got you at the counter.`;
+          ? `Table: ${order.table_number || 'N/A'} — Flavor Isle`
+          : `Pickup Location: Flavor Isle — Smiths Grove`;
+        const closingLine = orderType === 'delivery'
+          ? `We're rolling it your way — your flavor is waiting.`
+          : orderType === 'dine_in'
+          ? `Pull up to your table — your flavor is waiting.`
+          : `Slide through whenever you're ready — your flavor is waiting.`;
 
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: customerEmail,
           from_name: 'Smashie',
           subject: `✅ Order #${orderNum} is ready, fam!`,
-          body: `Hey ${customerName},\n\n${readyMsg}\n\nOrder #${orderNum}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+          body: `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\nThe Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
       }
