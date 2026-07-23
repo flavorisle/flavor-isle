@@ -8,6 +8,13 @@
         "type": "string"
       },
       "default": []
+    },
+    "category_sort_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     }
   },
   "required": []

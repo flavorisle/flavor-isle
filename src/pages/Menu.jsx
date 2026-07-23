@@ -20,12 +20,16 @@ export default function Menu() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [hiddenCats, setHiddenCats] = useState([]);
+  const [categoryOrder, setCategoryOrder] = useState([]);
   const { orderType, setOrderType, setIsCartOpen, totalItems } = useCart();
   const categoryBarRef = useRef(null);
 
   useEffect(() => {
     getMenuSetting()
-      .then(s => setHiddenCats(s.hidden_categories || []))
+      .then(s => {
+        setHiddenCats(s.hidden_categories || []);
+        setCategoryOrder(s.category_sort_order || []);
+      })
       .catch(() => {});
     base44.entities.MenuItem.list()
       .then(data => {
@@ -36,9 +40,16 @@ export default function Menu() {
       .finally(() => setLoading(false));
   }, []);
 
-  const categories = ['All', ...Array.from(new Set(
+  // Sort categories using the admin-defined order; new ones fall back to alphabetical.
+  const sortCats = (cats) => {
+    const known = categoryOrder.filter(c => cats.includes(c));
+    const leftover = cats.filter(c => !categoryOrder.includes(c)).sort((a, b) => a.localeCompare(b));
+    return [...known, ...leftover];
+  };
+
+  const categories = ['All', ...sortCats(Array.from(new Set(
     items.map(i => i.square_category).filter(c => c && !hiddenCats.includes(c))
-  )).sort()];
+  )))];
 
   const visibleItems = items.filter(item => {
     if (hiddenCats.includes(item.square_category)) return false;
@@ -60,7 +71,7 @@ export default function Menu() {
       if (!map[cat]) map[cat] = [];
       map[cat].push(item);
     }
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([category, items]) => ({ category, items }));
+    return sortCats(Object.keys(map)).map((category) => ({ category, items: map[category] }));
   })();
 
   return (

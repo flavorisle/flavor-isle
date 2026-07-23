@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { getMenuSetting, setHiddenCategories } from '@/lib/menuSettings';
+import { getMenuSetting, setHiddenCategories, setCategorySortOrder } from '@/lib/menuSettings';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 
@@ -23,6 +23,9 @@ export default function AdminMenu() {
   // Category visibility state
   const [hiddenCats, setHiddenCats] = useState([]);
 
+  // Category sort order
+  const [categoryOrder, setCategoryOrder] = useState([]);
+
   // Combo state
   const [combos, setCombos] = useState([]);
   const [comboForm, setComboForm] = useState({ name: '', description: '', main_category: '', side_category: '', drink_category: '', is_active: true });
@@ -39,6 +42,7 @@ export default function AdminMenu() {
     try {
       const setting = await getMenuSetting();
       setHiddenCats(setting.hidden_categories || []);
+      setCategoryOrder(setting.category_sort_order || []);
     } catch (e) { /* ignore */ }
   };
 
@@ -115,6 +119,26 @@ export default function AdminMenu() {
 
   const squareCategories = [...new Set(items.map(i => i.square_category || i.category).filter(Boolean))];
 
+  // Categories in admin-defined order; any new categories are appended alphabetically.
+  const orderedCategories = (() => {
+    const known = categoryOrder.filter(c => squareCategories.includes(c));
+    const leftover = squareCategories.filter(c => !categoryOrder.includes(c)).sort((a, b) => a.localeCompare(b));
+    return [...known, ...leftover];
+  })();
+
+  const moveCategory = async (cat, dir) => {
+    const idx = orderedCategories.indexOf(cat);
+    if (idx < 0) return;
+    const newIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= orderedCategories.length) return;
+    const next = [...orderedCategories];
+    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+    setCategoryOrder(next);
+    try {
+      await setCategorySortOrder(next);
+    } catch (e) { /* ignore */ }
+  };
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -188,11 +212,33 @@ export default function AdminMenu() {
               <p className="text-sm text-muted-foreground">No categories found yet. Sync from Square first.</p>
             ) : (
               <div className="space-y-2">
-                {squareCategories.map(cat => {
+                <p className="text-xs text-muted-foreground mb-3">Use the arrows to set how categories appear to customers on the menu. New categories land at the bottom alphabetically.</p>
+                {orderedCategories.map((cat, idx) => {
                   const hidden = hiddenCats.includes(cat);
                   return (
                     <div key={cat} className="flex items-center justify-between p-3 bg-muted rounded-2xl">
-                      <span className="font-heading text-sm text-obsidian-roast">{cat}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex flex-col">
+                          <button
+                            onClick={() => moveCategory(cat, 'up')}
+                            disabled={idx === 0}
+                            className="p-0.5 text-muted-foreground hover:text-obsidian-roast disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          <button
+                            onClick={() => moveCategory(cat, 'down')}
+                            disabled={idx === orderedCategories.length - 1}
+                            className="p-0.5 text-muted-foreground hover:text-obsidian-roast disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                        </div>
+                        <span className="text-xs text-muted-foreground font-heading w-5 text-center">{idx + 1}</span>
+                        <span className="font-heading text-sm text-obsidian-roast truncate">{cat}</span>
+                      </div>
                       <button
                         onClick={() => toggleCategoryVisible(cat)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-heading transition-colors ${hidden ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700'}`}

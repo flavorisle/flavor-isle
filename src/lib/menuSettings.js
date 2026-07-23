@@ -17,3 +17,13 @@ export async function setHiddenCategories(hiddenCategories) {
   const created = await base44.entities.MenuSetting.create({ hidden_categories: hiddenCategories });
   return created.id;
 }
+
+export async function setCategorySortOrder(order) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { category_sort_order: order });
+    return setting.id;
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_sort_order: order });
+  return created.id;
+}
