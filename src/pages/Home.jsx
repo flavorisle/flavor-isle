@@ -76,24 +76,24 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               {
-                name: 'Double Cheese Deluxe',
-                desc: 'Two thick patties stacked high with double American cheese, fresh lettuce, tomato, and our special sauce.',
-                price: '$12.99',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/12f340ef5_IMG_0375.png',
+                name: 'Double Cheeseburger',
+                desc: 'Two smashed beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
+                price: '$9.50',
+                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
                 tag: 'Best Seller'
               },
               {
-                name: 'Famous Onion Rings',
-                desc: 'Crispy cornmeal-battered rings fried golden. The ones everyone raves about.',
-                price: '$4.99',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff2952347_IMG_5382_Original.jpg',
+                name: 'Onion Rings',
+                desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
+                price: '$3.25',
+                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/9ed39a14b2f79500f38fc8e21a188cf2086eee55/original.jpeg',
                 tag: 'Must Try'
               },
               {
                 name: 'Hot Fudge Cake',
                 desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
-                price: '$5.99',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d0687b02c_IMG_0368.png',
+                price: '$6.99',
+                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
                 tag: 'Fan Fave'
               }
             ].map(item => (
