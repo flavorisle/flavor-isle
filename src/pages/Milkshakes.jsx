@@ -48,14 +48,21 @@ const CROWN_OPTIONS = [
   { id: 'X3LQNLZKFJB7ICJ62K5AU4DB', name: 'Chocolate Drizzle', price: 0, emoji: '🍫' },
 ];
 
+const CONSISTENCY_OPTIONS = [
+  { id: 'thin', name: 'Thin', price: 0, emoji: '💧', desc: 'Sippable & smooth' },
+  { id: 'regular', name: 'Regular', price: 0, emoji: '🥤', desc: 'The classic' },
+  { id: 'thick', name: 'Thick', price: 0.50, emoji: '🥄', desc: 'Extra-rich & spoonable' },
+];
+
 const BUILD_A_SHAKE_ID = '6a3e3807a18b44ca4d34f85b';
 const BASE_PRICE = 4.79;
 
 const STEPS = [
   { num: '01', label: 'BASE', sub: 'Choose your ice cream' },
-  { num: '02', label: 'FLAVOR', sub: '+$0.75 each' },
-  { num: '03', label: 'THROW-INS', sub: '+$0.40 each' },
-  { num: '04', label: 'CROWN IT', sub: 'The finishing touch' },
+  { num: '02', label: 'CONSISTENCY', sub: 'Thin, regular, or thick' },
+  { num: '03', label: 'FLAVOR', sub: '+$0.75 each' },
+  { num: '04', label: 'THROW-INS', sub: '+$0.40 each' },
+  { num: '05', label: 'CROWN IT', sub: 'The finishing touch' },
 ];
 
 function OptionChip({ option, selected, onToggle, single }) {
@@ -85,6 +92,7 @@ export default function Milkshakes() {
   const { addItem, setIsCartOpen } = useCart();
   const [step, setStep] = useState(0);
   const [selectedBase, setSelectedBase] = useState(null);
+  const [selectedConsistency, setSelectedConsistency] = useState(CONSISTENCY_OPTIONS.find(o => o.id === 'regular'));
   const [selectedFlavors, setSelectedFlavors] = useState([]);
   const [selectedMixins, setSelectedMixins] = useState([]);
   const [selectedCrown, setSelectedCrown] = useState([]);
@@ -96,12 +104,14 @@ export default function Milkshakes() {
   };
 
   const totalPrice = BASE_PRICE
+    + (selectedConsistency?.price || 0)
     + selectedFlavors.reduce((s, f) => s + f.price, 0)
     + selectedMixins.reduce((s, m) => s + m.price, 0)
     + selectedCrown.reduce((s, c) => s + c.price, 0);
 
   const allModifiers = [
     ...(selectedBase ? [{ name: selectedBase.name, price: 0 }] : []),
+    ...(selectedConsistency ? [{ name: `${selectedConsistency.name} Shake`, price: selectedConsistency.price }] : []),
     ...selectedFlavors.map(f => ({ name: f.name, price: f.price })),
     ...selectedMixins.map(m => ({ name: m.name, price: m.price })),
     ...selectedCrown.map(c => ({ name: c.name, price: c.price })),
@@ -109,6 +119,7 @@ export default function Milkshakes() {
 
   const nameLabel = [
     selectedBase ? selectedBase.name.split(' ')[0] : '',
+    selectedConsistency ? selectedConsistency.name : '',
     ...selectedFlavors.slice(0, 2).map(f => f.name.split(' ')[0]),
   ].filter(Boolean).join(' + ') || 'Build a Shake';
 
@@ -253,8 +264,38 @@ export default function Milkshakes() {
               </div>
             )}
 
-            {/* Step 2: Flavors */}
+            {/* Step 2: Consistency */}
             {step === 1 && (
+              <div>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Pick Your Consistency</h3>
+                <p className="text-muted-foreground text-sm mb-8">How thick do you want it? Choose your perfect shake texture.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {CONSISTENCY_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSelectedConsistency(opt)}
+                      className={`relative p-6 rounded-2xl border-2 transition-all text-center
+                        ${selectedConsistency?.id === opt.id ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'}`}
+                    >
+                      <div className="text-4xl mb-3">{opt.emoji}</div>
+                      <p className="font-heading text-obsidian-roast text-base">{opt.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{opt.desc}</p>
+                      {opt.price > 0 && (
+                        <p className="text-xs text-midnight-cherry font-semibold mt-2">+${opt.price.toFixed(2)}</p>
+                      )}
+                      {selectedConsistency?.id === opt.id && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-midnight-cherry rounded-full flex items-center justify-center">
+                          <Check size={12} className="text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Flavors */}
+            {step === 2 && (
               <div>
                 <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Add Flavors</h3>
                 <p className="text-muted-foreground text-sm mb-8">Inject your shake with signature flavors. Each one unlocks a new dimension. <span className="text-midnight-cherry font-semibold">+$0.75 each</span></p>
@@ -271,8 +312,8 @@ export default function Milkshakes() {
               </div>
             )}
 
-            {/* Step 3: Mixins */}
-            {step === 2 && (
+            {/* Step 4: Mixins */}
+            {step === 3 && (
               <div>
                 <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Throw-Ins</h3>
                 <p className="text-muted-foreground text-sm mb-8">Add texture and crunch with premium mix-ins. <span className="text-midnight-cherry font-semibold">+$0.40 each</span></p>
@@ -289,8 +330,8 @@ export default function Milkshakes() {
               </div>
             )}
 
-            {/* Step 4: Crown */}
-            {step === 3 && (
+            {/* Step 5: Crown */}
+            {step === 4 && (
               <div>
                 <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Crown It</h3>
                 <p className="text-muted-foreground text-sm mb-8">The grand finale. Top your creation to perfection.</p>
@@ -313,6 +354,14 @@ export default function Milkshakes() {
                       <div className="flex justify-between text-sm">
                         <span className="text-obsidian-roast font-semibold">🍦 {selectedBase.name}</span>
                         <span className="text-muted-foreground">Included</span>
+                      </div>
+                    )}
+                    {selectedConsistency && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-obsidian-roast">{selectedConsistency.emoji} {selectedConsistency.name} Shake</span>
+                        <span className={selectedConsistency.price > 0 ? 'text-midnight-cherry' : 'text-muted-foreground'}>
+                          {selectedConsistency.price > 0 ? `+$${selectedConsistency.price.toFixed(2)}` : 'Included'}
+                        </span>
                       </div>
                     )}
                     {selectedFlavors.map(f => (
@@ -363,14 +412,14 @@ export default function Milkshakes() {
               ← Back
             </button>
 
-            {step < 3 ? (
+            {step < 4 ? (
               <button
                 onClick={() => { if (canProceed) setStep(s => s + 1); }}
                 disabled={!canProceed}
                 className={`btn-cherry chrome-hover flex items-center gap-2 px-8 py-3 font-heading text-sm
                   ${!canProceed ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                {step === 0 ? 'Add Flavors' : step === 1 ? 'Add Throw-Ins' : 'Crown It'} <ChevronRight size={16} />
+                {step === 0 ? 'Pick Consistency' : step === 1 ? 'Add Flavors' : step === 2 ? 'Add Throw-Ins' : 'Crown It'} <ChevronRight size={16} />
               </button>
             ) : (
               <button
