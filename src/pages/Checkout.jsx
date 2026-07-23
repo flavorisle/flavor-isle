@@ -84,6 +84,14 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
 
+  // Tip state: 0 = no tip, '15'|'18'|'20' = preset %, 'custom' = flat amount
+  const [tipPreset, setTipPreset] = useState('18');
+  const [customTip, setCustomTip] = useState('');
+  const tipAmount = tipPreset === 'custom'
+    ? Math.max(0, parseFloat(customTip) || 0)
+    : +(subtotal * (parseInt(tipPreset) / 100)).toFixed(2);
+  const totalWithTip = +(total + tipAmount).toFixed(2);
+
   const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
   const handleContinue = async () => {
@@ -104,7 +112,7 @@ export default function Checkout() {
         orderType,
         customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
         instructions: form.instructions,
-        subtotal, deliveryFee, tax, total,
+        subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       });
 
       const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -234,6 +242,60 @@ export default function Checkout() {
                       className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
                 </div>
+
+                {/* Add a Tip */}
+                <div className="card-diner p-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="font-heading text-lg text-obsidian-roast">Add a Tip</h2>
+                    <span className="text-midnight-cherry font-heading text-lg">${tipAmount.toFixed(2)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">100% goes to the kitchen crew.</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['15', '18', '20'].map(pct => (
+                      <button
+                        key={pct}
+                        onClick={() => setTipPreset(pct)}
+                        className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+                          tipPreset === pct
+                            ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                            : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setTipPreset('custom')}
+                      className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+                        tipPreset === 'custom'
+                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                      }`}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {tipPreset === 'custom' && (
+                    <div className="mt-3 relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.50"
+                        value={customTip}
+                        onChange={e => setCustomTip(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-8 pr-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                      />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setTipPreset('0'); setCustomTip(''); }}
+                    className="mt-3 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
+                  >
+                    No tip
+                  </button>
+                </div>
               </>
             )}
 
@@ -247,7 +309,7 @@ export default function Checkout() {
                     orderNumber={orderNumber}
                     onSuccess={handleSuccess}
                     onError={setError}
-                    total={total}
+                    total={totalWithTip}
                   />
                 </Elements>
               </div>
@@ -286,8 +348,13 @@ export default function Checkout() {
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax (6%)</span><span>${tax.toFixed(2)}</span>
                 </div>
+                {tipAmount > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">
-                  <span>Total</span><span>${total.toFixed(2)}</span>
+                  <span>Total</span><span>${totalWithTip.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -308,7 +375,7 @@ export default function Checkout() {
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <>Continue to Payment · ${total.toFixed(2)}</>
+                      <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
                     )}
                   </button>
                   <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
