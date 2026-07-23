@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderStatusTracker from '@/components/OrderStatusTracker';
+import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
@@ -276,6 +277,10 @@ function LoggedInAccount({ user, logout }) {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        {tab === 'orders' && (
+          <LoyaltySummaryCard loyalty={loyalty} redemptions={redemptions} onOpenRewards={() => setTab('rewards')} />
+        )}
+
         {tab === 'orders' && (
           <div className="space-y-6">
             {orders.length === 0 ? (
