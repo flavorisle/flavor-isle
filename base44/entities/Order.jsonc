@@ -41,6 +41,10 @@
     "delivery_fee": {
       "type": "number"
     },
+    "tip": {
+      "type": "number",
+      "default": 0
+    },
     "total": {
       "type": "number"
     },

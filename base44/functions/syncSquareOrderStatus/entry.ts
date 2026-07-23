@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
+import { sendOrderStatusEmail } from '../../shared/sendOrderEmails.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses
 function mapSquareStateToStatus(squareOrder) {
@@ -11,7 +12,7 @@ function mapSquareStateToStatus(squareOrder) {
   if (orderState === 'CANCELED') return 'cancelled';
 
   switch (fulfillmentState) {
-    case 'PROPOSED': return 'pending';
+    case 'PROPOSED': return 'confirmed';
     case 'RESERVED': return 'confirmed';
     case 'PREPARED': return 'preparing';
     case 'COMPLETED': return 'ready';
@@ -107,12 +108,11 @@ Deno.serve(async (req) => {
       if (!customerEmail) continue;
 
       if (newStatus === 'preparing') {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: customerEmail,
-          from_name: 'Smashie',
-          subject: `🍔 Order #${orderNum} is in the works, fam!`,
-          body: `Hey ${customerName},\n\nOrder #${orderNum} is officially in the kitchen — the crew's doing their thing and yeah, we dropped the sauce on it. You got us on this one.\n\nYou'll get the next holla when it's ready to roll.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
-        });
+        await sendOrderStatusEmail(
+          customerEmail,
+          `🍔 Order #${orderNum} is in the works, fam!`,
+          `Hey ${customerName},\n\nOrder #${orderNum} is officially in the kitchen — the crew's doing their thing and yeah, we dropped the sauce on it. You got us on this one.\n\nYou'll get the next holla when it's ready to roll.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+        );
         notified++;
       }
 
@@ -133,12 +133,11 @@ Deno.serve(async (req) => {
           ? `Pull up to your table — your flavor is waiting.`
           : `Slide through whenever you're ready — your flavor is waiting.`;
 
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: customerEmail,
-          from_name: 'Smashie',
-          subject: `✅ Order #${orderNum} is ready, fam!`,
-          body: `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
-        });
+        await sendOrderStatusEmail(
+          customerEmail,
+          `✅ Order #${orderNum} is ready, fam!`,
+          `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+        );
         notified++;
 
         // Ready-for-pickup SMS so the customer can head out the moment it's done.
@@ -148,12 +147,11 @@ Deno.serve(async (req) => {
       }
 
       if (newStatus === 'completed') {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: customerEmail,
-          from_name: 'Smashie',
-          subject: `Thanks for pulling up! 🙌`,
-          body: `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — you already know we dropped the sauce. 🔥\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
-        });
+        await sendOrderStatusEmail(
+          customerEmail,
+          `Thanks for pulling up! 🙌`,
+          `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — you already know we dropped the sauce. 🔥\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+        );
         notified++;
       }
     }

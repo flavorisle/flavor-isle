@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total } = body;
+    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
         subtotal,
         tax,
         delivery_fee: deliveryFee || 0,
+        tip: tip || 0,
         total,
         customer_name: customer.name,
         customer_email: customer.email,
