@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
       idempotency_key: idempotencyKey,
       order: {
         location_id: locationId,
+        source: { name: 'Card' },
         fulfillments: [{
           type: 'PICKUP',
           state: 'PROPOSED',
