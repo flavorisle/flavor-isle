@@ -75,6 +75,50 @@ async function sendOrderConfirmationEmail(order) {
   }
 }
 
+// Route a newly paid order to Square POS so staff can track and update its
+// status, persist the returned Square order id so later status syncs can
+// match the record back, alert the kitchen printer, and email the customer.
+async function pushOrderToSquareAndKitchen(base44, order) {
+  try {
+    const squareRes = await base44.functions.invoke('createSquareOrder', {
+      items: order.items || [],
+      orderType: order.order_type || 'pickup',
+      customer: {
+        name: order.customer_name,
+        phone: order.customer_phone,
+        email: order.customer_email,
+        address: order.delivery_address,
+      },
+      instructions: order.special_instructions || '',
+      total: order.total,
+    });
+    const squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
+    if (squareOrderId) {
+      await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
+      console.log(`Order ${order.order_number} sent to Square (id ${squareOrderId})`);
+    } else {
+      console.log(`Order ${order.order_number} sent to Square (no id returned)`);
+    }
+  } catch (squareErr) {
+    console.error('Failed to send order to Square:', squareErr.message);
+  }
+
+  try {
+    await base44.functions.invoke('printKitchenOrder', {
+      order_number: order.order_number,
+      items: order.items || [],
+      special_instructions: order.special_instructions || '',
+      order_type: order.order_type,
+    });
+  } catch (printerErr) {
+    console.warn('Kitchen printer alert failed:', printerErr.message);
+  }
+
+  if (order.customer_email) {
+    await sendOrderConfirmationEmail(order);
+  }
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const body = await req.text();
@@ -109,40 +153,7 @@ Deno.serve(async (req) => {
         console.log(`Order ${order.order_number} updated: payment_status=${updates.payment_status}, status=${updates.status || order.status}`);
 
         if (paymentStatus === 'paid') {
-          // Send to Square POS
-          try {
-            await base44.functions.invoke('createSquareOrder', {
-              items: order.items || [],
-              orderType: order.order_type || 'pickup',
-              customer: {
-                name: order.customer_name,
-                phone: order.customer_phone,
-                email: order.customer_email,
-                address: order.delivery_address,
-              },
-              instructions: order.special_instructions || '',
-              total: order.total,
-            });
-            console.log(`Order ${order.order_number} sent to Square`);
-            
-            // Alert kitchen printer
-            try {
-              await base44.functions.invoke('printKitchenOrder', {
-                order_number: order.order_number,
-                items: order.items || [],
-                special_instructions: order.special_instructions || '',
-                order_type: order.order_type,
-              });
-            } catch (printerErr) {
-              console.warn('Kitchen printer alert failed:', printerErr.message);
-            }
-          } catch (squareErr) {
-            console.error('Failed to send order to Square:', squareErr.message);
-          }
-          
-          if (order.customer_email) {
-            await sendOrderConfirmationEmail(order);
-          }
+          await pushOrderToSquareAndKitchen(base44, order);
         }
       } else {
         console.warn('No Order found for stripe_session_id:', stripeSessionId);
@@ -162,11 +173,11 @@ Deno.serve(async (req) => {
       if (orders && orders.length > 0) {
         const order = orders[0];
         if (order.payment_status !== 'paid') {
+          const paidOrder = { ...order, payment_status: 'paid', status: 'confirmed' };
           await base44.asServiceRole.entities.Order.update(order.id, { payment_status: 'paid', status: 'confirmed' });
           console.log(`Order ${order.order_number} marked paid via payment_intent.succeeded`);
-          if (order.customer_email) {
-            await sendOrderConfirmationEmail({ ...order, payment_status: 'paid', status: 'confirmed' });
-          }
+          // Route to Square POS + kitchen, then email customer.
+          await pushOrderToSquareAndKitchen(base44, paidOrder);
         }
       } else {
         console.warn('No Order found for payment_intent id:', pi.id);
