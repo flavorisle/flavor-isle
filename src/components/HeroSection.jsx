@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone } from 'lucide-react';
+import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 const STATS = [
@@ -30,17 +30,26 @@ export default function HeroSection() {
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body">
             Order online for pickup, delivery, or dine-in. Hot food, fast.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={() => handleOrder('pickup')}
-              className="bg-white font-heading px-7 py-3.5 rounded-full text-sm sm:text-base hover:bg-vanilla-malt transition-colors chrome-hover"
-              style={{ color: '#E3481C' }}
-            >
-              Order Now
-            </button>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {[
+              { type: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
+              { type: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike },
+              { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
+            ].map(({ type, label, time, Icon }) => (
+              <button
+                key={type}
+                onClick={() => handleOrder(type)}
+                className="inline-flex items-center gap-2 bg-white font-heading px-5 sm:px-6 py-3.5 rounded-full text-sm sm:text-base hover:bg-vanilla-malt transition-colors chrome-hover"
+                style={{ color: '#E3481C' }}
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+                <span className="text-xs font-body opacity-70 hidden sm:inline">{time}</span>
+              </button>
+            ))}
             <a
               href="tel:+12805634618"
-              className="inline-flex items-center gap-2 border-2 border-white text-white font-heading px-7 py-3.5 rounded-full text-sm sm:text-base hover:bg-white/10 transition-colors"
+              className="inline-flex items-center gap-2 border-2 border-white text-white font-heading px-5 sm:px-6 py-3.5 rounded-full text-sm sm:text-base hover:bg-white/10 transition-colors"
             >
               <Phone size={16} /> Call Us
             </a>
