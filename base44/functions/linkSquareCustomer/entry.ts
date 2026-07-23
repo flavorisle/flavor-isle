@@ -141,6 +141,63 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Send a Smashie welcome email so the customer knows their history got synced.
+    if (normalizedEmail) {
+      try {
+        const dtFmt = (iso) =>
+          new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const latestDate = squareOrders.length
+          ? squareOrders
+              .map((o) => o.created_at || 0)
+              .sort()
+              .reverse()[0]
+          : null;
+        const dateStr = latestDate ? dtFmt(latestDate) : dtFmt(Date.now());
+        const itemCount = squareOrders.reduce(
+          (a, o) => a + (o.line_items || []).reduce((b, i) => b + (parseInt(i.quantity) || 1), 0),
+          0
+        );
+        const totalAmt =
+          squareOrders.reduce((a, o) => a + (o.total_money?.amount || 0), 0) / 100;
+
+        let body;
+        if (squareOrders.length > 0) {
+          const label = squareOrders.length === 1 ? 'one past order' : `${squareOrders.length} past orders`;
+          body = `Hey ${full_name || 'fam'},
+
+Welcome to Flavor Isle — you're officially tapped in. We spotted ${label} under your info and synced it to your account so your whole history stays tight and in one place.
+
+ORDER ADDED
+${dateStr} • ${itemCount} item${itemCount !== 1 ? 's' : ''} • $${totalAmt.toFixed(2)}
+
+View my order history — head to the Account page in the Flavor Isle app.
+
+— Pull up soon.
+Smashie & The Flavor Isle Team
+103 N Main St, Smiths Grove, KY 42171
+(270) 563-4618`;
+        } else {
+          body = `Hey ${full_name || 'fam'},
+
+Welcome to Flavor Isle — you're officially tapped in. No past orders under your info yet, but now that your account's linked, every order you place from here on out gets logged so your history stays tight.
+
+— Pull up soon.
+Smashie & The Flavor Isle Team
+103 N Main St, Smiths Grove, KY 42171
+(270) 563-4618`;
+        }
+
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: normalizedEmail,
+          from_name: 'Smashie',
+          subject: `Welcome to Flavor Isle, fam 🔥`,
+          body,
+        });
+      } catch (e) {
+        console.error('Welcome email failed:', e.message);
+      }
+    }
+
     return Response.json({
       success: true,
       linked: true,

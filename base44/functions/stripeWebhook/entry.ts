@@ -7,12 +7,18 @@ async function sendOrderConfirmationEmail(order) {
 
   const itemsHtml = (order.items || []).map(item =>
     `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${item.quantity > 1 ? ` x${item.quantity}` : ''}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}</td>
       <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;">$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
     </tr>`
   ).join('');
 
   const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[order.order_type] || order.order_type;
+  const fulfillmentLine = order.order_type === 'delivery' && order.delivery_address
+    ? `Delivery to ${order.delivery_address}`
+    : order.order_type === 'dine_in' && order.table_number
+      ? `Dine-In · Table ${order.table_number}`
+      : orderTypeLabel;
+  const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
 
   const html = `
     <div style="font-family:'Open Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffdf8;">
@@ -22,49 +28,56 @@ async function sendOrderConfirmationEmail(order) {
       </div>
 
       <div style="padding:32px 24px;">
-        <h2 style="color:#141414;font-size:22px;margin:0 0 4px;">Order Confirmed! 🎉</h2>
-        <p style="color:#666;margin:0 0 24px;">Thanks ${order.customer_name}, your order <strong>#${order.order_number}</strong> is confirmed and being prepared.</p>
+        <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
+        <h2 style="color:#141414;font-size:22px;margin:0 0 4px;">${order.customer_name} — your order is locked in. 🎉</h2>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, the crew's already doing their thing, and yeah — we dropped the sauce on this one. 🔥</p>
 
-        <div style="background:#f5edd6;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
-          <p style="margin:0;font-size:14px;color:#1A3A5C;"><strong>Order Type:</strong> ${orderTypeLabel}</p>
-          ${order.delivery_address ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Delivery Address:</strong> ${order.delivery_address}</p>` : ''}
-          ${order.table_number ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Table:</strong> ${order.table_number}</p>` : ''}
-          ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Special Instructions:</strong> ${order.special_instructions}</p>` : ''}
+        <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">
+          ORDER CONFIRMED · #${order.order_number || ''}
         </div>
 
         <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
           <thead>
             <tr>
-              <th style="text-align:left;padding:8px 0;border-bottom:2px solid #C0392B;color:#141414;font-size:13px;">Item</th>
-              <th style="text-align:right;padding:8px 0;border-bottom:2px solid #C0392B;color:#141414;font-size:13px;">Price</th>
+              <th style="text-align:left;padding:8px 0;border-bottom:2px solid #C0392B;color:#141414;font-size:13px;">ITEM</th>
+              <th style="text-align:right;padding:8px 0;border-bottom:2px solid #C0392B;color:#141414;font-size:13px;">PRICE</th>
             </tr>
           </thead>
           <tbody>${itemsHtml}</tbody>
         </table>
 
-        <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           <tr><td style="padding:4px 0;color:#666;font-size:14px;">Subtotal</td><td style="text-align:right;color:#666;font-size:14px;">$${(order.subtotal || 0).toFixed(2)}</td></tr>
           ${order.delivery_fee > 0 ? `<tr><td style="padding:4px 0;color:#666;font-size:14px;">Delivery Fee</td><td style="text-align:right;color:#666;font-size:14px;">$${(order.delivery_fee || 0).toFixed(2)}</td></tr>` : ''}
           <tr><td style="padding:4px 0;color:#666;font-size:14px;">Tax</td><td style="text-align:right;color:#666;font-size:14px;">$${(order.tax || 0).toFixed(2)}</td></tr>
           <tr><td style="padding:8px 0 0;color:#141414;font-size:16px;font-weight:bold;border-top:2px solid #f0e8d0;">Total</td><td style="text-align:right;padding:8px 0 0;color:#C0392B;font-size:18px;font-weight:bold;border-top:2px solid #f0e8d0;">$${(order.total || 0).toFixed(2)}</td></tr>
         </table>
 
+        <div style="background:#f5edd6;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0;font-size:14px;color:#1A3A5C;"><strong>Pickup/Delivery:</strong> ${fulfillmentLine}</p>
+          <p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Order Time:</strong> ~${estTime}</p>
+          ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
+        </div>
+
+        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — pull up and flex when you're ready.</p>
+        <p style="color:#666;margin:0 0 24px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+
         <div style="text-align:center;background:#1A3A5C;border-radius:12px;padding:20px;">
-          <p style="color:white;margin:0;font-size:15px;">Questions? Call us at <a href="tel:+12805634618" style="color:#f5edd6;">(280) 563-4618</a></p>
+          <p style="color:white;margin:0;font-size:15px;">Questions? Hit the line at <a href="tel:+12705634618" style="color:#f5edd6;">(270) 563-4618</a></p>
           <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">103 N Main St, Smiths Grove, KY 42171</p>
         </div>
       </div>
 
       <div style="text-align:center;padding:16px;color:#aaa;font-size:12px;">
-        © 2024 Flavor Isle. All rights reserved.
+        © 2024 Flavor Isle — we always drop the sauce.
       </div>
     </div>
   `;
 
   const { error } = await resend.emails.send({
-    from: 'Flavor Isle <onboarding@resend.dev>',
+    from: 'Smashie <onboarding@resend.dev>',
     to: order.customer_email,
-    subject: `Order Confirmed — #${order.order_number} 🍔`,
+    subject: `Order locked in — #${order.order_number} 🍔`,
     html,
   });
 

@@ -108,9 +108,9 @@ Deno.serve(async (req) => {
       if (newStatus === 'preparing') {
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: customerEmail,
-          from_name: 'Flavor Isle',
-          subject: `🍔 Your order #${orderNum} is being prepared!`,
-          body: `Hi ${customerName},\n\nGreat news! Our kitchen has started preparing your order #${orderNum}.\n\nYou'll get another update when it's ready.\n\nThanks for choosing Flavor Isle!\n103 N Main St, Smiths Grove, KY 42171\n(280) 563-4618`
+          from_name: 'Smashie',
+          subject: `🍔 Order #${orderNum} is in the works, fam!`,
+          body: `Hey ${customerName},\n\nOrder #${orderNum} is officially in the kitchen — the crew's doing their thing and yeah, we dropped the sauce on it. You got us on this one.\n\nYou'll get the next holla when it's ready to roll.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
       }
@@ -118,16 +118,16 @@ Deno.serve(async (req) => {
       if (newStatus === 'ready') {
         const orderType = order.order_type;
         const readyMsg = orderType === 'delivery'
-          ? `Your order is on its way! Our driver is heading to you now.`
+          ? `Your order's out for delivery — driver's en route, so stay posted.`
           : orderType === 'dine_in'
-          ? `Your order is ready at your table! Enjoy your meal.`
-          : `Your order is ready for pickup! Come on in — we'll have it waiting for you at the counter.`;
+          ? `Your order's ready at your table — dig in, you earned it.`
+          : `Your order is hot and ready — pull up and grab it, we got you at the counter.`;
 
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: customerEmail,
-          from_name: 'Flavor Isle',
-          subject: `✅ Order #${orderNum} is ready!`,
-          body: `Hi ${customerName},\n\n${readyMsg}\n\nOrder #${orderNum}\n\nFlavor Isle\n103 N Main St, Smiths Grove, KY 42171\n(280) 563-4618`
+          from_name: 'Smashie',
+          subject: `✅ Order #${orderNum} is ready, fam!`,
+          body: `Hey ${customerName},\n\n${readyMsg}\n\nOrder #${orderNum}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
       }
@@ -135,9 +135,9 @@ Deno.serve(async (req) => {
       if (newStatus === 'completed') {
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: customerEmail,
-          from_name: 'Flavor Isle',
-          subject: `Thank you for visiting Flavor Isle! 🙌`,
-          body: `Hi ${customerName},\n\nYour order #${orderNum} is marked complete. We hope you enjoyed your meal!\n\nWe'd love to see you again soon.\n\nFlavor Isle\n103 N Main St, Smiths Grove, KY 42171\n(280) 563-4618`
+          from_name: 'Smashie',
+          subject: `Thanks for pulling up! 🙌`,
+          body: `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — you already know we dropped the sauce. 🔥\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
         });
         notified++;
       }
