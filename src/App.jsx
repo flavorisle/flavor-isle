@@ -27,6 +27,7 @@ import MeetSmashie from './pages/MeetSmashie';
 import OrderStatus from './pages/OrderStatus';
 import StoreLocator from './pages/StoreLocator';
 import KitchenStatus from './pages/KitchenStatus';
+import FAQ from './pages/FAQ';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/store-locator" element={<StoreLocator />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />
+      <Route path="/faq" element={<FAQ />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

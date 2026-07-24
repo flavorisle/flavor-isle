@@ -25,6 +25,7 @@ export default function Navbar() {
   { label: 'Track Order', to: '/order-status' },
   { label: 'Store Locator', to: '/store-locator' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
+  { label: 'FAQ', to: '/faq' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];
