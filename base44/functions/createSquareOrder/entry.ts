@@ -101,18 +101,23 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Add tax and delivery fee as fixed-amount service charges so the Square
-    // order total matches the amount the customer was actually charged.
-    const serviceCharges = [];
-    if (tax > 0) {
-      serviceCharges.push({
+    // Send tax as a real order-level tax (not a service charge) so Square
+    // shows it once in its standard Tax line instead of a second tax-looking row.
+    const itemsSubtotal = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+    const orderTaxes = [];
+    if (tax > 0 && itemsSubtotal > 0) {
+      const pct = ((tax / itemsSubtotal) * 100).toFixed(2);
+      orderTaxes.push({
         uid: 'sales-tax',
         name: 'Sales Tax',
-        amount_money: { amount: Math.round(tax * 100), currency: 'USD' },
-        calculation_phase: 'TOTAL_PHASE',
-        taxable: false,
+        type: 'ADDITIVE',
+        percentage: pct,
+        scope: 'ORDER',
       });
     }
+
+    // Delivery fee stays a fixed-amount service charge.
+    const serviceCharges = [];
     if (deliveryFee > 0) {
       serviceCharges.push({
         uid: 'delivery-fee',
@@ -154,6 +159,7 @@ Deno.serve(async (req) => {
           },
         }],
         line_items: lineItems,
+        ...(orderTaxes.length > 0 ? { taxes: orderTaxes } : {}),
         ...(serviceCharges.length > 0 ? { service_charges: serviceCharges } : {}),
         metadata: {
           customer_email: customer.email,
