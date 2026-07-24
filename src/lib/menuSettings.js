@@ -28,6 +28,17 @@ export async function setCategorySortOrder(order) {
   return created.id;
 }
 
+export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutoff }) {
+  const setting = await getMenuSetting();
+  const updates = {
+    closing_time: closingTime,
+    delivery_cutoff_minutes: deliveryCutoff,
+    pickup_cutoff_minutes: pickupCutoff,
+  };
+  await base44.entities.MenuSetting.update(setting.id, updates);
+  return { ...setting, ...updates };
+}
+
 export async function setOrderingEnabled(enabled, closedMessage) {
   const setting = await getMenuSetting();
   const updates = { ordering_enabled: enabled };

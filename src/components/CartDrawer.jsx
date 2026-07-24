@@ -16,7 +16,8 @@ export default function CartDrawer() {
     updateQuantity, removeItem,
     orderType, setOrderType,
     subtotal, deliveryFee, tax, total, totalItems,
-    orderingEnabled, orderingClosedMessage
+    orderingEnabled, orderingClosedMessage,
+    cutoffStatus
   } = useCart();
   const navigate = useNavigate();
 
@@ -61,8 +62,11 @@ export default function CartDrawer() {
               <button
                 key={type}
                 onClick={() => setOrderType(type)}
+                disabled={cutoffStatus[type]}
                 className={`flex-1 py-2 text-xs font-heading rounded-xl transition-all ${
-                  orderType === type
+                  cutoffStatus[type]
+                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                    : orderType === type
                     ? 'bg-midnight-cherry text-white shadow-float'
                     : 'bg-muted text-muted-foreground hover:bg-gray-200'
                 }`}

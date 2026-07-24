@@ -74,7 +74,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus } = useCart();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
@@ -115,6 +115,10 @@ export default function Checkout() {
 
   const handleContinue = async () => {
     setError('');
+    if (cutoffStatus[orderType]) {
+      setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
+      return;
+    }
     if (!form.name.trim() || !form.email.trim()) {
       setError('Please fill in your name and email.');
       return;
@@ -220,15 +224,18 @@ export default function Checkout() {
                       <button
                         key={type}
                         onClick={() => setOrderType(type)}
+                        disabled={cutoffStatus[type]}
                         className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all font-heading text-sm ${
-                          orderType === type
+                          cutoffStatus[type]
+                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                            : orderType === type
                             ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
                             : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
                         }`}
                       >
                         <Icon size={20} />
                         {label}
-                        <span className="text-xs font-body opacity-60">{sub}</span>
+                        <span className="text-xs font-body opacity-60">{cutoffStatus[type] ? 'Closed for tonight' : sub}</span>
                       </button>
                     ))}
                   </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { getCutoffStatus } from '@/lib/orderCutoff';
 
 const CartContext = createContext(null);
 
@@ -9,15 +10,22 @@ export function CartProvider({ children }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderingEnabled, setOrderingEnabledState] = useState(true);
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');
+  const [menuSetting, setMenuSetting] = useState(null);
+  const [, setTick] = useState(0); // re-render every minute so cutoffs stay current
 
   useEffect(() => {
     getMenuSetting()
       .then(s => {
+        setMenuSetting(s);
         setOrderingEnabledState(s.ordering_enabled !== false);
         if (s.ordering_closed_message) setOrderingClosedMessage(s.ordering_closed_message);
       })
       .catch(() => {});
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(timer);
   }, []);
+
+  const cutoffStatus = getCutoffStatus(menuSetting);
 
   // Different modifier combos on the same menu item become separate lines,
   // so each selection's modifiers are preserved and displayed.
@@ -66,7 +74,8 @@ export function CartProvider({ children }) {
       orderType, setOrderType,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
-      orderingEnabled, orderingClosedMessage
+      orderingEnabled, orderingClosedMessage,
+      cutoffStatus
     }}>
       {children}
     </CartContext.Provider>

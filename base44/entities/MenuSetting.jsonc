@@ -23,6 +23,18 @@
     "ordering_closed_message": {
       "type": "string",
       "default": "Ordering is temporarily closed"
+    },
+    "closing_time": {
+      "type": "string",
+      "default": "20:00"
+    },
+    "delivery_cutoff_minutes": {
+      "type": "number",
+      "default": 30
+    },
+    "pickup_cutoff_minutes": {
+      "type": "number",
+      "default": 15
     }
   },
   "required": []

@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
 import StoreStatusCard from '@/components/StoreStatusCard';
+import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 
 const adminPages = [
   {
@@ -49,6 +50,8 @@ export default function AdminDashboard() {
       </div>
 
       <StoreStatusCard />
+
+      <OrderCutoffSettings />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />
