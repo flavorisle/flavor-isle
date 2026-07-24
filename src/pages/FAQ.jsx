@@ -12,7 +12,7 @@ const FAQ_SECTIONS = [
     faqs: [
       {
         q: 'What kind of food do you serve?',
-        a: 'We\'re a classic American diner serving smash burgers, chicken, sides, hand-spun milkshakes, drinks, and daily specials. Check out our full menu online — it stays in sync with what\'s available in the restaurant.',
+        a: 'We\'re a classic American diner serving fresh, never-frozen hand-patted burgers, chicken, sides, hand-spun milkshakes, drinks, and daily specials. Check out our full menu online — it stays in sync with what\'s available in the restaurant.',
       },
       {
         q: 'Do you have daily specials?',

@@ -14,13 +14,13 @@ import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
 
 const SPECIALS_TICKER = [
-  "🍔 Double Smash Burger — $10.99",
+  "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
   "🥤 Thick Vanilla Malt — $5.49",
   "🍟 Loaded Cheese Fries — $4.99",
   "⭐ Today's Special: BLT Deluxe — $8.99",
   "🍳 All-Day Breakfast Platter — $9.49",
   "🥧 Homemade Pie Slice — $3.99",
-  "🍔 Double Smash Burger — $10.99",
+  "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
   "🥤 Thick Vanilla Malt — $5.49",
   "🍟 Loaded Cheese Fries — $4.99",
   "⭐ Today's Special: BLT Deluxe — $8.99",
@@ -29,7 +29,7 @@ const SPECIALS_TICKER = [
 ];
 
 const FEATURES = [
-  { icon: '🍔', label: 'Hand-Smashed Burgers', desc: 'Fresh beef, never frozen' },
+  { icon: '🍔', label: 'Hand-Patted Burgers', desc: 'Fresh beef, never frozen' },
   { icon: '🥤', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
   { icon: '🍳', label: 'All-Day Breakfast', desc: 'Because breakfast is forever' },
   { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' },
@@ -76,7 +76,7 @@ export default function Home() {
             {[
               {
                 name: 'Double Cheeseburger',
-                desc: 'Two smashed beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
+                desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
                 price: '$9.50',
                 img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
                 tag: 'Best Seller'

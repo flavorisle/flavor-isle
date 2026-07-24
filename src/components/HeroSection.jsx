@@ -53,7 +53,7 @@ export default function HeroSection() {
             Real Food.<br />Real Good.
           </h1>
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
-            Smiths Grove's classic American diner. Hand-smashed burgers, thick shakes, and homestyle cooking made fresh every day.
+            Smiths Grove's classic American diner. Fresh, never-frozen hand-patted burgers, thick shakes, and homestyle cooking made fresh every day.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[

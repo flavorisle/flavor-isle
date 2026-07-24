@@ -18,14 +18,14 @@ const SMASHIE_TRAITS = [
   { emoji: '🧠', label: 'Knows the Menu Cold', desc: 'Ask him anything — from calorie counts to what pairs best with the Hot Fudge Cake. He knows.' },
   { emoji: '⚡', label: '24/7 Available', desc: "Even after we close, Smashie's still online to help you plan your next visit or answer any question." },
   { emoji: '📱', label: 'Takes Orders Too', desc: 'Call us and Smashie picks up. Text us and Smashie texts back. He\'ll take your order and get it to the kitchen.' },
-  { emoji: '💯', label: 'Flavor Isle to the Core', desc: 'Smashie grew up on this food. The Isle Smash Burger and Hot Fudge Cake? His personal favorites, no cap.' },
+  { emoji: '💯', label: 'Flavor Isle to the Core', desc: 'Smashie grew up on this food. The Double Cheeseburger and Hot Fudge Cake? His personal favorites, no cap.' },
 ];
 
 const FAQS = [
   { q: "Can Smashie actually take my order?", a: "Yep! Text or call the restaurant number and Smashie will take your order, confirm it, and route it straight to the kitchen. He's legit." },
   { q: "What if I have allergies or dietary needs?", a: "Smashie knows the menu inside out. Ask him about ingredients, substitutions, or what's safe for your dietary needs and he'll give you the real answer." },
   { q: "Is Smashie a robot?", a: "He's AI — but he's built specifically for Flavor Isle. He knows our menu, our vibe, our story. He's basically one of us at this point." },
-  { q: "What's Smashie's favorite order?", a: "Isle Smash Burger, loaded fries, and a Chocolate Fudge Shake. Hot Fudge Cake for dessert, obviously. No cap." },
+  { q: "What's Smashie's favorite order?", a: "Double Cheeseburger, loaded fries, and a Chocolate Fudge Shake. Hot Fudge Cake for dessert, obviously. No cap." },
   { q: "Can I chat with him on the website?", a: "Hit the chat bubble in the bottom right corner of any page. Smashie's always there, always ready." },
 ];
 
@@ -161,7 +161,7 @@ export default function MeetSmashie() {
         <p className="text-muted-foreground mb-10">Ask him for a recommendation. This is usually where he starts.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {[
-            { name: 'Isle Smash Burger', desc: 'Double smashed patties, special sauce. His ride-or-die.', emoji: '🍔', price: '$10.99' },
+            { name: 'Double Cheeseburger', desc: 'Two fresh hand-patted patties, special sauce. His ride-or-die.', emoji: '🍔', price: '$9.50' },
             { name: 'Chocolate Fudge Shake', desc: 'Thick, rich, made with real ice cream. Bussin every time.', emoji: '🥤', price: '$5.49' },
             { name: 'Hot Fudge Cake', desc: 'End every meal with this. No exceptions.', emoji: '🍰', price: '$5.99' },
           ].map(item => (

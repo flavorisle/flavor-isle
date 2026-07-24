@@ -32,8 +32,8 @@ export default function About() {
             <h2 className="font-heading text-3xl text-obsidian-roast mb-6">More Than a Diner. A Community Landmark.</h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>Flavor Isle was born from a simple idea: that every town deserves a place where the food is real, the portions are generous, and everyone feels like a regular.</p>
-              <p>Nestled in the heart of Smiths Grove, Kentucky, we've been slinging hand-smashed burgers, thick milkshakes, and all-day breakfast to families, farmers, and friends since we first fired up the griddle.</p>
-              <p>Everything on our menu is made from scratch — from the burger patties (hand-smashed daily) to the milkshakes (real ice cream, never mix) to our legendary homemade pies that come out of the oven every morning.</p>
+              <p>Nestled in the heart of Smiths Grove, Kentucky, we've been slinging fresh, never-frozen hand-patted burgers, thick milkshakes, and all-day breakfast to families, farmers, and friends since we first fired up the griddle.</p>
+              <p>Everything on our menu is made from scratch — from the burger patties (hand-patted fresh daily, never frozen) to the milkshakes (real ice cream, never mix) to our legendary homemade pies that come out of the oven every morning.</p>
             </div>
             <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-7 py-3.5 text-sm mt-8">
               See Our Menu <ArrowRight size={16} />
