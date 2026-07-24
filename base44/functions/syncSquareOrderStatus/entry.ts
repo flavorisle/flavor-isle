@@ -110,8 +110,8 @@ Deno.serve(async (req) => {
       if (newStatus === 'preparing') {
         await sendOrderStatusEmail(
           customerEmail,
-          `🍔 Order #${orderNum} is being prepared`,
-          `Hi ${customerName},\n\nGood news — order #${orderNum} is in the kitchen and being freshly prepared right now.\n\nWe'll send you another update the moment it's ready.\n\n— Smashie & The Flavor Isle Team`
+          `🍔 Order #${orderNum} is on the grill`,
+          `Hey ${customerName},\n\nOrder #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥\n\nWe'll hit you up the second it's ready.\n\n— Smashie & The Flavor Isle Team 🍔`
         );
         notified++;
       }
@@ -128,15 +128,15 @@ Deno.serve(async (req) => {
           ? `Table: ${order.table_number || 'N/A'} — Flavor Isle`
           : `Pickup Location: Flavor Isle — Smiths Grove`;
         const closingLine = orderType === 'delivery'
-          ? `It's on its way to you now — enjoy!`
+          ? `It's rolling your way right now — enjoy! 🚗`
           : orderType === 'dine_in'
-          ? `It's headed to your table — enjoy!`
-          : `Come by whenever you're ready — we'll have it waiting for you.`;
+          ? `It's headed to your table — dig in! 🍔`
+          : `Pull up whenever you're ready — we'll have it hot and waiting.`;
 
         await sendOrderStatusEmail(
           customerEmail,
           `✅ Order #${orderNum} is ready!`,
-          `Hi ${customerName},\n\nYour Flavor Isle order is hot, fresh, and ready to go.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team`
+          `Hey ${customerName},\n\nIt's go time — your Flavor Isle order is hot, fresh, and ready. 🔥\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team 🍔`
         );
         notified++;
 
@@ -149,8 +149,8 @@ Deno.serve(async (req) => {
       if (newStatus === 'completed') {
         await sendOrderStatusEmail(
           customerEmail,
-          `Thanks for your order! 🙌`,
-          `Hi ${customerName},\n\nOrder #${orderNum} is complete. We hope you enjoyed every bite!\n\nThank you for supporting Flavor Isle — we'd love to see you again soon.\n\n— Smashie & The Flavor Isle Team`
+          `Thanks for rolling with us! 🙌`,
+          `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team`
         );
         notified++;
       }

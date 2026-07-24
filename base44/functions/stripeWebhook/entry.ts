@@ -23,8 +23,9 @@ async function sendOrderConfirmationEmail(order) {
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
 
   const html = brandedEmailHtml(`
-        <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">Your order is confirmed, ${order.customer_name}! 🎉</h2>
-        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Thanks for your order — the kitchen has it and is getting started right away.</p>
+        <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
+        <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">${order.customer_name} — your order is locked in. 🎉</h2>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, and the crew's already firing up the grill. 🔥</p>
 
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER CONFIRMED · #${order.order_number || ''}
@@ -53,14 +54,14 @@ async function sendOrderConfirmationEmail(order) {
           ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
         </div>
 
-        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll let you know the moment it's ready.</p>
+        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
   `);
 
   const { error } = await resend.emails.send({
     from: 'Flavor Isle <smashie@order.flavor-isle.com>',
     to: order.customer_email,
-    subject: `Order confirmed — #${order.order_number} 🍔`,
+    subject: `Order locked in — #${order.order_number} 🍔`,
     html,
   });
 
