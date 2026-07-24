@@ -356,13 +356,14 @@ function LoggedInAccount({ user, logout }) {
 
             {/* Available Rewards */}
             <div>
-              <h3 className="font-heading text-lg text-obsidian-roast mb-4">Redeem Your Points</h3>
+              <h3 className="font-heading text-lg text-obsidian-roast mb-1">Redeem Your Points</h3>
+              <p className="text-sm text-muted-foreground mb-4">Earn 1 star for every $1 you spend — redeem them here, then apply your reward at checkout.</p>
               <div className="space-y-3">
                 {[
-                  { points: 50, value: 5, desc: '$5 off your next order' },
-                  { points: 100, value: 12, desc: '$12 off orders over $30' },
-                  { points: 150, value: 20, desc: '$20 off orders over $50' },
-                  { points: 250, value: 40, desc: '$40 off orders over $80' },
+                  { points: 50, value: 5, min: 0, desc: '$5 off your next order' },
+                  { points: 100, value: 12, min: 30, desc: '$12 off orders over $30' },
+                  { points: 150, value: 20, min: 50, desc: '$20 off orders over $50' },
+                  { points: 250, value: 40, min: 80, desc: '$40 off orders over $80' },
                 ].map((reward, idx) => (
                   <button
                     key={idx}
@@ -387,6 +388,7 @@ function LoggedInAccount({ user, logout }) {
                             discount_type: 'fixed',
                             discount_value: reward.value,
                             points_cost: reward.points,
+                            min_subtotal: reward.min,
                             description: reward.desc,
                             is_redeemed: false,
                             expires_at: expiresAt.toISOString(),

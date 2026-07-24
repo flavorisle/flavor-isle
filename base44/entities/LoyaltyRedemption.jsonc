@@ -21,6 +21,10 @@
     "points_cost": {
       "type": "number"
     },
+    "min_subtotal": {
+      "type": "number",
+      "default": 0
+    },
     "description": {
       "type": "string"
     },
@@ -31,6 +35,9 @@
     "redeemed_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "order_id": {
+      "type": "string"
     },
     "expires_at": {
       "type": "string",

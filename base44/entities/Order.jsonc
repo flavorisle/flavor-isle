@@ -45,6 +45,13 @@
       "type": "number",
       "default": 0
     },
+    "discount": {
+      "type": "number",
+      "default": 0
+    },
+    "redemption_id": {
+      "type": "string"
+    },
     "total": {
       "type": "number"
     },

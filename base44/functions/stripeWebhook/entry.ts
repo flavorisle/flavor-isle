@@ -89,6 +89,43 @@ async function sendOrderConfirmationEmail(order) {
   }
 }
 
+// Loyalty: mark any applied reward as used, then award stars (1 pt per $1 of
+// subtotal, boosted by tier) to the customer's loyalty account matched by email.
+async function processLoyalty(base44, order) {
+  try {
+    if (order.redemption_id) {
+      await base44.asServiceRole.entities.LoyaltyRedemption.update(order.redemption_id, {
+        is_redeemed: true,
+        redeemed_at: new Date().toISOString(),
+        order_id: order.id,
+      });
+      console.log(`Reward ${order.redemption_id} marked used for order ${order.order_number}`);
+    }
+
+    if (!order.customer_email) return;
+    const loyalties = await base44.asServiceRole.entities.Loyalty.filter({ email: order.customer_email });
+    if (!loyalties || loyalties.length === 0) return;
+    const loyalty = loyalties[0];
+    if (loyalty.last_order_id === order.id) return; // already awarded
+
+    const multiplier = loyalty.tier === 'gold' ? 2 : loyalty.tier === 'silver' ? 1.5 : 1;
+    const points = Math.floor((order.subtotal || 0) * multiplier);
+    if (points <= 0) return;
+
+    const earned = (loyalty.points_earned || 0) + points;
+    const tier = earned >= 1500 ? 'gold' : earned >= 500 ? 'silver' : 'bronze';
+    await base44.asServiceRole.entities.Loyalty.update(loyalty.id, {
+      points_balance: (loyalty.points_balance || 0) + points,
+      points_earned: earned,
+      tier,
+      last_order_id: order.id,
+    });
+    console.log(`Awarded ${points} loyalty points to ${order.customer_email} for order ${order.order_number}`);
+  } catch (err) {
+    console.error('Loyalty processing failed:', err.message);
+  }
+}
+
 // Route a newly paid order to Square POS so staff can track and update its
 // status, persist the returned Square order id so later status syncs can
 // match the record back, alert the kitchen printer, and email the customer.
@@ -109,6 +146,7 @@ async function pushOrderToSquareAndKitchen(base44, order) {
       tax: order.tax || 0,
       deliveryFee: order.delivery_fee || 0,
       tip: order.tip || 0,
+      discount: order.discount || 0,
     });
     const squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
     if (squareOrderId) {
@@ -140,6 +178,9 @@ async function pushOrderToSquareAndKitchen(base44, order) {
   if (order.customer_phone) {
     await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
   }
+
+  // Loyalty: consume applied reward + award stars for this order.
+  await processLoyalty(base44, order);
 }
 
 Deno.serve(async (req) => {

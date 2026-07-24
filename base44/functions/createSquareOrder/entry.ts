@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, customer, instructions, total, tax, deliveryFee, tip } = body;
+    const { items, orderType, orderNumber, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
 
     const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[orderType] || 'Pickup';
     const displayName = orderNumber
@@ -104,9 +104,24 @@ Deno.serve(async (req) => {
     // Send tax as a real order-level tax (not a service charge) so Square
     // shows it once in its standard Tax line instead of a second tax-looking row.
     const itemsSubtotal = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+    // Loyalty reward discount as an order-level fixed discount so the Square
+    // total matches what the customer actually paid.
+    const orderDiscounts = [];
+    if (discount > 0) {
+      orderDiscounts.push({
+        uid: 'loyalty-reward',
+        name: 'Loyalty Reward',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(discount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
+    // Square applies the ADDITIVE tax to the post-discount amount, so base the
+    // percentage on the discounted subtotal to keep the applied tax equal to ours.
+    const taxBase = itemsSubtotal - (discount || 0);
     const orderTaxes = [];
-    if (tax > 0 && itemsSubtotal > 0) {
-      const pct = ((tax / itemsSubtotal) * 100).toFixed(2);
+    if (tax > 0 && taxBase > 0) {
+      const pct = ((tax / taxBase) * 100).toFixed(2);
       orderTaxes.push({
         uid: 'sales-tax',
         name: 'Sales Tax',
@@ -159,6 +174,7 @@ Deno.serve(async (req) => {
           },
         }],
         line_items: lineItems,
+        ...(orderDiscounts.length > 0 ? { discounts: orderDiscounts } : {}),
         ...(orderTaxes.length > 0 ? { taxes: orderTaxes } : {}),
         ...(serviceCharges.length > 0 ? { service_charges: serviceCharges } : {}),
         metadata: {

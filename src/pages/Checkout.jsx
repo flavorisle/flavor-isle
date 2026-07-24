@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
+import RewardSelector from '@/components/checkout/RewardSelector';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -91,7 +93,23 @@ export default function Checkout() {
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : +(subtotal * (parseInt(tipPreset) / 100)).toFixed(2);
-  const totalWithTip = +(total + tipAmount).toFixed(2);
+
+  // Loyalty rewards — available (unused, unexpired) redemptions for signed-in users
+  const { user } = useAuth();
+  const [rewards, setRewards] = useState([]);
+  const [appliedRewardId, setAppliedRewardId] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+    base44.entities.LoyaltyRedemption.filter({ user_id: user.id, is_redeemed: false }).then(rr => {
+      const now = new Date();
+      setRewards((rr || []).filter(r => !r.expires_at || new Date(r.expires_at) > now));
+    });
+  }, [user]);
+
+  const appliedReward = rewards.find(r => r.id === appliedRewardId) || null;
+  const discountAmount = appliedReward ? Math.min(appliedReward.discount_value, total) : 0;
+  const totalWithTip = +(Math.max(0, total - discountAmount) + tipAmount).toFixed(2);
 
   const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
@@ -114,6 +132,7 @@ export default function Checkout() {
         customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
         instructions: form.instructions,
         subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+        discount: discountAmount, redemptionId: appliedReward?.id || null,
       });
 
       const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -312,6 +331,16 @@ export default function Checkout() {
                     No tip
                   </button>
                 </div>
+
+                {/* Loyalty Rewards */}
+                {user && rewards.length > 0 && (
+                  <RewardSelector
+                    rewards={rewards}
+                    subtotal={subtotal}
+                    appliedId={appliedRewardId}
+                    onApply={setAppliedRewardId}
+                  />
+                )}
               </>
             )}
 
@@ -362,6 +391,11 @@ export default function Checkout() {
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax (6%)</span><span>${tax.toFixed(2)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-patina-mint font-semibold">
+                    <span>Reward Discount</span><span>−${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
