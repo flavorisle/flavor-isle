@@ -82,7 +82,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
-          <span>© 2024 Flavor Isle. All rights reserved.</span>
+          <span>© 1964–2026 Flavor Isle. All rights reserved.</span>
         </div>
       </div>
     </footer>
