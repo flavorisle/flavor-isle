@@ -3,19 +3,13 @@ import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-
-const HOURS = [
-  { day: 'Monday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Tuesday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Wednesday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Thursday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Friday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Saturday', hours: '10:30 AM – 8:00 PM' },
-  { day: 'Sunday', hours: '11:00 AM – 8:00 PM' },
-];
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
 export default function StoreLocator() {
   const todayIndex = (new Date().getDay() + 6) % 7; // Monday = 0
+  const businessHours = useBusinessHours();
+  const HOURS = DAY_KEYS.map(k => ({ day: DAY_LABELS[k], hours: dayHoursLabel(businessHours[k]) }));
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>

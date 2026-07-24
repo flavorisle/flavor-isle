@@ -39,6 +39,12 @@ export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutof
   return { ...setting, ...updates };
 }
 
+export async function setBusinessHours(hours) {
+  const setting = await getMenuSetting();
+  await base44.entities.MenuSetting.update(setting.id, { business_hours: hours });
+  return { ...setting, business_hours: hours };
+}
+
 export async function setOrderingEnabled(enabled, closedMessage) {
   const setting = await getMenuSetting();
   const updates = { ordering_enabled: enabled };

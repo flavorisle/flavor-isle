@@ -6,6 +6,7 @@ import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
 import StoreStatusCard from '@/components/StoreStatusCard';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
+import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 
 const adminPages = [
@@ -54,6 +55,8 @@ export default function AdminDashboard() {
       <StoreStatusCard />
 
       <OrderCutoffSettings />
+
+      <BusinessHoursSettings />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />

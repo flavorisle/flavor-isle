@@ -4,8 +4,11 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
 
 export default function Contact() {
+  const businessHours = useBusinessHours();
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,7 +48,7 @@ export default function Contact() {
                 { icon: MapPin, label: 'Address', value: '103 N Main St, Smiths Grove, Kentucky 42171', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
                 { icon: Phone, label: 'Phone', value: '(270) 563-4618', href: 'tel:+12705634618' },
                 { icon: Mail, label: 'Email', value: 'hello@flavor-isle.com', href: 'mailto:hello@flavor-isle.com' },
-                { icon: Clock, label: 'Hours', value: 'Mon–Sat 10:30AM–8PM · Sun 11AM–8PM', href: null },
+                { icon: Clock, label: 'Hours', value: hoursSummary(businessHours), href: null },
               ].map(info => (
                 <div key={info.label} className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">

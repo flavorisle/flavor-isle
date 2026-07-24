@@ -3,12 +3,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
 
 export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
   const { isAuthenticated, user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const businessHours = useBusinessHours();
   const location = useLocation();
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function Navbar() {
             <a href="tel:+12705634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
-        <div className="text-xs text-gray-400">Mon–Sat: 10:30AM–8PM · Sun: 11AM–8PM</div>
+        <div className="text-xs text-gray-400">{hoursSummary(businessHours)}</div>
       </div>
 
       {/* Main Nav */}

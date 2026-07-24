@@ -12,6 +12,8 @@ import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
 
 const SPECIALS_TICKER = [
   "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
@@ -39,6 +41,7 @@ const FEATURES = [
 export default function Home() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
+  const businessHours = useBusinessHours();
 
   const handleOrder = (type) => {
     setOrderType(type);
@@ -146,7 +149,7 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="font-semibold text-obsidian-roast">Hours</p>
-                    <p className="text-sm">Mon–Sat: 10:30AM–8PM · Sun: 11AM–8PM</p>
+                    <p className="text-sm">{hoursSummary(businessHours)}</p>
                   </div>
                 </div>
               </div>

@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursGroups } from '@/lib/businessHours';
 
 export default function Footer() {
+  const businessHours = useBusinessHours();
   return (
     <footer className="bg-obsidian-roast text-white">
       {/* Main footer */}
@@ -36,14 +39,12 @@ export default function Footer() {
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Hours</h4>
           <div className="space-y-2 text-sm text-gray-400">
-            <div className="flex justify-between gap-4">
-              <span>Monday – Saturday</span>
-              <span>10:30AM – 8PM</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span>Sunday</span>
-              <span>11AM – 8PM</span>
-            </div>
+            {hoursGroups(businessHours).map(g => (
+              <div key={g.days} className="flex justify-between gap-4">
+                <span>{g.days}</span>
+                <span>{g.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 

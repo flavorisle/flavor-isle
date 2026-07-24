@@ -35,6 +35,24 @@
     "pickup_cutoff_minutes": {
       "type": "number",
       "default": 15
+    },
+    "business_hours": {
+      "type": "object",
+      "description": "Per-day open hours keyed by weekday (monday..sunday), each with open, close (24h HH:MM) and closed flag",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "string"
+          },
+          "close": {
+            "type": "string"
+          },
+          "closed": {
+            "type": "boolean"
+          }
+        }
+      }
     }
   },
   "required": []
