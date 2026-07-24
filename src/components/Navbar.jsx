@@ -23,6 +23,8 @@ export default function Navbar() {
   { label: 'Promos', to: '/promos' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Track Order', to: '/order-status' },
+  { label: 'Store Locator', to: '/store-locator' },
+  { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];

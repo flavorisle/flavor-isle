@@ -25,6 +25,8 @@ import Milkshakes from './pages/Milkshakes';
 import Promos from './pages/Promos';
 import MeetSmashie from './pages/MeetSmashie';
 import OrderStatus from './pages/OrderStatus';
+import StoreLocator from './pages/StoreLocator';
+import KitchenStatus from './pages/KitchenStatus';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -66,6 +68,8 @@ const AuthenticatedApp = () => {
       <Route path="/promos" element={<Promos />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/order-status" element={<OrderStatus />} />
+      <Route path="/store-locator" element={<StoreLocator />} />
+      <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
