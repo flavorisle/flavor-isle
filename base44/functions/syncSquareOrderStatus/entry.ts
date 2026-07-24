@@ -110,8 +110,8 @@ Deno.serve(async (req) => {
       if (newStatus === 'preparing') {
         await sendOrderStatusEmail(
           customerEmail,
-          `🍔 Order #${orderNum} is in the works, fam!`,
-          `Hey ${customerName},\n\nOrder #${orderNum} is officially in the kitchen — the crew's doing their thing and yeah, we dropped the sauce on it. You got us on this one.\n\nYou'll get the next holla when it's ready to roll.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+          `🍔 Order #${orderNum} is being prepared`,
+          `Hi ${customerName},\n\nGood news — order #${orderNum} is in the kitchen and being freshly prepared right now.\n\nWe'll send you another update the moment it's ready.\n\n— Smashie & The Flavor Isle Team`
         );
         notified++;
       }
@@ -128,15 +128,15 @@ Deno.serve(async (req) => {
           ? `Table: ${order.table_number || 'N/A'} — Flavor Isle`
           : `Pickup Location: Flavor Isle — Smiths Grove`;
         const closingLine = orderType === 'delivery'
-          ? `We're rolling it your way — your flavor is waiting.`
+          ? `It's on its way to you now — enjoy!`
           : orderType === 'dine_in'
-          ? `Pull up to your table — your flavor is waiting.`
-          : `Slide through whenever you're ready — your flavor is waiting.`;
+          ? `It's headed to your table — enjoy!`
+          : `Come by whenever you're ready — we'll have it waiting for you.`;
 
         await sendOrderStatusEmail(
           customerEmail,
-          `✅ Order #${orderNum} is ready, fam!`,
-          `Hey ${customerName},\n\nYour Flavor Isle order is officially ready. Bag sealed. Fries hot. Vibes immaculate.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+          `✅ Order #${orderNum} is ready!`,
+          `Hi ${customerName},\n\nYour Flavor Isle order is hot, fresh, and ready to go.\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team`
         );
         notified++;
 
@@ -149,8 +149,8 @@ Deno.serve(async (req) => {
       if (newStatus === 'completed') {
         await sendOrderStatusEmail(
           customerEmail,
-          `Thanks for pulling up! 🙌`,
-          `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — you already know we dropped the sauce. 🔥\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team\n103 N Main St, Smiths Grove, KY 42171\n(270) 563-4618`
+          `Thanks for your order! 🙌`,
+          `Hi ${customerName},\n\nOrder #${orderNum} is complete. We hope you enjoyed every bite!\n\nThank you for supporting Flavor Isle — we'd love to see you again soon.\n\n— Smashie & The Flavor Isle Team`
         );
         notified++;
       }

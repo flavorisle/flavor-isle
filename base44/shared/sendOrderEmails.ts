@@ -1,11 +1,34 @@
 import { Resend } from 'npm:resend@3.2.0';
 
+const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
+
+// Branded email shell matching the website: centered logo, cherry header,
+// cream body, navy footer, Oswald headings / Open Sans body.
+export function brandedEmailHtml(bodyHtml) {
+  return `
+  <div style="background:#F5EDD6;padding:24px 12px;font-family:'Open Sans',Arial,sans-serif;">
+    <div style="max-width:600px;margin:0 auto;background:#FFFDF8;border-radius:16px;overflow:hidden;">
+      <div style="background:#C0392B;padding:28px 24px;text-align:center;">
+        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:50%;display:block;margin:0 auto 12px;" />
+        <h1 style="color:#ffffff;font-family:'Oswald',Arial,sans-serif;margin:0;font-size:26px;letter-spacing:3px;">FLAVOR ISLE</h1>
+        <p style="color:rgba(255,255,255,0.85);margin:4px 0 0;font-size:12px;letter-spacing:2px;">SMITHS GROVE, KY</p>
+      </div>
+      <div style="padding:28px 24px;color:#141414;font-size:16px;line-height:1.6;">${bodyHtml}</div>
+      <div style="background:#1A3A5C;padding:18px 24px;text-align:center;">
+        <p style="color:#ffffff;margin:0;font-size:14px;">Questions? Call <a href="tel:+12705634618" style="color:#F5EDD6;">(270) 563-4618</a></p>
+        <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:12px;">103 N Main St, Smiths Grove, KY 42171</p>
+      </div>
+    </div>
+    <p style="text-align:center;color:#999;font-size:12px;margin:14px 0 0;">© 1964–2026 Flavor Isle. All rights reserved.</p>
+  </div>`;
+}
+
 // Send a customer status-update email through Resend directly.
 //
 // Guests placing web orders are NOT registered app users, so the built-in
 // SendEmail integration (which only reaches registered users) silently drops
 // their messages. Reach them here via Resend instead.
-export async function sendOrderStatusEmail(to, subject, body, fromName = 'Smashie') {
+export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor Isle') {
   if (!to) return false;
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
@@ -13,7 +36,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Smashi
       from: `${fromName} <smashie@order.flavor-isle.com>`,
       to,
       subject,
-      html: `<div style="font-family:'Open Sans',Arial,sans-serif;color:#141414;font-size:17px;line-height:1.5;">${body.replace(/\n/g, '<br>')}</div>`,
+      html: brandedEmailHtml(body.replace(/\n/g, '<br>')),
     });
     if (error) {
       console.error('sendOrderStatusEmail error:', error);

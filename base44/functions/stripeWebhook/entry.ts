@@ -2,6 +2,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
+import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -21,19 +22,11 @@ async function sendOrderConfirmationEmail(order) {
       : orderTypeLabel;
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
 
-  const html = `
-    <div style="font-family:'Open Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffdf8;">
-      <div style="background:#C0392B;padding:32px 24px;text-align:center;">
-        <h1 style="color:white;font-family:Arial,sans-serif;margin:0;font-size:28px;letter-spacing:2px;">FLAVOR ISLE</h1>
-        <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Smiths Grove, KY</p>
-      </div>
+  const html = brandedEmailHtml(`
+        <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">Your order is confirmed, ${order.customer_name}! 🎉</h2>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Thanks for your order — the kitchen has it and is getting started right away.</p>
 
-      <div style="padding:32px 24px;">
-        <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
-        <h2 style="color:#141414;font-size:22px;margin:0 0 4px;">${order.customer_name} — your order is locked in. 🎉</h2>
-        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, and the crew's already firing up the grill. 🔥</p>
-
-        <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">
+        <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER CONFIRMED · #${order.order_number || ''}
         </div>
 
@@ -60,25 +53,14 @@ async function sendOrderConfirmationEmail(order) {
           ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
         </div>
 
-        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — pull up and flex when you're ready.</p>
-        <p style="color:#666;margin:0 0 24px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
-
-        <div style="text-align:center;background:#1A3A5C;border-radius:12px;padding:20px;">
-          <p style="color:white;margin:0;font-size:15px;">Questions? Hit the line at <a href="tel:+12705634618" style="color:#f5edd6;">(270) 563-4618</a></p>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">103 N Main St, Smiths Grove, KY 42171</p>
-        </div>
-      </div>
-
-      <div style="text-align:center;padding:16px;color:#aaa;font-size:12px;">
-        © 2024 Flavor Isle — Smiths Grove's favorite diner.
-      </div>
-    </div>
-  `;
+        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll let you know the moment it's ready.</p>
+        <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+  `);
 
   const { error } = await resend.emails.send({
-    from: 'Smashie <smashie@order.flavor-isle.com>',
+    from: 'Flavor Isle <smashie@order.flavor-isle.com>',
     to: order.customer_email,
-    subject: `Order locked in — #${order.order_number} 🍔`,
+    subject: `Order confirmed — #${order.order_number} 🍔`,
     html,
   });
 
