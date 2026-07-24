@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { getMenuSetting, setHiddenCategories, setCategorySortOrder } from '@/lib/menuSettings';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
+import AdminNav from '@/components/admin/AdminNav';
 
 const DAYS = ['Daily', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -174,6 +175,7 @@ export default function AdminMenu() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+      <AdminNav />
 
       <div className="bg-obsidian-roast py-10 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between">

@@ -6,6 +6,7 @@ import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
 import StoreStatusCard from '@/components/StoreStatusCard';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
+import AdminNav from '@/components/admin/AdminNav';
 
 const adminPages = [
   {
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+      <AdminNav />
 
       {/* Hero */}
       <div className="bg-obsidian-roast py-10 px-4 sm:px-6">

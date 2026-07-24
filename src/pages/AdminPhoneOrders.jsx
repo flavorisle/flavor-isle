@@ -3,6 +3,7 @@ import { Phone, Clock, CheckCircle, X, ChefHat, RefreshCw, ShoppingBag } from 'l
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import OccupancyTracker from '@/components/OccupancyTracker';
+import AdminNav from '@/components/admin/AdminNav';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -66,24 +67,24 @@ export default function AdminPhoneOrders() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
-      <OccupancyTracker />
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-midnight-cherry rounded-2xl flex items-center justify-center">
-                <ShoppingBag size={22} className="text-white" />
-              </div>
-              <div>
-                <h1 className="font-heading text-2xl text-obsidian-roast">All Orders</h1>
-                <p className="text-sm text-muted-foreground">Live orders, phone orders & Square POS</p>
-              </div>
-            </div>
-            <button onClick={load} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors">
-              <RefreshCw size={14} /> Refresh
-            </button>
+      <AdminNav />
+
+      <div className="bg-obsidian-roast py-10 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div>
+            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-1">Admin</p>
+            <h1 className="font-heading text-3xl text-white">All Orders</h1>
+            <p className="text-gray-300 mt-1 text-sm">Live orders, phone orders & Square POS</p>
           </div>
-          
+          <button onClick={load} className="flex items-center gap-2 btn-mint chrome-hover px-5 py-2.5 text-sm font-heading">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      <OccupancyTracker />
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="mb-8">
           {/* Restaurant Busyness Indicator */}
           <div className="card-diner p-4 flex items-center justify-between">
             <div>

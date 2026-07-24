@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Search, FolderOpen, Copy, Check, RefreshCw, Image } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
+import AdminNav from '@/components/admin/AdminNav';
 
 const FOLDER_LABELS = {
   'Desktop/flavor isle/images for visit': '📸 Photos',
@@ -58,21 +59,25 @@ export default function AdminMedia() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+      <AdminNav />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <div className="bg-obsidian-roast py-10 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-4xl text-obsidian-roast">OneDrive Media</h1>
-            <p className="text-muted-foreground mt-1">Browse Flavor Isle images from OneDrive</p>
+            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-1">Admin</p>
+            <h1 className="font-heading text-3xl text-white">Media Manager</h1>
+            <p className="text-gray-300 mt-1 text-sm">Browse Flavor Isle images from OneDrive</p>
           </div>
           <button
             onClick={fetchMedia}
-            className="btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2"
+            className="btn-mint chrome-hover px-5 py-2.5 text-sm font-heading flex items-center gap-2"
           >
             <RefreshCw size={15} /> Refresh
           </button>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
