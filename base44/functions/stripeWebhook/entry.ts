@@ -31,7 +31,7 @@ async function sendOrderConfirmationEmail(order) {
       <div style="padding:32px 24px;">
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
         <h2 style="color:#141414;font-size:22px;margin:0 0 4px;">${order.customer_name} — your order is locked in. 🎉</h2>
-        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, the crew's already doing their thing, and yeah — we dropped the sauce on this one. 🔥</p>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, and the crew's already firing up the grill. 🔥</p>
 
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER CONFIRMED · #${order.order_number || ''}
@@ -70,7 +70,7 @@ async function sendOrderConfirmationEmail(order) {
       </div>
 
       <div style="text-align:center;padding:16px;color:#aaa;font-size:12px;">
-        © 2024 Flavor Isle — we always drop the sauce.
+        © 2024 Flavor Isle — Smiths Grove's favorite diner.
       </div>
     </div>
   `;
