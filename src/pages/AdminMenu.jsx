@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal, Gift } from 'lucide-react';
+import AdminPromosManager from '@/components/admin/AdminPromosManager';
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting, setHiddenCategories, setCategorySortOrder } from '@/lib/menuSettings';
 import Navbar from '@/components/Navbar';
@@ -194,7 +195,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }].map(t => (
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'promos', label: 'Promos', Icon: Gift }].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}
@@ -394,6 +395,9 @@ export default function AdminMenu() {
             </div>
           </div>
         )}
+
+        {/* ── PROMOS TAB ── */}
+        {tab === 'promos' && ( <AdminPromosManager /> )}
 
         {/* ── MENU ITEMS TAB ── */}
         {tab === 'menu' && (
