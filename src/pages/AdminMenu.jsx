@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal, Gift } from 'lucide-react';
+import { getMenuSetting, setCategoryItemOrder } from '@/lib/menuSettings';
+import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
+import AdminCategoriesManager from '@/components/admin/AdminCategoriesManager';
 import AdminPromosManager from '@/components/admin/AdminPromosManager';
 import { base44 } from '@/api/base44Client';
-import { getMenuSetting, setHiddenCategories, setCategorySortOrder } from '@/lib/menuSettings';
+
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import AdminNav from '@/components/admin/AdminNav';
@@ -22,11 +25,10 @@ export default function AdminMenu() {
   const [specialForm, setSpecialForm] = useState({ title: '', description: '', menu_item_id: '', day_of_week: 'Daily', is_active: true });
   const [savingSpecial, setSavingSpecial] = useState(false);
 
-  // Category visibility state
-  const [hiddenCats, setHiddenCats] = useState([]);
-
-  // Category sort order
-  const [categoryOrder, setCategoryOrder] = useState([]);
+  // Category renames + per-category item ordering + admin category order (Menu Items tab)
+  const [renames, setRenames] = useState({});
+  const [itemOrder, setItemOrder] = useState({});
+  const [catSort, setCatSort] = useState([]);
 
   // Combo state
   const [combos, setCombos] = useState([]);
@@ -43,18 +45,9 @@ export default function AdminMenu() {
   const loadMenuSetting = async () => {
     try {
       const setting = await getMenuSetting();
-      setHiddenCats(setting.hidden_categories || []);
-      setCategoryOrder(setting.category_sort_order || []);
-    } catch (e) { /* ignore */ }
-  };
-
-  const toggleCategoryVisible = async (cat) => {
-    const next = hiddenCats.includes(cat)
-      ? hiddenCats.filter(c => c !== cat)
-      : [...hiddenCats, cat];
-    setHiddenCats(next);
-    try {
-      await setHiddenCategories(next);
+      setRenames(setting.category_renames || {});
+      setItemOrder(setting.category_item_order || {});
+      setCatSort(setting.category_sort_order || []);
     } catch (e) { /* ignore */ }
   };
 
@@ -120,26 +113,10 @@ export default function AdminMenu() {
   };
 
   const squareCategories = [...new Set(items.map(i => i.square_category || i.category).filter(Boolean))];
-
-  // Categories in admin-defined order; any new categories are appended alphabetically.
-  const orderedCategories = (() => {
-    const known = categoryOrder.filter(c => squareCategories.includes(c));
-    const leftover = squareCategories.filter(c => !categoryOrder.includes(c)).sort((a, b) => a.localeCompare(b));
-    return [...known, ...leftover];
-  })();
-
-  const moveCategory = async (cat, dir) => {
-    const idx = orderedCategories.indexOf(cat);
-    if (idx < 0) return;
-    const newIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= orderedCategories.length) return;
-    const next = [...orderedCategories];
-    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
-    setCategoryOrder(next);
-    try {
-      await setCategorySortOrder(next);
-    } catch (e) { /* ignore */ }
-  };
+  // All category keys for the per-item selector: effective keys (incl. custom
+  // display_category) plus any custom categories the admin created in the
+  // Categories tab (tracked via category_sort_order).
+  const allCategoryKeys = sortCategories(Array.from(new Set([...items.map(itemCategoryKey), ...catSort])), catSort);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -163,14 +140,40 @@ export default function AdminMenu() {
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, ...updated } : i));
   };
 
+  // Move an item up/down within its current category, persisting the order.
+  const moveItem = async (item, dir) => {
+    const key = itemCategoryKey(item);
+    const groupItems = grouped[key] || [];
+    const idx = groupItems.findIndex(i => i.id === item.id);
+    if (idx < 0) return;
+    const newIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= groupItems.length) return;
+    const ids = groupItems.map(i => i.id);
+    [ids[idx], ids[newIdx]] = [ids[newIdx], ids[idx]];
+    const next = { ...itemOrder, [key]: ids };
+    setItemOrder(next);
+    try { await setCategoryItemOrder(next); } catch (e) { /* ignore */ }
+  };
+
+  // Set a custom category for an item (or clear it to fall back to the Square default).
+  const assignCategoryToItem = async (item, key) => {
+    const display_category = key || null;
+    await base44.entities.MenuItem.update(item.id, { display_category });
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, display_category: display_category || undefined } : i));
+  };
+
   const grouped = {};
   items
     .filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()))
     .forEach(item => {
-      const cat = item.square_category || item.category || 'Uncategorized';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(item);
+      const key = itemCategoryKey(item);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
     });
+  // Apply the admin-defined order within each category group.
+  Object.keys(grouped).forEach(k => {
+    grouped[k] = sortItemsInCategory(grouped[k], itemOrder[k] || []);
+  });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -208,52 +211,7 @@ export default function AdminMenu() {
 
         {/* ── CATEGORIES TAB ── */}
         {tab === 'categories' && (
-          <div className="card-diner p-6">
-            <h2 className="font-heading text-lg text-obsidian-roast mb-2">Display Categories</h2>
-            <p className="text-sm text-muted-foreground mb-5">Toggle which categories appear to customers on the menu. Hidden categories and their items are kept out of the menu until you turn them back on.</p>
-            {squareCategories.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No categories found yet. Sync from Square first.</p>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground mb-3">Use the arrows to set how categories appear to customers on the menu. New categories land at the bottom alphabetically.</p>
-                {orderedCategories.map((cat, idx) => {
-                  const hidden = hiddenCats.includes(cat);
-                  return (
-                    <div key={cat} className="flex items-center justify-between p-3 bg-muted rounded-2xl">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex flex-col">
-                          <button
-                            onClick={() => moveCategory(cat, 'up')}
-                            disabled={idx === 0}
-                            className="p-0.5 text-muted-foreground hover:text-obsidian-roast disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move up"
-                          >
-                            <ChevronUp size={14} />
-                          </button>
-                          <button
-                            onClick={() => moveCategory(cat, 'down')}
-                            disabled={idx === orderedCategories.length - 1}
-                            className="p-0.5 text-muted-foreground hover:text-obsidian-roast disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move down"
-                          >
-                            <ChevronDown size={14} />
-                          </button>
-                        </div>
-                        <span className="text-xs text-muted-foreground font-heading w-5 text-center">{idx + 1}</span>
-                        <span className="font-heading text-sm text-obsidian-roast truncate">{cat}</span>
-                      </div>
-                      <button
-                        onClick={() => toggleCategoryVisible(cat)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-heading transition-colors ${hidden ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700'}`}
-                      >
-                        {hidden ? 'Hidden' : 'Visible'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <AdminCategoriesManager items={items} />
         )}
 
         {/* ── DAILY SPECIALS TAB ── */}
@@ -417,7 +375,7 @@ export default function AdminMenu() {
             <div key={category} className="mb-8">
               <div className="flex items-center gap-3 mb-3">
                 <Tag size={16} className="text-patina-mint" />
-                <h2 className="font-heading text-lg text-obsidian-roast">{category}</h2>
+                <h2 className="font-heading text-lg text-obsidian-roast">{categoryLabel(category, renames)}</h2>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{catItems.length}</span>
               </div>
               <div className="space-y-3">
@@ -440,9 +398,31 @@ export default function AdminMenu() {
                             <span className="text-xs text-patina-mint">{item.modifiers.length} modifier group{item.modifiers.length !== 1 ? 's' : ''}</span>
                           )}
                         </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground font-heading uppercase tracking-wider">Category</span>
+                          <select
+                            value={item.display_category || ''}
+                            onChange={e => assignCategoryToItem(item, e.target.value)}
+                            className="flex-1 max-w-[220px] px-2.5 py-1.5 bg-muted border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
+                          >
+                            <option value="">{itemCategoryKey(item)} (default)</option>
+                            {allCategoryKeys.map(k => <option key={k} value={k}>{categoryLabel(k, renames)}</option>)}
+                          </select>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Reorder within category */}
+                        {!search && (
+                          <div className="flex flex-col">
+                            <button onClick={() => moveItem(item, 'up')} className="p-0.5 text-muted-foreground hover:text-obsidian-roast" title="Move up">
+                              <ChevronUp size={14} />
+                            </button>
+                            <button onClick={() => moveItem(item, 'down')} className="p-0.5 text-muted-foreground hover:text-obsidian-roast" title="Move down">
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
+                        )}
                         {/* Available toggle */}
                         <button
                           onClick={() => toggleAvailable(item)}

@@ -26,6 +26,10 @@
     "square_category": {
       "type": "string"
     },
+    "display_category": {
+      "type": "string",
+      "description": "Admin-defined override category; when set the item groups under this name instead of its Square/original category. Used to build custom categories (e.g. unique burger groupings)."
+    },
     "image_url": {
       "type": "string"
     },

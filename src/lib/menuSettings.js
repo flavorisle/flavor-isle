@@ -59,3 +59,23 @@ export async function setOrderingEnabled(enabled, closedMessage) {
     ordering_closed_message: typeof closedMessage === 'string' ? closedMessage : 'Ordering is temporarily closed',
   });
 }
+
+export async function setCategoryRenames(renames) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { category_renames: renames });
+    return setting.id;
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_renames: renames });
+  return created.id;
+}
+
+export async function setCategoryItemOrder(order) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { category_item_order: order });
+    return setting.id;
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_item_order: order });
+  return created.id;
+}

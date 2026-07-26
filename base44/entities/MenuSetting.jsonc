@@ -16,6 +16,16 @@
       },
       "default": []
     },
+    "category_renames": {
+      "type": "object",
+      "description": "Map of category key -> display name shown to customers (e.g. { 'Smash Burgers': 'Signature Smash' }). Keys are the underlying Square/custom category; the label is what renders.",
+      "default": {}
+    },
+    "category_item_order": {
+      "type": "object",
+      "description": "Map of category key -> ordered list of MenuItem ids controlling item order within that category on the public menu.",
+      "default": {}
+    },
     "ordering_enabled": {
       "type": "boolean",
       "default": true

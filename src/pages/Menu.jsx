@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import MenuItemCard from '@/components/MenuItemCard';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { itemCategoryKey, categoryLabel, sortItemsInCategory } from '@/lib/menuCategory';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -21,6 +22,8 @@ export default function Menu() {
   const [search, setSearch] = useState('');
   const [hiddenCats, setHiddenCats] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
+  const [renames, setRenames] = useState({});
+  const [itemOrder, setItemOrder] = useState({});
   const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
   const categoryBarRef = useRef(null);
 
@@ -29,6 +32,8 @@ export default function Menu() {
       .then(s => {
         setHiddenCats(s.hidden_categories || []);
         setCategoryOrder(s.category_sort_order || []);
+        setRenames(s.category_renames || {});
+        setItemOrder(s.category_item_order || {});
       })
       .catch(() => {});
     base44.entities.MenuItem.list()
@@ -48,15 +53,16 @@ export default function Menu() {
   };
 
   const categories = ['All', ...sortCats(Array.from(new Set(
-    items.map(i => i.square_category).filter(c => c && !hiddenCats.includes(c))
+    items.map(itemCategoryKey).filter(c => c && !hiddenCats.includes(c))
   )))];
 
   const visibleItems = items.filter(item => {
-    if (hiddenCats.includes(item.square_category)) return false;
+    const key = itemCategoryKey(item);
+    if (hiddenCats.includes(key)) return false;
     const matchSearch = !search ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       (item.description || '').toLowerCase().includes(search.toLowerCase());
-    const matchCat = activeCategory === 'All' || item.square_category === activeCategory;
+    const matchCat = activeCategory === 'All' || key === activeCategory;
     return matchSearch && matchCat;
   });
 
@@ -67,11 +73,14 @@ export default function Menu() {
     }
     const map = {};
     for (const item of visibleItems) {
-      const cat = item.square_category || 'Other';
+      const cat = itemCategoryKey(item);
       if (!map[cat]) map[cat] = [];
       map[cat].push(item);
     }
-    return sortCats(Object.keys(map)).map((category) => ({ category, items: map[category] }));
+    return sortCats(Object.keys(map)).map((category) => ({
+      category,
+      items: sortItemsInCategory(map[category], itemOrder[category] || []),
+    }));
   })();
 
   return (
@@ -131,8 +140,8 @@ export default function Menu() {
                     : 'bg-muted text-muted-foreground hover:bg-gray-200'
                 }`}
               >
-                {cat}
-              </button>
+                {cat === 'All' ? 'All' : categoryLabel(cat, renames)}
+                </button>
             ))}
           </div>
         </div>
@@ -171,7 +180,7 @@ export default function Menu() {
               <div key={category}>
                 {(activeCategory === 'All' && !search) && (
                   <div className="flex items-center gap-4 mb-6">
-                    <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">{category}</h2>
+                    <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">{categoryLabel(category, renames)}</h2>
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-sm text-muted-foreground">{groupItems.length} item{groupItems.length !== 1 ? 's' : ''}</span>
                   </div>
