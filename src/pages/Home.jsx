@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
+import StartOrderBand from '@/components/StartOrderBand';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -55,6 +56,9 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <HeroSection />
+
+      {/* ── START AN ORDER ── */}
+      <StartOrderBand />
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />

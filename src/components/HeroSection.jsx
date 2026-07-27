@@ -12,10 +12,15 @@ const STATS = [
   { num: '0', label: 'SHORTCUTS. EVER.' },
 ];
 
+// Fast, always-available hero photo so the hero paints with a real image
+// immediately instead of the brown gradient fallback. If the OneDrive media
+// lookup resolves, the diner's storefront sign photo swaps in on top.
+const DEFAULT_HERO_PHOTO = 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg';
+
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
-  const [heroImage, setHeroImage] = useState(null);
+  const [heroImage, setHeroImage] = useState(DEFAULT_HERO_PHOTO);
 
   useEffect(() => {
     let active = true;
