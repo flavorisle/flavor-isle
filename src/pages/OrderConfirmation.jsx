@@ -76,7 +76,7 @@ export default function OrderConfirmation() {
             </div>
             <div>
               <p className="font-heading text-sm text-obsidian-roast">Flavor Isle</p>
-              <p className="text-sm text-muted-foreground">Main Street, Smiths Grove, KY · (270) 563-5000</p>
+              <p className="text-sm text-muted-foreground">Main Street, Smiths Grove, KY · (270) 563-4618</p>
             </div>
           </div>
 
