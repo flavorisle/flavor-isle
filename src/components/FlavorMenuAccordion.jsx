@@ -1,0 +1,98 @@
+import React, { useState } from 'react';
+import { ChevronDown, Heart } from 'lucide-react';
+
+const ROSE = '#d85573';
+const ROSE_BG = '#fce4e4';
+const ROSE_TEXT = '#8e3a4e';
+
+const SECTIONS = [
+  {
+    title: 'Sugar Free Flavors',
+    items: [
+      { name: 'Watermelon', emoji: '🍉' },
+      { name: 'Strawberry', emoji: '🍓' },
+      { name: 'Raspberry', emoji: '🫐' },
+    ],
+  },
+  {
+    title: 'Regular Flavors',
+    items: [
+      { name: 'Blackberry', emoji: '🫐' },
+      { name: 'Rocket-Pop Vanilla', emoji: '🚀' },
+      { name: 'Coconut', emoji: '🥥' },
+      { name: 'Blue Raspberry', emoji: '🔷' },
+      { name: 'Peach', emoji: '🍑' },
+    ],
+  },
+  {
+    title: 'Boba Flavors',
+    items: [
+      { name: 'Strawberry', emoji: '🧋' },
+      { name: 'Peach', emoji: '🧋' },
+      { name: 'Watermelon', emoji: '🧋' },
+    ],
+  },
+];
+
+export default function FlavorMenuAccordion() {
+  const [open, setOpen] = useState(0);
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-10" style={{ backgroundColor: ROSE_BG }}>
+      {/* Header band */}
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <Heart size={14} style={{ color: ROSE, fill: ROSE }} />
+          <span className="font-heading text-xs uppercase tracking-widest" style={{ color: ROSE_TEXT }}>
+            Saturday, July 12th · 12:30–8:00 PM
+          </span>
+          <Heart size={14} style={{ color: ROSE, fill: ROSE }} />
+        </div>
+        <h1 className="font-heading text-3xl uppercase tracking-wider" style={{ color: ROSE_TEXT }}>Flavor Isle</h1>
+      </div>
+
+      {/* Accordion */}
+      <div className="space-y-4">
+        {SECTIONS.map((section, i) => {
+          const isOpen = open === i;
+          return (
+            <div
+              key={section.title}
+              className="overflow-hidden rounded-3xl"
+              style={{ backgroundColor: 'white', border: `1.5px solid ${ROSE}` }}
+            >
+              <button
+                onClick={() => setOpen(isOpen ? -1 : i)}
+                className="w-full flex items-center justify-between px-5 py-4 transition-colors"
+                style={{ backgroundColor: ROSE }}
+              >
+                <span className="font-heading text-white uppercase tracking-wider text-sm">{section.title}</span>
+                <ChevronDown
+                  size={18}
+                  className="text-white transition-transform"
+                  style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}
+                />
+              </button>
+              {isOpen && (
+                <div className="p-4 space-y-2">
+                  {section.items.map(item => (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
+                      style={{ backgroundColor: ROSE_BG }}
+                    >
+                      <span className="text-2xl leading-none">{item.emoji}</span>
+                      <span className="font-heading uppercase tracking-wide text-sm" style={{ color: ROSE_TEXT }}>
+                        {item.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
