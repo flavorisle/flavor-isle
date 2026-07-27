@@ -48,7 +48,7 @@ export default function FlavorMenuAccordion() {
         </div>
         <h1 className="font-heading text-4xl uppercase tracking-wider mb-1" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
         <p className="font-body text-sm uppercase tracking-[0.25em] mb-1" style={{ color: '#FF99CC' }}>by Ady Lee</p>
-        <p className="font-body text-base mb-4" style={{ color: 'var(--cream-white)' }}>Available in store — grab one when you pick up your order!</p>
+        <p className="font-body text-base mb-4" style={{ color: 'var(--obsidian-roast)' }}>Available in store — grab one when you pick up your order!</p>
         <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full mb-2" style={{ color: 'white', backgroundColor: ROSE }}>
           Lemonades · $5 · 32 oz
         </span>
