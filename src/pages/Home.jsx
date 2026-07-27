@@ -12,7 +12,6 @@ import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
-import DealsAccordion from '@/components/DealsAccordion';
 import SmashieChat from '@/components/SmashieChat';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -120,15 +119,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
-
-      {/* ── DINER DEALS ACCORDION ── */}
-      <section className="py-16 px-4 sm:px-6">
-        <div className="text-center mb-10">
-          <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Tap to Explore</p>
-          <h2 className="font-heading text-4xl text-obsidian-roast">Diner Deals</h2>
-        </div>
-        <DealsAccordion />
       </section>
 
       {/* ── DAILY SPECIALS ── */}

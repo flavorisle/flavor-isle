@@ -87,12 +87,34 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
 
-  // Tip state: 0 = no tip, '15'|'18'|'20' = preset %, 'custom' = flat amount
+  // Tip state — "smart tipping": when the order is small enough that even the
+  // largest percentage tip stays under $1.00, show flat-dollar ($1/$2/$3)
+  // options instead of percentages so the crew still gets a worthwhile tip.
   const [tipPreset, setTipPreset] = useState('18');
   const [customTip, setCustomTip] = useState('');
+
+  const smartFlat = subtotal * 0.20 < 1; // max % preset < $1 → use flat tips
+  const tipPresets = smartFlat
+    ? [
+        { key: '1', label: '$1', amount: 1 },
+        { key: '2', label: '$2', amount: 2 },
+        { key: '3', label: '$3', amount: 3 },
+      ]
+    : [
+        { key: '15', label: '15%', amount: +(subtotal * 0.15).toFixed(2) },
+        { key: '18', label: '18%', amount: +(subtotal * 0.18).toFixed(2) },
+        { key: '20', label: '20%', amount: +(subtotal * 0.20).toFixed(2) },
+      ];
+
+  // Reset to a valid default whenever the mode flips between % and flat $
+  useEffect(() => {
+    setTipPreset(smartFlat ? '2' : '18');
+  }, [smartFlat]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
-    : +(subtotal * (parseInt(tipPreset) / 100)).toFixed(2);
+    : tipPreset === '0' ? 0
+    : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
   // Loyalty rewards — available (unused, unexpired) redemptions for signed-in users
   const { user } = useAuth();
@@ -298,17 +320,17 @@ export default function Checkout() {
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">100% goes to the kitchen crew.</p>
                   <div className="grid grid-cols-4 gap-2">
-                    {['15', '18', '20'].map(pct => (
+                    {tipPresets.map(preset => (
                       <button
-                        key={pct}
-                        onClick={() => setTipPreset(pct)}
+                        key={preset.key}
+                        onClick={() => setTipPreset(preset.key)}
                         className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
-                          tipPreset === pct
+                          tipPreset === preset.key
                             ? 'border-midnight-cherry bg-midnight-cherry text-white'
                             : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
                         }`}
                       >
-                        {pct}%
+                        {preset.label}
                       </button>
                     ))}
                     <button
