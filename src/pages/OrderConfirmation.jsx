@@ -9,6 +9,8 @@ export default function OrderConfirmation() {
   const params = new URLSearchParams(location.search);
   const sessionId = params.get('session_id');
   const orderNumber = params.get('order_number');
+  const readyFor = params.get('ready_for');
+  const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : null;
   const [confetti, setConfetti] = useState(false);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function OrderConfirmation() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             {[
               { icon: CheckCircle, label: 'Order Confirmed', desc: 'Sent to our kitchen via Square', color: 'text-green-500' },
-              { icon: Clock, label: 'Being Prepared', desc: '15–25 min for pickup · 35–50 for delivery', color: 'text-patina-mint' },
+              { icon: Clock, label: 'Being Prepared', desc: readyForLabel ? `Ready by ${readyForLabel}` : '15–25 min for pickup · 35–50 for delivery', color: 'text-patina-mint' },
               { icon: ShoppingBag, label: 'Enjoy!', desc: 'Hot, fresh, and made with love', color: 'text-midnight-cherry' },
             ].map(step => (
               <div key={step.label} className="bg-muted rounded-2xl p-4">

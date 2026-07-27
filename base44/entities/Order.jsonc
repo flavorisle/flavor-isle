@@ -74,7 +74,13 @@
       "type": "string"
     },
     "estimated_time": {
-      "type": "number"
+      "type": "number",
+      "description": "Minutes from order placement until the order is ready"
+    },
+    "scheduled_for": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the customer wants the order ready. For ASAP orders this is order time + 20 min; for scheduled orders it is the chosen time slot."
     },
     "stripe_session_id": {
       "type": "string"

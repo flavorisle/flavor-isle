@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId } = body;
+    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
         special_instructions: instructions || '',
         table_number: customer.table || '',
         stripe_session_id: paymentIntent.id,
+        scheduled_for: scheduledFor || '',
+        estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
     } catch (dbError) {
       console.error('DB save error (non-fatal):', dbError.message);

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import RewardSelector from '@/components/checkout/RewardSelector';
+import SchedulePicker from '@/components/checkout/SchedulePicker';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -87,6 +88,9 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
 
+  // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
+  const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
+
   // Tip state — "smart tipping": when the order is small enough that even the
   // largest percentage tip stays under $1.00, show flat-dollar ($1/$2/$3)
   // options instead of percentages so the crew still gets a worthwhile tip.
@@ -133,6 +137,11 @@ export default function Checkout() {
   const discountAmount = appliedReward ? Math.min(appliedReward.discount_value, total) : 0;
   const totalWithTip = +(Math.max(0, total - discountAmount) + tipAmount).toFixed(2);
 
+  const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
+  const readyLabel = readyAt
+    ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ' (≈ 20 min)' : ''}`
+    : 'ASAP (≈ 20 min)';
+
   const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
   const handleContinue = async () => {
@@ -149,6 +158,16 @@ export default function Checkout() {
       setError('Please enter a delivery address.');
       return;
     }
+    if (schedule.mode === 'schedule' && !schedule.scheduledFor) {
+      setError('Please choose a time for your order.');
+      return;
+    }
+
+    // Fresh ready time at submit — ASAP = now + 20 min; scheduled = chosen slot
+    const scheduledFor = schedule.mode === 'asap'
+      ? new Date(Date.now() + 20 * 60000).toISOString()
+      : schedule.scheduledFor;
+    const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
 
     setLoading(true);
     try {
@@ -159,6 +178,8 @@ export default function Checkout() {
         instructions: form.instructions,
         subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
         discount: discountAmount, redemptionId: appliedReward?.id || null,
+        scheduledFor,
+        estimatedTime,
       });
 
       const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -175,7 +196,7 @@ export default function Checkout() {
 
   const handleSuccess = (on) => {
     clearCart();
-    navigate(`/order-confirmation?order_number=${on}`);
+    navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
 
   if (!orderingEnabled) {
@@ -266,6 +287,11 @@ export default function Checkout() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Pickup Time */}
+                <div className="card-diner p-6">
+                  <SchedulePicker onChange={setSchedule} />
                 </div>
 
                 {/* Contact Info */}
@@ -399,6 +425,11 @@ export default function Checkout() {
           <div className="lg:col-span-2">
             <div className="card-diner p-6 sticky top-32">
               <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Summary</h2>
+
+              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 mb-5 text-sm font-heading">
+                <Clock size={16} />
+                <span>Ready by {readyLabel}</span>
+              </div>
 
               <div className="space-y-3 mb-5">
                 {cartItems.map(item => (
