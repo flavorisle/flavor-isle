@@ -11,7 +11,6 @@ import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
-import MenuCategoryRows from '@/components/MenuCategoryRows';
 import SmashieChat from '@/components/SmashieChat';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -63,8 +62,60 @@ export default function Home() {
       {/* ── OUR STORY ── */}
       <OurStory />
 
-      {/* ── MENU BROWSER (category rows, left-to-right) ── */}
-      <MenuCategoryRows />
+      {/* ── FEATURED MENU ITEMS ── */}
+      <section className="py-16 bg-obsidian-roast">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Fan Favorites</p>
+              <h2 className="font-heading text-4xl text-white">The Classics</h2>
+            </div>
+            <Link to="/menu" className="btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2">
+              Full Menu <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                name: 'Double Cheeseburger',
+                desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
+                price: '$9.50',
+                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
+                tag: 'Best Seller'
+              },
+              {
+                name: 'Onion Rings',
+                desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
+                price: '$3.25',
+                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png',
+                tag: 'Must Try'
+              },
+              {
+                name: 'Hot Fudge Cake',
+                desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
+                price: '$6.99',
+                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
+                tag: 'Fan Fave'
+              }
+            ].map(item => (
+              <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">
+                <div className="relative h-52 overflow-hidden">
+                  <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute top-3 right-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">{item.tag}</div>
+                </div>
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-heading text-white text-base">{item.name}</h3>
+                    <span className="text-midnight-cherry font-heading text-lg">{item.price}</span>
+                  </div>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
