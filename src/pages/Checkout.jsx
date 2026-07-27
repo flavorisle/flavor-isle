@@ -234,7 +234,7 @@ export default function Checkout() {
       <Navbar />
       <CartDrawer />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-32 lg:pb-10">
         <div className="flex items-center gap-4 mb-8">
           {step === 'payment' ? (
             <button onClick={() => setStep('details')} className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
@@ -479,7 +479,7 @@ export default function Checkout() {
               )}
 
               {step === 'details' && (
-                <>
+                <div className="hidden lg:block">
                   <button
                     onClick={handleContinue}
                     disabled={loading}
@@ -492,12 +492,29 @@ export default function Checkout() {
                     )}
                   </button>
                   <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Sticky mobile CTA — keeps the primary action reachable without scrolling the full summary */}
+      {step === 'details' && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 py-3">
+          <button
+            onClick={handleContinue}
+            disabled={loading}
+            className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
