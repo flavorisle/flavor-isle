@@ -36,45 +36,45 @@ function SparkleToggle({ open }) {
 
 const DEALS = [
   {
-    id: 'shakes',
-    title: 'Shake Deals',
-    copy: 'Hand-spun shakes & malts blended with real ice cream. Strawberry, chocolate, vanilla, and the rotating flavor of the week.',
+    id: 'dessert',
+    title: 'Sweet Treats',
+    copy: 'Homemade baked-to-order chocolate brownie cake smothered in hot fudge, layered with whipped cream and chopped peanuts. A Flavor Isle classic.',
     image:
-      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c75abb00e_generated_image.png',
-    alt: 'Hand-spun strawberry milkshake',
-    nudge: true,
+      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/bb9b490bf_IMG_0371.png',
+    alt: 'Hot fudge brownie dessert',
+    nudge: false,
   },
   {
     id: 'burgers',
     title: 'Burger Deals',
     copy: 'Fresh, never-frozen beef hand-patted to order. Doubles, triples, and our signature Smash Stack — stacked with melty American cheese.',
     image:
-      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/743c39e1c_generated_image.png',
+      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/56f93f003_IMG_0375.png',
     alt: 'Classic double cheeseburger',
     nudge: false,
   },
   {
-    id: 'takeout',
-    title: 'Takeout Deals',
-    copy: 'Order ahead for pickup and skip the wait. Grab a hot bag of Flavor Isle classics to-go — burgers, sides, and shakes packed for the road.',
+    id: 'fries',
+    title: 'Fresh Fries',
+    copy: 'Golden, hand-cut crinkle fries seasoned with a pinch of salt and fried crisp to order — the side everyone raves about.',
     image:
-      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8c1324625_generated_image.png',
-    alt: 'Flavor Isle takeaway bag',
+      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c5a5ce796_IMG_0407.png',
+    alt: 'Hand-cut crinkle fries',
     nudge: false,
   },
   {
-    id: 'fresh',
-    title: 'Fresh & Fast',
-    copy: 'Most orders are ready in 15–25 minutes. Hand-cut fries, onion rings, and homestyle sides cooked fresh the moment you order — never sitting under a lamp.',
+    id: 'loaded',
+    title: 'Loaded Sides',
+    copy: 'Take those fries over the top — smothered in melted cheese, crumbled bacon, and a cool drizzle of house sauce. Loaded, layered, and ready to share.',
     image:
-      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/4f619a845_generated_image.png',
-    alt: 'Crispy fries and onion rings',
+      'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d86dcab09_IMG_0409.png',
+    alt: 'Loaded cheese and bacon fries',
     nudge: false,
   },
 ];
 
 export default function DealsAccordion() {
-  const [openId, setOpenId] = useState('shakes');
+  const [openId, setOpenId] = useState('dessert');
 
   return (
     <section className="dsa-section">
