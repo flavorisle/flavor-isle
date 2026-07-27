@@ -28,6 +28,7 @@ import OrderStatus from './pages/OrderStatus';
 import StoreLocator from './pages/StoreLocator';
 import KitchenStatus from './pages/KitchenStatus';
 import FAQ from './pages/FAQ';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
       <Route path="/store-locator" element={<StoreLocator />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
