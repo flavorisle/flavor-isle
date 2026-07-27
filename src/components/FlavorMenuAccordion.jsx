@@ -42,8 +42,11 @@ export default function FlavorMenuAccordion() {
       {/* Header band */}
       <div className="flex flex-col items-center text-center mb-8">
         <h1 className="font-heading text-4xl uppercase tracking-wider mb-3" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
-        <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full" style={{ color: 'white', backgroundColor: ROSE }}>
+        <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full mb-2" style={{ color: 'white', backgroundColor: ROSE }}>
           Lemonades · $5 · 32 oz
+        </span>
+        <span className="font-heading text-xs uppercase tracking-widest px-3 py-1.5 rounded-full" style={{ color: ROSE_TEXT, backgroundColor: 'white', border: `1.5px solid ${ROSE}` }}>
+          All Flavors · $1
         </span>
       </div>
 
