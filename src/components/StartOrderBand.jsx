@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Utensils, Bike } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { base44 } from '@/api/base44Client';
 
 // Prominent "Start an Order" entry placed right under the hero so guests can
 // jump straight into ordering with one tap.
@@ -16,6 +17,7 @@ export default function StartOrderBand() {
   const navigate = useNavigate();
 
   const start = (type) => {
+    base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'start_order_band' } });
     setOrderType(type);
     navigate('/menu');
   };

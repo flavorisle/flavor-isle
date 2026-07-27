@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { base44 } from '@/api/base44Client';
 import BusynessStatus from '@/components/BusynessStatus';
 
 const STATS = [
@@ -21,6 +22,7 @@ export default function HeroSection() {
   const { setOrderType } = useCart();
 
   const handleOrder = (type) => {
+    base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'hero' } });
     setOrderType(type);
     navigate('/menu');
   };
