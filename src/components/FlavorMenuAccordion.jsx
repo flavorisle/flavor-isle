@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Heart } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 const ROSE = '#d85573';
 const ROSE_BG = '#fce4e4';
@@ -41,14 +41,10 @@ export default function FlavorMenuAccordion() {
     <div className="max-w-2xl mx-auto px-4 py-10" style={{ backgroundColor: ROSE_BG }}>
       {/* Header band */}
       <div className="flex flex-col items-center text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <Heart size={14} style={{ color: ROSE, fill: ROSE }} />
-          <span className="font-heading text-xs uppercase tracking-widest" style={{ color: ROSE_TEXT }}>
-            Saturday, July 12th · 12:30–8:00 PM
-          </span>
-          <Heart size={14} style={{ color: ROSE, fill: ROSE }} />
-        </div>
-        <h1 className="font-heading text-3xl uppercase tracking-wider" style={{ color: ROSE_TEXT }}>Flavor Isle</h1>
+        <h1 className="font-heading text-4xl uppercase tracking-wider mb-3" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
+        <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full" style={{ color: 'white', backgroundColor: ROSE }}>
+          Lemonades · $5 · 32 oz
+        </span>
       </div>
 
       {/* Accordion */}
