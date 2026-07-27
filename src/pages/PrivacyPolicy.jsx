@@ -10,7 +10,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Payment Information',
-        text: 'Payment is processed securely through Stripe. We do not store your full card number, CVV, or sensitive card details on our servers. Stripe returns a tokenized reference that we save to link your payment to your order.',
+        text: 'Payment is processed securely through our payment partners. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order.',
       },
       {
         heading: 'Order History & Preferences',
@@ -48,7 +48,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Service Partners',
-        text: 'We share only what is necessary with trusted partners to run our business: Stripe for payment processing, Square for in-store order sync, and a delivery courier when fulfilling delivery orders.',
+        text: 'We share only what is necessary with our trusted service partners — for payment processing, in-store order syncing, and delivery courier services — to run our business.',
       },
       {
         heading: 'Phone & SMS Communications',
