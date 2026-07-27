@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { base44 } from '@/api/base44Client';
 import BusynessStatus from '@/components/BusynessStatus';
 
 const STATS = [
@@ -15,28 +14,11 @@ const STATS = [
 // Fast, always-available hero photo so the hero paints with a real image
 // immediately instead of the brown gradient fallback. If the OneDrive media
 // lookup resolves, the diner's storefront sign photo swaps in on top.
-const DEFAULT_HERO_PHOTO = 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg';
+const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg';
 
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
-  const [heroImage, setHeroImage] = useState(DEFAULT_HERO_PHOTO);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await base44.functions.invoke('getOneDriveMedia', {});
-        const imgs = res.data?.images || [];
-        const match = imgs.find(i => /flavor isle sign/i.test(i.name) && /\.jpe?g$/i.test(i.name))
-          || imgs.find(i => /flavor isle sign/i.test(i.name));
-        if (active && match?.downloadUrl) setHeroImage(match.downloadUrl);
-      } catch (e) {
-        // background gradient fallback stays in place
-      }
-    })();
-    return () => { active = false; };
-  }, []);
 
   const handleOrder = (type) => {
     setOrderType(type);
@@ -49,7 +31,7 @@ export default function HeroSection() {
       <div
         className="relative bg-cover bg-center"
         style={{
-          backgroundImage: heroImage ? `url('${heroImage}')` : 'linear-gradient(135deg, #E3481C 0%, #C0392B 100%)',
+          backgroundImage: `url('${DEFAULT_HERO_PHOTO}')`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70" />
