@@ -41,6 +41,10 @@ export default function FlavorMenuAccordion() {
     <div className="max-w-2xl mx-auto px-4 py-10" style={{ backgroundColor: ROSE_BG }}>
       {/* Header band */}
       <div className="flex flex-col items-center text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-3" style={{ backgroundColor: 'white', border: `1.5px solid ${ROSE}` }}>
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#27ae60' }} />
+          <span className="font-heading text-xs uppercase tracking-widest" style={{ color: ROSE_TEXT }}>Available Now</span>
+        </div>
         <h1 className="font-heading text-4xl uppercase tracking-wider mb-3" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
         <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full mb-2" style={{ color: 'white', backgroundColor: ROSE }}>
           Lemonades · $5 · 32 oz

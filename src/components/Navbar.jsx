@@ -23,7 +23,7 @@ export default function Navbar() {
   const navLinks = [
   { label: 'Menu', to: '/menu' },
   { label: 'Milkshakes', to: '/milkshakes' },
-  { label: 'Flavors', to: '/flavors' },
+  { label: 'The Sip Shack', to: '/flavors' },
   { label: 'Promos', to: '/promos' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Track Order', to: '/order-status' },
