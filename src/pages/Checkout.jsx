@@ -223,7 +223,12 @@ export default function Checkout() {
                     ].map(({ type, Icon, label, sub }) => (
                       <button
                         key={type}
-                        onClick={() => setOrderType(type)}
+                        onClick={() => {
+                          if (!cutoffStatus[type] && orderType !== type) {
+                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
+                          }
+                          setOrderType(type);
+                        }}
                         disabled={cutoffStatus[type]}
                         className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all font-heading text-sm ${
                           cutoffStatus[type]
