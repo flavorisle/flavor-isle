@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { sendOrderStatusEmail } from '../../shared/sendOrderEmails.ts';
+import { sendOrderStatusEmail, sendOrderReadyEmail } from '../../shared/sendOrderEmails.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses
 function mapSquareStateToStatus(squareOrder) {
@@ -117,27 +117,8 @@ Deno.serve(async (req) => {
       }
 
       if (newStatus === 'ready') {
-        const orderType = order.order_type;
-        const itemSummary = (order.items || [])
-          .map(i => `${i.name || 'Item'}${i.quantity > 1 ? ` x${i.quantity}` : ''}`)
-          .join(', ');
-        const totalStr = `$${(order.total || 0).toFixed(2)}`;
-        const locationLine = orderType === 'delivery'
-          ? `Delivery To: ${order.delivery_address || 'on file'}`
-          : orderType === 'dine_in'
-          ? `Table: ${order.table_number || 'N/A'} — Flavor Isle`
-          : `Pickup Location: Flavor Isle — Smiths Grove`;
-        const closingLine = orderType === 'delivery'
-          ? `It's rolling your way right now — enjoy! 🚗`
-          : orderType === 'dine_in'
-          ? `It's headed to your table — dig in! 🍔`
-          : `Pull up whenever you're ready — we'll have it hot and waiting.`;
-
-        await sendOrderStatusEmail(
-          customerEmail,
-          `✅ Order #${orderNum} is ready!`,
-          `Hey ${customerName},\n\nIt's go time — your Flavor Isle order is hot, fresh, and ready. 🔥\n\nORDER READY · #${orderNum}\nItems: ${itemSummary || '—'}\nTotal: ${totalStr}\n${locationLine}\n\n${closingLine}\n\n— Smashie & The Flavor Isle Team 🍔`
-        );
+        // Dedicated ready email with The Sip Shack flavors accordion baked in.
+        await sendOrderReadyEmail(order);
         notified++;
 
         // Ready-for-pickup SMS so the customer can head out the moment it's done.
