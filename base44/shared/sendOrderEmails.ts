@@ -83,6 +83,9 @@ export function flavorsAccordionHtml() {
       <p style="text-align:center;margin:0 0 6px;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:3px;color:#8e3a4e;font-size:22px;">The Sip Shack</p>
       <p style="text-align:center;margin:0 0 4px;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:2px;color:#FF99CC;font-size:12px;">by Ady Lee</p>
       <p style="text-align:center;margin:0 0 14px;color:#141414;font-size:14px;font-weight:600;">Grab one in store while you pick up!</p>
+      <div style="text-align:center;margin:0 0 16px;">
+        <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b1994be97_IMG_0733.jpeg" alt="The Sip Shack slushy drinks" width="520" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.12);" />
+      </div>
       <p style="text-align:center;margin:0 0 16px;">
         <span style="display:inline-block;background:#d85573;color:#ffffff;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:12px;padding:6px 12px;border-radius:999px;">Lemonades · $5 · 32 oz</span>
         <span style="display:inline-block;background:#ffffff;color:#8e3a4e;border:1.5px solid #d85573;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:11px;padding:5px 10px;border-radius:999px;margin-left:6px;">All Flavors · $1</span>
