@@ -17,26 +17,26 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
 const SPECIALS_TICKER = [
-  "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
-  "🥤 Thick Vanilla Malt — $5.49",
-  "🍟 Loaded Cheese Fries — $4.99",
-  "⭐ Today's Special: BLT Deluxe — $8.99",
-  "🍳 All-Day Breakfast Platter — $9.49",
-  "🥧 Homemade Pie Slice — $3.99",
-  "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
-  "🥤 Thick Vanilla Malt — $5.49",
-  "🍟 Loaded Cheese Fries — $4.99",
-  "⭐ Today's Special: BLT Deluxe — $8.99",
-  "🍳 All-Day Breakfast Platter — $9.49",
-  "🥧 Homemade Pie Slice — $3.99",
-];
+"🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
+"🥤 Thick Vanilla Malt — $5.49",
+"🍟 Loaded Cheese Fries — $4.99",
+"⭐ Today's Special: BLT Deluxe — $8.99",
+"🍳 All-Day Breakfast Platter — $9.49",
+"🥧 Homemade Pie Slice — $3.99",
+"🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
+"🥤 Thick Vanilla Malt — $5.49",
+"🍟 Loaded Cheese Fries — $4.99",
+"⭐ Today's Special: BLT Deluxe — $8.99",
+"🍳 All-Day Breakfast Platter — $9.49",
+"🥧 Homemade Pie Slice — $3.99"];
+
 
 const FEATURES = [
-  { icon: '🍔', label: 'Hand-Patted Burgers', desc: 'Fresh beef, never frozen' },
-  { icon: '🥤', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
-  { icon: '🍳', label: 'All-Day Breakfast', desc: 'Because breakfast is forever' },
-  { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' },
-];
+{ icon: '🍔', label: 'Hand-Patted Burgers', desc: 'Fresh beef, never frozen' },
+{ icon: '🥤', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
+{ icon: '🍳', label: 'All-Day Breakfast', desc: 'Because breakfast is forever' },
+{ icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
+
 
 
 export default function Home() {
@@ -71,7 +71,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Fan Favorites</p>
+              <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">FAN FAVORITES</p>
               <h2 className="font-heading text-4xl text-white">The Classics</h2>
             </div>
             <Link to="/menu" className="btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2">
@@ -81,29 +81,29 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              {
-                name: 'Double Cheeseburger',
-                desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
-                price: '$9.50',
-                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
-                tag: 'Best Seller'
-              },
-              {
-                name: 'Onion Rings',
-                desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
-                price: '$3.25',
-                img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png',
-                tag: 'Must Try'
-              },
-              {
-                name: 'Hot Fudge Cake',
-                desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
-                price: '$6.99',
-                img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
-                tag: 'Fan Fave'
-              }
-            ].map(item => (
-              <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">
+            {
+              name: 'Double Cheeseburger',
+              desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
+              price: '$9.50',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
+              tag: 'Best Seller'
+            },
+            {
+              name: 'Onion Rings',
+              desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
+              price: '$3.25',
+              img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png',
+              tag: 'Must Try'
+            },
+            {
+              name: 'Hot Fudge Cake',
+              desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
+              price: '$6.99',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
+              tag: 'Fan Fave'
+            }].
+            map((item) =>
+            <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">
                 <div className="relative h-52 overflow-hidden">
                   <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 right-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">{item.tag}</div>
@@ -116,7 +116,7 @@ export default function Home() {
                   <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -178,8 +178,8 @@ export default function Home() {
                     href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors"
-                  >
+                    className="mt-4 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors">
+                    
                     Get Directions <ArrowRight size={14} />
                   </a>
                 </div>
@@ -207,6 +207,6 @@ export default function Home() {
 
       <Footer />
       <SmashieChat />
-    </div>
-  );
+    </div>);
+
 }
