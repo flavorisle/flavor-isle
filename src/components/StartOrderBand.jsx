@@ -7,10 +7,10 @@ import { base44 } from '@/api/base44Client';
 // Prominent "Start an Order" entry placed right under the hero so guests can
 // jump straight into ordering with one tap.
 const OPTIONS = [
-  { id: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
-  { id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
-  { id: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike },
-];
+{ id: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
+{ id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
+{ id: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike }];
+
 
 export default function StartOrderBand() {
   const { setOrderType } = useCart();
@@ -30,24 +30,24 @@ export default function StartOrderBand() {
             <ArrowRight size={18} className="text-midnight-cherry" />
           </div>
           <div>
-            <h2 className="font-heading text-xl text-obsidian-roast leading-none">Start an Order</h2>
+            <h2 className="font-heading text-xl leading-none text-[hsl(var(--primary))]">Start an Order</h2>
             <p className="text-xs text-muted-foreground">Pick a way to get your food — we'll take you to the menu.</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3 justify-center">
-          {OPTIONS.map(({ id, label, time, Icon }) => (
-            <button
-              key={id}
-              onClick={() => start(id)}
-              className="btn-cherry chrome-hover inline-flex items-center gap-2 px-5 py-3 text-sm"
-            >
+          {OPTIONS.map(({ id, label, time, Icon }) =>
+          <button
+            key={id}
+            onClick={() => start(id)}
+            className="btn-cherry chrome-hover inline-flex items-center gap-2 px-5 py-3 text-sm">
+            
               <Icon size={16} />
               {label}
               <span className="text-xs font-body opacity-80 hidden sm:inline">{time}</span>
             </button>
-          ))}
+          )}
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 }
