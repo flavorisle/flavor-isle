@@ -88,7 +88,7 @@ export default function SmashieChat() {
               <button
                 key={q}
                 onClick={() => {setInput(q);}}
-                className="text-xs bg-muted hover:bg-midnight-cherry/10 px-3 py-1.5 rounded-full transition-colors border border-border text-[hsl(var(--primary))]">
+                className="text-xs hover:bg-midnight-cherry/10 px-3 py-1.5 rounded-full transition-colors border border-border text-[hsl(var(--primary))] bg-[hsl(var(--primary))]">
                 
                       {q}
                     </button>
