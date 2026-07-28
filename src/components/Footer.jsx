@@ -39,12 +39,12 @@ export default function Footer() {
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Hours</h4>
           <div className="space-y-2 text-sm text-gray-400">
-            {hoursGroups(businessHours).map(g => (
-              <div key={g.days} className="flex justify-between gap-4">
+            {hoursGroups(businessHours).map((g) =>
+            <div key={g.days} className="flex justify-between gap-4">
                 <span>{g.days}</span>
                 <span>{g.label}</span>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -62,7 +62,7 @@ export default function Footer() {
 
         {/* Contact */}
         <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Find Us</h4>
+          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">FIND US</h4>
           <div className="space-y-3 text-sm text-gray-400">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="text-patina-mint mt-0.5 flex-shrink-0" />
@@ -86,6 +86,6 @@ export default function Footer() {
           <span>© 1964–2026 Flavor Isle. All rights reserved.</span>
         </div>
       </div>
-    </footer>
-  );
+    </footer>);
+
 }
