@@ -37,7 +37,7 @@ export default function Footer() {
 
         {/* Hours */}
         <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Hours</h4>
+          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">HOURS</h4>
           <div className="space-y-2 text-sm text-gray-400">
             {hoursGroups(businessHours).map((g) =>
             <div key={g.days} className="flex justify-between gap-4">
@@ -50,7 +50,7 @@ export default function Footer() {
 
         {/* Quick Links */}
         <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest text-patina-mint mb-4">Quick Links</h4>
+          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">QUICK LINKS</h4>
           <div className="flex flex-col gap-2 text-sm text-gray-400">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
