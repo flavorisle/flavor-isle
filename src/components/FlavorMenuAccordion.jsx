@@ -42,11 +42,17 @@ export default function FlavorMenuAccordion() {
     <div className="max-w-2xl mx-auto px-4 py-10" style={{ backgroundColor: ROSE_BG }}>
       {/* Header band */}
       <div className="flex flex-col items-center text-center mb-8">
-        <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b8ded99b5_IMG_0733.jpeg" alt="The Sip Shack drinks" className="w-full max-w-md rounded-2xl mb-5 shadow-float" />
+        <div className="relative w-full max-w-md mb-5">
+          <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b8ded99b5_IMG_0733.jpeg" alt="The Sip Shack drinks" className="w-full rounded-2xl shadow-float" />
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/fda6ce6f0_IMG_0757.png"
+            alt="Hosted Vendor — The Sip Shack at Flavor Isle"
+            className="absolute -bottom-3 -right-3 w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg"
+          />
+        </div>
         <SipShackStatus />
         <h1 className="font-heading text-4xl uppercase tracking-wider mb-1" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
         <p className="font-body text-sm uppercase tracking-[0.25em] mb-1" style={{ color: '#FF99CC' }}>by Ady Lee</p>
-<p className="font-body text-lg font-semibold mb-4" style={{ color: '#141414' }}>Available in store — grab one when you pick up your order!</p>
         <span className="font-heading text-sm uppercase tracking-widest px-4 py-2 rounded-full mb-2" style={{ color: 'white', backgroundColor: ROSE }}>
           Lemonades · $5 · 32 oz
         </span>
