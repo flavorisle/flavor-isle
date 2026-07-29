@@ -16,7 +16,7 @@ export default function Footer() {
             <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-full" />
             <div className="min-w-0 whitespace-nowrap">
               <div className="font-heading text-xl leading-none">FLAVOR ISLE</div>
-              <div className="text-xs text-patina-mint tracking-widest">SMITHS GROVE, KY</div>
+              <div className="text-xs tracking-widest text-[hsl(var(--primary))]">SMITHS GROVE, KY</div>
             </div>
           </div>
           <p className="text-gray-400 text-sm leading-relaxed">
