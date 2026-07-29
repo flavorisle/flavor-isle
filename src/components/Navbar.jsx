@@ -45,7 +45,7 @@ export default function Navbar() {
             <span className="hidden sm:inline">Smiths Grove, KY</span>
           </span>
           <span className="flex items-center gap-1">
-            <Phone size={12} className="text-patina-mint" />
+            <Phone size={12} className="text-patina-mint bg-[hsl(var(--primary))]" />
             <a href="tel:+12705634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
@@ -109,27 +109,27 @@ export default function Navbar() {
             
             {/* Auth Section */}
             <div className="border-t border-border pt-4 mt-2">
-              {isAuthenticated ? (
-                <div className="space-y-3">
+              {isAuthenticated ?
+            <div className="space-y-3">
                   <p className="text-xs text-muted-foreground font-body">Signed in as <span className="font-semibold text-obsidian-roast">{user?.full_name || user?.email}</span></p>
                   <button
-                    onClick={() => {
-                      logout();
-                      setMobileOpen(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-body text-obsidian-roast hover:bg-muted rounded-lg transition-colors">
+                onClick={() => {
+                  logout();
+                  setMobileOpen(false);
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-body text-obsidian-roast hover:bg-muted rounded-lg transition-colors">
                     <LogOut size={16} />
                     Sign Out
                   </button>
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center px-4 py-2.5 bg-patina-mint text-white rounded-lg text-sm font-heading hover:bg-opacity-90 transition-colors">
+                </div> :
+
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-center px-4 py-2.5 bg-patina-mint text-white rounded-lg text-sm font-heading hover:bg-opacity-90 transition-colors">
                   Sign In
                 </Link>
-              )}
+            }
             </div>
           </div>
         }
