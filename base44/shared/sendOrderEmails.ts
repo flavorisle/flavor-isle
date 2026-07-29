@@ -1,4 +1,5 @@
 import { Resend } from 'npm:resend@3.2.0';
+import { sipShackStatus, sipShackHoursList } from './sipShackHours.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -60,6 +61,25 @@ const SIP_SECTIONS = [
   { title: 'Boba Flavors', items: [['Strawberry', '🧋'], ['Peach', '🧋'], ['Watermelon', '🧋']] },
 ];
 
+function sipStatusHtml() {
+  const status = sipShackStatus();
+  const pill = status.isOpen
+    ? `<span style="display:inline-block;background:#27ae60;color:#ffffff;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:12px;padding:6px 14px;border-radius:999px;">${status.label}</span>`
+    : `<span style="display:inline-block;background:#ffffff;color:#8e3a4e;border:1.5px solid #d85573;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:12px;padding:6px 14px;border-radius:999px;">${status.label}</span>`;
+  const rows = sipShackHoursList().map(h => `
+    <tr>
+      <td style="padding:3px 0;color:#8e3a4e;font-size:13px;">${h.day}</td>
+      <td style="padding:3px 0;color:#8e3a4e;font-size:13px;font-weight:600;text-align:right;">${h.label}</td>
+    </tr>`).join('');
+
+  return `
+    <p style="text-align:center;margin:0 0 12px;">${pill}</p>
+    <table style="max-width:280px;margin:0 auto 16px;width:100%;background:#ffffff;border:1.5px solid #d85573;border-radius:12px;border-collapse:collapse;">
+      <tr><td colspan="2" style="padding:10px 14px 4px;text-align:center;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:2px;color:#8e3a4e;font-size:11px;">Available Hours</td></tr>
+      <tr><td colspan="2" style="padding:0 14px 10px;"><table style="width:100%;border-collapse:collapse;">${rows}</table></td></tr>
+    </table>`;
+}
+
 export function flavorsAccordionHtml() {
   const sections = SIP_SECTIONS.map(section => {
     const rows = section.items.map(([name, emoji]) => `
@@ -83,6 +103,7 @@ export function flavorsAccordionHtml() {
       <p style="text-align:center;margin:0 0 6px;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:3px;color:#8e3a4e;font-size:22px;">The Sip Shack</p>
       <p style="text-align:center;margin:0 0 4px;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:2px;color:#FF99CC;font-size:12px;">by Ady Lee</p>
       <p style="text-align:center;margin:0 0 14px;color:#141414;font-size:14px;font-weight:600;">Grab one in store while you pick up!</p>
+      ${sipStatusHtml()}
       <div style="text-align:center;margin:0 0 16px;">
         <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b1994be97_IMG_0733.jpeg" alt="The Sip Shack slushy drinks" width="520" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.12);" />
       </div>

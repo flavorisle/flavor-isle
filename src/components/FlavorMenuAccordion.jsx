@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import SipShackStatus from '@/components/SipShackStatus';
 
 const ROSE = '#d85573';
 const ROSE_BG = '#fce4e4';
@@ -42,10 +43,7 @@ export default function FlavorMenuAccordion() {
       {/* Header band */}
       <div className="flex flex-col items-center text-center mb-8">
         <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b8ded99b5_IMG_0733.jpeg" alt="The Sip Shack drinks" className="w-full max-w-md rounded-2xl mb-5 shadow-float" />
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-3" style={{ backgroundColor: 'white', border: `1.5px solid ${ROSE}` }}>
-          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#27ae60' }} />
-          <span className="font-heading text-xs uppercase tracking-widest" style={{ color: ROSE_TEXT }}>Available Now</span>
-        </div>
+        <SipShackStatus />
         <h1 className="font-heading text-4xl uppercase tracking-wider mb-1" style={{ color: ROSE_TEXT }}>The Sip Shack</h1>
         <p className="font-body text-sm uppercase tracking-[0.25em] mb-1" style={{ color: '#FF99CC' }}>by Ady Lee</p>
 <p className="font-body text-lg font-semibold mb-4" style={{ color: '#141414' }}>Available in store — grab one when you pick up your order!</p>
