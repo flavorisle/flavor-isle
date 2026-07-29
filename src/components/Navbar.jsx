@@ -41,7 +41,7 @@ export default function Navbar() {
       <div className="bg-obsidian-roast text-white text-sm py-2 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <MapPin size={12} className="text-patina-mint" />
+            <MapPin size={12} className="text-[hsl(var(--primary))]" />
             <span className="hidden sm:inline">Smiths Grove, KY</span>
           </span>
           <span className="flex items-center gap-1">
