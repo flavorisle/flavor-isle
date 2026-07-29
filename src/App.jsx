@@ -34,6 +34,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import FacebookAd from './pages/FacebookAd';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
       <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/facebook-ad" element={<FacebookAd />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
