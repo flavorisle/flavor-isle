@@ -7,7 +7,7 @@ export function SipShackIntroNote() {
   return (
     <div className="max-w-2xl mx-auto px-4 pt-4">
       <p className="text-xs font-body text-center leading-snug opacity-80" style={{ color: ROSE_TEXT }}>
-        🍋 An independent lemonade stand hosted outside Flavor Isle, run by one of our awesome seasonal teen
+        🍋 An independent lemonade stand hosted outside Flavor Isle, run by one of our awesome teen
         employees — not part of our menu or operations. We just love supporting local kids and community fun.
       </p>
     </div>
