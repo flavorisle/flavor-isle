@@ -65,15 +65,15 @@ export default function Footer() {
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">FIND US</h4>
           <div className="space-y-3 text-sm text-gray-400">
             <div className="flex items-start gap-2">
-              <MapPin size={16} className="text-patina-mint mt-0.5 flex-shrink-0" />
+              <MapPin size={16} className="mt-0.5 flex-shrink-0 text-[hsl(var(--primary))]" />
               <a href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">103 N Main St, Smiths Grove<br />Kentucky, KY 42171</a>
             </div>
             <div className="flex items-center gap-2">
-              <Phone size={16} className="text-patina-mint flex-shrink-0" />
+              <Phone size={16} className="flex-shrink-0 text-[hsl(var(--primary))]" />
               <a href="tel:+12705634618" className="hover:text-white transition-colors">(270) 563-4618</a>
             </div>
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-patina-mint flex-shrink-0" />
+              <Clock size={16} className="flex-shrink-0 text-[hsl(var(--primary))]" />
               <span>Kitchen closes 30 min before closing</span>
             </div>
           </div>
