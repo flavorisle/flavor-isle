@@ -5,16 +5,11 @@ const ROSE_TEXT = '#8e3a4e';
 
 export function SipShackIntroNote() {
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6">
-      <div className="rounded-3xl px-5 py-4 space-y-2" style={{ backgroundColor: 'white', border: `1.5px solid ${ROSE}` }}>
-        <p className="font-body text-sm leading-relaxed" style={{ color: ROSE_TEXT }}>
-          The Sip Shack is an independent lemonade stand proudly hosted outside Flavor Isle.
-          It's run by one of our awesome seasonal teen employees, and she's allowed to sell lemonade while she's working.
-        </p>
-        <p className="font-body text-sm leading-relaxed" style={{ color: ROSE_TEXT }}>
-          Sip Shack isn't part of our menu or operations — we just love supporting local kids and community fun.
-        </p>
-      </div>
+    <div className="max-w-2xl mx-auto px-4 pt-4">
+      <p className="text-xs font-body text-center leading-snug opacity-80" style={{ color: ROSE_TEXT }}>
+        🍋 An independent lemonade stand hosted outside Flavor Isle, run by one of our awesome seasonal teen
+        employees — not part of our menu or operations. We just love supporting local kids and community fun.
+      </p>
     </div>
   );
 }
