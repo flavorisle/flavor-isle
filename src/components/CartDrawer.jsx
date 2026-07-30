@@ -3,6 +3,7 @@ import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Users } from 'lucide-r
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
+import AdBannerStrip from './AdBannerStrip';
 
 const ORDER_TYPE_LABELS = {
   pickup: 'Pickup',
@@ -78,6 +79,13 @@ export default function CartDrawer() {
             ))}
           </div>
         </div>
+
+        {/* Promo banners */}
+        {cartItems.length > 0 && (
+          <div className="px-4 pt-3">
+            <AdBannerStrip placement="cart" compact />
+          </div>
+        )}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">

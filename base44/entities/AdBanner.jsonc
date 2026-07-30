@@ -1,0 +1,55 @@
+{
+  "name": "AdBanner",
+  "type": "object",
+  "properties": {
+    "headline": {
+      "type": "string"
+    },
+    "subtext": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional background/side image"
+    },
+    "cta_label": {
+      "type": "string",
+      "default": "Order Now"
+    },
+    "cta_link": {
+      "type": "string",
+      "default": "/menu"
+    },
+    "placement": {
+      "type": "string",
+      "enum": [
+        "home",
+        "menu",
+        "cart"
+      ],
+      "default": "home",
+      "description": "Where the banner shows: home hero area, top of menu, or cart/checkout"
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "cherry",
+        "navy",
+        "yellow"
+      ],
+      "default": "cherry"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "headline",
+    "placement"
+  ]
+}

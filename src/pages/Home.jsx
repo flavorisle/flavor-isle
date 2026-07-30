@@ -16,6 +16,7 @@ import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
+import AdBannerStrip from '@/components/AdBannerStrip';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -59,6 +60,9 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <HeroSection />
+
+      {/* ── PROMO BANNERS ── */}
+      <AdBannerStrip placement="home" />
 
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
