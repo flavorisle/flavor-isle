@@ -9,7 +9,6 @@ import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
-import GroupOrderBar from '@/components/GroupOrderBar';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -275,7 +274,6 @@ export default function Checkout() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
-      <GroupOrderBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-32 lg:pb-10">
         <div className="flex items-center gap-4 mb-8">
@@ -501,7 +499,7 @@ export default function Checkout() {
                   personSubtotals.filter(p => p.itemCount > 0).map(p => (
                     <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-heading text-sm text-patina-mint">{p.name}</span>
+                        <span className="font-heading text-sm text-patina-mint">{p.name === 'Me' ? 'You' : p.name}</span>
                         <span className="text-xs text-muted-foreground">{p.itemCount} item{p.itemCount !== 1 ? 's' : ''}</span>
                       </div>
                       <div className="space-y-2">
@@ -517,7 +515,7 @@ export default function Checkout() {
                         ))}
                       </div>
                       <div className="flex justify-between pt-2 mt-2 border-t border-border/60 text-xs">
-                        <span className="text-muted-foreground">{p.name}'s share</span>
+                        <span className="text-muted-foreground">{p.name === 'Me' ? 'Your share' : `${p.name}'s share`}</span>
                         <span className="font-heading text-obsidian-roast">${p.subtotal.toFixed(2)}</span>
                       </div>
                     </div>
@@ -575,7 +573,7 @@ export default function Checkout() {
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                    <>{groupMode && payMode === 'separate' ? `Pay Separately · ${totalWithTip.toFixed(2)}` : `Continue to Payment · ${totalWithTip.toFixed(2)}`}</>
+                    <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
                     )}
                   </button>
                   <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
@@ -588,7 +586,7 @@ export default function Checkout() {
 
       {/* Sticky mobile CTA — keeps the primary action reachable without scrolling the full summary */}
       {step === 'details' && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 py-3 safe-bottom">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
           <button
             onClick={handleContinue}
             disabled={loading}
@@ -597,7 +595,7 @@ export default function Checkout() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <>{groupMode && payMode === 'separate' ? `Pay Separately · ${totalWithTip.toFixed(2)}` : `Continue to Payment · ${totalWithTip.toFixed(2)}`}</>
+              <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
             )}
           </button>
         </div>
