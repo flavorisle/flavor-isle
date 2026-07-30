@@ -4,7 +4,8 @@ import { ChevronLeft } from 'lucide-react';
 
 // Floating mobile back control, shown only on nested (non-home) routes
 // under the md breakpoint as a native-style back affordance.
-const PRIMARY = ['/',];
+// Root tab screens — no back button there (the bottom tab bar is the nav affordance).
+const PRIMARY = ['/', '/menu', '/order-status', '/account'];
 
 export default function MobileHeader() {
   const location = useLocation();

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Gift, ChevronDown, ChevronUp, Star, Pencil, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
 // Literal Tailwind classes so the purge keeps them.
 const BADGE_COLORS = [
@@ -151,10 +152,9 @@ export default function AdminPromosManager() {
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Badge Color</label>
-            <select value={form.badge_color} onChange={e => setForm(p => ({ ...p, badge_color: e.target.value }))}
-              className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-              {BADGE_COLORS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
+            <BrandSelect value={form.badge_color} onValueChange={v => setForm(p => ({ ...p, badge_color: v }))}>
+              {BADGE_COLORS.map(c => <BrandOption key={c.value} value={c.value}>{c.label}</BrandOption>)}
+            </BrandSelect>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Emoji</label>
@@ -182,10 +182,9 @@ export default function AdminPromosManager() {
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Button Links To</label>
-            <select value={form.cta_link} onChange={e => setForm(p => ({ ...p, cta_link: e.target.value }))}
-              className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-              {LINK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <BrandSelect value={form.cta_link} onValueChange={v => setForm(p => ({ ...p, cta_link: v }))}>
+              {LINK_OPTIONS.map(o => <BrandOption key={o.value} value={o.value}>{o.label}</BrandOption>)}
+            </BrandSelect>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Sort Order</label>

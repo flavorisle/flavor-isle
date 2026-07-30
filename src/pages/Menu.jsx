@@ -8,6 +8,8 @@ import MenuItemCard from '@/components/MenuItemCard';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -25,22 +27,23 @@ export default function Menu() {
   const [itemOrder, setItemOrder] = useState({});
   const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
 
-  useEffect(() => {
-    getMenuSetting().
-    then((s) => {
+  const reload = async () => {
+    try {
+      const s = await getMenuSetting();
       setHiddenCats(s.hidden_categories || []);
       setCategoryOrder(s.category_sort_order || []);
-      setRenames(s.category_renames || {});
+      setRenames(s.category_renames || []);
       setItemOrder(s.category_item_order || {});
-    }).
-    catch(() => {});
-    base44.entities.MenuItem.list().
-    then((data) => {
+    } catch (e) {}
+    try {
+      const data = await base44.entities.MenuItem.list();
       setItems((data || []).filter((i) => !i.is_hidden));
-    }).
-    catch(() => {}).
-    finally(() => setLoading(false));
-  }, []);
+    } catch (e) {}
+    setLoading(false);
+  };
+
+  useEffect(() => { reload(); }, []);
+  const { pull, refreshing } = usePullToRefresh(reload);
 
   // Items matching the search, excluding hidden categories.
   const visibleItems = items.filter((item) => {
@@ -73,8 +76,7 @@ export default function Menu() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
-
-      {/* Page header */}
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">ORDER ONLINE</p>

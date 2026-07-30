@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Users, TrendingUp, Plus, X } from 'lucide-react';
+import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
 const MAX_CAPACITY = 50;
 
@@ -116,15 +117,15 @@ export default function OccupancyTracker() {
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm font-body"
               />
               <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={formData.party_size}
-                  onChange={(e) => setFormData({ ...formData, party_size: e.target.value })}
-                  className="px-3 py-2 border border-border rounded-lg text-sm font-body"
+                <BrandSelect
+                  value={String(formData.party_size)}
+                  onValueChange={(v) => setFormData({ ...formData, party_size: Number(v) })}
+                  className="px-3 py-2 text-sm"
                 >
                   {[1, 2, 3, 4, 5, 6, 8, 10, 12].map(size => (
-                    <option key={size} value={size}>{size} {size === 1 ? 'Person' : 'People'}</option>
+                    <BrandOption key={size} value={String(size)}>{size} {size === 1 ? 'Person' : 'People'}</BrandOption>
                   ))}
-                </select>
+                </BrandSelect>
                 <input
                   type="text"
                   placeholder="Table #"

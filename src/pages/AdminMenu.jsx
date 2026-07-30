@@ -5,6 +5,7 @@ import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } f
 import AdminCategoriesManager from '@/components/admin/AdminCategoriesManager';
 import AdminPromosManager from '@/components/admin/AdminPromosManager';
 import { base44 } from '@/api/base44Client';
+import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
@@ -228,18 +229,19 @@ export default function AdminMenu() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Day *</label>
-                  <select value={specialForm.day_of_week} onChange={(e) => setSpecialForm((p) => ({ ...p, day_of_week: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                    {DAYS.map((d) => <option key={d}>{d}</option>)}
-                  </select>
+                  <BrandSelect value={specialForm.day_of_week} onValueChange={(v) => setSpecialForm((p) => ({ ...p, day_of_week: v }))}>
+                    {DAYS.map((d) => <BrandOption key={d} value={d}>{d}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Menu Item *</label>
-                  <select value={specialForm.menu_item_id} onChange={(e) => setSpecialForm((p) => ({ ...p, menu_item_id: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                    <option value="">Select an item…</option>
-                    {items.map((i) => <option key={i.id} value={i.id}>{i.name} — ${i.price?.toFixed(2)}</option>)}
-                  </select>
+                  <BrandSelect
+                    value={specialForm.menu_item_id || ''}
+                    onValueChange={(v) => setSpecialForm((p) => ({ ...p, menu_item_id: v }))}
+                    placeholder="Select an item…"
+                  >
+                    {items.map((i) => <BrandOption key={i.id} value={i.id}>{i.name} — ${i.price?.toFixed(2)}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Description (optional)</label>
@@ -293,27 +295,33 @@ export default function AdminMenu() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Main Category *</label>
-                  <select value={comboForm.main_category} onChange={(e) => setComboForm((p) => ({ ...p, main_category: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                    <option value="">Select category…</option>
-                    {squareCategories.map((c) => <option key={c}>{c}</option>)}
-                  </select>
+                  <BrandSelect
+                    value={comboForm.main_category || ''}
+                    onValueChange={(v) => setComboForm((p) => ({ ...p, main_category: v }))}
+                    placeholder="Select category…"
+                  >
+                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Side Category *</label>
-                  <select value={comboForm.side_category} onChange={(e) => setComboForm((p) => ({ ...p, side_category: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                    <option value="">Select category…</option>
-                    {squareCategories.map((c) => <option key={c}>{c}</option>)}
-                  </select>
+                  <BrandSelect
+                    value={comboForm.side_category || ''}
+                    onValueChange={(v) => setComboForm((p) => ({ ...p, side_category: v }))}
+                    placeholder="Select category…"
+                  >
+                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Drink Category *</label>
-                  <select value={comboForm.drink_category} onChange={(e) => setComboForm((p) => ({ ...p, drink_category: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                    <option value="">Select category…</option>
-                    {squareCategories.map((c) => <option key={c}>{c}</option>)}
-                  </select>
+                  <BrandSelect
+                    value={comboForm.drink_category || ''}
+                    onValueChange={(v) => setComboForm((p) => ({ ...p, drink_category: v }))}
+                    placeholder="Select category…"
+                  >
+                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Description (optional)</label>
@@ -400,14 +408,14 @@ export default function AdminMenu() {
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-muted-foreground font-heading uppercase tracking-wider">Category</span>
-                          <select
-                        value={item.display_category || ''}
-                        onChange={(e) => assignCategoryToItem(item, e.target.value)}
-                        className="flex-1 max-w-[220px] px-2.5 py-1.5 bg-muted border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30">
-                        
-                            <option value="">{itemCategoryKey(item)} (default)</option>
-                            {allCategoryKeys.map((k) => <option key={k} value={k}>{categoryLabel(k, renames)}</option>)}
-                          </select>
+                          <BrandSelect
+                            value={item.display_category || '__default__'}
+                            onValueChange={(v) => assignCategoryToItem(item, v === '__default__' ? '' : v)}
+                            className="flex-1 max-w-[220px] px-2.5 py-1.5 text-xs"
+                          >
+                            <BrandOption value="__default__">{itemCategoryKey(item)} (default)</BrandOption>
+                            {allCategoryKeys.map((k) => <BrandOption key={k} value={k}>{categoryLabel(k, renames)}</BrandOption>)}
+                          </BrandSelect>
                         </div>
                       </div>
 

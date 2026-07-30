@@ -6,6 +6,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -61,6 +63,11 @@ export default function OrderStatus() {
     }
   };
 
+  const refresh = async () => {
+    if (orderNum.trim()) await handleSearch();
+  };
+  const { pull, refreshing } = usePullToRefresh(refresh);
+
   const profile = order ? (STATUS_PROFILE[order.status] || STATUS_PROFILE.pending) : null;
   const activeStage = order ? stageIndex(order.status) : null;
 
@@ -71,6 +78,7 @@ export default function OrderStatus() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
 
       <section className="pt-10 pb-20 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">

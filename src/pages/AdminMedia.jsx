@@ -4,6 +4,7 @@ import { Search, FolderOpen, Copy, Check, RefreshCw, Image } from 'lucide-react'
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import AdminNav from '@/components/admin/AdminNav';
+import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
 const FOLDER_LABELS = {
   'Desktop/flavor isle/images for visit': '📸 Photos',
@@ -90,16 +91,17 @@ export default function AdminMedia() {
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
             />
           </div>
-          <select
+          <BrandSelect
             value={folderFilter}
-            onChange={e => setFolderFilter(e.target.value)}
-            className="px-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none"
+            onValueChange={v => setFolderFilter(v)}
+            className="bg-white"
+            contentClassName="max-h-80"
           >
-            <option value="all">All Folders ({images.length})</option>
+            <BrandOption value="all">All Folders ({images.length})</BrandOption>
             {folders.map(f => (
-              <option key={f} value={f}>{FOLDER_LABELS[f] || f.split('/').pop()} ({images.filter(i => i.path === f).length})</option>
+              <BrandOption key={f} value={f}>{FOLDER_LABELS[f] || f.split('/').pop()} ({images.filter(i => i.path === f).length})</BrandOption>
             ))}
-          </select>
+          </BrandSelect>
         </div>
 
         {loading && (

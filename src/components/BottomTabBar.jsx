@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, UtensilsCrossed, ClipboardList, User, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
@@ -9,6 +9,7 @@ const HIDDEN_PATHS = ['/checkout', '/order-confirmation'];
 
 export default function BottomTabBar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { totalItems, setIsCartOpen } = useCart();
 
   if (HIDDEN_PATHS.includes(location.pathname)) return null;
@@ -20,6 +21,16 @@ export default function BottomTabBar() {
     { to: '/order-status', label: 'Tracker', icon: ClipboardList },
     { to: '/account', label: 'Account', icon: User },
   ];
+
+  // Tapping the tab you're already on scrolls smoothly back to the top
+  // instead of re-navigating (native-app feel).
+  const handleTabClick = (to) => {
+    if (location.pathname === to) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate(to);
+    }
+  };
 
   return (
     <nav
@@ -65,14 +76,14 @@ export default function BottomTabBar() {
           }
 
           return (
-            <Link
+            <button
               key={tab.to}
-              to={tab.to}
+              onClick={() => handleTabClick(tab.to)}
               className="tap-44 flex-1 flex items-center justify-center select-none"
               aria-current={active ? 'page' : undefined}
             >
               {content}
-            </Link>
+            </button>
           );
         })}
       </div>
