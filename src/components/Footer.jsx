@@ -13,7 +13,7 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
-            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-[4px_4px_6px_4px]" />
+            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-md" />
             <div className="min-w-0 whitespace-nowrap">
               <div className="font-heading text-xl leading-none">FLAVOR ISLE</div>
               <div className="text-xs tracking-widest text-[hsl(var(--primary))]">SMITHS GROVE, KY</div>
