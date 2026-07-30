@@ -87,6 +87,29 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Prefill contact details for signed-in customers from their account +
+  // saved customer profile. Only fills fields the guest hasn't typed into.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!isAuthed || cancelled) return;
+      const me = await base44.auth.me().catch(() => null);
+      if (!me || cancelled) return;
+      const profiles = await base44.entities.CustomerProfile.filter({ email: me.email }).catch(() => []);
+      const p = profiles?.[0] || {};
+      if (cancelled) return;
+      setForm(prev => ({
+        ...prev,
+        name: prev.name || p.name || me.full_name || '',
+        email: prev.email || me.email || '',
+        phone: prev.phone || p.phone || '',
+        address: prev.address || p.delivery_address || p.address || '',
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Payment step state
   const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
   const [stripePromise, setStripePromise] = useState(null);

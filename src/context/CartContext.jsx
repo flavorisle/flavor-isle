@@ -4,9 +4,22 @@ import { getCutoffStatus } from '@/lib/orderCutoff';
 
 const CartContext = createContext(null);
 
+const SESSION_KEY = 'flavor-isle-cart';
+
+const readSession = (key, fallback) => {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed[key] ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
-  const [orderType, setOrderType] = useState('pickup'); // pickup | delivery | dine_in
+  const [cartItems, setCartItems] = useState(() => readSession('cartItems', []));
+  const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderingEnabled, setOrderingEnabledState] = useState(true);
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');
@@ -15,9 +28,17 @@ export function CartProvider({ children }) {
 
   // Group order state — when active, every added item is tagged with the person
   // currently being ordered for. The whole group shares ONE delivery fee + tax.
-  const [groupMode, setGroupMode] = useState(false);
-  const [people, setPeople] = useState([]); // [{ id, name }]
-  const [activePersonId, setActivePersonId] = useState(null);
+  const [groupMode, setGroupMode] = useState(() => readSession('groupMode', false));
+  const [people, setPeople] = useState(() => readSession('people', [])); // [{ id, name }]
+  const [activePersonId, setActivePersonId] = useState(() => readSession('activePersonId', null));
+
+  // Persist the cart for the current browser session so a refresh or a trip
+  // through login doesn't lose the order.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, groupMode, people, activePersonId }));
+    } catch { /* storage unavailable */ }
+  }, [cartItems, orderType, groupMode, people, activePersonId]);
 
   useEffect(() => {
     getMenuSetting()
