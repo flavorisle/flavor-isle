@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
+import SavedAddressField from '@/components/checkout/SavedAddressField';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -86,6 +87,7 @@ export default function Checkout() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedAddress, setSavedAddress] = useState(false);
 
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
@@ -99,6 +101,7 @@ export default function Checkout() {
       const profiles = await base44.entities.CustomerProfile.filter({ email: me.email }).catch(() => []);
       const p = profiles?.[0] || {};
       if (cancelled) return;
+      if (p.delivery_address || p.address) setSavedAddress(true);
       setForm(prev => ({
         ...prev,
         name: prev.name || p.name || me.full_name || '',
@@ -364,17 +367,17 @@ export default function Checkout() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Full Name *</label>
-                      <input type="text" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
+                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
-                      <input type="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
+                      <input type="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
-                      <input type="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
+                      <input type="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     {orderType === 'dine_in' && (
@@ -387,11 +390,11 @@ export default function Checkout() {
                   </div>
 
                   {orderType === 'delivery' && (
-                    <div className="mt-4">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Delivery Address *</label>
-                      <input type="text" value={form.address} onChange={e => updateForm('address', e.target.value)} placeholder="123 Main St, Smiths Grove, KY 42171"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                    </div>
+                    <SavedAddressField
+                      value={form.address}
+                      onChange={val => updateForm('address', val)}
+                      saved={savedAddress}
+                    />
                   )}
 
                   <div className="mt-4">
