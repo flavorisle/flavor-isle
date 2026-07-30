@@ -10,6 +10,8 @@ import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
+import ConversionNudgeBar from '@/components/ConversionNudgeBar';
+import SocialProofStrip from '@/components/SocialProofStrip';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -77,10 +79,14 @@ export default function Menu() {
       <Navbar />
       <CartDrawer />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
+      <ConversionNudgeBar />
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">ORDER ONLINE</p>
           <h1 className="font-heading text-5xl text-white mb-6">The Menu</h1>
+          <div className="mb-6">
+            <SocialProofStrip tone="light" />
+          </div>
 
           {/* Order type switcher */}
           <div className="flex flex-wrap gap-3">
