@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { accrueForOrder } from '../../shared/squareLoyalty.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -72,9 +73,11 @@ async function sendOrderConfirmationEmail(order) {
   }
 }
 
-// Loyalty: mark any applied reward as used, then award stars (1 pt per $1 of
-// subtotal, boosted by tier) to the customer's loyalty account matched by email.
-async function processLoyalty(base44, order) {
+// Loyalty: consume any applied legacy reward, then accrue Square Star Rewards
+// points for the paid Square order into the customer's loyalty account (the
+// same in-store program). Points are computed by Square from the order's spend
+// per the program's accrual rules.
+async function processLoyalty(base44, order, squareOrderId) {
   try {
     if (order.redemption_id) {
       await base44.asServiceRole.entities.LoyaltyRedemption.update(order.redemption_id, {
@@ -85,27 +88,11 @@ async function processLoyalty(base44, order) {
       console.log(`Reward ${order.redemption_id} marked used for order ${order.order_number}`);
     }
 
-    if (!order.customer_email) return;
-    const loyalties = await base44.asServiceRole.entities.Loyalty.filter({ email: order.customer_email });
-    if (!loyalties || loyalties.length === 0) return;
-    const loyalty = loyalties[0];
-    if (loyalty.last_order_id === order.id) return; // already awarded
-
-    const multiplier = loyalty.tier === 'gold' ? 2 : loyalty.tier === 'silver' ? 1.5 : 1;
-    const points = Math.floor((order.subtotal || 0) * multiplier);
-    if (points <= 0) return;
-
-    const earned = (loyalty.points_earned || 0) + points;
-    const tier = earned >= 1500 ? 'gold' : earned >= 500 ? 'silver' : 'bronze';
-    await base44.asServiceRole.entities.Loyalty.update(loyalty.id, {
-      points_balance: (loyalty.points_balance || 0) + points,
-      points_earned: earned,
-      tier,
-      last_order_id: order.id,
-    });
-    console.log(`Awarded ${points} loyalty points to ${order.customer_email} for order ${order.order_number}`);
+    if (!squareOrderId || !order.customer_email) return;
+    await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
+    console.log(`Square Star Rewards points accrued for order ${order.order_number}`);
   } catch (err) {
-    console.error('Loyalty processing failed:', err.message);
+    console.error('Square loyalty accrual failed:', err.message);
   }
 }
 
@@ -162,8 +149,8 @@ async function pushOrderToSquareAndKitchen(base44, order) {
     await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
   }
 
-  // Loyalty: consume applied reward + award stars for this order.
-  await processLoyalty(base44, order);
+  // Loyalty: consume applied reward + accrue Square Star Rewards for this order.
+  await processLoyalty(base44, order, squareOrderId);
 }
 
 Deno.serve(async (req) => {

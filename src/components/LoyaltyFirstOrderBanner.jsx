@@ -10,7 +10,7 @@ export default function LoyaltyFirstOrderBanner() {
           <div className="p-8 sm:p-10">
             <div className="inline-flex items-center gap-2 bg-midnight-cherry/10 text-midnight-cherry rounded-full px-3 py-1 mb-4">
               <Sparkles size={14} />
-              <span className="text-xs font-heading tracking-widest uppercase">Flavor Isle Rewards</span>
+              <span className="text-xs font-heading tracking-widest uppercase">Star Rewards</span>
             </div>
             <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast mb-3 leading-tight">
               Your first order starts earning rewards.

@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderStatusTracker from '@/components/OrderStatusTracker';
 import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
+import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
@@ -107,44 +108,40 @@ function LoggedInAccount({ user, logout }) {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const [loyalty, setLoyalty] = useState(null);
-  const [redemptions, setRedemptions] = useState([]);
+  const [starStatus, setStarStatus] = useState(null);
+  const [starLoading, setStarLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('orders');
   const [loading, setLoading] = useState(true);
-  const [loadTimeout, setLoadTimeout] = useState(null);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleting, setDeleting] = useState(false);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
-  const loadData = async (skipRedemptions = false) => {
+  const loadData = async () => {
     setLoading(true);
+    setStarLoading(true);
     try {
-      const calls = [
+      const results = await Promise.all([
         base44.entities.CustomerProfile.filter({ email: user.email }),
         base44.entities.Order.filter({ customer_email: user.email }),
         base44.entities.Favorite.filter({ user_id: user.id }),
-        base44.entities.Loyalty.filter({ user_id: user.id }),
-      ];
-      if (!skipRedemptions) calls.push(base44.entities.LoyaltyRedemption.filter({ user_id: user.id }));
-      
-      const results = await Promise.all(calls);
-      const [profiles, ords, favs, loyalties, rr] = skipRedemptions ? [...results, redemptions] : results;
-      
+      ]);
+      const [profiles, ords, favs] = results;
       if (profiles && profiles.length > 0) {
         const p = profiles[0];
         setProfile(p);
-        setForm({ 
-          name: p.name || '', 
-          phone: p.phone || '', 
-          address: p.address || '', 
-          delivery_address: p.delivery_address || '', 
-          curbside_address: p.curbside_address || '', 
-          car_make: p.car_make || '', 
-          car_model: p.car_model || '', 
+        setForm({
+          name: p.name || '',
+          phone: p.phone || '',
+          address: p.address || '',
+          delivery_address: p.delivery_address || '',
+          curbside_address: p.curbside_address || '',
+          car_make: p.car_make || '',
+          car_model: p.car_model || '',
           car_color: p.car_color || '',
           no_contact_delivery: p.no_contact_delivery || false,
           preferred_communication: p.preferred_communication || 'email'
@@ -156,31 +153,20 @@ function LoggedInAccount({ user, logout }) {
       }
       setOrders(ords || []);
       setFavorites(favs || []);
-      if (!loyalties || loyalties.length === 0) {
-        const newLoyalty = await base44.entities.Loyalty.create({ user_id: user.id, email: user.email, points_balance: 0, points_earned: 0, points_redeemed: 0, tier: 'bronze' });
-        setLoyalty(newLoyalty);
-      } else {
-        setLoyalty(loyalties[0]);
+      try {
+        const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
+        setStarStatus(res.data);
+      } catch (e) {
+        setStarStatus(null);
       }
-      if (!skipRedemptions) setRedemptions(rr || []);
     } finally {
       setLoading(false);
+      setStarLoading(false);
     }
-  };
-
-  const debouncedLoadRedemptions = () => {
-    if (loadTimeout) clearTimeout(loadTimeout);
-    const timer = setTimeout(() => {
-      base44.entities.LoyaltyRedemption.filter({ user_id: user.id }).then(rr => setRedemptions(rr || []));
-    }, 500);
-    setLoadTimeout(timer);
   };
 
   useEffect(() => {
     loadData();
-    return () => {
-      if (loadTimeout) clearTimeout(loadTimeout);
-    };
   }, [user.email, user.id]);
 
   const saveProfile = async () => {
@@ -297,7 +283,7 @@ function LoggedInAccount({ user, logout }) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         {tab === 'orders' && (
-          <LoyaltySummaryCard loyalty={loyalty} redemptions={redemptions} onOpenRewards={() => setTab('rewards')} />
+          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => setTab('rewards')} />
         )}
 
         {tab === 'orders' && (
@@ -332,136 +318,7 @@ function LoggedInAccount({ user, logout }) {
         )}
 
         {tab === 'rewards' && (
-          <div className="space-y-6">
-            {/* Points Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="card-diner p-6 bg-gradient-to-br from-midnight-cherry/10 to-red-50 border-2 border-midnight-cherry/20">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-midnight-cherry/20 rounded-full flex items-center justify-center">
-                    <Zap size={24} className="text-midnight-cherry" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Points Balance</p>
-                    <p className="font-heading text-4xl text-midnight-cherry mt-1">{loyalty?.points_balance || 0}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-diner p-6 bg-gradient-to-br from-patina-mint/10 to-teal-50 border-2 border-patina-mint/20">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-patina-mint/20 rounded-full flex items-center justify-center">
-                    <TrendingUp size={24} className="text-patina-mint" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Earned</p>
-                    <p className="font-heading text-4xl text-patina-mint mt-1">{loyalty?.points_earned || 0}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-diner p-6 bg-gradient-to-br from-orange-100/40 to-amber-50 border-2 border-orange-200/40">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-orange-200/40 rounded-full flex items-center justify-center">
-                    <Gift size={24} className="text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Your Tier</p>
-                    <p className="font-heading text-2xl text-obsidian-roast mt-1 capitalize">{loyalty?.tier || 'Bronze'}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{loyalty?.tier === 'gold' ? '2x points per order' : loyalty?.tier === 'silver' ? '1.5x points per order' : 'Standard rewards'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Available Rewards */}
-            <div>
-              <h3 className="font-heading text-lg text-obsidian-roast mb-1">Redeem Your Points</h3>
-              <p className="text-sm text-muted-foreground mb-4">Earn 1 star for every $1 you spend — redeem them here, then apply your reward at checkout.</p>
-              <div className="space-y-3">
-                {[
-                  { points: 50, value: 5, min: 0, desc: '$5 off your next order' },
-                  { points: 100, value: 12, min: 30, desc: '$12 off orders over $30' },
-                  { points: 150, value: 20, min: 50, desc: '$20 off orders over $50' },
-                  { points: 250, value: 40, min: 80, desc: '$40 off orders over $80' },
-                ].map((reward, idx) => (
-                  <button
-                    key={idx}
-                    onClick={async () => {
-                      if ((loyalty?.points_balance || 0) >= reward.points) {
-                        try {
-                          const newBalance = (loyalty?.points_balance || 0) - reward.points;
-                          const newRedeemed = (loyalty?.points_redeemed || 0) + reward.points;
-                          
-                          // Update loyalty record
-                          await base44.entities.Loyalty.update(loyalty.id, {
-                            points_balance: newBalance,
-                            points_redeemed: newRedeemed,
-                          });
-                          
-                          // Create redemption record
-                          const expiresAt = new Date();
-                          expiresAt.setDate(expiresAt.getDate() + 30);
-                          await base44.entities.LoyaltyRedemption.create({
-                            user_id: user.id,
-                            loyalty_id: loyalty.id,
-                            discount_type: 'fixed',
-                            discount_value: reward.value,
-                            points_cost: reward.points,
-                            min_subtotal: reward.min,
-                            description: reward.desc,
-                            is_redeemed: false,
-                            expires_at: expiresAt.toISOString(),
-                          });
-                          
-                          // Update local state
-                          setLoyalty(prev => ({ ...prev, points_balance: newBalance, points_redeemed: newRedeemed }));
-                          debouncedLoadRedemptions();
-                        } catch (err) {
-                          console.error('Error redeeming points:', err);
-                        }
-                      }
-                    }}
-                    disabled={(loyalty?.points_balance || 0) < reward.points}
-                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center justify-between ${
-                      (loyalty?.points_balance || 0) >= reward.points
-                        ? 'border-patina-mint/30 bg-patina-mint/5 hover:bg-patina-mint/10 cursor-pointer'
-                        : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-heading text-obsidian-roast">{reward.desc}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{reward.points} points</p>
-                    </div>
-                    <div className={`text-sm font-heading px-4 py-2 rounded-lg ${(loyalty?.points_balance || 0) >= reward.points ? 'bg-patina-mint/20 text-patina-mint' : 'bg-gray-200 text-gray-500'}`}>
-                      Redeem
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Redemption History */}
-            {redemptions.length > 0 && (
-              <div>
-                <h3 className="font-heading text-lg text-obsidian-roast mb-4">Your Rewards</h3>
-                <div className="space-y-3">
-                  {redemptions.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).map(r => (
-                    <div key={r.id} className="card-diner p-4 flex items-center justify-between">
-                      <div>
-                        <p className="font-heading text-obsidian-roast">{r.description}</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {r.is_redeemed ? 'Used' : 'Expires'} {new Date(r.expires_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className={`px-4 py-2 rounded-lg font-heading text-sm ${r.is_redeemed ? 'bg-gray-100 text-gray-600' : 'bg-patina-mint/20 text-patina-mint'}`}>
-                        {r.is_redeemed ? 'Used' : `${r.discount_value > r.discount_value % 1 ? `$${r.discount_value}` : r.discount_value + '%'}`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <StarRewardsPanel status={starStatus} loading={starLoading} onAddPhone={() => setTab('profile')} />
         )}
 
         {tab === 'favorites' && (
