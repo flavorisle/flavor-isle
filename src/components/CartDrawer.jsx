@@ -34,12 +34,12 @@ export default function CartDrawer() {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 z-[70] backdrop-blur-sm"
         onClick={() => setIsCartOpen(false)}
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-vanilla-malt z-50 flex flex-col shadow-float-lg animate-slide-in-right">
+      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-vanilla-malt z-[71] flex flex-col shadow-float-lg animate-slide-in-right">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border bg-white">
           <div className="flex items-center gap-3">
