@@ -176,7 +176,8 @@ export default function Menu() {
       {totalItems > 0 &&
       <button
         onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-6 right-6 bg-midnight-cherry text-white px-6 py-4 rounded-2xl shadow-float-lg flex items-center gap-3 z-40 animate-float-up hover:bg-red-800 transition-colors">
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+        className="fixed right-6 md:!bottom-6 bg-midnight-cherry text-white px-6 py-4 rounded-2xl shadow-float-lg flex items-center gap-3 z-[60] animate-float-up hover:bg-red-800 transition-colors">
         
           <div className="relative">
             <ShoppingBag size={22} />
