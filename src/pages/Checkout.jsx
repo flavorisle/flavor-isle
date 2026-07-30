@@ -9,6 +9,8 @@ import SchedulePicker from '@/components/checkout/SchedulePicker';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -77,6 +79,8 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 export default function Checkout() {
   const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus } = useCart();
   const navigate = useNavigate();
+  const businessHours = useBusinessHours();
+  const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [loading, setLoading] = useState(false);
@@ -184,15 +188,17 @@ export default function Checkout() {
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
 
-  if (!orderingEnabled) {
+  if (!orderingEnabled || storeClosed) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
-          <div className="text-6xl mb-6">🚫</div>
-          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Ordering is Closed</h2>
-          <p className="text-muted-foreground mb-8">{orderingClosedMessage}</p>
+          <div className="text-6xl mb-6">{storeClosed ? '🌙' : '🚫'}</div>
+          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">{storeClosed ? "We're Closed Right Now" : 'Ordering is Closed'}</h2>
+          <p className="text-muted-foreground mb-8">
+            {storeClosed ? `We'll be back during our posted hours: ${hoursSummary(businessHours)}` : orderingClosedMessage}
+          </p>
           <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-block">Browse the Menu</Link>
         </div>
       </div>

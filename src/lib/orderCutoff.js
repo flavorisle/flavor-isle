@@ -1,17 +1,42 @@
 const STORE_TZ = 'America/Chicago';
+const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-// Returns which order types are cut off for the night, based on the store's
-// closing time and per-type cutoff windows (all in store-local time).
-// Dine-in uses the pickup cutoff since it's an in-store order.
+const toMins = (t) => {
+  if (!t) return null;
+  const [h, m] = String(t).split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+
+// Returns which order types are cut off. Honors the store's per-day business
+// hours: if today is closed, or the current store-local time is before opening
+// or after closing, every type is cut off. Otherwise only the wind-down
+// cutoffs near closing apply (delivery gated earlier than pickup/dine-in).
 export function getCutoffStatus(setting) {
-  const closing = setting?.closing_time || '20:00';
   const deliveryCutoff = setting?.delivery_cutoff_minutes ?? 30;
   const pickupCutoff = setting?.pickup_cutoff_minutes ?? 15;
+  const closedFallback = toMins(setting?.closing_time) ?? toMins('20:00');
 
-  const [h, m] = closing.split(':').map(Number);
+  const allClosed = {
+    delivery: true,
+    pickup: true,
+    dine_in: true,
+    deliveryCutoff,
+    pickupCutoff,
+  };
+
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
-  const minsToClose = h * 60 + m - (now.getHours() * 60 + now.getMinutes());
+  const dayKey = DAY_KEYS[(now.getDay() + 6) % 7];
+  const today = setting?.business_hours?.[dayKey] || {};
+  if (today.closed) return allClosed;
 
+  const openMins = toMins(today.open) ?? toMins('10:30');
+  const closeMins = toMins(today.close) ?? closedFallback;
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  if (nowMins < openMins) return allClosed;   // before opening
+  if (nowMins >= closeMins) return allClosed; // after closing
+
+  const minsToClose = closeMins - nowMins;
   return {
     delivery: minsToClose < deliveryCutoff,
     pickup: minsToClose < pickupCutoff,
