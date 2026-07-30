@@ -108,7 +108,9 @@ export function describeRewardTier(tier: any): string {
     return `$${Math.round(cents / 100)} off`;
   }
   if (def.discount_type === 'FIXED_PERCENTAGE') {
-    return `${def.percentage_discount || 0}% off`;
+    const pct = def.percentage_discount || 0;
+    if ((def.scope === 'ITEM_VARIATION' || def.scope === 'ITEM') && pct >= 100) return 'Free item';
+    return `${pct}% off`;
   }
   if (def.discount_type === 'FIXED_PRICE') {
     const cents = def.item_price_money?.amount || 0;
