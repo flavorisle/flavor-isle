@@ -13,6 +13,12 @@ export function CartProvider({ children }) {
   const [menuSetting, setMenuSetting] = useState(null);
   const [, setTick] = useState(0); // re-render every minute so cutoffs stay current
 
+  // Group order state — when active, every added item is tagged with the person
+  // currently being ordered for. The whole group shares ONE delivery fee + tax.
+  const [groupMode, setGroupMode] = useState(false);
+  const [people, setPeople] = useState([]); // [{ id, name }]
+  const [activePersonId, setActivePersonId] = useState(null);
+
   useEffect(() => {
     getMenuSetting()
       .then(s => {
@@ -29,24 +35,39 @@ export function CartProvider({ children }) {
 
   // Different modifier combos on the same menu item become separate lines,
   // so each selection's modifiers are preserved and displayed.
+  // Combo builder items (alwaysUnique) are NEVER merged — each built combo is
+  // its own line so custom-named multiples don't collapse into one quantity.
   const lineId = (item) => {
+    if (item.alwaysUnique) {
+      return `${item.id}__${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    }
     const mods = (item.selectedModifiers || [])
       .map(m => `${m.name}:${m.price ?? 0}`)
       .sort()
       .join('|');
-    return mods ? `${item.id}__${mods}` : item.id;
+    const personKey = item.person_id ? `p${item.person_id}` : '';
+    return mods || personKey ? `${item.id}__${personKey}${mods ? '|' : ''}${mods}` : item.id;
   };
 
+  const activePerson = people.find(p => p.id === activePersonId) || null;
+
   const addItem = useCallback((item) => {
-    const id = lineId(item);
     setCartItems(prev => {
-      const existing = prev.find(i => i.id === id);
-      if (existing) {
-        return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
+      // Tag with the active person when in group mode (unless item already has one).
+      const tagged = groupMode && !item.person_id
+        ? { ...item, person_id: activePerson?.id, person_name: activePerson?.name }
+        : item;
+      const id = lineId(tagged);
+      // Combos (alwaysUnique) never merge — always a fresh line.
+      if (!tagged.alwaysUnique) {
+        const existing = prev.find(i => i.id === id);
+        if (existing) {
+          return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
+        }
       }
-      return [...prev, { ...item, id, quantity: 1 }];
+      return [...prev, { ...tagged, id, quantity: 1 }];
     });
-  }, []);
+  }, [groupMode, activePerson]);
 
   const removeItem = useCallback((itemId) => {
     setCartItems(prev => prev.filter(i => i.id !== itemId));
@@ -60,7 +81,47 @@ export function CartProvider({ children }) {
     }
   }, []);
 
+  // Reassign an already-carted line to a different person (group mode).
+  const reassignItem = useCallback((itemId, personId, personName) => {
+    setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, person_id: personId, person_name: personName } : i));
+  }, []);
+
   const clearCart = useCallback(() => setCartItems([]), []);
+
+  // Group order helpers
+  const addPerson = useCallback((name) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return null;
+    const existing = people.find(p => p.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) return existing.id;
+    const id = `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setPeople(prev => [...prev, { id, name: trimmed }]);
+    return id;
+  }, [people]);
+
+  const removePerson = useCallback((personId) => {
+    setPeople(prev => prev.filter(p => p.id !== personId));
+    setCartItems(prev => prev.map(i => i.person_id === personId ? { ...i, person_id: null, person_name: null } : i));
+    setActivePersonId(prev => prev === personId ? null : prev);
+  }, []);
+
+  const startGroupOrder = useCallback(() => {
+    setGroupMode(true);
+    if (people.length === 0) {
+      const id = `p-${Date.now()}`;
+      setPeople([{ id, name: 'Me' }]);
+      setActivePersonId(id);
+    } else if (!activePersonId) {
+      setActivePersonId(people[0].id);
+    }
+  }, [people, activePersonId]);
+
+  const endGroupOrder = useCallback(() => {
+    setGroupMode(false);
+    setPeople([]);
+    setActivePersonId(null);
+    setCartItems(prev => prev.map(i => ({ ...i, person_id: null, person_name: null })));
+  }, []);
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -68,14 +129,25 @@ export function CartProvider({ children }) {
   const tax = subtotal * 0.06;
   const total = subtotal + deliveryFee + tax;
 
+  // Per-person subtotal (group mode breakdown)
+  const personSubtotals = people.map(p => ({
+    ...p,
+    subtotal: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.price * i.quantity, 0),
+    itemCount: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.quantity, 0),
+  })).filter(p => p.itemCount > 0 || people.length > 0);
+  const unassignedSubtotal = cartItems.filter(i => !i.person_id).reduce((s, i) => s + i.price * i.quantity, 0);
+
   return (
     <CartContext.Provider value={{
-      cartItems, addItem, removeItem, updateQuantity, clearCart,
+      cartItems, addItem, removeItem, updateQuantity, clearCart, reassignItem,
       orderType, setOrderType,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
       orderingEnabled, orderingClosedMessage,
-      cutoffStatus
+      cutoffStatus,
+      groupMode, people, activePersonId, activePerson,
+      startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
+      personSubtotals, unassignedSubtotal,
     }}>
       {children}
     </CartContext.Provider>

@@ -39,6 +39,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import FacebookAd from './pages/FacebookAd';
 import Feedback from './pages/Feedback';
+import Combos from './pages/Combos';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
       <Route path="/feedback" element={<Feedback />} />
+      <Route path="/combos" element={<Combos />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -6,8 +6,10 @@ import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 
 import SchedulePicker from '@/components/checkout/SchedulePicker';
+import SplitPayment from '@/components/checkout/SplitPayment';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
+import GroupOrderBar from '@/components/GroupOrderBar';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -77,7 +79,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
@@ -87,10 +89,15 @@ export default function Checkout() {
   const [error, setError] = useState('');
 
   // Payment step state
-  const [step, setStep] = useState('details'); // 'details' | 'payment'
+  const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+
+  // Group split-payment state
+  const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
+  const [splitIntents, setSplitIntents] = useState([]);
+  const [splitPublishable, setSplitPublishable] = useState('');
 
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
@@ -158,24 +165,68 @@ export default function Checkout() {
       : schedule.scheduledFor;
     const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
 
+    const mappedItems = cartItems.map(i => ({
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      image_url: i.image_url,
+      selectedModifiers: i.selectedModifiers || [],
+      person_name: i.person_name || '',
+    }));
+
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('createPaymentIntent', {
-        items: cartItems.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url, selectedModifiers: i.selectedModifiers || [] })),
-        orderType,
-        customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
-        instructions: form.instructions,
-        subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-        discount: 0, redemptionId: null,
-        scheduledFor,
-        estimatedTime,
-      });
+      if (groupMode && payMode === 'separate') {
+        // Split: each person pays their own share; one fee + tip shared across the group.
+        const withItems = personSubtotals.filter(p => p.itemCount > 0);
+        if (withItems.length === 0) { setError('Add items to split.'); setLoading(false); return; }
+        // Even split of the shared fee + tip, remainder on the last person so the
+        // sum of shares exactly equals the group total.
+        const shareCount = withItems.length;
+        const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
+        const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
+        const splits = withItems.map((p, idx) => {
+          const pSub = p.subtotal;
+          const pTax = +(pSub * 0.06).toFixed(2);
+          const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
+          const pTotal = +(pSub + pTax + feeTip).toFixed(2);
+          return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
+        });
 
-      const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
-      setClientSecret(cs);
-      setOrderNumber(on);
-      setStripePromise(loadStripe(publishableKey));
-      setStep('payment');
+        const res = await base44.functions.invoke('createGroupPayment', {
+          items: mappedItems,
+          orderType,
+          customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
+          instructions: form.instructions,
+          subtotal, deliveryFee, tax, total: totalWithTip,
+          scheduledFor, estimatedTime,
+          splits,
+          groupName: people.map(p => p.name).join(', '),
+        });
+
+        const { intents, publishableKey, orderNumber: on } = res.data;
+        setSplitIntents(intents);
+        setSplitPublishable(publishableKey);
+        setOrderNumber(on);
+        setStep('split');
+      } else {
+        const res = await base44.functions.invoke('createPaymentIntent', {
+          items: mappedItems,
+          orderType,
+          customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
+          instructions: form.instructions,
+          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+          discount: 0, redemptionId: null,
+          scheduledFor,
+          estimatedTime,
+        });
+
+        const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
+        setClientSecret(cs);
+        setOrderNumber(on);
+        setStripePromise(loadStripe(publishableKey));
+        setStep('payment');
+      }
     } catch (err) {
       setError('Could not initialize payment. Please try again.');
     } finally {
@@ -224,10 +275,11 @@ export default function Checkout() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+      <GroupOrderBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-32 lg:pb-10">
         <div className="flex items-center gap-4 mb-8">
-          {step === 'payment' ? (
+          {step === 'payment' || step === 'split' ? (
             <button onClick={() => setStep('details')} className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
               <ArrowLeft size={16} /> Back
             </button>
@@ -383,7 +435,38 @@ export default function Checkout() {
                   </button>
                 </div>
 
+                {/* Group payment mode — the whole group pays one fee; choose
+                    whether one person pays everything or each pays their share. */}
+                {groupMode && (
+                  <div className="card-diner p-6">
+                    <h2 className="font-heading text-lg text-obsidian-roast mb-1">Group Payment</h2>
+                    <p className="text-sm text-muted-foreground mb-4">Split into per-person card charges, or pay the full total at once. The delivery fee is charged once either way.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => setPayMode('together')}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'together' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
+                        <p className="font-heading text-sm text-obsidian-roast">Pay Together</p>
+                        <p className="text-xs text-muted-foreground">One charge · ${totalWithTip.toFixed(2)}</p>
+                      </button>
+                      <button onClick={() => setPayMode('separate')}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'separate' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
+                        <p className="font-heading text-sm text-obsidian-roast">Pay Separately</p>
+                        <p className="text-xs text-muted-foreground">Each person pays their share</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </>
+            )}
+
+            {step === 'split' && splitIntents.length > 0 && (
+              <SplitPayment
+                intents={splitIntents}
+                publishableKey={splitPublishable}
+                orderNumber={orderNumber}
+                onSuccess={handleSuccess}
+                onError={setError}
+              />
             )}
 
             {step === 'payment' && stripePromise && clientSecret && (
@@ -414,16 +497,43 @@ export default function Checkout() {
               </div>
 
               <div className="space-y-3 mb-5">
-                {cartItems.map(item => (
-                  <div key={item.id} className="flex justify-between items-start gap-3">
-                    <div>
-                      <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
-                      <CartItemModifiers modifiers={item.selectedModifiers} />
-                      <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                {groupMode ? (
+                  personSubtotals.filter(p => p.itemCount > 0).map(p => (
+                    <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-heading text-sm text-patina-mint">{p.name}</span>
+                        <span className="text-xs text-muted-foreground">{p.itemCount} item{p.itemCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {cartItems.filter(i => i.person_id === p.id).map(item => (
+                          <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
+                            <div>
+                              <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                              <CartItemModifiers modifiers={item.selectedModifiers} />
+                              <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                            </div>
+                            <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between pt-2 mt-2 border-t border-border/60 text-xs">
+                        <span className="text-muted-foreground">{p.name}'s share</span>
+                        <span className="font-heading text-obsidian-roast">${p.subtotal.toFixed(2)}</span>
+                      </div>
                     </div>
-                    <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  cartItems.map(item => (
+                    <div key={item.id} className="flex justify-between items-start gap-3">
+                      <div>
+                        <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                        <CartItemModifiers modifiers={item.selectedModifiers} />
+                        <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                      </div>
+                      <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="border-t border-border pt-4 space-y-2 text-sm mb-5">
@@ -432,7 +542,7 @@ export default function Checkout() {
                 </div>
                 {deliveryFee > 0 && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Delivery</span><span>${deliveryFee.toFixed(2)}</span>
+                    <span>{groupMode ? 'Delivery (shared once)' : 'Delivery'}</span><span>${deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
@@ -465,7 +575,7 @@ export default function Checkout() {
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+                    <>{groupMode && payMode === 'separate' ? `Pay Separately · ${totalWithTip.toFixed(2)}` : `Continue to Payment · ${totalWithTip.toFixed(2)}`}</>
                     )}
                   </button>
                   <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
@@ -487,7 +597,7 @@ export default function Checkout() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+              <>{groupMode && payMode === 'separate' ? `Pay Separately · ${totalWithTip.toFixed(2)}` : `Continue to Payment · ${totalWithTip.toFixed(2)}`}</>
             )}
           </button>
         </div>

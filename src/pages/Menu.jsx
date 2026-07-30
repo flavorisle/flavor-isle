@@ -4,6 +4,7 @@ import { ShoppingBag, Bike, Utensils, Search } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';

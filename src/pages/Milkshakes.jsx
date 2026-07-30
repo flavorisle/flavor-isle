@@ -4,6 +4,7 @@ import { ArrowRight, ArrowDown, Check, Plus, Minus, ShoppingBag, ChevronRight } 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import GroupOrderBar from '@/components/GroupOrderBar';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 
