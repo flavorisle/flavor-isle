@@ -26,12 +26,8 @@ import AdminPhoneOrders from './pages/AdminPhoneOrders';
 import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
 import Flavors from './pages/Flavors';
-import Promos from './pages/Promos';
 import MeetSmashie from './pages/MeetSmashie';
-import OrderStatus from './pages/OrderStatus';
-import StoreLocator from './pages/StoreLocator';
 import KitchenStatus from './pages/KitchenStatus';
-import FAQ from './pages/FAQ';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -84,12 +80,8 @@ const AuthenticatedApp = () => {
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/flavors" element={<Flavors />} />
       <Route path="/sipshack" element={<Flavors />} />
-      <Route path="/promos" element={<Promos />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
-      <Route path="/order-status" element={<OrderStatus />} />
-      <Route path="/store-locator" element={<StoreLocator />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />
-      <Route path="/faq" element={<FAQ />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
       <Route path="/feedback" element={<Feedback />} />

@@ -25,13 +25,9 @@ export default function Navbar() {
   { label: 'Combos', to: '/combos' },
   { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'The Sip Shack', to: '/flavors' },
-  { label: 'Promos', to: '/promos' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
-  { label: 'Track Order', to: '/order-status' },
-  { label: 'Store Locator', to: '/store-locator' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'Feedback', to: '/feedback' },
-  { label: 'FAQ', to: '/faq' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];

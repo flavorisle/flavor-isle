@@ -33,7 +33,7 @@ export default function AdminMenu() {
 
   // Combo state
   const [combos, setCombos] = useState([]);
-  const [comboForm, setComboForm] = useState({ name: '', description: '', main_category: '', side_category: '', drink_category: '', is_active: true });
+  const [comboForm, setComboForm] = useState({ name: '', description: '', main_category: '', side_category: '', drink_category: '', discount_percent: 12, is_active: true });
   const [savingCombo, setSavingCombo] = useState(false);
 
   useEffect(() => {
@@ -97,8 +97,8 @@ export default function AdminMenu() {
   const saveCombo = async () => {
     if (!comboForm.name || !comboForm.main_category || !comboForm.side_category || !comboForm.drink_category) return;
     setSavingCombo(true);
-    await base44.entities.ComboConfig.create({ ...comboForm, discount_percent: 12 });
-    setComboForm({ name: '', description: '', main_category: '', side_category: '', drink_category: '', is_active: true });
+    await base44.entities.ComboConfig.create({ ...comboForm, discount_percent: Number(comboForm.discount_percent) || 12 });
+    setComboForm({ name: '', description: '', main_category: '', side_category: '', drink_category: '', discount_percent: 12, is_active: true });
     await loadCombos();
     setSavingCombo(false);
   };
@@ -113,10 +113,9 @@ export default function AdminMenu() {
     setCombos((prev) => prev.map((x) => x.id === c.id ? { ...x, is_active: !c.is_active } : x));
   };
 
-  const squareCategories = [...new Set(items.map((i) => i.square_category || i.category).filter(Boolean))];
-  // All category keys for the per-item selector: effective keys (incl. custom
-  // display_category) plus any custom categories the admin created in the
-  // Categories tab (tracked via category_sort_order).
+  // All category keys for the combo builder + per-item selector: effective
+  // keys (incl. custom display_category) plus any custom categories the
+  // admin created in the Categories tab (tracked via category_sort_order).
   const allCategoryKeys = sortCategories(Array.from(new Set([...items.map(itemCategoryKey), ...catSort])), catSort);
 
   const handleSync = async () => {
@@ -285,7 +284,7 @@ export default function AdminMenu() {
         <div className="space-y-8">
             <div className="card-diner p-6">
               <h2 className="font-heading text-lg text-obsidian-roast mb-2">Add a Combo</h2>
-              <p className="text-sm text-muted-foreground mb-5">Select which Square category covers the main, side, and drink. Customers get a bundle discount when they pick all three.</p>
+              <p className="text-sm text-muted-foreground mb-5">Pick which category covers the main, side, and drink — these include any custom categories you put together in the Categories tab. Customers get a bundle discount when they pick all three.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Combo Name *</label>
@@ -300,7 +299,7 @@ export default function AdminMenu() {
                     onValueChange={(v) => setComboForm((p) => ({ ...p, main_category: v }))}
                     placeholder="Select category…"
                   >
-                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
                   </BrandSelect>
                 </div>
                 <div>
@@ -310,7 +309,7 @@ export default function AdminMenu() {
                     onValueChange={(v) => setComboForm((p) => ({ ...p, side_category: v }))}
                     placeholder="Select category…"
                   >
-                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
                   </BrandSelect>
                 </div>
                 <div>
@@ -320,8 +319,14 @@ export default function AdminMenu() {
                     onValueChange={(v) => setComboForm((p) => ({ ...p, drink_category: v }))}
                     placeholder="Select category…"
                   >
-                    {squareCategories.map((c) => <BrandOption key={c} value={c}>{c}</BrandOption>)}
+                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
                   </BrandSelect>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Discount %</label>
+                  <input type="number" min="0" max="100" placeholder="12" value={comboForm.discount_percent}
+                    onChange={(e) => setComboForm((p) => ({ ...p, discount_percent: e.target.value }))}
+                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Description (optional)</label>
@@ -347,6 +352,7 @@ export default function AdminMenu() {
                   <div className="flex-1 min-w-0">
                     <p className="font-heading text-sm text-obsidian-roast">{c.name}</p>
                     <p className="text-xs text-muted-foreground">{c.main_category} + {c.side_category} + {c.drink_category}</p>
+                    <p className="text-xs text-patina-mint font-heading mt-0.5">{c.discount_percent || 12}% off when bundled</p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <button onClick={() => toggleCombo(c)} className={`px-3 py-1.5 rounded-xl text-xs font-heading transition-colors ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>

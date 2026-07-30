@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, Check, X, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { itemCategoryKey } from '@/lib/menuCategory';
 
 function ModifierModal({ item, onClose, onConfirm }) {
   const initSelections = () => {
@@ -129,7 +130,7 @@ export default function ComboBuilderSection() {
   if (combos.length === 0) return null;
 
   const itemsForCategory = (cat) =>
-    menuItems.filter(i => (i.square_category || i.category || '').toLowerCase() === (cat || '').toLowerCase());
+    menuItems.filter(i => itemCategoryKey(i).toLowerCase() === (cat || '').toLowerCase());
 
   const mainItems = selectedCombo ? itemsForCategory(selectedCombo.main_category) : [];
   const sideItems = selectedCombo ? itemsForCategory(selectedCombo.side_category) : [];

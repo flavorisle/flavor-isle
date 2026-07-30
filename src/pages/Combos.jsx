@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
+import { itemCategoryKey } from '@/lib/menuCategory';
 
 const STEPS = [
   { num: '01', label: 'COMBO', sub: 'Choose your bundle' },
@@ -143,7 +144,7 @@ export default function Combos() {
   }
 
   const itemsForCategory = (cat) =>
-    menuItems.filter(i => (i.square_category || i.display_category || i.category || '').toLowerCase() === (cat || '').toLowerCase());
+    menuItems.filter(i => itemCategoryKey(i).toLowerCase() === (cat || '').toLowerCase());
 
   const mainItems = selectedCombo ? itemsForCategory(selectedCombo.main_category) : [];
   const sideItems = selectedCombo ? itemsForCategory(selectedCombo.side_category) : [];
