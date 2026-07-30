@@ -25,7 +25,9 @@
   ],
   "context_files": [],
   "app_user_connector_configs": [],
-  "selected_skill_names": [],
+  "selected_skill_names": [
+    "brand-voice"
+  ],
   "selected_workspace_skill_ids": [
     "6a63e1d4c8db87f30ac9553d",
     "6a63e203d3b77bf0c15f62e1",
