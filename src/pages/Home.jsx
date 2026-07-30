@@ -25,20 +25,18 @@ const SPECIALS_TICKER = [
 "🥤 Thick Vanilla Malt — $5.49",
 "🍟 Loaded Cheese Fries — $4.99",
 "⭐ Today's Special: BLT Deluxe — $8.99",
-"🍳 All-Day Breakfast Platter — $9.49",
 "🥧 Homemade Pie Slice — $3.99",
 "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
 "🥤 Thick Vanilla Malt — $5.49",
 "🍟 Loaded Cheese Fries — $4.99",
 "⭐ Today's Special: BLT Deluxe — $8.99",
-"🍳 All-Day Breakfast Platter — $9.49",
 "🥧 Homemade Pie Slice — $3.99"];
 
 
 const FEATURES = [
 { icon: '🍔', label: 'Hand-Patted Burgers', desc: 'Fresh beef, never frozen' },
 { icon: '🥤', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
-{ icon: '🍳', label: 'All-Day Breakfast', desc: 'Because breakfast is forever' },
+{ icon: '🍗', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
 
 
