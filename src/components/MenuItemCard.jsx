@@ -62,7 +62,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-float-lg w-full max-w-md max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-3xl shadow-float-lg w-full max-w-md max-h-[calc(100dvh-2rem)] flex flex-col safe-top">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="flex-1 mr-4">
@@ -132,7 +132,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border">
+        <div className="p-6 border-t border-border safe-bottom">
           <button
             onClick={handleConfirm}
             className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2"

@@ -6,12 +6,16 @@ import { ChevronLeft } from 'lucide-react';
 // under the md breakpoint as a native-style back affordance.
 // Root tab screens — no back button there (the bottom tab bar is the nav affordance).
 const PRIMARY = ['/', '/menu', '/account'];
+// Full-screen flows that have their own back affordance and a sticky CTA —
+// the floating back button would overlap the fixed bottom action bar here.
+const HIDDEN_PATHS = ['/checkout', '/order-confirmation'];
 
 export default function MobileHeader() {
   const location = useLocation();
   const navigate = useNavigate();
 
   if (PRIMARY.includes(location.pathname)) return null;
+  if (HIDDEN_PATHS.includes(location.pathname)) return null;
   if (window.matchMedia('(min-width: 768px)').matches) return null;
 
   const goBack = () => {
