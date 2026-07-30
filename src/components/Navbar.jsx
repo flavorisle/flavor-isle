@@ -45,7 +45,7 @@ export default function Navbar() {
             <span className="hidden sm:inline">Smiths Grove, KY</span>
           </span>
           <span className="flex items-center gap-1">
-            <Phone size={12} className="text-patina-mint bg-[hsl(var(--primary))]" />
+            <Phone size={12} className="text-[hsl(var(--primary))]" />
             <a href="tel:+12705634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
