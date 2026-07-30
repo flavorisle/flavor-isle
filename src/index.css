@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,76 +6,77 @@
 
 @layer base {
   :root {
-    --background: 40 33% 98%;
-    --foreground: 0 0% 8%;
-    --card: 40 33% 99%;
-    --card-foreground: 0 0% 8%;
+    --background: 42 67% 94%;
+    --foreground: 210 100% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 100% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
-    --primary: 5 63% 47%;
+    --popover-foreground: 210 100% 20%;
+    --primary: 12 100% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 213 55% 23%;
+    --secondary: 210 100% 20%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 40 20% 94%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 213 55% 23%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 42 40% 90%;
+    --muted-foreground: 210 30% 45%;
+    --accent: 37 91% 55%;
+    --accent-foreground: 210 100% 20%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 40 20% 88%;
-    --input: 40 20% 88%;
-    --ring: 350 100% 32%;
-    --radius: 1.5rem;
-    --font-heading: 'Oswald', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Oswald', ui-sans-serif, system-ui, sans-serif;
+    --border: 42 30% 85%;
+    --input: 42 30% 85%;
+    --ring: 12 100% 40%;
+    --radius: 0.75rem;
+    --font-heading: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Flavor Isle Custom Tokens */
-    --vanilla-malt: #F5EDD6;
-    --midnight-cherry: #C0392B;
-    --patina-mint: #1A3A5C;
-    --obsidian-roast: #141414;
+    /* Flavor Isle × Smashie Brand Tokens */
+    --vanilla-malt: #FDF6E3;
+    --midnight-cherry: #CC3300;
+    --patina-mint: #003366;
+    --smashie-yellow: #F5A623;
+    --obsidian-roast: #003366;
     --chrome-silver: #C0C0C0;
-    --cream-white: #FFFDF8;
-    --sidebar-background: 40 33% 98%;
-    --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 350 100% 32%;
+    --cream-white: #FDF6E3;
+    --sidebar-background: 42 67% 94%;
+    --sidebar-foreground: 210 100% 20%;
+    --sidebar-primary: 12 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 20% 94%;
-    --sidebar-accent-foreground: 0 0% 8%;
-    --sidebar-border: 40 20% 88%;
-    --sidebar-ring: 350 100% 32%;
+    --sidebar-accent: 42 40% 90%;
+    --sidebar-accent-foreground: 210 100% 20%;
+    --sidebar-border: 42 30% 85%;
+    --sidebar-ring: 12 100% 40%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 350 100% 40%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 180 34% 47%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 180 34% 47%;
-    --accent-foreground: 0 0% 98%;
+    --background: 210 100% 10%;
+    --foreground: 42 67% 94%;
+    --card: 210 100% 14%;
+    --card-foreground: 42 67% 94%;
+    --popover: 210 100% 14%;
+    --popover-foreground: 42 67% 94%;
+    --primary: 12 100% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 37 91% 55%;
+    --secondary-foreground: 210 100% 20%;
+    --muted: 210 60% 18%;
+    --muted-foreground: 42 30% 65%;
+    --accent: 37 91% 55%;
+    --accent-foreground: 210 100% 20%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 350 100% 40%;
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 350 100% 40%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 14.9%;
-    --sidebar-ring: 350 100% 40%;
+    --border: 210 60% 22%;
+    --input: 210 60% 22%;
+    --ring: 12 100% 40%;
+    --sidebar-background: 210 100% 8%;
+    --sidebar-foreground: 42 67% 94%;
+    --sidebar-primary: 12 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 60% 18%;
+    --sidebar-accent-foreground: 42 67% 94%;
+    --sidebar-border: 210 60% 22%;
+    --sidebar-ring: 12 100% 40%;
   }
 }
 
@@ -87,12 +88,13 @@
   body {
     @apply bg-background text-foreground font-body;
     background-color: var(--vanilla-malt);
-    font-size: 18px;
+    font-size: 14.4px;
     line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    letter-spacing: 0.02em;
   }
 }
 
@@ -104,11 +106,14 @@
   .bg-vanilla-malt { background-color: var(--vanilla-malt); }
   .bg-midnight-cherry { background-color: var(--midnight-cherry); }
   .bg-patina-mint { background-color: var(--patina-mint); }
+  .bg-smashie-yellow { background-color: var(--smashie-yellow); }
   .text-midnight-cherry { color: var(--midnight-cherry); }
   .text-patina-mint { color: var(--patina-mint); }
-  .text-obsidian-roast { color: var(--obsidian-roast); }
+  .text-obsidian-roast { color: var(--patina-mint); }
+  .text-smashie-yellow { color: var(--smashie-yellow); }
   .border-midnight-cherry { border-color: var(--midnight-cherry); }
   .border-patina-mint { border-color: var(--patina-mint); }
+  .border-smashie-yellow { border-color: var(--smashie-yellow); }
   .bg-navy { background-color: var(--patina-mint); }
 
   .shadow-float {
@@ -144,41 +149,55 @@
   .btn-cherry {
     background-color: var(--midnight-cherry);
     color: white;
-    border-radius: var(--radius);
+    border-radius: 999px;
     font-family: var(--font-heading);
-    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .btn-cherry:hover {
-    background-color: #8a0016;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(161, 0, 26, 0.35);
+    background-color: #aa2900;
+    box-shadow: 0 6px 20px rgba(204, 51, 0, 0.35);
   }
 
   .btn-mint {
     background-color: var(--patina-mint);
     color: white;
-    border-radius: var(--radius);
+    border-radius: 999px;
     font-family: var(--font-heading);
-    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .btn-mint:hover {
-    background-color: #3d8888;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(78, 159, 159, 0.35);
+    background-color: #002a55;
+    box-shadow: 0 6px 20px rgba(0, 51, 102, 0.35);
+  }
+
+  .btn-yellow {
+    background-color: var(--smashie-yellow);
+    color: var(--patina-mint);
+    border-radius: 999px;
+    font-family: var(--font-heading);
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-yellow:hover {
+    background-color: #e09500;
+    box-shadow: 0 6px 20px rgba(245, 166, 35, 0.4);
   }
 
   .card-diner {
     background: white;
-    border-radius: var(--radius);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
   }
 
   .card-diner:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.14);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
   }
 
   .ticker-container {

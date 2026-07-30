@@ -6,8 +6,9 @@ module.exports = {
   	extend: {
   		borderRadius: {
   			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 4px)',
-  			sm: 'calc(var(--radius) - 8px)'
+  			md: 'calc(var(--radius) - 2px)',
+  			sm: 'calc(var(--radius) - 4px)',
+  			full: '9999px',
   		},
   		colors: {
   			background: 'hsl(var(--background))',
@@ -60,16 +61,17 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'vanilla-malt': '#F5EDD6',
-        'midnight-cherry': '#C0392B',
-        'patina-mint': '#1A3A5C',
-        'obsidian-roast': '#141414',
+        'vanilla-malt': '#FDF6E3',
+        'midnight-cherry': '#CC3300',
+        'patina-mint': '#003366',
+        'smashie-yellow': '#F5A623',
+        'obsidian-roast': '#003366',
         'chrome-silver': '#C0C0C0',
   		},
   		fontFamily: {
-  			heading: ['Oswald', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			body: ['Open Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			display: ['Oswald', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			heading: ['Bebas Neue', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			body: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			display: ['Bebas Neue', 'ui-sans-serif', 'system-ui', 'sans-serif'],
   			mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
   		},
   		keyframes: {
