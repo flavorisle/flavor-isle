@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import AdBannerStrip from '@/components/AdBannerStrip';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -41,6 +42,10 @@ export default function Contact() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Find Us & Get in Touch</p>
         <h1 className="font-heading text-5xl text-obsidian-roast mb-10">Contact & Location</h1>
+
+        <div className="mb-8">
+          <AdBannerStrip placement="contact" compact />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-12">
           {/* Map */}

@@ -25,10 +25,11 @@
       "enum": [
         "home",
         "menu",
-        "cart"
+        "cart",
+        "contact"
       ],
       "default": "home",
-      "description": "Where the banner shows: home hero area, top of menu, or cart/checkout"
+      "description": "Where the banner shows: home hero area, top of menu, cart/checkout, or the contact & location page"
     },
     "theme": {
       "type": "string",
