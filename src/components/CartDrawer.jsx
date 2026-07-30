@@ -129,7 +129,7 @@ export default function CartDrawer() {
 
         {/* Footer totals + checkout */}
         {cartItems.length > 0 && (
-          <div className="p-4 bg-white border-t border-border space-y-3">
+          <div className="p-4 bg-white border-t border-border space-y-3 safe-bottom">
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>

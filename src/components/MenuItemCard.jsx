@@ -167,9 +167,13 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
   const toggleFavorite = async (e) => {
     e?.stopPropagation();
     if (!user?.id) return;
+    const wasFavorite = isFavorite;
+    // Optimistic: flip the heart instantly for a snappy, native feel.
+    setIsFavorite(!wasFavorite);
+    onFavoriteChange?.();
     setSavingFavorite(true);
     try {
-      if (isFavorite) {
+      if (wasFavorite) {
         const favs = await base44.entities.Favorite.filter({ user_id: user.id, menu_item_id: item.id });
         if (favs?.length > 0) {
           await base44.entities.Favorite.delete(favs[0].id);
@@ -184,10 +188,11 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           menu_item_category: item.category,
         });
       }
-      setIsFavorite(!isFavorite);
-      onFavoriteChange?.();
     } catch (err) {
+      // Revert the optimistic change if the DB operation fails.
       console.error('Error toggling favorite:', err);
+      setIsFavorite(wasFavorite);
+      onFavoriteChange?.();
     } finally {
       setSavingFavorite(false);
     }

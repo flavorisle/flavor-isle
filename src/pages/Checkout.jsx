@@ -501,7 +501,7 @@ export default function Checkout() {
 
       {/* Sticky mobile CTA — keeps the primary action reachable without scrolling the full summary */}
       {step === 'details' && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 py-3">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 py-3 safe-bottom">
           <button
             onClick={handleContinue}
             disabled={loading}

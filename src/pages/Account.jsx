@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
+} from '@/components/ui/alert-dialog';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -111,6 +115,9 @@ function LoggedInAccount({ user, logout }) {
   const [tab, setTab] = useState('orders');
   const [loading, setLoading] = useState(true);
   const [loadTimeout, setLoadTimeout] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [deleting, setDeleting] = useState(false);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
   const loadData = async (skipRedemptions = false) => {
@@ -192,6 +199,18 @@ function LoggedInAccount({ user, logout }) {
     order.items.forEach(item => addItem(item));
     if (order.order_type) setOrderType(order.order_type);
     setIsCartOpen(true);
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await base44.functions.invoke('deleteMyAccount', {});
+      // Clear local state, then log out (which redirects server-side).
+      logout();
+    } catch (err) {
+      console.error('Account deletion failed:', err);
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -517,6 +536,20 @@ function LoggedInAccount({ user, logout }) {
               )}
             </div>
 
+            {/* Danger Zone — account deletion (App Store requirement) */}
+            <div className="rounded-2xl border-2 border-red-200 bg-red-50/50 p-6">
+              <h3 className="font-heading text-lg text-obsidian-roast mb-1">Delete Account</h3>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                Permanently erase your Flavor Isle account, profile, favorites, rewards, and order history. This cannot be undone.
+              </p>
+              <button
+                onClick={() => { setDeleteStep(1); setDeleteOpen(true); }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-heading hover:bg-red-700 transition-colors tap-44"
+              >
+                <Trash2 size={16} /> Delete Account
+              </button>
+            </div>
+
             {/* Personal Information */}
             <div className="card-diner p-6">
               <h3 className="font-heading text-lg text-obsidian-roast mb-4">Personal Information</h3>
@@ -633,6 +666,54 @@ function LoggedInAccount({ user, logout }) {
           </div>
         )}
       </div>
+
+      {/* Delete account — double confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteStep(1); }}>
+        <AlertDialogContent className="max-w-md">
+          {deleteStep === 1 ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-obsidian-roast">
+                  <AlertTriangle size={18} className="text-red-600" /> Delete your account?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes your profile, favorites, loyalty points, and order history from Flavor Isle. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="tap-44">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => setDeleteStep(2)}
+                  className="bg-red-600 text-white hover:bg-red-700 tap-44"
+                >
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-obsidian-roast">
+                  <AlertTriangle size={18} className="text-red-600" /> Are you absolutely sure?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This is your final warning. Tap <strong>Delete Forever</strong> to permanently erase your Flavor Isle account and all its data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting} className="tap-44">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="bg-red-600 text-white hover:bg-red-700 tap-44 disabled:opacity-60"
+                >
+                  {deleting ? 'Deleting…' : 'Delete Forever'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

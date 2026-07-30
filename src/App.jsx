@@ -7,6 +7,9 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import { CartProvider } from '@/context/CartContext';
+import { ThemeProvider } from 'next-themes';
+import BottomTabBar from './components/BottomTabBar';
+import MobileHeader from './components/MobileHeader';
 
 // Page imports
 import Home from './pages/Home';
@@ -92,7 +95,7 @@ const AuthenticatedApp = () => {
   );
 };
 
-function App() {
+function AppShell() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -100,11 +103,21 @@ function App() {
           <Router>
             <ScrollToTop />
             <AuthenticatedApp />
+            <BottomTabBar />
+            <MobileHeader />
           </Router>
           <Toaster />
         </CartProvider>
       </QueryClientProvider>
     </AuthProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <AppShell />
+    </ThemeProvider>
   );
 }
 
