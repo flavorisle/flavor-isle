@@ -1,9 +1,13 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const { error: authError } = await requireAdmin(base44);
+    if (authError) return authError;
+
     const reqBody = await req.json();
     const { order_id, reason = 'requested_by_customer' } = reqBody;
 

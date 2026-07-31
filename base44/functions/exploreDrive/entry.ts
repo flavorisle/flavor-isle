@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 async function graphRequest(accessToken, path) {
   const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
@@ -12,6 +13,9 @@ async function graphRequest(accessToken, path) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const { error: authError } = await requireAdmin(base44);
+    if (authError) return authError;
+
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('one_drive');
     const body = await req.json().catch(() => ({}));
     const folderPath = body.path || '';

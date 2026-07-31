@@ -1,8 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const { error: authError } = await requireAdmin(base44);
+    if (authError) return authError;
+
     const body = await req.json();
 
     const { items, special_instructions, table_number, customer_name } = body;
