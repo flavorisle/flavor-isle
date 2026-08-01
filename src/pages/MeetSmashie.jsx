@@ -24,7 +24,7 @@ const SMASHIE_TRAITS = [
 const FAQS = [
   { q: "Can Smashie actually take my order?", a: "Yep! Text or call the restaurant number and Smashie will take your order, confirm it, and route it straight to the kitchen. He's legit." },
   { q: "What if I have allergies or dietary needs?", a: "Smashie knows the menu inside out. Ask him about ingredients, substitutions, or what's safe for your dietary needs and he'll give you the real answer." },
-  { q: "Is Smashie a robot?", a: "He's AI — but he's built specifically for Flavor Isle. He knows our menu, our vibe, our story. He's basically one of us at this point." },
+  { q: "Is Smashie a robot?", a: "He's AI — but he's built specifically for Flavor Isle. He knows our menu and our vibe. He's basically one of us at this point." },
   { q: "What's Smashie's favorite order?", a: "Double Cheeseburger, loaded fries, and a Chocolate Fudge Shake. Hot Fudge Cake for dessert, obviously. No cap." },
   { q: "Can I chat with him on the website?", a: "Hit the chat bubble in the bottom right corner of any page. Smashie's always there, always ready." },
 ];

@@ -20,7 +20,7 @@ export default function Footer() {
             </div>
           </div>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Smiths Grove's favorite classic American diner. Serving up comfort since the very beginning.
+            Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
           </p>
           <div className="flex gap-3 mt-5">
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-patina-mint transition-colors">
@@ -54,7 +54,6 @@ export default function Footer() {
           <div className="flex flex-col gap-2 text-sm text-gray-400">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
-            <Link to="/about" className="hover:text-white transition-colors">Our Story</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
@@ -84,7 +83,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
-          <span className="text-[hsl(var(--primary))]">© 1964–2026 Flavor Isle. All rights reserved.</span>
+          <span className="text-[hsl(var(--primary))]">© 2026 Flavor Isle. All rights reserved.</span>
         </div>
       </div>
     </footer>);

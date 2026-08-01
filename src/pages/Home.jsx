@@ -12,7 +12,6 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
-import OurStory from '@/components/OurStory';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
@@ -71,9 +70,6 @@ export default function Home() {
 
       {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
       <LoyaltyFirstOrderBanner />
-
-      {/* ── OUR STORY ── */}
-      <OurStory />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">

@@ -16,7 +16,6 @@ import Home from './pages/Home';
 import Menu from './pages/Menu';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
-import About from './pages/About';
 import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
@@ -25,7 +24,6 @@ import AdminMedia from './pages/AdminMedia';
 import AdminPhoneOrders from './pages/AdminPhoneOrders';
 import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
-import Flavors from './pages/Flavors';
 import MeetSmashie from './pages/MeetSmashie';
 import KitchenStatus from './pages/KitchenStatus';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -70,7 +68,6 @@ const AuthenticatedApp = () => {
       <Route path="/menu" element={<Menu />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
-      <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/account" element={<AccountNew />} />
       <Route path="/admin" element={<AdminDashboard />} />
@@ -78,8 +75,6 @@ const AuthenticatedApp = () => {
       <Route path="/admin/media" element={<AdminMedia />} />
       <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
-      <Route path="/flavors" element={<Flavors />} />
-      <Route path="/sipshack" element={<Flavors />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />

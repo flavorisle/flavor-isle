@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const CHIPS = [
-  { icon: '🏪', label: 'Family-owned since 1964' },
+  { icon: '🍔', label: 'Hand-patted burgers' },
   { icon: '🔥', label: 'Made fresh, never frozen' },
   { icon: '🚚', label: 'Pickup in 15–25 min' },
 ];

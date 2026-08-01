@@ -6,15 +6,15 @@ import { base44 } from '@/api/base44Client';
 import BusynessStatus from '@/components/BusynessStatus';
 
 const STATS = [
-  { num: '3.4M', label: 'BURGERS SERVED SINCE 1964' },
+  { num: '3.4M', label: 'BURGERS SERVED' },
   { num: '1.8M', label: 'SHAKES SPUN & STILL SWIRLING' },
-  { num: '60+', label: 'YEARS SERVING SMITHS GROVE' },
+  { num: '100%', label: 'FRESH, NEVER-FROZEN BEEF' },
   { num: '0', label: 'SHORTCUTS. EVER.' },
 ];
 
 // Fast, always-available hero photo so the hero paints with a real image
 // immediately instead of the brown gradient fallback. If the OneDrive media
-// lookup resolves, the diner's storefront sign photo swaps in on top.
+// lookup resolves, the storefront sign photo swaps in on top.
 const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg';
 
 export default function HeroSection() {
@@ -42,7 +42,7 @@ export default function HeroSection() {
             Real Food.<br />Real Good.
           </h1>
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
-            Smiths Grove's classic American diner. Fresh, never-frozen hand-patted burgers, thick shakes, and homestyle cooking made fresh every day.
+            Smiths Grove's burger restaurant. Fresh, never-frozen hand-patted burgers, thick shakes, and hot sides made fresh every day.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[

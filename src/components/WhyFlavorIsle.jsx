@@ -3,7 +3,7 @@ import React from 'react';
 const CARDS = [
   { icon: '🥩', title: 'Fresh Every Day', body: "We never freeze our beef. Every patty is hand-patted fresh before it hits the grill — real quality in every bite." },
   { icon: '🧑‍🍳', title: 'Made to Order', body: "Nothing sits under a heat lamp here. Your food is cooked fresh when you order it — every single time." },
-  { icon: '❤️', title: 'Community Roots', body: "Over 60 years, three generations, and one unwavering recipe for what a neighborhood restaurant should be. Family-owned since day one." },
+  { icon: '❤️', title: 'Community Roots', body: "A neighborhood burger restaurant that knows its regulars by name — good food, fair prices, friendly faces." },
   { icon: '⚡', title: 'Hot & Fast', body: "Order online, pick up in minutes. We don't make you wait — we make you hungry." },
 ];
 
