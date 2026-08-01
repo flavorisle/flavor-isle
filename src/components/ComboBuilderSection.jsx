@@ -240,7 +240,7 @@ export default function ComboBuilderSection() {
               <Package size={12} /> Combo Builder
             </div>
             <h2 className="font-heading text-4xl text-white mb-2">Build Your Combo</h2>
-            <p className="text-gray-400 text-sm">Pick a main, a side, and a drink — and save when you bundle.</p>
+            <p className="text-gray-400 text-sm">Pick a main, a side, and a drink.</p>
           </div>
 
           {combos.length > 1 && (
@@ -269,7 +269,6 @@ export default function ComboBuilderSection() {
               <div>
                 {allPicked ? (
                   <div className="space-y-0.5">
-                    <p className="text-sm text-muted-foreground line-through">${originalTotal.toFixed(2)} separately</p>
                     <p className="font-heading text-3xl text-midnight-cherry">${comboPrice.toFixed(2)} <span className="text-sm font-body text-patina-mint">combo price</span></p>
                   </div>
                 ) : (

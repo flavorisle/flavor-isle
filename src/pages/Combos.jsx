@@ -256,7 +256,7 @@ export default function Combos() {
           </div>
           <h1 className="font-heading text-7xl sm:text-9xl text-white leading-none mb-4">COMBO ISLE</h1>
           <p className="text-gray-300 text-lg mb-2">Pick a main, a side, and a drink.</p>
-          <p className="text-gray-400 text-base mb-12">Name it. Stack it. Save when you bundle.</p>
+          <p className="text-gray-400 text-base mb-12">Name it. Stack it.</p>
           <button onClick={scrollToBuilder} className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base">
             Start Building <ArrowDown size={18} />
           </button>
@@ -285,8 +285,7 @@ export default function Combos() {
             {/* Step 0: Combo config */}
             {step === 0 && (
               <div>
-                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Choose Your Bundle</h3>
-                <p className="text-muted-foreground text-sm mb-6">Each bundle saves you on the trio.</p>
+                <h3 className="font-heading text-2xl text-obsidian-roast mb-6">Choose Your Bundle</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {combos.map(c => (
                     <button key={c.id} onClick={() => { setSelectedCombo(c); setPicks({ main: null, side: null, drink: null }); }}
@@ -294,7 +293,6 @@ export default function Combos() {
                       <p className="font-heading text-lg text-obsidian-roast">{c.name}</p>
                       {c.description && <p className="text-sm text-muted-foreground mt-1">{c.description}</p>}
                       <p className="text-xs text-patina-mint font-heading mt-2 uppercase tracking-wider">{c.main_category} · {c.side_category} · {c.drink_category}</p>
-                      <p className="text-sm text-midnight-cherry font-semibold mt-1">Save {(c.discount_percent || 12)}%</p>
                     </button>
                   ))}
                 </div>
@@ -334,8 +332,7 @@ export default function Combos() {
                   <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🍔 {picks.main?.name}</span><span className="text-muted-foreground">${picks.main?.price.toFixed(2)}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🍟 {picks.side?.name}</span><span className="text-muted-foreground">${picks.side?.price.toFixed(2)}</span></div>
                   <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🧋 {picks.drink?.name}</span><span className="text-muted-foreground">${picks.drink?.price.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-sm pt-2 border-t border-border"><span className="text-muted-foreground line-through">Separately</span><span className="text-muted-foreground line-through">${originalTotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between font-heading text-obsidian-roast text-lg pt-1"><span>Combo Price</span><span className="text-midnight-cherry">${comboPrice.toFixed(2)}</span></div>
+                  <div className="flex justify-between font-heading text-obsidian-roast text-lg pt-2 border-t border-border"><span>Combo Price</span><span className="text-midnight-cherry">${comboPrice.toFixed(2)}</span></div>
                 </div>
 
                 <button onClick={handleAddCombo} disabled={!allPicked}
