@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -60,27 +61,33 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      {/* Public — no login required */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Home />} />
-      <Route path="/menu" element={<Menu />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/contact" element={<Contact />} />
-      <Route path="/account" element={<AccountNew />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/menu" element={<AdminMenu />} />
-      <Route path="/admin/media" element={<AdminMedia />} />
-      <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
-      <Route path="/milkshakes" element={<Milkshakes />} />
-      <Route path="/meet-smashie" element={<MeetSmashie />} />
-      <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
+      <Route path="/meet-smashie" element={<MeetSmashie />} />
+      <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/feedback" element={<Feedback />} />
-      <Route path="/combos" element={<Combos />} />
+
+      {/* Login required to view the menu, build an order, or access account */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/menu" element={<Menu />} />
+        <Route path="/combos" element={<Combos />} />
+        <Route path="/milkshakes" element={<Milkshakes />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
+        <Route path="/account" element={<AccountNew />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/menu" element={<AdminMenu />} />
+        <Route path="/admin/media" element={<AdminMedia />} />
+        <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
+      </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
