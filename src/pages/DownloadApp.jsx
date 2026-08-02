@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Apple, Play, ArrowRight, Bell, Star, Truck, MessageCircle, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import AppScreenshots from '@/components/AppScreenshots';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
 
@@ -116,7 +115,25 @@ export default function DownloadApp() {
             <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">A Quick Look</p>
             <h2 className="font-heading text-4xl text-obsidian-roast">Inside the App</h2>
           </div>
-          <AppScreenshots />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {[
+              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/813b75f95_generated_image.png',
+              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/44eb616fb_generated_image.png',
+              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/610e99463_generated_image.png',
+            ].map((src, i) => (
+              <div key={i} className="mx-auto" style={{ maxWidth: 280 }}>
+                <div className="relative rounded-[2.5rem] bg-obsidian-roast p-2 shadow-float-lg">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-obsidian-roast rounded-full z-10" />
+                  <img
+                    src={src}
+                    alt={`Flavor Isle app screen ${i + 1}`}
+                    className="w-full rounded-[2rem] object-cover"
+                    style={{ aspectRatio: '9 / 19.5' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
