@@ -1,0 +1,55 @@
+{
+  "name": "BusynessProfile",
+  "type": "object",
+  "properties": {
+    "weekday": {
+      "type": "number",
+      "description": "0=Sunday through 6=Saturday"
+    },
+    "hour": {
+      "type": "number",
+      "description": "0-23 in store local time (America/Chicago)"
+    },
+    "avg_order_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Average orders during this hour for this weekday across recent history"
+    },
+    "max_order_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Busiest single-day order count seen for this weekday + hour"
+    },
+    "sample_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of distinct days sampled for this weekday + hour"
+    }
+  },
+  "required": [
+    "weekday",
+    "hour"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

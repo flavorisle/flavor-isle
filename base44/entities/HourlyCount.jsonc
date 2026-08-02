@@ -1,0 +1,49 @@
+{
+  "name": "HourlyCount",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "description": "YYYY-MM-DD in store local time (America/Chicago)"
+    },
+    "hour": {
+      "type": "number",
+      "description": "0-23 in store local time"
+    },
+    "weekday": {
+      "type": "number"
+    },
+    "order_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Orders placed during this hour from ALL Square sources, including in-store POS"
+    }
+  },
+  "required": [
+    "date",
+    "hour",
+    "weekday"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
