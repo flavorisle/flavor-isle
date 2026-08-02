@@ -7,15 +7,15 @@ const HERO_BURGER = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f6
 // Real Flavor Isle food photos provided by the owner.
 const BEST_SELLERS = [
   {
-    name: 'The OG Double Cheeseburger',
-    desc: 'Two fresh patties, melted American cheese',
+    name: 'Double Bacon Cheeseburger',
+    desc: 'Two fresh patties, bacon, melted cheese',
     price: 9.5,
     rating: 4.8,
     image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a5648d9bc_20240618_193404581_iOS.jpg',
   },
   {
-    name: 'Loaded Bacon Cheese Fries',
-    desc: 'Crinkle fries, cheese sauce, bacon, ranch',
+    name: 'Zesty Bacon Ranch Fries',
+    desc: 'Crinkle fries, bacon, ranch, zesty seasoning',
     price: 4.99,
     rating: 4.7,
     image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d03ee300c_IMG_9874.jpg',
