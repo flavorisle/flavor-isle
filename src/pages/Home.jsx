@@ -15,7 +15,6 @@ import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
-import ComboBuilderSection from '@/components/ComboBuilderSection';
 import SmashieChat from '@/components/SmashieChat';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import useBusinessHours from '@/hooks/useBusinessHours';
@@ -130,9 +129,6 @@ export default function Home() {
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
-
-      {/* ── COMBO BUILDER ── */}
-      <ComboBuilderSection />
 
       {/* ── REVIEWS ── */}
       <ReviewSection />

@@ -23,7 +23,6 @@ export default function Navbar() {
   const navLinks = [
   { label: 'Menu', to: '/menu' },
   { label: 'Combos', to: '/combos' },
-  { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'Feedback', to: '/feedback' },
