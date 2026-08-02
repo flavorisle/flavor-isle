@@ -85,7 +85,7 @@ export default function Checkout() {
   const businessHours = useBusinessHours();
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddress, setSavedAddress] = useState(false);
@@ -103,9 +103,12 @@ export default function Checkout() {
       const p = profiles?.[0] || {};
       if (cancelled) return;
       if (p.delivery_address || p.address) setSavedAddress(true);
+      const savedName = p.name || me.full_name || '';
+      const nameParts = savedName.split(/\s+(?=\S)/); // split into first + rest
       setForm(prev => ({
         ...prev,
-        name: prev.name || p.name || me.full_name || '',
+        firstName: prev.firstName || nameParts[0] || '',
+        lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
         email: prev.email || me.email || '',
         phone: prev.phone || p.phone || '',
         address: prev.address || p.delivery_address || p.address || '',
@@ -172,8 +175,8 @@ export default function Checkout() {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Please fill in your name and email.');
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+      setError('Please fill in your first name, last name, and email.');
       return;
     }
     if (orderType === 'delivery' && !form.address.trim()) {
@@ -221,10 +224,11 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
+        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
-          customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
+          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: form.instructions,
           subtotal, deliveryFee, tax, total: totalWithTip,
           scheduledFor, estimatedTime,
@@ -238,10 +242,11 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
+        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
-          customer: { name: form.name, email: form.email, phone: form.phone, address: form.address, table: form.table },
+          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: form.instructions,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: 0, redemptionId: null,
@@ -369,8 +374,13 @@ export default function Checkout() {
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Full Name *</label>
-                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
+                      <input type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
+                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
+                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
