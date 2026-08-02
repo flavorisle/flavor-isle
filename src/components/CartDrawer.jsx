@@ -91,7 +91,11 @@ export default function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-              <ShoppingBag size={48} strokeWidth={1} />
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                alt="Your cart"
+                className="w-28 h-28 object-contain animate-float-up"
+              />
               <p className="font-body">Your cart is empty</p>
               <button
                 onClick={() => setIsCartOpen(false)}

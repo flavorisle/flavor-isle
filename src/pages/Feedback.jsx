@@ -1,5 +1,5 @@
 import React from 'react';
-import { PenLine, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -14,9 +14,11 @@ export default function Feedback() {
       {/* Hero */}
       <section className="bg-patina-mint/10 px-4 sm:px-6 py-14">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="w-16 h-16 bg-midnight-cherry rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <PenLine size={28} className="text-white" />
-          </div>
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8684a938f_Shareyourexperience.png"
+            alt="Share your Flavor Isle experience"
+            className="w-24 h-24 object-contain mx-auto mb-5 drop-shadow-md"
+          />
           <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">We'd Love to Hear From You</p>
           <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-4">Share Your Experience</h1>
           <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto">
