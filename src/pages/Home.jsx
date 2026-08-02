@@ -9,7 +9,7 @@ import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
 import StartOrderBand from '@/components/StartOrderBand';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
-import PopularTimesCard from '@/components/PopularTimesCard';
+
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
@@ -66,7 +66,6 @@ export default function Home() {
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
       <ConversionNudgeBar />
-      <PopularTimesCard />
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />

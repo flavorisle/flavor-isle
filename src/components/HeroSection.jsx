@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
-import BusynessStatus from '@/components/BusynessStatus';
+import PopularTimesCard from '@/components/PopularTimesCard';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED' },
@@ -69,9 +69,9 @@ export default function HeroSection() {
             </a>
           </div>
 
-          {/* Live status card */}
-          <div className="mt-10 max-w-md mx-auto">
-            <BusynessStatus />
+          {/* Live busy graph */}
+          <div className="mt-10">
+            <PopularTimesCard embedded />
           </div>
         </div>
       </div>

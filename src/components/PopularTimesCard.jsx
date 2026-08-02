@@ -18,7 +18,7 @@ function hourLabel(h) {
   return `${h - 12}p`;
 }
 
-export default function PopularTimesCard() {
+export default function PopularTimesCard({ embedded = false }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,10 +48,17 @@ export default function PopularTimesCard() {
   const busyPct = data?.busyPercent ?? 0;
   const weekday = data?.weekday ?? new Date().getDay();
 
+  const Wrapper = embedded
+    ? ({ children }) => <div className="w-full max-w-md mx-auto">{children}</div>
+    : ({ children }) => (
+        <section className="px-4 sm:px-6 py-8" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+          <div className="max-w-3xl mx-auto">{children}</div>
+        </section>
+      );
+
   return (
-    <section className="px-4 sm:px-6 py-8" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
-      <div className="max-w-3xl mx-auto">
-        <div className="card-diner p-5 sm:p-6">
+    <Wrapper>
+      <div className="card-diner p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
               <Activity size={18} className="text-midnight-cherry" />
@@ -115,8 +122,7 @@ export default function PopularTimesCard() {
               </p>
             </>
           )}
-        </div>
       </div>
-    </section>
+    </Wrapper>
   );
 }
