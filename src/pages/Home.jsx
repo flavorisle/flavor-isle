@@ -12,6 +12,7 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import PopularTimesCard from '@/components/PopularTimesCard';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
+import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
@@ -195,6 +196,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── DOWNLOAD APP BANNER ── */}
+      <DownloadAppBanner />
 
       {/* ── CTA BANNER ── */}
       <section className="py-16 bg-midnight-cherry px-4 sm:px-6">

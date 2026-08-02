@@ -11,6 +11,7 @@ import SavedAddressField from '@/components/checkout/SavedAddressField';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
+import DownloadAppBanner from '@/components/DownloadAppBanner';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
@@ -607,6 +608,8 @@ export default function Checkout() {
                   <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
                 </div>
               )}
+
+              <DownloadAppBanner variant="compact" />
             </div>
           </div>
         </div>
