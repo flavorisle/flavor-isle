@@ -49,9 +49,9 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
       if (Array.isArray(sel)) {
-        sel.forEach(m => selectedMods.push({ group: groupName, name: m.name, price: m.price }));
+        sel.forEach(m => selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
       } else {
-        selectedMods.push({ group: groupName, name: sel.name, price: sel.price });
+        selectedMods.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
       }
     }
     onConfirm(selectedMods, extraCost);

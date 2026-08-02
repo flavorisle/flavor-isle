@@ -197,6 +197,8 @@ export default function Checkout() {
       image_url: i.image_url,
       selectedModifiers: i.selectedModifiers || [],
       person_name: i.person_name || '',
+      catalog_object_id: i.catalog_object_id || '',
+      isBuildShake: !!i.isBuildShake,
     }));
 
     setLoading(true);
