@@ -40,7 +40,9 @@ export default function PopularTimesCard() {
   }, []);
 
   const hour = data?.hour ?? new Date().getHours();
-  const chart = data?.chart || [];
+  const OPEN_HOUR = 10;   // 10a
+  const CLOSE_HOUR = 21;  // 9p
+  const chart = (data?.chart || []).filter(c => c.hour >= OPEN_HOUR && c.hour <= CLOSE_HOUR);
   const peak = Math.max(1, ...chart.map(c => c.avg));
   const hasData = !!(data && (data.peakAvg > 1 || data.liveCount > 0 || chart.some(c => c.avg > 0)));
   const busyPct = data?.busyPercent ?? 0;
@@ -80,11 +82,11 @@ export default function PopularTimesCard() {
           ) : (
             <>
               <div className="flex items-end gap-[3px] sm:gap-1 h-28 mb-2">
-                {chart.map((c, i) => {
+                {chart.map((c) => {
                   const pctH = Math.max(4, Math.round((c.avg / peak) * 100));
-                  const isNow = i === hour;
+                  const isNow = c.hour === hour;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative">
+                    <div key={c.hour} className="flex-1 flex flex-col items-center justify-end h-full relative">
                       {isNow && (
                         <span className="absolute -top-4 text-[9px] font-heading text-midnight-cherry">Now</span>
                       )}
@@ -95,15 +97,17 @@ export default function PopularTimesCard() {
                           backgroundColor: isNow ? 'var(--midnight-cherry)' : 'rgba(0,51,102,0.28)',
                           minHeight: 4,
                         }}
-                        title={`${hourLabel(i)} — avg ${c.avg} order${c.avg === 1 ? '' : 's'}`}
+                        title={`${hourLabel(c.hour)} — avg ${c.avg} order${c.avg === 1 ? '' : 's'}`}
                       />
                     </div>
                   );
                 })}
               </div>
               <div className="flex gap-[3px] sm:gap-1 text-[9px] text-muted-foreground">
-                {chart.map((c, i) => (
-                  <div key={i} className="flex-1 text-center">{i % 3 === 0 ? hourLabel(i) : ''}</div>
+                {chart.map((c) => (
+                  <div key={c.hour} className="flex-1 text-center">
+                    {(c.hour - OPEN_HOUR) % 2 === 0 ? hourLabel(c.hour) : ''}
+                  </div>
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground mt-4 text-center">
