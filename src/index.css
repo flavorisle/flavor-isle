@@ -69,6 +69,12 @@
     --border: 210 60% 22%;
     --input: 210 60% 22%;
     --ring: 12 100% 40%;
+
+    /* Flavor Isle brand tokens — dark theme overrides */
+    --vanilla-malt: #071523;
+    --cream-white: #0f1f2e;
+    --obsidian-roast: #f0f5fa;
+
     --sidebar-background: 210 100% 8%;
     --sidebar-foreground: 42 67% 94%;
     --sidebar-primary: 12 100% 40%;

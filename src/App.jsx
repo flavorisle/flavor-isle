@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -11,6 +11,7 @@ import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
 import Home from './pages/Home';
@@ -38,6 +39,7 @@ import Combos from './pages/Combos';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -60,7 +62,15 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -8 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+      >
+        <Routes location={location}>
       {/* Public — no login required */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -89,7 +99,9 @@ const AuthenticatedApp = () => {
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

@@ -25,7 +25,15 @@ export default function BottomTabBar() {
   // instead of re-navigating (native-app feel).
   const handleTabClick = (to) => {
     if (location.pathname === to) {
+      // Already on this tab: snap back to the top and reset any transient
+      // view state (active modals, query params, in-page search) so the
+      // page returns to its clean default, then broadcast a retap event so
+      // the active view can close its own modals / clear its search box.
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (location.search) {
+        navigate(to, { replace: true });
+      }
+      window.dispatchEvent(new CustomEvent('flavorisle:tab-retap', { detail: { path: to } }));
     } else {
       navigate(to);
     }
