@@ -36,6 +36,7 @@ import ResetPassword from './pages/ResetPassword';
 import FacebookAd from './pages/FacebookAd';
 import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
+import DownloadApp from './pages/DownloadApp';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/feedback" element={<Feedback />} />
+      <Route path="/download" element={<DownloadApp />} />
 
       {/* Login required to view the menu, build an order, or access account */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
