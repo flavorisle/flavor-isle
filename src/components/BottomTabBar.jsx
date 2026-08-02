@@ -52,11 +52,19 @@ export default function BottomTabBar() {
           const content = (
             <span className="flex flex-col items-center justify-center gap-0.5 w-full">
               <span className="relative">
-                <Icon
-                  size={22}
-                  strokeWidth={active ? 2.4 : 2}
-                  className={active ? 'text-midnight-cherry' : 'text-muted-foreground'}
-                />
+                {tab.cart ? (
+                  <img
+                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                    alt="Cart"
+                    className="w-7 h-7 object-contain"
+                  />
+                ) : (
+                  <Icon
+                    size={22}
+                    strokeWidth={active ? 2.4 : 2}
+                    className={active ? 'text-midnight-cherry' : 'text-muted-foreground'}
+                  />
+                )}
                 {tab.cart && totalItems > 0 && (
                   <span className="absolute -top-2 -right-2.5 bg-midnight-cherry text-white text-[10px] font-heading leading-none w-4 h-4 rounded-full flex items-center justify-center">
                     {totalItems}

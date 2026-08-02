@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
+import { Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import useBusinessHours from '@/hooks/useBusinessHours';
@@ -64,9 +64,13 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 bg-midnight-cherry text-white rounded-full hover:bg-red-800 transition-colors">
+              className="relative p-1 rounded-full hover:opacity-90 transition">
               
-              <ShoppingBag size={18} />
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                alt="Cart"
+                className="w-10 h-10 object-contain"
+              />
               {totalItems > 0 &&
               <span className="absolute -top-1 -right-1 bg-patina-mint text-white text-xs font-heading w-5 h-5 rounded-full flex items-center justify-center animate-float-up">
                   {totalItems}

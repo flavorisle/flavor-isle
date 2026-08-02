@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Users } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ArrowRight, Users } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
@@ -44,9 +44,11 @@ export default function CartDrawer() {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-midnight-cherry rounded-full flex items-center justify-center">
-              <ShoppingBag size={18} className="text-white" />
-            </div>
+            <img
+              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+              alt="Your cart"
+              className="w-10 h-10 object-contain"
+            />
             <div>
               <h2 className="font-heading text-lg text-obsidian-roast">Your Order</h2>
               <p className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
