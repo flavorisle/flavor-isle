@@ -8,6 +8,7 @@ import SmashieChat from '@/components/SmashieChat';
 
 const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png'; // hands up
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
+const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
 const FEATURES = [
   { icon: Zap, title: 'Order Ahead', desc: 'Skip the wait. Build your order and grab it hot — pickup, delivery, or dine-in.' },
@@ -50,29 +51,37 @@ export default function DownloadApp() {
             <p className="text-gray-300 text-lg max-w-lg leading-relaxed mb-8">
               Order ahead, earn Star Rewards, track your food in real time, and chat with Smashie — all from your phone. Smashie says it's a no-brainer.
             </p>
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <a
-                href="#"
-                className="bg-white text-obsidian-roast font-heading px-6 py-3.5 rounded-2xl text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-3 chrome-hover"
-              >
+            <div className="flex items-center gap-4 justify-center md:justify-start">
+              <img
+                src={APP_ICON}
+                alt="Flavor Isle app icon"
+                className="w-20 h-20 rounded-2xl object-contain bg-white p-1.5 shadow-float-lg"
+              />
+              <div>
+                <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 border border-smashie-yellow/40 text-smashie-yellow px-3 py-1 rounded-full text-xs font-heading mb-2">
+                  <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> COMING SOON
+                </div>
+                <p className="text-gray-300 text-sm leading-snug max-w-xs">
+                  Launching on the App Store & Google Play soon. For now, order right here on the web.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-6">
+              <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
                 <Apple size={22} />
                 <span className="text-left leading-tight">
-                  <span className="block text-[10px] font-body font-semibold opacity-70">Download on the</span>
+                  <span className="block text-[10px] font-body font-semibold opacity-70">Coming to the</span>
                   App Store
                 </span>
-              </a>
-              <a
-                href="#"
-                className="bg-white text-obsidian-roast font-heading px-6 py-3.5 rounded-2xl text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-3 chrome-hover"
-              >
+              </span>
+              <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
                 <Play size={20} className="fill-current" />
                 <span className="text-left leading-tight">
-                  <span className="block text-[10px] font-body font-semibold opacity-70">Get it on</span>
+                  <span className="block text-[10px] font-body font-semibold opacity-70">Coming to</span>
                   Google Play
                 </span>
-              </a>
+              </span>
             </div>
-            <p className="text-gray-400 text-xs mt-4">Free to download. Order anytime we're open.</p>
           </div>
         </div>
       </section>
@@ -109,13 +118,13 @@ export default function DownloadApp() {
               Download the app, sign in, and Smashie's right there in your pocket — ready to take your order, drop a recommendation, or just hype you up.
             </p>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <a href="#" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-2">
-                <Apple size={18} /> App Store
-              </a>
-              <a href="#" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-2">
-                <Play size={16} className="fill-current" /> Google Play
-              </a>
-              <Link to="/menu" className="border-2 border-white/40 text-white font-heading px-6 py-3 rounded-full text-sm hover:bg-white/10 transition-colors flex items-center gap-2">
+              <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
+                <Apple size={18} /> App Store · Soon
+              </span>
+              <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
+                <Play size={16} className="fill-current" /> Google Play · Soon
+              </span>
+              <Link to="/menu" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-2">
                 Order on the Web <ArrowRight size={16} />
               </Link>
             </div>
