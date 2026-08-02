@@ -2,22 +2,23 @@ import React from 'react';
 import { Wifi, BatteryFull, Search, Receipt, User, ShoppingBag, Star, Plus, ChevronLeft, Home } from 'lucide-react';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
+const HERO_BURGER = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png';
 
-// Real photos already synced from Square — real Flavor Isle item imagery.
+// Real Flavor Isle food photos provided by the owner.
 const BEST_SELLERS = [
   {
-    name: 'Circus Cookie Bliss Milkshake',
-    desc: 'Real ice cream, cookie crumble, thick shake',
-    price: 5.99,
+    name: 'The OG Double Cheeseburger',
+    desc: 'Two fresh patties, melted American cheese',
+    price: 9.5,
     rating: 4.8,
-    image: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/fce44bc19f5273f8db53155385a31671b33671c4/original.jpeg',
+    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a5648d9bc_20240618_193404581_iOS.jpg',
   },
   {
-    name: '8pc Mozzarella Sticks',
-    desc: 'Golden, gooey, served with marinara',
-    price: 6.6,
+    name: 'Loaded Bacon Cheese Fries',
+    desc: 'Crinkle fries, cheese sauce, bacon, ranch',
+    price: 4.99,
     rating: 4.7,
-    image: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/674666783b85ac5a983b1acb8611e322faab2e3f/original.jpeg',
+    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d03ee300c_IMG_9874.jpg',
   },
 ];
 
@@ -67,13 +68,13 @@ export default function AppPhoneMockup() {
         {/* Scrollable app content */}
         <div className="h-[520px] overflow-y-auto scrollbar-hide px-3 pb-3">
           {/* Hero */}
-          <div
-            className="rounded-2xl overflow-hidden relative h-36 flex flex-col items-center justify-center mb-3"
-            style={{ background: 'linear-gradient(135deg, #003366 0%, #0b2f50 100%)' }}
-          >
-            <img src={LOGO} alt="Flavor Isle" className="w-16 h-16 rounded-full object-contain mb-1 bg-white/90 p-1" />
-            <div className="font-heading text-white text-lg leading-none">FLAVOR ISLE</div>
-            <div className="text-white/70 text-[10px] tracking-widest">SMASH BURGERS · SHAKES</div>
+          <div className="rounded-2xl overflow-hidden relative h-36 mb-3">
+            <img src={HERO_BURGER} alt="Flavor Isle double cheeseburger" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 flex flex-col items-center justify-end pb-2" style={{ background: 'linear-gradient(to top, rgba(0,51,102,0.78) 0%, rgba(0,51,102,0) 55%)' }}>
+              <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-full object-contain mb-0.5 bg-white/90 p-0.5" />
+              <div className="font-heading text-white text-base leading-none">FLAVOR ISLE</div>
+              <div className="text-white/80 text-[8px] tracking-widest">SMITHS GROVE, KY</div>
+            </div>
           </div>
 
           {/* Craving pills */}
