@@ -108,35 +108,6 @@ export default function DownloadApp() {
         </div>
       </section>
 
-      {/* Screenshots */}
-      <section className="py-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">A Quick Look</p>
-            <h2 className="font-heading text-4xl text-obsidian-roast">Inside the App</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {[
-              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/813b75f95_generated_image.png',
-              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/44eb616fb_generated_image.png',
-              'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/610e99463_generated_image.png',
-            ].map((src, i) => (
-              <div key={i} className="mx-auto" style={{ maxWidth: 280 }}>
-                <div className="relative rounded-[2.5rem] bg-obsidian-roast p-2 shadow-float-lg">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-obsidian-roast rounded-full z-10" />
-                  <img
-                    src={src}
-                    alt={`Flavor Isle app screen ${i + 1}`}
-                    className="w-full rounded-[2rem] object-cover"
-                    style={{ aspectRatio: '9 / 19.5' }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Smashie CTA band */}
       <section className="py-16 bg-patina-mint px-4 sm:px-6">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
