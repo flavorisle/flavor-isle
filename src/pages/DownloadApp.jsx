@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
+import AppPhoneMockup from '@/components/AppPhoneMockup';
 
 const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png'; // hands up
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
@@ -82,6 +83,27 @@ export default function DownloadApp() {
                 </span>
               </span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* App preview — phone mockup */}
+      <section className="py-16 px-4 sm:px-6" style={{ backgroundColor: '#F7F3E8' }}>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10">
+          <div className="flex-1 text-center md:text-left">
+            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">A Sneak Peek</p>
+            <h2 className="font-heading text-4xl text-obsidian-roast mb-3">The App, In Your Pocket</h2>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
+              Browse best sellers, build a shake, track your order in real time, and watch your Star Rewards stack up — all in a clean, fast app built for Flavor Isle.
+            </p>
+            <ul className="space-y-2 text-sm text-obsidian-roast max-w-md mx-auto md:mx-0">
+              <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> Craving pills to jump to burgers, shakes & more</li>
+              <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> One-tap add to cart from best sellers</li>
+              <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> Live order tracking + rewards on the home screen</li>
+            </ul>
+          </div>
+          <div className="flex-shrink-0">
+            <AppPhoneMockup />
           </div>
         </div>
       </section>
