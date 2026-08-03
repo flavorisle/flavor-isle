@@ -2,7 +2,7 @@
 // this module from frontend code. Public key is duplicated in src/lib/pushConfig.js
 // for the browser subscription step.
 export const VAPID_PUBLIC_KEY =
-  'BJgwUBrlDSazh25COeIRpUhHywnzSMpRlM3yYfwgYBsFVE6k6xvxsweizMLToPgnb1w1QUUydYzQ0UFbakX8mv8';
+  'BLdY9j6AzntTNW1t9fl3hYJF2PFjlftmpOnTLAR1d3YIODutic-3pqOUehpu6GD85z6QdXSZdfaR0jEkWHxWYdY';
 export const VAPID_PRIVATE_KEY =
-  'sBct-OqoiNJFGOmizhQWwwZAS4MtsbEPWH5PtuDJ9vA';
+  'DAxFL62EQBn02C_1gfnpfhso5XK3P4ZCJctpoJ_ee-y';
 export const VAPID_SUBJECT = 'mailto:hello@flavor-isle.com';
