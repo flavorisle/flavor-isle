@@ -251,108 +251,29 @@ export default function Combos() {
           backgroundImage: `radial-gradient(circle at 20% 50%, rgba(204,51,0,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(0,51,102,0.4) 0%, transparent 55%)`
         }} />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-midnight-cherry/20 border border-midnight-cherry/40 text-red-300 px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
-            <Package size={14} /> Build a Bundle
+          <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-5 py-2.5 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
+            <Package size={14} /> Coming Soon
           </div>
           <h1 className="font-heading text-7xl sm:text-9xl text-white leading-none mb-4">COMBO ISLE</h1>
           <p className="text-gray-300 text-lg mb-2">Pick a main, a side, and a drink.</p>
           <p className="text-gray-400 text-base mb-12">Name it. Stack it.</p>
           <button onClick={scrollToBuilder} className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base">
-            Start Building <ArrowDown size={18} />
+            Learn More <ArrowDown size={18} />
           </button>
         </div>
       </section>
 
-      {/* Builder */}
-      <section ref={builderRef} className="py-16 px-4 sm:px-6 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-3">Your Combo, Your Way</p>
-            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast">BUILD YOUR COMBO</h2>
+      {/* Coming Soon */}
+      <section ref={builderRef} className="py-20 px-4 sm:px-6 bg-white">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 text-smashie-yellow px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-6">
+            <Package size={14} /> Coming Soon
           </div>
-
-          {/* Step tabs */}
-          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-            {STEPS.map((s, i) => (
-              <button key={s.num} onClick={() => i <= step || canProceed ? setStep(i) : null}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl font-heading text-sm transition-all ${step === i ? 'bg-obsidian-roast text-white shadow-float' : i < step ? 'bg-midnight-cherry/10 text-midnight-cherry border border-midnight-cherry/30' : 'bg-muted text-muted-foreground'}`}>
-                <span className="opacity-60 text-xs">{s.num}</span>{s.label}{i < step && <Check size={12} />}
-              </button>
-            ))}
-          </div>
-
-          <div className="card-diner p-6 md:p-8">
-            {/* Step 0: Combo config */}
-            {step === 0 && (
-              <div>
-                <h3 className="font-heading text-2xl text-obsidian-roast mb-6">Choose Your Bundle</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {combos.map(c => (
-                    <button key={c.id} onClick={() => { setSelectedCombo(c); setPicks({ main: null, side: null, drink: null }); }}
-                      className={`p-5 rounded-2xl border-2 text-left transition-all ${selectedCombo?.id === c.id ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border hover:border-midnight-cherry/40 bg-white'}`}>
-                      <p className="font-heading text-lg text-obsidian-roast">{c.name}</p>
-                      {c.description && <p className="text-sm text-muted-foreground mt-1">{c.description}</p>}
-                      <p className="text-xs text-patina-mint font-heading mt-2 uppercase tracking-wider">{c.main_category} · {c.side_category} · {c.drink_category}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Step 1-3: pickers */}
-            {step === 1 && <div><h3 className="font-heading text-2xl text-obsidian-roast mb-6">Pick Your Main</h3><ItemPicker items={mainItems} slot="main" selected={picks.main} label={`Main — ${selectedCombo?.main_category}`} emoji="🍔" /></div>}
-            {step === 2 && <div><h3 className="font-heading text-2xl text-obsidian-roast mb-6">Pick Your Side</h3><ItemPicker items={sideItems} slot="side" selected={picks.side} label={`Side — ${selectedCombo.side_category}`} emoji="🍟" /></div>}
-            {step === 3 && <div><h3 className="font-heading text-2xl text-obsidian-roast mb-6">Pick Your Drink</h3><ItemPicker items={drinkItems} slot="drink" selected={picks.drink} label={`Drink — ${selectedCombo.drink_category}`} emoji="🧋" /></div>}
-            {/* Step 4: name + add */}
-            {step === 4 && (
-              <div>
-                <h3 className="font-heading text-2xl text-obsidian-roast mb-2">Name Your Combo</h3>
-                <p className="text-muted-foreground text-sm mb-6">Give it a custom name so it stands out on the order — we'll number it automatically.</p>
-
-                {/* Group person selector */}
-                {groupMode && (
-                  <div className="mb-6 bg-patina-mint/5 border border-patina-mint/20 rounded-2xl p-4">
-                    <p className="text-xs font-heading uppercase tracking-widest text-patina-mint mb-2 flex items-center gap-1"><User size={12} /> Ordering For</p>
-                    <div className="flex flex-wrap gap-2">
-                      {people.map(p => (
-                        <button key={p.id} onClick={() => setActivePersonId(p.id)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-heading transition-all ${activePerson?.id === p.id ? 'bg-patina-mint text-white' : 'bg-muted text-obsidian-roast hover:bg-patina-mint/20'}`}>
-                          {p.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Alex's Triple Threat"
-                  className="w-full px-5 py-4 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry mb-2" maxLength={40} />
-                <p className="text-xs text-muted-foreground mb-5">This will appear as: <span className="font-heading text-obsidian-roast">Combo #{nextComboNumber} — {personLabel}{customName.trim() || 'Main + Side + Drink'}</span></p>
-
-                {/* Summary */}
-                <div className="bg-muted rounded-2xl p-5 mb-6 space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🍔 {picks.main?.name}</span><span className="text-muted-foreground">${picks.main?.price.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🍟 {picks.side?.name}</span><span className="text-muted-foreground">${picks.side?.price.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-obsidian-roast font-heading">🧋 {picks.drink?.name}</span><span className="text-muted-foreground">${picks.drink?.price.toFixed(2)}</span></div>
-                  <div className="flex justify-between font-heading text-obsidian-roast text-lg pt-2 border-t border-border"><span>Combo Price</span><span className="text-midnight-cherry">${comboPrice.toFixed(2)}</span></div>
-                </div>
-
-                <button onClick={handleAddCombo} disabled={!allPicked}
-                  className={`btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${!allPicked ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                  {added ? <><Check size={16} /> Added! Build Another?</> : <><ShoppingBag size={16} /> Add Combo — ${comboPrice.toFixed(2)}</>}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Nav */}
-          <div className="flex items-center justify-between mt-6">
-            <button onClick={() => setStep(s => Math.max(0, s - 1))} className={`px-6 py-3 rounded-2xl border border-border font-heading text-sm text-obsidian-roast hover:bg-muted transition-all ${step === 0 ? 'invisible' : ''}`}>← Back</button>
-            {step < 4 && (
-              <button onClick={() => canProceed && setStep(s => s + 1)} disabled={!canProceed}
-                className={`btn-cherry chrome-hover flex items-center gap-2 px-8 py-3 font-heading text-sm ${!canProceed ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                Next <ChevronRight size={16} />
-              </button>
-            )}
-          </div>
+          <h2 className="font-heading text-5xl sm:text-6xl text-obsidian-roast mb-4">COMBO BUILDER</h2>
+          <p className="text-muted-foreground text-lg mb-10">We're cooking up something special. Our combo builder will let you mix a main, a side, and a drink into one stacked deal — stay tuned!</p>
+          <button onClick={() => navigate('/menu')} className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm">
+            <ShoppingBag size={16} /> Order from the Menu
+          </button>
         </div>
       </section>
 
