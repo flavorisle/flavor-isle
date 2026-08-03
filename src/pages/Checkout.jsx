@@ -103,12 +103,8 @@ export default function Checkout() {
       const p = profiles?.[0] || {};
       if (cancelled) return;
       if (p.delivery_address || p.address) setSavedAddress(true);
-      const savedName = p.name || me.full_name || '';
-      const nameParts = savedName.split(/\s+(?=\S)/); // split into first + rest
       setForm(prev => ({
         ...prev,
-        firstName: prev.firstName || nameParts[0] || '',
-        lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
         email: prev.email || me.email || '',
         phone: prev.phone || p.phone || '',
         address: prev.address || p.delivery_address || p.address || '',
