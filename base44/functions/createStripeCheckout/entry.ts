@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const orderTypeLabel = orderType === 'pickup' ? 'Pickup' : orderType === 'delivery' ? 'Delivery' : 'Dine-In';
 
     // Generate order number
-    const orderNumber = `FI-${Date.now().toString().slice(-6)}`;
+    const orderNumber = Date.now().toString().slice(-6);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

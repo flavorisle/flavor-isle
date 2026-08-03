@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
 
-    const orderNumber = `FI-${Date.now().toString().slice(-6)}`;
+    const orderNumber = Date.now().toString().slice(-6);
     const amountCents = Math.round(total * 100);
 
     const paymentIntent = await stripe.paymentIntents.create({
