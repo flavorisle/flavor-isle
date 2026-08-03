@@ -7,11 +7,21 @@ const _wp = webpushModule.default || webpushModule;
 const setVapidDetails = _wp.setVapidDetails || webpushModule.setVapidDetails;
 const sendNotification = _wp.sendNotification || webpushModule.sendNotification;
 
+console.log('web-push module shape:', JSON.stringify({
+  hasDefault: !!webpushModule.default,
+  wpKeys: Object.keys(_wp || {}),
+  setVapidIsFn: typeof setVapidDetails,
+  sendIsFn: typeof sendNotification,
+  pubKeyLen: VAPID_PUBLIC_KEY?.length,
+  privKeyLen: VAPID_PRIVATE_KEY?.length,
+}));
+
 let vapidConfigured = false;
 function ensureVapid() {
   if (!vapidConfigured) {
     setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
     vapidConfigured = true;
+    console.log('VAPID details set successfully');
   }
 }
 
@@ -20,6 +30,7 @@ function ensureVapid() {
 export async function sendPushToSubscriptions(base44, subscriptions, payload) {
   ensureVapid();
   let sent = 0;
+  const errors = [];
   for (const sub of subscriptions) {
     try {
       await sendNotification(
@@ -28,21 +39,25 @@ export async function sendPushToSubscriptions(base44, subscriptions, payload) {
       );
       sent++;
     } catch (err) {
+      errors.push({
+        message: err.message,
+        statusCode: err.statusCode,
+        body: err.body,
+        endpoint: sub.endpoint?.slice(0, 50),
+      });
       if (err.statusCode === 410 || err.statusCode === 404) {
         try {
           await base44.asServiceRole.entities.PushSubscription.delete(sub.id);
         } catch (_) { /* already gone */ }
-      } else {
-        console.error('Push send failed:', err.message);
       }
     }
   }
-  return sent;
+  return { sent, errors };
 }
 
 // Sends a push to every subscription belonging to a given customer email.
 export async function sendPushToEmail(base44, email, payload) {
-  if (!email) return 0;
+  if (!email) return { sent: 0, errors: [] };
   const subs = await base44.asServiceRole.entities.PushSubscription.filter({ email });
   return sendPushToSubscriptions(base44, subs, payload);
 }

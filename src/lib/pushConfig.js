@@ -1,4 +1,4 @@
 // VAPID public key — safe to expose in the browser. Used to subscribe to push.
 // The matching private key lives server-side only (base44/shared/vapidKeys.ts).
 export const VAPID_PUBLIC_KEY =
-  'BLdY9j6AzntTNW1t9fl3hYJF2PFjlftmpOnTLAR1d3YIODutic-3pqOUehpu6GD85z6QdXSZdfaR0jEkWHxWYdY';
+  'BJzBPJd86bKb_5i-CnEvEugtL8NHi1yKMhVL_a8YUqDgu7JSOHOTLCGV9KkyedunWjEjPC9hmmn9xMZ38YHQSvY';
