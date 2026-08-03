@@ -259,7 +259,7 @@ function LoggedInAccount({ user, logout }) {
 
       {/* Tabs */}
       <div className="border-b border-border bg-white sticky top-[88px] z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex gap-0">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex gap-0 overflow-x-auto scrollbar-hide">
           {[
             { key: 'orders', label: 'My Orders', icon: ShoppingBag },
             { key: 'track', label: 'Track Order', icon: ClipboardList },
@@ -270,7 +270,7 @@ function LoggedInAccount({ user, logout }) {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-heading border-b-2 transition-colors ${tab === key ? 'border-midnight-cherry text-midnight-cherry' : 'border-transparent text-muted-foreground hover:text-obsidian-roast'}`}
+              className={`flex items-center gap-2 px-5 sm:px-6 py-4 text-sm font-heading border-b-2 transition-colors flex-shrink-0 whitespace-nowrap ${tab === key ? 'border-midnight-cherry text-midnight-cherry' : 'border-transparent text-muted-foreground hover:text-obsidian-roast'}`}
             >
               <Icon size={16} /> {label}
               {key === 'orders' && activeOrders.length > 0 && (
