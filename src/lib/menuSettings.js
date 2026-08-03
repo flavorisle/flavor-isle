@@ -1,20 +1,47 @@
 import { base44 } from '@/api/base44Client';
 
 // Single-record settings document for menu-wide configuration.
+// Module-level cache so multiple components/hooks on the same page load
+// share one API call instead of each firing MenuSetting.list() independently.
+let _cachedSetting = null;
+let _fetchPromise = null;
+
 export async function getMenuSetting() {
-  const list = await base44.entities.MenuSetting.list();
-  const existing = (list || [])[0];
-  if (existing) return existing;
-  return base44.entities.MenuSetting.create({ hidden_categories: [] });
+  if (_cachedSetting) return _cachedSetting;
+  if (_fetchPromise) return _fetchPromise;
+  _fetchPromise = (async () => {
+    const list = await base44.entities.MenuSetting.list();
+    const existing = (list || [])[0];
+    if (existing) {
+      _cachedSetting = existing;
+      return existing;
+    }
+    const created = await base44.entities.MenuSetting.create({ hidden_categories: [] });
+    _cachedSetting = created;
+    return created;
+  })();
+  try {
+    return await _fetchPromise;
+  } finally {
+    _fetchPromise = null;
+  }
+}
+
+// Allow admin pages to bust the cache after updating settings.
+export function bustMenuSettingCache() {
+  _cachedSetting = null;
+  _fetchPromise = null;
 }
 
 export async function setHiddenCategories(hiddenCategories) {
   const setting = await getMenuSetting();
   if (setting?.id) {
     await base44.entities.MenuSetting.update(setting.id, { hidden_categories: hiddenCategories });
+    bustMenuSettingCache();
     return setting.id;
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: hiddenCategories });
+  bustMenuSettingCache();
   return created.id;
 }
 
@@ -22,9 +49,11 @@ export async function setCategorySortOrder(order) {
   const setting = await getMenuSetting();
   if (setting?.id) {
     await base44.entities.MenuSetting.update(setting.id, { category_sort_order: order });
+    bustMenuSettingCache();
     return setting.id;
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_sort_order: order });
+  bustMenuSettingCache();
   return created.id;
 }
 
@@ -36,12 +65,14 @@ export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutof
     pickup_cutoff_minutes: pickupCutoff,
   };
   await base44.entities.MenuSetting.update(setting.id, updates);
+  bustMenuSettingCache();
   return { ...setting, ...updates };
 }
 
 export async function setBusinessHours(hours) {
   const setting = await getMenuSetting();
   await base44.entities.MenuSetting.update(setting.id, { business_hours: hours });
+  bustMenuSettingCache();
   return { ...setting, business_hours: hours };
 }
 
@@ -51,22 +82,27 @@ export async function setOrderingEnabled(enabled, closedMessage) {
   if (typeof closedMessage === 'string') updates.ordering_closed_message = closedMessage;
   if (setting?.id) {
     await base44.entities.MenuSetting.update(setting.id, updates);
+    bustMenuSettingCache();
     return { ...setting, ...updates };
   }
-  return base44.entities.MenuSetting.create({
+  const created = await base44.entities.MenuSetting.create({
     hidden_categories: [],
     ordering_enabled: enabled,
     ordering_closed_message: typeof closedMessage === 'string' ? closedMessage : 'Ordering is temporarily closed',
   });
+  bustMenuSettingCache();
+  return created;
 }
 
 export async function setCategoryRenames(renames) {
   const setting = await getMenuSetting();
   if (setting?.id) {
     await base44.entities.MenuSetting.update(setting.id, { category_renames: renames });
+    bustMenuSettingCache();
     return setting.id;
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_renames: renames });
+  bustMenuSettingCache();
   return created.id;
 }
 
@@ -74,8 +110,10 @@ export async function setCategoryItemOrder(order) {
   const setting = await getMenuSetting();
   if (setting?.id) {
     await base44.entities.MenuSetting.update(setting.id, { category_item_order: order });
+    bustMenuSettingCache();
     return setting.id;
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_item_order: order });
+  bustMenuSettingCache();
   return created.id;
 }
