@@ -8,6 +8,7 @@ import StoreStatusCard from '@/components/StoreStatusCard';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
+import BroadcastPushCard from '@/components/BroadcastPushCard';
 
 const adminPages = [
 {
@@ -57,6 +58,8 @@ export default function AdminDashboard() {
       <OrderCutoffSettings />
 
       <BusinessHoursSettings />
+
+      <BroadcastPushCard />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />

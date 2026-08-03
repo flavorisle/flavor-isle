@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderStatusTracker from '@/components/OrderStatusTracker';
+import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
@@ -534,6 +535,8 @@ function LoggedInAccount({ user, logout }) {
                 </div>
               )}
             </div>
+
+            <PushNotificationPrompt />
           </div>
         )}
       </div>
