@@ -47,6 +47,10 @@ export default function usePushNotifications() {
       if (!reg) reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
       await navigator.serviceWorker.ready;
 
+      // Clear any existing subscription (may have been created with a previous VAPID key)
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
