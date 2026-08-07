@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, Check, Sparkles } from 'lucide-react';
 import { buildDeluxeLabel } from '@/lib/deluxeLabel';
+import { getDeluxePresetForItem, isDeluxePresetActive, applyDeluxePreset } from '@/lib/deluxeConfig';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -19,6 +20,15 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   };
 
   const [selections, setSelections] = useState(initSelections);
+
+  // Deluxe preset — a one-tap shortcut that selects a fixed set of toppings.
+  const deluxePreset = getDeluxePresetForItem(item);
+  const deluxeActive = isDeluxePresetActive(selections, deluxePreset);
+
+  const toggleDeluxe = () => {
+    if (!deluxePreset) return;
+    setSelections((prev) => applyDeluxePreset(prev, deluxePreset, !deluxeActive));
+  };
 
   const toggleSingle = (groupName, mod) => {
     setSelections(prev => ({
@@ -95,6 +105,29 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
+          {deluxePreset && (
+            <button
+              type="button"
+              onClick={toggleDeluxe}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
+                deluxeActive
+                  ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                  : 'border-midnight-cherry/40 bg-midnight-cherry/5 text-midnight-cherry hover:bg-midnight-cherry/10'
+              }`}
+            >
+              <span className="flex items-center gap-2 font-heading text-sm">
+                <Sparkles size={16} />
+                Make it {deluxePreset.name}
+              </span>
+              <span className="flex items-center gap-2 text-xs font-body">
+                {deluxePreset.modifiers.map((m) => m.name).join(', ')}
+                <span className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${deluxeActive ? 'bg-white border-white' : 'border-midnight-cherry'}`}>
+                  {deluxeActive && <Check size={12} className="text-midnight-cherry" />}
+                </span>
+              </span>
+            </button>
+          )}
+
           {hasModifiers ? (
             item.modifiers.map(group => (
               <div key={group.name}>
