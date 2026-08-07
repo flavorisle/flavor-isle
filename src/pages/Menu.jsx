@@ -96,27 +96,28 @@ export default function Menu() {
 
           {/* Order type switcher */}
           <div className="grid grid-cols-3 gap-3 max-w-2xl">
-            {Object.entries(ORDER_TYPE_CONFIG).map(([type, config]) => (
-              <button
-                key={type}
-                onClick={() => setOrderType(type)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
-                  orderType === type
-                    ? 'bg-midnight-cherry text-white shadow-float ring-2 ring-smashie-yellow'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                }`}
-              >
-                <img
-                  src={ORDER_TYPE_IMAGES[type]}
-                  alt={config.label}
-                  className="w-16 h-16 object-contain rounded-lg"
-                />
-                <span className="font-heading text-sm">{config.label}</span>
-                <span className={`text-xs font-body ${orderType === type ? 'text-red-200' : 'text-white/40'}`}>
-                  {config.time}
-                </span>
-              </button>
-            ))}
+            {Object.entries(ORDER_TYPE_CONFIG).map(([type, config]) => {
+              const active = orderType === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setOrderType(type)}
+                  className={`group relative overflow-hidden rounded-2xl transition-all ${
+                    active ? 'ring-2 ring-smashie-yellow shadow-float' : 'ring-1 ring-white/15 hover:ring-white/40'
+                  }`}
+                >
+                  <img
+                    src={ORDER_TYPE_IMAGES[type]}
+                    alt={config.label}
+                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-80 group-hover:opacity-100'}`}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-center">
+                    <span className="block font-heading text-sm text-white leading-none">{config.label}</span>
+                    <span className="text-[11px] font-body text-white/70">{config.time}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
