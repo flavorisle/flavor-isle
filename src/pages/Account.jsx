@@ -123,6 +123,21 @@ function LoggedInAccount({ user, logout }) {
   const [deleting, setDeleting] = useState(false);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
 
+  const refreshStarStatus = async () => {
+    setStarLoading(true);
+    try {
+      // The backend reads the phone from the saved CustomerProfile (phone is
+      // the primary key for Square loyalty), so this re-sync surfaces the
+      // customer's star progress immediately after they add/update it.
+      const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
+      setStarStatus(res.data);
+    } catch (e) {
+      setStarStatus(null);
+    } finally {
+      setStarLoading(false);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     setStarLoading(true);
@@ -155,15 +170,9 @@ function LoggedInAccount({ user, logout }) {
       }
       setOrders(ords || []);
       setFavorites(favs || []);
-      try {
-        const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
-        setStarStatus(res.data);
-      } catch (e) {
-        setStarStatus(null);
-      }
+      await refreshStarStatus();
     } finally {
       setLoading(false);
-      setStarLoading(false);
     }
   };
 
@@ -177,6 +186,10 @@ function LoggedInAccount({ user, logout }) {
       await base44.entities.CustomerProfile.update(profile.id, form);
       setProfile(p => ({ ...p, ...form }));
       setEditing(false);
+      // Re-sync Star Rewards whenever the profile changes — phone is what
+      // links the online account to the in-store Square loyalty program, so
+      // adding/updating it should surface the customer's star progress live.
+      await refreshStarStatus();
     } finally {
       setSaving(false);
     }
