@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Check } from 'lucide-react';
+import { Plus, X, Check, Sparkles } from 'lucide-react';
+import { buildDeluxeLabel } from '@/lib/deluxeLabel';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -38,6 +39,19 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     });
   };
 
+  // Flatten the current selections into the same shape used by the cart so the
+  // Deluxe label can update live as the customer toggles toppings.
+  const liveModifiers = [];
+  for (const [groupName, sel] of Object.entries(selections)) {
+    if (!sel) continue;
+    if (Array.isArray(sel)) {
+      sel.forEach((m) => liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+    } else {
+      liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+    }
+  }
+  const deluxeLabel = buildDeluxeLabel(liveModifiers);
+
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
@@ -66,6 +80,12 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             <h3 className="font-heading text-xl text-obsidian-roast">{item.name}</h3>
             {item.description && (
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
+            )}
+            {deluxeLabel && (
+              <div className="mt-2 inline-flex items-center gap-1.5 bg-midnight-cherry/10 text-midnight-cherry text-xs font-heading px-3 py-1 rounded-full">
+                <Sparkles size={12} />
+                {deluxeLabel}
+              </div>
             )}
           </div>
           <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
