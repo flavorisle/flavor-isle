@@ -15,6 +15,7 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import SignUpNudge from '@/components/SignUpNudge';
+import MadeFreshBanner from '@/components/MadeFreshBanner';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -180,6 +181,8 @@ export default function Menu() {
           </div>
         }
       </div>
+
+      <MadeFreshBanner />
 
       {/* Floating cart bubble */}
       {totalItems > 0 &&
