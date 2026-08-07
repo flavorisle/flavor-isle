@@ -87,13 +87,15 @@ const AuthenticatedApp = () => {
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
 
-      {/* Login required to view the menu, build an order, or access account */}
+      {/* Public — browse & order without an account */}
+      <Route path="/menu" element={<Menu />} />
+      <Route path="/combos" element={<Combos />} />
+      <Route path="/milkshakes" element={<Milkshakes />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/order-confirmation" element={<OrderConfirmation />} />
+
+      {/* Login required to view account, rewards, or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/menu" element={<Menu />} />
-        <Route path="/combos" element={<Combos />} />
-        <Route path="/milkshakes" element={<Milkshakes />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/account" element={<AccountNew />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/admin" element={<AdminDashboard />} />

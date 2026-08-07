@@ -14,6 +14,7 @@ import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import SignUpNudge from '@/components/SignUpNudge';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -124,6 +125,10 @@ export default function Menu() {
       }
 
       <AdBannerStrip placement="menu" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <SignUpNudge variant="compact" />
+      </div>
 
       {/* Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">

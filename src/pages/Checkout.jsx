@@ -12,6 +12,7 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
+import SignUpNudge from '@/components/SignUpNudge';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
@@ -616,6 +617,10 @@ export default function Checkout() {
               )}
 
               <DownloadAppBanner variant="compact" />
+
+              <div className="mt-4">
+                <SignUpNudge variant="compact" />
+              </div>
             </div>
           </div>
         </div>

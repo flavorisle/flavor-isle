@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { CheckCircle, Clock, MapPin, ShoppingBag, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SignUpNudge from '@/components/SignUpNudge';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -91,6 +92,8 @@ export default function OrderConfirmation() {
             </Link>
           </div>
         </div>
+
+        <SignUpNudge variant="featured" />
       </div>
 
       <Footer />
