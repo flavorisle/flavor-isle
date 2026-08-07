@@ -13,6 +13,7 @@ import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import SignUpNudge from '@/components/SignUpNudge';
+import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
@@ -332,10 +333,10 @@ export default function Checkout() {
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { type: 'pickup', Icon: ShoppingBag, label: 'Pickup', sub: '15–25 min' },
-                      { type: 'delivery', Icon: Bike, label: 'Delivery', sub: '35–50 min' },
-                      { type: 'dine_in', Icon: Utensils, label: 'Dine-In', sub: 'Seat yourself' },
-                    ].map(({ type, Icon, label, sub }) => (
+                      { type: 'pickup', label: 'Pickup', sub: '15–25 min' },
+                      { type: 'delivery', label: 'Delivery', sub: '35–50 min' },
+                      { type: 'dine_in', label: 'Dine-In', sub: 'Seat yourself' },
+                    ].map(({ type, label, sub }) => (
                       <button
                         key={type}
                         onClick={() => {
@@ -353,7 +354,11 @@ export default function Checkout() {
                             : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
                         }`}
                       >
-                        <Icon size={20} />
+                        <img
+                          src={ORDER_TYPE_IMAGES[type]}
+                          alt={label}
+                          className={`w-16 h-16 object-contain rounded-lg ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
+                        />
                         {label}
                         <span className="text-xs font-body opacity-60">{cutoffStatus[type] ? 'Closed for tonight' : sub}</span>
                       </button>
