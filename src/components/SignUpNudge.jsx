@@ -40,15 +40,15 @@ export default function SignUpNudge({ variant = 'compact' }) {
             <Star size={22} className="text-smashie-yellow" fill="currentColor" />
           </div>
           <div>
-            <h3 className="font-heading text-xl text-obsidian-roast leading-none">Save this order & earn rewards</h3>
-            <p className="text-xs text-muted-foreground mt-1">Create a free account — it takes 30 seconds.</p>
+            <h3 className="font-heading text-xl text-obsidian-roast leading-none">Create an account to save your order history</h3>
+            <p className="text-xs text-muted-foreground mt-1">Track your Star Rewards loyalty points — it takes 30 seconds.</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
-            { icon: Gift, label: 'Earn Stars', desc: 'Every order counts' },
-            { icon: RefreshCw, label: 'Easy Reorder', desc: 'One tap to repeat' },
-            { icon: UserPlus, label: 'Save Info', desc: 'No re-typing' },
+            { icon: RefreshCw, label: 'Order History', desc: 'See every past order' },
+            { icon: Gift, label: 'Track Rewards', desc: 'Watch your Stars add up' },
+            { icon: UserPlus, label: 'Easy Reorder', desc: 'One tap to repeat' },
           ].map((b) => (
             <div key={b.label} className="text-center bg-white/60 rounded-2xl p-3">
               <b.icon size={18} className="text-midnight-cherry mx-auto mb-1" />
