@@ -46,6 +46,21 @@ export async function searchSquareCustomerIdByEmail(email: string): Promise<stri
   return data?.customers?.[0]?.id || null;
 }
 
+// Square loyalty accounts are keyed by phone number. Search the Square
+// customer directory by phone (E.164) to resolve a customer_id for account
+// creation when no loyalty account yet exists.
+export async function searchSquareCustomerIdByPhone(phone: string): Promise<string | null> {
+  const e164 = toE164Phone(phone);
+  if (!e164) return null;
+  const res = await fetch(`${SQUARE_API}/customers/search`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ query: { filter: { phone_number: { exact: e164 } } }, limit: 1 }),
+  });
+  const data = await res.json();
+  return data?.customers?.[0]?.id || null;
+}
+
 export async function findLoyaltyAccountByCustomer(customerId: string): Promise<any | null> {
   const res = await fetch(`${SQUARE_API}/loyalty/accounts/search`, {
     method: 'POST',
@@ -54,6 +69,25 @@ export async function findLoyaltyAccountByCustomer(customerId: string): Promise<
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`SearchLoyaltyAccounts failed: ${JSON.stringify(data?.errors || data)}`);
+  return data?.loyalty_accounts?.[0] || null;
+}
+
+// Primary loyalty lookup — Square loyalty accounts are mapped by phone
+// number, so search the loyalty account directory by PHONE mapping (E.164)
+// before falling back to a customer_id-based search.
+export async function searchLoyaltyAccountByPhone(phone: string): Promise<any | null> {
+  const e164 = toE164Phone(phone);
+  if (!e164) return null;
+  const res = await fetch(`${SQUARE_API}/loyalty/accounts/search`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      query: { filter: { mapping: { type: 'PHONE', id: e164, value: e164 } } },
+      limit: 1,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`SearchLoyaltyAccounts by phone failed: ${JSON.stringify(data?.errors || data)}`);
   return data?.loyalty_accounts?.[0] || null;
 }
 
@@ -151,12 +185,19 @@ export async function accrueForOrder({
   if (!program?.id) throw new Error('Square loyalty program not found');
   if (program.status === 'INACTIVE') throw new Error('Square loyalty program is not active');
 
-  const customerId = await searchSquareCustomerIdByEmail(email);
-  if (!customerId) throw new Error('No Square customer found for loyalty accrual');
+  // Phone is the primary identifier for Square loyalty — look up the account
+  // by phone mapping first, then fall back to email-based customer lookup.
+  let account: any | null = null;
+  if (phone) account = await searchLoyaltyAccountByPhone(phone);
 
-  let account = await findLoyaltyAccountByCustomer(customerId);
   if (!account) {
-    account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
+    let customerId = phone ? await searchSquareCustomerIdByPhone(phone) : null;
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) throw new Error('No Square customer found for loyalty accrual');
+    account = await findLoyaltyAccountByCustomer(customerId);
+    if (!account) {
+      account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
+    }
   }
   await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId });
 }
@@ -193,24 +234,31 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
 
   if (program.status !== 'ACTIVE') return result;
 
-  const customerId = await searchSquareCustomerIdByEmail(email);
-  if (!customerId) {
-    result.needsPhone = !toE164Phone(phone);
-    return result;
-  }
+  // Phone is the primary identifier for Square loyalty — look up the account
+  // by phone mapping first, then fall back to email-based customer lookup.
+  let account: any | null = null;
+  if (phone) account = await searchLoyaltyAccountByPhone(phone);
 
-  let account = await findLoyaltyAccountByCustomer(customerId);
   if (!account) {
-    const e164 = toE164Phone(phone);
-    if (!e164) {
-      result.needsPhone = true;
+    let customerId = phone ? await searchSquareCustomerIdByPhone(phone) : null;
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) {
+      result.needsPhone = !toE164Phone(phone);
       return result;
     }
-    try {
-      account = await createLoyaltyAccount({ programId: program.id, customerId, phone: e164 });
-    } catch (e) {
-      // If we can't create (e.g. conflict), surface needsPhone so the UI nudges.
-      console.error('Loyalty account create failed:', (e as Error).message);
+    account = await findLoyaltyAccountByCustomer(customerId);
+    if (!account) {
+      const e164 = toE164Phone(phone);
+      if (!e164) {
+        result.needsPhone = true;
+        return result;
+      }
+      try {
+        account = await createLoyaltyAccount({ programId: program.id, customerId, phone: e164 });
+      } catch (e) {
+        // If we can't create (e.g. conflict), surface needsPhone so the UI nudges.
+        console.error('Loyalty account create failed:', (e as Error).message);
+      }
     }
   }
 
