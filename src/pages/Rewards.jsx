@@ -212,7 +212,7 @@ export default function Rewards() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-heading text-obsidian-roast">{t.name}</p>
-                          <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope === 'ITEM' ? 'item' : 'order'} reward</p>
+                          <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">

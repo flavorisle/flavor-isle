@@ -15,7 +15,7 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -107,6 +107,7 @@ const EMPTY_FORM = {
 
 // ── Logged-in account view ──
 function LoggedInAccount({ user, logout }) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -299,7 +300,7 @@ function LoggedInAccount({ user, logout }) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         {tab === 'orders' && (
-          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => setTab('rewards')} />
+          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => navigate('/rewards')} />
         )}
 
         {tab === 'orders' && (
