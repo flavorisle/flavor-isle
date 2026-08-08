@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Zap, Heart } from 'lucide-react';
+import { Plus, Zap, Heart, Star } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -118,7 +118,13 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             </div>
           )}
 
-          {item.is_featured && !soldOut && (
+          {item.is_fan_favorite && !soldOut && (
+            <div className="absolute top-3 left-3 bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float">
+              <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
+            </div>
+          )}
+
+          {!item.is_fan_favorite && item.is_featured && !soldOut && (
             <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
               <Zap size={10} /> Special
             </div>

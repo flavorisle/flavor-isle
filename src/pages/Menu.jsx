@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
+import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -150,6 +151,9 @@ export default function Menu() {
 
       {/* Menu content — one horizontal row per category */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+        {!search && !loading && items.length > 0 && (
+          <FanFavoritesSection items={items} />
+        )}
         {loading ?
         <div className="text-center py-20 text-muted-foreground">
             <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
