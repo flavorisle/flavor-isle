@@ -8,6 +8,7 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
+import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -87,7 +88,7 @@ export default function Checkout() {
   const businessHours = useBusinessHours();
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddress, setSavedAddress] = useState(false);
@@ -173,8 +174,8 @@ export default function Checkout() {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      setError('Please fill in your first name, last name, and email.');
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Please fill in your name and email.');
       return;
     }
     if (orderType === 'delivery' && !form.address.trim()) {
@@ -222,7 +223,7 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
-        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
+        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
@@ -240,7 +241,7 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
-        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
+        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
@@ -371,18 +372,17 @@ export default function Checkout() {
                   <SchedulePicker onChange={setSchedule} />
                 </div>
 
+                {/* Loyalty & Rewards — stars-earned preview for members,
+                    earn-rewards nudge for guests */}
+                <CheckoutLoyaltyBar subtotal={subtotal} />
+
                 {/* Contact Info */}
                 <div className="card-diner p-6">
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
-                      <input type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
-                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
+                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
