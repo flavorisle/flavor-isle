@@ -10,6 +10,10 @@ export const DELUXE_TOPPINGS = [
 ];
 
 const norm = (s) => (s || '').trim().toLowerCase();
+// Tolerant stem so "Onion"/"Onions" and "Tomato"/"Tomatoes" match — the
+// Deluxe config uses plural display names but the Square catalog often uses
+// singular, and an exact compare would wrongly flag them as missing.
+const stem = (s) => norm(s).replace(/(es|s)$/, '');
 
 // Builds a human-readable "Deluxe" label from the currently selected modifiers.
 //
@@ -25,16 +29,16 @@ const norm = (s) => (s || '').trim().toLowerCase();
 export function buildDeluxeLabel(selectedModifiers) {
   if (!Array.isArray(selectedModifiers) || selectedModifiers.length === 0) return null;
 
-  const selectedNames = selectedModifiers
+  const selectedStems = selectedModifiers
     .map((m) => (typeof m === 'string' ? m : m?.name))
     .filter(Boolean)
-    .map(norm);
+    .map(stem);
 
   const missing = DELUXE_TOPPINGS.filter(
-    (topping) => !selectedNames.includes(norm(topping))
+    (topping) => !selectedStems.includes(stem(topping))
   );
   const present = DELUXE_TOPPINGS.filter((topping) =>
-    selectedNames.includes(norm(topping))
+    selectedStems.includes(stem(topping))
   );
 
   if (present.length === 0) return null;
@@ -47,9 +51,9 @@ export function buildDeluxeLabel(selectedModifiers) {
 // to render the badge at all.
 export function isDeluxe(selectedModifiers) {
   if (!Array.isArray(selectedModifiers) || selectedModifiers.length === 0) return false;
-  const selectedNames = selectedModifiers
+  const selectedStems = selectedModifiers
     .map((m) => (typeof m === 'string' ? m : m?.name))
     .filter(Boolean)
-    .map(norm);
-  return DELUXE_TOPPINGS.some((topping) => selectedNames.includes(norm(topping)));
+    .map(stem);
+  return DELUXE_TOPPINGS.some((topping) => selectedStems.includes(stem(topping)));
 }
