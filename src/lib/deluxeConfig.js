@@ -15,7 +15,7 @@ const STORAGE_KEY = 'flavor_isle_deluxe_config';
 // The out-of-the-box preset — matches the original "Deluxe" burger build.
 export const DEFAULT_DELUXE_CONFIG = {
   name: 'Deluxe',
-  toppings: ['Mustard', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
+  toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
   // Menu item ids the preset applies to. Empty array = every item that has
   // matching modifiers available.
   appliesTo: [],

@@ -3,6 +3,7 @@
 // and " Lettuce " all resolve to the same topping.
 export const DELUXE_TOPPINGS = [
   'Mustard',
+  'Mayo',
   'Pickles',
   'Onions',
   'Tomatoes',
