@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal, Gift, Sparkles, GlassWater } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp, Tag, Plus, Trash2, Star, Package, SlidersHorizontal, Gift, Sparkles, IceCream } from 'lucide-react';
 import { getMenuSetting, setCategoryItemOrder } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 import AdminCategoriesManager from '@/components/admin/AdminCategoriesManager';
@@ -200,7 +200,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: GlassWater }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
           <button key={t.id} onClick={() => setTab(t.id)}
           className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}

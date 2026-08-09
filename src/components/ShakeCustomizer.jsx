@@ -77,16 +77,19 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
       ...toppings.map((t) => ({ id: t.id, name: t.name, price: t.price })),
     ];
 
-    addItem({
+    const cartItem = {
       id: MILKSHAKE_ITEM_ID,
       catalog_object_id: MILKSHAKE_SQUARE_ID,
       isBuildShake: true,
       name: cartName,
       price: unitPrice,
-      quantity,
       category: 'Shakes',
       selectedModifiers,
-    });
+    };
+    // addItem starts each line at qty 1 and merges identical builds, so calling
+    // it N times yields one line with quantity N (or separate lines for
+    // different modifier combos).
+    for (let i = 0; i < quantity; i++) addItem(cartItem);
 
     setAdded(true);
     setTimeout(() => {
