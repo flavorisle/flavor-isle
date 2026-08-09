@@ -9,6 +9,10 @@ import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 export const MILKSHAKE_ITEM_ID = '6a3e25598a5d91912096d635';
 export const MILKSHAKE_SQUARE_ID = 'FRPDBY4XY74IMUQLTG43JAJN';
 
+// Size prices are all-in: they already include one flavor. Extra flavors,
+// thick consistency, and toppings are added on top.
+export const SHAKE_SIZE_PRICES = { small: 5.49, large: 5.99 };
+
 const CONSISTENCY_OPTIONS = [
   { id: 'thin', name: 'Thin', price: 0, emoji: '💧', desc: 'Sippable & smooth' },
   { id: 'regular', name: 'Regular', price: 0, emoji: '🥤', desc: 'The classic' },
@@ -51,15 +55,23 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   const resolvedName = resolveFlavorName(primaryFlavor.id, primaryFlavor.name, config);
   const resolvedEmoji = resolveFlavorEmoji(primaryFlavor.id, config);
 
+  // Resolve the all-in size price (includes one flavor) by matching the
+  // Square size option name. Falls back to the old base+difference model for
+  // any unrecognized size.
+  const sizeBasePrice = (opt) => {
+    const n = (opt?.name || '').toLowerCase();
+    if (n.includes('small')) return SHAKE_SIZE_PRICES.small;
+    if (n.includes('large')) return SHAKE_SIZE_PRICES.large;
+    return basePrice + (opt?.price || 0) + (primaryFlavor?.price || 0);
+  };
+
   const toggleMulti = (list, setList, opt) => {
     setList((prev) => (prev.some((s) => s.id === opt.id) ? prev.filter((s) => s.id !== opt.id) : [...prev, opt]));
   };
 
   const unitPrice =
-    basePrice +
-    (size?.price || 0) +
+    sizeBasePrice(size) +
     (consistency?.price || 0) +
-    primaryFlavor.price +
     extraFlavors.reduce((s, f) => s + f.price, 0) +
     toppings.reduce((s, t) => s + t.price, 0);
 
@@ -109,7 +121,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
             <span className="text-3xl">{resolvedEmoji}</span>
             <div>
               <h2 className="font-heading text-lg text-obsidian-roast leading-none">{resolvedName} Milkshake</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">from ${basePrice.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">from ${SHAKE_SIZE_PRICES.small.toFixed(2)} · includes one flavor</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
@@ -134,7 +146,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
                     }`}
                   >
                     <p className="font-heading text-obsidian-roast text-base">{opt.name}</p>
-                    {opt.price > 0 && <p className="text-xs text-midnight-cherry font-semibold mt-1">+${opt.price.toFixed(2)}</p>}
+                    <p className="text-xs text-midnight-cherry font-semibold mt-1">${sizeBasePrice(opt).toFixed(2)}</p>
                     {selected && (
                       <div className="absolute top-2 right-2 w-5 h-5 bg-midnight-cherry rounded-full flex items-center justify-center">
                         <Check size={11} className="text-white" />
