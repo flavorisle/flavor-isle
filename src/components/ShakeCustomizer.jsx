@@ -130,7 +130,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
             <span className="text-3xl">{resolvedEmoji}</span>
             <div>
               <h2 className="font-heading text-lg text-obsidian-roast leading-none">{resolvedName} Milkshake</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">from ${SHAKE_SIZE_PRICES.small.toFixed(2)} · includes one flavor</p>
+              <p className="text-xs text-muted-foreground mt-0.5">from ${SHAKE_SIZE_PRICES.small.toFixed(2)}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
