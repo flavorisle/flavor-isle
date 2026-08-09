@@ -13,6 +13,11 @@ export const MILKSHAKE_SQUARE_ID = 'FRPDBY4XY74IMUQLTG43JAJN';
 // thick consistency, and toppings are added on top.
 export const SHAKE_SIZE_PRICES = { small: 5.49, large: 5.99 };
 
+const ICE_CREAM_BASE_OPTIONS = [
+  { id: 'vanilla', name: 'Vanilla', emoji: '🍦', desc: 'Classic base' },
+  { id: 'chocolate', name: 'Chocolate', emoji: '🍫', desc: 'Rich cocoa base' },
+];
+
 const CONSISTENCY_OPTIONS = [
   { id: 'thin', name: 'Thin', price: 0, emoji: '💧', desc: 'Sippable & smooth' },
   { id: 'regular', name: 'Regular', price: 0, emoji: '🥤', desc: 'The classic' },
@@ -25,6 +30,7 @@ const CONSISTENCY_OPTIONS = [
 export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeItem, config }) {
   const { addItem, setIsCartOpen } = useCart();
   const [size, setSize] = useState(null);
+  const [iceCreamBase, setIceCreamBase] = useState(ICE_CREAM_BASE_OPTIONS[0]);
   const [consistency, setConsistency] = useState(CONSISTENCY_OPTIONS[1]);
   const [extraFlavors, setExtraFlavors] = useState([]);
   const [toppings, setToppings] = useState([]);
@@ -35,6 +41,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   useEffect(() => {
     if (open) {
       setSize(null);
+      setIceCreamBase(ICE_CREAM_BASE_OPTIONS[0]);
       setConsistency(CONSISTENCY_OPTIONS[1]);
       setExtraFlavors([]);
       setToppings([]);
@@ -78,11 +85,13 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   const totalPrice = unitPrice * quantity;
 
   const allFlavorNames = [resolvedName, ...extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config))];
-  const cartName = `${allFlavorNames.join(' + ')} Milkshake`;
+  const baseSuffix = iceCreamBase && iceCreamBase.id !== 'vanilla' ? ` (${iceCreamBase.name} Base)` : '';
+  const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseSuffix}`;
 
   const handleAddToCart = () => {
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
+      ...(iceCreamBase && iceCreamBase.id !== 'vanilla' ? [{ name: `${iceCreamBase.name} Ice Cream Base`, price: 0 }] : []),
       ...(consistency ? [{ name: `${consistency.name} Shake`, price: consistency.price }] : []),
       { id: primaryFlavor.id, name: resolvedName, price: primaryFlavor.price },
       ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
@@ -147,6 +156,34 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
                   >
                     <p className="font-heading text-obsidian-roast text-base">{opt.name}</p>
                     <p className="text-xs text-midnight-cherry font-semibold mt-1">${sizeBasePrice(opt).toFixed(2)}</p>
+                    {selected && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-midnight-cherry rounded-full flex items-center justify-center">
+                        <Check size={11} className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ice Cream Base */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Ice Cream Base</p>
+            <div className="grid grid-cols-2 gap-3">
+              {ICE_CREAM_BASE_OPTIONS.map((opt) => {
+                const selected = iceCreamBase?.id === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setIceCreamBase(opt)}
+                    className={`relative p-4 rounded-2xl border-2 transition-all text-center ${
+                      selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{opt.emoji}</div>
+                    <p className="font-heading text-obsidian-roast text-sm">{opt.name}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{opt.desc}</p>
                     {selected && (
                       <div className="absolute top-2 right-2 w-5 h-5 bg-midnight-cherry rounded-full flex items-center justify-center">
                         <Check size={11} className="text-white" />
