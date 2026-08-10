@@ -9,6 +9,7 @@ import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
+import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -512,6 +513,8 @@ export default function Checkout() {
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
+                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     clientSecret={clientSecret}
@@ -521,6 +524,9 @@ export default function Checkout() {
                     total={totalWithTip}
                   />
                 </Elements>
+                <div className="mt-5">
+                  <CheckoutTrustBadges variant="full" />
+                </div>
               </div>
             )}
           </div>
@@ -617,7 +623,9 @@ export default function Checkout() {
                     <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
                     )}
                   </button>
-                  <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
+                  <div className="mt-3">
+                    <CheckoutTrustBadges variant="compact" />
+                  </div>
                 </div>
               )}
 
