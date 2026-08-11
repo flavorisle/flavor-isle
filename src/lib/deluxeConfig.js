@@ -1,87 +1,125 @@
-// Deluxe preset configuration.
+// Deluxe preset configuration — supports multiple presets ("tags").
 //
-// A "Deluxe" preset is a one-tap shortcut in the modifier modal that selects a
-// fixed set of toppings (e.g. mustard, pickles, onions, tomatoes, lettuce) and
-// labels the order "Deluxe" — or "Deluxe, no <topping>" as the customer removes
-// individual toppings.
+// A preset is a one-tap shortcut in the modifier modal that selects a fixed
+// set of toppings and labels the order with its name — e.g. "Deluxe" — or
+// "{name}, no <topping>" as the customer removes individual toppings.
 //
-// Storage: this config is kept in localStorage so it works on the current
-// frontend branch. The read/write surface below is the single place that
-// touches storage, so it can be swapped for a server-side entity field later
-// without touching any component code.
+// Each preset carries an optional `silentToppings` list: toppings the button
+// selects but never calls out as missing (e.g. Mayo is part of a Deluxe but
+// shouldn't show "no Mayo").
+//
+// Storage lives in localStorage so it works on the current frontend branch.
+// The read/write surface below is the only place that touches storage, so it
+// can be swapped for a server-side entity later without touching components.
 
-const STORAGE_KEY = 'flavor_isle_deluxe_config';
+const STORAGE_KEY = 'flavor_isle_deluxe_presets';
+const LEGACY_KEY = 'flavor_isle_deluxe_config';
 
-// The out-of-the-box preset — matches the original "Deluxe" burger build.
-export const DEFAULT_DELUXE_CONFIG = {
-  name: 'Deluxe',
-  toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
-  // Menu item ids the preset applies to. Empty array = every item that has
-  // matching modifiers available.
-  appliesTo: [],
-};
+export const DEFAULT_DELUXE_PRESETS = [
+  {
+    id: 'deluxe',
+    name: 'Deluxe',
+    toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
+    silentToppings: ['Mayo'],
+    appliesTo: [],
+  },
+];
 
 const norm = (s) => (s || '').trim().toLowerCase();
 
-// Read the current config, merged over the defaults so new fields always exist.
-export function getDeluxeConfig() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_DELUXE_CONFIG;
-    const parsed = JSON.parse(raw);
-    return {
-      name: typeof parsed.name === 'string' && parsed.name.trim() ? parsed.name.trim() : DEFAULT_DELUXE_CONFIG.name,
-      toppings: Array.isArray(parsed.toppings) ? parsed.toppings.filter(Boolean) : DEFAULT_DELUXE_CONFIG.toppings,
-      appliesTo: Array.isArray(parsed.appliesTo) ? parsed.appliesTo : DEFAULT_DELUXE_CONFIG.appliesTo,
-    };
-  } catch {
-    return DEFAULT_DELUXE_CONFIG;
-  }
+function genId() {
+  return 'preset_' + Math.random().toString(36).slice(2, 9);
 }
 
-export function saveDeluxeConfig(config) {
-  const clean = {
-    name: (config?.name || '').trim() || DEFAULT_DELUXE_CONFIG.name,
-    toppings: (config?.toppings || []).filter(Boolean),
-    appliesTo: Array.isArray(config?.appliesTo) ? config.appliesTo : [],
+export function makeBlankPreset(name = 'New Deluxe') {
+  return { id: genId(), name, toppings: [], silentToppings: [], appliesTo: [] };
+}
+
+function cleanPreset(p) {
+  return {
+    id: (p && p.id) || genId(),
+    name: (p && p.name && p.name.trim()) || 'Deluxe',
+    toppings: Array.isArray(p && p.toppings) ? p.toppings.filter(Boolean) : [],
+    silentToppings: Array.isArray(p && p.silentToppings) ? p.silentToppings.filter(Boolean) : [],
+    appliesTo: Array.isArray(p && p.appliesTo) ? p.appliesTo : [],
   };
+}
+
+// Read all presets, migrating the legacy single-preset config on first load.
+export function getDeluxePresets() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map(cleanPreset);
+    }
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const lp = JSON.parse(legacy);
+      const migrated = [cleanPreset({
+        id: 'deluxe',
+        name: lp.name || 'Deluxe',
+        toppings: lp.toppings || DEFAULT_DELUXE_PRESETS[0].toppings,
+        silentToppings: ['Mayo'],
+        appliesTo: lp.appliesTo || [],
+      })];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  } catch {
+    // fall through
+  }
+  return DEFAULT_DELUXE_PRESETS.map(cleanPreset);
+}
+
+export function saveDeluxePresets(presets) {
+  const clean = (presets || []).map(cleanPreset);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
   return clean;
 }
 
-// Resolves the Deluxe preset for a specific menu item.
+// The topping names a preset's label should track: its toppings minus the
+// silent ones. Pass `availableNames` to restrict to toppings actually offered
+// on the item (avoids false "no X" for toppings the item doesn't carry).
+export function presetTrackedToppings(preset, availableNames) {
+  if (!preset) return [];
+  const silent = new Set((preset.silentToppings || []).map(norm));
+  const base = (preset.toppings || []).filter((t) => !silent.has(norm(t)));
+  if (!availableNames) return base;
+  const avail = new Set(availableNames.map(norm));
+  return base.filter((t) => avail.has(norm(t)));
+}
+
+// Resolves all presets that apply to a specific menu item.
 //
-// Returns { name, modifiers } where `modifiers` is the array of concrete
-// modifier entries (with group + id + name + price) found on the item that
-// match the configured topping names — or null when the preset doesn't apply
-// to this item or the item has none of the toppings available.
-export function getDeluxePresetForItem(item) {
-  if (!item || !Array.isArray(item.modifiers) || item.modifiers.length === 0) return null;
-
-  const config = getDeluxeConfig();
-
-  // Restrict to specific items when the admin chose an explicit list.
-  if (config.appliesTo.length > 0 && !config.appliesTo.includes(item.id)) return null;
-
-  const wanted = config.toppings.map(norm);
-  const matched = [];
-
-  for (const group of item.modifiers) {
-    if (!group || !Array.isArray(group.modifiers)) continue;
-    for (const mod of group.modifiers) {
-      if (!mod || mod.sold_out) continue;
-      if (wanted.includes(norm(mod.name))) {
-        matched.push({ group: group.name, id: mod.id, name: mod.name, price: mod.price || 0 });
+// Returns an array of `{ ...preset, modifiers }` where `modifiers` is the
+// concrete modifier entries (group + id + name + price) found on the item
+// matching the preset's topping names.
+export function getDeluxePresetsForItem(item) {
+  if (!item || !Array.isArray(item.modifiers) || item.modifiers.length === 0) return [];
+  const presets = getDeluxePresets();
+  const resolved = [];
+  for (const preset of presets) {
+    if (preset.appliesTo.length > 0 && !preset.appliesTo.includes(item.id)) continue;
+    const wanted = preset.toppings.map(norm);
+    const matched = [];
+    for (const group of item.modifiers) {
+      if (!group || !Array.isArray(group.modifiers)) continue;
+      for (const mod of group.modifiers) {
+        if (!mod || mod.sold_out) continue;
+        if (wanted.includes(norm(mod.name))) {
+          matched.push({ group: group.name, id: mod.id, name: mod.name, price: mod.price || 0 });
+        }
       }
     }
+    if (matched.length === 0) continue;
+    resolved.push({ ...preset, modifiers: matched });
   }
-
-  if (matched.length === 0) return null;
-  return { name: config.name, modifiers: matched };
+  return resolved;
 }
 
 // True when every preset modifier is currently selected — used to show the
-// active/checked state on the "Make it Deluxe" button.
+// active/checked state on a "Make it {name}" button.
 export function isDeluxePresetActive(selections, preset) {
   if (!preset || !preset.modifiers) return false;
   return preset.modifiers.every((m) => {
@@ -106,7 +144,6 @@ export function applyDeluxePreset(selections, preset, active) {
         next[group] = current.filter((s) => s.id !== m.id);
       }
     } else {
-      // SINGLE-select group (rare for toppings) — set or clear.
       if (active) {
         next[group] = { id: m.id, name: m.name, price: m.price };
       } else if (current?.id === m.id && group !== 'Size') {
