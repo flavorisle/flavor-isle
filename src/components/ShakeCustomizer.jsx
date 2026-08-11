@@ -3,43 +3,30 @@ import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 // The main Square "Milkshake" item — every shake is built from this one catalog
 // object so the POS ticket stays clean and pricing stays in sync with Square.
 export const MILKSHAKE_ITEM_ID = '6a3e25598a5d91912096d635';
-export const MILKSHAKE_SQUARE_ID = 'FRPDBY4XY74IMUQLTG43JAJN';
-
-const ICE_CREAM_BASE_OPTIONS = [
-  { id: 'vanilla', name: 'Vanilla', emoji: '🍦', desc: 'Classic base' },
-  { id: 'chocolate', name: 'Chocolate', emoji: '🍫', desc: 'Rich cocoa base' },
-];
-
-const CONSISTENCY_OPTIONS = [
-  { id: 'thin', name: 'Thin', price: 0, emoji: '💧', desc: 'Sippable & smooth' },
-  { id: 'regular', name: 'Regular', price: 0, emoji: '🥤', desc: 'The classic' },
-  { id: 'thick', name: 'Thick', price: 0.5, emoji: '🥄', desc: 'Extra-rich & spoonable' },
-];
+export const MILKSHAKE_SQUARE_ID = '47KFPHPPP5OCKHTOSKLB2LEM';
 
 // Customizer modal for a single milkshake flavor. The clicked flavor is
-// pre-selected; the customer picks size, consistency, extra flavors, and
-// toppings before adding to the cart.
+// pre-selected; the customer picks size, base, thickness, extra flavors, and
+// toppings before adding to the cart. All options come live from Square.
 export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeItem, config }) {
   const { addItem, setIsCartOpen } = useCart();
   const [size, setSize] = useState(null);
-  const [iceCreamBase, setIceCreamBase] = useState(ICE_CREAM_BASE_OPTIONS[0]);
-  const [consistency, setConsistency] = useState(CONSISTENCY_OPTIONS[1]);
+  const [base, setBase] = useState(null);
+  const [thickness, setThickness] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
   const [toppings, setToppings] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  // Reset selections whenever a new flavor card opens the modal.
   useEffect(() => {
     if (open) {
       setSize(null);
-      setIceCreamBase(null);
-      setConsistency(null);
+      setBase(null);
+      setThickness(null);
       setExtraFlavors([]);
       setToppings([]);
       setQuantity(1);
@@ -52,15 +39,25 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   const groups = shakeItem.modifiers || [];
   const findGroup = (kw) => groups.find((g) => (g.name || '').toLowerCase().includes(kw));
   const sizeOpts = (findGroup('size')?.modifiers || []).filter((m) => !m.sold_out);
-  const flavorOpts = (findGroup('flavor')?.modifiers || []).filter((m) => !m.sold_out && m.id !== primaryFlavor.id);
-  const toppingOpts = (findGroup('topping')?.modifiers || []).filter((m) => !m.sold_out);
+  const baseOpts = (findGroup('base')?.modifiers || []).filter((m) => !m.sold_out);
+  const thicknessOpts = (findGroup('thick')?.modifiers || []).filter((m) => !m.sold_out);
+  const sauceOpts = (findGroup('sauce')?.modifiers || []).filter((m) => !m.sold_out);
+  const syrupOpts = (findGroup('syrup')?.modifiers || []).filter((m) => !m.sold_out);
+  const mixinOpts = (findGroup('mixin')?.modifiers || []).filter((m) => !m.sold_out);
+  const toppingOpts = (findGroup('crown')?.modifiers || []).filter((m) => !m.sold_out);
+
+  // All add-on flavor options (sauces + syrups + mixins) excluding the primary
+  const allExtraOpts = [
+    ...sauceOpts.filter((m) => m.id !== primaryFlavor.id),
+    ...syrupOpts.filter((m) => m.id !== primaryFlavor.id),
+    ...mixinOpts,
+  ];
 
   const basePrice = shakeItem.price ?? 3.59;
   const resolvedName = resolveFlavorName(primaryFlavor.id, primaryFlavor.name, config);
   const resolvedEmoji = resolveFlavorEmoji(primaryFlavor.id, config);
 
-  // Live Square pricing: item base + size upcharge + one flavor. Extra
-  // flavors, thick consistency, and toppings stack on top of this.
+  // Live Square pricing: item base + size upcharge + primary flavor.
   const sizeBasePrice = (opt) =>
     basePrice + (opt?.price || 0) + (primaryFlavor?.price || 0);
 
@@ -74,21 +71,22 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
 
   const unitPrice =
     sizeBasePrice(size) +
-    (consistency?.price || 0) +
+    (base?.price || 0) +
+    (thickness?.price || 0) +
     extraFlavors.reduce((s, f) => s + f.price, 0) +
     toppings.reduce((s, t) => s + t.price, 0);
 
   const totalPrice = unitPrice * quantity;
 
   const allFlavorNames = [resolvedName, ...extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config))];
-  const baseSuffix = iceCreamBase ? ` (${iceCreamBase.name} Ice Cream)` : '';
-  const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseSuffix}`;
+  const baseLabel = base ? resolveFlavorName(base.id, base.name, config).replace(/ Ice Cream/i, '') : '';
+  const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseLabel ? ` (${baseLabel})` : ''}`;
 
   const handleAddToCart = () => {
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
-      ...(iceCreamBase ? [{ name: `${iceCreamBase.name} Ice Cream`, price: 0 }] : []),
-      ...(consistency ? [{ name: `${consistency.name} Shake`, price: consistency.price }] : []),
+      ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
+      ...(thickness ? [{ id: thickness.id, name: resolveFlavorName(thickness.id, thickness.name, config), price: thickness.price }] : []),
       { id: primaryFlavor.id, name: resolvedName, price: primaryFlavor.price },
       ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
       ...toppings.map((t) => ({ id: t.id, name: t.name, price: t.price })),
@@ -103,9 +101,6 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
       category: 'Shakes',
       selectedModifiers,
     };
-    // addItem starts each line at qty 1 and merges identical builds, so calling
-    // it N times yields one line with quantity N (or separate lines for
-    // different modifier combos).
     for (let i = 0; i < quantity; i++) addItem(cartItem);
 
     setAdded(true);
@@ -115,6 +110,20 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
       setIsCartOpen(true);
     }, 900);
   };
+
+  const renderOptButton = (opt, selected, onClick, label) => (
+    <button
+      key={opt.id}
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
+        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+      }`}
+    >
+      {label || opt.name}
+      <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>
+      {selected && <Check size={13} className="ml-0.5" />}
+    </button>
+  );
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
@@ -164,60 +173,23 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
           </div>
 
           {/* Ice Cream Base */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Ice Cream Base <span className="normal-case font-body text-muted-foreground/70">(optional)</span></p>
-            <Select value={iceCreamBase?.id} onValueChange={(v) => setIceCreamBase(ICE_CREAM_BASE_OPTIONS.find((o) => o.id === v))}>
-              <SelectTrigger className="h-12 rounded-2xl border-2 border-border bg-white font-body text-sm text-obsidian-roast">
-                <SelectValue placeholder="Standard vanilla" />
-              </SelectTrigger>
-              <SelectContent>
-                {ICE_CREAM_BASE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.id} value={opt.id}>
-                    {opt.emoji} {opt.name} — {opt.desc}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Consistency */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Consistency <span className="normal-case font-body text-muted-foreground/70">(optional)</span></p>
-            <Select value={consistency?.id} onValueChange={(v) => setConsistency(CONSISTENCY_OPTIONS.find((o) => o.id === v))}>
-              <SelectTrigger className="h-12 rounded-2xl border-2 border-border bg-white font-body text-sm text-obsidian-roast">
-                <SelectValue placeholder="Regular" />
-              </SelectTrigger>
-              <SelectContent>
-                {CONSISTENCY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.id} value={opt.id}>
-                    {opt.emoji} {opt.name}{opt.price > 0 ? ` (+$${opt.price.toFixed(2)})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Extra flavors */}
-          {flavorOpts.length > 0 && (
+          {baseOpts.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add Another Flavor</p>
-              <div className="flex flex-wrap gap-2">
-                {flavorOpts.map((opt) => {
-                  const selected = extraFlavors.some((s) => s.id === opt.id);
-                  const name = resolveFlavorName(opt.id, opt.name, config);
-                  const emoji = resolveFlavorEmoji(opt.id, config);
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Ice Cream Base</p>
+              <div className="grid grid-cols-3 gap-3">
+                {baseOpts.map((opt) => {
+                  const selected = base?.id === opt.id;
+                  const name = resolveFlavorName(opt.id, opt.name, config).replace(/ Ice Cream/i, '');
                   return (
                     <button
                       key={opt.id}
-                      onClick={() => toggleMulti(extraFlavors, setExtraFlavors, opt)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      onClick={() => setBase(selected ? null : opt)}
+                      className={`p-3 rounded-2xl border-2 transition-all text-center ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
                       }`}
                     >
-                      <span className="text-base leading-none">{emoji}</span>
-                      {name}
-                      <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>
-                      {selected && <Check size={13} className="ml-0.5" />}
+                      <p className="font-heading text-obsidian-roast text-sm">{name}</p>
+                      {opt.price > 0 && <p className="text-xs text-midnight-cherry font-semibold mt-0.5">+${opt.price.toFixed(2)}</p>}
                     </button>
                   );
                 })}
@@ -225,26 +197,53 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
             </div>
           )}
 
-          {/* Toppings */}
-          {toppingOpts.length > 0 && (
+          {/* Thickness */}
+          {thicknessOpts.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add a Topping</p>
-              <div className="flex flex-wrap gap-2">
-                {toppingOpts.map((opt) => {
-                  const selected = toppings.some((s) => s.id === opt.id);
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Thickness</p>
+              <div className="grid grid-cols-3 gap-3">
+                {thicknessOpts.map((opt) => {
+                  const selected = thickness?.id === opt.id;
                   return (
                     <button
                       key={opt.id}
-                      onClick={() => toggleMulti(toppings, setToppings, opt)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      onClick={() => setThickness(selected ? null : opt)}
+                      className={`p-3 rounded-2xl border-2 transition-all text-center ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
                       }`}
                     >
-                      {opt.name}
-                      <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>
-                      {selected && <Check size={13} className="ml-0.5" />}
+                      <p className="font-heading text-obsidian-roast text-sm">{resolveFlavorName(opt.id, opt.name, config)}</p>
+                      {opt.price > 0 && <p className="text-xs text-midnight-cherry font-semibold mt-0.5">+${opt.price.toFixed(2)}</p>}
                     </button>
                   );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Extra flavors (sauces + syrups + mixins) */}
+          {allExtraOpts.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add More Flavors</p>
+              <div className="flex flex-wrap gap-2">
+                {allExtraOpts.map((opt) => {
+                  const selected = extraFlavors.some((s) => s.id === opt.id);
+                  const name = resolveFlavorName(opt.id, opt.name, config);
+                  const emoji = resolveFlavorEmoji(opt.id, config);
+                  return renderOptButton(opt, selected, () => toggleMulti(extraFlavors, setExtraFlavors, opt), `${emoji} ${name}`);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Toppings (Crown it) */}
+          {toppingOpts.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Crown It</p>
+              <div className="flex flex-wrap gap-2">
+                {toppingOpts.map((opt) => {
+                  const selected = toppings.some((s) => s.id === opt.id);
+                  return renderOptButton(opt, selected, () => toggleMulti(toppings, setToppings, opt));
                 })}
               </div>
             </div>

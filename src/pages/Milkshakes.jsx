@@ -26,9 +26,15 @@ export default function Milkshakes() {
       .finally(() => setLoading(false));
   }, []);
 
-  const flavors = (shakeItem?.modifiers || [])
-    .find((g) => (g.name || '').toLowerCase().includes('flavor'))
-    ?.modifiers.filter((m) => !m.sold_out) || [];
+  // Flavors = sauces + syrups from the new Square "build your own" structure.
+  // The old single "FLAVOR CHOICE" list was replaced with separate modifier
+  // groups; sauces and syrups are the flavor-giving options shown on the grid.
+  const sauceGroup = (shakeItem?.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('sauce'));
+  const syrupGroup = (shakeItem?.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('syrup'));
+  const flavors = [
+    ...(sauceGroup?.modifiers || []),
+    ...(syrupGroup?.modifiers || []),
+  ].filter((m) => !m.sold_out);
 
   // "From" price = item base + cheapest flavor (small size has no upcharge).
   const minFlavorPrice = flavors.length ? Math.min(...flavors.map((f) => f.price || 0)) : 0;
