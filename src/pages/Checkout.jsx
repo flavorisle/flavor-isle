@@ -8,10 +8,14 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
+import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
+import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
+import SignUpNudge from '@/components/SignUpNudge';
+import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
@@ -85,7 +89,7 @@ export default function Checkout() {
   const businessHours = useBusinessHours();
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddress, setSavedAddress] = useState(false);
@@ -171,8 +175,8 @@ export default function Checkout() {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      setError('Please fill in your first name, last name, and email.');
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Please fill in your name and email.');
       return;
     }
     if (orderType === 'delivery' && !form.address.trim()) {
@@ -220,7 +224,7 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
-        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
+        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
@@ -238,7 +242,7 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
-        const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
+        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
@@ -331,10 +335,10 @@ export default function Checkout() {
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { type: 'pickup', Icon: ShoppingBag, label: 'Pickup', sub: '15–25 min' },
-                      { type: 'delivery', Icon: Bike, label: 'Delivery', sub: '35–50 min' },
-                      { type: 'dine_in', Icon: Utensils, label: 'Dine-In', sub: 'Seat yourself' },
-                    ].map(({ type, Icon, label, sub }) => (
+                      { type: 'pickup', label: 'Pickup', sub: '15–25 min' },
+                      { type: 'delivery', label: 'Delivery', sub: '35–50 min' },
+                      { type: 'dine_in', label: 'Dine-In', sub: 'Seat yourself' },
+                    ].map(({ type, label, sub }) => (
                       <button
                         key={type}
                         onClick={() => {
@@ -352,7 +356,11 @@ export default function Checkout() {
                             : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
                         }`}
                       >
-                        <Icon size={20} />
+                        <img
+                          src={ORDER_TYPE_IMAGES[type]}
+                          alt={label}
+                          className={`w-16 h-16 object-contain rounded-lg ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
+                        />
                         {label}
                         <span className="text-xs font-body opacity-60">{cutoffStatus[type] ? 'Closed for tonight' : sub}</span>
                       </button>
@@ -365,18 +373,17 @@ export default function Checkout() {
                   <SchedulePicker onChange={setSchedule} />
                 </div>
 
+                {/* Loyalty & Rewards — stars-earned preview for members,
+                    earn-rewards nudge for guests */}
+                <CheckoutLoyaltyBar subtotal={subtotal} />
+
                 {/* Contact Info */}
                 <div className="card-diner p-6">
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
-                      <input type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
-                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
+                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
                         className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
@@ -506,6 +513,8 @@ export default function Checkout() {
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
+                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     clientSecret={clientSecret}
@@ -515,6 +524,9 @@ export default function Checkout() {
                     total={totalWithTip}
                   />
                 </Elements>
+                <div className="mt-5">
+                  <CheckoutTrustBadges variant="full" />
+                </div>
               </div>
             )}
           </div>
@@ -611,11 +623,17 @@ export default function Checkout() {
                     <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
                     )}
                   </button>
-                  <p className="text-xs text-muted-foreground text-center mt-3">🔒 Secure checkout · 256-bit SSL encryption</p>
+                  <div className="mt-3">
+                    <CheckoutTrustBadges variant="compact" />
+                  </div>
                 </div>
               )}
 
               <DownloadAppBanner variant="compact" />
+
+              <div className="mt-4">
+                <SignUpNudge variant="compact" />
+              </div>
             </div>
           </div>
         </div>

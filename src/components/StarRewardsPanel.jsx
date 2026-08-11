@@ -95,7 +95,7 @@ export default function StarRewardsPanel({ status, loading, onAddPhone }) {
               <div key={t.id} className="card-diner p-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="font-heading text-obsidian-roast">{t.name}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{t.description} · {t.scope === 'ITEM' ? 'item' : 'order'} reward</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
                 </div>
                 <span className="flex items-center gap-1.5 flex-shrink-0 text-sm font-heading px-3 py-1.5 rounded-lg bg-patina-mint/15 text-patina-mint">
                   <Star size={14} /> {Number(t.points).toLocaleString()}

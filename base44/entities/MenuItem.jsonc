@@ -41,6 +41,15 @@
       "type": "boolean",
       "default": false
     },
+    "is_fan_favorite": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for the top 10 most-sold items across online + in-store. Refreshed weekly by the refreshFanFavorites workflow."
+    },
+    "fan_favorite_rank": {
+      "type": "number",
+      "description": "Rank 1\u201310 among fan favorites (1 = best seller). Null when not a fan favorite."
+    },
     "is_hidden": {
       "type": "boolean",
       "default": false

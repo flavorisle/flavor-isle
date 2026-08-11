@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
+import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -14,6 +15,9 @@ import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import SignUpNudge from '@/components/SignUpNudge';
+import MadeFreshBanner from '@/components/MadeFreshBanner';
+import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 
 const ORDER_TYPE_CONFIG = {
   pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
@@ -92,26 +96,28 @@ export default function Menu() {
           </div>
 
           {/* Order type switcher */}
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-3 gap-3 max-w-2xl">
             {Object.entries(ORDER_TYPE_CONFIG).map(([type, config]) => {
-              const Icon = config.icon;
+              const active = orderType === type;
               return (
                 <button
                   key={type}
                   onClick={() => setOrderType(type)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-heading transition-all ${
-                  orderType === type ?
-                  'bg-midnight-cherry text-white shadow-float' :
-                  'bg-white/10 text-white/70 hover:bg-white/20'}`
-                  }>
-                  
-                  <Icon size={16} />
-                  {config.label}
-                  <span className={`text-xs font-body ${orderType === type ? 'text-red-200' : 'text-white/40'}`}>
-                    {config.time}
-                  </span>
-                </button>);
-
+                  className={`group relative overflow-hidden rounded-2xl transition-all ${
+                    active ? 'ring-2 ring-smashie-yellow shadow-float' : 'ring-1 ring-white/15 hover:ring-white/40'
+                  }`}
+                >
+                  <img
+                    src={ORDER_TYPE_IMAGES[type]}
+                    alt={config.label}
+                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-80 group-hover:opacity-100'}`}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-center">
+                    <span className="block font-heading text-sm text-white leading-none">{config.label}</span>
+                    <span className="text-[11px] font-body text-white/70">{config.time}</span>
+                  </div>
+                </button>
+              );
             })}
           </div>
         </div>
@@ -124,6 +130,10 @@ export default function Menu() {
       }
 
       <AdBannerStrip placement="menu" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <SignUpNudge variant="compact" />
+      </div>
 
       {/* Search */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -141,6 +151,9 @@ export default function Menu() {
 
       {/* Menu content — one horizontal row per category */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+        {!search && !loading && items.length > 0 && (
+          <FanFavoritesSection items={items} />
+        )}
         {loading ?
         <div className="text-center py-20 text-muted-foreground">
             <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
@@ -175,6 +188,8 @@ export default function Menu() {
           </div>
         }
       </div>
+
+      <MadeFreshBanner />
 
       {/* Floating cart bubble */}
       {totalItems > 0 &&

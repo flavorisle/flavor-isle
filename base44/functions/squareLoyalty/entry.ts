@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
     // exposed for testing / re-runs.
     if (action === 'accrue') {
       const { square_order_id, email, phone } = body || {};
-      if (!square_order_id || !email) {
-        return Response.json({ error: 'square_order_id and email are required' }, { status: 400 });
+      if (!square_order_id || (!email && !phone)) {
+        return Response.json({ error: 'square_order_id and either email or phone are required' }, { status: 400 });
       }
       await accrueForOrder({ squareOrderId: square_order_id, email, phone });
       return Response.json({ success: true });

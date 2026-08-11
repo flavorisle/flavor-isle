@@ -15,7 +15,7 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -107,6 +107,7 @@ const EMPTY_FORM = {
 
 // ── Logged-in account view ──
 function LoggedInAccount({ user, logout }) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -122,6 +123,21 @@ function LoggedInAccount({ user, logout }) {
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleting, setDeleting] = useState(false);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
+
+  const refreshStarStatus = async () => {
+    setStarLoading(true);
+    try {
+      // The backend reads the phone from the saved CustomerProfile (phone is
+      // the primary key for Square loyalty), so this re-sync surfaces the
+      // customer's star progress immediately after they add/update it.
+      const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
+      setStarStatus(res.data);
+    } catch (e) {
+      setStarStatus(null);
+    } finally {
+      setStarLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -155,15 +171,9 @@ function LoggedInAccount({ user, logout }) {
       }
       setOrders(ords || []);
       setFavorites(favs || []);
-      try {
-        const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
-        setStarStatus(res.data);
-      } catch (e) {
-        setStarStatus(null);
-      }
+      await refreshStarStatus();
     } finally {
       setLoading(false);
-      setStarLoading(false);
     }
   };
 
@@ -177,6 +187,10 @@ function LoggedInAccount({ user, logout }) {
       await base44.entities.CustomerProfile.update(profile.id, form);
       setProfile(p => ({ ...p, ...form }));
       setEditing(false);
+      // Re-sync Star Rewards whenever the profile changes — phone is what
+      // links the online account to the in-store Square loyalty program, so
+      // adding/updating it should surface the customer's star progress live.
+      await refreshStarStatus();
     } finally {
       setSaving(false);
     }
@@ -286,7 +300,7 @@ function LoggedInAccount({ user, logout }) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         {tab === 'orders' && (
-          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => setTab('rewards')} />
+          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => navigate('/rewards')} />
         )}
 
         {tab === 'orders' && (

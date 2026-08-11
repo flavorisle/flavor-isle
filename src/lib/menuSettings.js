@@ -57,13 +57,14 @@ export async function setCategorySortOrder(order) {
   return created.id;
 }
 
-export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutoff }) {
+export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutoff, deliveryFee }) {
   const setting = await getMenuSetting();
   const updates = {
     closing_time: closingTime,
     delivery_cutoff_minutes: deliveryCutoff,
     pickup_cutoff_minutes: pickupCutoff,
   };
+  if (typeof deliveryFee === 'number') updates.delivery_fee = deliveryFee;
   await base44.entities.MenuSetting.update(setting.id, updates);
   bustMenuSettingCache();
   return { ...setting, ...updates };

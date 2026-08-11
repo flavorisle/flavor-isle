@@ -1,6 +1,6 @@
 {
   "name": "Sync Square Order Status",
-  "description": "Polls Square every 5 minutes for order status changes and sends email notifications to customers when their order is being prepared, ready, or completed.",
+  "description": "Polls Square every 5 minutes for order status changes and sends email/SMS/push notifications to customers when their order is being prepared, ready, or completed. Catch-up logic sends missed milestone emails when states are skipped between polls.",
   "trigger": {
     "condition": null,
     "config": {

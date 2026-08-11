@@ -46,6 +46,11 @@
       "type": "number",
       "default": 15
     },
+    "delivery_fee": {
+      "type": "number",
+      "default": 0,
+      "description": "Flat fee in USD applied to every delivery order. Set to 0 for free delivery."
+    },
     "business_hours": {
       "type": "object",
       "description": "Per-day open hours keyed by weekday (monday..sunday), each with open, close (24h HH:MM) and closed flag",

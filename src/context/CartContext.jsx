@@ -146,7 +146,7 @@ export function CartProvider({ children }) {
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
+  const deliveryFee = orderType === 'delivery' ? Number(menuSetting?.delivery_fee ?? 0) : 0;
   const tax = subtotal * 0.06;
   const total = subtotal + deliveryFee + tax;
 

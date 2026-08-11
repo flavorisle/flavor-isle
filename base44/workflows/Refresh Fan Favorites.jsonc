@@ -1,0 +1,45 @@
+{
+  "description": "Weekly refresh of the top 10 best-selling menu items (online + in-store) for the Fan Favorites rail on the Menu page.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "refresh_fan_favorites",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "refresh": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "refreshFanFavorites",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Refresh fan favorites",
+            "description": "Aggregate 60 days of Square sales, stamp top 10"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Refresh Fan Favorites",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 3 * * 1",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}

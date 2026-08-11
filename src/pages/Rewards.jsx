@@ -7,12 +7,20 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 
-// Tier badge styling — Square loyalty doesn't expose named tiers, so we derive
-// a friendly "status" label from lifetime stars to give members a sense of rank.
+// Loyalty status tiers — derived from lifetime stars. Each tier grants a
+// benefit multiplier (Nx) applied to stars earned on every order.
+const LOYALTY_TIERS = [
+  { min: 150, label: 'Big Burger Energy', multiplier: 5, color: 'from-amber-400 via-yellow-500 to-amber-600', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { min: 120, label: 'Mega Flex', multiplier: 4, color: 'from-patina-mint to-[#0a1f33]', text: 'text-patina-mint', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { min: 70, label: 'Big Flex', multiplier: 3, color: 'from-midnight-cherry to-red-700', text: 'text-midnight-cherry', bg: 'bg-red-50', border: 'border-red-200' },
+  { min: 40, label: 'Big Bite', multiplier: 2, color: 'from-smashie-yellow to-amber-500', text: 'text-amber-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+];
+
 function deriveTier(lifetime) {
-  if (lifetime >= 2000) return { label: 'Gold', color: 'from-amber-400 to-yellow-500', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
-  if (lifetime >= 500) return { label: 'Silver', color: 'from-slate-300 to-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };
-  return { label: 'Bronze', color: 'from-orange-300 to-orange-500', text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' };
+  for (const t of LOYALTY_TIERS) {
+    if (lifetime >= t.min) return t;
+  }
+  return { min: 0, label: 'Starter', multiplier: 1, color: 'from-slate-300 to-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };
 }
 
 export default function Rewards() {
@@ -93,7 +101,8 @@ export default function Rewards() {
                 <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${tier.color} flex items-center justify-center`}>
                   <Award size={15} className="text-white" />
                 </div>
-                <span className="font-heading text-sm tracking-wide">{tier.label} Member</span>
+                <span className="font-heading text-sm tracking-wide">{tier.label}</span>
+                <span className="text-xs font-heading text-smashie-yellow bg-white/20 rounded-full px-2 py-0.5">{tier.multiplier}× stars</span>
                 <span className="text-xs text-white/60">·</span>
                 <span className="text-xs text-white/70">{Number(lifetime).toLocaleString()} lifetime</span>
               </div>
@@ -162,6 +171,56 @@ export default function Rewards() {
           </div>
         )}
 
+        {/* Tier ladder — shows all status tiers and the member's progress */}
+        {status?.hasAccount && (
+          <div className="card-diner p-6 mb-8">
+            <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
+            <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
+            <div className="space-y-3">
+              {[...LOYALTY_TIERS].reverse().map((t) => {
+                const reached = lifetime >= t.min;
+                const isCurrent = tier.label === t.label;
+                return (
+                  <div
+                    key={t.label}
+                    className={`flex items-center gap-4 rounded-2xl p-4 border-2 transition-all ${
+                      isCurrent
+                        ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float'
+                        : reached
+                        ? 'border-patina-mint/20 bg-patina-mint/5'
+                        : 'border-border bg-muted/40'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center flex-shrink-0 ${reached ? '' : 'opacity-40 grayscale'}`}>
+                      <Award size={22} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-heading text-obsidian-roast">{t.label}</p>
+                        {isCurrent && (
+                          <span className="text-xs font-heading bg-midnight-cherry text-white px-2 py-0.5 rounded-full">Current</span>
+                        )}
+                        {reached && !isCurrent && (
+                          <span className="text-xs font-heading bg-patina-mint/15 text-patina-mint px-2 py-0.5 rounded-full">Unlocked</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {reached
+                          ? `${Number(t.min).toLocaleString()}+ lifetime stars`
+                          : `${Number(Math.max(0, t.min - lifetime)).toLocaleString()} stars away · ${Number(t.min).toLocaleString()} lifetime to unlock`}
+                      </p>
+                    </div>
+                    <div className={`flex items-center gap-1.5 flex-shrink-0 font-heading text-lg ${reached ? 'text-smashie-yellow' : 'text-muted-foreground'}`}>
+                      <Zap size={16} className={reached ? 'fill-smashie-yellow' : ''} />
+                      {t.multiplier}×
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Progress to next reward */}
         {status?.hasAccount && nextTier && (
           <div className="card-diner p-6 mb-8">
@@ -212,7 +271,7 @@ export default function Rewards() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-heading text-obsidian-roast">{t.name}</p>
-                          <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope === 'ITEM' ? 'item' : 'order'} reward</p>
+                          <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
