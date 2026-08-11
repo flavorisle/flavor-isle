@@ -10,10 +10,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 export const MILKSHAKE_ITEM_ID = '6a3e25598a5d91912096d635';
 export const MILKSHAKE_SQUARE_ID = 'FRPDBY4XY74IMUQLTG43JAJN';
 
-// Size prices are all-in: they already include one flavor. Extra flavors,
-// thick consistency, and toppings are added on top.
-export const SHAKE_SIZE_PRICES = { small: 5.49, large: 5.99 };
-
 const ICE_CREAM_BASE_OPTIONS = [
   { id: 'vanilla', name: 'Vanilla', emoji: '🍦', desc: 'Classic base' },
   { id: 'chocolate', name: 'Chocolate', emoji: '🍫', desc: 'Rich cocoa base' },
@@ -63,15 +59,14 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   const resolvedName = resolveFlavorName(primaryFlavor.id, primaryFlavor.name, config);
   const resolvedEmoji = resolveFlavorEmoji(primaryFlavor.id, config);
 
-  // Resolve the all-in size price (includes one flavor) by matching the
-  // Square size option name. Falls back to the old base+difference model for
-  // any unrecognized size.
-  const sizeBasePrice = (opt) => {
-    const n = (opt?.name || '').toLowerCase();
-    if (n.includes('small')) return SHAKE_SIZE_PRICES.small;
-    if (n.includes('large')) return SHAKE_SIZE_PRICES.large;
-    return basePrice + (opt?.price || 0) + (primaryFlavor?.price || 0);
-  };
+  // Live Square pricing: item base + size upcharge + one flavor. Extra
+  // flavors, thick consistency, and toppings stack on top of this.
+  const sizeBasePrice = (opt) =>
+    basePrice + (opt?.price || 0) + (primaryFlavor?.price || 0);
+
+  const fromPrice = sizeOpts.length
+    ? Math.min(...sizeOpts.map((o) => sizeBasePrice(o)))
+    : basePrice + (primaryFlavor?.price || 0);
 
   const toggleMulti = (list, setList, opt) => {
     setList((prev) => (prev.some((s) => s.id === opt.id) ? prev.filter((s) => s.id !== opt.id) : [...prev, opt]));
@@ -131,7 +126,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
             <span className="text-3xl">{resolvedEmoji}</span>
             <div>
               <h2 className="font-heading text-lg text-obsidian-roast leading-none">{resolvedName} Milkshake</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">from ${SHAKE_SIZE_PRICES.small.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">from ${fromPrice.toFixed(2)}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">

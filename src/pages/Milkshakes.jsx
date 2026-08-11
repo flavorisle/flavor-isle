@@ -3,7 +3,7 @@ import { ArrowRight, ShoppingBag } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import ShakeCustomizer, { MILKSHAKE_ITEM_ID, SHAKE_SIZE_PRICES } from '@/components/ShakeCustomizer';
+import ShakeCustomizer, { MILKSHAKE_ITEM_ID } from '@/components/ShakeCustomizer';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import { getShakeConfig, resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
@@ -30,7 +30,9 @@ export default function Milkshakes() {
     .find((g) => (g.name || '').toLowerCase().includes('flavor'))
     ?.modifiers.filter((m) => !m.sold_out) || [];
 
-  const fromPrice = SHAKE_SIZE_PRICES.small.toFixed(2);
+  // "From" price = item base + cheapest flavor (small size has no upcharge).
+  const minFlavorPrice = flavors.length ? Math.min(...flavors.map((f) => f.price || 0)) : 0;
+  const fromPrice = shakeItem ? ((shakeItem.price || 0) + minFlavorPrice).toFixed(2) : null;
 
   const openCustomizer = (flavor) => setActiveFlavor(flavor);
   const closeCustomizer = () => setActiveFlavor(null);
@@ -60,7 +62,7 @@ export default function Milkshakes() {
             Pick a flavor, then make it large or small, thin or thick — add another flavor for a twist.
           </p>
           <div className="inline-flex items-center gap-2 text-gray-400 text-xs font-heading uppercase tracking-widest">
-            <span>from ${fromPrice}</span>
+            <span>from ${fromPrice || '—'}</span>
             <span className="text-gray-600">•</span>
             <span>Scroll to explore</span>
           </div>
@@ -97,7 +99,7 @@ export default function Milkshakes() {
                   >
                     <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
                     <p className="font-heading text-obsidian-roast text-base leading-tight">{name}</p>
-                    <p className="text-xs text-muted-foreground mt-1.5">from ${fromPrice}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">from ${fromPrice || '—'}</p>
                     <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-heading text-midnight-cherry opacity-0 group-hover:opacity-100 transition-opacity">
                       Customize <ArrowRight size={12} />
                     </span>
