@@ -169,6 +169,14 @@ export default function Checkout() {
 
   const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
+  // Scroll to top when moving to the payment or split step so the card form
+  // is immediately visible instead of leaving the user scrolled down past it.
+  useEffect(() => {
+    if (step === 'payment' || step === 'split') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [step]);
+
   const handleContinue = async () => {
     setError('');
     if (cutoffStatus[orderType]) {
