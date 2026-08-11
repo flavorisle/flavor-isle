@@ -12,21 +12,21 @@ const STORAGE_KEY = 'fi_shake_config_v1';
 // Square modifier id -> curated display name
 export const DEFAULT_FLAVOR_NAMES = {
   ZJJHXT37NGMZMXV65NWJGMP3: 'Vanilla',
-  KFPJL7EMR442VHINDRIBT5OV: 'Banana',
-  SV4XWA4MEVGZYKT6ZAPLUDW6: 'Caramel',
+  KFPJL7EMR442VHINDRIBT5OV: 'Real Banana',
+  SV4XWA4MEVGZYKT6ZAPLUDW6: 'Caramel Sauce',
   XCQGUBCXAPOAC7UO4AM3WB4Q: 'Cherry Syrup',
-  TZNOA7OY6B5Q5X6CY5DSSMGQ: 'Cherry',
-  RGILJDQRFPX6UEG437SMMJYC: 'Chocolate',
+  TZNOA7OY6B5Q5X6CY5DSSMGQ: 'Cherry Topping',
+  RGILJDQRFPX6UEG437SMMJYC: 'Chocolate Syrup',
   UUH2PYJTVF4KTAIW53BIVZMU: 'Hot Fudge',
   X5XL2ARTVDM7QOJKADZPSTED: 'Peanut Butter',
-  OJ6R43VUMQYOA5BMA2LVLGST: 'Pineapple',
+  OJ6R43VUMQYOA5BMA2LVLGST: 'Pineapple Topping',
   TLH35JYXNHG3EB7S3E2O4NK2: 'Strawberry Syrup',
-  UZ5GF5VHBA6DQVLPMAJ2KLY5: 'Strawberry',
-  ZOR4URHMSHCHZCKTBEMKGR7O: 'Oreo',
-  BZC7L7P6ZLAEJHX765YGHSGF: 'Blueberry',
-  TPOYBHIL6TOJNEUGM624724X: 'Raspberry',
-  T3FATIPMKEJGSR23ZCB6LGPU: 'Peach',
-  '3DBXRG2QXNVMFGP7ULG7HJ4M': 'Orange',
+  UZ5GF5VHBA6DQVLPMAJ2KLY5: 'Strawberry Topping',
+  ZOR4URHMSHCHZCKTBEMKGR7O: 'Oreo Cookies',
+  BZC7L7P6ZLAEJHX765YGHSGF: 'Blueberry Topping',
+  TPOYBHIL6TOJNEUGM624724X: 'Raspberry Topping',
+  T3FATIPMKEJGSR23ZCB6LGPU: 'Peach Topping',
+  '3DBXRG2QXNVMFGP7ULG7HJ4M': 'Orange Syrup',
 };
 
 // Square modifier id -> emoji
@@ -75,10 +75,21 @@ export function saveShakeConfig(config) {
   return clean;
 }
 
-// Resolve a flavor's display name: admin override → curated default → original.
+// Resolve a flavor's display name: admin override → Square name (title-cased
+// if ALL-CAPS) → curated default. Square is the source of truth, so the user's
+// latest name changes always win; ALL-CAPS names are prettified for display.
 export function resolveFlavorName(flavorId, originalName, config) {
   const cfg = config || getShakeConfig();
-  return cfg.flavorNames[flavorId] || DEFAULT_FLAVOR_NAMES[flavorId] || originalName;
+  if (cfg.flavorNames[flavorId]) return cfg.flavorNames[flavorId];
+  if (originalName) {
+    if (originalName === originalName.toUpperCase() && /[A-Z]/.test(originalName)) {
+      return originalName
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    return originalName;
+  }
+  return DEFAULT_FLAVOR_NAMES[flavorId] || originalName;
 }
 
 // Resolve a flavor's emoji: admin override → curated default → shake glass.
