@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ShakeCustomizer, { MILKSHAKE_ITEM_ID } from '@/components/ShakeCustomizer';
+import PremiumShakesSection from '@/components/PremiumShakesSection';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import { getShakeConfig, resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
@@ -110,6 +111,11 @@ export default function Milkshakes() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* Premium Bliss Shakes */}
+      <section className="py-16 px-4 sm:px-6 bg-gradient-to-b from-vanilla-malt to-amber-50/40">
+        <PremiumShakesSection />
       </section>
 
       {/* CTA */}
