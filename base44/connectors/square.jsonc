@@ -1,7 +1,14 @@
 {
   "type": "square",
   "scopes": [
+    "ITEMS_READ",
     "ITEMS_WRITE",
+    "ORDERS_READ",
+    "ORDERS_WRITE",
+    "PAYMENTS_READ",
+    "PAYMENTS_WRITE",
+    "CUSTOMERS_READ",
+    "CUSTOMERS_WRITE",
     "MERCHANT_PROFILE_READ"
   ]
 }
