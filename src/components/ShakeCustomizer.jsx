@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 // The main Square "Milkshake" item — every shake is built from this one catalog
 // object so the POS ticket stays clean and pricing stays in sync with Square.
@@ -41,8 +42,8 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   useEffect(() => {
     if (open) {
       setSize(null);
-      setIceCreamBase(ICE_CREAM_BASE_OPTIONS[0]);
-      setConsistency(CONSISTENCY_OPTIONS[1]);
+      setIceCreamBase(null);
+      setConsistency(null);
       setExtraFlavors([]);
       setToppings([]);
       setQuantity(1);
@@ -169,59 +170,36 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
 
           {/* Ice Cream Base */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Ice Cream Base</p>
-            <div className="grid grid-cols-2 gap-3">
-              {ICE_CREAM_BASE_OPTIONS.map((opt) => {
-                const selected = iceCreamBase?.id === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setIceCreamBase(opt)}
-                    className={`relative p-4 rounded-2xl border-2 transition-all text-center ${
-                      selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{opt.emoji}</div>
-                    <p className="font-heading text-obsidian-roast text-sm">{opt.name}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{opt.desc}</p>
-                    {selected && (
-                      <div className="absolute top-2 right-2 w-5 h-5 bg-midnight-cherry rounded-full flex items-center justify-center">
-                        <Check size={11} className="text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Ice Cream Base <span className="normal-case font-body text-muted-foreground/70">(optional)</span></p>
+            <Select value={iceCreamBase?.id} onValueChange={(v) => setIceCreamBase(ICE_CREAM_BASE_OPTIONS.find((o) => o.id === v))}>
+              <SelectTrigger className="h-12 rounded-2xl border-2 border-border bg-white font-body text-sm text-obsidian-roast">
+                <SelectValue placeholder="Standard vanilla" />
+              </SelectTrigger>
+              <SelectContent>
+                {ICE_CREAM_BASE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.emoji} {opt.name} — {opt.desc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Consistency */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Consistency</p>
-            <div className="grid grid-cols-3 gap-3">
-              {CONSISTENCY_OPTIONS.map((opt) => {
-                const selected = consistency?.id === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => setConsistency(opt)}
-                    className={`relative p-4 rounded-2xl border-2 transition-all text-center ${
-                      selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{opt.emoji}</div>
-                    <p className="font-heading text-obsidian-roast text-sm">{opt.name}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{opt.desc}</p>
-                    {opt.price > 0 && <p className="text-xs text-midnight-cherry font-semibold mt-1">+${opt.price.toFixed(2)}</p>}
-                    {selected && (
-                      <div className="absolute top-2 right-2 w-5 h-5 bg-midnight-cherry rounded-full flex items-center justify-center">
-                        <Check size={11} className="text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Consistency <span className="normal-case font-body text-muted-foreground/70">(optional)</span></p>
+            <Select value={consistency?.id} onValueChange={(v) => setConsistency(CONSISTENCY_OPTIONS.find((o) => o.id === v))}>
+              <SelectTrigger className="h-12 rounded-2xl border-2 border-border bg-white font-body text-sm text-obsidian-roast">
+                <SelectValue placeholder="Regular" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONSISTENCY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.emoji} {opt.name}{opt.price > 0 ? ` (+$${opt.price.toFixed(2)})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Extra flavors */}
