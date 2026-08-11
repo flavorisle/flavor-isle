@@ -86,13 +86,13 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
   const totalPrice = unitPrice * quantity;
 
   const allFlavorNames = [resolvedName, ...extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config))];
-  const baseSuffix = iceCreamBase && iceCreamBase.id !== 'vanilla' ? ` (${iceCreamBase.name} Base)` : '';
+  const baseSuffix = iceCreamBase ? ` (${iceCreamBase.name} Ice Cream)` : '';
   const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseSuffix}`;
 
   const handleAddToCart = () => {
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
-      ...(iceCreamBase && iceCreamBase.id !== 'vanilla' ? [{ name: `${iceCreamBase.name} Ice Cream Base`, price: 0 }] : []),
+      ...(iceCreamBase ? [{ name: `${iceCreamBase.name} Ice Cream`, price: 0 }] : []),
       ...(consistency ? [{ name: `${consistency.name} Shake`, price: consistency.price }] : []),
       { id: primaryFlavor.id, name: resolvedName, price: primaryFlavor.price },
       ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
