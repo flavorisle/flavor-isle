@@ -2,21 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
+import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
-// The main Square "Milkshake" item — every shake is built from this one catalog
-// object so the POS ticket stays clean and pricing stays in sync with Square.
+// Legacy: the old single "Milkshake" item. Kept for backwards compatibility
+// with AdminShakeManager, which still manages flavor name/emoji overrides
+// through this item's FLAVOR CHOICE modifier list.
 export const MILKSHAKE_ITEM_ID = '6a3e25598a5d91912096d635';
-export const MILKSHAKE_SQUARE_ID = '47KFPHPPP5OCKHTOSKLB2LEM';
 
-// Customizer modal for a single milkshake flavor. The clicked flavor is
-// pre-selected; the customer picks size, base, thickness, and extra flavors
-// before adding to the cart. All options come live from Square.
-export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeItem, config }) {
+// Customizer modal for an individual milkshake item. The customer picks size,
+// base, and extra flavors before adding to the cart. All options come live
+// from the item's own Square modifier lists.
+export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const { addItem, setIsCartOpen } = useCart();
   const [size, setSize] = useState(null);
   const [base, setBase] = useState(null);
-  const [thickness, setThickness] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -25,50 +24,51 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
     if (open) {
       setSize(null);
       setBase(null);
-      setThickness(null);
       setExtraFlavors([]);
       setQuantity(1);
       setAdded(false);
     }
-  }, [open, primaryFlavor?.id]);
+  }, [open, shakeItem?.id]);
 
-  if (!open || !primaryFlavor || !shakeItem) return null;
+  if (!open || !shakeItem) return null;
 
   const groups = shakeItem.modifiers || [];
   const findGroup = (kw) => groups.find((g) => (g.name || '').toLowerCase().includes(kw));
   const sizeOpts = (findGroup('size')?.modifiers || []).filter((m) => !m.sold_out);
   const baseOpts = (findGroup('base')?.modifiers || []).filter((m) => !m.sold_out);
-  const thicknessOpts = (findGroup('thick')?.modifiers || []).filter((m) => !m.sold_out);
   const flavorOpts = (findGroup('flavor')?.modifiers || []).filter((m) => !m.sold_out);
 
-  // Extra flavor options from the FLAVOR CHOICE list, excluding the primary
-  const allExtraOpts = flavorOpts.filter((m) => m.id !== primaryFlavor.id);
+  const flavorName = flavorNameFromItem(shakeItem.name);
+  const flavorEmoji = flavorEmojiByName(flavorName);
 
-  const basePrice = shakeItem.price ?? 3.59;
-  const resolvedName = resolveFlavorName(primaryFlavor.id, primaryFlavor.name, config);
-  const resolvedEmoji = resolveFlavorEmoji(primaryFlavor.id, config);
+  // Extra flavor options from the "Add as many flavors" list, excluding the
+  // shake's own flavor (you're already getting it).
+  const allExtraOpts = flavorOpts.filter((m) =>
+    resolveFlavorName(m.id, m.name, config).toLowerCase() !== flavorName.toLowerCase()
+  );
 
-  // Live Square pricing: item base + size upcharge + primary flavor.
-  const sizeBasePrice = (opt) =>
-    basePrice + (opt?.price || 0) + (primaryFlavor?.price || 0);
+  const basePrice = shakeItem.price ?? 5;
+
+  const sizeBasePrice = (opt) => basePrice + (opt?.price || 0);
 
   const fromPrice = sizeOpts.length
     ? Math.min(...sizeOpts.map((o) => sizeBasePrice(o)))
-    : basePrice + (primaryFlavor?.price || 0);
+    : basePrice;
 
   const toggleMulti = (list, setList, opt) => {
     setList((prev) => (prev.some((s) => s.id === opt.id) ? prev.filter((s) => s.id !== opt.id) : [...prev, opt]));
   };
 
   const unitPrice =
-    sizeBasePrice(size) +
+    basePrice +
+    (size?.price || 0) +
     (base?.price || 0) +
-    (thickness?.price || 0) +
     extraFlavors.reduce((s, f) => s + f.price, 0);
 
   const totalPrice = unitPrice * quantity;
 
-  const allFlavorNames = [resolvedName, ...extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config))];
+  const extraFlavorNames = extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config));
+  const allFlavorNames = [flavorName, ...extraFlavorNames];
   const baseLabel = base ? resolveFlavorName(base.id, base.name, config).replace(/ Ice Cream/i, '') : '';
   const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseLabel ? ` (${baseLabel})` : ''}`;
 
@@ -76,18 +76,16 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
       ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
-      ...(thickness ? [{ id: thickness.id, name: resolveFlavorName(thickness.id, thickness.name, config), price: thickness.price }] : []),
-      { id: primaryFlavor.id, name: resolvedName, price: primaryFlavor.price },
       ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
     ];
 
     const cartItem = {
-      id: MILKSHAKE_ITEM_ID,
-      catalog_object_id: MILKSHAKE_SQUARE_ID,
-      isBuildShake: true,
+      id: shakeItem.id,
+      catalog_object_id: shakeItem.square_item_id,
       name: cartName,
       price: unitPrice,
       category: 'Shakes',
+      image_url: shakeItem.image_url || '',
       selectedModifiers,
     };
     for (let i = 0; i < quantity; i++) addItem(cartItem);
@@ -107,9 +105,9 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border bg-white">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{resolvedEmoji}</span>
+            <span className="text-3xl">{flavorEmoji}</span>
             <div>
-              <h2 className="font-heading text-lg text-obsidian-roast leading-none">{resolvedName} Milkshake</h2>
+              <h2 className="font-heading text-lg text-obsidian-roast leading-none">{flavorName} Milkshake</h2>
               <p className="text-xs text-muted-foreground mt-0.5">from ${fromPrice.toFixed(2)}</p>
             </div>
           </div>
@@ -172,31 +170,7 @@ export default function ShakeCustomizer({ open, onClose, primaryFlavor, shakeIte
             </div>
           )}
 
-          {/* Thickness */}
-          {thicknessOpts.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Thickness</p>
-              <div className="grid grid-cols-3 gap-3">
-                {thicknessOpts.map((opt) => {
-                  const selected = thickness?.id === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => setThickness(selected ? null : opt)}
-                      className={`p-3 rounded-2xl border-2 transition-all text-center ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry/5 shadow-float' : 'border-border bg-white hover:border-midnight-cherry/50'
-                      }`}
-                    >
-                      <p className="font-heading text-obsidian-roast text-sm">{resolveFlavorName(opt.id, opt.name, config)}</p>
-                      {opt.price > 0 && <p className="text-xs text-midnight-cherry font-semibold mt-0.5">+${opt.price.toFixed(2)}</p>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Extra flavors from FLAVOR CHOICE */}
+          {/* Extra flavors */}
           {allExtraOpts.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add Another Flavor</p>

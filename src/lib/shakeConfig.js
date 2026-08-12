@@ -99,3 +99,45 @@ export function resolveFlavorEmoji(flavorId, config) {
   const cfg = config || getShakeConfig();
   return cfg.flavorEmojis[flavorId] || DEFAULT_FLAVOR_EMOJIS[flavorId] || '🥤';
 }
+
+// Strip the "Milkshake" suffix from an individual shake item name to get the
+// flavor (e.g., "Chocolate Milkshake" → "Chocolate").
+export function flavorNameFromItem(itemName) {
+  return (itemName || '').replace(/\s*Milkshake\s*$/i, '').trim();
+}
+
+// Look up an emoji by flavor name (for individual shake items whose flavor
+// comes from the item name, not a modifier id). Checks admin overrides first
+// via reverse lookup of DEFAULT_FLAVOR_NAMES, then falls back to a direct
+// name → emoji map.
+const NAME_TO_EMOJI = {
+  'Vanilla': '🍦',
+  'Chocolate': '🍫',
+  'Strawberry': '🍓',
+  'Cherry': '🍒',
+  'Caramel': '🍯',
+  'Butterscotch': '🧈',
+  'Hot Fudge': '🍫',
+  'Orange Creamsicle': '🍊',
+  'Peanut Butter': '🥜',
+  'Banana': '🍌',
+  'Pineapple': '🍍',
+  'Raspberry': '🍇',
+  'Peach': '🍑',
+  'Cookies and Creme': '🍪',
+  'Real Fruit Banana': '🍌',
+  'Crushed Pineapple': '🍍',
+  'Real Fruit Strawberry': '🍓',
+  'Real Fruit Blueberry': '🫐',
+  'Real Fruit Raspberry': '🍇',
+  'Real Fruit Peach': '🍑',
+  'Real Fruit Cherry': '🍒',
+};
+
+export function flavorEmojiByName(name) {
+  const cfg = getShakeConfig();
+  for (const [id, n] of Object.entries(DEFAULT_FLAVOR_NAMES)) {
+    if (n === name && cfg.flavorEmojis[id]) return cfg.flavorEmojis[id];
+  }
+  return NAME_TO_EMOJI[name] || '🥤';
+}

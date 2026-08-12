@@ -3,41 +3,45 @@ import { ArrowRight, ShoppingBag } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import ShakeCustomizer, { MILKSHAKE_ITEM_ID } from '@/components/ShakeCustomizer';
+import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
-import { getShakeConfig, resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
+import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
-// The Milkshakes page lists every flavor from the single Square "Milkshake"
-// item as its own card. Tapping a card opens the ShakeCustomizer where the
-// customer picks size, consistency, extra flavors, and toppings.
+// The Milkshakes page lists every individual milkshake item from Square's
+// "Whirl & Twirl" category as its own card. Tapping a card opens the
+// ShakeCustomizer where the customer picks size, base, and extra flavors.
 export default function Milkshakes() {
   const { setIsCartOpen } = useCart();
-  const [shakeItem, setShakeItem] = useState(null);
-  const [config, setConfig] = useState(getShakeConfig());
+  const [shakes, setShakes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeFlavor, setActiveFlavor] = useState(null);
+  const [activeShake, setActiveShake] = useState(null);
 
   useEffect(() => {
     base44.entities.MenuItem
-      .get(MILKSHAKE_ITEM_ID)
-      .then((it) => setShakeItem(it))
+      .filter({ square_category: 'Whirl & Twirl', is_hidden: false })
+      .then((items) => {
+        // Sort alphabetically by name for a consistent display order.
+        const sorted = (items || [])
+          .filter((i) => i.is_available !== false)
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        setShakes(sorted);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Flavors come from the single "FLAVOR CHOICE" modifier list in Square.
-  const flavors = (shakeItem?.modifiers || [])
-    .find((g) => (g.name || '').toLowerCase().includes('flavor'))
-    ?.modifiers.filter((m) => !m.sold_out) || [];
+  // "From" price = item base + cheapest size option (if any).
+  const getFromPrice = (item) => {
+    const sizeGroup = (item.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('size'));
+    const sizeOpts = (sizeGroup?.modifiers || []).filter((m) => !m.sold_out);
+    const minSizePrice = sizeOpts.length ? Math.min(...sizeOpts.map((o) => o.price || 0)) : 0;
+    return ((item.price || 0) + minSizePrice).toFixed(2);
+  };
 
-  // "From" price = item base + cheapest flavor (small size has no upcharge).
-  const minFlavorPrice = flavors.length ? Math.min(...flavors.map((f) => f.price || 0)) : 0;
-  const fromPrice = shakeItem ? ((shakeItem.price || 0) + minFlavorPrice).toFixed(2) : null;
-
-  const openCustomizer = (flavor) => setActiveFlavor(flavor);
-  const closeCustomizer = () => setActiveFlavor(null);
+  const openCustomizer = (shake) => setActiveShake(shake);
+  const closeCustomizer = () => setActiveShake(null);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -58,13 +62,13 @@ export default function Milkshakes() {
             <span className="block text-6xl sm:text-8xl" style={{ color: '#4EE3C8' }}>ISLE</span>
           </h1>
           <p className="text-gray-300 text-lg mb-3">
-            <span className="text-white font-semibold">{flavors.length} flavors</span>, your size, your consistency.
+            <span className="text-white font-semibold">{shakes.length} flavors</span>, your size, your base.
           </p>
           <p className="text-gray-400 text-sm mb-8">
-            Pick a flavor, then make it large or small, thin or thick — add another flavor for a twist.
+            Pick a flavor, then make it large or small — add another flavor for a twist.
           </p>
           <div className="inline-flex items-center gap-2 text-gray-400 text-xs font-heading uppercase tracking-widest">
-            <span>from ${fromPrice || '—'}</span>
+            <span>from {shakes.length > 0 ? `$${getFromPrice(shakes[0])}` : '—'}</span>
             <span className="text-gray-600">•</span>
             <span>Scroll to explore</span>
           </div>
@@ -84,24 +88,24 @@ export default function Milkshakes() {
               <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
               <p className="font-heading">Loading flavors…</p>
             </div>
-          ) : flavors.length === 0 ? (
+          ) : shakes.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <p className="font-heading">No flavors available right now.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {flavors.map((flavor) => {
-                const name = resolveFlavorName(flavor.id, flavor.name, config);
-                const emoji = resolveFlavorEmoji(flavor.id, config);
+              {shakes.map((shake) => {
+                const name = flavorNameFromItem(shake.name);
+                const emoji = flavorEmojiByName(name);
                 return (
                   <button
-                    key={flavor.id}
-                    onClick={() => openCustomizer(flavor)}
+                    key={shake.id}
+                    onClick={() => openCustomizer(shake)}
                     className="card-diner p-5 text-center group flex flex-col items-center justify-center min-h-[140px]"
                   >
                     <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
                     <p className="font-heading text-obsidian-roast text-base leading-tight">{name}</p>
-                    <p className="text-xs text-muted-foreground mt-1.5">from ${fromPrice || '—'}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
                     <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-heading text-midnight-cherry opacity-0 group-hover:opacity-100 transition-opacity">
                       Customize <ArrowRight size={12} />
                     </span>
@@ -125,7 +129,7 @@ export default function Milkshakes() {
             Your shake.<br /><span style={{ color: '#4EE3C8' }}>Your way.</span>
           </h2>
           <p className="text-gray-400 mb-8 text-sm leading-relaxed">
-            Small or large. Thin, regular, or thick. One flavor or three.<br />
+            Small or large. One flavor or three.<br />
             <span className="text-white font-semibold">Mix it however you like.</span>
           </p>
           <button
@@ -140,11 +144,9 @@ export default function Milkshakes() {
       <Footer />
 
       <ShakeCustomizer
-        open={!!activeFlavor}
+        open={!!activeShake}
         onClose={closeCustomizer}
-        primaryFlavor={activeFlavor}
-        shakeItem={shakeItem}
-        config={config}
+        shakeItem={activeShake}
       />
     </div>
   );
