@@ -86,47 +86,21 @@ Deno.serve(async (req) => {
 
     const idempotencyKey = crypto.randomUUID();
 
-    const SHAKE_SQUARE_ID = 'ZKOAZRA72U6BAH6FEL6YX4GG';
     const lineItems = items.map(item => {
-      // catalog_object_id is set explicitly by the shake builder; everything
-      // else stays an ad-hoc named line (the original behavior) so we never
-      // push a stale catalog reference for a plain menu item.
-      const catalogObjectId = item.catalog_object_id || undefined;
-      const isShake = item.isBuildShake || catalogObjectId === SHAKE_SQUARE_ID;
-
-      // Build-a-Shake: emit the picked flavors/mixins/crown as REAL Square
-      // modifier lines (referencing the catalog modifier ids) so the POS ticket
-      // shows each add-on. Consistency has no Square modifier, so its upcharge
-      // stays folded into the parent line's base price.
-      const modsWithId = (item.selectedModifiers || []).filter(m => m && m.id);
-      if (isShake && catalogObjectId && modsWithId.length > 0) {
-        const modsValue = modsWithId.reduce((s, m) => s + (m.price || 0), 0);
-        const parentPrice = (item.price || 0) - modsValue;
-        return {
-          name: item.name,
-          quantity: String(item.quantity || 1),
-          base_price_money: { amount: Math.round(parentPrice * 100), currency: 'USD' },
-          catalog_object_id: catalogObjectId,
-          modifiers: modsWithId.map(m => ({
-            catalog_object_id: m.id,
-            name: m.name,
-            quantity: '1',
-            base_price_money: { amount: Math.round((m.price || 0) * 100), currency: 'USD' },
-          })),
-        };
-      }
-
+      // Milkshakes are built from a single Square "Milkshake" item, but that
+      // item has NO modifier lists attached in the catalog — so we can't
+      // reference the catalog object (an ITEM id, not a variation id) or the
+      // modifier option ids. Emit as an ad-hoc named line with the selected
+      // modifiers folded into the name so the POS ticket prints correctly.
+      // item.price already includes all modifier upcharges from the cart.
       const mods = (item.selectedModifiers || []).map(m => m.name).filter(Boolean).join(', ');
-      // item.price already includes any modifier upcharges from the cart —
-      // do NOT add them again here or modified items get overcharged in Square.
       return {
         name: mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item'),
         quantity: String(item.quantity || 1),
         base_price_money: {
-          amount: Math.round((item.price || item.base_price_money?.amount / 100 || 0) * 100),
+          amount: Math.round((item.price || 0) * 100),
           currency: 'USD',
         },
-        ...(catalogObjectId ? { catalog_object_id: catalogObjectId } : {}),
       };
     });
 
