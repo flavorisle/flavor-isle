@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Check, Sparkles } from 'lucide-react';
-import { buildDeluxeLabel } from '@/lib/deluxeLabel';
-import { getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
+import { Plus, X, Check } from 'lucide-react';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -20,13 +18,6 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   };
 
   const [selections, setSelections] = useState(initSelections);
-
-  // Deluxe presets — one-tap shortcuts that each select a fixed set of toppings.
-  const deluxePresets = getDeluxePresetsForItem(item);
-
-  const toggleDeluxe = (preset) => {
-    setSelections((prev) => applyDeluxePreset(prev, preset, !isDeluxePresetActive(prev, preset)));
-  };
 
   const toggleSingle = (groupName, mod) => {
     setSelections(prev => ({
@@ -46,23 +37,6 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
       };
     });
   };
-
-  // Flatten the current selections into the same shape used by the cart so the
-  // Deluxe label can update live as the customer toggles toppings.
-  const liveModifiers = [];
-  for (const [groupName, sel] of Object.entries(selections)) {
-    if (!sel) continue;
-    if (Array.isArray(sel)) {
-      sel.forEach((m) => liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
-    } else {
-      liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
-    }
-  }
-  const labelPresets = deluxePresets.map((p) => ({
-    name: p.name,
-    trackedToppings: presetTrackedToppings(p, p.modifiers.map((m) => m.name)),
-  }));
-  const deluxeLabel = buildDeluxeLabel(liveModifiers, labelPresets);
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
@@ -93,12 +67,6 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             {item.description && (
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
             )}
-            {deluxeLabel && (
-              <div className="mt-2 inline-flex items-center gap-1.5 bg-midnight-cherry/10 text-midnight-cherry text-xs font-heading px-3 py-1 rounded-full">
-                <Sparkles size={12} />
-                {deluxeLabel}
-              </div>
-            )}
           </div>
           <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
             <X size={20} />
@@ -107,33 +75,6 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
-          {deluxePresets.length > 0 && deluxePresets.map((preset) => {
-            const active = isDeluxePresetActive(selections, preset);
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => toggleDeluxe(preset)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
-                  active
-                    ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                    : 'border-midnight-cherry/40 bg-midnight-cherry/5 text-midnight-cherry hover:bg-midnight-cherry/10'
-                }`}
-              >
-                <span className="flex items-center gap-2 font-heading text-sm">
-                  <Sparkles size={16} />
-                  Make it {preset.name}
-                </span>
-                <span className="flex items-center gap-2 text-xs font-body">
-                  {preset.modifiers.map((m) => m.name).join(', ')}
-                  <span className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${active ? 'bg-white border-white' : 'border-midnight-cherry'}`}>
-                    {active && <Check size={12} className="text-midnight-cherry" />}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-
           {hasModifiers ? (
             item.modifiers.map(group => (
               <div key={group.name}>
