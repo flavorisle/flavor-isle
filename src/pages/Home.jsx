@@ -9,7 +9,6 @@ import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
 import StartOrderBand from '@/components/StartOrderBand';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
-import ShakeIslePromo from '@/components/ShakeIslePromo';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
@@ -66,11 +65,6 @@ export default function Home() {
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
       <ConversionNudgeBar />
-
-      {/* ── SHAKE ISLE PROMO ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
-        <ShakeIslePromo />
-      </div>
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
