@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
+import ShakeIsleStory from '@/components/ShakeIsleStory';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
@@ -140,6 +141,8 @@ export default function Milkshakes() {
           </button>
         </div>
       </section>
+
+      <ShakeIsleStory />
 
       <Footer />
 
