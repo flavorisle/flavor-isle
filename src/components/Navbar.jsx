@@ -25,7 +25,7 @@ export default function Navbar() {
   const navLinks = [
   { label: 'Menu', to: '/menu' },
   { label: 'Combos', to: '/combos' },
-  { label: 'Merch', to: '/merch' },
+  { label: 'Tasty Threads', to: '/merch' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'Feedback', to: '/feedback' },
