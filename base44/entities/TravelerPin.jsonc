@@ -1,0 +1,51 @@
+{
+  "name": "TravelerPin",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name shown on the pin (e.g. first name or nickname)"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Short message left by the traveler"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Pin latitude"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Pin longitude"
+    },
+    "location_name": {
+      "type": "string",
+      "description": "Human-readable place name (reverse geocoded) shown in the popup"
+    }
+  },
+  "required": [
+    "lat",
+    "lng"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

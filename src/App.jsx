@@ -38,6 +38,7 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import Rewards from './pages/Rewards';
+import TravelerMap from './pages/TravelerMap';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -86,6 +87,7 @@ const AuthenticatedApp = () => {
       <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
+      <Route path="/traveler-map" element={<TravelerMap />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />

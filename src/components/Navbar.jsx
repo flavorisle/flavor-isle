@@ -24,6 +24,7 @@ export default function Navbar() {
   { label: 'Menu', to: '/menu' },
   { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'Combos', to: '/combos' },
+  { label: "Traveler's Map", to: '/traveler-map' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'Feedback', to: '/feedback' },
