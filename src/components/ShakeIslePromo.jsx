@@ -27,7 +27,7 @@ export default function ShakeIslePromo() {
             Hand-Spun Shakes
           </p>
           <p className="text-gray-300 text-xs mb-3">
-            Pick from 17 original shakes, 6 premium ones, or create your own.
+            Pick from 16 original shakes, 6 premium ones, or create your own.
           </p>
           <h2 className="font-heading text-3xl sm:text-4xl text-white leading-none mb-2">
             SHAKE ISLE

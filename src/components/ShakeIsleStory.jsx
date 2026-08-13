@@ -15,7 +15,7 @@ export default function ShakeIsleStory() {
             When a shake is hand-spun, you taste the difference.
           </p>
           <p className="text-muted-foreground text-sm mb-3 leading-relaxed">
-            Choose from seventeen original flavors. Five premium legends. Or build your own masterpiece from scratch — it's your craving.
+            Choose from sixteen original flavors. Five premium legends. Or build your own masterpiece from scratch — it's your craving.
           </p>
           <p className="text-muted-foreground text-sm leading-relaxed">
             Every swirl hits cold, creamy, and crazy satisfying.
