@@ -17,7 +17,6 @@ import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
-import ShakeIslePromo from '@/components/ShakeIslePromo';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 
 const ORDER_TYPE_CONFIG = {
@@ -155,9 +154,6 @@ export default function Menu() {
         {!search && !loading && items.length > 0 && (
           <>
             <FanFavoritesSection items={items} />
-            <div className="mt-8">
-              <ShakeIslePromo />
-            </div>
           </>
         )}
         {loading ?
