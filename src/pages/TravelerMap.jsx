@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Share2, X, Loader2, LogIn, Sparkles, Search } from 'lucide-react';
+import { MapPin, Share2, X, Loader2, LogIn, Sparkles, Search, Camera } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -47,6 +47,22 @@ export default function TravelerMap() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [mapRef, setMapRef] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const clearPhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
 
   // Load every traveler pin — the entity is public-read so guests can see them.
   const loadPins = useCallback(async () => {
@@ -136,14 +152,29 @@ export default function TravelerMap() {
     }
     setSubmitting(true);
     try {
+      let photo_url = '';
+      if (photoFile) {
+        setUploading(true);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: photoFile });
+          photo_url = file_url;
+        } catch (err) {
+          console.error('Photo upload failed', err);
+          toast({ title: 'Photo upload failed', description: 'Saving your pin without a photo.', variant: 'default' });
+        } finally {
+          setUploading(false);
+        }
+      }
       const created = await base44.entities.TravelerPin.create({
         name: form.name.trim(),
         comment: form.comment.trim(),
         lat: pending.lat,
         lng: pending.lng,
         location_name: form.location_name.trim(),
+        photo_url,
       });
       setPins((prev) => [created, ...prev]);
+      clearPhoto();
       setPending(null);
       setForm({ name: '', comment: '', location_name: '' });
       toast({ title: 'Pin dropped!', description: 'Thanks for marking your spot on the map.', variant: 'default' });
@@ -175,6 +206,7 @@ export default function TravelerMap() {
   };
 
   const closeForm = () => {
+    clearPhoto();
     setPending(null);
     setForm({ name: '', comment: '', location_name: '' });
   };
@@ -254,6 +286,9 @@ export default function TravelerMap() {
                         <MapPin size={10} /> {pin.location_name}
                       </div>
                     )}
+                    {pin.photo_url && (
+                      <img src={pin.photo_url} alt={pin.name || 'Traveler'} className="mt-2 rounded-lg w-full h-24 object-cover" />
+                    )}
                     {pin.comment && (
                       <p className="text-sm text-obsidian-roast mt-2 leading-snug">{pin.comment}</p>
                     )}
@@ -329,12 +364,33 @@ export default function TravelerMap() {
                   className="mt-1.5 w-full px-4 py-3 rounded-xl border border-border bg-vanilla-malt text-sm text-obsidian-roast focus:outline-none focus:border-midnight-cherry resize-none"
                 />
               </div>
+              <div>
+                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground">Photo (optional)</label>
+                {photoPreview ? (
+                  <div className="mt-1.5 relative rounded-xl overflow-hidden">
+                    <img src={photoPreview} alt="Preview" className="w-full h-32 object-cover" />
+                    <button
+                      type="button"
+                      onClick={clearPhoto}
+                      className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full p-1 tap-44 flex items-center justify-center"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="mt-1.5 flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-border rounded-xl py-4 cursor-pointer hover:border-midnight-cherry transition-colors">
+                    <Camera size={20} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Add a photo</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                  </label>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Add a name <em>or</em> a message — at least one is needed to save your pin.
               </p>
               <button
                 type="submit"
-                disabled={submitting || reverseGeocoding}
+                disabled={submitting || reverseGeocoding || uploading}
                 className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}

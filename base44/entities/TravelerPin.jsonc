@@ -21,6 +21,10 @@
     "location_name": {
       "type": "string",
       "description": "Human-readable place name (reverse geocoded) shown in the popup"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Optional photo uploaded by the traveler, shown in the pin popup"
     }
   },
   "required": [
