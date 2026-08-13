@@ -38,6 +38,7 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import Rewards from './pages/Rewards';
+import HalloweenOverlay from './components/HalloweenOverlay';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -119,6 +120,7 @@ function AppShell() {
           <Router>
             <ScrollToTop />
             <AuthenticatedApp />
+            <HalloweenOverlay />
             <BottomTabBar />
             <MobileHeader />
           </Router>
