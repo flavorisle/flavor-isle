@@ -23,14 +23,17 @@ export default function ShakeIslePromo() {
       <div className="relative z-10 flex items-center gap-5 p-6 sm:p-8">
         {/* Emoji stack */}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-heading uppercase tracking-widest mb-2" style={{ color: '#4EE3C8' }}>
-            Hand-Spun · 16 Flavors
+          <p className="text-xs font-heading uppercase tracking-widest mb-1" style={{ color: '#4EE3C8' }}>
+            Hand-Spun Shakes
+          </p>
+          <p className="text-gray-300 text-xs mb-3">
+            Pick from 17 original shakes, 6 premium ones, or create your own.
           </p>
           <h2 className="font-heading text-3xl sm:text-4xl text-white leading-none mb-2">
             SHAKE ISLE
           </h2>
           <p className="text-gray-300 text-sm">
-            Pick your flavor, size & consistency — make it thick, thin, or loaded.
+            Pick your size, the flavor, &amp; ice cream base. Then twist it your way with another flavor — cold, creamy, and built to stunt.
           </p>
         </div>
         <div className="hidden sm:flex flex-shrink-0 items-center gap-1">
