@@ -236,17 +236,28 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
 
   // Phone is the primary identifier for Square loyalty — look up the account
   // by phone mapping first, then fall back to email-based customer lookup.
+  // Each lookup is wrapped so a transient Square API error doesn't wipe out
+  // the entire status — the user still sees the program info and reward tiers.
   let account: any | null = null;
-  if (phone) account = await searchLoyaltyAccountByPhone(phone);
+  if (phone) {
+    try { account = await searchLoyaltyAccountByPhone(phone); }
+    catch (e) { console.error('Loyalty phone search failed:', (e as Error).message); }
+  }
 
   if (!account) {
-    let customerId = phone ? await searchSquareCustomerIdByPhone(phone) : null;
-    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    let customerId: string | null = null;
+    try {
+      if (phone) customerId = await searchSquareCustomerIdByPhone(phone);
+      if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    } catch (e) {
+      console.error('Square customer lookup failed:', (e as Error).message);
+    }
     if (!customerId) {
       result.needsPhone = !toE164Phone(phone);
       return result;
     }
-    account = await findLoyaltyAccountByCustomer(customerId);
+    try { account = await findLoyaltyAccountByCustomer(customerId); }
+    catch (e) { console.error('Loyalty customer search failed:', (e as Error).message); }
     if (!account) {
       const e164 = toE164Phone(phone);
       if (!e164) {

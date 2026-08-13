@@ -35,6 +35,17 @@ Deno.serve(async (req) => {
     return Response.json(status);
   } catch (error) {
     console.error('squareLoyalty error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    // Return a partial status so the UI can still render the program info
+    // and reward tiers rather than showing a blank "not connected" state.
+    return Response.json({
+      programName: 'Flavor Isle Star Rewards',
+      programStatus: 'ACTIVE',
+      balance: 0,
+      lifetimePoints: 0,
+      hasAccount: false,
+      needsPhone: false,
+      earnText: null,
+      rewardTiers: [],
+    });
   }
 });
