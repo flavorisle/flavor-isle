@@ -129,6 +129,8 @@ export default function Menu() {
         </div>
       }
 
+      <AdBannerStrip placement="menu" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <SignUpNudge variant="compact" />
       </div>
@@ -152,9 +154,6 @@ export default function Menu() {
         {!search && !loading && items.length > 0 && (
           <>
             <FanFavoritesSection items={items} />
-            <div className="mt-8">
-              <AdBannerStrip placement="menu" />
-            </div>
           </>
         )}
         {loading ?
