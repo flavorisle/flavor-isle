@@ -187,6 +187,14 @@ function LoggedInAccount({ user, logout }) {
       await base44.entities.CustomerProfile.update(profile.id, form);
       setProfile(p => ({ ...p, ...form }));
       setEditing(false);
+      // Push name + phone to the Square customer directory so the online
+      // account and the in-store POS customer stay in sync. Fire-and-forget
+      // after the profile save so the UI stays responsive — a Square failure
+      // shouldn't block the local profile update.
+      base44.functions.invoke('syncCustomerToSquare', {
+        full_name: form.name,
+        phone: form.phone,
+      }).catch((e) => console.error('Square customer sync failed:', e));
       // Re-sync Star Rewards whenever the profile changes — phone is what
       // links the online account to the in-store Square loyalty program, so
       // adding/updating it should surface the customer's star progress live.
