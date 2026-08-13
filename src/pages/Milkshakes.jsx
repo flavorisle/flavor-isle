@@ -123,12 +123,20 @@ export default function Milkshakes() {
         <PremiumShakesSection />
       </section>
 
-      {/* CTA */}
+      {/* CTA — heading */}
       <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-heading text-3xl sm:text-4xl text-white mb-4 leading-tight">
+          <h2 className="font-heading text-3xl sm:text-4xl text-white leading-tight">
             Your shake.<br /><span style={{ color: '#4EE3C8' }}>Your way.</span>
           </h2>
+        </div>
+      </section>
+
+      <ShakeIsleStory />
+
+      {/* CTA — closing line + cart */}
+      <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
+        <div className="max-w-2xl mx-auto text-center">
           <p className="text-gray-400 mb-8 text-sm leading-relaxed">
             Small or large. One flavor or three.<br />
             <span className="text-white font-semibold">Mix it however you like.</span>
@@ -141,8 +149,6 @@ export default function Milkshakes() {
           </button>
         </div>
       </section>
-
-      <ShakeIsleStory />
 
       <Footer />
 
