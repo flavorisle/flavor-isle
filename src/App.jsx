@@ -38,6 +38,13 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import Rewards from './pages/Rewards';
+import Merch from './pages/Merch';
+import MerchCheckout from './pages/MerchCheckout';
+import MerchConfirmation from './pages/MerchConfirmation';
+import AdminMerchOrders from './pages/AdminMerchOrders';
+import { MerchCartProvider } from '@/context/MerchCartContext';
+import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
+// Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -91,6 +98,9 @@ const AuthenticatedApp = () => {
       <Route path="/menu" element={<Menu />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
+      <Route path="/merch" element={<Merch />} />
+      <Route path="/merch-checkout" element={<MerchCheckout />} />
+      <Route path="/merch-confirmation" element={<MerchConfirmation />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
@@ -102,6 +112,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/menu" element={<AdminMenu />} />
         <Route path="/admin/media" element={<AdminMedia />} />
         <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
+        <Route path="/admin/merch-orders" element={<AdminMerchOrders />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
@@ -116,13 +127,16 @@ function AppShell() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <CartProvider>
-          <Router>
-            <ScrollToTop />
-            <AuthenticatedApp />
-            <BottomTabBar />
-            <MobileHeader />
-          </Router>
-          <Toaster />
+          <MerchCartProvider>
+            <Router>
+              <ScrollToTop />
+              <AuthenticatedApp />
+              <BottomTabBar />
+              <MobileHeader />
+              <MerchCartDrawer />
+            </Router>
+            <Toaster />
+          </MerchCartProvider>
         </CartProvider>
       </QueryClientProvider>
     </AuthProvider>

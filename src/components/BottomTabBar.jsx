@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, UtensilsCrossed, User, ShoppingBag } from 'lucide-react';
+import { Home, UtensilsCrossed, User, ShoppingBag, Shirt } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 // Routes where the persistent bottom tab bar would conflict with a
@@ -17,6 +17,7 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
+    { to: '/merch', label: 'Merch', icon: Shirt },
     { cart: true, label: 'Cart', icon: ShoppingBag },
     { to: '/account', label: 'Account', icon: User },
   ];

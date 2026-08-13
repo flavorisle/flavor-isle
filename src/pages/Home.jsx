@@ -17,6 +17,7 @@ import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import SmashieChat from '@/components/SmashieChat';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import MerchPromo from '@/components/MerchPromo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -126,6 +127,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── TASTY THREADS MERCH ── */}
+      <MerchPromo />
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Image } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Image, Shirt } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
   { label: 'Orders', to: '/admin/phone-orders', Icon: ShoppingBag },
+  { label: 'Merch Orders', to: '/admin/merch-orders', Icon: Shirt },
   { label: 'Media', to: '/admin/media', Icon: Image },
 ];
 

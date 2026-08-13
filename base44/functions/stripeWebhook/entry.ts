@@ -190,7 +190,24 @@ Deno.serve(async (req) => {
           await pushOrderToSquareAndKitchen(base44, order);
         }
       } else {
-        console.warn('No Order found for stripe_session_id:', stripeSessionId);
+        // Merch order — paid merch orders are fulfilled by Printful.
+        const merchOrders = await base44.asServiceRole.entities.MerchOrder.filter({ stripe_session_id: stripeSessionId });
+        if (merchOrders && merchOrders.length > 0) {
+          const mo = merchOrders[0];
+          await base44.asServiceRole.entities.MerchOrder.update(mo.id, {
+            payment_status: 'paid',
+            fulfillment_status: 'paid',
+          });
+          console.log(`Merch order ${mo.order_number} marked paid`);
+          try {
+            await base44.functions.invoke('createPrintfulOrder', { merchOrderId: mo.id });
+            console.log(`Printful order placed for merch order ${mo.order_number}`);
+          } catch (pfErr) {
+            console.error('Printful order placement failed:', pfErr.message);
+          }
+        } else {
+          console.warn('No Order or MerchOrder found for stripe_session_id:', stripeSessionId);
+        }
       }
     } catch (dbErr) {
       console.error('DB update error:', dbErr.message);

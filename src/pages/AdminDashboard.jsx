@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, Shirt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -31,6 +31,13 @@ const adminPages = [
   icon: Image,
   path: '/admin/media',
   color: 'obsidian-roast'
+},
+{
+  title: 'Merch Orders',
+  description: 'Track Tasty Threads / Printful fulfillment & shipping',
+  icon: Shirt,
+  path: '/admin/merch-orders',
+  color: 'midnight-cherry'
 }];
 
 
