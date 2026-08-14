@@ -383,7 +383,7 @@ export default function Checkout() {
 
                 {/* Loyalty & Rewards — stars-earned preview for members,
                     earn-rewards nudge for guests */}
-                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
 
                 {/* Contact Info */}
                 <div className="card-diner p-6">
@@ -521,7 +521,7 @@ export default function Checkout() {
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
-                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
                 <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
