@@ -30,6 +30,7 @@ import Milkshakes from './pages/Milkshakes';
 import MeetSmashie from './pages/MeetSmashie';
 import KitchenStatus from './pages/KitchenStatus';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -82,6 +83,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/kitchen-status" element={<KitchenStatus />} />

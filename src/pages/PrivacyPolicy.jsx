@@ -20,6 +20,10 @@ const SECTIONS = [
         heading: 'Order & Account Information',
         text: 'When you place an order or create an account, we collect your name, email address, phone number, and — for delivery orders — your delivery address. For dine-in orders we may also store your table number.',
       },
+      {
+        heading: 'Photos & Your Likeness',
+        text: 'We may take photographs or video in our restaurant and at events. If you appear in those photos, we may use them as described in this policy. You may also choose to share a photo with us directly (for example, in a review or feedback submission).',
+      },
     ],
   },
   {
@@ -31,11 +35,19 @@ const SECTIONS = [
       },
       {
         heading: 'Customer Support & Communication',
-        text: 'We may use your email or phone number to send order confirmations, status updates, and to respond to your questions or concerns.',
+        text: 'We may use your email or phone number to send order confirmations, status updates, and to respond to your questions or concerns — including through our AI assistant, Smashie.',
       },
       {
         heading: 'Loyalty & Rewards',
-        text: 'If you join our loyalty program, we track points earned and redeemed so your rewards stay available across visits.',
+        text: 'If you join our loyalty program, we track points earned and redeemed so your rewards stay available across visits. Your phone number is used to link your online rewards to your in-store Star Rewards account.',
+      },
+      {
+        heading: 'Marketing & Promotions',
+        text: 'With your consent, we may use your name, photo, comments, or order stories to promote Flavor Isle — on our website, in our social media posts (including Facebook and Google), and in promotional materials. See "SMS, Phone & Marketing Consent" below.',
+      },
+      {
+        heading: 'Your Photos & Likeness',
+        text: 'Photos taken of you in our restaurant or shared with us may be displayed on our website and used in promotions, social media (including Facebook and Google), and advertising — but only with your consent, which you can withdraw at any time.',
       },
       {
         heading: 'Improving Our Restaurant',
@@ -48,15 +60,48 @@ const SECTIONS = [
     body: [
       {
         heading: 'Service Partners',
-        text: 'We share only what is necessary with our trusted service partners — for payment processing, in-store order syncing, and delivery courier services — to run our business.',
+        text: 'We share only what is necessary with our trusted service partners — for payment processing (Stripe), in-store order syncing (Square), and delivery courier services — to run our business.',
       },
       {
-        heading: 'Phone & SMS Communications',
-        text: 'With your consent, we may send order updates by SMS or use automated phone systems to contact you about your order. Standard message rates may apply.',
+        heading: 'Phone & SMS Communications (Twilio)',
+        text: 'We use Twilio to send you SMS messages and to place or receive phone calls. When you provide your phone number and consent, Twilio processes that number and message content to deliver SMS updates and connect calls. Message and data rates may apply. You can opt out at any time by replying STOP to any text.',
+      },
+      {
+        heading: 'AI Assistant (OpenAI)',
+        text: 'Our virtual assistant, Smashie, is powered by OpenAI. When you chat with Smashie online, by SMS, or by phone, the content of your conversation is sent to OpenAI to generate a response. We do not use your conversations to train OpenAI\u2019s models. Avoid sharing sensitive personal or payment details in chat.',
+      },
+      {
+        heading: 'Marketing on Facebook & Google',
+        text: 'With your consent, we may feature your photo, name, or feedback in paid and organic promotions on Facebook and Google. We do not share your contact information with these platforms for marketing beyond what is needed to display the promotion.',
       },
       {
         heading: 'Legal Requirements',
         text: 'We never sell your personal information. We may disclose information when required by law or to protect the rights, property, or safety of our guests and staff.',
+      },
+    ],
+  },
+  {
+    title: 'SMS, Phone & Marketing Consent',
+    body: [
+      {
+        heading: 'SMS Consent',
+        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Providing your number is optional but required to receive these messages. Reply STOP at any time to opt out; reply HELP for help.',
+      },
+      {
+        heading: 'Receiving Phone Calls',
+        text: 'By providing your phone number, you also consent to receive phone calls from us — including automated or AI-assisted calls from Smashie — about your order, rewards, or to follow up on feedback. You can withdraw this consent by removing your phone number from your account or contacting us.',
+      },
+      {
+        heading: 'Use of Your Information on Our Website & in Promos',
+        text: 'With your consent, we may display your first name, review, rating, or photo on our website and use them in promotions. Reviews submitted through our feedback form may be shown publicly once approved. You can ask us to remove your information from public display at any time.',
+      },
+      {
+        heading: 'Use of Photos Taken of You',
+        text: 'Photos or video taken of you in our restaurant or at our events may be used on our website and in promotions, social media (including Facebook and Google), and advertising. Where practical, we will ask for your consent before prominently featuring you. To opt out or request removal of a photo, contact us using the details below.',
+      },
+      {
+        heading: 'Withdrawing Consent',
+        text: 'You can withdraw any consent given here at any time — remove your phone number from your account, reply STOP to a text, or contact us to remove your photo or information from public display. Withdrawing consent does not affect messages already sent or orders already placed.',
       },
     ],
   },
@@ -95,7 +140,11 @@ const SECTIONS = [
       },
       {
         heading: 'Opt-Out',
-        text: 'You can opt out of promotional messages by using the unsubscribe link in any email or replying STOP to any text message. Transactional messages about your active orders are unaffected.',
+        text: 'You can opt out of promotional messages by using the unsubscribe link in any email or replying STOP to any text message. You can also remove your phone number from your account to stop SMS and phone calls. Transactional messages about your active orders are unaffected.',
+      },
+      {
+        heading: 'Withdraw Photo & Marketing Consent',
+        text: 'To withdraw consent for us to use your photo, name, or information on our website, social media, or in promotions, contact us using the details below and we will remove it promptly.',
       },
       {
         heading: 'Request Data Deletion',
@@ -106,7 +155,7 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicy() {
-  const lastUpdated = 'July 27, 2026';
+  const lastUpdated = 'August 14, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
