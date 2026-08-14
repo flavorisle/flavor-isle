@@ -51,6 +51,10 @@ export const smashieSmsTemplates = {
   confirmed: (order) =>
     `Flavor Isle: Hey ${order.customer_name || 'fam'}! Order #${order.order_number} is locked in — the crew's firing the grill right now. We'll text you the second it's ready. 🔥`,
 
+  // Fired when the order hits the kitchen.
+  preparing: (order) =>
+    `Flavor Isle: Order #${order.order_number} just hit the grill! 🔥 The crew's cooking it up fresh — we'll text you the second it's ready.`,
+
   // Fired when the order hits ready-for-pickup.
   ready: (order) => {
     const line = order.order_type === 'delivery'
@@ -58,4 +62,8 @@ export const smashieSmsTemplates = {
       : `Slide through Flavor Isle — 103 N Main St, Smiths Grove whenever you're ready`;
     return `Flavor Isle: Order #${order.order_number} is READY, fam! 🍔 Bag sealed, fries hot, vibes immaculate. ${line}. Questions? (270) 563-4618`;
   },
+
+  // Fired when the order is fully wrapped / completed.
+  completed: (order) =>
+    `Flavor Isle: Order #${order.order_number} is all wrapped — hope you ate good! 🍔 Thanks for rolling with us, fam. We'd love to see you back soon. Questions? (270) 563-4618`,
 };

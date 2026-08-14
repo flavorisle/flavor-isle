@@ -168,6 +168,9 @@ Deno.serve(async (req) => {
             `Hey ${customerName},\n\nOrder #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥\n\nWe'll hit you up the second it's ready.\n\n— Smashie & The Flavor Isle Team 🍔`
           );
           notified++;
+          if (order.customer_phone) {
+            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
+          }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
             body: `Hey ${customerName}, order #${orderNum} just hit the kitchen. We'll ping you the second it's ready!`,
@@ -199,6 +202,9 @@ Deno.serve(async (req) => {
             `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team`
           );
           notified++;
+          if (order.customer_phone) {
+            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
+          }
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
