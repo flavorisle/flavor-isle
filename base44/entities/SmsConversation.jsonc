@@ -8,6 +8,15 @@
     "conversation_id": {
       "type": "string"
     },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "sms",
+        "voice"
+      ],
+      "default": "sms",
+      "description": "Whether this conversation started as an SMS text or a voice call"
+    },
     "last_message_at": {
       "type": "string",
       "format": "date-time"

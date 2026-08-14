@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
+import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -36,6 +37,17 @@ Deno.serve(async (req) => {
 
     // --- Initial greeting (no speech yet) ---
     if (!isCallback && !speechResult) {
+      const settings = await getSmashieSettings(base44);
+      if (!settings.voice_ordering_enabled) {
+        const offTwiml = new VoiceResponse();
+        offTwiml.say(
+          { voice: 'Polly.Joanna', language: 'en-US' },
+          "Hey, thanks for calling Flavor Isle! Our AI phone ordering is switched off right now. Please order online at flavor dash isle dot com, or give us a call back soon!"
+        );
+        offTwiml.hangup();
+        return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+      }
+
       // Look up or create conversation
       const existing = await base44.asServiceRole.entities.SmsConversation.filter({
         phone_number: from,
@@ -59,6 +71,7 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.SmsConversation.create({
           phone_number: from,
           conversation_id: convo.id,
+          channel: 'voice',
           last_message_at: new Date().toISOString(),
           message_count: 0,
           status: 'active',
@@ -69,7 +82,7 @@ Deno.serve(async (req) => {
       const twiml = new VoiceResponse();
       twiml.say(
         { voice: 'Polly.Joanna', language: 'en-US' },
-        "Hey there, welcome to Flavor Isle! This is Smashie. What can I get started for you today?"
+        settings.greeting
       );
       twiml.gather({
         input: 'speech',

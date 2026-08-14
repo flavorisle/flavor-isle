@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, MessagesSquare } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -31,6 +31,13 @@ const adminPages = [
   icon: Image,
   path: '/admin/media',
   color: 'obsidian-roast'
+},
+{
+  title: 'Communications',
+  description: 'Phone log, SMS log, message log, and Smashie AI settings',
+  icon: MessagesSquare,
+  path: '/admin/communications',
+  color: 'patina-mint'
 }];
 
 
