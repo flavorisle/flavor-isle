@@ -8,11 +8,11 @@
     },
     {
       "function_name": "deluxeOrderHelper",
-      "description": "Look up burger and sandwich menu items with their toppings/modifiers and the Deluxe preset, so Smashie can accurately build a burger or sandwich order from a customer's spoken request."
+      "description": "Look up burger/sandwich items with toppings and the Deluxe preset to build accurate orders"
     },
     {
       "function_name": "milkshakeOrderHelper",
-      "description": "Look up the live milkshake flavors, sizes, and mix-ins and match the customer's request to a flavor, so Smashie can quickly build a shake order."
+      "description": "Look up live shake flavors, sizes, and mix-ins and match the caller's request"
     },
     {
       "entity_name": "PhoneMessage",
