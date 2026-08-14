@@ -54,7 +54,7 @@ export default function SmashieChat() {
       {!open &&
       <button
         onClick={openChat}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform flex items-center justify-center chrome-hover"
+        className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform flex items-center justify-center chrome-hover"
         aria-label="Chat with Smashie">
         
           <span className="text-2xl">🤖</span>
@@ -63,7 +63,7 @@ export default function SmashieChat() {
 
       {/* Chat Panel */}
       {open &&
-      <div className="fixed bottom-6 right-6 z-50 w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up">
+      <div className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up">
           {/* Header */}
           <div className="bg-midnight-cherry px-5 py-4 flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
