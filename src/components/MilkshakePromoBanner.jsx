@@ -19,6 +19,9 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
   }, []);
 
   const regularCount = shakes.filter((s) => !/malt/i.test(s.name || '')).length;
+  const maltCount = shakes.filter((s) => /malt/i.test(s.name || '')).length;
+  const PREMIUM_COUNT = 5;
+  const totalCount = regularCount + maltCount + PREMIUM_COUNT;
 
   const fromPrice = (() => {
     if (shakes.length === 0) return null;
@@ -31,7 +34,12 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
     return Math.min(...prices).toFixed(2);
   })();
 
-  const countLabel = regularCount > 0 ? `${regularCount} Flavors` : 'Hand-Spun Shakes';
+  const countLabel = shakes.length > 0 ? `${totalCount} Flavors` : 'Hand-Spun Shakes';
+  const breakdown = [
+    regularCount > 0 && `${regularCount} originals`,
+    PREMIUM_COUNT > 0 && `${PREMIUM_COUNT} premium bliss`,
+    maltCount > 0 && 'malt',
+  ].filter(Boolean).join(' · ');
 
   if (variant === 'strip') {
     return (
@@ -47,7 +55,7 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
               Shake Isle — <span style={{ color: '#4EE3C8' }}>{countLabel}</span>
             </p>
             <p className="text-white/70 text-xs sm:text-sm mt-0.5">
-              Hand-spun, your size &amp; base.{fromPrice ? ` From $${fromPrice}.` : ''}
+              {breakdown}. Your size &amp; base.{fromPrice ? ` From $${fromPrice}.` : ''}
             </p>
           </div>
           <span className="btn-cherry chrome-hover inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm flex-shrink-0">
@@ -76,8 +84,9 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
                 <span className="text-4xl sm:text-6xl" style={{ color: '#4EE3C8' }}>ISLE</span>
               </h2>
               <p className="text-gray-300 text-base mb-1">
-                <span className="text-white font-semibold">{regularCount > 0 ? `${regularCount} flavors` : 'Hand-spun shakes'}</span>, your size, your base.
+                <span className="text-white font-semibold">{shakes.length > 0 ? `${totalCount} flavors` : 'Hand-spun shakes'}</span>, your size, your base.
               </p>
+              <p className="text-[#4EE3C8] text-xs font-heading uppercase tracking-widest mb-2">{breakdown}</p>
               <p className="text-gray-400 text-sm mb-6">Pick a flavor, then make it large or small — add another for a twist.</p>
               <div className="inline-flex items-center gap-4 flex-wrap justify-center sm:justify-start">
                 <span className="btn-cherry chrome-hover inline-flex items-center gap-2 px-7 py-3.5 text-sm">

@@ -51,6 +51,16 @@ export default function Milkshakes() {
   const maltShakes = shakes.filter((s) => /malt/i.test(s.name || ''));
   const regularShakes = shakes.filter((s) => !/malt/i.test(s.name || ''));
 
+  // Total shake count includes the 5 premium Bliss shakes (shown in their own
+  // section) and the malt, so the hero reflects every shake we offer.
+  const PREMIUM_COUNT = 5;
+  const totalFlavors = regularShakes.length + maltShakes.length + PREMIUM_COUNT;
+  const heroBreakdown = [
+    regularShakes.length > 0 && `${regularShakes.length} originals`,
+    PREMIUM_COUNT > 0 && `${PREMIUM_COUNT} premium bliss`,
+    maltShakes.length > 0 && 'malt',
+  ].filter(Boolean).join(' · ');
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -70,8 +80,9 @@ export default function Milkshakes() {
             <span className="text-5xl sm:text-7xl md:text-8xl" style={{ color: '#4EE3C8' }}>ISLE</span>
           </h1>
           <p className="text-gray-300 text-lg mb-3">
-            <span className="text-white font-semibold">{regularShakes.length} flavors</span>, your size, your base.
+            <span className="text-white font-semibold">{totalFlavors} flavors</span>, your size, your base.
           </p>
+          <p className="text-[#4EE3C8] text-xs font-heading uppercase tracking-widest mb-3">{heroBreakdown}</p>
           <p className="text-gray-400 text-sm mb-8">
             Pick a flavor, then make it large or small — add another flavor for a twist.
           </p>
