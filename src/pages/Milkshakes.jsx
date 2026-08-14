@@ -7,6 +7,7 @@ import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
+import { Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
@@ -79,6 +80,12 @@ export default function Milkshakes() {
             <span className="text-gray-600">•</span>
             <span>Scroll to explore</span>
           </div>
+          <Link
+            to="/menu"
+            className="inline-flex items-center gap-1.5 mt-6 text-white/80 hover:text-white text-xs font-heading uppercase tracking-widest transition-colors"
+          >
+            <ArrowRight size={12} className="rotate-180" /> Back to Menu
+          </Link>
         </div>
       </section>
 
@@ -154,12 +161,20 @@ export default function Milkshakes() {
             Small or large. One flavor or three.<br />
             <span className="text-white font-semibold">Mix it however you like.</span>
           </p>
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm"
-          >
-            <ShoppingBag size={16} /> View Cart
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm"
+            >
+              <ShoppingBag size={16} /> View Cart
+            </button>
+            <Link
+              to="/menu"
+              className="btn-mint chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm"
+            >
+              <ArrowRight size={16} /> Browse Full Menu
+            </Link>
+          </div>
         </div>
       </section>
 

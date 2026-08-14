@@ -15,6 +15,7 @@ import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
@@ -53,10 +54,15 @@ export default function Menu() {
   useEffect(() => { reload(); }, []);
   const { pull, refreshing } = usePullToRefresh(reload);
 
-  // Items matching the search, excluding hidden categories.
+  // Milkshakes live on their own page — pull them out of the menu and promote
+  // the Shake Isle page in their place.
+  const SHAKE_KEY = 'Whirl & Twirl';
+
+  // Items matching the search, excluding hidden categories and the shake category.
   const visibleItems = items.filter((item) => {
     const key = itemCategoryKey(item);
     if (hiddenCats.includes(key)) return false;
+    if (key === SHAKE_KEY) return false;
     const matchSearch = !search ||
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     (item.description || '').toLowerCase().includes(search.toLowerCase());
@@ -64,9 +70,10 @@ export default function Menu() {
   });
 
   // Group items by effective category; one row per category (items scroll left→right).
+  // The shake category is replaced by a promo banner row linking to Shake Isle.
   const rows = (() => {
     if (search) {
-      return [{ key: 'Results', items: visibleItems }];
+      return [{ key: 'Results', items: visibleItems, isShakeBanner: false }];
     }
     const map = {};
     for (const item of visibleItems) {
@@ -74,9 +81,11 @@ export default function Menu() {
       if (!map[key]) map[key] = [];
       map[key].push(item);
     }
-    return sortCategories(Object.keys(map), categoryOrder).map((key) => ({
+    const keys = [...Object.keys(map), SHAKE_KEY];
+    return sortCategories(keys, categoryOrder).map((key) => ({
       key,
-      items: sortItemsInCategory(map[key], itemOrder[key] || [])
+      items: key === SHAKE_KEY ? [] : sortItemsInCategory(map[key], itemOrder[key] || []),
+      isShakeBanner: key === SHAKE_KEY,
     }));
   })();
 
@@ -161,7 +170,7 @@ export default function Menu() {
             <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
             <p className="font-heading">Loading menu…</p>
           </div> :
-        rows.length === 0 || rows.every((r) => r.items.length === 0) ?
+        !rows.some((r) => r.isShakeBanner || r.items.length > 0) ?
         <div className="text-center py-20 text-muted-foreground">
             <p className="text-4xl mb-4">🍽️</p>
             <p className="font-heading text-lg">No items found</p>
@@ -169,7 +178,16 @@ export default function Menu() {
           </div> :
 
         <div className="space-y-12">
-            {rows.map(({ key, items: rowItems }) =>
+            {rows.map(({ key, items: rowItems, isShakeBanner }) =>
+          isShakeBanner ? (
+            <div key={key}>
+              <div className="flex items-center gap-4 mb-5">
+                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Milkshakes</h2>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <MilkshakePromoBanner variant="strip" />
+            </div>
+          ) : (
           <div key={key}>
                 <div className="flex items-center gap-4 mb-5">
                   <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
@@ -186,6 +204,7 @@ export default function Menu() {
               )}
                 </div>
               </div>
+          )
           )}
           </div>
         }
