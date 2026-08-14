@@ -13,6 +13,11 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
   return (
     <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
       <div className="max-w-3xl mx-auto">
+        {/* Heading above the malt tile */}
+        <div className="text-center mb-8">
+          <h2 className="font-heading text-4xl sm:text-5xl text-white leading-none">MALT MILKSHAKE</h2>
+        </div>
+
         {/* Single centered malt tile */}
         <div className="flex justify-center mb-10">
           <button
