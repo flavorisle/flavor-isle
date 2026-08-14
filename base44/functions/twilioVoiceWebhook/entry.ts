@@ -162,6 +162,25 @@ Deno.serve(async (req) => {
     const isOrderComplete = /thank you|enjoy your meal|order.*confirmed|that's everything|goodbye|have a great|all set|we're all good/i.test(replyText);
     const atTurnCap = turn >= MAX_TURNS;
 
+    // Smashie can request a live transfer to the counter by including the
+    // [[TRANSFER]] token in his reply. We strip the token, speak the rest, then
+    // <Dial> the counter number (COUNTER_PHONE_NUMBER env). If no counter
+    // number is configured, we fall through to the normal flow so Smashie can
+    // take a message instead.
+    const wantsTransfer = /\[\[TRANSFER\]\]/i.test(replyText);
+    const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
+    if (wantsTransfer && counterNumber) {
+      const cleanReply = replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
+      const transferTwiml = new VoiceResponse();
+      transferTwiml.say(
+        { voice: 'Polly.Joanna', language: 'en-US' },
+        forTTS(cleanReply || "Let me get you over to the counter, hold tight!")
+      );
+      const dial = transferTwiml.dial({ timeout: 20 });
+      dial.number(counterNumber);
+      return new Response(transferTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+    }
+
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Joanna', language: 'en-US' }, forTTS(replyText));
 
