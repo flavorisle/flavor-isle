@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
+import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
@@ -44,6 +45,11 @@ export default function Milkshakes() {
   const openCustomizer = (shake) => setActiveShake(shake);
   const closeCustomizer = () => setActiveShake(null);
 
+  // Malt shakes live in their own section with an explainer, separate from
+  // the core flavor grid.
+  const maltShakes = shakes.filter((s) => /malt/i.test(s.name || ''));
+  const regularShakes = shakes.filter((s) => !/malt/i.test(s.name || ''));
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -63,13 +69,13 @@ export default function Milkshakes() {
             <span className="block text-6xl sm:text-8xl" style={{ color: '#4EE3C8' }}>ISLE</span>
           </h1>
           <p className="text-gray-300 text-lg mb-3">
-            <span className="text-white font-semibold">{shakes.length} flavors</span>, your size, your base.
+            <span className="text-white font-semibold">{regularShakes.length} flavors</span>, your size, your base.
           </p>
           <p className="text-gray-400 text-sm mb-8">
             Pick a flavor, then make it large or small — add another flavor for a twist.
           </p>
           <div className="inline-flex items-center gap-2 text-gray-400 text-xs font-heading uppercase tracking-widest">
-            <span>from {shakes.length > 0 ? `$${getFromPrice(shakes[0])}` : '—'}</span>
+            <span>from {regularShakes.length > 0 ? `$${getFromPrice(regularShakes[0])}` : '—'}</span>
             <span className="text-gray-600">•</span>
             <span>Scroll to explore</span>
           </div>
@@ -89,13 +95,13 @@ export default function Milkshakes() {
               <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
               <p className="font-heading">Loading flavors…</p>
             </div>
-          ) : shakes.length === 0 ? (
+          ) : regularShakes.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <p className="font-heading">No flavors available right now.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {shakes.map((shake) => {
+              {regularShakes.map((shake) => {
                 const name = flavorNameFromItem(shake.name);
                 const emoji = flavorEmojiByName(name);
                 return (
@@ -117,6 +123,13 @@ export default function Milkshakes() {
           )}
         </div>
       </section>
+
+      {/* Malt Milkshakes */}
+      <MaltShakesSection
+        maltShakes={maltShakes}
+        getFromPrice={getFromPrice}
+        onSelect={openCustomizer}
+      />
 
       {/* Premium Bliss Shakes */}
       <section className="py-16 px-4 sm:px-6 bg-gradient-to-b from-vanilla-malt to-amber-50/40">
