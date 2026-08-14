@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import FaqSection from '@/components/FaqSection';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -110,6 +111,11 @@ export default function Contact() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="mb-12">
+          <FaqSection />
         </div>
 
         {/* Contact form */}
