@@ -60,7 +60,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Service Partners',
-        text: 'We share only what is necessary with our trusted service partners — for payment processing (Stripe), in-store order syncing (Square), and delivery courier services — to run our business.',
+        text: 'We share only what is necessary with our trusted service partners — for payment processing and in-store order syncing (Square), and delivery courier services — to run our business.',
       },
       {
         heading: 'Phone & SMS Communications (Twilio)',
