@@ -61,12 +61,12 @@ export default function Milkshakes() {
           backgroundImage: `radial-gradient(circle at 15% 50%, rgba(204,51,0,0.3) 0%, transparent 50%), radial-gradient(circle at 85% 30%, rgba(0,51,102,0.4) 0%, transparent 50%)`
         }} />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-midnight-cherry/20 border border-midnight-cherry/40 text-red-300 px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/15 text-[#4EE3C8] px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
             Hand-Spun Shakes
           </div>
-          <h1 className="font-heading leading-none mb-4">
-            <span className="block text-6xl sm:text-8xl text-white">SHAKE</span>
-            <span className="block text-6xl sm:text-8xl" style={{ color: '#4EE3C8' }}>ISLE</span>
+          <h1 className="font-heading leading-none mb-4 whitespace-nowrap">
+            <span className="text-5xl sm:text-7xl md:text-8xl text-white">SHAKE </span>
+            <span className="text-5xl sm:text-7xl md:text-8xl" style={{ color: '#4EE3C8' }}>ISLE</span>
           </h1>
           <p className="text-gray-300 text-lg mb-3">
             <span className="text-white font-semibold">{regularShakes.length} flavors</span>, your size, your base.
@@ -139,8 +139,8 @@ export default function Milkshakes() {
       {/* CTA — heading */}
       <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-heading text-3xl sm:text-4xl text-white leading-tight">
-            Your shake.<br /><span style={{ color: '#4EE3C8' }}>Your way.</span>
+          <h2 className="font-heading text-3xl sm:text-4xl text-white leading-tight whitespace-nowrap">
+            Your shake. <span style={{ color: '#4EE3C8' }}>Your way.</span>
           </h2>
         </div>
       </section>
