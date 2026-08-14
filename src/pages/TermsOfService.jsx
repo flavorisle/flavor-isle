@@ -27,7 +27,7 @@ const SECTIONS = [
       },
       {
         heading: 'Payment',
-        text: 'Payment is processed securely through our payment partner, Stripe. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order.',
+        text: 'Payment is processed securely through our payment partner, Square. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order.',
       },
       {
         heading: 'Order Times & Availability',
@@ -121,7 +121,7 @@ const SECTIONS = [
       },
       {
         heading: 'Third-Party Services',
-        text: 'Our services rely on third parties (including Stripe, Square, Twilio, and OpenAI). We are not responsible for their separate policies or service interruptions.',
+        text: 'Our services rely on third parties (including Square, Twilio, and OpenAI). We are not responsible for their separate policies or service interruptions.',
       },
     ],
   },
