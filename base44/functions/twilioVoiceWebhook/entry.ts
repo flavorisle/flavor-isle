@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       );
       twiml.gather({
         input: 'speech',
-        action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(from)}&convId=${conversationId}`,
+        action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(from)}&convId=${conversationId}&turn=1`,
         speechTimeout: 'auto',
         language: 'en-US',
         timeout: 8,
@@ -89,10 +89,33 @@ Deno.serve(async (req) => {
     // --- Handle speech callback ---
     const conversationId = url.searchParams.get('convId') || '';
     const callerFrom = url.searchParams.get('from') || from;
+    const turn = parseInt(url.searchParams.get('turn') || '1', 10);
+    const MAX_TURNS = 14;
 
-    if (!speechResult || !conversationId) {
+    const callbackUrl = (nextTurn) =>
+      `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(callerFrom)}&convId=${conversationId}&turn=${nextTurn}`;
+
+    // Empty speech — re-prompt once before politely ending the call.
+    if (!speechResult) {
       const twiml = new VoiceResponse();
-      twiml.say({ voice: 'Polly.Joanna' }, "I didn't catch that. Please call back and try again!");
+      if (turn <= 2) {
+        twiml.say({ voice: 'Polly.Joanna', language: 'en-US' }, "I'm sorry, I didn't catch that. Could you say that again?");
+        twiml.gather({
+          input: 'speech',
+          action: callbackUrl(turn + 1),
+          speechTimeout: 'auto',
+          language: 'en-US',
+          timeout: 8,
+        });
+      }
+      twiml.say({ voice: 'Polly.Joanna' }, "No worries — give us a call back when you're ready and we'll take care of you!");
+      twiml.hangup();
+      return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+    }
+
+    if (!conversationId) {
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Joanna' }, "I'm having trouble finding your call session. Please call back!");
       twiml.hangup();
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
@@ -123,18 +146,22 @@ Deno.serve(async (req) => {
     }
 
     // Check if order was completed (Smashie says goodbye/confirmed)
-    const isOrderComplete = /thank you|enjoy your meal|order.*confirmed|that's everything|goodbye|have a great/i.test(replyText);
+    const isOrderComplete = /thank you|enjoy your meal|order.*confirmed|that's everything|goodbye|have a great|all set|we're all good/i.test(replyText);
+    const atTurnCap = turn >= MAX_TURNS;
 
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Joanna', language: 'en-US' }, forTTS(replyText));
 
-    if (isOrderComplete) {
+    if (isOrderComplete || atTurnCap) {
+      if (atTurnCap && !isOrderComplete) {
+        twiml.say({ voice: 'Polly.Joanna', language: 'en-US' }, "I want to make sure we get this right — let's wrap up here, and if you need anything else just give us another call!");
+      }
       twiml.hangup();
     } else {
       // Keep listening
       twiml.gather({
         input: 'speech',
-        action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(callerFrom)}&convId=${conversationId}`,
+        action: callbackUrl(turn + 1),
         speechTimeout: 'auto',
         language: 'en-US',
         timeout: 8,
@@ -143,7 +170,7 @@ Deno.serve(async (req) => {
       twiml.hangup();
     }
 
-    console.log(`Smashie replied to ${callerFrom}: ${replyText.substring(0, 100)}`);
+    console.log(`Smashie replied to ${callerFrom} (turn ${turn}): ${replyText.substring(0, 100)}`);
 
     return new Response(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' },
