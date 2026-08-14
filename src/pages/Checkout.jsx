@@ -90,6 +90,7 @@ export default function Checkout() {
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddress, setSavedAddress] = useState(false);
@@ -412,6 +413,21 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
+
+                  {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
+                  <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={smsConsent}
+                      onChange={e => setSmsConsent(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                    />
+                    <span className="text-xs text-muted-foreground leading-relaxed">
+                      Text me order status updates from Flavor Isle (confirmed, preparing, ready). Reply STOP to cancel, HELP for help. Msg &amp; data rates may apply. See our{' '}
+                      <Link to="/privacy-policy" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</Link>{' '}and{' '}
+                      <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
+                    </span>
+                  </label>
 
                   {orderType === 'delivery' && (
                     <SavedAddressField
