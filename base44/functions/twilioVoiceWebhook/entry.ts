@@ -152,8 +152,8 @@ Deno.serve(async (req) => {
     // drift during a long call or when admin-configured hours change.
     const storeStatus = await getStoreStatus(base44);
     const statusContext = storeStatus.isOpen
-      ? `[STORE STATUS: OPEN. Flavor Isle closes today at ${storeStatus.closeTime}. Open-hours capabilities are allowed.]`
-      : `[STORE STATUS: CLOSED. Flavor Isle opens ${storeStatus.nextOpenLabel}. Closed-mode rules are mandatory: only history, next opening time, or a management message.]`;
+      ? `[STORE STATUS: OPEN. Flavor Isle closes today at ${storeStatus.closeTime}. Open-hours capabilities are allowed. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`
+      : `[STORE STATUS: CLOSED. Flavor Isle opens ${storeStatus.nextOpenLabel}. Closed-mode rules are mandatory: only history, next opening time, or a management message. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
 
     const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
     const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
