@@ -9,13 +9,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 // preset definition. Smashie uses this to accurately build the line item and
 // confirm toppings back to the customer before logging the order.
 
-// Default "Deluxe" preset — mirrors src/lib/deluxeConfig.js DEFAULT_DELUXE_PRESETS.
-// "Deluxe" = Mustard, Mayo, Pickles, Onions, Tomatoes, Lettuce (Mayo is silent —
-// don't call it out as "missing" if removed).
+// Flavor Isle "Deluxe" requires one condiment choice, never both by default.
 const DELUXE_PRESET = {
   name: 'Deluxe',
-  toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
-  silentToppings: ['Mayo'],
+  condiment_choice: ['Mustard', 'Mayo'],
+  toppings: ['Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
 };
 
 const BURGER_CATEGORIES = ['Burgers', 'Chicken'];
@@ -74,9 +72,7 @@ Deno.serve(async (req) => {
       success: true,
       deluxe_preset: DELUXE_PRESET,
       note:
-        '"Deluxe" (or "all the way") means: ' +
-        DELUXE_PRESET.toppings.join(', ') +
-        '. "No X" removes a single topping. Mayo is silent — never call it out as missing. Pick the best-matching item, choose the toppings the customer asked for, and read the order back before logging it.',
+        '"Deluxe" (or "all the way") means Pickles, Onions, Tomatoes, and Lettuce, plus exactly ONE condiment: Mustard OR Mayo. Ask the customer which condiment they want; never add both unless they explicitly request both. "No X" removes a single topping. Only offer modifiers returned for the matched live item, then read the order back before logging it.',
       matched_items: view,
       line_item_template: {
         name: '<item name>',
