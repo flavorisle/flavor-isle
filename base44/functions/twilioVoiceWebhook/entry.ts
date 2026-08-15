@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     // Twilio cannot fetch protected backend-function URLs through <Play>.
     // Use its reliable young male neural voice directly so calls never fail.
     const speak = (twiml, text) => twiml.say(
-      { voice: 'Polly.Matthew-Neural', language: 'en-US' },
+      { voice: 'Polly.Matthew-Generative', language: 'en-US' },
       forTTS(text)
     );
 
@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     console.error('twilioVoiceWebhook error:', error.message);
     const twilio_twiml = twilio.twiml;
     const twiml = new twilio_twiml.VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew-Neural', language: 'en-US' }, "Yo, we hit a little tech snag — hit us back in a sec and we'll get you right!");
+    twiml.say({ voice: 'Polly.Matthew-Generative', language: 'en-US' }, "Yo, we hit a little tech snag — hit us back in a sec and we'll get you right!");
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
