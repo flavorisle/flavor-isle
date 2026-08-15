@@ -146,13 +146,20 @@ export default async function(req) {
     const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
 
     const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
-    const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
+    const priorAssistantCount = (conversation.messages || []).filter(m => m.role === 'assistant').length;
+    await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
       content: `${statusContext}\nCaller said: ${speechResult}`,
     });
 
-    // Get Smashie's reply
-    const messages = updatedConversation.messages || [];
+    // Agent replies are generated asynchronously, so wait for the new completed reply.
+    let messages = conversation.messages || [];
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
+      messages = refreshed.messages || [];
+      if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
+    }
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
     const replyText = lastReply?.content || "Let me check on that for you fam!";
