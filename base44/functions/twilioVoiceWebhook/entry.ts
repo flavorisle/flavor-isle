@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { generateSmashieVoice } from '../../shared/smashieVoice.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 
 // Helper: strip markdown for TTS
@@ -42,17 +41,13 @@ export default async function(req) {
       return callback.toString();
     };
 
-    // Generate each line with OpenAI's natural young male voice, upload it to
-    // a public audio URL, then let Twilio play it. Keep a reliable fallback.
+    // Return TwiML immediately; Twilio streams Smashie's OpenAI voice directly
+    // instead of waiting here for generation plus a second file upload.
     const speak = async (twiml, text) => {
       const cleanText = forTTS(text);
-      try {
-        const audioUrl = await generateSmashieVoice(base44, cleanText);
-        twiml.play({}, audioUrl);
-      } catch (error) {
-        console.error('OpenAI voice fallback:', error.message);
-        twiml.say({ voice: 'Polly.Matthew-Generative', language: 'en-US' }, cleanText);
-      }
+      const audioUrl = new URL('https://crave.flavor-isle.com/functions/smashieTts');
+      audioUrl.searchParams.set('text', cleanText);
+      twiml.play({}, audioUrl.toString());
     };
 
     console.log(`Voice call ${callSid} from ${from}, speech: "${speechResult}"`);
@@ -99,7 +94,7 @@ export default async function(req) {
       twiml.gather({
         input: 'speech',
         action: buildCallbackUrl(from, conversationId, 1),
-        speechTimeout: 'auto',
+        speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });
@@ -128,7 +123,7 @@ export default async function(req) {
         twiml.gather({
           input: 'speech',
           action: callbackUrl(turn + 1),
-          speechTimeout: 'auto',
+          speechTimeout: '1',
           language: 'en-US',
           timeout: 8,
         });
@@ -170,8 +165,8 @@ export default async function(req) {
       });
 
       let messages = conversation.messages || [];
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 250));
         const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
         messages = refreshed.messages || [];
         if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
@@ -256,7 +251,7 @@ export default async function(req) {
       twiml.gather({
         input: 'speech',
         action: callbackUrl(turn + 1),
-        speechTimeout: 'auto',
+        speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });

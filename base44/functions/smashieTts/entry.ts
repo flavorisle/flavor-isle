@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // Public TTS endpoint for Smashie's voice calls. Twilio <Play> GETs this with
-// ?text=... and we return natural OpenAI TTS audio (young male "ash" voice) so
+// ?text=... and we return natural OpenAI TTS audio (young male "verse" voice) so
 // Smashie never sounds robotic. Falls back to the platform's natural TTS if
 // OpenAI is unavailable, always returning audio bytes (never a redirect) so
 // Twilio <Play> reliably gets something to play.
@@ -17,7 +17,7 @@ export default async function (req: Request): Promise<Response> {
   }
   if (!text) return new Response('text required', { status: 400 });
 
-  // OpenAI TTS — natural young male "ash" voice.
+  // OpenAI TTS — natural young male "verse" voice.
   try {
     const res = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -27,9 +27,11 @@ export default async function (req: Request): Promise<Response> {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini-tts',
-        voice: 'ash',
+        voice: 'verse',
         input: text,
+        instructions: 'Use the clear, articulate voice of a confident 21-year-old American man. Sound relaxed, upbeat, socially natural, and easy to understand over a phone call.',
         response_format: 'mp3',
+        speed: 1.02,
       }),
     });
     if (res.ok) {
