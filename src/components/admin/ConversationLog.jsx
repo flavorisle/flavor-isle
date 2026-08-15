@@ -65,10 +65,14 @@ export default function ConversationLog({ channel }) {
     setExpanded(id);
     if (!messages[id]) {
       setLoadingMsgs(prev => ({ ...prev, [id]: true }));
-      try {
-        const conv = await base44.agents.getConversation(c.conversation_id);
-        setMessages(prev => ({ ...prev, [id]: conv.messages || [] }));
-      } catch (e) { console.error(e); }
+      if (c.transcript?.length) {
+        setMessages(prev => ({ ...prev, [id]: c.transcript }));
+      } else {
+        try {
+          const conv = await base44.agents.getConversation(c.conversation_id);
+          setMessages(prev => ({ ...prev, [id]: conv.messages || [] }));
+        } catch (e) { console.error(e); }
+      }
       setLoadingMsgs(prev => ({ ...prev, [id]: false }));
     }
     // Lazy-resolve the caller's Square name for older voice records.

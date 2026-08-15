@@ -67,36 +67,29 @@ export default async function(req) {
         return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
       }
 
-      // Look up or create conversation
-      const existing = await base44.asServiceRole.entities.SmsConversation.filter({
-        phone_number: from,
-        status: 'active',
-      });
-
-      let conversationId;
-
-      if (existing[0]) {
-        conversationId = existing[0].conversation_id;
-      } else {
-        const convo = await base44.asServiceRole.agents.createConversation({
-          agent_name: 'smashie',
-          metadata: {
-            name: `Voice Order - ${from}`,
-            description: `Voice call order from ${from}`,
-            channel: 'voice',
-            phone: from,
-          },
-        });
-        await base44.asServiceRole.entities.SmsConversation.create({
-          phone_number: from,
-          conversation_id: convo.id,
+      // Every phone call gets its own conversation and complete transcript.
+      const startedAt = new Date().toISOString();
+      const convo = await base44.asServiceRole.agents.createConversation({
+        agent_name: 'smashie',
+        metadata: {
+          name: `Voice Call - ${from}`,
+          description: `Voice call from ${from}`,
           channel: 'voice',
-          last_message_at: new Date().toISOString(),
-          message_count: 0,
-          status: 'active',
-        });
-        conversationId = convo.id;
-      }
+          phone: from,
+          call_sid: callSid,
+        },
+      });
+      const conversationId = convo.id;
+      await base44.asServiceRole.entities.SmsConversation.create({
+        phone_number: from,
+        conversation_id: conversationId,
+        call_sid: callSid,
+        channel: 'voice',
+        last_message_at: startedAt,
+        message_count: 0,
+        status: 'active',
+        transcript: [{ role: 'assistant', content: settings.greeting, timestamp: startedAt }],
+      });
 
       const twiml = new VoiceResponse();
       await speak(twiml, settings.greeting);
@@ -163,21 +156,51 @@ export default async function(req) {
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
     const replyText = lastReply?.content || "Let me check on that for you fam!";
+    let spokenReply = replyText;
 
-    // Update conversation record
-    const existing = await base44.asServiceRole.entities.SmsConversation.filter({
-      phone_number: callerFrom,
-      status: 'active',
-    });
+    // Smashie emits a structured token only after collecting all message details.
+    const messageMatch = replyText.match(/\[\[PHONE_MESSAGE:(\{[\s\S]*?\})\]\]/i);
+    if (messageMatch) {
+      try {
+        const messageData = JSON.parse(messageMatch[1]);
+        if (!messageData.caller_name || !messageData.recipient || !messageData.message) {
+          throw new Error('Incomplete phone message details');
+        }
+        await base44.asServiceRole.entities.PhoneMessage.create({
+          caller_name: messageData.caller_name,
+          caller_phone: callerFrom,
+          recipient: messageData.recipient,
+          message: messageData.message,
+          conversation_id: conversationId,
+          call_sid: callSid,
+          channel: 'voice',
+          status: 'new',
+        });
+        spokenReply = replyText.replace(messageMatch[0], '').trim() || "Got it — I'll make sure they get your message.";
+      } catch (messageError) {
+        console.error('Phone message save failed:', messageError.message);
+        spokenReply = "I'm sorry, I couldn't save that message. Please try that one more time.";
+      }
+    }
+
+    // Persist a clean, admin-readable transcript independent of agent ownership.
+    const existing = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
     if (existing[0]) {
+      const timestamp = new Date().toISOString();
+      const transcript = [
+        ...(existing[0].transcript || []),
+        { role: 'user', content: speechResult, timestamp },
+        { role: 'assistant', content: spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim(), timestamp },
+      ];
       await base44.asServiceRole.entities.SmsConversation.update(existing[0].id, {
-        last_message_at: new Date().toISOString(),
-        message_count: (existing[0].message_count || 0) + 1,
+        last_message_at: timestamp,
+        message_count: (existing[0].message_count || 0) + 2,
+        transcript,
       });
     }
 
     // Check if order was completed (Smashie says goodbye/confirmed)
-    const isOrderComplete = /thank you|enjoy your meal|order.*confirmed|that's everything|goodbye|have a great|all set|we're all good/i.test(replyText);
+    const isOrderComplete = /thank you|enjoy your meal|order.*confirmed|that's everything|goodbye|have a great|all set|we're all good/i.test(spokenReply);
     const atTurnCap = turn >= MAX_TURNS;
 
     // Smashie can request a live transfer to the counter by including the
@@ -185,10 +208,10 @@ export default async function(req) {
     // <Dial> the counter number (COUNTER_PHONE_NUMBER env). If no counter
     // number is configured, we fall through to the normal flow so Smashie can
     // take a message instead.
-    const wantsTransfer = /\[\[TRANSFER\]\]/i.test(replyText);
+    const wantsTransfer = /\[\[TRANSFER\]\]/i.test(spokenReply);
     const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
     if (wantsTransfer && counterNumber) {
-      const cleanReply = replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
+      const cleanReply = spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
       await speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
       const dial = transferTwiml.dial({ timeout: 20 });
@@ -197,7 +220,7 @@ export default async function(req) {
     }
 
     const twiml = new VoiceResponse();
-    await speak(twiml, replyText);
+    await speak(twiml, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
 
     if (isOrderComplete || atTurnCap) {
       if (atTurnCap && !isOrderComplete) {
@@ -217,7 +240,7 @@ export default async function(req) {
       twiml.hangup();
     }
 
-    console.log(`Smashie replied to ${callerFrom} (turn ${turn}): ${replyText.substring(0, 100)}`);
+    console.log(`Smashie replied to ${callerFrom} (turn ${turn}): ${spokenReply.substring(0, 100)}`);
 
     return new Response(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' },

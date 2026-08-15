@@ -3,7 +3,7 @@ import { Phone, MessageSquare, MessagesSquare, Bot } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import AdminNav from '@/components/admin/AdminNav';
 import ConversationLog from '@/components/admin/ConversationLog';
-import MessageLog from '@/components/admin/MessageLog';
+import ManagementMessageLog from '@/components/admin/ManagementMessageLog';
 import SmashieSettingsPanel from '@/components/admin/SmashieSettingsPanel';
 
 const TABS = [
@@ -51,7 +51,7 @@ export default function AdminCommunications() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {tab === 'phone' && <ConversationLog channel="voice" />}
         {tab === 'sms' && <ConversationLog channel="sms" />}
-        {tab === 'messages' && <MessageLog />}
+        {tab === 'messages' && <ManagementMessageLog />}
         {tab === 'settings' && <SmashieSettingsPanel />}
       </div>
     </div>

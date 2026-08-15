@@ -18,6 +18,14 @@
       "type": "string",
       "description": "The message the caller asked Smashie to pass along"
     },
+    "conversation_id": {
+      "type": "string",
+      "description": "Related voice conversation containing the full call transcript"
+    },
+    "call_sid": {
+      "type": "string",
+      "description": "Twilio identifier for the related call"
+    },
     "channel": {
       "type": "string",
       "enum": [

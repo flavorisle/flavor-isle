@@ -7,7 +7,7 @@ import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 // details (status, direction, duration, start time) on the caller's voice
 // conversation, resolve the Square customer name from the caller's phone, and
 // mark the conversation completed when the call ends.
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     if (req.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
 
+    const callSid = params.get('CallSid') || '';
     const callStatus = params.get('CallStatus') || '';
     const callDuration = params.get('CallDuration') || '';
     const from = params.get('From') || '';
@@ -25,11 +26,9 @@ Deno.serve(async (req) => {
     console.log(`Voice status: from=${from} status=${callStatus} dir=${direction} dur=${callDuration}s`);
 
     const base44 = createClientFromRequest(req);
-    const existing = await base44.asServiceRole.entities.SmsConversation.filter({
-      phone_number: from,
-      status: 'active',
-      channel: 'voice',
-    });
+    const existing = await base44.asServiceRole.entities.SmsConversation.filter(callSid
+      ? { call_sid: callSid, channel: 'voice' }
+      : { phone_number: from, status: 'active', channel: 'voice' });
 
     if (existing[0]) {
       const update = {
@@ -68,4 +67,4 @@ Deno.serve(async (req) => {
     console.error('twilioVoiceStatus error:', error.message);
     return new Response('OK', { status: 200 });
   }
-});
+}

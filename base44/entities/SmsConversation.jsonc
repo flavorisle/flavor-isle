@@ -8,6 +8,10 @@
     "conversation_id": {
       "type": "string"
     },
+    "call_sid": {
+      "type": "string",
+      "description": "Twilio call identifier used to keep each call and transcript separate."
+    },
     "channel": {
       "type": "string",
       "enum": [
@@ -32,6 +36,29 @@
         "completed"
       ],
       "default": "active"
+    },
+    "transcript": {
+      "type": "array",
+      "description": "Complete caller and Smashie transcript captured during this phone call.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     },
     "customer_name": {
       "type": "string",
