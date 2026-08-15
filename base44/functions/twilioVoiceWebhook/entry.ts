@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getStoreStatus } from '../../shared/storeHours.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -30,10 +31,12 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const isCallback = url.searchParams.get('callback') === '1';
 
-    // Build a Twilio <Play> URL that streams natural OpenAI TTS audio for the
-    // given text, so Smashie never sounds like a robotic Polly voice.
-    const ttsUrl = (text) =>
-      `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/smashieTts?text=${encodeURIComponent(text)}`;
+    // Twilio cannot fetch protected backend-function URLs through <Play>.
+    // Use its reliable young male neural voice directly so calls never fail.
+    const speak = (twiml, text) => twiml.say(
+      { voice: 'Polly.Matthew-Neural', language: 'en-US' },
+      forTTS(text)
+    );
 
     console.log(`Voice call ${callSid} from ${from}, speech: "${speechResult}"`);
 
@@ -43,12 +46,10 @@ Deno.serve(async (req) => {
     // --- Initial greeting (no speech yet) ---
     if (!isCallback && !speechResult) {
       const settings = await getSmashieSettings(base44);
+      const storeStatus = await getStoreStatus(base44);
       if (!settings.voice_ordering_enabled) {
         const offTwiml = new VoiceResponse();
-        offTwiml.play(
-          {},
-          ttsUrl("Yo fam, thanks for calling Flavor Isle! Our AI phone ordering's switched off right now, no cap. Hit us up online at flavor dash isle dot com, or pull up another time — we got you!")
-        );
+        speak(offTwiml, "Yo fam, thanks for calling Flavor Isle! Our AI phone assistant is switched off right now. Please call back during business hours.");
         offTwiml.hangup();
         return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
       }
@@ -85,7 +86,10 @@ Deno.serve(async (req) => {
       }
 
       const twiml = new VoiceResponse();
-      twiml.play({}, ttsUrl(forTTS(settings.greeting)));
+      const greeting = storeStatus.isOpen
+        ? settings.greeting
+        : `Yo fam, thanks for calling Flavor Isle! We're closed right now, and we open ${storeStatus.nextOpenLabel}. I'm Smashie. I can share Flavor Isle history, tell you our opening time, or take a message for management. What can I help with?`;
+      speak(twiml, greeting);
       twiml.gather({
         input: 'speech',
         action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(from)}&convId=${conversationId}&turn=1`,
@@ -93,7 +97,9 @@ Deno.serve(async (req) => {
         language: 'en-US',
         timeout: 8,
       });
-      twiml.play({}, ttsUrl("My bad fam, didn't catch that. Hit us back when you're ready and we'll get your order right!"));
+      speak(twiml, storeStatus.isOpen
+        ? "My bad fam, I didn't catch that. Run it back when you're ready!"
+        : "My bad fam, I didn't catch that. I can share our history, opening time, or take a message for management.");
       twiml.hangup();
 
       return new Response(twiml.toString(), {
@@ -114,7 +120,7 @@ Deno.serve(async (req) => {
     if (!speechResult) {
       const twiml = new VoiceResponse();
       if (turn <= 2) {
-        twiml.play({}, ttsUrl("Yo, I didn't catch that — run that back for me?"));
+        speak(twiml, "Yo, I didn't catch that — run that back for me?");
         twiml.gather({
           input: 'speech',
           action: callbackUrl(turn + 1),
@@ -123,23 +129,29 @@ Deno.serve(async (req) => {
           timeout: 8,
         });
       }
-      twiml.play({}, ttsUrl("No worries fam — hit us back when you're ready and we'll take care of you. Bet!"));
+      speak(twiml, "No worries fam — hit us back when you're ready. Bet!");
       twiml.hangup();
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
     if (!conversationId) {
       const twiml = new VoiceResponse();
-      twiml.play({}, ttsUrl("Yo, I'm having trouble pulling up your call — hit us back real quick!"));
+      speak(twiml, "Yo, I'm having trouble pulling up your call — hit us back real quick!");
       twiml.hangup();
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    // Get conversation and send message to Smashie
+    // Attach live store status to every turn so closed-hours restrictions cannot
+    // drift during a long call or when admin-configured hours change.
+    const storeStatus = await getStoreStatus(base44);
+    const statusContext = storeStatus.isOpen
+      ? `[STORE STATUS: OPEN. Flavor Isle closes today at ${storeStatus.closeTime}. Open-hours capabilities are allowed.]`
+      : `[STORE STATUS: CLOSED. Flavor Isle opens ${storeStatus.nextOpenLabel}. Closed-mode rules are mandatory: only history, next opening time, or a management message.]`;
+
     const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
     const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
-      content: speechResult,
+      content: `${statusContext}\nCaller said: ${speechResult}`,
     });
 
     // Get Smashie's reply
@@ -171,24 +183,22 @@ Deno.serve(async (req) => {
     // take a message instead.
     const wantsTransfer = /\[\[TRANSFER\]\]/i.test(replyText);
     const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
-    if (wantsTransfer && counterNumber) {
+    if (storeStatus.isOpen && wantsTransfer && counterNumber) {
       const cleanReply = replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
-      transferTwiml.play(
-        {},
-        ttsUrl(forTTS(cleanReply || "Bet — let me get you over to the counter, hold tight fam!"))
-      );
+      speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
       const dial = transferTwiml.dial({ timeout: 20 });
       dial.number(counterNumber);
       return new Response(transferTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
     const twiml = new VoiceResponse();
-    twiml.play({}, ttsUrl(forTTS(replyText)));
+    const safeReply = storeStatus.isOpen ? replyText : replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
+    speak(twiml, safeReply);
 
     if (isOrderComplete || atTurnCap) {
       if (atTurnCap && !isOrderComplete) {
-        twiml.play({}, ttsUrl("Aight fam, let's wrap this up so we get it right — hit us back if you need anything else. We got you!"));
+        speak(twiml, "Aight fam, let's wrap this up — hit us back if you need anything else. We got you!");
       }
       twiml.hangup();
     } else {
@@ -200,7 +210,7 @@ Deno.serve(async (req) => {
         language: 'en-US',
         timeout: 8,
       });
-      twiml.play({}, ttsUrl("You still there fam? Hit us back if we got disconnected!"));
+      speak(twiml, "You still there fam? Hit us back if we got disconnected!");
       twiml.hangup();
     }
 
@@ -213,9 +223,7 @@ Deno.serve(async (req) => {
     console.error('twilioVoiceWebhook error:', error.message);
     const twilio_twiml = twilio.twiml;
     const twiml = new twilio_twiml.VoiceResponse();
-    // Ultimate fallback uses Polly so an error path never depends on the TTS
-    // service that may have contributed to the failure.
-    twiml.say({ voice: 'Polly.Matthew' }, "Yo, we hit a little tech snag — hit us back in a sec and we'll get you right!");
+    twiml.say({ voice: 'Polly.Matthew-Neural', language: 'en-US' }, "Yo, we hit a little tech snag — hit us back in a sec and we'll get you right!");
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
