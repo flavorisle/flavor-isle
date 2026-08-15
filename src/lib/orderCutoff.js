@@ -15,6 +15,8 @@ export function getCutoffStatus(setting) {
   const deliveryCutoff = setting?.delivery_cutoff_minutes ?? 30;
   const pickupCutoff = setting?.pickup_cutoff_minutes ?? 15;
   const closedFallback = toMins(setting?.closing_time) ?? toMins('20:00');
+  // Admin can pause delivery entirely — it stays unavailable regardless of hours.
+  const deliveryPaused = setting?.delivery_enabled === false;
 
   const allClosed = {
     delivery: true,
@@ -38,7 +40,7 @@ export function getCutoffStatus(setting) {
 
   const minsToClose = closeMins - nowMins;
   return {
-    delivery: minsToClose < deliveryCutoff,
+    delivery: deliveryPaused || minsToClose < deliveryCutoff,
     pickup: minsToClose < pickupCutoff,
     dine_in: minsToClose < pickupCutoff,
     deliveryCutoff,

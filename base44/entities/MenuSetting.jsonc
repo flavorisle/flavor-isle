@@ -34,6 +34,11 @@
       "type": "string",
       "default": "Ordering is temporarily closed"
     },
+    "delivery_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours."
+    },
     "closing_time": {
       "type": "string",
       "default": "20:00"
