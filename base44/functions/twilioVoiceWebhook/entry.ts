@@ -24,13 +24,15 @@ function forTTS(text) {
 export default async function(req) {
   try {
     const bodyText = await req.text();
-    const params = new URLSearchParams(bodyText);
+    const isJson = req.headers.get('content-type')?.includes('application/json');
+    const body = isJson ? JSON.parse(bodyText || '{}') : Object.fromEntries(new URLSearchParams(bodyText));
+    const params = new URLSearchParams(body);
 
     const callSid = params.get('CallSid') || '';
     const from = params.get('From') || '';
     const speechResult = params.get('SpeechResult') || '';
     const url = new URL(req.url);
-    const isCallback = url.searchParams.get('callback') === '1';
+    const isCallback = url.searchParams.get('callback') === '1' || params.get('callback') === '1';
     const buildCallbackUrl = (caller, conversationId, turn) => {
       const callback = new URL(`https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook`);
       callback.searchParams.set('callback', '1');
@@ -110,9 +112,9 @@ export default async function(req) {
     }
 
     // --- Handle speech callback ---
-    const conversationId = url.searchParams.get('convId') || '';
-    const callerFrom = url.searchParams.get('from') || from;
-    const turn = parseInt(url.searchParams.get('turn') || '1', 10);
+    const conversationId = url.searchParams.get('convId') || params.get('convId') || '';
+    const callerFrom = url.searchParams.get('from') || params.get('from') || from;
+    const turn = parseInt(url.searchParams.get('turn') || params.get('turn') || '1', 10);
     const MAX_TURNS = 14;
 
     const callbackUrl = (nextTurn) =>
