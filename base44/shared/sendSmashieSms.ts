@@ -32,9 +32,11 @@ export async function sendSmashieSms(to, body) {
 
   try {
     const client = twilio(accountSid, authToken);
+    // Send through the A2P-registered Messaging Service so carriers associate
+    // each message with the approved campaign (required for US delivery).
     const message = await client.messages.create({
       body,
-      from,
+      messagingServiceSid: 'MGaec5a9f6d45927317bd4d62930596589',
       to: normalizedTo,
     });
     console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${message.sid})`);
