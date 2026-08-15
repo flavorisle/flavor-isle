@@ -32,6 +32,45 @@
         "completed"
       ],
       "default": "active"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Resolved Square customer name for the caller's phone number, if a matching customer exists. Null when no match is found."
+    },
+    "square_customer_id": {
+      "type": "string",
+      "description": "Square customer id matching this caller's phone, when resolved."
+    },
+    "call_duration": {
+      "type": "number",
+      "description": "Voice call duration in seconds, captured from the Twilio status callback."
+    },
+    "call_status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "ringing",
+        "in-progress",
+        "completed",
+        "failed",
+        "busy",
+        "no-answer",
+        "canceled"
+      ],
+      "description": "Final Twilio call status for voice conversations."
+    },
+    "call_direction": {
+      "type": "string",
+      "enum": [
+        "inbound",
+        "outbound"
+      ],
+      "description": "Direction of the voice call."
+    },
+    "call_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the voice call started (Twilio StartTime)."
     }
   },
   "required": [
