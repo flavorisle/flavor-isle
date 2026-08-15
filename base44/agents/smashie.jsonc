@@ -51,6 +51,6 @@
   "voice_config": {
     "voice_id": null
   },
-  "allow_anonymous_access": false,
+  "allow_anonymous_access": true,
   "name": "smashie"
 }

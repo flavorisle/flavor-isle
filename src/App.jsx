@@ -11,6 +11,7 @@ import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
+import SmashieChat from './components/SmashieChat';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -125,6 +126,7 @@ function AppShell() {
             <AuthenticatedApp />
             <BottomTabBar />
             <MobileHeader />
+            <SmashieChat />
           </Router>
           <Toaster />
         </CartProvider>

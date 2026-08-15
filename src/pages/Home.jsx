@@ -15,7 +15,6 @@ import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
-import SmashieChat from '@/components/SmashieChat';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import useBusinessHours from '@/hooks/useBusinessHours';
@@ -216,7 +215,6 @@ export default function Home() {
       </section>
 
       <Footer />
-      <SmashieChat />
     </div>);
 
 }
