@@ -4,7 +4,7 @@
 // effect immediately without touching the agent config file.
 
 const DEFAULTS = {
-  greeting: "Hey there, welcome to Flavor Isle! This is Smashie. What can I get started for you today?",
+  greeting: "Hey fam, Flavor Isle—Smashie here. What can I get started for you?",
   sms_status_updates_enabled: true,
   sms_auto_reply_enabled: true,
   voice_ordering_enabled: true,
