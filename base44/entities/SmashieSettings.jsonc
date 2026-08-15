@@ -4,8 +4,8 @@
   "properties": {
     "greeting": {
       "type": "string",
-      "default": "Yo fam, welcome to Flavor Isle! Smashie here \u2014 what can I get going for you today? For real, everything slaps.",
-      "description": "Smashie's default spoken/written greeting used on voice calls and SMS replies"
+      "default": "Yo fam, thanks for calling Flavor Isle! Real talk, our crew's slammed helping folks right now, but I got you. I'm Smashie, your AI homie. I can take your order, answer questions about the menu, give directions, or pass a message to the team \u2014 what can I do for you today?",
+      "description": "Smashie's default spoken/written greeting used on voice calls and SMS replies. Flow: let the caller know the crew is busy helping customers, introduce yourself as Smashie, then say what you can do for them."
     },
     "sms_status_updates_enabled": {
       "type": "boolean",
