@@ -31,6 +31,14 @@ Deno.serve(async (req) => {
     const speechResult = params.get('SpeechResult') || '';
     const url = new URL(req.url);
     const isCallback = url.searchParams.get('callback') === '1';
+    const buildCallbackUrl = (caller, conversationId, turn) => {
+      const callback = new URL(`https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook`);
+      callback.searchParams.set('callback', '1');
+      callback.searchParams.set('from', caller);
+      callback.searchParams.set('convId', conversationId);
+      callback.searchParams.set('turn', String(turn));
+      return callback.toString();
+    };
 
     // Generate each line with OpenAI's natural young male voice, upload it to
     // a public audio URL, then let Twilio play it. Keep a reliable fallback.
@@ -99,7 +107,7 @@ Deno.serve(async (req) => {
       await speak(twiml, greeting);
       twiml.gather({
         input: 'speech',
-        action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(from)}&convId=${conversationId}&turn=1`,
+        action: buildCallbackUrl(from, conversationId, 1),
         speechTimeout: 'auto',
         language: 'en-US',
         timeout: 8,
@@ -121,7 +129,7 @@ Deno.serve(async (req) => {
     const MAX_TURNS = 14;
 
     const callbackUrl = (nextTurn) =>
-      `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(callerFrom)}&convId=${conversationId}&turn=${nextTurn}`;
+      buildCallbackUrl(callerFrom, conversationId, nextTurn);
 
     // Empty speech — re-prompt once before politely ending the call.
     if (!speechResult) {
