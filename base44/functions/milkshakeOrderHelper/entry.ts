@@ -58,14 +58,18 @@ Deno.serve(async (req) => {
     );
 
     const shakes = items.filter(
-      (it) =>
-        (it.category === 'Shakes' || /milkshake|shake|malt/i.test(it.name || '')) &&
-        !it.is_hidden
+      (it) => it.category === 'Shakes' || /milkshake|shake|malt/i.test(it.name || ''),
     );
 
-    // Prefer the item that carries a FLAVOR CHOICE modifier (the customizable one).
+    // Prefer the generic customizable Milkshake item. Individual flavor items
+    // also expose add-on flavor groups, but their prices already include a flavor.
     const mainShake =
-      shakes.find((s) => (s.modifiers || []).some((g) => /flavor/i.test(g.name || ''))) ||
+      shakes.find(
+        (s) =>
+          /^milkshake$/i.test((s.name || '').trim()) &&
+          (s.modifiers || []).some((g) => /^flavor choice$/i.test((g.name || '').trim())),
+      ) ||
+      shakes.find((s) => (s.modifiers || []).some((g) => /^flavor choice$/i.test((g.name || '').trim()))) ||
       shakes[0] ||
       null;
 
@@ -103,14 +107,19 @@ Deno.serve(async (req) => {
       sizes,
       mix_ins: mixIns,
       matched_flavor: matchedFlavor,
+      included_flavor_count: 1,
+      pricing: {
+        base_price: mainShake?.price || 0,
+        rule: 'The base milkshake price includes exactly one flavor. Do not add the selected first flavor price to the line item. Charge only the base price, any size upcharge, paid mix-ins, and additional flavors beyond the first.',
+      },
       note:
-        'Use this to build the customer shake. Pick a flavor from `flavors` (matched_flavor is a best guess — confirm it with the caller), a size from `sizes` if present, and any mix-ins. Then include the shake as a line item when logging the order with logPhoneOrder.',
+        'Confirm the flavor and size with the caller. One flavor is included in the base milkshake price, so never add a flavor charge for the first selected flavor. Build the line-item price from the base price plus any size upcharge, paid mix-ins, and additional flavors beyond the first, then quote that price to the caller.',
       line_item_template: {
         name: '<Flavor> Milkshake',
-        price: 0,
+        price: mainShake?.price || 0,
         quantity: 1,
-        selected_modifiers: ['Flavor Choice: <flavor>', 'Size: <size>'],
-        notes: '',
+        selected_modifiers: ['Flavor Choice: <one included flavor>', 'Size: <size>'],
+        notes: 'One flavor included in base price',
       },
     });
   } catch (error) {

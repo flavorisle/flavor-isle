@@ -4,12 +4,22 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { customer_name, customer_phone, items, order_type, special_instructions, total } = body;
+    const { customer_name, customer_phone, items, order_type, delivery_address, special_instructions, total } = body;
 
     if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, items' }, { status: 400 });
     }
+    if (order_type === 'delivery' && !delivery_address) {
+      return Response.json({ error: 'A delivery address is required for delivery orders' }, { status: 400 });
+    }
 
+    const itemSubtotal = items.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+      0,
+    );
+    const subtotal = Number(total) > 0 ? Number(total) : itemSubtotal;
+    const tax = Math.round(subtotal * 0.06 * 100) / 100;
+    const finalTotal = Math.round((subtotal + tax) * 100) / 100;
     const orderNumber = 'PH' + Date.now().toString().slice(-6);
 
     // Log to Base44 database
@@ -18,12 +28,13 @@ export default async function(req) {
       order_type: order_type || 'pickup',
       status: 'confirmed',
       items: items,
-      subtotal: total || 0,
-      tax: Math.round((total || 0) * 0.06 * 100) / 100,
-      total: Math.round((total || 0) * 1.06 * 100) / 100,
+      subtotal,
+      tax,
+      total: finalTotal,
       customer_name: customer_name,
       customer_phone: customer_phone || '',
       customer_email: 'phone-order@flavorisle.com',
+      delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
     });
@@ -50,7 +61,8 @@ export default async function(req) {
         }));
 
         // Format note for kitchen
-        let pickupNote = `CALL IN\n${customer_name}\n${customer_phone || ''}`;
+        let pickupNote = `CALL IN — ${(order_type || 'pickup').toUpperCase()}\n${customer_name}\n${customer_phone || ''}`;
+        if (order_type === 'delivery') pickupNote += `\nDELIVER TO: ${delivery_address}`;
 
         const squareOrder = {
           idempotency_key: crypto.randomUUID(),
@@ -95,7 +107,11 @@ export default async function(req) {
       success: true,
       order_number: orderNumber,
       order_id: order.id,
-      message: `Phone order #${orderNumber} logged successfully for ${customer_name}`,
+      subtotal,
+      tax,
+      total: finalTotal,
+      delivery_address: delivery_address || null,
+      message: `Phone order #${orderNumber} logged successfully for ${customer_name}. Final total: $${finalTotal.toFixed(2)}`,
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);
