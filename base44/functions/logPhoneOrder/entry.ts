@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import Stripe from 'npm:stripe@14.25.0';
-import { secrets } from 'base44:runtime';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
 export default async function(req) {
@@ -46,7 +45,7 @@ export default async function(req) {
     let paymentLinkSent = false;
 
     try {
-      const stripe = new Stripe(secrets.get('STRIPE_SECRET_KEY'));
+      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
       const lineItems = items.map((item) => ({
         price_data: {
           currency: 'usd',
