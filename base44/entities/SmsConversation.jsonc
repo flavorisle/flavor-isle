@@ -37,6 +37,26 @@
       ],
       "default": "active"
     },
+    "message_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Smashie is currently collecting a management message during this call."
+    },
+    "message_draft": {
+      "type": "object",
+      "description": "Message details collected across voice turns before delivery.",
+      "properties": {
+        "caller_name": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
     "transcript": {
       "type": "array",
       "description": "Complete caller and Smashie transcript captured during this phone call.",

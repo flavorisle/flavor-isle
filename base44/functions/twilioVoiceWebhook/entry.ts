@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { generateSmashieVoice } from '../../shared/smashieVoice.ts';
+import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -145,24 +146,38 @@ export default async function(req) {
     // Phone ordering is intentionally available at all hours for testing.
     const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
 
-    const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
-    const priorAssistantCount = (conversation.messages || []).filter(m => m.role === 'assistant').length;
-    await base44.asServiceRole.agents.addMessage(conversation, {
-      role: 'user',
-      content: `${statusContext}\nCaller said: ${speechResult}`,
-    });
+    const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
+    const messageTurn = await processPhoneMessageTurn(
+      base44,
+      callRecords[0],
+      speechResult,
+      callerFrom,
+      callSid,
+      conversationId,
+    );
 
-    // Agent replies are generated asynchronously, so wait for the new completed reply.
-    let messages = conversation.messages || [];
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
-      messages = refreshed.messages || [];
-      if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
+    let replyText;
+    if (messageTurn) {
+      replyText = messageTurn.reply;
+    } else {
+      const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
+      const priorAssistantCount = (conversation.messages || []).filter(m => m.role === 'assistant').length;
+      await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: `${statusContext}\nCaller said: ${speechResult}`,
+      });
+
+      let messages = conversation.messages || [];
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
+        messages = refreshed.messages || [];
+        if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
+      }
+      const assistantMessages = messages.filter(m => m.role === 'assistant');
+      const lastReply = assistantMessages[assistantMessages.length - 1];
+      replyText = lastReply?.content || "Let me check on that for you fam!";
     }
-    const assistantMessages = messages.filter(m => m.role === 'assistant');
-    const lastReply = assistantMessages[assistantMessages.length - 1];
-    const replyText = lastReply?.content || "Let me check on that for you fam!";
     let spokenReply = replyText;
 
     // Smashie emits a structured token only after collecting all message details.
