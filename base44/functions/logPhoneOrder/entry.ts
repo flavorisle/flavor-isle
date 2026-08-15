@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { normalizePhone, sendSmashieSms } from '../../shared/sendSmashieSms.ts';
+import Stripe from 'npm:stripe@14.25.0';
+import { secrets } from 'base44:runtime';
+import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
 export default async function(req) {
   try {
@@ -44,82 +46,52 @@ export default async function(req) {
     let paymentLinkSent = false;
 
     try {
-      const connection = await base44.asServiceRole.connectors.getConnection('square');
-      const accessToken = connection.accessToken;
-      let locationId = connection.connectionConfig?.locationId;
+      const stripe = new Stripe(secrets.get('STRIPE_SECRET_KEY'));
+      const lineItems = items.map((item) => ({
+        price_data: {
+          currency: 'usd',
+          product_data: { name: item.name },
+          unit_amount: Math.round((Number(item.price) || 0) * 100),
+        },
+        quantity: Number(item.quantity) || 1,
+      }));
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'Sales Tax (6%)' },
+          unit_amount: Math.round(tax * 100),
+        },
+        quantity: 1,
+      });
 
-      if (!locationId) {
-        const locRes = await fetch('https://connect.squareup.com/v2/locations', {
-          headers: { Authorization: `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' },
-        });
-        const locData = await locRes.json();
-        locationId = locData.locations?.[0]?.id;
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: `https://flavor-isle.com/order-confirmation?session_id={CHECKOUT_SESSION_ID}&order_number=${orderNumber}`,
+        cancel_url: 'https://flavor-isle.com/contact',
+        metadata: {
+          base44_app_id: Deno.env.get('BASE44_APP_ID'),
+          order_number: orderNumber,
+          order_type: order_type || 'pickup',
+          customer_name,
+          customer_phone,
+          delivery_address: delivery_address || '',
+          special_instructions: special_instructions || '',
+          phone_order: 'true',
+        },
+      });
+
+      paymentUrl = session.url;
+      await base44.asServiceRole.entities.Order.update(order.id, { stripe_session_id: session.id });
+      if (paymentUrl) {
+        paymentLinkSent = await sendSmashieSms(
+          customer_phone,
+          `Flavor Isle: Pay $${finalTotal.toFixed(2)} securely for phone order #${orderNumber} with Stripe: ${paymentUrl}`,
+        );
       }
-
-      if (locationId) {
-        const lineItems = items.map((item) => ({
-          name: item.name,
-          quantity: String(Number(item.quantity) || 1),
-          base_price_money: {
-            amount: Math.round((Number(item.price) || 0) * 100),
-            currency: 'USD',
-          },
-        }));
-        let pickupNote = `CALL IN — ${(order_type || 'pickup').toUpperCase()}\n${customer_name}\n${customer_phone}`;
-        if (order_type === 'delivery') pickupNote += `\nDELIVER TO: ${delivery_address}`;
-
-        const linkRes = await fetch('https://connect.squareup.com/v2/online-checkout/payment-links', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Square-Version': '2024-01-18',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idempotency_key: crypto.randomUUID(),
-            order: {
-              location_id: locationId,
-              line_items: lineItems,
-              taxes: [{ name: 'Sales Tax', percentage: '6', scope: 'ORDER' }],
-              fulfillments: [{
-                type: 'PICKUP',
-                state: 'PROPOSED',
-                pickup_details: {
-                  recipient: { display_name: customer_name, phone_number: normalizePhone(customer_phone) },
-                  pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
-                  note: pickupNote + (special_instructions ? `\n\nNOTES: ${special_instructions}` : ''),
-                },
-              }],
-              metadata: {
-                order_source: 'phone-order',
-                order_number: orderNumber,
-                order_type: order_type || 'pickup',
-              },
-            },
-            checkout_options: {
-              redirect_url: `https://flavor-isle.com/order-confirmation?order_number=${orderNumber}`,
-              ask_for_shipping_address: false,
-            },
-            pre_populated_data: { buyer_phone_number: normalizePhone(customer_phone) },
-          }),
-        });
-        const linkData = await linkRes.json();
-        if (!linkRes.ok) throw new Error(`Square payment link failed: ${JSON.stringify(linkData)}`);
-
-        paymentUrl = linkData.payment_link?.url || null;
-        const squareOrderId = linkData.payment_link?.order_id || null;
-        if (squareOrderId) {
-          await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
-        }
-        if (paymentUrl) {
-          paymentLinkSent = await sendSmashieSms(
-            customer_phone,
-            `Flavor Isle: Pay $${finalTotal.toFixed(2)} securely for phone order #${orderNumber}: ${paymentUrl}`,
-          );
-        }
-      }
-    } catch (squareErr) {
-      console.error('Square payment link error:', squareErr.message);
+    } catch (stripeErr) {
+      console.error('Stripe payment link error:', stripeErr.message);
     }
 
     return Response.json({

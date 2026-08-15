@@ -57,9 +57,32 @@ Deno.serve(async (req) => {
       300
     );
 
-    const shakes = items.filter(
+    const visibleItems = items.filter((it) => it.is_hidden !== true);
+    const shakes = visibleItems.filter(
       (it) => it.category === 'Shakes' || /milkshake|shake|malt/i.test(it.name || ''),
     );
+    const blisses = visibleItems
+      .filter((it) => /bliss/i.test(it.name || '') || /blend\s*&\s*bliss/i.test(it.square_category || ''))
+      .map((it) => ({
+        id: it.id,
+        name: it.name,
+        price: Number(it.price) || 0,
+        sizes: (it.modifiers || [])
+          .find((group) => /size/i.test(group.name || ''))
+          ?.modifiers?.filter((option) => !option.sold_out)
+          .map((option) => ({ id: option.id, name: option.name, price: Number(option.price) || 0 })) || [],
+      }));
+    const milkshakes = visibleItems
+      .filter((it) => /milkshake/i.test(it.name || '') && !/bliss/i.test(it.name || ''))
+      .map((it) => ({
+        id: it.id,
+        name: it.name,
+        price: Number(it.price) || 0,
+        sizes: (it.modifiers || [])
+          .find((group) => /size/i.test(group.name || ''))
+          ?.modifiers?.filter((option) => !option.sold_out)
+          .map((option) => ({ id: option.id, name: option.name, price: Number(option.price) || 0 })) || [],
+      }));
 
     // Prefer the generic customizable Milkshake item. Individual flavor items
     // also expose add-on flavor groups, but their prices already include a flavor.
@@ -105,6 +128,8 @@ Deno.serve(async (req) => {
         : null,
       flavors,
       sizes,
+      milkshakes,
+      blisses,
       mix_ins: mixIns,
       matched_flavor: matchedFlavor,
       included_flavor_count: 1,
@@ -113,7 +138,7 @@ Deno.serve(async (req) => {
         rule: 'The base milkshake price includes exactly one flavor. Do not add the selected first flavor price to the line item. Charge only the base price, any size upcharge, paid mix-ins, and additional flavors beyond the first.',
       },
       note:
-        'Confirm the flavor and size with the caller. One flavor is included in the base milkshake price, so never add a flavor charge for the first selected flavor. Build the line-item price from the base price plus any size upcharge, paid mix-ins, and additional flavors beyond the first, then quote that price to the caller.',
+        'When the caller asks what milkshakes are available, list only the items returned in milkshakes and blisses, including every live Bliss. Confirm the selected item and size from its live record. Use each item’s own returned price and size options; never infer an unlisted item or option.',
       line_item_template: {
         name: '<Flavor> Milkshake',
         price: mainShake?.price || 0,

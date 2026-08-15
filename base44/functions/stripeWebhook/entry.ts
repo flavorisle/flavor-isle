@@ -140,7 +140,7 @@ async function pushOrderToSquareAndKitchen(base44, order) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
   }
 
-  if (order.customer_email) {
+  if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
     await sendOrderConfirmationEmail(order);
   }
 
