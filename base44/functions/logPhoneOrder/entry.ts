@@ -1,17 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getStoreStatus } from '../../shared/storeHours.ts';
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const storeStatus = await getStoreStatus(base44);
-    if (!storeStatus.isOpen) {
-      return Response.json({
-        error: `Flavor Isle is closed. Phone orders reopen ${storeStatus.nextOpenLabel}.`,
-      }, { status: 409 });
-    }
-
     const { customer_name, customer_phone, items, order_type, special_instructions, total } = body;
 
     if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
@@ -109,4 +101,4 @@ Deno.serve(async (req) => {
     console.error('logPhoneOrder error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

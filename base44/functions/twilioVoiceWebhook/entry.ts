@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { getStoreStatus } from '../../shared/storeHours.ts';
 import { generateSmashieVoice } from '../../shared/smashieVoice.ts';
 
 // Helper: strip markdown for TTS
@@ -21,7 +20,7 @@ function forTTS(text) {
   return clean.length > 600 ? clean.substring(0, 597) + '...' : clean;
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
@@ -61,7 +60,6 @@ Deno.serve(async (req) => {
     // --- Initial greeting (no speech yet) ---
     if (!isCallback && !speechResult) {
       const settings = await getSmashieSettings(base44);
-      const storeStatus = await getStoreStatus(base44);
       if (!settings.voice_ordering_enabled) {
         const offTwiml = new VoiceResponse();
         await speak(offTwiml, "Yo fam, thanks for calling Flavor Isle! Our AI phone assistant is switched off right now. Please call back during business hours.");
@@ -101,10 +99,7 @@ Deno.serve(async (req) => {
       }
 
       const twiml = new VoiceResponse();
-      const greeting = storeStatus.isOpen
-        ? settings.greeting
-        : `Yo fam, thanks for calling Flavor Isle! We're closed right now, and we open ${storeStatus.nextOpenLabel}. I'm Smashie. I can share Flavor Isle history, tell you our opening time, or take a message for management. What can I help with?`;
-      await speak(twiml, greeting);
+      await speak(twiml, settings.greeting);
       twiml.gather({
         input: 'speech',
         action: buildCallbackUrl(from, conversationId, 1),
@@ -112,9 +107,7 @@ Deno.serve(async (req) => {
         language: 'en-US',
         timeout: 8,
       });
-      await speak(twiml, storeStatus.isOpen
-        ? "My bad fam, I didn't catch that. Run it back when you're ready!"
-        : "My bad fam, I didn't catch that. I can share our history, opening time, or take a message for management.");
+      await speak(twiml, "My bad fam, I didn't catch that. Run it back when you're ready!");
       twiml.hangup();
 
       return new Response(twiml.toString(), {
@@ -156,12 +149,8 @@ Deno.serve(async (req) => {
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    // Attach live store status to every turn so closed-hours restrictions cannot
-    // drift during a long call or when admin-configured hours change.
-    const storeStatus = await getStoreStatus(base44);
-    const statusContext = storeStatus.isOpen
-      ? `[STORE STATUS: OPEN. Flavor Isle closes today at ${storeStatus.closeTime}. Open-hours capabilities are allowed. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`
-      : `[STORE STATUS: CLOSED. Flavor Isle opens ${storeStatus.nextOpenLabel}. Closed-mode rules are mandatory: only history, next opening time, or a management message. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
+    // Phone ordering is intentionally available at all hours for testing.
+    const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
 
     const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
     const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
@@ -198,7 +187,7 @@ Deno.serve(async (req) => {
     // take a message instead.
     const wantsTransfer = /\[\[TRANSFER\]\]/i.test(replyText);
     const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
-    if (storeStatus.isOpen && wantsTransfer && counterNumber) {
+    if (wantsTransfer && counterNumber) {
       const cleanReply = replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
       await speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
@@ -208,8 +197,7 @@ Deno.serve(async (req) => {
     }
 
     const twiml = new VoiceResponse();
-    const safeReply = storeStatus.isOpen ? replyText : replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
-    await speak(twiml, safeReply);
+    await speak(twiml, replyText);
 
     if (isOrderComplete || atTurnCap) {
       if (atTurnCap && !isOrderComplete) {
@@ -242,4 +230,4 @@ Deno.serve(async (req) => {
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
-});
+}
