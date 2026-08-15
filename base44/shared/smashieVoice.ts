@@ -9,11 +9,11 @@ export async function generateSmashieVoice(base44, text) {
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini-tts',
-      voice: 'ash',
+      voice: 'verse',
       input: text,
-      instructions: 'Sound like a friendly, energetic young adult American man. Speak naturally and conversationally with warmth, confidence, varied pacing, and subtle enthusiasm. Never sound like an announcer, automated phone tree, or robot.',
+      instructions: 'Use the clear, articulate voice of a confident 21-year-old American man. Sound relaxed, upbeat, socially natural, and effortlessly cool—not performative. Keep pronunciation crisp, pacing steady, and sentences easy to understand over a phone call. Use only a light conversational edge; do not exaggerate slang, mumble, slur words, use a character voice, sound childish, or sound older than 25.',
       response_format: 'mp3',
-      speed: 1.04,
+      speed: 1.02,
     }),
   });
 
