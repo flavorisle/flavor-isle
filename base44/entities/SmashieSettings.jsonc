@@ -4,7 +4,7 @@
   "properties": {
     "greeting": {
       "type": "string",
-      "default": "Hey there, welcome to Flavor Isle! This is Smashie. What can I get started for you today?",
+      "default": "Yo fam, welcome to Flavor Isle! Smashie here \u2014 what can I get going for you today? For real, everything slaps.",
       "description": "Smashie's default spoken/written greeting used on voice calls and SMS replies"
     },
     "sms_status_updates_enabled": {
