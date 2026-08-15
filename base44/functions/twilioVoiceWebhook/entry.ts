@@ -30,6 +30,11 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const isCallback = url.searchParams.get('callback') === '1';
 
+    // Build a Twilio <Play> URL that streams natural OpenAI TTS audio for the
+    // given text, so Smashie never sounds like a robotic Polly voice.
+    const ttsUrl = (text) =>
+      `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/smashieTts?text=${encodeURIComponent(text)}`;
+
     console.log(`Voice call ${callSid} from ${from}, speech: "${speechResult}"`);
 
     const base44 = createClientFromRequest(req);
@@ -40,9 +45,9 @@ Deno.serve(async (req) => {
       const settings = await getSmashieSettings(base44);
       if (!settings.voice_ordering_enabled) {
         const offTwiml = new VoiceResponse();
-        offTwiml.say(
-          { voice: 'Polly.Matthew', language: 'en-US' },
-          "Yo fam, thanks for calling Flavor Isle! Our AI phone ordering's switched off right now, no cap. Hit us up online at flavor dash isle dot com, or pull up another time — we got you!"
+        offTwiml.play(
+          {},
+          ttsUrl("Yo fam, thanks for calling Flavor Isle! Our AI phone ordering's switched off right now, no cap. Hit us up online at flavor dash isle dot com, or pull up another time — we got you!")
         );
         offTwiml.hangup();
         return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
@@ -80,10 +85,7 @@ Deno.serve(async (req) => {
       }
 
       const twiml = new VoiceResponse();
-      twiml.say(
-        { voice: 'Polly.Matthew', language: 'en-US' },
-        settings.greeting
-      );
+      twiml.play({}, ttsUrl(forTTS(settings.greeting)));
       twiml.gather({
         input: 'speech',
         action: `${url.origin}/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook?callback=1&from=${encodeURIComponent(from)}&convId=${conversationId}&turn=1`,
@@ -91,7 +93,7 @@ Deno.serve(async (req) => {
         language: 'en-US',
         timeout: 8,
       });
-      twiml.say({ voice: 'Polly.Matthew' }, "My bad fam, didn't catch that. Hit us back when you're ready and we'll get your order right!");
+      twiml.play({}, ttsUrl("My bad fam, didn't catch that. Hit us back when you're ready and we'll get your order right!"));
       twiml.hangup();
 
       return new Response(twiml.toString(), {
@@ -112,7 +114,7 @@ Deno.serve(async (req) => {
     if (!speechResult) {
       const twiml = new VoiceResponse();
       if (turn <= 2) {
-        twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Yo, I didn't catch that — run that back for me?");
+        twiml.play({}, ttsUrl("Yo, I didn't catch that — run that back for me?"));
         twiml.gather({
           input: 'speech',
           action: callbackUrl(turn + 1),
@@ -121,14 +123,14 @@ Deno.serve(async (req) => {
           timeout: 8,
         });
       }
-      twiml.say({ voice: 'Polly.Matthew' }, "No worries fam — hit us back when you're ready and we'll take care of you. Bet!");
+      twiml.play({}, ttsUrl("No worries fam — hit us back when you're ready and we'll take care of you. Bet!"));
       twiml.hangup();
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
     if (!conversationId) {
       const twiml = new VoiceResponse();
-      twiml.say({ voice: 'Polly.Matthew' }, "Yo, I'm having trouble pulling up your call — hit us back real quick!");
+      twiml.play({}, ttsUrl("Yo, I'm having trouble pulling up your call — hit us back real quick!"));
       twiml.hangup();
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
@@ -172,9 +174,9 @@ Deno.serve(async (req) => {
     if (wantsTransfer && counterNumber) {
       const cleanReply = replyText.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
-      transferTwiml.say(
-        { voice: 'Polly.Matthew', language: 'en-US' },
-        forTTS(cleanReply || "Bet — let me get you over to the counter, hold tight fam!")
+      transferTwiml.play(
+        {},
+        ttsUrl(forTTS(cleanReply || "Bet — let me get you over to the counter, hold tight fam!"))
       );
       const dial = transferTwiml.dial({ timeout: 20 });
       dial.number(counterNumber);
@@ -182,11 +184,11 @@ Deno.serve(async (req) => {
     }
 
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, forTTS(replyText));
+    twiml.play({}, ttsUrl(forTTS(replyText)));
 
     if (isOrderComplete || atTurnCap) {
       if (atTurnCap && !isOrderComplete) {
-        twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Aight fam, let's wrap this up so we get it right — hit us back if you need anything else. We got you!");
+        twiml.play({}, ttsUrl("Aight fam, let's wrap this up so we get it right — hit us back if you need anything else. We got you!"));
       }
       twiml.hangup();
     } else {
@@ -198,7 +200,7 @@ Deno.serve(async (req) => {
         language: 'en-US',
         timeout: 8,
       });
-      twiml.say({ voice: 'Polly.Matthew' }, "You still there fam? Hit us back if we got disconnected!");
+      twiml.play({}, ttsUrl("You still there fam? Hit us back if we got disconnected!"));
       twiml.hangup();
     }
 
@@ -211,6 +213,8 @@ Deno.serve(async (req) => {
     console.error('twilioVoiceWebhook error:', error.message);
     const twilio_twiml = twilio.twiml;
     const twiml = new twilio_twiml.VoiceResponse();
+    // Ultimate fallback uses Polly so an error path never depends on the TTS
+    // service that may have contributed to the failure.
     twiml.say({ voice: 'Polly.Matthew' }, "Yo, we hit a little tech snag — hit us back in a sec and we'll get you right!");
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
