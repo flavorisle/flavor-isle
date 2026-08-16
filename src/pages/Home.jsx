@@ -17,6 +17,7 @@ import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
+import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -55,6 +56,8 @@ export default function Home() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
+
+      <EarlyCloseNotice />
 
       {/* ── HERO ── */}
       <HeroSection />
