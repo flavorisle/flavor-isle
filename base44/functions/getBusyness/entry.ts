@@ -31,7 +31,17 @@ export default async function(req) {
     const peakAvg = chart.reduce((m, c) => Math.max(m, c.avg), 0);
     const cur = chart[today.hour] || { avg: 0, live: 0 };
     const avgForHour = cur.avg || 0;
-    const liveCount = cur.live || 0;
+    const curHourCount = cur.live || 0;
+
+    // Rolling 60-minute order count so the level reflects the active rush
+    // instead of dropping artificially at the top of each hour. Combines the
+    // proportional tail of the previous hour with everything placed so far
+    // in the current hour.
+    const minute = today.minute || 0;
+    const prevHour = (today.hour + 23) % 24;
+    const prevCount = (chart[prevHour] || {}).live || 0;
+    const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
+
     const busyPercent = avgForHour > 0
       ? Math.round((liveCount / avgForHour) * 100)
       : (liveCount > 0 ? 100 : 0);
@@ -43,6 +53,7 @@ export default async function(req) {
       chart,
       peakAvg,
       liveCount,
+      curHourCount,
       avgForHour,
       busyPercent,
     });

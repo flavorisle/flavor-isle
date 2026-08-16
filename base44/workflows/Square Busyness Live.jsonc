@@ -1,5 +1,5 @@
 {
-  "description": "Pulls recent Square orders every hour to keep the live how-busy-are-we bar on the landing page fresh.",
+  "description": "Pulls recent Square orders every 5 minutes to keep the live how-busy-are-we bar on the landing page fresh during an active rush.",
   "name": "Square Busyness Live",
   "trigger": {
     "condition": null,
@@ -7,7 +7,7 @@
       "trigger_type": "scheduled",
       "events": [],
       "schedule_mode": "recurring",
-      "cron_expression": "7 * * * *",
+      "cron_expression": "*/5 * * * *",
       "one_time_date": null,
       "timezone": "America/Chicago",
       "interval_value": null,

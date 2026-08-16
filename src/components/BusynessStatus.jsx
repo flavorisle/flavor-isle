@@ -71,7 +71,7 @@ export default function BusynessStatus() {
         </div>
         <div className="text-right">
           <p className="text-2xl font-heading">{liveCount}</p>
-          <p className="text-xs opacity-75">Orders this hour</p>
+          <p className="text-xs opacity-75">Orders (last hr)</p>
         </div>
       </div>
       {urgency && (

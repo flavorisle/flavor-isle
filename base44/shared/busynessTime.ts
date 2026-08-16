@@ -8,9 +8,12 @@ function partsToChicago(parts) {
   let hour = parseInt(parts.hour, 10);
   if (Number.isNaN(hour)) hour = 0;
   if (hour === 24) hour = 0;
+  let minute = parseInt(parts.minute, 10);
+  if (Number.isNaN(minute)) minute = 0;
   return {
     dateKey: `${parts.year}-${parts.month}-${parts.day}`,
     hour,
+    minute,
     weekday: WEEKDAY_NAMES.indexOf(parts.weekday),
   };
 }
@@ -22,6 +25,7 @@ const chicagoFormatter = () =>
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
     weekday: "long",
   });
