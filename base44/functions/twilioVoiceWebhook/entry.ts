@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
+import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -89,6 +90,21 @@ export default async function(req) {
         transcript: [{ role: 'assistant', content: settings.greeting, timestamp: startedAt }],
       });
 
+      // Resolve the caller's Square customer so Smashie knows their name + email
+      // without asking. Powers email-based payment link delivery.
+      try {
+        const squareCust = await lookupCustomerByPhone(base44, from);
+        if (squareCust) {
+          await base44.asServiceRole.entities.SmsConversation.update(convo.id, {
+            customer_name: squareCust.name,
+            square_customer_id: squareCust.id,
+            customer_email: squareCust.email,
+          });
+        }
+      } catch (e) {
+        console.error('Caller Square lookup failed:', e.message);
+      }
+
       const twiml = new VoiceResponse();
       await speak(twiml, settings.greeting);
       twiml.gather({
@@ -141,9 +157,18 @@ export default async function(req) {
     }
 
     // Phone ordering is intentionally available at all hours for testing.
-    const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]`;
-
     const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
+
+    // Inject the caller's resolved Square info so Smashie knows their name and
+    // email without asking. Powers email-based payment link delivery.
+    const callerRecord = callRecords[0] || {};
+    const callerInfo = callerRecord.customer_email
+      ? `[CALLER INFO: Name: ${callerRecord.customer_name || 'Unknown'}, Email: ${callerRecord.customer_email}, SquareCustomerId: ${callerRecord.square_customer_id || 'none'}. Resolved automatically from the caller's phone via Square. When confirming a phone order, pass this email to logPhoneOrder as customer_email — do NOT ask the caller for their email.]`
+      : callerRecord.customer_name
+        ? `[CALLER INFO: Name: ${callerRecord.customer_name}. No email on file in Square. When confirming a phone order, ask the caller for their email so the payment link can be emailed, and pass it to logPhoneOrder as customer_email.]`
+        : `[CALLER INFO: Caller not found in Square. When confirming a phone order, ask for the caller's name and email, and pass both to logPhoneOrder.]`;
+    const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n${callerInfo}`;
+
     const messageTurn = await processPhoneMessageTurn(
       base44,
       callRecords[0],

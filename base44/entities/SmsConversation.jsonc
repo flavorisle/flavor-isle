@@ -88,6 +88,10 @@
       "type": "string",
       "description": "Square customer id matching this caller's phone, when resolved."
     },
+    "customer_email": {
+      "type": "string",
+      "description": "Email resolved from the caller's Square customer record at call start. Used to email payment links so callers don't have to repeat their email every time."
+    },
     "call_duration": {
       "type": "number",
       "description": "Voice call duration in seconds, captured from the Twilio status callback."

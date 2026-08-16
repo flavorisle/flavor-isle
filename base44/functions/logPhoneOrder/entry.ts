@@ -5,7 +5,7 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { customer_name, customer_phone, items, order_type, delivery_address, special_instructions, total } = body;
+    const { customer_name, customer_phone, customer_email, items, order_type, delivery_address, special_instructions, total } = body;
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_phone, items' }, { status: 400 });
@@ -34,7 +34,7 @@ export default async function(req) {
       total: finalTotal,
       customer_name,
       customer_phone,
-      customer_email: 'phone-order@flavorisle.com',
+      customer_email: customer_email || 'phone-order@flavorisle.com',
       delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
@@ -43,6 +43,7 @@ export default async function(req) {
     let paymentUrl = null;
     let squareOrderId = null;
     let paymentLinkSent = false;
+    let paymentLinkEmailed = false;
 
     try {
       // Use the authorized Square connector (same source as the online orders).
@@ -153,6 +154,34 @@ export default async function(req) {
         await base44.asServiceRole.entities.Order.update(order.id, updateFields);
       }
 
+      // Send the payment link via email (primary — reliable, not blocked by
+      // carrier A2P 10DLC rules) and SMS (secondary — may fail until the
+      // Twilio A2P campaign is registered).
+      if (paymentUrl && customer_email) {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: customer_email,
+            from_name: 'Smashie',
+            subject: `Flavor Isle — Pay $${finalTotal.toFixed(2)} for order #${orderNumber}`,
+            body: [
+              `Hey ${customer_name}!`,
+              ``,
+              `Your phone order #${orderNumber} is locked in for $${finalTotal.toFixed(2)}. Tap the secure Square link below to pay:`,
+              ``,
+              paymentUrl,
+              ``,
+              `Once paid, the crew fires the grill and we'll have it ready for you.`,
+              ``,
+              `— Smashie & The Flavor Isle Team`,
+              `103 N Main St, Smiths Grove, KY 42171`,
+              `(270) 563-4618`,
+            ].join('\n'),
+          });
+          paymentLinkEmailed = true;
+        } catch (e) {
+          console.error('Payment link email failed:', e.message);
+        }
+      }
       if (paymentUrl) {
         paymentLinkSent = await sendSmashieSms(
           customer_phone,
@@ -162,6 +191,11 @@ export default async function(req) {
     } catch (squareErr) {
       console.error('Square payment link error:', squareErr.message);
     }
+
+    const deliveredVia = [
+      paymentLinkEmailed ? 'emailed to ' + customer_email : null,
+      paymentLinkSent ? 'texted to ' + customer_phone : null,
+    ].filter(Boolean).join(' and ');
 
     return Response.json({
       success: true,
@@ -174,9 +208,10 @@ export default async function(req) {
       delivery_address: delivery_address || null,
       payment_url: paymentUrl,
       payment_link_sent: paymentLinkSent,
-      message: paymentLinkSent
-        ? `Phone order #${orderNumber} is pending payment. A secure Square link for $${finalTotal.toFixed(2)} was texted to ${customer_phone}.`
-        : `Phone order #${orderNumber} is pending payment, but the payment link could not be texted. Transfer the caller to the counter for help.`,
+      payment_link_emailed: paymentLinkEmailed,
+      message: deliveredVia
+        ? `Phone order #${orderNumber} is pending payment. A secure Square link for $${finalTotal.toFixed(2)} was ${deliveredVia}.`
+        : `Phone order #${orderNumber} is pending payment, but the payment link could not be delivered. Transfer the caller to the counter for help.`,
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);
