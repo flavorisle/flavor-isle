@@ -31,16 +31,16 @@ export default function BusynessStatus() {
         let iconComponent = Zap;
         let urgencyMsg = '';
 
-        if (pct >= 130 || live >= 20) {
+        if (live >= 13) {
           level = 'Slammed — Expect a Wait';
           color = 'bg-red-100 text-red-700';
           iconComponent = Flame;
-          urgencyMsg = "🔥 Kitchen's slammed — order now to beat the rush!";
-        } else if (pct >= 80 || live >= 10) {
+          urgencyMsg = "🔥 We're slammed — order ahead, expect up to a 30 min delay before your order is started.";
+        } else if (live >= 10) {
           level = 'A Little Busy';
           color = 'bg-yellow-100 text-yellow-700';
           iconComponent = TrendingUp;
-          urgencyMsg = '⏱ A little busy — order ahead to skip the line.';
+          urgencyMsg = '⏱ A little busy — order ahead, expect a 25–30 min wait.';
         }
 
         setBusynessLevel(level);

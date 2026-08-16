@@ -44,8 +44,8 @@ async function getBusynessLevel(base44) {
     const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
     const pct = avgForHour > 0 ? Math.round((liveCount / avgForHour) * 100) : (liveCount > 0 ? 100 : 0);
 
-    if (pct >= 130 || liveCount >= 20) return 'Slammed — Expect a Wait';
-    if (pct >= 80 || liveCount >= 10) return 'A Little Busy';
+    if (liveCount >= 13) return 'Slammed — Expect a Wait';
+    if (liveCount >= 10) return 'A Little Busy';
     return 'Running Smooth';
   } catch (e) {
     console.error('getBusynessLevel failed:', e.message);
