@@ -177,13 +177,16 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
+      const closedToday = todayChicago().dateKey === '2026-08-16';
       const busynessLevel = await getBusynessLevel(base44);
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
         ? "Heads up fam, we're slammed right now so there might be a little wait!"
         : busynessLevel === 'A Little Busy'
           ? "We're a little busy right now but we got you!"
           : "We're running smooth right now, no wait at all!";
-      const voiceGreeting = `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;
+      const voiceGreeting = closedToday
+        ? "Hey fam, Smashie here at Flavor Isle! Just a heads up — we're closed today for maintenance and to beat the heat. We'll be back to normal tomorrow! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?"
+        : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;
       const convo = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
         metadata: {
@@ -284,7 +287,10 @@ export default async function(req) {
         ? `[CALLER INFO: Name: ${callerRecord.customer_name}. No email on file in Square. When confirming a phone order, ask the caller for their email so the payment link can be emailed, and pass it to logPhoneOrder as customer_email.]`
         : `[CALLER INFO: Caller not found in Square. When confirming a phone order, ask for the caller's name and email, and pass both to logPhoneOrder.]`;
     const liveBusyness = await getBusynessLevel(base44);
-    const statusContext = `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${liveBusyness}. If the caller asks how busy you are, tell them this.]\n${callerInfo}`;
+    const closedToday = todayChicago().dateKey === '2026-08-16';
+    const statusContext = closedToday
+      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed today (Sunday, August 16, 2026) for maintenance and the heat. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said. When CLOSED: you may ONLY share Flavor Isle history, tell the caller we're closed today and back to normal tomorrow, or take and save a message for management. Do not discuss the menu, recommend food, take or build an order, provide directions, or offer a counter transfer. Do not mention busyness or wait times — we are closed.]\n${callerInfo}`
+      : `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${liveBusyness}. If the caller asks how busy you are, tell them this.]\n${callerInfo}`;
 
     const messageTurn = await processPhoneMessageTurn(
       base44,

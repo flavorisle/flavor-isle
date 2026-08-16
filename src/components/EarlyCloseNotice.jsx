@@ -12,8 +12,8 @@ export default function EarlyCloseNotice() {
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center">
         <AlertCircle size={18} className="flex-shrink-0 text-smashie-yellow" />
         <p className="text-sm font-body">
-          <span className="font-heading tracking-wide">NO ONLINE OR PHONE ORDERS TODAY</span>
-          <span className="opacity-90"> — we're closed for maintenance today (Sunday). We'll be back to normal tomorrow!</span>
+          <span className="font-heading tracking-wide">CLOSED TODAY</span>
+          <span className="opacity-90"> — we're completely closed today (Sunday) for maintenance and to beat the heat. We'll be back to normal tomorrow!</span>
         </p>
       </div>
     </div>
