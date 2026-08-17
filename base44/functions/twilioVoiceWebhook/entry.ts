@@ -5,6 +5,7 @@ import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
 import { getStoreClosure } from '../../shared/storeClosure.ts';
+import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -37,17 +38,23 @@ async function getBusynessLevel(base44) {
     const liveMap = {};
     (live || []).forEach(l => { liveMap[l.hour] = l.order_count; });
 
-    const avgForHour = (profMap[today.hour] || {}).avg_order_count || 0;
     const curHourCount = liveMap[today.hour] || 0;
     const minute = today.minute || 0;
     const prevHour = (today.hour + 23) % 24;
     const prevCount = liveMap[prevHour] || 0;
-    const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
-    const pct = avgForHour > 0 ? Math.round((liveCount / avgForHour) * 100) : (liveCount > 0 ? 100 : 0);
 
-    if (liveCount >= 13) return 'Slammed — Expect a Wait';
-    if (liveCount >= 10) return 'A Little Busy';
-    return 'Running Smooth';
+    // Active queue: orders in the last 20 min (cook time). Orders older than
+    // this have been served and no longer contribute to kitchen load.
+    let activeCount;
+    if (minute >= COOK_WINDOW_MINUTES) {
+      activeCount = Math.round((curHourCount * COOK_WINDOW_MINUTES) / minute);
+    } else {
+      const prevSlice = Math.round((prevCount * (COOK_WINDOW_MINUTES - minute)) / 60);
+      activeCount = curHourCount + prevSlice;
+    }
+
+    const stage = getBusynessStage(activeCount);
+    return stage.level === 'Slammed' ? 'Slammed — Expect a Wait' : stage.level;
   } catch (e) {
     console.error('getBusynessLevel failed:', e.message);
     return 'Running Smooth';
@@ -184,10 +191,12 @@ export default async function(req) {
       const closedToday = closure.closed;
       const busynessLevel = await getBusynessLevel(base44);
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
-        ? "Heads up fam, we're slammed right now so there might be a little wait!"
-        : busynessLevel === 'A Little Busy'
-          ? "We're a little busy right now but we got you!"
-          : "We're running smooth right now, no wait at all!";
+        ? "Heads up fam, we're slammed right now — expect up to an hour wait!"
+        : busynessLevel === 'Busy'
+          ? "We're busy right now — expect about a 35 to 40 minute wait!"
+          : busynessLevel === 'A Little Busy'
+            ? "We're a little busy right now but we got you — about a 30 minute wait!"
+            : "We're running smooth right now, no wait at all!";
       const voiceGreeting = closedToday
         ? `Hey fam, Smashie here at Flavor Isle! Just a heads up — we're ${closure.message || 'closed'} today. We'll be back to normal soon! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?`
         : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;

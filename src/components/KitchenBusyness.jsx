@@ -4,14 +4,16 @@ import { base44 } from '@/api/base44Client';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
+// 4-stage kitchen-capacity model: cook handles 2-3 orders at a time.
+// Stages reflect the active queue depth and estimated clear time.
 function getBusynessLevel(counts) {
   const cooking = (counts.pending || 0) + (counts.confirmed || 0) + (counts.preparing || 0);
   const total = cooking + (counts.ready || 0);
 
-  if (cooking === 0 && total === 0) return { label: 'Not Busy', color: 'bg-green-500', textColor: 'text-green-400', bars: 1, wait: '10–15 min', emoji: '😎' };
-  if (cooking <= 2) return { label: 'A Little Busy', color: 'bg-yellow-400', textColor: 'text-yellow-400', bars: 2, wait: '15–20 min', emoji: '🙂' };
-  if (cooking <= 6) return { label: 'Fairly Busy', color: 'bg-orange-400', textColor: 'text-orange-400', bars: 3, wait: '20–30 min', emoji: '🔥' };
-  return { label: 'Very Busy!', color: 'bg-midnight-cherry', textColor: 'text-red-400', bars: 4, wait: '30–45 min', emoji: '🚨' };
+  if (cooking <= 3)  return { label: 'Running Smooth', color: 'bg-green-500',    textColor: 'text-green-400',  bars: 1, wait: '~20 min',      emoji: '😎' };
+  if (cooking <= 7)  return { label: 'A Little Busy',  color: 'bg-yellow-400',   textColor: 'text-yellow-400', bars: 2, wait: '~30 min',      emoji: '🙂' };
+  if (cooking <= 12) return { label: 'Busy',           color: 'bg-orange-400',  textColor: 'text-orange-400', bars: 3, wait: '35–40 min',   emoji: '🔥' };
+  return { label: 'Slammed', color: 'bg-midnight-cherry', textColor: 'text-red-400', bars: 4, wait: '50–60 min', emoji: '🚨' };
 }
 
 export default function KitchenBusyness() {
