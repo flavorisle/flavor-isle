@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image, MessagesSquare } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, MessagesSquare, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -12,6 +12,13 @@ import BroadcastPushCard from '@/components/BroadcastPushCard';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 
 const adminPages = [
+{
+  title: 'All Orders',
+  description: 'Unified live view of in-person, online & phone orders',
+  icon: Receipt,
+  path: '/admin/orders',
+  color: 'midnight-cherry'
+},
 {
   title: 'Menu Manager',
   description: 'Manage menu items, daily specials, and combo offers',

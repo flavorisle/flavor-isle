@@ -25,6 +25,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
 import AdminMedia from './pages/AdminMedia';
 import AdminPhoneOrders from './pages/AdminPhoneOrders';
+import AdminOrders from './pages/AdminOrders';
 import AdminCommunications from './pages/AdminCommunications';
 import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
@@ -106,6 +107,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/menu" element={<AdminMenu />} />
         <Route path="/admin/media" element={<AdminMedia />} />
         <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
       </Route>
 
