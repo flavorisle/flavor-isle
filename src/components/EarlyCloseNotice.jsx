@@ -1,11 +1,13 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import useStoreClosure from '@/hooks/useStoreClosure';
 
-// Temporary one-day notice: closing early at 5pm on 2026-08-16 due to
-// maintenance and the heat. Auto-hides on any other date.
+// Dynamic full-day closure banner. Reads the admin-configured closure from
+// MenuSetting (set via the Admin Dashboard "Emergency Closure" panel) so the
+// site reflects whatever the admin schedules — no hardcoded dates.
 export default function EarlyCloseNotice() {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  if (today !== '2026-08-16') return null;
+  const { closed, message, loading } = useStoreClosure();
+  if (loading || !closed) return null;
 
   return (
     <div className="bg-midnight-cherry text-white px-4 py-3">
@@ -13,7 +15,7 @@ export default function EarlyCloseNotice() {
         <AlertCircle size={18} className="flex-shrink-0 text-smashie-yellow" />
         <p className="text-sm font-body">
           <span className="font-heading tracking-wide">CLOSED TODAY</span>
-          <span className="opacity-90"> — we're completely closed today (Sunday) for maintenance and to beat the heat. We'll be back to normal tomorrow!</span>
+          <span className="opacity-90"> — {message || "we're closed today"}. We'll be back to normal soon!</span>
         </p>
       </div>
     </div>

@@ -9,6 +9,7 @@ import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
+import StoreClosurePanel from '@/components/StoreClosurePanel';
 
 const adminPages = [
 {
@@ -61,6 +62,8 @@ export default function AdminDashboard() {
       </div>
 
       <StoreStatusCard />
+
+      <StoreClosurePanel />
 
       <OrderCutoffSettings />
 

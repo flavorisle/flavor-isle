@@ -22,6 +22,7 @@ const DEFAULT_SETTING = {
   pickup_cutoff_minutes: 15,
   delivery_fee: 0,
   business_hours: null,
+  closure: null,
 };
 
 export async function getMenuSetting() {
@@ -147,4 +148,16 @@ export async function setCategoryItemOrder(order) {
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_item_order: order });
   bustMenuSettingCache();
   return created.id;
+}
+
+export async function setClosure(closure) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { closure });
+    bustMenuSettingCache();
+    return { ...setting, closure };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], closure });
+  bustMenuSettingCache();
+  return created;
 }
