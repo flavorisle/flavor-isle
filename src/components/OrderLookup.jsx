@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import PickupZoneMap from '@/components/PickupZoneMap';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -27,6 +28,7 @@ export default function OrderLookup() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedZone, setSelectedZone] = useState('');
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -183,6 +185,22 @@ export default function OrderLookup() {
               </a>
             )}
           </div>
+
+          {/* Pickup zone map for pickup/curbside orders */}
+          {order.order_type === 'pickup' && (
+            <div className="px-6 pb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin size={16} className="text-midnight-cherry" />
+                <p className="font-heading text-sm text-obsidian-roast uppercase tracking-wider">
+                  {selectedZone ? 'Your Parking Zone' : 'Where Are You Parked?'}
+                </p>
+              </div>
+              <PickupZoneMap
+                selectedZone={selectedZone}
+                onSelectZone={setSelectedZone}
+              />
+            </div>
+          )}
         </div>
       )}
 
