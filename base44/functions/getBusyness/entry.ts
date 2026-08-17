@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { getStoreStatus } from '../../shared/storeClosure.ts';
 
 // Public read for the landing page "How busy are we?" card.
 // Returns today's 24-hour typical-traffic chart + the live current-hour status.
@@ -55,6 +56,28 @@ export default async function(req) {
     } else {
       const prevSlice = Math.round((prevCount * (COOK_WINDOW_MINUTES - minute)) / 60);
       activeCount = curHourCount + prevSlice;
+    }
+
+    // If the store is closed (admin closure or outside business hours),
+    // the status card should say "Closed" instead of a busyness level.
+    const storeStatus = await getStoreStatus(base44);
+    if (!storeStatus.open) {
+      return Response.json({
+        weekday: today.weekday,
+        hour: today.hour,
+        date: today.dateKey,
+        chart,
+        peakAvg,
+        liveCount,
+        activeCount: 0,
+        curHourCount,
+        avgForHour,
+        busyPercent,
+        busyness_level: 'Closed',
+        estimated_wait: 'Closed',
+        estimated_wait_min: 0,
+        closure_message: storeStatus.message,
+      });
     }
 
     const stage = getBusynessStage(activeCount);
