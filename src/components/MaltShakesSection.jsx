@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
 // Dedicated section for the malt milkshake on the Shake Isle page. Shows a
@@ -27,8 +27,8 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
             <span className="text-5xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
             <p className="font-heading text-obsidian-roast text-lg leading-tight">{name}</p>
             <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
-            <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-heading text-midnight-cherry opacity-0 group-hover:opacity-100 transition-opacity">
-              Customize <ArrowRight size={12} />
+            <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading bg-midnight-cherry text-white px-3 py-1.5 rounded-full">
+              <Plus size={12} /> Customize
             </span>
           </button>
         </div>
