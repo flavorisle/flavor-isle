@@ -12,6 +12,7 @@ import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
+import ShakePromoPopup from './components/ShakePromoPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -127,6 +128,7 @@ function AppShell() {
             <BottomTabBar />
             <MobileHeader />
             <SmashieChat />
+            <ShakePromoPopup />
           </Router>
           <Toaster />
         </CartProvider>
