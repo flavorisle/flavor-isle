@@ -20,6 +20,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import WalletPayButton from '@/components/checkout/WalletPayButton';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 
@@ -65,6 +66,18 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 
   return (
     <form onSubmit={handlePay}>
+      <WalletPayButton
+        clientSecret={clientSecret}
+        total={total}
+        orderNumber={orderNumber}
+        onSuccess={onSuccess}
+        onError={onError}
+      />
+      <div className="flex items-center gap-3 mb-4 text-xs text-muted-foreground">
+        <div className="flex-1 h-px bg-border" />
+        <span className="font-heading uppercase tracking-wider">or pay with card</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
       <div className="border border-border rounded-2xl px-4 py-4 bg-muted mb-5">
         <CardElement options={CARD_STYLE} />
       </div>
