@@ -65,7 +65,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 
   return (
     <form onSubmit={handlePay}>
-      <div className="border border-border rounded-2xl px-4 py-4 bg-muted mb-5">
+      <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
         <CardElement options={CARD_STYLE} />
       </div>
       <button
