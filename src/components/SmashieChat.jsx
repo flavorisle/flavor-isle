@@ -18,6 +18,13 @@ export default function SmashieChat() {
 
   useEffect(() => {scrollToBottom();}, [messages]);
 
+  // Open the chat when the bottom tab bar (or any other UI) requests it.
+  useEffect(() => {
+    const handler = () => openChat();
+    window.addEventListener('flavorisle:open-smashie', handler);
+    return () => window.removeEventListener('flavorisle:open-smashie', handler);
+  }, []);
+
   const openChat = async () => {
     setOpen(true);
     if (!conversation) {
@@ -54,7 +61,7 @@ export default function SmashieChat() {
       {!open &&
       <button
         onClick={openChat}
-        className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform flex items-center justify-center chrome-hover"
+        className="hidden md:flex fixed right-6 bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center chrome-hover"
         aria-label="Chat with Smashie">
         
           <span className="text-2xl">🤖</span>
