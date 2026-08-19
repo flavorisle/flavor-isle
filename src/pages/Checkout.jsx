@@ -283,7 +283,7 @@ export default function Checkout() {
 
   if (!orderingEnabled || storeClosed) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -300,7 +300,7 @@ export default function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -314,7 +314,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+    <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
 
