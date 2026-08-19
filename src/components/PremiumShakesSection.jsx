@@ -128,7 +128,7 @@ export default function PremiumShakesSection() {
                   <p className="text-midnight-cherry font-heading text-base">${item.price.toFixed(2)}</p>
                   <div className="mt-auto pt-2">
                     <span className={`inline-flex items-center gap-1 text-xs font-heading w-full justify-center py-2 rounded-xl transition-all ${
-                      isAdded ? 'bg-patina-mint text-white' : 'bg-muted text-obsidian-roast group-hover:bg-midnight-cherry group-hover:text-white'
+                      isAdded ? 'bg-midnight-cherry text-white' : 'bg-patina-mint text-white'
                     }`}>
                       {isAdded ? <><Check size={12} /> Added!</> : <><Plus size={12} /> Add</>}
                     </span>
