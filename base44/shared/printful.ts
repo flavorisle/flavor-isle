@@ -15,12 +15,19 @@ function authHeaders(): Record<string, string> {
 // Parse a sync_variant into a compact, UI-friendly shape. Apparel variants
 // usually name themselves like "Black / S"; we split that into color + size so
 // the storefront can render pill selectors.
-function parseVariant(v: any, productImage?: string) {
+function parseVariant(v: any, productImage?: string, productName?: string) {
   const name: string = v.name || "";
   let size = v.variant?.size || "";
   let color = v.variant?.color || v.variant?.color_code || "";
   if (!size || !color) {
-    const parts = name.split(" / ").map((s) => s.trim()).filter(Boolean);
+    // Printful names apparel variants like "Design / Color / Size". Strip the
+    // leading product/design name so the remaining "Color / Size" parses into
+    // a real color (e.g. "Black") instead of the design name.
+    let label = name;
+    if (productName && label.startsWith(productName + " / ")) {
+      label = label.slice(productName.length + 3);
+    }
+    const parts = label.split(" / ").map((s) => s.trim()).filter(Boolean);
     if (parts.length >= 2) {
       if (!color) color = parts[0];
       if (!size) size = parts[parts.length - 1];
@@ -56,7 +63,7 @@ export async function fetchStoreProducts() {
         const d = await r.json();
         if (!r.ok) return null;
         const sp = d.result?.sync_product || {};
-        const variants = (d.result?.sync_variants || []).map((v: any) => parseVariant(v, sp.image));
+        const variants = (d.result?.sync_variants || []).map((v: any) => parseVariant(v, sp.image, sp.name));
         const prices = variants.map((v: any) => v.price).filter((n: number) => n > 0);
         const images: string[] = [];
         if (sp.image) images.push(sp.image);
