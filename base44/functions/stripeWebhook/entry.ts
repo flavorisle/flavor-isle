@@ -4,6 +4,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
+import { sendPushToEmail } from '../../shared/sendPush.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -152,6 +153,20 @@ async function pushOrderToSquareAndKitchen(base44, order) {
   // Confirmed SMS — sent the moment payment lands and the order goes confirmed.
   if (order.customer_phone) {
     await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
+  }
+
+  // Confirmed push — fires the instant payment lands, alongside the email/SMS.
+  if (order.customer_email) {
+    try {
+      await sendPushToEmail(base44, order.customer_email, {
+        title: '🍔 Order locked in!',
+        body: `Hey ${order.customer_name || 'fam'}, order #${order.order_number || ''} is confirmed — the crew's firing up the grill. We'll ping you as it moves along!`,
+        url: '/account',
+        tag: `order-${order.id}`,
+      });
+    } catch (pushErr) {
+      console.warn('Confirmed push failed:', pushErr.message);
+    }
   }
 
   // Loyalty: consume applied reward + accrue Square Star Rewards for this order.
