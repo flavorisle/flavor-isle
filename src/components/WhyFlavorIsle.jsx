@@ -9,20 +9,20 @@ const CARDS = [
 
 export default function WhyFlavorIsle() {
   return (
-    <section className="py-20 px-4 sm:px-6" style={{ background: '#FDF5DA' }}>
+    <section className="py-20 px-4 sm:px-6 bg-background">
       <div className="text-center mb-12">
         <p className="font-heading uppercase tracking-widest text-sm mb-3" style={{ color: '#d36a44' }}>
           Why Flavor Isle?
         </p>
-        <h2 className="font-heading uppercase text-4xl sm:text-5xl leading-tight" style={{ color: '#002d5b' }}>
+        <h2 className="font-heading uppercase text-4xl sm:text-5xl leading-tight text-obsidian-roast">
           Made Different. Tasted Better.
         </h2>
       </div>
       <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5">
         {CARDS.map((c) => (
-          <div key={c.title} className="bg-white rounded-2xl p-7 shadow-float">
+          <div key={c.title} className="bg-card rounded-2xl p-7 shadow-float">
             <div className="text-3xl mb-3">{c.icon}</div>
-            <h3 className="font-heading uppercase text-xl mb-2" style={{ color: '#002d5b' }}>
+            <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">
               {c.title}
             </h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{c.body}</p>

@@ -88,10 +88,10 @@ export default function DownloadApp() {
       </section>
 
       {/* App preview — phone mockup */}
-      <section className="py-16 px-4 sm:px-6" style={{ backgroundColor: '#F7F3E8' }}>
+      <section className="py-16 px-4 sm:px-6 bg-background">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10">
           <div className="flex-1 text-center md:text-left">
-            <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">A Sneak Peek</p>
+            <p className="text-obsidian-roast text-sm font-heading uppercase tracking-widest mb-2">A Sneak Peek</p>
             <h2 className="font-heading text-4xl text-obsidian-roast mb-3">The App, In Your Pocket</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
               Browse best sellers, build a shake, track your order in real time, and watch your Star Rewards stack up — all in a clean, fast app built for Flavor Isle.
