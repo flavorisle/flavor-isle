@@ -4,6 +4,7 @@ import { CheckCircle, Clock, MapPin, ShoppingBag, ArrowRight } from 'lucide-reac
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignUpNudge from '@/components/SignUpNudge';
+import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -94,6 +95,11 @@ export default function OrderConfirmation() {
         </div>
 
         <SignUpNudge variant="featured" />
+
+        {/* Push opt-in — best moment to ask, right after they place an order */}
+        <div className="mt-6 text-left">
+          <PushNotificationPrompt />
+        </div>
       </div>
 
       <Footer />
