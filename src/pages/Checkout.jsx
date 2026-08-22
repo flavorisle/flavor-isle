@@ -10,6 +10,7 @@ import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
+import WalletPayButton from '@/components/checkout/WalletPayButton';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -64,7 +65,15 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
   };
 
   return (
-    <form onSubmit={handlePay}>
+    <div>
+      <WalletPayButton
+        clientSecret={clientSecret}
+        total={total}
+        label={`Flavor Isle #${orderNumber}`}
+        onSuccess={() => onSuccess(orderNumber)}
+        onError={onError}
+      />
+      <form onSubmit={handlePay}>
       <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
         <CardElement options={CARD_STYLE} />
       </div>
@@ -79,7 +88,8 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
           <><Lock size={15} /> Pay ${total.toFixed(2)}</>
         )}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }
 
