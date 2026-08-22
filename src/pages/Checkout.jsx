@@ -78,7 +78,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
         <span className="font-heading uppercase tracking-wider">or pay with card</span>
         <div className="flex-1 h-px bg-border" />
       </div>
-      <div className="border border-border rounded-2xl px-4 py-4 bg-muted mb-5">
+      <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
         <CardElement options={CARD_STYLE} />
       </div>
       <button
@@ -296,7 +296,7 @@ export default function Checkout() {
 
   if (!orderingEnabled || storeClosed) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -313,7 +313,7 @@ export default function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -327,7 +327,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+    <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
 

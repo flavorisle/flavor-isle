@@ -131,7 +131,7 @@ export default function Milkshakes() {
                     <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
                     <p className="font-heading text-obsidian-roast text-base leading-tight">{name}</p>
                     <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
-                    <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading bg-midnight-cherry text-white px-3 py-1.5 rounded-full">
+                    <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading bg-patina-mint text-white px-3 py-1.5 rounded-full">
                       <Plus size={12} /> Customize
                     </span>
                   </button>

@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { isKeepAliveTab } from '@/lib/keepAliveTabs';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -46,6 +48,28 @@ import Rewards from './pages/Rewards';
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
+  const scrollPositions = useRef({});
+
+  // Save the scroll position of the active keep-alive tab as the user scrolls.
+  useEffect(() => {
+    const onSave = () => {
+      if (isKeepAliveTab(location.pathname)) {
+        scrollPositions.current[location.pathname] = window.scrollY;
+      }
+    };
+    window.addEventListener('scroll', onSave, { passive: true });
+    return () => window.removeEventListener('scroll', onSave);
+  }, [location.pathname]);
+
+  // Restore the saved scroll position when landing on a keep-alive tab.
+  useEffect(() => {
+    if (!isKeepAliveTab(location.pathname)) return;
+    const saved = scrollPositions.current[location.pathname] ?? 0;
+    const raf = requestAnimationFrame(() =>
+      window.scrollTo({ top: saved, left: 0, behavior: 'instant' })
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -67,16 +91,30 @@ const AuthenticatedApp = () => {
     }
   }
 
+  const isTabPath = isKeepAliveTab(location.pathname);
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, x: 8 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -8 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
-      >
-        <Routes location={location}>
+    <>
+      {/* Keep-alive bottom-tab routes: stay mounted, toggled with `hidden` so
+          view state + scroll survive tab switches instead of remounting. */}
+      <div className={location.pathname === '/' ? '' : 'hidden'} aria-hidden={location.pathname !== '/'}>
+        <Home />
+      </div>
+      <div className={location.pathname === '/menu' ? '' : 'hidden'} aria-hidden={location.pathname !== '/menu'}>
+        <Menu />
+      </div>
+
+      {/* All other routes mount/unmount normally with the page transition. */}
+      {!isTabPath && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            <Routes location={location}>
       {/* Public — no login required */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -111,9 +149,11 @@ const AuthenticatedApp = () => {
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      )}
+    </>
   );
 };
 
