@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
-import { accrueForOrder } from '../../shared/squareLoyalty.ts';
+import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -80,12 +80,17 @@ async function sendOrderConfirmationEmail(order) {
 async function processLoyalty(base44, order, squareOrderId) {
   try {
     if (order.redemption_id) {
-      await base44.asServiceRole.entities.LoyaltyRedemption.update(order.redemption_id, {
-        is_redeemed: true,
-        redeemed_at: new Date().toISOString(),
-        order_id: order.id,
-      });
-      console.log(`Reward ${order.redemption_id} marked used for order ${order.order_number}`);
+      try {
+        await redeemReward({
+          email: order.customer_email,
+          phone: order.customer_phone,
+          rewardTierId: order.redemption_id,
+          idempotencyKey: `${order.id}:${order.redemption_id}`,
+        });
+        console.log(`Reward tier ${order.redemption_id} redeemed for order ${order.order_number}`);
+      } catch (redeemErr) {
+        console.error('Square loyalty redemption failed:', redeemErr.message);
+      }
     }
 
     if (!squareOrderId || !order.customer_email) return;
@@ -140,7 +145,7 @@ async function pushOrderToSquareAndKitchen(base44, order) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
   }
 
-  if (order.customer_email) {
+  if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
     await sendOrderConfirmationEmail(order);
   }
 

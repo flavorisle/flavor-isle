@@ -54,6 +54,13 @@ export function CartProvider({ children }) {
 
   const cutoffStatus = getCutoffStatus(menuSetting);
 
+  // If delivery is paused, move anyone already set to delivery back to pickup.
+  useEffect(() => {
+    if (menuSetting?.delivery_enabled === false && orderType === 'delivery') {
+      setOrderType('pickup');
+    }
+  }, [menuSetting, orderType]);
+
   // Different modifier combos on the same menu item become separate lines,
   // so each selection's modifiers are preserved and displayed.
   // Combo builder items (alwaysUnique) are NEVER merged — each built combo is

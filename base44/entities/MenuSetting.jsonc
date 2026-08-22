@@ -34,6 +34,11 @@
       "type": "string",
       "default": "Ordering is temporarily closed"
     },
+    "delivery_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours."
+    },
     "closing_time": {
       "type": "string",
       "default": "20:00"
@@ -66,6 +71,28 @@
           "closed": {
             "type": "boolean"
           }
+        }
+      }
+    },
+    "closure": {
+      "type": "object",
+      "description": "Temporary full-day closure override for maintenance, weather, or emergencies. When active and today (store local time, America/Chicago) falls within the inclusive start/end date range, the website shows a CLOSED banner, online ordering is cut off, and Smashie announces the closure on the phone.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "default": false
+        },
+        "start_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD inclusive, store local time (America/Chicago)"
+        },
+        "end_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD inclusive, store local time (America/Chicago). Defaults to start_date for a single-day closure."
+        },
+        "message": {
+          "type": "string",
+          "description": "Reason shown to customers in the website banner and spoken by Smashie, e.g. 'closed for maintenance and the heat'."
         }
       }
     }

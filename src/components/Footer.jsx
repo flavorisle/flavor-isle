@@ -83,8 +83,12 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
           <span className="text-[hsl(var(--primary))]">© 2026 Flavor Isle. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </div>
     </footer>);

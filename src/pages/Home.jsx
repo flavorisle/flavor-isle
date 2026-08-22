@@ -15,9 +15,11 @@ import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
-import SmashieChat from '@/components/SmashieChat';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
+import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
+import EarlyCloseNotice from '@/components/EarlyCloseNotice';
+import PushNoticeCard from '@/components/PushNoticeCard';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -57,6 +59,8 @@ export default function Home() {
       <Navbar />
       <CartDrawer />
 
+      <EarlyCloseNotice />
+
       {/* ── HERO ── */}
       <HeroSection />
 
@@ -66,6 +70,11 @@ export default function Home() {
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
       <ConversionNudgeBar />
+
+      {/* ── PUSH NOTICES ── */}
+      <div className="pb-2">
+        <PushNoticeCard />
+      </div>
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
@@ -127,6 +136,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── SHAKE ISLE PROMO ── */}
+      <MilkshakePromoBanner variant="feature" />
 
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
@@ -216,7 +228,6 @@ export default function Home() {
       </section>
 
       <Footer />
-      <SmashieChat />
     </div>);
 
 }

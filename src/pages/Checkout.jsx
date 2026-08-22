@@ -10,6 +10,8 @@ import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
+import WalletPayButton from '@/components/checkout/WalletPayButton';
+import CheckoutRewardSelector from '@/components/checkout/CheckoutRewardSelector';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -64,8 +66,16 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
   };
 
   return (
-    <form onSubmit={handlePay}>
-      <div className="border border-border rounded-2xl px-4 py-4 bg-muted mb-5">
+    <div>
+      <WalletPayButton
+        clientSecret={clientSecret}
+        total={total}
+        label={`Flavor Isle #${orderNumber}`}
+        onSuccess={() => onSuccess(orderNumber)}
+        onError={onError}
+      />
+      <form onSubmit={handlePay}>
+      <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
         <CardElement options={CARD_STYLE} />
       </div>
       <button
@@ -79,7 +89,8 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
           <><Lock size={15} /> Pay ${total.toFixed(2)}</>
         )}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }
 
@@ -90,6 +101,7 @@ export default function Checkout() {
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddress, setSavedAddress] = useState(false);
@@ -122,6 +134,7 @@ export default function Checkout() {
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
 
   // Group split-payment state
   const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
@@ -155,12 +168,18 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
+  // Clear an applied reward when the loyalty identity or split mode changes.
+  useEffect(() => {
+    setAppliedReward(null);
+  }, [form.phone, groupMode, payMode]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
-  const totalWithTip = +(Math.max(0, total) + tipAmount).toFixed(2);
+  const rewardDiscount = appliedReward?.discountValue || 0;
+  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
   const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
   const readyLabel = readyAt
@@ -257,7 +276,7 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: form.instructions,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: 0, redemptionId: null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
         });
@@ -282,7 +301,7 @@ export default function Checkout() {
 
   if (!orderingEnabled || storeClosed) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -299,7 +318,7 @@ export default function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -313,7 +332,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+    <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
 
@@ -383,7 +402,15 @@ export default function Checkout() {
 
                 {/* Loyalty & Rewards — stars-earned preview for members,
                     earn-rewards nudge for guests */}
-                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
+                {!(groupMode && payMode === 'separate') && (
+                  <CheckoutRewardSelector
+                    phone={form.phone}
+                    subtotal={subtotal}
+                    appliedReward={appliedReward}
+                    onApply={setAppliedReward}
+                  />
+                )}
 
                 {/* Contact Info */}
                 <div className="card-diner p-6">
@@ -412,6 +439,21 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
+
+                  {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
+                  <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={smsConsent}
+                      onChange={e => setSmsConsent(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                    />
+                    <span className="text-xs text-muted-foreground leading-relaxed">
+                      Text me order status updates from Flavor Isle (confirmed, preparing, ready). Reply STOP to cancel, HELP for help. Msg &amp; data rates may apply. See our{' '}
+                      <Link to="/privacy-policy" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</Link>{' '}and{' '}
+                      <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
+                    </span>
+                  </label>
 
                   {orderType === 'delivery' && (
                     <SavedAddressField
@@ -521,7 +563,7 @@ export default function Checkout() {
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
-                <CheckoutLoyaltyBar subtotal={subtotal} />
+                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
                 <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
@@ -604,6 +646,11 @@ export default function Checkout() {
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {rewardDiscount > 0 && (
+                  <div className="flex justify-between text-patina-mint">
+                    <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
+import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -46,11 +47,22 @@ Deno.serve(async (req) => {
       smsRecord = await base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,
         conversation_id: conversation.id,
+        channel: 'sms',
         last_message_at: new Date().toISOString(),
         message_count: 0,
         status: 'active',
       });
       console.log(`New SMS conversation for ${from}: ${conversation.id}`);
+    }
+
+    // Respect the admin's SMS auto-reply toggle — if off, log the inbound text
+    // but don't route it through Smashie or send a reply.
+    const settings = await getSmashieSettings(base44);
+    if (!settings.sms_auto_reply_enabled) {
+      console.log(`SMS auto-reply disabled — ignoring message from ${from}`);
+      return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
     // Send message to Smashie
@@ -63,7 +75,7 @@ Deno.serve(async (req) => {
     const messages = updatedConversation.messages || [];
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
-    const replyText = lastReply?.content || "Hey! This is Smashie at Flavor Isle 🍔 What can I get started for you?";
+    const replyText = lastReply?.content || settings.greeting;
 
     // Update conversation record
     await base44.asServiceRole.entities.SmsConversation.update(smsRecord.id, {

@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
+import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { getStoreStatus } from '../../shared/storeClosure.ts';
 
 // Public read for the landing page "How busy are we?" card.
 // Returns today's 24-hour typical-traffic chart + the live current-hour status.
@@ -31,10 +33,54 @@ export default async function(req) {
     const peakAvg = chart.reduce((m, c) => Math.max(m, c.avg), 0);
     const cur = chart[today.hour] || { avg: 0, live: 0 };
     const avgForHour = cur.avg || 0;
-    const liveCount = cur.live || 0;
+    const curHourCount = cur.live || 0;
+
+    const minute = today.minute || 0;
+    const prevHour = (today.hour + 23) % 24;
+    const prevCount = (chart[prevHour] || {}).live || 0;
+
+    // 60-min rolling count — kept for the "busier than usual" comparison
+    // against the historical hourly average (used by PopularTimesCard).
+    const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
+
     const busyPercent = avgForHour > 0
       ? Math.round((liveCount / avgForHour) * 100)
       : (liveCount > 0 ? 100 : 0);
+
+    // Active queue depth: orders placed in the last COOK_WINDOW_MINUTES (20 min).
+    // Orders older than the cook time have been served and no longer count
+    // toward the kitchen backlog. This is what drives the busyness stage.
+    let activeCount;
+    if (minute >= COOK_WINDOW_MINUTES) {
+      activeCount = Math.round((curHourCount * COOK_WINDOW_MINUTES) / minute);
+    } else {
+      const prevSlice = Math.round((prevCount * (COOK_WINDOW_MINUTES - minute)) / 60);
+      activeCount = curHourCount + prevSlice;
+    }
+
+    // If the store is closed (admin closure or outside business hours),
+    // the status card should say "Closed" instead of a busyness level.
+    const storeStatus = await getStoreStatus(base44);
+    if (!storeStatus.open) {
+      return Response.json({
+        weekday: today.weekday,
+        hour: today.hour,
+        date: today.dateKey,
+        chart,
+        peakAvg,
+        liveCount,
+        activeCount: 0,
+        curHourCount,
+        avgForHour,
+        busyPercent,
+        busyness_level: 'Closed',
+        estimated_wait: 'Closed',
+        estimated_wait_min: 0,
+        closure_message: storeStatus.message,
+      });
+    }
+
+    const stage = getBusynessStage(activeCount);
 
     return Response.json({
       weekday: today.weekday,
@@ -43,8 +89,13 @@ export default async function(req) {
       chart,
       peakAvg,
       liveCount,
+      activeCount,
+      curHourCount,
       avgForHour,
       busyPercent,
+      busyness_level: stage.level,
+      estimated_wait: stage.waitRange,
+      estimated_wait_min: stage.waitMin,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -15,6 +15,19 @@ export function getCutoffStatus(setting) {
   const deliveryCutoff = setting?.delivery_cutoff_minutes ?? 30;
   const pickupCutoff = setting?.pickup_cutoff_minutes ?? 15;
   const closedFallback = toMins(setting?.closing_time) ?? toMins('20:00');
+  // Admin can pause delivery entirely — it stays unavailable regardless of hours.
+  const deliveryPaused = setting?.delivery_enabled === false;
+
+  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
+  // When active and today falls within the inclusive date range, every order
+  // type is cut off — same as a closed weekday.
+  const closure = setting?.closure;
+  if (closure?.active) {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
+    const start = closure.start_date || todayStr;
+    const end = closure.end_date || start;
+    if (todayStr >= start && todayStr <= end) return allClosed;
+  }
 
   const allClosed = {
     delivery: true,
@@ -38,7 +51,7 @@ export function getCutoffStatus(setting) {
 
   const minsToClose = closeMins - nowMins;
   return {
-    delivery: minsToClose < deliveryCutoff,
+    delivery: deliveryPaused || minsToClose < deliveryCutoff,
     pickup: minsToClose < pickupCutoff,
     dine_in: minsToClose < pickupCutoff,
     deliveryCutoff,

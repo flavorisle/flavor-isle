@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image, Shirt } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, Shirt, MessagesSquare } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -9,6 +9,7 @@ import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
+import StoreClosurePanel from '@/components/StoreClosurePanel';
 
 const adminPages = [
 {
@@ -38,6 +39,13 @@ const adminPages = [
   icon: Shirt,
   path: '/admin/merch-orders',
   color: 'midnight-cherry'
+},
+{
+  title: 'Communications',
+  description: 'Phone log, SMS log, message log, and Smashie AI settings',
+  icon: MessagesSquare,
+  path: '/admin/communications',
+  color: 'patina-mint'
 }];
 
 
@@ -61,6 +69,8 @@ export default function AdminDashboard() {
       </div>
 
       <StoreStatusCard />
+
+      <StoreClosurePanel />
 
       <OrderCutoffSettings />
 

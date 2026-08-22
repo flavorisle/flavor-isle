@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import FaqSection from '@/components/FaqSection';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -22,7 +23,7 @@ export default function Contact() {
     setLoading(true);
     try {
       await base44.integrations.Core.SendEmail({
-        to: 'hello@flavor-isle.com',
+        to: 'hello@order.flavor-isle.com',
         subject: `Website Message from ${form.name}`,
         body: `Name: ${form.name}\nEmail: ${form.email}\n\nMessage:\n${form.message}`,
       });
@@ -66,7 +67,7 @@ export default function Contact() {
               {[
                 { icon: MapPin, label: 'Address', value: '103 N Main St, Smiths Grove, Kentucky 42171', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
                 { icon: Phone, label: 'Phone', value: '(270) 563-4618', href: 'tel:+12705634618' },
-                { icon: Mail, label: 'Email', value: 'hello@flavor-isle.com', href: 'mailto:hello@flavor-isle.com' },
+                { icon: Mail, label: 'Email', value: 'hello@order.flavor-isle.com', href: 'mailto:hello@order.flavor-isle.com' },
                 { icon: Clock, label: 'Today', value: hoursSummary(businessHours), href: null },
               ].map((info) => (
                 <div key={info.label} className="flex items-start gap-4">
@@ -110,6 +111,11 @@ export default function Contact() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="mb-12">
+          <FaqSection />
         </div>
 
         {/* Contact form */}

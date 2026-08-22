@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import OccupancyTracker from '@/components/OccupancyTracker';
 import AdminNav from '@/components/admin/AdminNav';
+import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -84,6 +85,7 @@ export default function AdminPhoneOrders() {
 
       <OccupancyTracker />
       <div className="max-w-5xl mx-auto px-4 py-8">
+        <PhoneOrderSetup />
         <div className="mb-8">
           {/* Restaurant Busyness Indicator */}
           <div className="card-diner p-4 flex items-center justify-between">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, UtensilsCrossed, User, ShoppingBag, Shirt } from 'lucide-react';
+import { Home, UtensilsCrossed, User, ShoppingBag, Shirt, Bot } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 // Routes where the persistent bottom tab bar would conflict with a
@@ -19,6 +19,7 @@ export default function BottomTabBar() {
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
     { to: '/merch', label: 'Merch', icon: Shirt },
     { cart: true, label: 'Cart', icon: ShoppingBag },
+    { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
   ];
 
@@ -85,6 +86,19 @@ export default function BottomTabBar() {
                 onClick={() => setIsCartOpen(true)}
                 className="tap-44 flex-1 flex items-center justify-center select-none"
                 aria-label={`Cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          if (tab.smashie) {
+            return (
+              <button
+                key="smashie"
+                onClick={() => window.dispatchEvent(new CustomEvent('flavorisle:open-smashie'))}
+                className="tap-44 flex-1 flex items-center justify-center select-none"
+                aria-label="Chat with Smashie"
               >
                 {content}
               </button>

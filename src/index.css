@@ -86,6 +86,45 @@
   }
 }
 
+/* Force a subtree back onto the light palette regardless of system dark mode.
+   Used on high-contrast forms (checkout) so fields stay readable on Android. */
+.force-light {
+  --background: 42 67% 94%;
+  --foreground: 210 100% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 100% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 100% 20%;
+  --primary: 12 100% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 100% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 42 40% 90%;
+  --muted-foreground: 210 30% 45%;
+  --accent: 37 91% 55%;
+  --accent-foreground: 210 100% 20%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 42 30% 85%;
+  --input: 42 30% 85%;
+  --ring: 12 100% 40%;
+  --vanilla-malt: #FDF6E3;
+  --midnight-cherry: #CC3300;
+  --patina-mint: #003366;
+  --smashie-yellow: #F5A623;
+  --obsidian-roast: #003366;
+  --chrome-silver: #C0C0C0;
+  --cream-white: #FDF6E3;
+  --sidebar-background: 42 67% 94%;
+  --sidebar-foreground: 210 100% 20%;
+  --sidebar-primary: 12 100% 40%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 42 40% 90%;
+  --sidebar-accent-foreground: 210 100% 20%;
+  --sidebar-border: 42 30% 85%;
+  --sidebar-ring: 12 100% 40%;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
