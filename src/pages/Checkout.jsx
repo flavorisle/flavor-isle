@@ -11,6 +11,7 @@ import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
+import CheckoutRewardSelector from '@/components/checkout/CheckoutRewardSelector';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -133,6 +134,7 @@ export default function Checkout() {
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
 
   // Group split-payment state
   const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
@@ -166,12 +168,18 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
+  // Clear an applied reward when the loyalty identity or split mode changes.
+  useEffect(() => {
+    setAppliedReward(null);
+  }, [form.phone, groupMode, payMode]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
-  const totalWithTip = +(Math.max(0, total) + tipAmount).toFixed(2);
+  const rewardDiscount = appliedReward?.discountValue || 0;
+  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
   const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
   const readyLabel = readyAt
@@ -268,7 +276,7 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: form.instructions,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: 0, redemptionId: null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
         });
@@ -395,6 +403,14 @@ export default function Checkout() {
                 {/* Loyalty & Rewards — stars-earned preview for members,
                     earn-rewards nudge for guests */}
                 <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
+                {!(groupMode && payMode === 'separate') && (
+                  <CheckoutRewardSelector
+                    phone={form.phone}
+                    subtotal={subtotal}
+                    appliedReward={appliedReward}
+                    onApply={setAppliedReward}
+                  />
+                )}
 
                 {/* Contact Info */}
                 <div className="card-diner p-6">
@@ -630,6 +646,11 @@ export default function Checkout() {
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {rewardDiscount > 0 && (
+                  <div className="flex justify-between text-patina-mint">
+                    <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">

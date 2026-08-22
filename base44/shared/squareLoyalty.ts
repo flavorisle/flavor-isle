@@ -229,6 +229,9 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
       points: t.points,
       description: describeRewardTier(t),
       scope: t.definition?.scope || 'ORDER',
+      discountType: t.definition?.discount_type || null,
+      percentage: t.definition?.percentage_discount || 0,
+      fixedAmountCents: t.definition?.fixed_discount_money?.amount || 0,
     });
   });
 
@@ -281,4 +284,50 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
     result.accountId = account.id;
   }
   return result;
+}
+
+// Redeem a Square loyalty reward tier for a buyer — deducts points from their
+// loyalty account and creates a Square redemption record. Called from the
+// Stripe webhook after an online order paid with an applied reward. A
+// deterministic idempotency key (per order + tier) keeps webhook retries from
+// double-deducting points.
+export async function redeemReward({
+  email,
+  phone,
+  rewardTierId,
+  idempotencyKey,
+}: {
+  email: string;
+  phone?: string;
+  rewardTierId: string;
+  idempotencyKey?: string;
+}): Promise<void> {
+  if (!rewardTierId) return;
+  const program = await getLoyaltyProgram();
+  if (!program?.id) throw new Error('Square loyalty program not found');
+
+  let account: any | null = null;
+  if (phone) {
+    try { account = await searchLoyaltyAccountByPhone(phone); }
+    catch (e) { console.error('Loyalty phone search failed:', (e as Error).message); }
+  }
+  if (!account) {
+    let customerId: string | null = null;
+    if (phone) customerId = await searchSquareCustomerIdByPhone(phone);
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) throw new Error('No Square customer found for loyalty redemption');
+    account = await findLoyaltyAccountByCustomer(customerId);
+  }
+  if (!account) throw new Error('No loyalty account found to redeem from');
+
+  const res = await fetch(`${SQUARE_API}/loyalty/rewards`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      loyalty_reward: { loyalty_account_id: account.id, reward_tier_id: rewardTierId },
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`CreateLoyaltyReward failed: ${JSON.stringify(data?.errors || data)}`);
 }
