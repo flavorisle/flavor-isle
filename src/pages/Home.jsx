@@ -18,6 +18,7 @@ import DailySpecialsSection from '@/components/DailySpecialsSection';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
+import PushNoticeCard from '@/components/PushNoticeCard';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -68,6 +69,11 @@ export default function Home() {
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
       <ConversionNudgeBar />
+
+      {/* ── PUSH NOTICES ── */}
+      <div className="pb-2">
+        <PushNoticeCard />
+      </div>
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
