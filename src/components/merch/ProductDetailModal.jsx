@@ -156,6 +156,22 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
 
         {/* Footer */}
         <div className="p-5 border-t border-border flex-shrink-0 bg-white safe-bottom">
+          {selectedVariant && selectedVariant.in_stock !== false && (
+            <div className="flex items-center gap-2 mb-3 text-xs">
+              <span className="text-muted-foreground font-heading uppercase tracking-widest">Adding:</span>
+              {selectedVariant.color && (
+                <span className="px-2.5 py-1 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-heading">
+                  {selectedVariant.color}
+                </span>
+              )}
+              {selectedVariant.size && (
+                <span className="px-2.5 py-1 rounded-full bg-patina-mint/10 text-patina-mint font-heading">
+                  {selectedVariant.size}
+                </span>
+              )}
+              <span className="ml-auto font-heading text-base text-obsidian-roast">${selectedVariant.price.toFixed(2)}</span>
+            </div>
+          )}
           <button
             type="button"
             onClick={handleAdd}
@@ -165,7 +181,7 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
             {selectedVariant?.in_stock === false ? (
               'Out of Stock'
             ) : (
-              <><Plus size={16} /> Add to Cart{selectedVariant ? ` — $${selectedVariant.price.toFixed(2)}` : ''}</>
+              <><Plus size={16} /> Add to Cart</>
             )}
           </button>
         </div>

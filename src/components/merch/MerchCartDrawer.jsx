@@ -53,10 +53,21 @@ export default function MerchCartDrawer() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
-                  {item.variantName && (
-                    <p className="text-xs text-patina-mint">{item.variantName}</p>
+                  {(item.color || item.size) && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {item.color && (
+                        <span className="px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry text-[11px] font-heading">
+                          {item.color}
+                        </span>
+                      )}
+                      {item.size && (
+                        <span className="px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint text-[11px] font-heading">
+                          {item.size}
+                        </span>
+                      )}
+                    </div>
                   )}
-                  <p className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-midnight-cherry font-semibold text-sm mt-1">${(item.price * item.quantity).toFixed(2)}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-midnight-cherry hover:text-white transition-colors">
                       <Minus size={12} />
