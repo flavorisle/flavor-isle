@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useMerchCart } from '@/context/MerchCartContext';
+import MerchCartButton from '@/components/merch/MerchCartButton';
 import { useAuth } from '@/lib/AuthContext';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -24,6 +26,7 @@ export default function Navbar() {
   { label: 'Menu', to: '/menu' },
   { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'Combos', to: '/combos' },
+  { label: 'Tasty Threads', to: '/merch' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
   { label: 'Kitchen Status', to: '/kitchen-status' },
   { label: 'Feedback', to: '/feedback' },
@@ -62,6 +65,7 @@ export default function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
+            <MerchCartButton />
             <button
               onClick={() => setIsCartOpen(true)}
               className="relative p-1 rounded-full hover:opacity-90 transition">

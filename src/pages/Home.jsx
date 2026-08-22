@@ -16,6 +16,7 @@ import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import PushNoticeCard from '@/components/PushNoticeCard';
@@ -138,6 +139,9 @@ export default function Home() {
 
       {/* ── SHAKE ISLE PROMO ── */}
       <MilkshakePromoBanner variant="feature" />
+
+      {/* ── TASTY THREADS MERCH ── */}
+      <MerchPromo />
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />

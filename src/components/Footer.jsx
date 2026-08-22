@@ -54,6 +54,7 @@ export default function Footer() {
           <div className="flex flex-col gap-2 text-sm text-gray-400">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
+            <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
