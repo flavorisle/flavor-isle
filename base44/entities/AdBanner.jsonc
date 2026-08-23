@@ -2,6 +2,10 @@
   "name": "AdBanner",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "headline": {
       "type": "string"
     },

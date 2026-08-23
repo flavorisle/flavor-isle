@@ -2,6 +2,10 @@
   "name": "MenuSetting",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "hidden_categories": {
       "type": "array",
       "items": {

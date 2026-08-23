@@ -2,6 +2,10 @@
   "name": "PhoneMessage",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "caller_name": {
       "type": "string",
       "description": "Name of the person who left the message"
