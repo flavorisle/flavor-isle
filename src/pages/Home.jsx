@@ -71,6 +71,9 @@ export default function Home() {
       <StartOrderBand />
       <ConversionNudgeBar />
 
+      {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
+      <LoyaltyFirstOrderBanner />
+
       {/* ── PUSH NOTICES ── */}
       <div className="pb-2">
         <PushNoticeCard />
@@ -78,9 +81,6 @@ export default function Home() {
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
-
-      {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
-      <LoyaltyFirstOrderBanner />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">
