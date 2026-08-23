@@ -69,8 +69,11 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
   const extraFlavorNames = extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config));
   const allFlavorNames = [flavorName, ...extraFlavorNames];
+  // Only call out the base when it differs from the shake's own flavor —
+  // otherwise it reads "Vanilla Milkshake (Vanilla)" and confuses the crew.
   const baseLabel = base ? resolveFlavorName(base.id, base.name, config).replace(/ Ice Cream/i, '') : '';
-  const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseLabel ? ` (${baseLabel})` : ''}`;
+  const showBase = baseLabel && baseLabel.toLowerCase() !== flavorName.toLowerCase();
+  const cartName = `${allFlavorNames.join(' + ')} Milkshake${showBase ? ` (${baseLabel})` : ''}`;
 
   const handleAddToCart = () => {
     const selectedModifiers = [
