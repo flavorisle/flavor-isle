@@ -24,12 +24,19 @@ function parseVariant(v: any, productImage?: string, productName?: string) {
     // leading product/design name so the remaining "Color / Size" parses into
     // a real color (e.g. "Black") instead of the design name.
     let label = name;
-    if (productName && label.startsWith(productName + " / ")) {
-      label = label.slice(productName.length + 3);
+    let stripped = false;
+    if (productName) {
+      const pn = productName.trim();
+      if (label.startsWith(pn + " / ")) {
+        label = label.slice(pn.length + 3);
+        stripped = true;
+      }
     }
     const parts = label.split(" / ").map((s) => s.trim()).filter(Boolean);
     if (parts.length >= 2) {
-      if (!color) color = parts[0];
+      // Stripped → "Color / Size". Not stripped → "Design / Color / Size",
+      // where the color is the middle part, not the first.
+      if (!color) color = !stripped && parts.length >= 3 ? parts[1] : parts[0];
       if (!size) size = parts[parts.length - 1];
     } else if (parts.length === 1) {
       if (!size) size = parts[0];
