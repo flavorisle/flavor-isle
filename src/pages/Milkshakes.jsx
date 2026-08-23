@@ -26,8 +26,10 @@ export default function Milkshakes() {
       .filter({ square_category: 'Whirl & Twirl', is_hidden: false })
       .then((items) => {
         // Sort alphabetically by name for a consistent display order.
+        // Removed (is_hidden) items are already excluded by the filter query.
+        // Sold-out items stay visible so the Shake Isle reflects what's out
+        // of stock today — they render as disabled "Sold Out" cards below.
         const sorted = (items || [])
-          .filter((i) => i.is_available !== false)
           .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         setShakes(sorted);
       })
@@ -122,17 +124,28 @@ export default function Milkshakes() {
               {regularShakes.map((shake) => {
                 const name = flavorNameFromItem(shake.name);
                 const emoji = flavorEmojiByName(name);
+                const soldOut = shake.is_available === false;
                 return (
                   <button
                     key={shake.id}
-                    onClick={() => openCustomizer(shake)}
-                    className="card-diner p-5 text-center group flex flex-col items-center justify-center min-h-[140px]"
+                    onClick={() => !soldOut && openCustomizer(shake)}
+                    disabled={soldOut}
+                    className={`card-diner p-5 text-center group flex flex-col items-center justify-center min-h-[140px] relative ${
+                      soldOut ? 'opacity-60 cursor-not-allowed' : ''
+                    }`}
                   >
-                    <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
+                    {soldOut && (
+                      <span className="absolute top-2 right-2 bg-obsidian-roast text-white text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Sold Out
+                      </span>
+                    )}
+                    <span className={`text-4xl mb-2 group-hover:scale-110 transition-transform ${soldOut ? 'grayscale' : ''}`}>{emoji}</span>
                     <p className="font-heading text-obsidian-roast text-base leading-tight">{name}</p>
                     <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
-                    <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading bg-patina-mint text-white px-3 py-1.5 rounded-full">
-                      <Plus size={12} /> Customize
+                    <span className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading px-3 py-1.5 rounded-full ${
+                      soldOut ? 'bg-muted text-muted-foreground' : 'bg-patina-mint text-white'
+                    }`}>
+                      {soldOut ? 'Sold Out' : <><Plus size={12} /> Customize</>}
                     </span>
                   </button>
                 );
