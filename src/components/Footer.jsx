@@ -53,7 +53,6 @@ export default function Footer() {
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">QUICK LINKS</h4>
           <div className="flex flex-col gap-2 text-sm text-gray-400">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
-            <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
