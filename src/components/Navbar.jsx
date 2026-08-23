@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MapPin, Phone, LogOut } from 'lucide-react';
+import { Menu, X, MapPin, Phone, LogOut, Contrast } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useMerchCart } from '@/context/MerchCartContext';
 import MerchCartButton from '@/components/merch/MerchCartButton';
 import { useAuth } from '@/lib/AuthContext';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import useHighContrast from '@/hooks/useHighContrast';
 import { hoursSummary } from '@/lib/businessHours';
 
 export default function Navbar() {
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const businessHours = useBusinessHours();
+  const { enabled: highContrast, toggle: toggleHighContrast } = useHighContrast();
   const location = useLocation();
 
   useEffect(() => {
@@ -48,7 +50,17 @@ export default function Navbar() {
             <a href="tel:+12705634618" className="hover:text-patina-mint transition-colors">(270) 563-4618</a>
           </span>
         </div>
-        <div className="text-xs text-gray-400">{hoursSummary(businessHours)}</div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleHighContrast}
+            aria-pressed={highContrast}
+            title="Toggle high contrast"
+            className={`flex items-center gap-1 text-xs rounded-full px-2 py-1 transition-colors ${highContrast ? 'bg-smashie-yellow text-obsidian-roast font-semibold' : 'text-gray-300 hover:text-white'}`}
+          >
+            <Contrast size={13} /> <span className="hidden sm:inline">Contrast</span>
+          </button>
+          <div className="text-xs text-gray-400">{hoursSummary(businessHours)}</div>
+        </div>
       </div>
 
       {/* Main Nav */}

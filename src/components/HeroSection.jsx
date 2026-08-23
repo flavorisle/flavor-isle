@@ -42,7 +42,7 @@ export default function HeroSection() {
             Real Food.<br />Real Good.
           </h1>
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
-            Smiths Grove's burger restaurant. Fresh, never-frozen hand-patted burgers, thick shakes, and hot sides made fresh every day.
+            Smiths Grove's favorite burger restaurant, just off I-65 near Bowling Green. Fresh, never-frozen hand-patted smash burgers, thick milkshakes, and hot sides — made fresh every day. Order online for pickup or delivery, or dine in with us.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[

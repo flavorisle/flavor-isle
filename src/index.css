@@ -86,6 +86,40 @@
   }
 }
 
+/* High-contrast accessibility mode — stronger text/bg contrast, darker borders,
+   and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 210 100% 6%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 100% 6%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 100% 6%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 210 35% 22%;
+  --border: 210 50% 35%;
+  --input: 210 50% 35%;
+  --ring: 12 100% 35%;
+  --vanilla-malt: #FFFFFF;
+  --cream-white: #FFFFFF;
+  --midnight-cherry: #B82600;
+  --patina-mint: #001F4D;
+  --obsidian-roast: #001F4D;
+}
+
+.high-contrast .btn-cherry { background-color: #B82600; color: #ffffff; }
+.high-contrast .btn-mint { background-color: #001F4D; color: #ffffff; }
+.high-contrast .btn-yellow { background-color: #E09500; color: #001F4D; }
+.high-contrast .card-diner { border: 2px solid hsl(var(--border)); }
+.high-contrast button:focus-visible,
+.high-contrast a:focus-visible,
+.high-contrast input:focus-visible,
+.high-contrast select:focus-visible,
+.high-contrast textarea:focus-visible {
+  outline: 3px solid #FFD400;
+  outline-offset: 2px;
+}
+
 /* Force a subtree back onto the light palette regardless of system dark mode.
    Used on high-contrast forms (checkout) so fields stay readable on Android. */
 .force-light {
