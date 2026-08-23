@@ -51,7 +51,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'How long does my order take?',
-        a: "Pickup orders are typically ready in 15–25 minutes and delivery takes 35–50 minutes, depending on how busy the kitchen is. Check the Kitchen Status page for a live look at current wait times.",
+        a: "Pickup orders are typically ready in 15–25 minutes and delivery takes 35–50 minutes, depending on how busy the kitchen is. The live status bar at the top of every page shows our current kitchen load and estimated wait.",
       },
       {
         q: 'How do I track my order?',
