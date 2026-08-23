@@ -12,6 +12,7 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
+import LiveStatusBar from '@/components/LiveStatusBar';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -70,6 +71,9 @@ export default function Home() {
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
       <ConversionNudgeBar />
+
+      {/* ── LIVE KITCHEN MODE CARD ── */}
+      <LiveStatusBar />
 
       {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
       <LoyaltyFirstOrderBanner />
