@@ -54,10 +54,10 @@ export default function Navbar() {
           <button
             onClick={toggleHighContrast}
             aria-pressed={highContrast}
-            title="Toggle high contrast"
-            className={`flex items-center gap-1 text-xs rounded-full px-2 py-1 transition-colors ${highContrast ? 'bg-smashie-yellow text-obsidian-roast font-semibold' : 'text-gray-300 hover:text-white'}`}
+            title="Toggle high contrast for easier reading"
+            className={`flex items-center gap-1.5 text-sm rounded-full px-3 py-1.5 font-heading transition-colors tap-44 ${highContrast ? 'bg-smashie-yellow text-obsidian-roast' : 'bg-white/15 text-white hover:bg-white/25'}`}
           >
-            <Contrast size={13} /> <span className="hidden sm:inline">Contrast</span>
+            <Contrast size={16} /> <span>Contrast</span>
           </button>
           <div className="text-xs text-gray-400">{hoursSummary(businessHours)}</div>
         </div>

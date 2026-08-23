@@ -167,8 +167,8 @@
   body {
     @apply bg-background text-foreground font-body;
     background-color: var(--vanilla-malt);
-    font-size: 14.4px;
-    line-height: 1.6;
+    font-size: 17px;
+    line-height: 1.7;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -292,7 +292,7 @@
   .safe-left { padding-left: env(safe-area-inset-left); }
   .safe-right { padding-right: env(safe-area-inset-right); }
 
-  .tap-44 { min-width: 44px; min-height: 44px; }
+  .tap-44 { min-width: 48px; min-height: 48px; }
 
   .glass-tab {
     background: rgba(255, 255, 255, 0.72);
@@ -324,7 +324,7 @@
   /* Reserve space for the mobile bottom tab bar so content isn't obscured */
   @media (max-width: 767px) {
     body {
-      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
   }
 

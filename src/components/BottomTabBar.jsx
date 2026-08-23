@@ -47,33 +47,33 @@ export default function BottomTabBar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      <div className="flex items-stretch justify-around h-16 px-1">
+      <div className="flex items-stretch justify-around h-20 px-1">
         {tabs.map((tab) => {
           const active = tab.to && location.pathname === tab.to;
           const Icon = tab.icon;
           const content = (
-            <span className="flex flex-col items-center justify-center gap-0.5 w-full">
+            <span className="flex flex-col items-center justify-center gap-1 w-full">
               <span className="relative">
                 {tab.cart ? (
                   <img
                     src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
                     alt="Cart"
-                    className="w-7 h-7 object-contain"
+                    className="w-8 h-8 object-contain"
                   />
                 ) : (
                   <Icon
-                    size={22}
-                    strokeWidth={active ? 2.4 : 2}
+                    size={26}
+                    strokeWidth={active ? 2.6 : 2.1}
                     className={active ? 'text-midnight-cherry' : 'text-muted-foreground'}
                   />
                 )}
                 {tab.cart && totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2.5 bg-midnight-cherry text-white text-[10px] font-heading leading-none w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2.5 bg-midnight-cherry text-white text-xs font-heading leading-none w-5 h-5 rounded-full flex items-center justify-center">
                     {totalItems}
                   </span>
                 )}
               </span>
-              <span className={`text-[10px] font-heading uppercase tracking-wide ${active ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
+              <span className={`text-xs font-heading uppercase tracking-wide ${active ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
                 {tab.label}
               </span>
             </span>
