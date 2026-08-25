@@ -12,6 +12,28 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+// Pick the best mockup image (product photo with the design applied) for a
+// variant. Printful's variant `image` field is the mockup; when it's missing
+// we look for a file typed "preview"/"mockup" rather than the bare design
+// ("default" type), which is just the artwork file.
+function pickMockupImage(v: any, productImage?: string): string {
+  if (v.image) return v.image;
+  const files: any[] = v.files || [];
+  const mockup = files.find((f: any) => {
+    const t = (f.type || "").toLowerCase();
+    return t === "preview" || t === "mockup" || t.includes("mockup");
+  });
+  if (mockup) return mockup.preview_url || mockup.thumbnail_url || mockup.image_url || "";
+  // Any non-"default" file (e.g. "back", "embroidery_front") is still a product
+  // photo, preferable to the bare design artwork.
+  const nonDefault = files.find((f: any) => {
+    const t = (f.type || "").toLowerCase();
+    return t && t !== "default";
+  });
+  if (nonDefault) return nonDefault.preview_url || nonDefault.thumbnail_url || nonDefault.image_url || "";
+  return productImage || "";
+}
+
 // Parse a sync_variant into a compact, UI-friendly shape. Apparel variants
 // usually name themselves like "Black / S"; we split that into color + size so
 // the storefront can render pill selectors.
@@ -43,7 +65,7 @@ function parseVariant(v: any, productImage?: string, productName?: string) {
     }
   }
   const price = v.retail_price != null ? Number(v.retail_price) : v.price != null ? Number(v.price) : 0;
-  const image = v.image || v.files?.[0]?.thumbnail_url || v.files?.[0]?.preview_url || productImage || "";
+  const image = pickMockupImage(v, productImage);
   return {
     id: v.id,
     name,
