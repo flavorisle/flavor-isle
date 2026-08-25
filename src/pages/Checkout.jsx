@@ -8,11 +8,10 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
-import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
+import CheckoutRewardsPanel from '@/components/checkout/CheckoutRewardsPanel';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
-import CheckoutRewardSelector from '@/components/checkout/CheckoutRewardSelector';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -484,17 +483,15 @@ export default function Checkout() {
                   <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} />
                 </div>
 
-                {/* Loyalty & Rewards — stars-earned preview for members,
-                    earn-rewards nudge for guests */}
-                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
-                {!(groupMode && payMode === 'separate') && (
-                  <CheckoutRewardSelector
-                    phone={form.phone}
-                    subtotal={subtotal}
-                    appliedReward={appliedReward}
-                    onApply={setAppliedReward}
-                  />
-                )}
+                {/* Star Rewards — balance, tier progress, and redeemable rewards
+                    in one panel (rewards hidden during separate split payments). */}
+                <CheckoutRewardsPanel
+                  subtotal={subtotal}
+                  phone={form.phone}
+                  appliedReward={appliedReward}
+                  onApply={setAppliedReward}
+                  showRewards={!(groupMode && payMode === 'separate')}
+                />
 
                 {/* Contact Info */}
                 <div className="card-diner p-6">
@@ -647,7 +644,7 @@ export default function Checkout() {
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
-                <CheckoutLoyaltyBar subtotal={subtotal} phone={form.phone} />
+                <CheckoutRewardsPanel subtotal={subtotal} phone={form.phone} showRewards={false} />
                 <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm

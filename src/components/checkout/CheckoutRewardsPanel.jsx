@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Gift, Phone, TrendingUp, Award } from 'lucide-react';
+import { Star, Gift, Phone, TrendingUp, Award, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 
@@ -34,10 +34,29 @@ function computeTier(rewardTiers, balance) {
   return { current, next, progress };
 }
 
-// Loyalty strip for checkout. When the customer types a phone number, it
-// automatically looks up their live Star Rewards balance and tier — works for
-// guests and signed-in members alike (rewards are keyed by phone).
-export default function CheckoutLoyaltyBar({ subtotal, phone }) {
+// Compute a dollar discount for a Square reward tier against the order subtotal.
+// Only order-level FIXED_AMOUNT and FIXED_PERCENTAGE (<100%) tiers are redeemable
+// online; item-scoped / free-item / fixed-price tiers are skipped.
+function computeDiscount(tier, subtotal) {
+  if (!tier) return null;
+  if (tier.scope && tier.scope !== 'ORDER') return null;
+  if (tier.discountType === 'FIXED_AMOUNT') {
+    const v = (tier.fixedAmountCents || 0) / 100;
+    return v > 0 ? Math.min(subtotal, +v.toFixed(2)) : null;
+  }
+  if (tier.discountType === 'FIXED_PERCENTAGE') {
+    const pct = tier.percentage || 0;
+    if (pct <= 0 || pct >= 100) return null;
+    return +(subtotal * pct / 100).toFixed(2);
+  }
+  return null;
+}
+
+// Merged Star Rewards panel for checkout. Does a single live Square loyalty
+// lookup by phone (works for guests and signed-in members) and shows the
+// balance, tier progress, stars-earned estimate, and — when showRewards is
+// true — the redeemable rewards the customer can apply to this order.
+export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, onApply, showRewards = true }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(true);
@@ -83,6 +102,17 @@ export default function CheckoutLoyaltyBar({ subtotal, phone }) {
     return () => { cancelled = true; };
   }, [hasPhone, phone]);
 
+  // Keep the applied discount in sync if the subtotal changes.
+  useEffect(() => {
+    if (!appliedReward || !status || !onApply) return;
+    const tier = (status.rewardTiers || []).find(t => t.id === appliedReward.tierId);
+    if (!tier) return;
+    const dv = computeDiscount(tier, subtotal);
+    if (dv != null && dv !== appliedReward.discountValue) {
+      onApply({ tierId: tier.id, discountValue: dv, description: tier.description });
+    }
+  }, [subtotal, status]);
+
   if (loading) {
     return (
       <div className="card-diner p-4 flex items-center gap-3">
@@ -99,41 +129,16 @@ export default function CheckoutLoyaltyBar({ subtotal, phone }) {
   const estStars = estimateStars(s.earnText, subtotal);
   const { current, next, progress } = computeTier(s.rewardTiers, balance);
 
-  // Phone entered + loyalty account found — live balance, tier, and progress.
-  if (hasPhone && s.hasAccount) {
-    return (
-      <div className="card-diner p-4 bg-gradient-to-r from-patina-mint/8 to-midnight-cherry/5 border border-patina-mint/20">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-patina-mint/15 rounded-full flex items-center justify-center flex-shrink-0">
-            <Award size={18} className="text-patina-mint" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-heading text-sm text-obsidian-roast">{balance.toLocaleString()} stars available</p>
-            <p className="text-xs text-muted-foreground leading-snug">
-              {current ? `Tier: ${current.name} — ${current.description}` : 'No reward tier unlocked yet'}
-            </p>
-          </div>
-        </div>
-        {next ? (
-          <div>
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{Math.max(0, next.points - balance)} stars to {next.name}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-patina-mint rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-        ) : current ? (
-          <p className="text-xs text-patina-mint font-heading">Highest tier reached — you're a legend! 🏆</p>
-        ) : null}
-        <p className="text-xs text-midnight-cherry font-heading mt-2">This order earns ~{estStars} stars ⭐</p>
-      </div>
-    );
-  }
+  // Redeemable order-level rewards the customer has unlocked.
+  const rewards = showRewards && s.hasAccount
+    ? (s.rewardTiers || [])
+        .map(t => ({ ...t, discountValue: computeDiscount(t, subtotal) }))
+        .filter(t => t.discountValue != null && t.discountValue > 0 && balance >= t.points)
+    : [];
 
+  // ── Nudge states: no account to show rewards for ──────────────────────
   // Phone entered but no rewards account found for that number.
-  if (hasPhone) {
+  if (hasPhone && !s.hasAccount) {
     return (
       <div className="card-diner p-4 bg-gradient-to-r from-smashie-yellow/10 to-patina-mint/5 border border-smashie-yellow/30">
         <div className="flex items-center gap-3">
@@ -153,7 +158,7 @@ export default function CheckoutLoyaltyBar({ subtotal, phone }) {
   }
 
   // No phone entered — guest nudge.
-  if (isGuest) {
+  if (isGuest && !s.hasAccount) {
     return (
       <div className="card-diner p-4 bg-gradient-to-r from-smashie-yellow/10 to-patina-mint/5 border border-smashie-yellow/30">
         <div className="flex items-center gap-3">
@@ -187,36 +192,91 @@ export default function CheckoutLoyaltyBar({ subtotal, phone }) {
     );
   }
 
-  // Signed in with active loyalty account (no phone typed, using saved profile).
-  if (s.hasAccount) {
+  // Signed in but loyalty not yet active/available.
+  if (!s.hasAccount) {
     return (
-      <div className="card-diner p-4 bg-gradient-to-r from-patina-mint/8 to-midnight-cherry/5 border border-patina-mint/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-patina-mint/15 rounded-full flex items-center justify-center flex-shrink-0">
-            <TrendingUp size={18} className="text-patina-mint" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-heading text-sm text-obsidian-roast">{balance.toLocaleString()} stars · earns ~{estStars} ⭐</p>
-            <p className="text-xs text-muted-foreground leading-snug">
-              {current ? `Tier: ${current.name}` : 'No reward tier unlocked yet'}
-              {s.earnText ? ` · ${s.earnText}` : ''}
-            </p>
-          </div>
+      <div className="card-diner p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-smashie-yellow/15 rounded-full flex items-center justify-center flex-shrink-0">
+          <Gift size={18} className="text-smashie-yellow" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-heading text-sm text-obsidian-roast">Flavor Isle Star Rewards</p>
+          <p className="text-xs text-muted-foreground leading-snug">Earn rewards on every order — in-store and online.</p>
         </div>
       </div>
     );
   }
 
-  // Signed in but loyalty not yet active/available
+  // ── Active account: merged balance + rewards card ──────────────────────
   return (
-    <div className="card-diner p-4 flex items-center gap-3">
-      <div className="w-10 h-10 bg-smashie-yellow/15 rounded-full flex items-center justify-center flex-shrink-0">
-        <Gift size={18} className="text-smashie-yellow" />
+    <div className="card-diner p-6 bg-gradient-to-r from-patina-mint/8 to-midnight-cherry/5 border border-patina-mint/20">
+      {/* Balance + tier + progress header */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 bg-patina-mint/15 rounded-full flex items-center justify-center flex-shrink-0">
+          <Award size={18} className="text-patina-mint" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-heading text-sm text-obsidian-roast">{balance.toLocaleString()} stars available</p>
+          <p className="text-xs text-muted-foreground leading-snug">
+            {current ? `Tier: ${current.name} — ${current.description}` : 'No reward tier unlocked yet'}
+            {s.earnText ? ` · ${s.earnText}` : ''}
+          </p>
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-heading text-sm text-obsidian-roast">Flavor Isle Star Rewards</p>
-        <p className="text-xs text-muted-foreground leading-snug">Earn rewards on every order — in-store and online.</p>
-      </div>
+
+      {next ? (
+        <div className="mb-3">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>{Math.max(0, next.points - balance)} stars to {next.name}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-patina-mint rounded-full transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      ) : current ? (
+        <p className="text-xs text-patina-mint font-heading mb-3">Highest tier reached — you're a legend! 🏆</p>
+      ) : null}
+
+      <p className="text-xs text-midnight-cherry font-heading mb-4">This order earns ~{estStars} stars ⭐</p>
+
+      {/* Redeemable rewards (details step only) */}
+      {showRewards && rewards.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mb-1 pt-3 border-t border-patina-mint/15">
+            <Gift size={16} className="text-patina-mint" />
+            <h2 className="font-heading text-sm text-obsidian-roast">Your Rewards</h2>
+            <span className="ml-auto text-xs text-muted-foreground font-heading">{balance.toLocaleString()} stars</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Apply one reward to this order — points are deducted when you pay.</p>
+          <div className="space-y-2">
+            {rewards.map(r => {
+              const applied = appliedReward?.tierId === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => onApply?.(applied ? null : { tierId: r.id, discountValue: r.discountValue, description: r.description })}
+                  className={`w-full p-3 rounded-2xl border-2 transition-all text-left flex items-center justify-between gap-3 ${
+                    applied
+                      ? 'border-patina-mint bg-patina-mint/10'
+                      : 'border-border hover:border-patina-mint/50 cursor-pointer'
+                  }`}
+                >
+                  <div>
+                    <p className="font-heading text-sm text-obsidian-roast">{r.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{r.points} stars</p>
+                  </div>
+                  <span className={`flex items-center gap-1.5 flex-shrink-0 text-sm font-heading px-3 py-1.5 rounded-lg ${
+                    applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/15 text-patina-mint'
+                  }`}>
+                    {applied ? (<><Check size={14} /> Applied</>) : `−$${r.discountValue.toFixed(2)}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
