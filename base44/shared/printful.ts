@@ -49,7 +49,7 @@ function parseVariant(v: any, productImage?: string, productName?: string) {
     name,
     sku: v.sku || "",
     price,
-    in_stock: v.availability === "active" && !v.is_discontinued,
+    in_stock: (v.availability_status || "active") === "active" && !v.is_discontinued,
     size,
     color,
     image,
