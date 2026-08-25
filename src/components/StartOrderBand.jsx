@@ -23,7 +23,7 @@ export default function StartOrderBand() {
   };
 
   return (
-    <section className="sticky top-[112px] z-30 bg-white/95 backdrop-blur-md border-y border-border shadow-float">
+    <section className="sticky top-[120px] z-30 bg-white/95 backdrop-blur-md border-y border-border shadow-float">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap gap-3 justify-center">
         {OPTIONS.map(({ id, label, time, Icon }) => (
           <button
