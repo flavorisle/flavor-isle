@@ -4,6 +4,7 @@ import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import PopularTimesCard from '@/components/PopularTimesCard';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED' },
@@ -20,6 +21,14 @@ const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
+  const { level } = useLiveStatus();
+
+  // Scale pickup/delivery estimates with the live kitchen load. Pickup tracks
+  // the kitchen wait directly; delivery adds a courier window on top. Dine-in
+  // stays "Seat yourself" since it's a seating note, not a wait.
+  const waitMin = level?.waitMin || 20;
+  const pickupTime = `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`;
+  const deliveryTime = `${waitMin + 15}–${waitMin + 25} min`;
 
   const handleOrder = (type) => {
     base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'hero' } });
@@ -54,8 +63,8 @@ export default function HeroSection() {
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[
-              { type: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
-              { type: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike },
+              { type: 'pickup', label: 'Pickup', time: pickupTime, Icon: ShoppingBag },
+              { type: 'delivery', label: 'Delivery', time: deliveryTime, Icon: Bike },
               { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
             ].map(({ type, label, time, Icon }) => (
               <button
