@@ -7,7 +7,6 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
-import StartOrderBand from '@/components/StartOrderBand';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
@@ -21,6 +20,7 @@ import FaqSection from '@/components/FaqSection';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
+
 
 const SPECIALS_TICKER = [
 "🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
@@ -65,9 +65,6 @@ export default function Home() {
 
       {/* ── PROMO BANNERS ── */}
       <AdBannerStrip placement="home" />
-
-      {/* ── START AN ORDER ── */}
-      <StartOrderBand />
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
