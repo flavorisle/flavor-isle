@@ -129,26 +129,34 @@ Deno.serve(async (req) => {
 
     const smashieSettings = await getSmashieSettings(base44);
 
+    // Fetch recent Order entities ONCE and index by square_order_id, instead
+    // of one filter() call per Square order — the per-order calls were
+    // exhausting the entity API rate limit every 5-minute run.
+    const recentOrders = await base44.asServiceRole.entities.Order.list('-created_date', 1000);
+    const orderBySquareId = new Map();
+    (recentOrders || []).forEach(o => {
+      if (o.square_order_id) orderBySquareId.set(o.square_order_id, o);
+    });
+
     let updated = 0;
     let notified = 0;
+    const pendingUpdates = [];
 
     for (const sqOrder of squareOrders) {
       const newStatus = mapSquareStateToStatus(sqOrder);
       if (!newStatus) continue;
 
-      // Find matching Order entity by square_order_id
-      const matches = await base44.asServiceRole.entities.Order.filter({ square_order_id: sqOrder.id });
-      if (!matches || matches.length === 0) continue;
-
-      const order = matches[0];
+      // Look up the matching Order entity from the in-memory index
+      const order = orderBySquareId.get(sqOrder.id);
+      if (!order) continue;
 
       // Only update if status actually changed
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
 
-      // Update the order status
-      await base44.asServiceRole.entities.Order.update(order.id, { status: newStatus });
+      // Stage the status update; applied in a single bulkUpdate after the loop
+      pendingUpdates.push({ id: order.id, status: newStatus });
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
@@ -208,6 +216,10 @@ Deno.serve(async (req) => {
           });
         }
       }
+    }
+
+    if (pendingUpdates.length > 0) {
+      await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
     }
 
     return Response.json({ checked: squareOrders.length, updated, notified });
