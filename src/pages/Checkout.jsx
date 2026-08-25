@@ -11,6 +11,7 @@ import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
+import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import CheckoutRewardSelector from '@/components/checkout/CheckoutRewardSelector';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
@@ -132,6 +133,7 @@ export default function Checkout() {
   // Payment step state
   const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
   const [stripePromise, setStripePromise] = useState(null);
+  const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
@@ -299,6 +301,61 @@ export default function Checkout() {
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
 
+  // Load the Stripe publishable key once so Apple Pay / Google Pay can render
+  // on the first step (before a payment intent exists).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke('getStripePublishableKey', {});
+        if (!cancelled && res?.data?.publishableKey) {
+          setExpressStripePromise(loadStripe(res.data.publishableKey));
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Build a single-pay intent from the current cart + wallet-provided contact
+  // details. Used by the express Apple Pay / Google Pay button.
+  const createIntent = async (walletCustomer) => {
+    const scheduledFor = schedule.mode === 'asap'
+      ? new Date(Date.now() + 20 * 60000).toISOString()
+      : schedule.scheduledFor;
+    const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
+    const mappedItems = cartItems.map(i => ({
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      image_url: i.image_url,
+      selectedModifiers: i.selectedModifiers || [],
+      person_name: i.person_name || '',
+      catalog_object_id: i.catalog_object_id || '',
+      isBuildShake: !!i.isBuildShake,
+    }));
+    const customer = {
+      name: walletCustomer.name || form.name,
+      email: walletCustomer.email || form.email,
+      phone: walletCustomer.phone || form.phone,
+      address: orderType === 'delivery' ? form.address : '',
+      table: form.table || '',
+    };
+    const res = await base44.functions.invoke('createPaymentIntent', {
+      items: mappedItems,
+      orderType,
+      customer,
+      instructions: form.instructions,
+      subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+      scheduledFor, estimatedTime,
+    });
+    return res.data;
+  };
+
+  const expressAvailable = !cutoffStatus[orderType]
+    && !(groupMode && payMode === 'separate')
+    && (orderType !== 'delivery' || form.address.trim() !== '');
+
   if (!orderingEnabled || storeClosed) {
     return (
       <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -357,6 +414,28 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
+                {/* Express checkout — Apple Pay / Google Pay */}
+                {expressStripePromise && expressAvailable && (
+                  <div className="card-diner p-6">
+                    <h2 className="font-heading text-lg text-obsidian-roast mb-1">Express Checkout</h2>
+                    <p className="text-sm text-muted-foreground mb-4">Skip the form — pay instantly with Apple Pay or Google Pay.</p>
+                    <Elements stripe={expressStripePromise}>
+                      <ExpressCheckout
+                        total={totalWithTip}
+                        label="Flavor Isle"
+                        createIntent={createIntent}
+                        onSuccess={handleSuccess}
+                        onError={setError}
+                      />
+                    </Elements>
+                    <div className="flex items-center gap-3 mt-5">
+                      <div className="h-px bg-border flex-1" />
+                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">Or fill in details</span>
+                      <div className="h-px bg-border flex-1" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Order Type */}
                 <div className="card-diner p-6">
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
