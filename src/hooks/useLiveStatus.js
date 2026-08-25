@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import useStoreClosure from '@/hooks/useStoreClosure';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { fetchBusyness } from '@/lib/busynessCache';
 import { getBusynessStage } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
@@ -27,8 +28,8 @@ export default function useLiveStatus() {
     let active = true;
     const load = async () => {
       try {
-        const res = await base44.functions.invoke('getBusyness', {});
-        if (active) setData(res?.data || res);
+        const data = await fetchBusyness();
+        if (active) setData(data);
       } catch {
         /* keep last known state */
       }

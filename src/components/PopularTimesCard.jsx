@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { fetchBusyness } from '@/lib/busynessCache';
 import { Activity, Clock } from 'lucide-react';
 
 const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -24,8 +24,8 @@ export default function PopularTimesCard({ embedded = false }) {
 
   const load = async () => {
     try {
-      const res = await base44.functions.invoke('getBusyness', {});
-      setData(res.data || null);
+      const data = await fetchBusyness();
+      setData(data || null);
     } catch {
       setData(null);
     } finally {

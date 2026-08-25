@@ -13,13 +13,35 @@ export default function AdminMerchCategories() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const [superName, setSuperName] = useState('');
   const [catName, setCatName] = useState('');
   const [catParent, setCatParent] = useState('');
 
-  const load = async () => {
+  // Full initial load — products, categories, and assignments in one batch.
+  const loadAll = async () => {
     setLoading(true);
+    setError('');
+    try {
+      const [cats, assigns, prodRes] = await Promise.all([
+        base44.entities.MerchCategory.list('-sort_order', 200),
+        base44.entities.MerchProductAssignment.list('-sort_order', 500),
+        base44.functions.invoke('getPrintfulProducts', {}).catch(() => ({ data: { products: [] } })),
+      ]);
+      setCategories(cats || []);
+      setAssignments(assigns || []);
+      setProducts(prodRes.data?.products || []);
+    } catch (e) {
+      setError(e?.message || 'Could not load categories.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh only categories + assignments (after category changes). Skips the
+  // expensive Printful catalog fetch since products don't change here.
+  const refreshMeta = async () => {
     try {
       const [cats, assigns] = await Promise.all([
         base44.entities.MerchCategory.list('-sort_order', 200),
@@ -27,18 +49,22 @@ export default function AdminMerchCategories() {
       ]);
       setCategories(cats || []);
       setAssignments(assigns || []);
-      try {
-        const res = await base44.functions.invoke('getPrintfulProducts', {});
-        setProducts(res.data?.products || []);
-      } catch (e) {
-        /* products optional */
-      }
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      /* keep last known state */
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Refresh only assignments (after a single product assignment). One call.
+  const refreshAssignments = async () => {
+    try {
+      const assigns = await base44.entities.MerchProductAssignment.list('-sort_order', 500);
+      setAssignments(assigns || []);
+    } catch (e) {
+      /* keep last known state */
+    }
+  };
+
+  useEffect(() => { loadAll(); }, []);
 
   const supers = categories
     .filter((c) => !c.super_category)
@@ -60,7 +86,7 @@ export default function AdminMerchCategories() {
         sort_order: supers.length,
       });
       setSuperName('');
-      await load();
+      await refreshMeta();
       toast({ title: 'Super category created' });
     } catch (e) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -80,7 +106,7 @@ export default function AdminMerchCategories() {
         sort_order: count,
       });
       setCatName('');
-      await load();
+      await refreshMeta();
       toast({ title: 'Category created' });
     } catch (e) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -94,7 +120,7 @@ export default function AdminMerchCategories() {
     setBusy(true);
     try {
       await base44.entities.MerchCategory.delete(cat.id);
-      await load();
+      await refreshMeta();
     } catch (e) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
@@ -120,7 +146,7 @@ export default function AdminMerchCategories() {
           category: categoryName,
         });
       }
-      await load();
+      await refreshAssignments();
     } catch (e) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
@@ -152,6 +178,11 @@ export default function AdminMerchCategories() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+        {error && (
+          <div className="card-diner p-4 bg-red-50 border border-red-200 text-sm text-red-700">
+            {error}
+          </div>
+        )}
         {/* Super categories */}
         <section className="card-diner p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -253,7 +284,7 @@ export default function AdminMerchCategories() {
               <Shirt size={18} className="text-obsidian-roast" />
               <h2 className="font-heading text-lg text-obsidian-roast">Product Assignments</h2>
             </div>
-            <button onClick={load} className="text-sm text-patina-mint hover:text-midnight-cherry inline-flex items-center gap-1">
+            <button onClick={loadAll} className="text-sm text-patina-mint hover:text-midnight-cherry inline-flex items-center gap-1">
               <RefreshCw size={14} /> Refresh
             </button>
           </div>
