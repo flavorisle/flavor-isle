@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Lock, Clock, ArrowRight } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Lock, Clock, ArrowRight, ShoppingBag } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
 
 // Colored status dot per live busyness level.
@@ -36,6 +36,31 @@ export default function LiveStatusBar() {
     closeTime,
     closureMessage,
   } = useLiveStatus();
+  const location = useLocation();
+
+  // Tasty Threads (Printful) ships on demand 24/7 — the kitchen hours/closure
+  // status doesn't apply to merch, so merch routes get their own always-open
+  // bar instead of the "Closed" / busyness messaging.
+  if (location.pathname.startsWith('/merch')) {
+    return (
+      <div className="w-full bg-patina-mint text-white border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <ShoppingBag size={16} className="flex-shrink-0" />
+            <p className="text-sm font-heading uppercase tracking-wide truncate">
+              Tasty Threads · Ships on demand 24/7
+            </p>
+          </div>
+          <Link
+            to="/merch"
+            className="tap-44 inline-flex items-center gap-1.5 bg-smashie-yellow text-obsidian-roast px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+          >
+            Shop Now <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // ── Closed (after hours or admin closure) ──
   if (isClosed) {
