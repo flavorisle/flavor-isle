@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown';
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 
+const SMASHIE_HEAD = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png';
+
 export default function SmashieChat() {
   const [open, setOpen] = useState(false);
   const [conversation, setConversation] = useState(null);
@@ -63,8 +65,8 @@ export default function SmashieChat() {
         onClick={openChat}
         className="hidden md:flex fixed right-6 bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center chrome-hover"
         aria-label="Chat with Smashie">
-        
-          <span className="text-2xl">🤖</span>
+
+          <img src={SMASHIE_HEAD} alt="Smashie" className="w-full h-full object-cover rounded-full" />
         </button>
       }
 
@@ -73,7 +75,7 @@ export default function SmashieChat() {
       <div className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up">
           {/* Header */}
           <div className="bg-midnight-cherry px-5 py-4 flex items-center gap-3 flex-shrink-0">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
+            <img src={SMASHIE_HEAD} alt="Smashie" className="w-10 h-10 object-cover rounded-full flex-shrink-0" />
             <div className="flex-1">
               <p className="font-heading text-white text-base leading-none">Smashie AI</p>
               <p className="text-red-200 text-xs mt-0.5">Flavor Isle's Diner Assistant</p>
@@ -87,7 +89,7 @@ export default function SmashieChat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && !sending &&
           <div className="text-center py-8">
-                <div className="text-4xl mb-3">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-16 h-16 object-cover rounded-full mx-auto mb-3" />
                 <p className="font-heading text-obsidian-roast mb-1">Hey there, I'm Smashie!</p>
                 <p className="text-sm text-muted-foreground">Ask me about the menu, place a phone order, or just say hi!</p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center text-[hsl(var(--primary))]">
@@ -110,7 +112,7 @@ export default function SmashieChat() {
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser &&
-                <div className="w-7 h-7 bg-midnight-cherry rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-1 text-sm">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-7 h-7 object-cover rounded-full mr-2 flex-shrink-0 mt-1" />
                 }
                   <div className="flex flex-col gap-2 max-w-[80%]">
                     <div className={`px-4 py-2.5 rounded-2xl text-sm ${
@@ -140,7 +142,7 @@ export default function SmashieChat() {
 
             {isThinking && messages[messages.length - 1]?.role === 'user' &&
           <div className="flex justify-start">
-                <div className="w-7 h-7 bg-midnight-cherry rounded-full flex items-center justify-center mr-2 flex-shrink-0 text-sm">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-7 h-7 object-cover rounded-full mr-2 flex-shrink-0" />
                 <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
                   <Loader2 size={14} className="animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Smashie is thinking…</span>

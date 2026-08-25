@@ -60,6 +60,12 @@ export default function BottomTabBar() {
                     alt="Cart"
                     className="w-8 h-8 object-contain"
                   />
+                ) : tab.smashie ? (
+                  <img
+                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png"
+                    alt="Smashie"
+                    className={`w-8 h-8 object-cover rounded-full ${active ? 'ring-2 ring-midnight-cherry' : ''}`}
+                  />
                 ) : (
                   <Icon
                     size={26}
