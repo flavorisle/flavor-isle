@@ -135,6 +135,34 @@ export async function accumulateLoyaltyPoints({
   return data?.loyalty_account || null;
 }
 
+// Flat star grant/ deduction outside the spend-based accrual rules. Used to
+// award the new-member welcome bonus to first-time enrollees.
+export async function adjustLoyaltyPoints({
+  accountId,
+  points,
+  reason,
+}: {
+  accountId: string;
+  points: number;
+  reason: string;
+}): Promise<any | null> {
+  const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/adjust`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      adjust_points: { points, reason },
+      idempotency_key: crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`AdjustLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
+  return data?.loyalty_account || null;
+}
+
+// Welcome bonus granted once to every customer the first time they're enrolled
+// in Star Rewards from an online order.
+export const WELCOME_BONUS_STARS = 40;
+
 export function describeRewardTier(tier: any): string {
   const def = tier?.definition || {};
   if (def.discount_type === 'FIXED_AMOUNT') {
@@ -188,6 +216,7 @@ export async function accrueForOrder({
   // Phone is the primary identifier for Square loyalty — look up the account
   // by phone mapping first, then fall back to email-based customer lookup.
   let account: any | null = null;
+  let newlyEnrolled = false;
   if (phone) account = await searchLoyaltyAccountByPhone(phone);
 
   if (!account) {
@@ -197,8 +226,25 @@ export async function accrueForOrder({
     account = await findLoyaltyAccountByCustomer(customerId);
     if (!account) {
       account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
+      newlyEnrolled = true;
     }
   }
+
+  // Welcome bonus: grant 40 stars to first-time enrollees before the spend-based
+  // accrual so a new member always starts with a head start on their first reward.
+  if (newlyEnrolled) {
+    try {
+      await adjustLoyaltyPoints({
+        accountId: account.id,
+        points: WELCOME_BONUS_STARS,
+        reason: 'Welcome bonus for joining Star Rewards',
+      });
+      console.log(`Welcome bonus of ${WELCOME_BONUS_STARS} stars granted to new loyalty account ${account.id}`);
+    } catch (err) {
+      console.error('Welcome bonus adjust failed:', (err as Error).message);
+    }
+  }
+
   await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId });
 }
 
