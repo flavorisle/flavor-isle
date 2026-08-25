@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, Check, Sparkles } from 'lucide-react';
-import { buildDeluxeLabel } from '@/lib/deluxeLabel';
+import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
@@ -61,8 +61,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   const labelPresets = deluxePresets.map((p) => ({
     name: p.name,
     trackedToppings: presetTrackedToppings(p, p.modifiers.map((m) => m.name)),
+    allToppings: p.toppings,
   }));
-  const deluxeLabel = DELUXE_ENABLED ? buildDeluxeLabel(liveModifiers, labelPresets) : null;
+  const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
+    ? buildDeluxeLabelFull(liveModifiers, labelPresets)
+    : { label: null, allToppings: [] };
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
@@ -80,7 +83,10 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
         selectedMods.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
       }
     }
-    onConfirm(selectedMods, extraCost);
+    const { label, allToppings } = DELUXE_ENABLED
+      ? buildDeluxeLabelFull(selectedMods, labelPresets)
+      : { label: null, allToppings: [] };
+    onConfirm(selectedMods, extraCost, label, allToppings);
   };
 
   return createPortal(
