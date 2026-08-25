@@ -21,6 +21,7 @@ import SignUpNudge from '@/components/SignUpNudge';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
+import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -99,6 +100,10 @@ export default function Checkout() {
   const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
+  const { level } = useLiveStatus();
+  // Kitchen prep estimate scales with the live busyness level so checkout
+  // ready times match what the hero/status bar advertise.
+  const prepMinutes = level?.waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
@@ -185,8 +190,8 @@ export default function Checkout() {
 
   const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
   const readyLabel = readyAt
-    ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ' (≈ 20 min)' : ''}`
-    : 'ASAP (≈ 20 min)';
+    ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
+    : `ASAP (≈ ${prepMinutes} min)`;
 
   const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
@@ -217,11 +222,11 @@ export default function Checkout() {
       return;
     }
 
-    // Fresh ready time at submit — ASAP = now + 20 min; scheduled = chosen slot
+    // Fresh ready time at submit — ASAP = now + prepMinutes; scheduled = chosen slot
     const scheduledFor = schedule.mode === 'asap'
-      ? new Date(Date.now() + 20 * 60000).toISOString()
+      ? new Date(Date.now() + prepMinutes * 60000).toISOString()
       : schedule.scheduledFor;
-    const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
+    const estimatedTime = schedule.mode === 'asap' ? prepMinutes : schedule.estimatedTime;
 
     const mappedItems = cartItems.map(i => ({
       name: i.name,
@@ -320,9 +325,9 @@ export default function Checkout() {
   // details. Used by the express Apple Pay / Google Pay button.
   const createIntent = async (walletCustomer) => {
     const scheduledFor = schedule.mode === 'asap'
-      ? new Date(Date.now() + 20 * 60000).toISOString()
+      ? new Date(Date.now() + prepMinutes * 60000).toISOString()
       : schedule.scheduledFor;
-    const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
+    const estimatedTime = schedule.mode === 'asap' ? prepMinutes : schedule.estimatedTime;
     const mappedItems = cartItems.map(i => ({
       name: i.name,
       price: i.price,
@@ -441,8 +446,8 @@ export default function Checkout() {
                   <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { type: 'pickup', label: 'Pickup', sub: '15–25 min' },
-                      { type: 'delivery', label: 'Delivery', sub: '35–50 min' },
+                      { type: 'pickup', label: 'Pickup', sub: `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
+                      { type: 'delivery', label: 'Delivery', sub: `${prepMinutes + 15}–${prepMinutes + 25} min` },
                       { type: 'dine_in', label: 'Dine-In', sub: 'Seat yourself' },
                     ].map(({ type, label, sub }) => (
                       <button
@@ -476,7 +481,7 @@ export default function Checkout() {
 
                 {/* Pickup Time */}
                 <div className="card-diner p-6">
-                  <SchedulePicker onChange={setSchedule} />
+                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} />
                 </div>
 
                 {/* Loyalty & Rewards — stars-earned preview for members,
