@@ -3,18 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Utensils, Bike } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 // Sticky order-type buttons that follow the user down the page, right under
 // the navbar. No heading — just the pickup / dine-in / delivery shortcuts.
-const OPTIONS = [
-  { id: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
-  { id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
-  { id: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike },
-];
-
+// Pickup/delivery times scale with the live kitchen load.
 export default function StartOrderBand() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
+  const { level } = useLiveStatus();
+
+  const waitMin = level?.waitMin || 20;
+  const OPTIONS = [
+    { id: 'pickup', label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag },
+    { id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
+    { id: 'delivery', label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min`, Icon: Bike },
+  ];
 
   const start = (type) => {
     base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'start_order_band' } });
