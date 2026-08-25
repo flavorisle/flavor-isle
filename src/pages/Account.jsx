@@ -43,11 +43,12 @@ function OrderCard({ order, onReorder }) {
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
               </span>
+              {order.order_source === 'in_store' && <span className="text-xs px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
               {isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
             </div>
             <p className="text-xs text-muted-foreground">
               {new Date(order.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {' · '}{order.order_type?.replace('_', ' ')}
+              {' · '}{order.order_source === 'in_store' ? 'In-Store' : order.order_type?.replace('_', ' ')}
               {' · '}{(order.items || []).length} item{order.items?.length !== 1 ? 's' : ''}
             </p>
           </div>

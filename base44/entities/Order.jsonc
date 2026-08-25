@@ -17,6 +17,15 @@
         "dine_in"
       ]
     },
+    "order_source": {
+      "type": "string",
+      "enum": [
+        "online",
+        "in_store"
+      ],
+      "default": "online",
+      "description": "Where the order originated. 'online' for web/app orders placed through the site; 'in_store' for Square POS orders synced from the register."
+    },
     "status": {
       "type": "string",
       "enum": [
