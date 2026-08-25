@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 
@@ -38,6 +39,63 @@ export function CartProvider({ children }) {
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, groupMode, people, activePersonId }));
     } catch { /* storage unavailable */ }
+  }, [cartItems, orderType, groupMode, people, activePersonId]);
+
+  // Cross-device cart sync for signed-in customers. On mount we load the cart
+  // saved to their CustomerProfile; on every change we debounce-save it back so
+  // the same cart follows them across phones, tablets, and desktops. Guests
+  // keep the sessionStorage behavior above.
+  const profileRef = useRef(null); // { email, id } once the profile is loaded
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const authed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!authed || cancelled) return;
+      const me = await base44.auth.me().catch(() => null);
+      if (!me || cancelled) return;
+      try {
+        const profiles = await base44.entities.CustomerProfile.filter({ email: me.email });
+        if (cancelled) return;
+        const p = profiles?.[0];
+        profileRef.current = { email: me.email, id: p?.id || null };
+        const saved = p?.cart;
+        // Only hydrate from the server when this browser doesn't already have a
+        // cart in progress, so we never clobber an order the user is actively building.
+        const localHasItems = (readSession('cartItems', []) || []).length > 0;
+        if (saved && Array.isArray(saved.cartItems) && saved.cartItems.length > 0 && !localHasItems) {
+          setCartItems(saved.cartItems);
+          setOrderType(saved.orderType || 'pickup');
+          setGroupMode(!!saved.groupMode);
+          setPeople(saved.people || []);
+          setActivePersonId(saved.activePersonId || null);
+        }
+      } catch { /* profile not available yet */ }
+      finally {
+        if (!cancelled) hydratedRef.current = true;
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Debounced save back to the profile so other devices pick up the latest cart.
+  useEffect(() => {
+    if (!hydratedRef.current || !profileRef.current) return;
+    const timer = setTimeout(async () => {
+      try {
+        const payload = { cartItems, orderType, groupMode, people, activePersonId, savedAt: Date.now() };
+        const { email, id } = profileRef.current;
+        if (id) {
+          await base44.entities.CustomerProfile.update(id, { cart: payload });
+        } else {
+          const me = await base44.auth.me().catch(() => null);
+          const created = await base44.entities.CustomerProfile.create({ email, name: me?.full_name || email, cart: payload });
+          if (created?.id) profileRef.current.id = created.id;
+        }
+      } catch { /* offline or quota — sessionStorage still has it */ }
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [cartItems, orderType, groupMode, people, activePersonId]);
 
   useEffect(() => {
