@@ -10,7 +10,6 @@ import HeroSection from '@/components/HeroSection';
 import StartOrderBand from '@/components/StartOrderBand';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
-import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -73,11 +72,8 @@ export default function Home() {
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
 
-      {/* ── WHY ORDER DIRECT ── */}
+      {/* ── WHY ORDER DIRECT (incl. Star Rewards) ── */}
       <WhyOrderDirect />
-
-      {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
-      <LoyaltyFirstOrderBanner />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">
