@@ -174,7 +174,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             <p className="text-xs text-muted-foreground mb-3">{item.calories} cal</p>
           )}
 
-          <ItemRatings itemName={item.name} />
+          <ItemRatings item={item} />
 
           {hasModifiers && (
             <p className="text-xs text-muted-foreground mb-2 mt-3">

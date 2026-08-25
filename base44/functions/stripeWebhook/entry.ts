@@ -2,7 +2,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, merchPromoHtml } from '../../shared/sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 
@@ -58,6 +58,7 @@ async function sendOrderConfirmationEmail(order) {
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+        ${merchPromoHtml()}
   `);
 
   const { error } = await resend.emails.send({

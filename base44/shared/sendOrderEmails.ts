@@ -2,6 +2,30 @@ import { Resend } from 'npm:resend@3.2.0';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
+// Public app URL used for in-email call-to-action links (reviews, merch).
+const APP_URL = 'https://taste-isle-express.base44.app';
+
+// Tasty Threads merch promo block — appended to order emails to drive merch sales.
+export function merchPromoHtml() {
+  return `
+  <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
+    <a href="${APP_URL}/merch" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
+  </div>`;
+}
+
+// Review CTA block — appended to the thank-you email to collect ratings.
+export function reviewCtaHtml(orderId?: string) {
+  const url = orderId ? `${APP_URL}/feedback?order=${orderId}` : `${APP_URL}/feedback`;
+  return `
+  <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#1A3A5C;color:#fff;">
+    <p style="font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ HOW'D WE DO?</p>
+    <p style="margin:0 0 14px;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;">Loved your order? Drop a quick review and help your neighbors find their next favorite meal.</p>
+    <a href="${url}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">LEAVE A REVIEW →</a>
+  </div>`;
+}
+
 // Branded email shell matching the website: centered logo, cherry header,
 // cream body, navy footer, Oswald headings / Open Sans body.
 export function brandedEmailHtml(bodyHtml) {
@@ -85,7 +109,8 @@ export async function sendOrderReadyEmail(order) {
     <p style="color:#141414;font-size:15px;margin:0 0 4px;"><strong>Total:</strong> ${totalStr}</p>
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
-    <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>`;
+    <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${merchPromoHtml()}`;
 
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -105,4 +130,60 @@ export async function sendOrderReadyEmail(order) {
     console.error('sendOrderReadyEmail exception:', err.message);
     return false;
   }
+}
+
+// Low-level branded sender shared by the preparing + completed emails.
+async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fromName = 'Flavor Isle') {
+  if (!to) return false;
+  const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+  try {
+    const { error } = await resend.emails.send({
+      from: `${fromName} <smashie@order.flavor-isle.com>`,
+      to,
+      subject,
+      html: brandedEmailHtml(bodyHtml),
+    });
+    if (error) {
+      console.error(`sendBrandedHtml error:`, error);
+      return false;
+    }
+    console.log(`Branded email sent to ${to}: ${subject}`);
+    return true;
+  } catch (err) {
+    console.error('sendBrandedHtml exception:', err.message);
+    return false;
+  }
+}
+
+// "On the grill" email — sent when the order hits the kitchen. Includes a
+// Tasty Threads merch promo to cross-sell while the customer waits.
+export async function sendOrderPreparingEmail(order: any) {
+  if (!order.customer_email) return false;
+  const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
+  const customerName = order.customer_name || 'friend';
+  const body = `
+    <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
+    <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">🍔 Order #${orderNum} is on the grill</h2>
+    <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
+    <p style="color:#666;margin:0 0 4px;font-size:14px;">We'll hit you up the second it's ready.</p>
+    <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${merchPromoHtml()}`;
+  return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
+}
+
+// Thank-you email — sent when the order is completed. Asks for a review and
+// promotes the merch line.
+export async function sendOrderCompletedEmail(order: any) {
+  if (!order.customer_email) return false;
+  const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
+  const customerName = order.customer_name || 'friend';
+  const body = `
+    <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
+    <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">Thanks for rolling with us! 🙌</h2>
+    <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔</p>
+    <p style="color:#666;margin:0 0 4px;font-size:14px;">We'd love to see you back soon, fam.</p>
+    <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team</p>
+    ${reviewCtaHtml(order.id)}
+    ${merchPromoHtml()}`;
+  return sendBrandedHtml(order.customer_email, `Thanks for rolling with us! 🙌`, body);
 }

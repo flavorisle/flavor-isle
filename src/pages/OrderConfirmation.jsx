@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignUpNudge from '@/components/SignUpNudge';
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
+import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -72,6 +73,9 @@ export default function OrderConfirmation() {
               </div>
             ))}
           </div>
+
+          {/* App dropping soon — shown while the crew prepares the order */}
+          <AppDroppingSoonBanner />
 
           {/* Location reminder */}
           <div className="border border-border rounded-2xl p-4 mb-8 flex items-center gap-3 text-left">

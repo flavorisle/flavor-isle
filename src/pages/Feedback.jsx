@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -6,6 +7,8 @@ import CartDrawer from '@/components/CartDrawer';
 import ReviewForm from '@/components/ReviewForm';
 
 export default function Feedback() {
+  const location = useLocation();
+  const orderId = new URLSearchParams(location.search).get('order');
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -31,7 +34,7 @@ export default function Feedback() {
       <section className="px-4 sm:px-6 py-12">
         <div className="max-w-2xl mx-auto">
           <div className="card-diner p-6 sm:p-8">
-            <ReviewForm submitLabel="Submit Feedback" />
+            <ReviewForm submitLabel="Submit Feedback" orderId={orderId} />
           </div>
           <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-6 text-center">
             <ShieldCheck size={14} className="text-patina-mint" />

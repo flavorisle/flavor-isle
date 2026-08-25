@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { sendOrderStatusEmail, sendOrderReadyEmail } from '../../shared/sendOrderEmails.ts';
+import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 
@@ -165,11 +165,7 @@ Deno.serve(async (req) => {
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `🍔 Order #${orderNum} is on the grill`,
-            `Hey ${customerName},\n\nOrder #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥\n\nWe'll hit you up the second it's ready.\n\n— Smashie & The Flavor Isle Team 🍔`
-          );
+          await sendOrderPreparingEmail(order);
           notified++;
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
@@ -199,11 +195,7 @@ Deno.serve(async (req) => {
         }
 
         if (milestone === 'completed') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `Thanks for rolling with us! 🙌`,
-            `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team`
-          );
+          await sendOrderCompletedEmail(order);
           notified++;
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
