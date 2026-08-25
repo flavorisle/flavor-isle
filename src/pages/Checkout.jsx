@@ -15,8 +15,6 @@ import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
-import DownloadAppBanner from '@/components/DownloadAppBanner';
-import SignUpNudge from '@/components/SignUpNudge';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -410,19 +408,17 @@ export default function Checkout() {
           )}
         </div>
 
-        <h1 className="font-heading text-4xl text-obsidian-roast mb-10">Checkout</h1>
+        <h1 className="font-heading text-3xl text-obsidian-roast mb-6">Checkout</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left – Form */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4">
 
             {step === 'details' && (
               <>
                 {/* Express checkout — Apple Pay / Google Pay */}
                 {expressStripePromise && expressAvailable && (
-                  <div className="card-diner p-6">
-                    <h2 className="font-heading text-lg text-obsidian-roast mb-1">Express Checkout</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Skip the form — pay instantly with Apple Pay or Google Pay.</p>
+                  <div className="card-diner p-4">
                     <Elements stripe={expressStripePromise}>
                       <ExpressCheckout
                         total={totalWithTip}
@@ -432,18 +428,18 @@ export default function Checkout() {
                         onError={setError}
                       />
                     </Elements>
-                    <div className="flex items-center gap-3 mt-5">
+                    <div className="flex items-center gap-3 mt-4">
                       <div className="h-px bg-border flex-1" />
-                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">Or fill in details</span>
+                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
                       <div className="h-px bg-border flex-1" />
                     </div>
                   </div>
                 )}
 
-                {/* Order Type */}
-                <div className="card-diner p-6">
-                  <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
-                  <div className="grid grid-cols-3 gap-3">
+                {/* Order details — type + time in one compact card */}
+                <div className="card-diner p-4">
+                  <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details</h2>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
                       { type: 'pickup', label: 'Pickup', sub: `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
                       { type: 'delivery', label: 'Delivery', sub: `${prepMinutes + 15}–${prepMinutes + 25} min` },
@@ -458,7 +454,7 @@ export default function Checkout() {
                           setOrderType(type);
                         }}
                         disabled={cutoffStatus[type]}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all font-heading text-sm ${
+                        className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all font-heading text-sm ${
                           cutoffStatus[type]
                             ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                             : orderType === type
@@ -469,18 +465,14 @@ export default function Checkout() {
                         <img
                           src={ORDER_TYPE_IMAGES[type]}
                           alt={label}
-                          className={`w-16 h-16 object-contain rounded-lg ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
+                          className={`w-10 h-10 object-contain ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
                         />
                         {label}
-                        <span className="text-xs font-body opacity-60">{cutoffStatus[type] ? 'Closed for tonight' : sub}</span>
+                        <span className="text-[11px] font-body opacity-60 leading-tight">{cutoffStatus[type] ? 'Closed' : sub}</span>
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Pickup Time */}
-                <div className="card-diner p-6">
-                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} />
+                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
                 </div>
 
                 {/* Star Rewards — balance, tier progress, and redeemable rewards
@@ -494,29 +486,29 @@ export default function Checkout() {
                 />
 
                 {/* Contact Info */}
-                <div className="card-diner p-6">
-                  <h2 className="font-heading text-lg text-obsidian-roast mb-4">Your Info</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="card-diner p-4">
+                  <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="sm:col-span-2">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
                       <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
                       <input type="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
                       <input type="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     {orderType === 'dine_in' && (
                       <div>
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Table Number</label>
                         <input type="text" value={form.table} onChange={e => updateForm('table', e.target.value)} placeholder="e.g. 7"
-                          className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                          className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       </div>
                     )}
                   </div>
@@ -548,23 +540,23 @@ export default function Checkout() {
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Special Instructions</label>
                     <textarea value={form.instructions} onChange={e => updateForm('instructions', e.target.value)}
                       placeholder="Allergies, extra sauce, no pickles…" rows={3}
-                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
+                      className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
                 </div>
 
                 {/* Add a Tip */}
-                <div className="card-diner p-6">
+                <div className="card-diner p-4">
                   <div className="flex items-center justify-between mb-1">
-                    <h2 className="font-heading text-lg text-obsidian-roast">Add a Tip</h2>
-                    <span className="text-midnight-cherry font-heading text-lg">${tipAmount.toFixed(2)}</span>
+                    <h2 className="font-heading text-base text-obsidian-roast">Add a Tip</h2>
+                    <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">100% goes to the kitchen crew.</p>
+                  <p className="text-xs text-muted-foreground mb-3">100% goes to the kitchen crew.</p>
                   <div className="grid grid-cols-4 gap-2">
                     {tipPresets.map(preset => (
                       <button
                         key={preset.key}
                         onClick={() => setTipPreset(preset.key)}
-                        className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+                        className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
                           tipPreset === preset.key
                             ? 'border-midnight-cherry bg-midnight-cherry text-white'
                             : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
@@ -575,7 +567,7 @@ export default function Checkout() {
                     ))}
                     <button
                       onClick={() => setTipPreset('custom')}
-                      className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+                      className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
                         tipPreset === 'custom'
                           ? 'border-midnight-cherry bg-midnight-cherry text-white'
                           : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
@@ -594,7 +586,7 @@ export default function Checkout() {
                         value={customTip}
                         onChange={e => setCustomTip(e.target.value)}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                        className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
                       />
                     </div>
                   )}
@@ -609,9 +601,9 @@ export default function Checkout() {
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
                 {groupMode && (
-                  <div className="card-diner p-6">
-                    <h2 className="font-heading text-lg text-obsidian-roast mb-1">Group Payment</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Split into per-person card charges, or pay the full total at once. The delivery fee is charged once either way.</p>
+                  <div className="card-diner p-4">
+                    <h2 className="font-heading text-base text-obsidian-roast mb-1">Group Payment</h2>
+                    <p className="text-xs text-muted-foreground mb-3">Split into per-person charges, or pay the full total. Delivery fee is charged once.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => setPayMode('together')}
                         className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'together' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
@@ -641,9 +633,9 @@ export default function Checkout() {
             )}
 
             {step === 'payment' && stripePromise && clientSecret && (
-              <div className="card-diner p-6">
-                <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
-                <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
+              <div className="card-diner p-4">
+                <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
+                <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
                 <CheckoutRewardsPanel subtotal={subtotal} phone={form.phone} showRewards={false} />
                 <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
@@ -664,15 +656,15 @@ export default function Checkout() {
 
           {/* Right – Order Summary */}
           <div className="lg:col-span-2">
-            <div className="card-diner p-6 sticky top-32">
-              <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Summary</h2>
+            <div className="card-diner p-5 sticky top-32">
+              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Summary</h2>
 
-              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 mb-5 text-sm font-heading">
+              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-xl px-4 py-2.5 mb-4 text-sm font-heading">
                 <Clock size={16} />
                 <span>Ready by {readyLabel}</span>
               </div>
 
-              <div className="space-y-3 mb-5">
+              <div className="space-y-2 mb-4">
                 {groupMode ? (
                   personSubtotals.filter(p => p.itemCount > 0).map(p => (
                     <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
@@ -712,7 +704,7 @@ export default function Checkout() {
                 )}
               </div>
 
-              <div className="border-t border-border pt-4 space-y-2 text-sm mb-5">
+              <div className="border-t border-border pt-3 space-y-2 text-sm mb-4">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
                 </div>
@@ -765,11 +757,6 @@ export default function Checkout() {
                 </div>
               )}
 
-              <DownloadAppBanner variant="compact" />
-
-              <div className="mt-4">
-                <SignUpNudge variant="compact" />
-              </div>
             </div>
           </div>
         </div>

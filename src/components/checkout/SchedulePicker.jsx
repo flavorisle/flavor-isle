@@ -10,7 +10,7 @@ const dateKeyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.ge
 const timeStr = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dayKeyFor = (d) => DAY_KEYS[(d.getDay() + 6) % 7]; // Sun(0) → 'sunday' at index 6
 
-export default function SchedulePicker({ onChange, prepMinutes = 20 }) {
+export default function SchedulePicker({ onChange, prepMinutes = 20, compact = false }) {
   const businessHours = useBusinessHours();
   const [mode, setMode] = useState('asap');
   const [date, setDate] = useState(() => dateKeyOf(new Date()));
@@ -88,16 +88,20 @@ export default function SchedulePicker({ onChange, prepMinutes = 20 }) {
 
   return (
     <div>
-      <h2 className="font-heading text-lg text-obsidian-roast">When do you want it?</h2>
-      <p className="text-sm text-muted-foreground mb-4">
-        Most orders are ready in about {prepMinutes} minutes. Schedule ahead to lock in your time.
-      </p>
+      {!compact && (
+        <>
+          <h2 className="font-heading text-lg text-obsidian-roast">When do you want it?</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Most orders are ready in about {prepMinutes} minutes. Schedule ahead to lock in your time.
+          </p>
+        </>
+      )}
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className={`grid grid-cols-2 gap-3 ${compact ? 'mb-3' : 'mb-4'}`}>
         <button
           type="button"
           onClick={() => setMode('asap')}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+          className={`flex items-center justify-center gap-2 ${compact ? 'py-2.5 rounded-xl' : 'py-3 rounded-2xl'} border-2 font-heading text-sm transition-all ${
             mode === 'asap' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
           }`}
         >
@@ -106,7 +110,7 @@ export default function SchedulePicker({ onChange, prepMinutes = 20 }) {
         <button
           type="button"
           onClick={() => setMode('schedule')}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+          className={`flex items-center justify-center gap-2 ${compact ? 'py-2.5 rounded-xl' : 'py-3 rounded-2xl'} border-2 font-heading text-sm transition-all ${
             mode === 'schedule' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
           }`}
         >
