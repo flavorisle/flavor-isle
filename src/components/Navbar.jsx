@@ -74,7 +74,7 @@ export default function Navbar() {
               className="relative p-1 rounded-full hover:opacity-90 transition">
               
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
                 alt="Cart"
                 className="w-10 h-10 object-contain"
               />

@@ -56,7 +56,7 @@ export default function BottomTabBar() {
               <span className="relative">
                 {tab.cart ? (
                   <img
-                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
                     alt="Cart"
                     className="w-8 h-8 object-contain"
                   />

@@ -45,7 +45,7 @@ export default function CartDrawer() {
         <div className="flex items-center justify-between p-6 border-b border-border bg-white">
           <div className="flex items-center gap-3">
             <img
-              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
               alt="Your cart"
               className="w-10 h-10 object-contain"
             />
@@ -94,7 +94,7 @@ export default function CartDrawer() {
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
                 alt="Your cart"
                 className="w-28 h-28 object-contain animate-float-up"
               />
