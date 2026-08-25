@@ -4,7 +4,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import useStoreClosure from '@/hooks/useStoreClosure';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { fetchBusyness } from '@/lib/busynessCache';
-import { getBusynessStage } from '@/lib/busynessStages';
+import { getBusynessStage, BUSYNESS_STAGES } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
 
@@ -72,9 +72,10 @@ export default function useLiveStatus() {
 
   let level = null;
   if (!isClosed && data && data.busyness_level !== 'Closed') {
-    // Drive the level from the rolling 60-min order count so a sustained
-    // rush reads as busy even when the momentary queue is small.
-    level = getBusynessStage(data.liveCount ?? 0);
+    // Trust the backend's computed level (single source of truth) so the
+    // top bar always matches the data the hero card reads. Fall back to a
+    // client-side recompute only if the backend didn't send a level.
+    level = BUSYNESS_STAGES.find(s => s.level === data.busyness_level) || getBusynessStage(data.liveCount ?? 0);
   }
 
   return {
