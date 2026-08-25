@@ -139,6 +139,9 @@ export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
+  // Whether the device actually supports a wallet (Apple Pay / Google Pay).
+  // The express card stays hidden until the Stripe Payment Request confirms support.
+  const [walletReady, setWalletReady] = useState(null);
 
   // Group split-payment state
   const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
@@ -418,20 +421,23 @@ export default function Checkout() {
               <>
                 {/* Express checkout — Apple Pay / Google Pay */}
                 {expressStripePromise && expressAvailable && (
-                  <div className="card-diner p-4">
-                    <Elements stripe={expressStripePromise}>
-                      <ExpressCheckout
-                        total={totalWithTip}
-                        label="Flavor Isle"
-                        createIntent={createIntent}
-                        onSuccess={handleSuccess}
-                        onError={setError}
-                      />
-                    </Elements>
-                    <div className="flex items-center gap-3 mt-4">
-                      <div className="h-px bg-border flex-1" />
-                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
-                      <div className="h-px bg-border flex-1" />
+                  <div className={walletReady === true ? '' : 'hidden'}>
+                    <div className="card-diner p-4">
+                      <Elements stripe={expressStripePromise}>
+                        <ExpressCheckout
+                          total={totalWithTip}
+                          label="Flavor Isle"
+                          createIntent={createIntent}
+                          onSuccess={handleSuccess}
+                          onError={setError}
+                          onAvailability={setWalletReady}
+                        />
+                      </Elements>
+                      <div className="flex items-center gap-3 mt-4">
+                        <div className="h-px bg-border flex-1" />
+                        <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
+                        <div className="h-px bg-border flex-1" />
+                      </div>
                     </div>
                   </div>
                 )}

@@ -5,15 +5,15 @@ import { PaymentRequestButtonElement, useStripe } from '@stripe/react-stripe-js'
 // device supports a wallet. The payment intent is created on the fly when the
 // wallet confirms, using contact details supplied by the wallet sheet, so the
 // customer can pay without filling out the form first. Must be inside <Elements>.
-export default function ExpressCheckout({ total, label, createIntent, onSuccess, onError }) {
+export default function ExpressCheckout({ total, label, createIntent, onSuccess, onError, onAvailability }) {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
   const [canPay, setCanPay] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Keep latest callbacks without re-running the setup effect on every render.
-  const cbRef = useRef({ onSuccess, onError, createIntent });
-  cbRef.current = { onSuccess, onError, createIntent };
+  const cbRef = useRef({ onSuccess, onError, createIntent, onAvailability });
+  cbRef.current = { onSuccess, onError, createIntent, onAvailability };
 
   useEffect(() => {
     if (!stripe) return;
@@ -32,9 +32,12 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
         if (res && (res.applePay || res.googlePay)) {
           setPaymentRequest(pr);
           setCanPay(true);
+          cbRef.current.onAvailability?.(true);
+        } else {
+          cbRef.current.onAvailability?.(false);
         }
       })
-      .catch(() => {});
+      .catch(() => { cbRef.current.onAvailability?.(false); });
 
     const onPaymentMethod = async (ev) => {
       setBusy(true);
