@@ -38,6 +38,14 @@ export default function HeroSection() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70" />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white">
+          {/* Est. 1964 seal */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-white/80 bg-white/10 backdrop-blur-sm">
+              <span className="font-heading text-[10px] tracking-[0.2em] text-white/90 leading-none">EST.</span>
+              <span className="font-heading text-2xl leading-none my-0.5" style={{ color: '#F5A623' }}>1964</span>
+              <span className="font-heading text-[9px] tracking-[0.15em] text-white/80 leading-none">SMITHS GROVE</span>
+            </div>
+          </div>
           <h1 className="font-heading uppercase leading-[1.05] text-5xl sm:text-6xl md:text-7xl mb-5 drop-shadow-lg">
             Real Food.<br />Real Good.
           </h1>
