@@ -72,7 +72,9 @@ export default function useLiveStatus() {
 
   let level = null;
   if (!isClosed && data && data.busyness_level !== 'Closed') {
-    level = getBusynessStage(data.activeCount ?? 0);
+    // Drive the level from the rolling 60-min order count so a sustained
+    // rush reads as busy even when the momentary queue is small.
+    level = getBusynessStage(data.liveCount ?? 0);
   }
 
   return {

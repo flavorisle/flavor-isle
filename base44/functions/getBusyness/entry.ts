@@ -80,7 +80,10 @@ export default async function(req) {
       });
     }
 
-    const stage = getBusynessStage(activeCount);
+    // The busyness level is driven by the rolling 60-min order count
+    // (liveCount), which captures sustained rushes that the instantaneous
+    // 20-min queue depth misses.
+    const stage = getBusynessStage(liveCount);
 
     return Response.json({
       weekday: today.weekday,
