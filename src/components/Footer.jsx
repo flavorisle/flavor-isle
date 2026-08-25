@@ -19,7 +19,7 @@ export default function Footer() {
               <div className="text-xs tracking-widest text-[hsl(var(--primary))]">SMITHS GROVE, KY</div>
             </div>
           </div>
-          <p className="text-gray-400 text-sm leading-relaxed">
+          <p className="text-gray-300 text-sm leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
           </p>
           <div className="flex gap-3 mt-5">
@@ -38,7 +38,7 @@ export default function Footer() {
         {/* Hours */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">HOURS</h4>
-          <div className="space-y-2 text-sm text-gray-400">
+          <div className="space-y-2 text-sm text-gray-300">
             {hoursGroups(businessHours).map((g) =>
             <div key={g.days} className="flex justify-between gap-4">
                 <span>{g.days}</span>
@@ -51,7 +51,7 @@ export default function Footer() {
         {/* Quick Links */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">QUICK LINKS</h4>
-          <div className="flex flex-col gap-2 text-sm text-gray-400">
+          <div className="flex flex-col gap-2 text-sm text-gray-300">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
@@ -63,7 +63,7 @@ export default function Footer() {
         {/* Contact */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">FIND US</h4>
-          <div className="space-y-3 text-sm text-gray-400">
+          <div className="space-y-3 text-sm text-gray-300">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 flex-shrink-0 text-[hsl(var(--primary))]" />
               <a href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">103 N Main St, Smiths Grove<br />Kentucky, KY 42171</a>

@@ -19,6 +19,8 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
+import FaqSection from '@/components/FaqSection';
+import WhyOrderDirect from '@/components/WhyOrderDirect';
 import PushNoticeCard from '@/components/PushNoticeCard';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -79,6 +81,9 @@ export default function Home() {
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
 
+      {/* ── WHY ORDER DIRECT ── */}
+      <WhyOrderDirect />
+
       {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
       <LoyaltyFirstOrderBanner />
 
@@ -129,7 +134,7 @@ export default function Home() {
                     <h3 className="font-heading text-white text-base">{item.name}</h3>
                     <span className="text-midnight-cherry font-heading text-lg">{item.price}</span>
                   </div>
-                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                  <p className="text-gray-300 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             )}
@@ -148,6 +153,9 @@ export default function Home() {
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
+
+      {/* ── FAQ ── */}
+      <FaqSection />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
