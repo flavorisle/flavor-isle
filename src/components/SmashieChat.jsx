@@ -63,10 +63,12 @@ export default function SmashieChat() {
       {!open &&
       <button
         onClick={openChat}
-        className="hidden md:flex fixed right-6 bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center chrome-hover"
+        className="hidden md:flex fixed right-6 bottom-6 z-[80] w-16 h-16 rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center chrome-hover ring-4 ring-white/90"
         aria-label="Chat with Smashie">
 
-          <img src={SMASHIE_HEAD} alt="Smashie" className="w-full h-full object-cover rounded-full" />
+          <span className="absolute inset-0 rounded-full bg-midnight-cherry/40 animate-ping opacity-70" />
+          <img src={SMASHIE_HEAD} alt="Smashie" className="relative w-full h-full object-cover rounded-full ring-2 ring-midnight-cherry" />
+          <span className="absolute -bottom-1 -right-1 bg-midnight-cherry text-white text-[10px] font-heading px-1.5 py-0.5 rounded-full shadow-float">CHAT</span>
         </button>
       }
 
