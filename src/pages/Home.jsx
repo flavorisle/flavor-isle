@@ -12,7 +12,6 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
-import LiveStatusBar from '@/components/LiveStatusBar';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -72,12 +71,6 @@ export default function Home() {
       <StartOrderBand />
       <ConversionNudgeBar />
 
-      {/* ── LIVE KITCHEN MODE CARD ── */}
-      <LiveStatusBar />
-
-      {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
-      <LoyaltyFirstOrderBanner />
-
       {/* ── PUSH NOTICES ── */}
       <div className="pb-2">
         <PushNoticeCard />
@@ -85,6 +78,9 @@ export default function Home() {
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
+
+      {/* ── FIRST-ORDER LOYALTY NUDGE ── */}
+      <LoyaltyFirstOrderBanner />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">

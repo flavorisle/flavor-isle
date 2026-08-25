@@ -3,41 +3,34 @@ import { Link } from 'react-router-dom';
 import { Lock, Clock, ArrowRight } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
 
-// Four branded "mode" cards — one per live kitchen-load level. The card art
-// (mascot + panel + CTA) is the designed asset; the bar swaps between them
-// based on the real-time busyness reading from getBusyness (~90% accurate).
-const MODES = {
-  'Running Smooth': {
-    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/47a638927_IMG_1004.png',
-    title: 'Chill Mode — Kitchen Wide Open',
-    frame: '#0033cc',
-  },
-  'A Little Busy': {
-    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/db8ae0e6f_IMG_1007.png',
-    title: 'Steady Mode — Moving Smooth',
-    frame: '#1a4f00',
-  },
-  Busy: {
-    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7d4301c5c_IMG_1006.png',
-    title: 'Flex Mode — Getting Busy',
-    frame: '#E6A200',
-  },
-  Slammed: {
-    image: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/eda439c8e_IMG_1005.png',
-    title: 'Melt Mode — Max Capacity',
-    frame: '#A6260B',
-  },
+// Colored status dot per live busyness level.
+const DOT = {
+  'Running Smooth': 'bg-green-500',
+  'A Little Busy': 'bg-yellow-400',
+  Busy: 'bg-orange-400',
+  Slammed: 'bg-red-500',
 };
 
-// Always-on-top live status. Open kitchen → full mode card banner that swaps
-// with the live load; last hour → compact "closing soon" urgency; after hours
-// or admin closure → compact "closed" bar.
+// Dynamic CTA copy that shifts by kitchen load — the "Level + dynamic CTA"
+// treatment so guests get a nudge calibrated to the current wait.
+const CTA_BY_LEVEL = {
+  'Running Smooth': 'Order now — no wait',
+  'A Little Busy': 'Order ahead — ~30 min',
+  Busy: 'Order ahead — ~40 min',
+  Slammed: 'Order ahead — ~60 min',
+};
+
+// Always-on-top live status bar. Replaces the old static navbar info bar with
+// a single source of truth for how busy the kitchen is right now, with a
+// dynamic order CTA, a "closing soon" urgency state in the last hour, and a
+// "Closed" state after hours or during an admin closure.
 export default function LiveStatusBar() {
   const {
     loading,
     isClosed,
     closingSoon,
     level,
+    wait,
     orderingEnabled,
     minutesUntilClose,
     closeTime,
@@ -104,43 +97,30 @@ export default function LiveStatusBar() {
     );
   }
 
-  // ── Live busyness mode card ──
-  const mode = MODES[level.level] || MODES['Running Smooth'];
-
-  const card = (
-    <div className="w-full px-3 pt-3 pb-3" style={{ background: 'var(--vanilla-malt)' }}>
-      <div
-        className="mx-auto max-w-sm rounded-2xl overflow-hidden shadow-float"
-        style={{ background: mode.frame }}
-      >
-        <img
-          src={mode.image}
-          alt={mode.title}
-          className="block w-full max-h-[240px] sm:max-h-[280px] object-contain"
-          loading="eager"
-        />
-      </div>
-    </div>
-  );
-
-  if (!orderingEnabled) {
-    return (
-      <div className="relative">
-        {card}
-        <span className="absolute top-5 left-1/2 -translate-x-1/2 bg-obsidian-roast/85 text-white text-[10px] font-heading uppercase tracking-widest px-3 py-1 rounded-full">
-          Ordering paused
-        </span>
-      </div>
-    );
-  }
+  // ── Live busyness level ──
+  const dot = DOT[level.level] || 'bg-gray-300';
+  const cta = CTA_BY_LEVEL[level.level] || 'Order Now';
 
   return (
-    <Link
-      to="/menu"
-      aria-label={`${mode.title} — order now`}
-      className="block w-full"
-    >
-      {card}
-    </Link>
+    <div className="w-full bg-vanilla-malt border-b border-border text-obsidian-roast">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse ${dot}`} />
+          <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
+            {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
+          </p>
+        </div>
+        {orderingEnabled ? (
+          <Link
+            to="/menu"
+            className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+          >
+            {cta} <ArrowRight size={13} />
+          </Link>
+        ) : (
+          <span className="text-xs font-heading uppercase tracking-wide text-muted-foreground">Ordering paused</span>
+        )}
+      </div>
+    </div>
   );
 }

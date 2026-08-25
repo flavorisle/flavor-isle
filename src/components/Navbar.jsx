@@ -4,6 +4,7 @@ import { Menu, X, Phone, LogOut, Contrast } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useMerchCart } from '@/context/MerchCartContext';
 import MerchCartButton from '@/components/merch/MerchCartButton';
+import LiveStatusBar from '@/components/LiveStatusBar';
 import { useAuth } from '@/lib/AuthContext';
 import useHighContrast from '@/hooks/useHighContrast';
 
@@ -34,8 +35,9 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Sticky header: main nav stays pinned */}
+      {/* Sticky header: live status bar + main nav stay pinned together */}
       <div className="sticky top-0 z-50">
+        <LiveStatusBar />
         <nav className={`transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
