@@ -40,6 +40,7 @@ export function MerchCartProvider({ children }) {
         variantName: item.variantName || '',
         sku: item.sku || '',
         sync_variant_id: item.sync_variant_id,
+        variant_id: item.variant_id || null,
         price: item.price,
         image: item.image || '',
         size: item.size || '',

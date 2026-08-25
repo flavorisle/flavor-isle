@@ -68,6 +68,9 @@ function parseVariant(v: any, productImage?: string, productName?: string) {
   const image = pickMockupImage(v, productImage);
   return {
     id: v.id,
+    // Base Printful catalog variant id — the shipping-rates API requires this
+    // (it does NOT accept sync_variant_id). The orders API uses `id` above.
+    variant_id: v.variant_id || v.variant?.id || null,
     name,
     sku: v.sku || "",
     price,
@@ -126,7 +129,7 @@ export async function getShippingRates({ recipient, items }: { recipient: any; i
       country_code: recipient.country_code || "US",
       zip: recipient.zip,
     },
-    items: items.map((i) => ({ sync_variant_id: String(i.sync_variant_id), quantity: i.quantity })),
+    items: items.map((i) => ({ variant_id: Number(i.variant_id), quantity: i.quantity })),
   };
   const res = await fetch(`${PRINTFUL_BASE}/shipping/rates`, {
     method: "POST",

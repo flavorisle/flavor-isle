@@ -45,7 +45,7 @@ export default function MerchCheckout() {
           country_code: form.country_code,
           zip: form.zip,
         },
-        items: items.map(i => ({ sync_variant_id: i.sync_variant_id, quantity: i.quantity })),
+        items: items.map(i => ({ variant_id: i.variant_id, sync_variant_id: i.sync_variant_id, quantity: i.quantity })),
       });
       setShipping(res.data.shipping);
       setRateName(res.data.rateName);

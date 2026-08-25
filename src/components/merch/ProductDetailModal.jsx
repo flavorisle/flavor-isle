@@ -49,6 +49,7 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
       variantName: variantLabel(selectedVariant),
       sku: selectedVariant.sku,
       sync_variant_id: selectedVariant.id,
+      variant_id: selectedVariant.variant_id,
       price: selectedVariant.price,
       image: selectedVariant.image || product.thumbnail_url,
       size: selectedVariant.size,
