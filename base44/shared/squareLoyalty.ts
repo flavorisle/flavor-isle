@@ -82,7 +82,7 @@ export async function searchLoyaltyAccountByPhone(phone: string): Promise<any | 
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
-      query: { filter: { mapping: { type: 'PHONE', id: e164, value: e164 } } },
+      query: { mappings: [{ phone_number: e164 }] },
       limit: 1,
     }),
   });
