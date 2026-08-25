@@ -8,7 +8,6 @@ import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
 import StartOrderBand from '@/components/StartOrderBand';
-import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import LoyaltyFirstOrderBanner from '@/components/LoyaltyFirstOrderBanner';
@@ -21,7 +20,6 @@ import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import FaqSection from '@/components/FaqSection';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
-import PushNoticeCard from '@/components/PushNoticeCard';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -71,12 +69,6 @@ export default function Home() {
 
       {/* ── START AN ORDER ── */}
       <StartOrderBand />
-      <ConversionNudgeBar />
-
-      {/* ── PUSH NOTICES ── */}
-      <div className="pb-2">
-        <PushNoticeCard />
-      </div>
 
       {/* ── WHY FLAVOR ISLE ── */}
       <WhyFlavorIsle />
@@ -218,22 +210,6 @@ export default function Home() {
 
       {/* ── DOWNLOAD APP BANNER ── */}
       <DownloadAppBanner />
-
-      {/* ── CTA BANNER ── */}
-      <section className="py-16 bg-midnight-cherry px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-heading text-4xl text-white mb-4">Hungry? Let's Fix That.</h2>
-          <p className="text-red-200 mb-8">Order online for pickup, delivery, or dine-in. Hot food, fast.</p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/menu" className="bg-white text-midnight-cherry font-heading px-8 py-4 rounded-2xl hover:bg-vanilla-malt transition-colors chrome-hover">
-              Order Now
-            </Link>
-            <a href="tel:+12705634618" className="border-2 border-white text-white font-heading px-8 py-4 rounded-2xl hover:bg-white/10 transition-colors">
-              Call Us
-            </a>
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>);
