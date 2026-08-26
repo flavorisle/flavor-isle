@@ -1,86 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { TrendingUp, AlertCircle, Zap, Flame, Lock } from 'lucide-react';
-import { getBusynessStage } from '@/lib/busynessStages';
-
-// Uses the getBusyness backend function which aggregates ALL Square order
-// sources (online + in-store POS) — not just local app orders — so the status
-// reflects real kitchen load even when the rush is at the counter.
-//
-// The 4-stage model is driven by the rolling 60-minute order count, which
-// captures sustained rushes that the momentary 20-min queue depth misses.
-// The backend returns the stage + estimated wait, and "Closed" when the
-// store is outside business hours or under admin closure.
+import React from 'react';
+import { TrendingUp, AlertCircle, Zap, Flame, Lock, Activity } from 'lucide-react';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
+// Centralized busyness display — reads the single useLiveStatus source of
+// truth (regressed waitMin + recovering flag) so every surface that shows
+// kitchen load stays in sync with the live status bar. The level is driven
+// by the rolling 60-min order count (liveCount); the wait eases back toward
+// the baseline as recent inflow slows.
 export default function BusynessStatus() {
-  const [activeCount, setActiveCount] = useState(0);
-  const [isClosed, setIsClosed] = useState(false);
-  const [stage, setStage] = useState(() => getBusynessStage(0));
-
-  useEffect(() => {
-    const loadBusyness = async () => {
-      try {
-        const res = await base44.functions.invoke('getBusyness', {});
-        const data = res?.data || res;
-        if (data.busyness_level === 'Closed') {
-          setIsClosed(true);
-        } else {
-          setIsClosed(false);
-          // The level is driven by the rolling 60-min order count (liveCount).
-          const count = data.liveCount ?? data.activeCount ?? 0;
-          setActiveCount(count);
-          setStage(getBusynessStage(count));
-        }
-      } catch (e) {
-        console.error('BusynessStatus load error', e);
-      }
-    };
-
-    loadBusyness();
-    const interval = setInterval(loadBusyness, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const { loading, isClosed, level, waitMin, recovering, liveCount } = useLiveStatus();
 
   if (isClosed) {
     return (
-      <div>
-        <div className="card-diner p-4 flex items-center justify-between border-2 border-gray-300 bg-gray-100 text-gray-500">
-          <div className="flex items-center gap-3">
-            <Lock size={20} />
-            <div>
-              <p className="text-xs font-heading uppercase tracking-wider opacity-75">Status</p>
-              <p className="font-heading text-lg">Closed</p>
-            </div>
+      <div className="card-diner p-4 flex items-center justify-between border-2 border-gray-300 bg-gray-100 text-gray-500">
+        <div className="flex items-center gap-3">
+          <Lock size={20} />
+          <div>
+            <p className="text-xs font-heading uppercase tracking-wider opacity-75">Status</p>
+            <p className="font-heading text-lg">Closed</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const IconComponent = ICONS[stage.icon] || Zap;
+  if (loading || !level) {
+    return (
+      <div className="card-diner p-4 flex items-center gap-3 border-2 border-gray-200 bg-gray-50 text-gray-400">
+        <Activity size={20} className="animate-pulse" />
+        <p className="font-heading text-sm uppercase tracking-wider">Checking kitchen…</p>
+      </div>
+    );
+  }
+
+  const IconComponent = ICONS[level.icon] || Zap;
 
   return (
     <div>
-      <div className={`card-diner p-4 flex items-center justify-between border-2 border-midnight-cherry/20 ${stage.bgClass} ${stage.textClass}`}>
+      <div className={`card-diner p-4 flex items-center justify-between border-2 border-midnight-cherry/20 ${level.bgClass} ${level.textClass}`}>
         <div className="flex items-center gap-3">
           <IconComponent size={20} />
           <div>
             <p className="text-xs font-heading uppercase tracking-wider opacity-75">Status</p>
-            <p className="font-heading text-lg">{stage.level}</p>
+            <p className="font-heading text-lg">{level.level}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-heading">{activeCount}</p>
+          <p className="text-2xl font-heading">{liveCount}</p>
           <p className="text-xs opacity-75">Orders (last 60 min)</p>
         </div>
       </div>
       <div className="flex items-center justify-between mt-2 px-1">
-        <p className="text-xs font-heading text-obsidian-roast">Est. wait: {stage.waitRange}</p>
-        {stage.urgency && (
-          <p className="text-xs text-midnight-cherry font-heading animate-float-up">{stage.urgency}</p>
-        )}
+        <p className="text-xs font-heading text-obsidian-roast">Est. wait: ~{waitMin} min</p>
+        {recovering ? (
+          <span className="inline-flex items-center gap-1 text-xs font-heading text-blue-600 animate-float-up">
+            <Activity size={12} /> Kitchen catching up
+          </span>
+        ) : level.urgency ? (
+          <p className="text-xs text-midnight-cherry font-heading animate-float-up">{level.urgency}</p>
+        ) : null}
       </div>
     </div>
   );

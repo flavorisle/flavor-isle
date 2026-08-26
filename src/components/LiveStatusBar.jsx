@@ -31,6 +31,8 @@ export default function LiveStatusBar() {
     closingSoon,
     level,
     wait,
+    recovering,
+    color,
     orderingEnabled,
     minutesUntilClose,
     closeTime,
@@ -134,6 +136,11 @@ export default function LiveStatusBar() {
           <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
             {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
           </p>
+          {recovering && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-heading uppercase tracking-wide text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> Recovering
+            </span>
+          )}
         </div>
         {orderingEnabled ? (
           <Link

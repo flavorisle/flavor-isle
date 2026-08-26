@@ -4,7 +4,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import useStoreClosure from '@/hooks/useStoreClosure';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { fetchBusyness } from '@/lib/busynessCache';
-import { getBusynessStage, BUSYNESS_STAGES } from '@/lib/busynessStages';
+import { getBusynessStage, BUSYNESS_STAGES, getStageMeta, RECOVERING_META, CLOSED_META } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
 
@@ -78,6 +78,10 @@ export default function useLiveStatus() {
     level = BUSYNESS_STAGES.find(s => s.level === data.busyness_level) || getBusynessStage(data.liveCount ?? 0);
   }
 
+  const recovering = data?.recovering ?? false;
+  const levelName = level?.level || 'Running Smooth';
+  const meta = isClosed ? CLOSED_META : recovering ? RECOVERING_META : getStageMeta(levelName);
+
   return {
     loading: !data,
     isClosed,
@@ -85,8 +89,12 @@ export default function useLiveStatus() {
     level,
     wait: data?.estimated_wait || level?.waitRange,
     waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 20,
-    recovering: data?.recovering ?? false,
+    recovering,
     activeCount: data?.activeCount ?? 0,
+    liveCount: data?.liveCount ?? 0,
+    busyPercent: data?.busyPercent ?? 0,
+    color: meta.color,
+    icon: meta.icon,
     orderingEnabled,
     minutesUntilClose,
     closeTime: todayHours.close ? formatTime12(todayHours.close) : null,
