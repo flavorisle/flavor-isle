@@ -38,12 +38,14 @@ export default function ItemRatings({ item, itemName }) {
       if (item?.id) {
         itemReviews = (data || []).filter(r => r.menu_item_id === item.id);
       }
-      // Fallback to fuzzy name match for older reviews not linked to an item.
+      // Fallback to name match for older reviews not linked to an item id.
+      // Match against the review's menu_item_name snapshot, NOT the
+      // reviewer's customer_name (that matched the wrong reviews to items).
       if (itemReviews.length === 0 && name) {
+        const lower = name.toLowerCase();
         itemReviews = (data || []).filter(r =>
-          !r.menu_item_id && r.customer_name &&
-          (r.customer_name.toLowerCase().includes(name.toLowerCase()) ||
-           name.toLowerCase().includes(r.customer_name.toLowerCase()))
+          !r.menu_item_id && r.menu_item_name &&
+          r.menu_item_name.toLowerCase() === lower
         );
       }
 
