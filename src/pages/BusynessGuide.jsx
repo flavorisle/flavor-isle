@@ -4,6 +4,7 @@ import { Flame, TrendingUp, AlertCircle, Zap, Clock, CalendarClock, ShoppingBag,
 import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
+import OrderStatusStages from '@/components/OrderStatusStages';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -144,6 +145,11 @@ export default function BusynessGuide() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Order tracking stages */}
+        <div className="mb-10">
+          <OrderStatusStages />
         </div>
 
         {/* CTA */}
