@@ -42,6 +42,7 @@ import FacebookAd from './pages/FacebookAd';
 import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
+import SMSSignup from './pages/SMSSignup';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
 import Order from './pages/Order';
@@ -136,6 +137,7 @@ const AuthenticatedApp = () => {
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
+      <Route path="/sms-signup" element={<SMSSignup />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
