@@ -44,6 +44,7 @@ import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
+import Order from './pages/Order';
 import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
 import AdminMerchOrders from './pages/AdminMerchOrders';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
+      <Route path="/order" element={<Order />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/merch" element={<Merch />} />
