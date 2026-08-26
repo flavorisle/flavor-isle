@@ -134,6 +134,13 @@ export default function LiveStatusBar() {
           <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
             {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
           </p>
+          <Link
+            to="/what-to-expect"
+            className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
+            title="What each level means & ordering tips"
+          >
+            What to expect?
+          </Link>
         </div>
         {orderingEnabled ? (
           <Link

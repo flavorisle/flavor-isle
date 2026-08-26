@@ -43,6 +43,7 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import SMSSignup from './pages/SMSSignup';
+import BusynessGuide from './pages/BusynessGuide';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
 import Order from './pages/Order';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
       <Route path="/sms-signup" element={<SMSSignup />} />
+      <Route path="/what-to-expect" element={<BusynessGuide />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
