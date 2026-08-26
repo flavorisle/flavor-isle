@@ -80,6 +80,15 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Word logo banner */}
+      <div className="border-t border-white/10 px-4 sm:px-6 pt-10 pb-2 flex justify-center">
+        <img
+          src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
+          alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
+          className="w-full max-w-xs sm:max-w-sm object-contain"
+        />
+      </div>
+
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
