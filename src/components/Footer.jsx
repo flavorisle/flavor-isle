@@ -12,13 +12,11 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Brand */}
         <div className="md:col-span-1">
-          <div className="flex items-center gap-2 mb-4">
-            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-md" />
-            <div className="min-w-0 whitespace-nowrap">
-              <div className="font-heading text-xl leading-none">FLAVOR ISLE</div>
-              <div className="text-xs tracking-widest text-[hsl(var(--primary))]">SMITHS GROVE, KY</div>
-            </div>
-          </div>
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
+            alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
+            className="w-full max-w-[200px] object-contain mb-4"
+          />
           <p className="text-gray-300 text-sm leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
           </p>
@@ -78,15 +76,6 @@ export default function Footer() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Word logo banner */}
-      <div className="border-t border-white/10 px-4 sm:px-6 pt-10 pb-2 flex justify-center">
-        <img
-          src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
-          alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
-          className="w-full max-w-xs sm:max-w-sm object-contain"
-        />
       </div>
 
       {/* Bottom bar */}
