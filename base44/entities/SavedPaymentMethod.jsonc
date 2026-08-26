@@ -1,0 +1,117 @@
+{
+  "name": "SavedPaymentMethod",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Base44 user id of the card owner"
+    },
+    "email": {
+      "type": "string",
+      "description": "Owner email \u2014 used to match cards to the signed-in customer"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe Customer object id the card is attached to"
+    },
+    "stripe_payment_method_id": {
+      "type": "string",
+      "description": "Stripe PaymentMethod id (card) \u2014 used to charge the saved card"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Card brand (visa, mastercard, amex, etc.)"
+    },
+    "last4": {
+      "type": "string",
+      "description": "Last 4 digits of the card number"
+    },
+    "exp_month": {
+      "type": "number"
+    },
+    "exp_year": {
+      "type": "number"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the customer's default card for one-tap checkout"
+    },
+    "nickname": {
+      "type": "string",
+      "description": "Optional customer-given label for the card"
+    }
+  },
+  "required": [
+    "user_id",
+    "email",
+    "stripe_customer_id",
+    "stripe_payment_method_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
