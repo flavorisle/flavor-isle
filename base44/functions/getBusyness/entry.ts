@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getBusynessStage, COOK_WINDOW_MINUTES, RECENT_WINDOW_MINUTES, computeRegressedWait } from '../../shared/busynessStages.ts';
+import { getBusynessStage, COOK_WINDOW_MINUTES, RECENT_WINDOW_MINUTES, computeRegressedWait, RECOVERING_MODE, RECOVERING_COLOR, CLOSED_MODE, CLOSED_COLOR } from '../../shared/busynessStages.ts';
 import { getStoreStatus } from '../../shared/storeClosure.ts';
 
 // Public read for the landing page "How busy are we?" card.
@@ -74,6 +74,8 @@ export default async function(req) {
         avgForHour,
         busyPercent,
         busyness_level: 'Closed',
+        mode: CLOSED_MODE,
+        color: CLOSED_COLOR,
         estimated_wait: 'Closed',
         estimated_wait_min: 0,
         recovering: false,
@@ -100,6 +102,11 @@ export default async function(req) {
 
     const regressed = computeRegressedWait(liveCount, recentInflow, activeCount, stage);
 
+    // Resolve the Smashie mode + color for this poll. The 5th mode (Melt) is
+    // emitted when the wait is recovering — otherwise the stage's own mode.
+    const mode = regressed.recovering ? RECOVERING_MODE : stage.mode;
+    const color = regressed.recovering ? RECOVERING_COLOR : stage.color;
+
     return Response.json({
       weekday: today.weekday,
       hour: today.hour,
@@ -113,6 +120,8 @@ export default async function(req) {
       avgForHour,
       busyPercent,
       busyness_level: stage.level,
+      mode,
+      color,
       estimated_wait: regressed.waitRange,
       estimated_wait_min: regressed.waitMin,
       recovering: regressed.recovering,

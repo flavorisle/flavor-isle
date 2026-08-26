@@ -80,7 +80,14 @@ export default function useLiveStatus() {
 
   const recovering = data?.recovering ?? false;
   const levelName = level?.level || 'Running Smooth';
-  const meta = isClosed ? CLOSED_META : recovering ? RECOVERING_META : getStageMeta(levelName);
+  // Backend is the single source of truth for the 5 modes (chill, steady,
+  // flex, full-smash, melt) + closed. Fall back to a local derivation only
+  // if the backend didn't send mode/color.
+  const meta = isClosed
+    ? CLOSED_META
+    : (data?.mode && data?.color)
+      ? { icon: data.mode, color: data.color }
+      : recovering ? RECOVERING_META : getStageMeta(levelName);
 
   return {
     loading: !data,

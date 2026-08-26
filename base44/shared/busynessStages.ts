@@ -12,14 +12,27 @@ export interface BusynessStage {
   waitRange: string;
   waitMin: number;
   color: string;
+  mode: string;
 }
 
+// The 5 Smashie modes customers see. Four are stages driven by the rolling
+// 60-min throughput; the 5th (Melt) is the Recovering state — the wait is
+// easing back toward the baseline after a rush. The backend resolves which
+// mode to emit per poll so every surface reads one source of truth.
 export const BUSYNESS_STAGES: BusynessStage[] = [
-  { min: 16, level: 'Slammed',         waitRange: '50–60 min', waitMin: 55, color: 'red' },
-  { min: 10, level: 'Busy',            waitRange: '35–40 min', waitMin: 38, color: 'orange' },
-  { min: 5,  level: 'A Little Busy',   waitRange: '~30 min',   waitMin: 30, color: 'yellow' },
-  { min: 0,  level: 'Running Smooth',  waitRange: '~20 min',   waitMin: 20, color: 'green' },
+  { min: 16, level: 'Slammed',         waitRange: '50–60 min', waitMin: 55, color: 'red',    mode: 'full-smash' },
+  { min: 10, level: 'Busy',            waitRange: '35–40 min', waitMin: 38, color: 'orange', mode: 'flex' },
+  { min: 5,  level: 'A Little Busy',   waitRange: '~30 min',   waitMin: 30, color: 'yellow', mode: 'steady' },
+  { min: 0,  level: 'Running Smooth',  waitRange: '~20 min',   waitMin: 20, color: 'green',  mode: 'chill' },
 ];
+
+// 5th mode — Recovering (Melt). Not a throughput stage; emitted when the
+// regressed wait has dropped below the stage wait while a backlog clears.
+export const RECOVERING_MODE = 'melt';
+export const RECOVERING_COLOR = 'blue';
+// Store-closed mode.
+export const CLOSED_MODE = 'closed';
+export const CLOSED_COLOR = 'gray';
 
 export function getBusynessStage(rollingCount: number): BusynessStage {
   return BUSYNESS_STAGES.find(s => rollingCount >= s.min) || BUSYNESS_STAGES[BUSYNESS_STAGES.length - 1];
