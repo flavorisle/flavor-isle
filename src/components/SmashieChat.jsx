@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
+const TRANSFER_TOKEN = /\[\[TRANSFER\]\]/i;
 
 const SMASHIE_HEAD = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png';
 
@@ -14,6 +15,7 @@ export default function SmashieChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [counterPhone, setCounterPhone] = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +28,15 @@ export default function SmashieChat() {
     window.addEventListener('flavorisle:open-smashie', handler);
     return () => window.removeEventListener('flavorisle:open-smashie', handler);
   }, []);
+
+  // Lazily fetch the counter phone number so the chat can offer a
+  // "Call the Counter" button when Smashie hands off to a real person.
+  useEffect(() => {
+    if (counterPhone) return;
+    base44.functions.invoke('getCounterPhone', {}).then(res => {
+      if (res?.data?.phone) setCounterPhone(res.data.phone);
+    }).catch(() => {});
+  }, [counterPhone]);
 
   const openChat = async () => {
     setOpen(true);
@@ -111,6 +122,8 @@ export default function SmashieChat() {
             {messages.map((msg, i) => {
             if (msg.role === 'system') return null;
             const isUser = msg.role === 'user';
+            const wantsTransfer = !isUser && TRANSFER_TOKEN.test(msg.content);
+            const cleanContent = isUser ? msg.content : msg.content.replace(/\[\[TRANSFER\]\]/gi, '').trim();
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser &&
@@ -123,9 +136,9 @@ export default function SmashieChat() {
                   'bg-muted text-obsidian-roast rounded-bl-sm'}`
                   }>
                       {isUser ?
-                    <p>{msg.content}</p> :
+                    <p>{cleanContent}</p> :
 
-                    <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{msg.content}</ReactMarkdown>
+                    <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{cleanContent}</ReactMarkdown>
                     }
                     </div>
                     {!isUser && SHAKE_KEYWORDS.test(msg.content) &&
@@ -136,6 +149,14 @@ export default function SmashieChat() {
                         <span className="text-base">🥤</span>
                         Build Your Shake →
                       </Link>
+                  }
+                  {wantsTransfer && counterPhone &&
+                  <a
+                    href={`tel:${counterPhone}`}
+                    className="flex items-center gap-2 bg-midnight-cherry text-white text-xs font-heading px-4 py-2.5 rounded-2xl hover:bg-red-800 transition-colors">
+                    <span className="text-base">📞</span>
+                    Call the Counter →
+                  </a>
                   }
                   </div>
                 </div>);
