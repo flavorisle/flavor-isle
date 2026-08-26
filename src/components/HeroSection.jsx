@@ -21,12 +21,7 @@ const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
-  const { level } = useLiveStatus();
-
-  // Scale pickup/delivery estimates with the live kitchen load. Pickup tracks
-  // the kitchen wait directly; delivery adds a courier window on top. Dine-in
-  // stays "Seat yourself" since it's a seating note, not a wait.
-  const waitMin = level?.waitMin || 20;
+  const { level, waitMin } = useLiveStatus();
   const pickupTime = `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`;
   const deliveryTime = `${waitMin + 15}–${waitMin + 25} min`;
 

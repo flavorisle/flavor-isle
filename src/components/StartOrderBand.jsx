@@ -11,9 +11,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 export default function StartOrderBand() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
-  const { level } = useLiveStatus();
-
-  const waitMin = level?.waitMin || 20;
+  const { level, waitMin } = useLiveStatus();
   const OPTIONS = [
     { id: 'pickup', label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag },
     { id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },

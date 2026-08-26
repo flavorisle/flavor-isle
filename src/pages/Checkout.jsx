@@ -97,10 +97,11 @@ export default function Checkout() {
   const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
-  const { level } = useLiveStatus();
+  const { level, waitMin } = useLiveStatus();
   // Kitchen prep estimate scales with the live busyness level so checkout
-  // ready times match what the hero/status bar advertise.
-  const prepMinutes = level?.waitMin || 20;
+  // ready times match what the hero/status bar advertise. Uses the regressed
+  // wait from the backend so it eases back to normal as inflow slows.
+  const prepMinutes = waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });

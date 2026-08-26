@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { getBusynessStage, COOK_WINDOW_MINUTES, RECENT_WINDOW_MINUTES, computeRegressedWait } from '../../shared/busynessStages.ts';
 import { getStoreStatus } from '../../shared/storeClosure.ts';
 
 // Public read for the landing page "How busy are we?" card.
@@ -76,14 +76,29 @@ export default async function(req) {
         busyness_level: 'Closed',
         estimated_wait: 'Closed',
         estimated_wait_min: 0,
+        recovering: false,
         closure_message: storeStatus.message,
       });
     }
 
     // The busyness level is driven by the rolling 60-min order count
     // (liveCount), which captures sustained rushes that the instantaneous
-    // 20-min queue depth misses.
+    // 20-min queue depth misses. The numeric wait estimate additionally
+    // regresses toward the normal baseline when recent inflow slows, so
+    // quoted times ease back down as the kitchen clears a backlog.
     const stage = getBusynessStage(liveCount);
+
+    // Recent inflow over the short window (same proration as activeCount,
+    // no extra entity reads). Used to detect a slowdown and decay the wait.
+    let recentInflow;
+    if (minute >= RECENT_WINDOW_MINUTES) {
+      recentInflow = Math.round((curHourCount * RECENT_WINDOW_MINUTES) / minute);
+    } else {
+      const prevSlice = Math.round((prevCount * (RECENT_WINDOW_MINUTES - minute)) / 60);
+      recentInflow = curHourCount + prevSlice;
+    }
+
+    const regressed = computeRegressedWait(liveCount, recentInflow, activeCount, stage);
 
     return Response.json({
       weekday: today.weekday,
@@ -93,12 +108,14 @@ export default async function(req) {
       peakAvg,
       liveCount,
       activeCount,
+      recentInflow,
       curHourCount,
       avgForHour,
       busyPercent,
       busyness_level: stage.level,
-      estimated_wait: stage.waitRange,
-      estimated_wait_min: stage.waitMin,
+      estimated_wait: regressed.waitRange,
+      estimated_wait_min: regressed.waitMin,
+      recovering: regressed.recovering,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
