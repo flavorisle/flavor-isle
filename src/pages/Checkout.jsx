@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -108,7 +108,13 @@ export default function Checkout() {
   const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
+  const nameRef = useRef(null);
+
+  // Auto-focus the first field so a guest can start typing their name
+  // immediately without hunting for the input — especially on desktop.
+  useEffect(() => { nameRef.current?.focus(); }, []);
 
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
@@ -181,6 +187,9 @@ export default function Checkout() {
     setAppliedReward(null);
   }, [form.phone, groupMode, payMode]);
 
+  // Clear stale field errors (e.g. delivery address) when the order type changes.
+  useEffect(() => { setFieldErrors({}); }, [orderType]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
@@ -194,7 +203,10 @@ export default function Checkout() {
     ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
     : `ASAP (≈ ${prepMinutes} min)`;
 
-  const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
+  const updateForm = (field, val) => {
+    setForm(prev => ({ ...prev, [field]: val }));
+    setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
+  };
 
   // Scroll to top when moving to the payment or split step so the card form
   // is immediately visible instead of leaving the user scrolled down past it.
@@ -206,20 +218,20 @@ export default function Checkout() {
 
   const handleContinue = async () => {
     setError('');
+    const errors = {};
     if (cutoffStatus[orderType]) {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Please fill in your name and email.');
-      return;
-    }
-    if (orderType === 'delivery' && !form.address.trim()) {
-      setError('Please enter a delivery address.');
-      return;
-    }
-    if (schedule.mode === 'schedule' && !schedule.scheduledFor) {
-      setError('Please choose a time for your order.');
+    if (!form.name.trim()) errors.name = 'Your name is required.';
+    if (!form.email.trim()) errors.email = 'Your email is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
+    if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setError('Please complete the highlighted fields to continue.');
       return;
     }
 
@@ -496,23 +508,26 @@ export default function Checkout() {
                   showRewards={!(groupMode && payMode === 'separate')}
                 />
 
-                {/* Contact Info */}
+                {/* Contact Info — delivery address moved up front so a new guest
+                    sees the most important field first, before consent/instructions. */}
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="sm:col-span-2">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
-                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
-                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      <input ref={nameRef} type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.name ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.name && <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
-                      <input type="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
-                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      <input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.email ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
-                      <input type="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
+                      <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
                         className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     {orderType === 'dine_in' && (
@@ -523,6 +538,19 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
+
+                  {/* Delivery address — shown right after contact for delivery
+                      orders so a new guest fills the most important field first. */}
+                  {orderType === 'delivery' && (
+                    <div className={fieldErrors.address ? 'ring-2 ring-destructive/30 rounded-2xl mt-4' : 'mt-4'}>
+                      <SavedAddressField
+                        value={form.address}
+                        onChange={val => updateForm('address', val)}
+                        saved={savedAddress}
+                      />
+                      {fieldErrors.address && <p className="text-xs text-destructive mt-1">{fieldErrors.address}</p>}
+                    </div>
+                  )}
 
                   {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
@@ -538,14 +566,6 @@ export default function Checkout() {
                       <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
                     </span>
                   </label>
-
-                  {orderType === 'delivery' && (
-                    <SavedAddressField
-                      value={form.address}
-                      onChange={val => updateForm('address', val)}
-                      saved={savedAddress}
-                    />
-                  )}
 
                   <div className="mt-4">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Special Instructions</label>
