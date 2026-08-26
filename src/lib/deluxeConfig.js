@@ -15,7 +15,7 @@
 // Master switch — set to false to hide all deluxe preset buttons and badges
 // from the customer-facing UI. Admin can still manage presets; flipping this
 // back to true re-enables the feature everywhere.
-export const DELUXE_ENABLED = true;
+export const DELUXE_ENABLED = false;
 
 import { matchScore } from '@/lib/deluxeLabel';
 
