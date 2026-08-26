@@ -138,14 +138,19 @@ export async function getShippingRates({ recipient, items }: { recipient: any; i
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || "Failed to get shipping rates");
-  const rates = (data.result || []).map((r: any) => ({
-    id: r.id,
-    name: r.name,
-    cost: Number(r.cost),
-    currency: r.currency,
-    min_days: r.min_delivery_days,
-    max_days: r.max_delivery_days,
-  }));
+  const rates = (data.result || [])
+    .map((r: any) => {
+      const cost = Number(r.cost != null ? r.cost : r.rate);
+      return {
+        id: r.id,
+        name: r.name,
+        cost: Number.isFinite(cost) ? cost : NaN,
+        currency: r.currency,
+        min_days: r.min_delivery_days ?? r.minDeliveryDays,
+        max_days: r.max_delivery_days ?? r.maxDeliveryDays,
+      };
+    })
+    .filter((r: any) => Number.isFinite(r.cost));
   if (!rates.length) throw new Error("No shipping rates available for this address.");
   rates.sort((a: any, b: any) => a.cost - b.cost);
   return rates;
