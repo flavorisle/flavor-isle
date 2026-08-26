@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
+import WhatToExpectVideo from '@/components/WhatToExpectVideo';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -43,17 +44,8 @@ export default function BusynessGuide() {
           </p>
         </div>
 
-        {/* Promo video */}
-        <div className="card-diner overflow-hidden mb-8">
-          <video
-            src="https://media.base44.com/videos/public/6a3d84f2fe4ae4efe7f629bf/076ebf44e_What_To_Expect_Tour.mp4"
-            controls
-            playsInline
-            preload="metadata"
-            className="w-full aspect-video object-cover bg-black"
-            aria-label="Flavor Isle What to Expect page tour"
-          />
-        </div>
+        {/* Promo video — three 8-second clips playing back-to-back as one tour */}
+        <WhatToExpectVideo />
 
         {/* Live status card */}
         <div className={`card-diner p-6 mb-8 ${isClosed ? 'ring-2 ring-red-200' : ''}`}>
