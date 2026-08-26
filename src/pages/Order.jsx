@@ -14,7 +14,7 @@ export default function Order() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
-  const { level, waitMin, isOpen } = useLiveStatus();
+  const { level, waitMin, isClosed, closingSoon, closeTime } = useLiveStatus();
 
   useEffect(() => {
     base44.analytics.track({ eventName: 'order_landing_viewed', properties: { source } });
@@ -43,16 +43,19 @@ export default function Order() {
           </p>
         </div>
 
-        {/* Live status */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        {/* Live status — driven by the kitchen busyness backend */}
+        <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
-            !isOpen ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+            isClosed ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
           }`}>
             <Clock size={14} />
-            {!isOpen ? 'Closed right now' : level || 'Open'}
+            {isClosed ? 'Closed right now' : (level?.level || 'Open')}
           </span>
-          {isOpen && waitMin > 0 && (
+          {!isClosed && waitMin > 0 && (
             <span className="text-sm text-muted-foreground">~{waitMin} min wait</span>
+          )}
+          {closingSoon && closeTime && (
+            <span className="text-sm font-semibold text-midnight-cherry">Closing soon · {closeTime}</span>
           )}
         </div>
 
