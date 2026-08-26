@@ -26,6 +26,17 @@ export function reviewCtaHtml(orderId?: string) {
   </div>`;
 }
 
+// "What to expect" block — links to the live busyness guide so customers
+// waiting on their order can see the current kitchen level and wait times.
+export function whatToExpectHtml() {
+  return `
+  <div style="margin:18px 0 8px;border-radius:14px;padding:18px 20px;background:#EAF1F8;border:1px solid #C9D8E8;">
+    <p style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:16px;margin:0 0 6px;letter-spacing:2px;">⏱ WHAT TO EXPECT WHILE YOU WAIT</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">Curious how busy we are? Check our live kitchen status — it breaks down each level and the wait to expect.</p>
+    <a href="${APP_URL}/what-to-expect" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SEE LIVE STATUS →</a>
+  </div>`;
+}
+
 // Branded email shell matching the website: centered logo, cherry header,
 // cream body, navy footer, Oswald headings / Open Sans body.
 export function brandedEmailHtml(bodyHtml) {
@@ -167,6 +178,7 @@ export async function sendOrderPreparingEmail(order: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'll hit you up the second it's ready.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${whatToExpectHtml()}
     ${merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
 }

@@ -74,6 +74,23 @@ export default function OrderConfirmation() {
             ))}
           </div>
 
+          {/* What to expect while you wait */}
+          <Link
+            to="/what-to-expect"
+            className="block w-full text-left bg-patina-mint/5 border border-patina-mint/20 rounded-2xl p-4 mb-8 hover:bg-patina-mint/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-patina-mint/15 rounded-full flex items-center justify-center flex-shrink-0">
+                <Clock size={18} className="text-patina-mint" />
+              </div>
+              <div className="flex-1">
+                <p className="font-heading text-sm text-obsidian-roast">What to expect while you wait</p>
+                <p className="text-xs text-muted-foreground mt-0.5">See how busy we are & what each kitchen level means</p>
+              </div>
+              <ArrowRight size={16} className="text-patina-mint flex-shrink-0" />
+            </div>
+          </Link>
+
           {/* App dropping soon — shown while the crew prepares the order */}
           <AppDroppingSoonBanner />
 
