@@ -17,7 +17,7 @@ import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
-import { hoursSummary } from '@/lib/businessHours';
+import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -103,6 +103,18 @@ export default function Checkout() {
   // wait from the backend so it eases back to normal as inflow slows.
   const prepMinutes = waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
+
+  // Before the store opens for pickup, ready times are clamped to opening —
+  // show "from {open}" on the order-type tiles instead of a minute estimate.
+  const orderNow = new Date();
+  const orderDayKey = DAY_KEYS[(orderNow.getDay() + 6) % 7];
+  const orderTodayHours = businessHours?.[orderDayKey] || {};
+  const beforeStoreOpen = !orderTodayHours.closed && orderTodayHours.open && (() => {
+    const [oh, om] = orderTodayHours.open.split(':').map(Number);
+    const so = new Date(orderNow); so.setHours(oh, om, 0, 0);
+    return orderNow < so;
+  })();
+  const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
@@ -200,7 +212,9 @@ export default function Checkout() {
 
   const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
   const readyLabel = readyAt
-    ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
+    ? schedule.mode === 'asap' && schedule.estimatedTime > prepMinutes
+      ? readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
     : `ASAP (≈ ${prepMinutes} min)`;
 
   const updateForm = (field, val) => {
@@ -236,10 +250,8 @@ export default function Checkout() {
     }
 
     // Fresh ready time at submit — ASAP = now + prepMinutes; scheduled = chosen slot
-    const scheduledFor = schedule.mode === 'asap'
-      ? new Date(Date.now() + prepMinutes * 60000).toISOString()
-      : schedule.scheduledFor;
-    const estimatedTime = schedule.mode === 'asap' ? prepMinutes : schedule.estimatedTime;
+    const scheduledFor = schedule.scheduledFor;
+    const estimatedTime = schedule.estimatedTime;
 
     const mappedItems = cartItems.map(i => ({
       name: i.name,
@@ -339,10 +351,8 @@ export default function Checkout() {
   // Build a single-pay intent from the current cart + wallet-provided contact
   // details. Used by the express Apple Pay / Google Pay button.
   const createIntent = async (walletCustomer) => {
-    const scheduledFor = schedule.mode === 'asap'
-      ? new Date(Date.now() + prepMinutes * 60000).toISOString()
-      : schedule.scheduledFor;
-    const estimatedTime = schedule.mode === 'asap' ? prepMinutes : schedule.estimatedTime;
+    const scheduledFor = schedule.scheduledFor;
+    const estimatedTime = schedule.estimatedTime;
     const mappedItems = cartItems.map(i => ({
       name: i.name,
       price: i.price,
@@ -464,9 +474,9 @@ export default function Checkout() {
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details</h2>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { type: 'pickup', label: 'Pickup', sub: `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
-                      { type: 'delivery', label: 'Delivery', sub: `${prepMinutes + 15}–${prepMinutes + 25} min` },
-                      { type: 'dine_in', label: 'Dine-In', sub: 'Seat yourself' },
+                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
+                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
+                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
                     ].map(({ type, label, sub }) => (
                       <button
                         key={type}

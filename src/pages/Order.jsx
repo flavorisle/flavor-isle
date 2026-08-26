@@ -4,6 +4,8 @@ import { ShoppingBag, Utensils, Bike, ArrowRight, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -15,15 +17,28 @@ export default function Order() {
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
   const { level, waitMin, isClosed, closingSoon, closeTime } = useLiveStatus();
+  const businessHours = useBusinessHours();
+
+  // Before the store opens for pickup, show "from {open}" instead of a minute
+  // estimate so guests pre-ordering ahead know pickup starts at opening.
+  const orderNow = new Date();
+  const orderDayKey = DAY_KEYS[(orderNow.getDay() + 6) % 7];
+  const orderTodayHours = businessHours?.[orderDayKey] || {};
+  const beforeStoreOpen = !orderTodayHours.closed && orderTodayHours.open && (() => {
+    const [oh, om] = orderTodayHours.open.split(':').map(Number);
+    const so = new Date(orderNow); so.setHours(oh, om, 0, 0);
+    return orderNow < so;
+  })();
+  const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   useEffect(() => {
     base44.analytics.track({ eventName: 'order_landing_viewed', properties: { source } });
   }, [source]);
 
   const OPTIONS = [
-    { id: 'pickup', label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag, blurb: 'Grab it hot off the grill.' },
-    { id: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils, blurb: 'Pull up a seat and dig in.' },
-    { id: 'delivery', label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min`, Icon: Bike, blurb: 'We bring it to your door.' },
+    { id: 'pickup', label: 'Pickup', time: openFromLabel || `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag, blurb: 'Grab it hot off the grill.' },
+    { id: 'dine_in', label: 'Dine-In', time: openFromLabel || 'Seat yourself', Icon: Utensils, blurb: 'Pull up a seat and dig in.' },
+    { id: 'delivery', label: 'Delivery', time: openFromLabel || `${waitMin + 15}–${waitMin + 25} min`, Icon: Bike, blurb: 'We bring it to your door.' },
   ];
 
   const start = (type) => {

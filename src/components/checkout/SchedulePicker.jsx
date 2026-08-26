@@ -71,8 +71,16 @@ export default function SchedulePicker({ onChange, prepMinutes = 20, compact = f
   useEffect(() => {
     const n = new Date();
     if (mode === 'asap') {
-      const ready = new Date(n.getTime() + prepMinutes * 60000);
-      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: prepMinutes, label: 'ASAP' });
+      let ready = new Date(n.getTime() + prepMinutes * 60000);
+      // Orders placed before the store opens are ready at opening, not before.
+      const dh = businessHours[dayKeyFor(n)];
+      if (dh && !dh.closed) {
+        const [oh, om] = dh.open.split(':').map(Number);
+        const storeOpen = new Date(n); storeOpen.setHours(oh, om, 0, 0);
+        if (ready < storeOpen) ready = storeOpen;
+      }
+      const est = Math.max(prepMinutes, Math.round((ready - n) / 60000));
+      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: est, label: 'ASAP' });
     } else if (slot) {
       const ready = new Date(date + 'T' + slot + ':00');
       onChange?.({
