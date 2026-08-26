@@ -46,12 +46,12 @@ export default function BusynessGuide() {
         {/* Promo video */}
         <div className="card-diner overflow-hidden mb-8">
           <video
-            src="https://media.base44.com/videos/public/6a3d84f2fe4ae4efe7f629bf/568e4294d_Busyness_Promo.mp4"
+            src="https://media.base44.com/videos/public/6a3d84f2fe4ae4efe7f629bf/076ebf44e_What_To_Expect_Tour.mp4"
             controls
             playsInline
             preload="metadata"
             className="w-full aspect-video object-cover bg-black"
-            aria-label="Flavor Isle live busyness indicator and wait times promo"
+            aria-label="Flavor Isle What to Expect page tour"
           />
         </div>
 
