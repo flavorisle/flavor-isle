@@ -60,7 +60,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Service Partners',
-        text: 'We share only what is necessary with our trusted service partners — for payment processing and in-store order syncing (Square), and delivery courier services — to run our business.',
+        text: 'We share only what is necessary with our trusted service partners — for payment processing and in-store order syncing (Square), delivery courier services, and merchandise fulfillment (Printful) — to run our business.',
       },
       {
         heading: 'Phone & SMS Communications (Twilio)',
@@ -77,6 +77,23 @@ const SECTIONS = [
       {
         heading: 'Legal Requirements',
         text: 'We never sell your personal information. We may disclose information when required by law or to protect the rights, property, or safety of our guests and staff.',
+      },
+    ],
+  },
+  {
+    title: 'Tasty Threads Merchandise',
+    body: [
+      {
+        heading: 'Shipping Information',
+        text: 'When you order from our Tasty Threads merchandise store, we collect your name, shipping address, email, and phone number to process and ship your order. Your shipping address is shared with our fulfillment partner to deliver your items.',
+      },
+      {
+        heading: 'Fulfillment Partner (Printful)',
+        text: 'Merchandise is printed and shipped on demand by Printful. When you place a merch order, your order details and shipping address are sent to Printful to manufacture and deliver your items. Printful uses this information solely to fulfill your order.',
+      },
+      {
+        heading: 'Merch Order Records',
+        text: 'We keep a record of your merch orders, tracking numbers, and fulfillment status so you can track your shipment and we can assist with any issues.',
       },
     ],
   },
@@ -155,7 +172,7 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicy() {
-  const lastUpdated = 'August 14, 2026';
+  const lastUpdated = 'August 26, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />

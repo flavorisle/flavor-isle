@@ -87,6 +87,27 @@ const SECTIONS = [
     ],
   },
   {
+    title: 'Tasty Threads Merchandise',
+    body: [
+      {
+        heading: 'Merch Orders',
+        text: 'When you order from our Tasty Threads merchandise store, you agree to pay the total shown, including shipping and applicable taxes. Merchandise prices and availability may change without notice.',
+      },
+      {
+        heading: 'Print-on-Demand Fulfillment',
+        text: 'Merchandise is printed and shipped on demand by our fulfillment partner, Printful. Production typically takes 2–7 business days before shipping. Estimated delivery times are approximate and may vary.',
+      },
+      {
+        heading: 'Shipping',
+        text: 'Shipping costs are calculated at checkout based on your address and the items in your order. We are not responsible for delays caused by the shipping carrier or incorrect addresses provided at checkout.',
+      },
+      {
+        heading: 'Returns & Exchanges',
+        text: 'Because each item is made to order, we generally do not accept returns or exchanges for size or preference reasons. If your item arrives damaged, defective, or incorrect, contact us promptly with a photo and we will arrange a replacement or refund.',
+      },
+    ],
+  },
+  {
     title: 'Loyalty & Rewards',
     body: [
       {
@@ -121,14 +142,14 @@ const SECTIONS = [
       },
       {
         heading: 'Third-Party Services',
-        text: 'Our services rely on third parties (including Square, Twilio, and OpenAI). We are not responsible for their separate policies or service interruptions.',
+        text: 'Our services rely on third parties (including Square, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
       },
     ],
   },
 ];
 
 export default function TermsOfService() {
-  const lastUpdated = 'August 14, 2026';
+  const lastUpdated = 'August 26, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
