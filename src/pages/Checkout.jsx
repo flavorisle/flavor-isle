@@ -17,7 +17,7 @@ import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
-import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
+import { hoursSummary } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import useOrderTimes from '@/hooks/useOrderTimes';
 import { loadStripe } from '@stripe/stripe-js';
