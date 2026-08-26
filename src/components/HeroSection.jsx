@@ -4,7 +4,7 @@ import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import PopularTimesCard from '@/components/PopularTimesCard';
-import useLiveStatus from '@/hooks/useLiveStatus';
+import useOrderTimes from '@/hooks/useOrderTimes';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED' },
@@ -21,9 +21,7 @@ const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
-  const { level, waitMin } = useLiveStatus();
-  const pickupTime = `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`;
-  const deliveryTime = `${waitMin + 15}–${waitMin + 25} min`;
+  const { pickup: pickupTime, delivery: deliveryTime, dineIn } = useOrderTimes();
 
   const handleOrder = (type) => {
     base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'hero' } });
@@ -60,7 +58,7 @@ export default function HeroSection() {
             {[
               { type: 'pickup', label: 'Pickup', time: pickupTime, Icon: ShoppingBag },
               { type: 'delivery', label: 'Delivery', time: deliveryTime, Icon: Bike },
-              { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
+              { type: 'dine_in', label: 'Dine-In', time: dineIn, Icon: Utensils },
             ].map(({ type, label, time, Icon }) => (
               <button
                 key={type}

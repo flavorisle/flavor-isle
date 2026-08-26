@@ -161,10 +161,21 @@ export async function sendOrderPreparingEmail(order: any) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
+  // Show the same estimated ready time checkout quoted so the email matches
+  // what the customer saw on the order buttons / checkout ready-by line.
+  const readyAt = order.scheduled_for ? new Date(order.scheduled_for) : null;
+  const readyBy = readyAt ? readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : null;
+  const estMin = order.estimated_time || null;
+  const readyLine = readyBy
+    ? `<p style="color:#141414;font-size:16px;margin:0 0 6px;"><strong>Estimated ready:</strong> ${readyBy}${estMin ? ` (≈ ${estMin} min)` : ''}</p>`
+    : estMin
+      ? `<p style="color:#141414;font-size:16px;margin:0 0 6px;"><strong>Estimated ready in:</strong> ≈ ${estMin} min</p>`
+      : '';
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
     <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">🍔 Order #${orderNum} is on the grill</h2>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
+    ${readyLine}
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'll hit you up the second it's ready.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${merchPromoHtml()}`;

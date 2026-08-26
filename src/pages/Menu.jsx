@@ -19,15 +19,7 @@ import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
-import useLiveStatus from '@/hooks/useLiveStatus';
-
-// Pickup / delivery estimates scale with the live kitchen load so the menu
-// matches the hero, status bar, and checkout everywhere times are shown.
-const ORDER_TYPE_CONFIG = (waitMin) => ({
-  pickup: { icon: ShoppingBag, label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
-  delivery: { icon: Bike, label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min` },
-  dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
-});
+import useOrderTimes from '@/hooks/useOrderTimes';
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -38,8 +30,12 @@ export default function Menu() {
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
   const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
-  const { level } = useLiveStatus();
-  const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
+  const { pickup, delivery, dineIn } = useOrderTimes();
+  const ORDER_TYPES = {
+    pickup: { icon: ShoppingBag, label: 'Pickup', time: pickup },
+    delivery: { icon: Bike, label: 'Delivery', time: delivery },
+    dine_in: { icon: Utensils, label: 'Dine-In', time: dineIn },
+  };
 
   const reload = async () => {
     try {

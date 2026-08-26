@@ -19,6 +19,7 @@ import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import useOrderTimes from '@/hooks/useOrderTimes';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -98,23 +99,12 @@ export default function Checkout() {
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
+  const { fromLabel } = useOrderTimes();
   // Kitchen prep estimate scales with the live busyness level so checkout
   // ready times match what the hero/status bar advertise. Uses the regressed
   // wait from the backend so it eases back to normal as inflow slows.
   const prepMinutes = waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
-
-  // Before the store opens for pickup, ready times are clamped to opening —
-  // show "from {open}" on the order-type tiles instead of a minute estimate.
-  const orderNow = new Date();
-  const orderDayKey = DAY_KEYS[(orderNow.getDay() + 6) % 7];
-  const orderTodayHours = businessHours?.[orderDayKey] || {};
-  const beforeStoreOpen = !orderTodayHours.closed && orderTodayHours.open && (() => {
-    const [oh, om] = orderTodayHours.open.split(':').map(Number);
-    const so = new Date(orderNow); so.setHours(oh, om, 0, 0);
-    return orderNow < so;
-  })();
-  const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
@@ -474,9 +464,9 @@ export default function Checkout() {
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details</h2>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
-                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
-                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
+                      { type: 'pickup', label: 'Pickup', sub: fromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
+                      { type: 'delivery', label: 'Delivery', sub: fromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
+                      { type: 'dine_in', label: 'Dine-In', sub: fromLabel || 'Seat yourself' },
                     ].map(({ type, label, sub }) => (
                       <button
                         key={type}
