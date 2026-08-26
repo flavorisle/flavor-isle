@@ -34,10 +34,14 @@ const NEXT_STATUS = {
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
 // Detect where an order came from.
+// POS sync stamps customer_email = 'square-pos@flavorisle.com'.
+// Phone orders get an order_number prefixed with 'PH' (logPhoneOrder).
+// Online orders have a real customer email + a Stripe payment; they also get
+// a square_order_id after payment (pushed to Square POS by the Stripe webhook),
+// so square_order_id alone is NOT a reliable POS marker.
 function getSource(order) {
-  if (order.square_order_id) return 'pos';
-  if (order.customer_email === 'phone-order@flavorisle.com' || order.stripe_session_id?.startsWith('phone_')) return 'phone';
-  if (order.stripe_session_id) return 'online';
+  if (order.customer_email === 'square-pos@flavorisle.com') return 'pos';
+  if (order.order_number?.startsWith('PH')) return 'phone';
   return 'online';
 }
 
