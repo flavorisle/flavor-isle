@@ -3,6 +3,21 @@ import { base44 } from '@/api/base44Client';
 import { Star, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ReviewForm from './ReviewForm';
 
+// Module-level cache so every ItemRatings card on a page shares ONE fetch of
+// the approved-reviews list instead of each card pulling it separately (which
+// triggered rate limits and UI jank on menu-heavy pages).
+let approvedReviewsCache = null;
+let approvedReviewsPromise = null;
+function loadApprovedReviews() {
+  if (approvedReviewsCache) return Promise.resolve(approvedReviewsCache);
+  if (!approvedReviewsPromise) {
+    approvedReviewsPromise = base44.entities.Review.filter({ is_approved: true })
+      .then(data => { approvedReviewsCache = data || []; return approvedReviewsCache; })
+      .catch(() => { approvedReviewsPromise = null; return []; });
+  }
+  return approvedReviewsPromise;
+}
+
 // Shows approved reviews for a specific menu item (matched by menu_item_id,
 // with a name-match fallback for legacy reviews) and lets a customer rate
 // the item directly from the menu card.
@@ -16,30 +31,31 @@ export default function ItemRatings({ item, itemName }) {
   const name = item?.name || itemName || '';
 
   useEffect(() => {
-    base44.entities.Review.filter({ is_approved: true })
-      .then(data => {
-        let itemReviews = [];
-        if (item?.id) {
-          itemReviews = (data || []).filter(r => r.menu_item_id === item.id);
-        }
-        // Fallback to fuzzy name match for older reviews not linked to an item.
-        if (itemReviews.length === 0 && name) {
-          itemReviews = (data || []).filter(r =>
-            !r.menu_item_id && r.customer_name &&
-            (r.customer_name.toLowerCase().includes(name.toLowerCase()) ||
-             name.toLowerCase().includes(r.customer_name.toLowerCase()))
-          );
-        }
+    let cancelled = false;
+    loadApprovedReviews().then(data => {
+      if (cancelled) return;
+      let itemReviews = [];
+      if (item?.id) {
+        itemReviews = (data || []).filter(r => r.menu_item_id === item.id);
+      }
+      // Fallback to fuzzy name match for older reviews not linked to an item.
+      if (itemReviews.length === 0 && name) {
+        itemReviews = (data || []).filter(r =>
+          !r.menu_item_id && r.customer_name &&
+          (r.customer_name.toLowerCase().includes(name.toLowerCase()) ||
+           name.toLowerCase().includes(r.customer_name.toLowerCase()))
+        );
+      }
 
-        if (itemReviews.length > 0) {
-          const avg = (itemReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / itemReviews.length).toFixed(1);
-          setAvgRating(avg);
-          setReviews(itemReviews.slice(0, 10));
-        } else {
-          setReviews([]);
-        }
-      })
-      .catch(() => {});
+      if (itemReviews.length > 0) {
+        const avg = (itemReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / itemReviews.length).toFixed(1);
+        setAvgRating(avg);
+        setReviews(itemReviews.slice(0, 10));
+      } else {
+        setReviews([]);
+      }
+    });
+    return () => { cancelled = true; };
   }, [item?.id, name]);
 
   const withPhotos = reviews.filter(r => r.photo_url);
