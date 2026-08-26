@@ -41,13 +41,15 @@ export default async function (req: Request) {
       });
     }
 
+    // Embedded checkout — the Stripe form renders inside our merch checkout
+    // page (iframe) instead of redirecting the customer away to a hosted page.
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
+      ui_mode: "embedded",
       customer_email: customer.email,
-      success_url: `${origin}/merch-confirmation?session_id={CHECKOUT_SESSION_ID}&order_number=${orderNumber}`,
-      cancel_url: `${origin}/merch-checkout`,
+      return_url: `${origin}/merch-confirmation?session_id={CHECKOUT_SESSION_ID}&order_number=${orderNumber}`,
       metadata: {
         order_number: orderNumber,
         order_type: "merch",
@@ -93,7 +95,12 @@ export default async function (req: Request) {
       console.error("MerchOrder save error (non-fatal):", dbError.message);
     }
 
-    return Response.json({ url: session.url, session_id: session.id, order_number: orderNumber });
+    return Response.json({
+      client_secret: session.client_secret,
+      publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY"),
+      session_id: session.id,
+      order_number: orderNumber,
+    });
   } catch (error) {
     console.error("Merch checkout error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
