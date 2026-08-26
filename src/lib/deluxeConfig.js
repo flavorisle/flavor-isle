@@ -58,7 +58,9 @@ export function getDeluxePresets() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(cleanPreset);
+      // An empty saved list would silently hide every Deluxe button, so fall
+      // through to the defaults instead of returning [].
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(cleanPreset);
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
