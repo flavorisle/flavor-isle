@@ -147,6 +147,24 @@ export default function BusynessGuide() {
           ))}
         </div>
 
+        {/* Cook to order explainer */}
+        <div className="card-diner p-6 mb-10 bg-midnight-cherry/5 border border-midnight-cherry/15">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-midnight-cherry text-white flex items-center justify-center flex-shrink-0">
+              <Flame size={24} />
+            </div>
+            <div>
+              <h2 className="font-heading text-xl text-obsidian-roast mb-1.5">Why we cook to order</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Nothing here sits under a heat lamp. Every burger is smashed fresh on the flat-top the second your ticket hits the kitchen, every shake is spun to order, and every side is dropped in the fryer when you order it — not a minute before.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+                That's the trade-off: <span className="font-semibold text-obsidian-roast">a few extra minutes for food that's genuinely hot, crisp, and made just for you.</span> The live kitchen status above tells you how long the board is right now, so you always know before you order.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Order tracking stages */}
         <div className="mb-10">
           <OrderStatusStages />
