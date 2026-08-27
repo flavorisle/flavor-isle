@@ -97,6 +97,19 @@ export default function Order() {
           ))}
         </div>
 
+        {/* What to expect info box */}
+        <div className="mt-8 rounded-2xl border-2 border-patina-mint/20 bg-white/70 p-5">
+          <h3 className="font-heading text-lg text-obsidian-roast mb-2 flex items-center gap-2">
+            <Utensils size={18} className="text-midnight-cherry" /> What to Expect
+          </h3>
+          <ul className="space-y-1.5 text-sm text-muted-foreground">
+            <li>• Hand-patted smash burgers, shakes & fries — made fresh to order.</li>
+            <li>• Most orders are ready in about {waitMin || 20} minutes; delivery adds a little extra.</li>
+            <li>• Pay securely online with card, Apple Pay, or Google Pay.</li>
+            <li>• Earn Star Rewards on every order and skip the line next time.</li>
+          </ul>
+        </div>
+
         <p className="text-center text-xs text-muted-foreground mt-8">
           Ordered through Google? You're in the right place — tap an option above to start.
         </p>
