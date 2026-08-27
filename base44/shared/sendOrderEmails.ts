@@ -1,4 +1,5 @@
 import { Resend } from 'npm:resend@3.2.0';
+import { getLiveBusyness } from './liveBusyness.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -166,17 +167,34 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
   }
 }
 
-// "On the grill" email — sent when the order hits the kitchen. Includes a
-// Tasty Threads merch promo to cross-sell while the customer waits.
-export async function sendOrderPreparingEmail(order: any) {
+// "On the grill" email — sent when the order hits the kitchen. Includes the
+// live kitchen wait (same number the site shows) and a Tasty Threads merch
+// promo to cross-sell while the customer waits. `base44` is optional but
+// recommended — when passed, the email quotes the current dynamic wait.
+export async function sendOrderPreparingEmail(order: any, base44?: any) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
+
+  // Pull the same live wait the site/status bar show. Falls back to a soft
+  // message if the busyness lookup fails so the email still sends.
+  let waitLine = "We'll hit you up the second it's ready.";
+  try {
+    if (base44) {
+      const live = await getLiveBusyness(base44);
+      if (!live.isClosed && live.estimated_wait_min > 0) {
+        waitLine = `The kitchen is <strong>${live.busyness_level}</strong> right now — expect about <strong>~${live.estimated_wait_min} min</strong> until it's ready.`;
+      }
+    }
+  } catch (e) {
+    console.error('sendOrderPreparingEmail live wait lookup failed:', e.message);
+  }
+
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
     <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">🍔 Order #${orderNum} is on the grill</h2>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
-    <p style="color:#666;margin:0 0 4px;font-size:14px;">We'll hit you up the second it's ready.</p>
+    <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${whatToExpectHtml()}
     ${merchPromoHtml()}`;

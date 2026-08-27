@@ -3,6 +3,7 @@ import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms
 import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -173,14 +174,24 @@ Deno.serve(async (req) => {
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
-          await sendOrderPreparingEmail(order);
+          await sendOrderPreparingEmail(order, base44);
           notified++;
+          // Live wait for the push body — same number the email and site show.
+          let pushWait = '';
+          try {
+            const live = await getLiveBusyness(base44);
+            if (!live.isClosed && live.estimated_wait_min > 0) {
+              pushWait = ` Expect ~${live.estimated_wait_min} min — kitchen is ${live.busyness_level.toLowerCase()}.`;
+            }
+          } catch (e) {
+            console.error('live wait for push failed:', e.message);
+          }
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
-            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen. We'll ping you the second it's ready!`,
+            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
             url: '/account',
             tag: `order-${order.id}`,
           });
