@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Image, Shirt, Tag, MessagesSquare, MessageSquareQuote } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, ShoppingBag, Image, Shirt, Tag, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
-  { label: 'Orders', to: '/admin/phone-orders', Icon: ShoppingBag },
+  { label: 'All Orders', to: '/admin/orders', Icon: Receipt },
+  { label: 'Phone Orders', to: '/admin/phone-orders', Icon: ShoppingBag },
   { label: 'Reviews', to: '/admin/reviews', Icon: MessageSquareQuote },
   { label: 'Merch Orders', to: '/admin/merch-orders', Icon: Shirt },
   { label: 'Merch Categories', to: '/admin/merch-categories', Icon: Tag },
