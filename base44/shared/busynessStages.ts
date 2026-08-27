@@ -38,10 +38,11 @@ export const COOK_CAPACITY_PER_HOUR = 8;
 // 15–20 min range: long enough to smooth a single quiet stretch, short
 // enough to catch a real slowdown within a few polls.
 export const RECENT_WINDOW_MINUTES = 18;
-// Normal (no-backlog) ticket time — the floor the estimate regresses to.
-export const BASE_WAIT_MIN = 20;
+// Normal (no-backlog) ticket time — the base cook time for a single order
+// with an empty board. The live wait starts here and grows with the queue.
+export const BASE_WAIT_MIN = 24;
 // Minutes of cook effort each order still in the active queue adds to the
-// floor, so a real remaining backlog is still quoted honestly.
+// base, so the estimate moves fluidly as orders enter and leave the kitchen.
 export const PER_ORDER_MINUTES = 3;
 
 export interface RegressedWait {
@@ -50,36 +51,31 @@ export interface RegressedWait {
   recovering: boolean;
 }
 
-// Regress the estimated wait toward the normal baseline when recent inflow
-// falls below cook capacity. Stateless per poll: the estimate interpolates
-// between the stage wait (sustained 60-min load) and the baseline, weighted
-// by how much of that load is still arriving vs stale from an earlier rush.
-// As the recent window rolls and inflow stays low, the freshness ratio
-// ramps down and the estimate eases back to the floor over several polls.
-// Never drops below the active-queue floor or above the stage wait, so a
-// real remaining backlog is still quoted and a fresh rush is never under-reported.
+// Continuous wait estimate — no stage-bucketed ceiling. The number is driven
+// entirely by the active queue depth (orders placed in the last cook window
+// that are still being worked), so it moves fluidly as orders enter and leave
+// the kitchen instead of snapping between fixed stage values (20 → 30 → 38).
+//
+//   wait = BASE_COOK_TIME + activeCount × PER_ORDER_MINUTES
+//
+// An empty board quotes the base cook time (~24 min). Each order in the
+// active queue adds a few minutes. The busyness LEVEL (Running Smooth →
+// Slammed) still comes from the rolling 60-min throughput and drives the
+// color/label/urgency — it just no longer caps the number.
 export function computeRegressedWait(
   liveCount: number,
   recentInflow: number,
   activeCount: number,
   stage: BusynessStage
 ): RegressedWait {
-  const stageWait = stage.waitMin;
-  const baseFloor = BASE_WAIT_MIN;
-  const queueFloor = Math.max(baseFloor, activeCount * PER_ORDER_MINUTES);
+  const queue = Math.max(0, activeCount);
+  let waitMin = BASE_WAIT_MIN + queue * PER_ORDER_MINUTES;
 
-  // Expected recent orders if the 60-min rate were sustained into the window.
-  const expectedRecent = Math.max(1, liveCount * (RECENT_WINDOW_MINUTES / 60));
-  // 1 = recent inflow matches the 60-min rate (sustained) → no decay.
-  // 0 = inflow stopped, the 60-min load is stale → decay to the floor.
-  const freshness = Math.max(0, Math.min(1, recentInflow / expectedRecent));
+  // Recovering: recent inflow has dropped below cook capacity while a
+  // backlog is still clearing → the wait will ease back down over the next
+  // few polls as orders leave the cook window.
+  const recovering = recentInflow < COOK_CAPACITY_PER_HOUR && queue > 0;
 
-  const headroom = Math.max(0, stageWait - baseFloor);
-  let waitMin = Math.round(baseFloor + headroom * freshness);
-  waitMin = Math.max(waitMin, queueFloor);
-  waitMin = Math.min(waitMin, stageWait);
-  waitMin = Math.max(waitMin, baseFloor);
-
-  const recovering = waitMin < stageWait && stageWait > baseFloor;
+  waitMin = Math.max(waitMin, BASE_WAIT_MIN);
   return { waitMin, waitRange: `≈ ${waitMin} min`, recovering };
 }

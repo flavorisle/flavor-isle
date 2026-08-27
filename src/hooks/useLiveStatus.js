@@ -84,7 +84,7 @@ export default function useLiveStatus() {
     closingSoon,
     level,
     wait: data?.estimated_wait || level?.waitRange,
-    waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 20,
+    waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 24,
     recovering: data?.recovering ?? false,
     activeCount: data?.activeCount ?? 0,
     orderingEnabled,

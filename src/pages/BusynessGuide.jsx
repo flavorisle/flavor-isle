@@ -15,10 +15,10 @@ const ORDER_TYPES = [
 ];
 
 const LEVEL_BLURBS = {
-  'Running Smooth': 'The board is clear and the grill is hot. Orders start right away and are typically ready in about 20 minutes.',
-  'A Little Busy': 'A steady stream of orders is coming in. Expect about a 30-minute wait from the time you place your order.',
-  'Busy': 'The kitchen is cooking at full tilt. Plan on a 35–40 minute wait — scheduling ahead is a smart move.',
-  'Slammed': "We're in the weeds. Orders can take up to 60 minutes. Schedule a later pickup time whenever you can.",
+  'Running Smooth': 'The board is clear and the grill is hot. Orders start right away and are typically ready in about 24 minutes.',
+  'A Little Busy': 'A steady stream of orders is coming in. Expect a 30–40 minute wait from the time you place your order.',
+  'Busy': 'The kitchen is cooking at full tilt. Plan on a 40–55 minute wait — scheduling ahead is a smart move.',
+  'Slammed': "We're in the weeds. Orders can take an hour or more. Schedule a later pickup time whenever you can.",
 };
 
 export default function BusynessGuide() {
