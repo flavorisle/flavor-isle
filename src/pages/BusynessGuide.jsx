@@ -156,7 +156,7 @@ export default function BusynessGuide() {
             <div>
               <h2 className="font-heading text-xl text-obsidian-roast mb-1.5">Why we cook to order</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Nothing here sits under a heat lamp. Every burger is smashed fresh on the flat-top the second your ticket hits the kitchen, every shake is spun to order, and every side is dropped in the fryer when you order it — not a minute before.
+                Nothing here sits under a heat lamp. Every burger is hand-patted and placed onto the grill the second your ticket hits the kitchen, every shake is spun to order, and every side is dropped in the fryer when you order it — not a minute before.
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 That's the trade-off: <span className="font-semibold text-obsidian-roast">a few extra minutes for food that's genuinely hot, crisp, and made just for you.</span> The live kitchen status above tells you how long the board is right now, so you always know before you order.
