@@ -446,25 +446,28 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
-                {/* Express checkout — Apple Pay / Google Pay */}
+                {/* Express checkout — one-tap Apple Pay / Google Pay first */}
                 {expressStripePromise && expressAvailable && (
-                  <div>
-                    <div className="card-diner p-4">
-                      <Elements stripe={expressStripePromise}>
-                        <ExpressCheckout
-                          total={totalWithTip}
-                          label="Flavor Isle"
-                          createIntent={createIntent}
-                          onSuccess={handleSuccess}
-                          onError={setError}
-                          onAvailability={setWalletReady}
-                        />
-                      </Elements>
-                      <div className="flex items-center gap-3 mt-4">
-                        <div className="h-px bg-border flex-1" />
-                        <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
-                        <div className="h-px bg-border flex-1" />
-                      </div>
+                  <div className="card-diner p-5 border-2 border-midnight-cherry/20 bg-white">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="font-heading text-lg text-obsidian-roast">One-Tap Checkout</h2>
+                      <span className="text-xs bg-midnight-cherry/10 text-midnight-cherry px-2.5 py-1 rounded-full font-heading">Fastest</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">Skip the form — pay instantly with your wallet and we'll grab the details we need from it.</p>
+                    <Elements stripe={expressStripePromise}>
+                      <ExpressCheckout
+                        total={totalWithTip}
+                        label="Flavor Isle"
+                        createIntent={createIntent}
+                        onSuccess={handleSuccess}
+                        onError={setError}
+                        onAvailability={setWalletReady}
+                      />
+                    </Elements>
+                    <div className="flex items-center gap-3 mt-5">
+                      <div className="h-px bg-border flex-1" />
+                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
+                      <div className="h-px bg-border flex-1" />
                     </div>
                   </div>
                 )}
