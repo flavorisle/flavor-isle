@@ -28,7 +28,7 @@ const STAGES = [
     Icon: Flame,
     color: 'text-midnight-cherry',
     bg: 'bg-midnight-cherry/10',
-    desc: "Your order is being cooked fresh right now — burgers smashed, shakes spun.",
+    desc: "Your order is being cooked fresh right now — burgers hand-patted, shakes spun.",
     expect: 'This is the longest stage. Wait times flex with how busy we are (see the levels above).',
   },
   {
