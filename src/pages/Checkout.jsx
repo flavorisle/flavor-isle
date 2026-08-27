@@ -209,12 +209,13 @@ export default function Checkout() {
   const rewardDiscount = appliedReward?.discountValue || 0;
   const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
-  const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
-  const readyLabel = readyAt
-    ? schedule.mode === 'asap' && schedule.estimatedTime > prepMinutes
-      ? readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
-    : `ASAP (≈ ${prepMinutes} min)`;
+  // Single combined ready-by label: "~N min · clock time". For ASAP the clock
+  // time is order time + prep minutes; for a scheduled order it's the chosen slot.
+  const readyAt = schedule.scheduledFor
+    ? new Date(schedule.scheduledFor)
+    : new Date(Date.now() + prepMinutes * 60000);
+  const readyMinutes = schedule.mode === 'schedule' ? schedule.estimatedTime : prepMinutes;
+  const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const updateForm = (field, val) => {
     setForm(prev => ({ ...prev, [field]: val }));
@@ -667,9 +668,6 @@ export default function Checkout() {
                       className="w-7 h-7 object-contain"
                     />
                     <span>{ORDER_TYPE_LABELS[orderType]}</span>
-                    <span className="ml-auto text-xs font-body opacity-70">
-                      {openFromLabel || (orderType === 'dine_in' ? 'Seat yourself' : orderType === 'delivery' ? `${prepMinutes + 15}–${prepMinutes + 25} min` : `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min`)}
-                    </span>
                   </div>
                   <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
                 </>
