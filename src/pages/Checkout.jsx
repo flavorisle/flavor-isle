@@ -661,39 +661,17 @@ export default function Checkout() {
 
               {step === 'details' && (
                 <>
-                  {/* Order type */}
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    {[
-                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
-                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
-                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
-                    ].map(({ type, label, sub }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          if (!cutoffStatus[type] && orderType !== type) {
-                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
-                          }
-                          setOrderType(type);
-                        }}
-                        disabled={cutoffStatus[type]}
-                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all font-heading text-xs ${
-                          cutoffStatus[type]
-                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                            : orderType === type
-                            ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                            : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        <img
-                          src={ORDER_TYPE_IMAGES[type]}
-                          alt={label}
-                          className={`w-8 h-8 object-contain ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
-                        />
-                        {label}
-                        <span className="text-[10px] font-body opacity-60 leading-tight">{cutoffStatus[type] ? 'Closed' : sub}</span>
-                      </button>
-                    ))}
+                  {/* Order type — chosen in the cart, shown read-only here */}
+                  <div className="flex items-center gap-2 bg-midnight-cherry/5 text-midnight-cherry rounded-xl px-3 py-2.5 mb-3 font-heading text-sm">
+                    <img
+                      src={ORDER_TYPE_IMAGES[orderType]}
+                      alt={ORDER_TYPE_LABELS[orderType]}
+                      className="w-7 h-7 object-contain"
+                    />
+                    <span>{ORDER_TYPE_LABELS[orderType]}</span>
+                    <span className="ml-auto text-xs font-body opacity-70">
+                      {openFromLabel || (orderType === 'dine_in' ? 'Seat yourself' : orderType === 'delivery' ? `${prepMinutes + 15}–${prepMinutes + 25} min` : `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min`)}
+                    </span>
                   </div>
                   <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
                 </>
