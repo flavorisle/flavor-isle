@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ShoppingBag, Utensils, Bike, ArrowRight, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
@@ -97,18 +97,24 @@ export default function Order() {
           ))}
         </div>
 
-        {/* What to expect info box */}
-        <div className="mt-8 rounded-2xl border-2 border-patina-mint/20 bg-white/70 p-5">
-          <h3 className="font-heading text-lg text-obsidian-roast mb-2 flex items-center gap-2">
-            <Utensils size={18} className="text-midnight-cherry" /> What to Expect
-          </h3>
-          <ul className="space-y-1.5 text-sm text-muted-foreground">
-            <li>• Hand-patted burgers, shakes & fries — made fresh to order.</li>
-            <li>• Most orders are ready in about {waitMin || 20} minutes; delivery adds a little extra.</li>
-            <li>• Pay securely online with card, Apple Pay, or Google Pay.</li>
-            <li>• Earn Star Rewards on every order and skip the line next time.</li>
-          </ul>
-        </div>
+        {/* What to expect — links to the full guide with a live wait preview */}
+        <Link
+          to="/what-to-expect"
+          className="mt-8 block rounded-2xl border-2 border-patina-mint/20 bg-white/70 p-5 hover:border-midnight-cherry/40 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Clock size={18} className="text-midnight-cherry" />
+              <h3 className="font-heading text-lg text-obsidian-roast">What to Expect</h3>
+            </div>
+            <ArrowRight size={18} className="text-muted-foreground group-hover:text-midnight-cherry group-hover:translate-x-1 transition-all" />
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            {isClosed
+              ? "We're closed right now — see our hours and busy times."
+              : `Current wait: ~${waitMin || 20} min · ${level?.level || 'Running Smooth'}. Tap to see today's busy times and plan ahead.`}
+          </p>
+        </Link>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
           Ordered through Google? You're in the right place — tap an option above to start.
