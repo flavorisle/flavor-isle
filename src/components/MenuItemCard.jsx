@@ -70,8 +70,14 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost) => {
-    addItem({ ...item, price: item.price + extraCost, selectedModifiers: selectedMods });
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings) => {
+    addItem({
+      ...item,
+      price: item.price + extraCost,
+      selectedModifiers: selectedMods,
+      deluxeLabel: deluxeLabel || undefined,
+      deluxeToppings: deluxeToppings || [],
+    });
     setShowModal(false);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
@@ -174,7 +180,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
             <p className="text-xs text-muted-foreground mb-3">{item.calories} cal</p>
           )}
 
-          <ItemRatings itemName={item.name} />
+          <ItemRatings item={item} />
 
           {hasModifiers && (
             <p className="text-xs text-muted-foreground mb-2 mt-3">

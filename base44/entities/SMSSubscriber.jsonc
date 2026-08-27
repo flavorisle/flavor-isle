@@ -1,0 +1,60 @@
+{
+  "name": "SMSSubscriber",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "phone": {
+      "type": "string",
+      "description": "Subscriber mobile number in E.164 format (e.g. +12705550000)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Optional subscriber name for personalization"
+    },
+    "email": {
+      "type": "string"
+    },
+    "opted_in": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the subscriber has consented to receive marketing texts"
+    },
+    "source": {
+      "type": "string",
+      "default": "website",
+      "description": "Where the subscriber signed up (website, in-store, etc.)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "unsubscribed"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "phone"
+  ],
+  "rls": {
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

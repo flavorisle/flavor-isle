@@ -32,17 +32,18 @@
     "6a63e1d4c8db87f30ac9553d",
     "6a63e203d3b77bf0c15f62e1",
     "6a3ea487dacaab2f04fedca0",
-    "6a63e213f14aa9cd1fc25b20"
+    "6a63e213f14aa9cd1fc25b20",
+    "6a6c1b13081a40c9f74f6382"
   ],
   "model": "automatic",
   "whatsapp_greeting": "",
   "telegram_greeting": "",
   "line_greeting": "",
   "memory_config": {
-    "enabled": false,
+    "enabled": true,
     "scope": "both",
     "include_other_conversation_context": false,
-    "instructions": null
+    "instructions": "Do not share personal information of customers this includes their Name, Phone, address, email, order information. You can share a lot of people are asking about ..."
   },
   "voice_config": {
     "voice_id": null

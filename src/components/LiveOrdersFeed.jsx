@@ -7,27 +7,49 @@ export default function LiveOrdersFeed() {
   const [stats, setStats] = useState({ total: 0, pending: 0, preparing: 0 });
 
   useEffect(() => {
+    let pending = false;
     const loadOrders = async () => {
-      const result = await base44.entities.Order.list('-created_date', 10);
-      const active = result.filter(o => ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status));
-      setOrders(active);
-      setStats({
-        total: active.length,
-        pending: active.filter(o => o.status === 'pending').length,
-        preparing: active.filter(o => ['confirmed', 'preparing'].includes(o.status)).length
-      });
+      if (pending) return;
+      pending = true;
+      const run = async () => {
+        const result = await base44.entities.Order.list('-created_date', 10);
+        const active = result.filter(o => ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status));
+        setOrders(active);
+        setStats({
+          total: active.length,
+          pending: active.filter(o => o.status === 'pending').length,
+          preparing: active.filter(o => ['confirmed', 'preparing'].includes(o.status)).length
+        });
+      };
+      try {
+        await run();
+      } catch (err) {
+        // Rate limits are transient — pause and retry once.
+        console.warn('LiveOrdersFeed: load failed, retrying', err.message);
+        try {
+          await new Promise((r) => setTimeout(r, 1200));
+          await run();
+        } catch (err2) {
+          console.warn('LiveOrdersFeed: could not load orders', err2.message);
+        }
+      } finally {
+        pending = false;
+      }
     };
 
     loadOrders();
 
-    // Subscribe to order changes
+    // Debounce subscribe reloads so a burst of order events doesn't fire many
+    // concurrent requests and trip the API rate limit.
+    let timer;
     const unsubscribe = base44.entities.Order.subscribe((event) => {
       if (['create', 'update'].includes(event.type)) {
-        loadOrders();
+        clearTimeout(timer);
+        timer = setTimeout(loadOrders, 600);
       }
     });
 
-    return unsubscribe;
+    return () => { unsubscribe(); clearTimeout(timer); };
   }, []);
 
   const getStatusColor = (status) => {

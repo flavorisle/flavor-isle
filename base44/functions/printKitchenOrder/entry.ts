@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Twilio } from 'npm:twilio';
+import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,9 +13,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing order_number' }, { status: 400 });
     }
 
-    // Format items for kitchen display
+    // Format items for kitchen display. Deluxe preset toppings print as the
+    // preset label ("Deluxe" / "Deluxe, no Tomato") instead of a raw list.
     const itemsText = (items || [])
-      .map(item => `${item.quantity}x ${item.name}${item.selectedModifiers ? ' (' + item.selectedModifiers.map(m => m.name).join(', ') + ')' : ''}`)
+      .map(item => {
+        const mods = formatItemModifiers(item).join(', ');
+        return `${item.quantity}x ${item.name}${mods ? ' (' + mods + ')' : ''}`;
+      })
       .join('\n');
 
     // Format message based on order type with customer info

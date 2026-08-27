@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Star } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-
-const CHIPS = [
-  { icon: '🍔', label: 'Hand-patted burgers' },
-  { icon: '🔥', label: 'Made fresh, never frozen' },
-  { icon: '🚚', label: 'Pickup in 15–25 min' },
-];
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 export default function SocialProofStrip({ tone = 'dark' }) {
   const isLight = tone === 'light';
   const text = isLight ? 'text-white/90' : 'text-obsidian-roast/80';
   const [rating, setRating] = useState(null);
   const [count, setCount] = useState(0);
+  const { waitMin } = useLiveStatus();
+
+  const CHIPS = [
+    { icon: '🍔', label: 'Hand-patted burgers' },
+    { icon: '🔥', label: 'Made fresh, never frozen' },
+    { icon: '🚚', label: `Pickup in ~${waitMin || 20} min` },
+  ];
 
   useEffect(() => {
     base44.entities.Review.filter({ is_approved: true })

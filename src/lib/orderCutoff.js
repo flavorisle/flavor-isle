@@ -42,12 +42,15 @@ export function getCutoffStatus(setting) {
   const today = setting?.business_hours?.[dayKey] || {};
   if (today.closed) return allClosed;
 
-  const openMins = toMins(today.open) ?? toMins('10:30');
+  // Online ordering unlocks at 8:00 AM every day — earlier than the store's
+  // pickup open time so guests can pre-order ahead. Pickup/dine-in ready
+  // times are clamped to the store open in the schedule picker.
+  const ORDER_OPEN_MINS = 8 * 60;
   const closeMins = toMins(today.close) ?? closedFallback;
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
-  if (nowMins < openMins) return allClosed;   // before opening
-  if (nowMins >= closeMins) return allClosed; // after closing
+  if (nowMins < ORDER_OPEN_MINS) return allClosed;   // before 8 AM — ordering locked
+  if (nowMins >= closeMins) return allClosed;        // after closing
 
   const minsToClose = closeMins - nowMins;
   return {

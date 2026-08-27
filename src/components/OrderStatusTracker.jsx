@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, Clock, ChefHat, PackageCheck, Bike, Utensils } from 'lucide-react';
+import AppDroppingSoonBanner from './AppDroppingSoonBanner';
 
 const PICKUP_STEPS = [
   { key: 'pending',   label: 'Order Received',  icon: Clock },
@@ -75,6 +76,8 @@ export default function OrderStatusTracker({ order }) {
           );
         })}
       </div>
+
+      {order.status === 'preparing' && <AppDroppingSoonBanner />}
     </div>
   );
 }

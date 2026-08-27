@@ -19,12 +19,15 @@ import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
-const ORDER_TYPE_CONFIG = {
-  pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
-  delivery: { icon: Bike, label: 'Delivery', time: '35–50 min' },
+// Pickup / delivery estimates scale with the live kitchen load so the menu
+// matches the hero, status bar, and checkout everywhere times are shown.
+const ORDER_TYPE_CONFIG = (waitMin) => ({
+  pickup: { icon: ShoppingBag, label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
+  delivery: { icon: Bike, label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min` },
   dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
-};
+});
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -35,6 +38,8 @@ export default function Menu() {
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
   const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
+  const { level } = useLiveStatus();
+  const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
 
   const reload = async () => {
     try {
@@ -106,7 +111,7 @@ export default function Menu() {
 
           {/* Order type switcher */}
           <div className="grid grid-cols-3 gap-3 max-w-2xl">
-            {Object.entries(ORDER_TYPE_CONFIG).map(([type, config]) => {
+            {Object.entries(ORDER_TYPES).map(([type, config]) => {
               const active = orderType === type;
               return (
                 <button

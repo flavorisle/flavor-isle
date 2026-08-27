@@ -1,9 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Camera, X, CheckCircle } from 'lucide-react';
+import { Star, Camera, X, CheckCircle, Share2, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ReviewForm from '@/components/ReviewForm';
 
+const SHARE_URL = 'https://taste-isle-express.base44.app';
+
 function ReviewCard({ review }) {
+  const [shared, setShared] = useState(false);
+
+  const handleShare = async () => {
+    const text = `"${review.text}" — ${review.customer_name}, ${review.rating}★ on Flavor Isle`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Flavor Isle review', text, url: SHARE_URL });
+      } else {
+        await navigator.clipboard.writeText(`${text} — ${SHARE_URL}`);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch { /* user cancelled share */ }
+  };
+
   return (
     <div className="card-diner p-6 flex flex-col gap-3">
       {review.photo_url && (
@@ -17,7 +34,16 @@ function ReviewCard({ review }) {
         ))}
       </div>
       <p className="text-muted-foreground text-sm leading-relaxed">"{review.text}"</p>
-      <p className="font-heading text-sm text-obsidian-roast">— {review.customer_name}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-heading text-sm text-obsidian-roast">— {review.customer_name}</p>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-midnight-cherry transition-colors tap-44"
+          aria-label="Share review"
+        >
+          {shared ? <><Check size={12} /> Copied!</> : <><Share2 size={12} /> Share</>}
+        </button>
+      </div>
     </div>
   );
 }

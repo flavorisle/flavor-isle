@@ -1,8 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { sendOrderStatusEmail, sendOrderReadyEmail } from '../../shared/sendOrderEmails.ts';
+import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -129,26 +130,34 @@ Deno.serve(async (req) => {
 
     const smashieSettings = await getSmashieSettings(base44);
 
+    // Fetch recent Order entities ONCE and index by square_order_id, instead
+    // of one filter() call per Square order — the per-order calls were
+    // exhausting the entity API rate limit every 5-minute run.
+    const recentOrders = await base44.asServiceRole.entities.Order.list('-created_date', 1000);
+    const orderBySquareId = new Map();
+    (recentOrders || []).forEach(o => {
+      if (o.square_order_id) orderBySquareId.set(o.square_order_id, o);
+    });
+
     let updated = 0;
     let notified = 0;
+    const pendingUpdates = [];
 
     for (const sqOrder of squareOrders) {
       const newStatus = mapSquareStateToStatus(sqOrder);
       if (!newStatus) continue;
 
-      // Find matching Order entity by square_order_id
-      const matches = await base44.asServiceRole.entities.Order.filter({ square_order_id: sqOrder.id });
-      if (!matches || matches.length === 0) continue;
-
-      const order = matches[0];
+      // Look up the matching Order entity from the in-memory index
+      const order = orderBySquareId.get(sqOrder.id);
+      if (!order) continue;
 
       // Only update if status actually changed
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
 
-      // Update the order status
-      await base44.asServiceRole.entities.Order.update(order.id, { status: newStatus });
+      // Stage the status update; applied in a single bulkUpdate after the loop
+      pendingUpdates.push({ id: order.id, status: newStatus });
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
@@ -165,18 +174,24 @@ Deno.serve(async (req) => {
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `🍔 Order #${orderNum} is on the grill`,
-            `Hey ${customerName},\n\nOrder #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥\n\nWe'll hit you up the second it's ready.\n\n— Smashie & The Flavor Isle Team 🍔`
-          );
+          await sendOrderPreparingEmail(order, base44);
           notified++;
+          // Live wait for the push body — same number the email and site show.
+          let pushWait = '';
+          try {
+            const live = await getLiveBusyness(base44);
+            if (!live.isClosed && live.estimated_wait_min > 0) {
+              pushWait = ` Expect ~${live.estimated_wait_min} min — kitchen is ${live.busyness_level.toLowerCase()}.`;
+            }
+          } catch (e) {
+            console.error('live wait for push failed:', e.message);
+          }
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
-            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen. We'll ping you the second it's ready!`,
+            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
             url: '/account',
             tag: `order-${order.id}`,
           });
@@ -199,11 +214,7 @@ Deno.serve(async (req) => {
         }
 
         if (milestone === 'completed') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `Thanks for rolling with us! 🙌`,
-            `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team`
-          );
+          await sendOrderCompletedEmail(order);
           notified++;
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
@@ -216,6 +227,10 @@ Deno.serve(async (req) => {
           });
         }
       }
+    }
+
+    if (pendingUpdates.length > 0) {
+      await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
     }
 
     return Response.json({ checked: squareOrders.length, updated, notified });

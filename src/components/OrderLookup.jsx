@@ -13,7 +13,7 @@ const STAGES = [
 const STATUS_PROFILE = {
   pending:    { stage: 0, headline: 'We got your order — holding for the go-ahead.', sub: "It's in our hands, fam. Just waiting on the green light to fire the grill.", color: '#1A3A5C' },
   confirmed:  { stage: 0, headline: "Locked in. We're about to fire the grill.", sub: "Order confirmed — the crew's pulling your stuff together now.", color: '#1A3A5C' },
-  preparing:  { stage: 1, headline: "Your meal is on the grill — yeah, we dropped the sauce.", sub: "Patties smashed, fries dropped, shakes spinning. You're almost there.", color: '#C0392B' },
+  preparing:  { stage: 1, headline: "Your meal is on the grill — yeah, we dropped the sauce.", sub: "Patties hand-patted and placed on the grill, fries dropped, shakes spinning. You're almost there.", color: '#C0392B' },
   ready:      { stage: 2, headline: "Bag sealed. Fries hot. Vibes immaculate — pull up!", sub: "Your order is ready for pickup at Flavor Isle — Smiths Grove. Slide through whenever you're ready.", color: '#C0392B' },
   delivered:  { stage: 3, headline: "Handed off — hope you ate good, fam.", sub: "Your order's been delivered. You already know we came with the flavor.", color: '#1A3A5C' },
   completed:  { stage: 3, headline: "All wrapped. Thanks for pulling up!", sub: "Hope you ate good — you already know we dropped the sauce. 🔥", color: '#1A3A5C' },

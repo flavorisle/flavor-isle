@@ -2,6 +2,10 @@
   "name": "SmashieSettings",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "greeting": {
       "type": "string",
       "default": "Hey fam, Flavor Isle\u2014Smashie here. What can I get started for you?",

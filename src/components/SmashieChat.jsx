@@ -5,6 +5,9 @@ import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
+const TRANSFER_TOKEN = /\[\[TRANSFER\]\]/i;
+
+const SMASHIE_HEAD = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png';
 
 export default function SmashieChat() {
   const [open, setOpen] = useState(false);
@@ -12,11 +15,28 @@ export default function SmashieChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [counterPhone, setCounterPhone] = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   useEffect(() => {scrollToBottom();}, [messages]);
+
+  // Open the chat when the bottom tab bar (or any other UI) requests it.
+  useEffect(() => {
+    const handler = () => openChat();
+    window.addEventListener('flavorisle:open-smashie', handler);
+    return () => window.removeEventListener('flavorisle:open-smashie', handler);
+  }, []);
+
+  // Lazily fetch the counter phone number so the chat can offer a
+  // "Call the Counter" button when Smashie hands off to a real person.
+  useEffect(() => {
+    if (counterPhone) return;
+    base44.functions.invoke('getCounterPhone', {}).then(res => {
+      if (res?.data?.phone) setCounterPhone(res.data.phone);
+    }).catch(() => {});
+  }, [counterPhone]);
 
   const openChat = async () => {
     setOpen(true);
@@ -54,10 +74,12 @@ export default function SmashieChat() {
       {!open &&
       <button
         onClick={openChat}
-        className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-16 h-16 bg-midnight-cherry text-white rounded-full shadow-float-lg hover:scale-110 transition-transform flex items-center justify-center chrome-hover"
+        className="hidden md:flex fixed right-6 bottom-6 z-[80] w-16 h-16 rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center ring-4 ring-white/90"
         aria-label="Chat with Smashie">
-        
-          <span className="text-2xl">🤖</span>
+
+          <span className="absolute inset-0 rounded-full bg-midnight-cherry/40 animate-ping opacity-70" />
+          <img src={SMASHIE_HEAD} alt="Smashie" className="relative w-full h-full object-cover rounded-full ring-2 ring-midnight-cherry" />
+          <span className="absolute -bottom-1 -right-1 bg-midnight-cherry text-white text-[10px] font-heading px-1.5 py-0.5 rounded-full shadow-float">CHAT</span>
         </button>
       }
 
@@ -66,7 +88,7 @@ export default function SmashieChat() {
       <div className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up">
           {/* Header */}
           <div className="bg-midnight-cherry px-5 py-4 flex items-center gap-3 flex-shrink-0">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
+            <img src={SMASHIE_HEAD} alt="Smashie" className="w-10 h-10 object-cover rounded-full flex-shrink-0" />
             <div className="flex-1">
               <p className="font-heading text-white text-base leading-none">Smashie AI</p>
               <p className="text-red-200 text-xs mt-0.5">Flavor Isle's Diner Assistant</p>
@@ -80,7 +102,7 @@ export default function SmashieChat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && !sending &&
           <div className="text-center py-8">
-                <div className="text-4xl mb-3">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-16 h-16 object-cover rounded-full mx-auto mb-3" />
                 <p className="font-heading text-obsidian-roast mb-1">Hey there, I'm Smashie!</p>
                 <p className="text-sm text-muted-foreground">Ask me about the menu, place a phone order, or just say hi!</p>
                 <div className="mt-4 flex flex-wrap gap-2 justify-center text-[hsl(var(--primary))]">
@@ -100,10 +122,12 @@ export default function SmashieChat() {
             {messages.map((msg, i) => {
             if (msg.role === 'system') return null;
             const isUser = msg.role === 'user';
+            const wantsTransfer = !isUser && TRANSFER_TOKEN.test(msg.content);
+            const cleanContent = isUser ? msg.content : msg.content.replace(/\[\[TRANSFER\]\]/gi, '').trim();
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser &&
-                <div className="w-7 h-7 bg-midnight-cherry rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-1 text-sm">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-7 h-7 object-cover rounded-full mr-2 flex-shrink-0 mt-1" />
                 }
                   <div className="flex flex-col gap-2 max-w-[80%]">
                     <div className={`px-4 py-2.5 rounded-2xl text-sm ${
@@ -112,9 +136,9 @@ export default function SmashieChat() {
                   'bg-muted text-obsidian-roast rounded-bl-sm'}`
                   }>
                       {isUser ?
-                    <p>{msg.content}</p> :
+                    <p>{cleanContent}</p> :
 
-                    <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{msg.content}</ReactMarkdown>
+                    <ReactMarkdown className="prose prose-sm max-w-none text-sm [&>p]:mb-1 [&>p:last-child]:mb-0">{cleanContent}</ReactMarkdown>
                     }
                     </div>
                     {!isUser && SHAKE_KEYWORDS.test(msg.content) &&
@@ -126,6 +150,14 @@ export default function SmashieChat() {
                         Build Your Shake →
                       </Link>
                   }
+                  {wantsTransfer && counterPhone &&
+                  <a
+                    href={`tel:${counterPhone}`}
+                    className="flex items-center gap-2 bg-midnight-cherry text-white text-xs font-heading px-4 py-2.5 rounded-2xl hover:bg-red-800 transition-colors">
+                    <span className="text-base">📞</span>
+                    Call the Counter →
+                  </a>
+                  }
                   </div>
                 </div>);
 
@@ -133,7 +165,7 @@ export default function SmashieChat() {
 
             {isThinking && messages[messages.length - 1]?.role === 'user' &&
           <div className="flex justify-start">
-                <div className="w-7 h-7 bg-midnight-cherry rounded-full flex items-center justify-center mr-2 flex-shrink-0 text-sm">🤖</div>
+                <img src={SMASHIE_HEAD} alt="Smashie" className="w-7 h-7 object-cover rounded-full mr-2 flex-shrink-0" />
                 <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
                   <Loader2 size={14} className="animate-spin text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Smashie is thinking…</span>

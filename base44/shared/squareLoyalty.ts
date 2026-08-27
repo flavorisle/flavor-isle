@@ -82,7 +82,7 @@ export async function searchLoyaltyAccountByPhone(phone: string): Promise<any | 
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
-      query: { filter: { mapping: { type: 'PHONE', id: e164, value: e164 } } },
+      query: { mappings: [{ phone_number: e164 }] },
       limit: 1,
     }),
   });
@@ -134,6 +134,34 @@ export async function accumulateLoyaltyPoints({
   if (!res.ok) throw new Error(`AccumulateLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
   return data?.loyalty_account || null;
 }
+
+// Flat star grant/ deduction outside the spend-based accrual rules. Used to
+// award the new-member welcome bonus to first-time enrollees.
+export async function adjustLoyaltyPoints({
+  accountId,
+  points,
+  reason,
+}: {
+  accountId: string;
+  points: number;
+  reason: string;
+}): Promise<any | null> {
+  const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/adjust`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      adjust_points: { points, reason },
+      idempotency_key: crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`AdjustLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
+  return data?.loyalty_account || null;
+}
+
+// Welcome bonus granted once to every customer the first time they're enrolled
+// in Star Rewards from an online order.
+export const WELCOME_BONUS_STARS = 40;
 
 export function describeRewardTier(tier: any): string {
   const def = tier?.definition || {};
@@ -188,6 +216,7 @@ export async function accrueForOrder({
   // Phone is the primary identifier for Square loyalty — look up the account
   // by phone mapping first, then fall back to email-based customer lookup.
   let account: any | null = null;
+  let newlyEnrolled = false;
   if (phone) account = await searchLoyaltyAccountByPhone(phone);
 
   if (!account) {
@@ -197,8 +226,25 @@ export async function accrueForOrder({
     account = await findLoyaltyAccountByCustomer(customerId);
     if (!account) {
       account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
+      newlyEnrolled = true;
     }
   }
+
+  // Welcome bonus: grant 40 stars to first-time enrollees before the spend-based
+  // accrual so a new member always starts with a head start on their first reward.
+  if (newlyEnrolled) {
+    try {
+      await adjustLoyaltyPoints({
+        accountId: account.id,
+        points: WELCOME_BONUS_STARS,
+        reason: 'Welcome bonus for joining Star Rewards',
+      });
+      console.log(`Welcome bonus of ${WELCOME_BONUS_STARS} stars granted to new loyalty account ${account.id}`);
+    } catch (err) {
+      console.error('Welcome bonus adjust failed:', (err as Error).message);
+    }
+  }
+
   await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId });
 }
 
@@ -229,6 +275,9 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
       points: t.points,
       description: describeRewardTier(t),
       scope: t.definition?.scope || 'ORDER',
+      discountType: t.definition?.discount_type || null,
+      percentage: t.definition?.percentage_discount || 0,
+      fixedAmountCents: t.definition?.fixed_discount_money?.amount || 0,
     });
   });
 
@@ -281,4 +330,50 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
     result.accountId = account.id;
   }
   return result;
+}
+
+// Redeem a Square loyalty reward tier for a buyer — deducts points from their
+// loyalty account and creates a Square redemption record. Called from the
+// Stripe webhook after an online order paid with an applied reward. A
+// deterministic idempotency key (per order + tier) keeps webhook retries from
+// double-deducting points.
+export async function redeemReward({
+  email,
+  phone,
+  rewardTierId,
+  idempotencyKey,
+}: {
+  email: string;
+  phone?: string;
+  rewardTierId: string;
+  idempotencyKey?: string;
+}): Promise<void> {
+  if (!rewardTierId) return;
+  const program = await getLoyaltyProgram();
+  if (!program?.id) throw new Error('Square loyalty program not found');
+
+  let account: any | null = null;
+  if (phone) {
+    try { account = await searchLoyaltyAccountByPhone(phone); }
+    catch (e) { console.error('Loyalty phone search failed:', (e as Error).message); }
+  }
+  if (!account) {
+    let customerId: string | null = null;
+    if (phone) customerId = await searchSquareCustomerIdByPhone(phone);
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) throw new Error('No Square customer found for loyalty redemption');
+    account = await findLoyaltyAccountByCustomer(customerId);
+  }
+  if (!account) throw new Error('No loyalty account found to redeem from');
+
+  const res = await fetch(`${SQUARE_API}/loyalty/rewards`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      loyalty_reward: { loyalty_account_id: account.id, reward_tier_id: rewardTierId },
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`CreateLoyaltyReward failed: ${JSON.stringify(data?.errors || data)}`);
 }

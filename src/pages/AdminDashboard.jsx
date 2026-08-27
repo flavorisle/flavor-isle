@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image, MessagesSquare, Receipt } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, Shirt, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -9,6 +9,7 @@ import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
+import PushLogList from '@/components/PushLogList';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 
 const adminPages = [
@@ -41,11 +42,25 @@ const adminPages = [
   color: 'obsidian-roast'
 },
 {
+  title: 'Merch Orders',
+  description: 'Track Tasty Threads / Printful fulfillment & shipping',
+  icon: Shirt,
+  path: '/admin/merch-orders',
+  color: 'midnight-cherry'
+},
+{
   title: 'Communications',
   description: 'Phone log, SMS log, message log, and Smashie AI settings',
   icon: MessagesSquare,
   path: '/admin/communications',
   color: 'patina-mint'
+},
+{
+  title: 'Reviews',
+  description: 'Approve customer feedback to feature as testimonials on the home page',
+  icon: MessageSquareQuote,
+  path: '/admin/reviews',
+  color: 'midnight-cherry'
 }];
 
 
@@ -77,6 +92,7 @@ export default function AdminDashboard() {
       <BusinessHoursSettings />
 
       <BroadcastPushCard />
+      <PushLogList />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />

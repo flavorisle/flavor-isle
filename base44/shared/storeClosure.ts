@@ -33,11 +33,13 @@ export async function getStoreStatus(base44) {
     const dayHours = (s.business_hours || {})[dayKey] || {};
     if (dayHours.closed) return { open: false, message: 'closed today' };
 
-    const openMins = toMins(dayHours.open) ?? toMins('10:30');
+    // Online ordering unlocks at 8:00 AM daily (earlier than the pickup open),
+    // so the live status treats the store as open from 8 AM until closing.
+    const ORDER_OPEN_MINS = 8 * 60;
     const closeMins = toMins(dayHours.close) ?? toMins('20:00');
     const nowMins = now.hour * 60 + now.minute;
 
-    if (nowMins < openMins || nowMins >= closeMins) {
+    if (nowMins < ORDER_OPEN_MINS || nowMins >= closeMins) {
       return { open: false, message: 'closed right now' };
     }
 

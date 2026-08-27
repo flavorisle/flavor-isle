@@ -39,7 +39,9 @@ export default function PremiumShakesSection() {
   useEffect(() => {
     Promise.all(PREMIUM_SHAKE_IDS.map((id) => base44.entities.MenuItem.get(id).catch(() => null)))
       .then((fetched) => {
-        setItems(fetched.filter(Boolean));
+        // Removed (is_hidden) premium shakes are excluded entirely; sold-out
+        // ones stay visible as disabled "Sold Out" cards.
+        setItems(fetched.filter(Boolean).filter((i) => i.is_hidden !== true));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -97,12 +99,15 @@ export default function PremiumShakesSection() {
             const badge = AVAILABILITY_BADGES[item.id];
             const shortName = SHORT_NAMES[item.id] || item.name.replace(/ Milkshake$/i, '');
             const isAdded = addedId === item.id;
+            const soldOut = item.is_available === false;
             return (
               <button
                 key={item.id}
                 onClick={() => handleCardClick(item)}
-                disabled={!orderingEnabled}
-                className="card-diner overflow-hidden text-left group flex flex-col disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={!orderingEnabled || soldOut}
+                className={`card-diner overflow-hidden text-left group flex flex-col disabled:opacity-60 disabled:cursor-not-allowed ${
+                  soldOut ? 'opacity-70' : ''
+                }`}
               >
                 {/* Image */}
                 <div className="relative h-32 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100">
@@ -110,16 +115,22 @@ export default function PremiumShakesSection() {
                     <img
                       src={item.image_url}
                       alt={item.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                        soldOut ? 'grayscale opacity-60' : ''
+                      }`}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">🥤</div>
                   )}
-                  {badge && (
+                  {soldOut ? (
+                    <div className="absolute top-2 left-2 bg-obsidian-roast text-white text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Sold Out
+                    </div>
+                  ) : badge ? (
                     <div className={`absolute top-2 left-2 text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider ${badge.className}`}>
                       {badge.label}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Content */}
@@ -128,9 +139,13 @@ export default function PremiumShakesSection() {
                   <p className="text-midnight-cherry font-heading text-base">${item.price.toFixed(2)}</p>
                   <div className="mt-auto pt-2">
                     <span className={`inline-flex items-center gap-1 text-xs font-heading w-full justify-center py-2 rounded-xl transition-all ${
-                      isAdded ? 'bg-patina-mint text-white' : 'bg-muted text-obsidian-roast group-hover:bg-midnight-cherry group-hover:text-white'
+                      soldOut
+                        ? 'bg-muted text-muted-foreground'
+                        : isAdded
+                          ? 'bg-midnight-cherry text-white'
+                          : 'bg-patina-mint text-white'
                     }`}>
-                      {isAdded ? <><Check size={12} /> Added!</> : <><Plus size={12} /> Add</>}
+                      {soldOut ? 'Sold Out' : isAdded ? <><Check size={12} /> Added!</> : <><Plus size={12} /> Add</>}
                     </span>
                   </div>
                 </div>

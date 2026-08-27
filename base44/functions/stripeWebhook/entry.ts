@@ -2,8 +2,9 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
-import { accrueForOrder } from '../../shared/squareLoyalty.ts';
+import { brandedEmailHtml, merchPromoHtml } from '../../shared/sendOrderEmails.ts';
+import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
+import { sendPushToEmail } from '../../shared/sendPush.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -57,6 +58,7 @@ async function sendOrderConfirmationEmail(order) {
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+        ${merchPromoHtml()}
   `);
 
   const { error } = await resend.emails.send({
@@ -80,12 +82,17 @@ async function sendOrderConfirmationEmail(order) {
 async function processLoyalty(base44, order, squareOrderId) {
   try {
     if (order.redemption_id) {
-      await base44.asServiceRole.entities.LoyaltyRedemption.update(order.redemption_id, {
-        is_redeemed: true,
-        redeemed_at: new Date().toISOString(),
-        order_id: order.id,
-      });
-      console.log(`Reward ${order.redemption_id} marked used for order ${order.order_number}`);
+      try {
+        await redeemReward({
+          email: order.customer_email,
+          phone: order.customer_phone,
+          rewardTierId: order.redemption_id,
+          idempotencyKey: `${order.id}:${order.redemption_id}`,
+        });
+        console.log(`Reward tier ${order.redemption_id} redeemed for order ${order.order_number}`);
+      } catch (redeemErr) {
+        console.error('Square loyalty redemption failed:', redeemErr.message);
+      }
     }
 
     if (!squareOrderId || !order.customer_email) return;
@@ -149,6 +156,20 @@ async function pushOrderToSquareAndKitchen(base44, order) {
     await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
   }
 
+  // Confirmed push — fires the instant payment lands, alongside the email/SMS.
+  if (order.customer_email) {
+    try {
+      await sendPushToEmail(base44, order.customer_email, {
+        title: '🍔 Order locked in!',
+        body: `Hey ${order.customer_name || 'fam'}, order #${order.order_number || ''} is confirmed — the crew's firing up the grill. We'll ping you as it moves along!`,
+        url: '/account',
+        tag: `order-${order.id}`,
+      });
+    } catch (pushErr) {
+      console.warn('Confirmed push failed:', pushErr.message);
+    }
+  }
+
   // Loyalty: consume applied reward + accrue Square Star Rewards for this order.
   await processLoyalty(base44, order, squareOrderId);
 }
@@ -190,7 +211,24 @@ Deno.serve(async (req) => {
           await pushOrderToSquareAndKitchen(base44, order);
         }
       } else {
-        console.warn('No Order found for stripe_session_id:', stripeSessionId);
+        // Merch order — paid merch orders are fulfilled by Printful.
+        const merchOrders = await base44.asServiceRole.entities.MerchOrder.filter({ stripe_session_id: stripeSessionId });
+        if (merchOrders && merchOrders.length > 0) {
+          const mo = merchOrders[0];
+          await base44.asServiceRole.entities.MerchOrder.update(mo.id, {
+            payment_status: 'paid',
+            fulfillment_status: 'paid',
+          });
+          console.log(`Merch order ${mo.order_number} marked paid`);
+          try {
+            await base44.functions.invoke('createPrintfulOrder', { merchOrderId: mo.id });
+            console.log(`Printful order placed for merch order ${mo.order_number}`);
+          } catch (pfErr) {
+            console.error('Printful order placement failed:', pfErr.message);
+          }
+        } else {
+          console.warn('No Order or MerchOrder found for stripe_session_id:', stripeSessionId);
+        }
       }
     } catch (dbErr) {
       console.error('DB update error:', dbErr.message);
