@@ -508,15 +508,59 @@ export default function Checkout() {
                   <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
                 </div>
 
-                {/* Star Rewards — balance, tier progress, and redeemable rewards
-                    in one panel (rewards hidden during separate split payments). */}
-                <CheckoutRewardsPanel
-                  subtotal={subtotal}
-                  phone={form.phone}
-                  appliedReward={appliedReward}
-                  onApply={setAppliedReward}
-                  showRewards={!(groupMode && payMode === 'separate')}
-                />
+                {/* Add a Tip */}
+                <div className="card-diner p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="font-heading text-base text-obsidian-roast">Add a Tip</h2>
+                    <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">100% goes to the kitchen crew.</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {tipPresets.map(preset => (
+                      <button
+                        key={preset.key}
+                        onClick={() => setTipPreset(preset.key)}
+                        className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
+                          tipPreset === preset.key
+                            ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                            : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setTipPreset('custom')}
+                      className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
+                        tipPreset === 'custom'
+                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                      }`}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {tipPreset === 'custom' && (
+                    <div className="mt-3 relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.50"
+                        value={customTip}
+                        onChange={e => setCustomTip(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                      />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setTipPreset('0'); setCustomTip(''); }}
+                    className="mt-3 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
+                  >
+                    No tip
+                  </button>
+                </div>
 
                 {/* Contact Info — delivery address moved up front so a new guest
                     sees the most important field first, before consent/instructions. */}
@@ -585,59 +629,15 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Add a Tip */}
-                <div className="card-diner p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h2 className="font-heading text-base text-obsidian-roast">Add a Tip</h2>
-                    <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">100% goes to the kitchen crew.</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {tipPresets.map(preset => (
-                      <button
-                        key={preset.key}
-                        onClick={() => setTipPreset(preset.key)}
-                        className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
-                          tipPreset === preset.key
-                            ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                            : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setTipPreset('custom')}
-                      className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
-                        tipPreset === 'custom'
-                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                      }`}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                  {tipPreset === 'custom' && (
-                    <div className="mt-3 relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.50"
-                        value={customTip}
-                        onChange={e => setCustomTip(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
-                      />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => { setTipPreset('0'); setCustomTip(''); }}
-                    className="mt-3 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
-                  >
-                    No tip
-                  </button>
-                </div>
+                {/* Star Rewards — balance, tier progress, and redeemable rewards
+                    in one panel (rewards hidden during separate split payments). */}
+                <CheckoutRewardsPanel
+                  subtotal={subtotal}
+                  phone={form.phone}
+                  appliedReward={appliedReward}
+                  onApply={setAppliedReward}
+                  showRewards={!(groupMode && payMode === 'separate')}
+                />
 
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
