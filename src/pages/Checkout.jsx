@@ -446,8 +446,9 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
-                {/* Express checkout — one-tap Apple Pay / Google Pay first */}
-                {expressStripePromise && expressAvailable && (
+                {/* Express checkout — one-tap Apple Pay / Google Pay first.
+                    Hidden entirely when the device has no wallet (walletReady === false). */}
+                {expressStripePromise && expressAvailable && walletReady !== false && (
                   <div className="card-diner p-5 border-2 border-midnight-cherry/20 bg-white">
                     <div className="flex items-center justify-between mb-1">
                       <h2 className="font-heading text-lg text-obsidian-roast">One-Tap Checkout</h2>

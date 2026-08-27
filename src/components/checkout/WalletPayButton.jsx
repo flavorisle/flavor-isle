@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStripe } from '@stripe/react-stripe-js';
 
-// Google Pay / Apple Pay via the Stripe Payment Request API. The branded
-// buttons are always displayed so customers on supported devices can tap to
-// pay; on unsupported browsers the native sheet won't open and the card form
-// below remains the fallback. Must be used inside <Elements>.
+// Google Pay / Apple Pay via the Stripe Payment Request API. The buttons only
+// render when Stripe confirms the device can actually pay with a wallet
+// (canMakePayment), so unsupported setups never show a broken button. Must be
+// used inside <Elements>.
 export default function WalletPayButton({ clientSecret, total, label, onSuccess, onError }) {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
+  // null = still checking support, true = wallet available, false = unsupported
+  const [canPay, setCanPay] = useState(null);
   const [busy, setBusy] = useState(false);
 
   // Keep the latest callbacks without re-running the setup effect on every render.
@@ -26,6 +28,13 @@ export default function WalletPayButton({ clientSecret, total, label, onSuccess,
       requestPayerPhone: true,
     });
     setPaymentRequest(pr);
+
+    // Only show wallet buttons when the device/browser actually supports a
+    // wallet. In cross-origin iframes or on unverified domains this resolves
+    // null/false, so we hide the buttons instead of showing a dead tap.
+    pr.canMakePayment()
+      .then((res) => setCanPay(!!(res && (res.applePay || res.googlePay))))
+      .catch(() => setCanPay(false));
 
     const onPaymentMethod = async (ev) => {
       setBusy(true);
@@ -76,7 +85,8 @@ export default function WalletPayButton({ clientSecret, total, label, onSuccess,
     });
   };
 
-  if (!paymentRequest) {
+  // Still checking support — show pulse placeholders.
+  if (canPay === null || !paymentRequest) {
     return (
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="h-12 rounded-xl bg-black/80 animate-pulse" />
@@ -84,6 +94,9 @@ export default function WalletPayButton({ clientSecret, total, label, onSuccess,
       </div>
     );
   }
+
+  // No wallet available — render nothing so the card form is the only path.
+  if (!canPay) return null;
 
   return (
     <div className="relative grid grid-cols-2 gap-3 mb-4">

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStripe } from '@stripe/react-stripe-js';
 
-// One-tap Apple Pay / Google Pay express checkout. The branded buttons are
-// always displayed so customers on supported devices can tap to pay without
-// filling out the form first; on unsupported browsers the native sheet simply
-// won't open and they fall back to the card form below. Must be inside
-// <Elements>.
+// One-tap Apple Pay / Google Pay express checkout. The buttons only render
+// when Stripe confirms the device/browser can actually pay with a wallet
+// (canMakePayment), so unsupported setups never show a broken button. Must
+// be inside <Elements>.
 export default function ExpressCheckout({ total, label, createIntent, onSuccess, onError, onAvailability }) {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
+  // null = still checking support, true = wallet available, false = unsupported
+  const [canPay, setCanPay] = useState(null);
   const [busy, setBusy] = useState(false);
 
   // Keep latest callbacks without re-running the setup effect on every render.
@@ -27,7 +28,21 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
       requestPayerPhone: true,
     });
     setPaymentRequest(pr);
-    cbRef.current.onAvailability?.(true);
+
+    // Only advertise wallet pay when the device can actually use it. Apple Pay
+    // needs a verified domain + Safari; Google Pay needs Chrome/Android with a
+    // saved card. In cross-origin iframes (e.g. the builder preview) both are
+    // unavailable, so we hide the buttons instead of showing a dead tap.
+    pr.canMakePayment()
+      .then((res) => {
+        const available = !!(res && (res.applePay || res.googlePay));
+        setCanPay(available);
+        cbRef.current.onAvailability?.(available);
+      })
+      .catch(() => {
+        setCanPay(false);
+        cbRef.current.onAvailability?.(false);
+      });
 
     const onPaymentMethod = async (ev) => {
       setBusy(true);
@@ -103,7 +118,8 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
     });
   };
 
-  if (!paymentRequest) {
+  // Still checking support — show pulse placeholders.
+  if (canPay === null || !paymentRequest) {
     return (
       <div className="grid grid-cols-2 gap-3">
         <div className="h-12 rounded-xl bg-black/80 animate-pulse" />
@@ -111,6 +127,9 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
       </div>
     );
   }
+
+  // No wallet available — render nothing so the card form is the only path.
+  if (!canPay) return null;
 
   return (
     <div className="relative grid grid-cols-2 gap-3">
