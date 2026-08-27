@@ -115,7 +115,7 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -140,8 +140,11 @@ export default function Checkout() {
       const p = profiles?.[0] || {};
       if (cancelled) return;
       if (p.delivery_address || p.address) setSavedAddress(true);
+      const [firstPart, ...rest] = (p.name || me.full_name || '').trim().split(/\s+/);
       setForm(prev => ({
         ...prev,
+        firstName: prev.firstName || firstPart || '',
+        lastName: prev.lastName || rest.join(' ') || '',
         email: prev.email || me.email || '',
         phone: prev.phone || p.phone || '',
         address: prev.address || p.delivery_address || p.address || '',
@@ -206,6 +209,7 @@ export default function Checkout() {
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
+  const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = appliedReward?.discountValue || 0;
   const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
@@ -237,7 +241,8 @@ export default function Checkout() {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.name.trim()) errors.name = 'Your name is required.';
+    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
+    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
     if (!form.email.trim()) errors.email = 'Your email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
@@ -285,7 +290,6 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
@@ -303,7 +307,6 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
@@ -366,7 +369,7 @@ export default function Checkout() {
       deluxeToppings: i.deluxeToppings || [],
     }));
     const customer = {
-      name: walletCustomer.name || form.name,
+      name: walletCustomer.name || fullName,
       email: walletCustomer.email || form.email,
       phone: walletCustomer.phone || form.phone,
       address: orderType === 'delivery' ? form.address : '',
@@ -537,11 +540,17 @@ export default function Checkout() {
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
-                      <input ref={nameRef} type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
-                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.name ? 'border-destructive' : 'border-border'}`} />
-                      {fieldErrors.name && <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>}
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
+                      <input ref={nameRef} type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.firstName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.firstName && <p className="text-xs text-destructive mt-1">{fieldErrors.firstName}</p>}
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
+                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.lastName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.lastName && <p className="text-xs text-destructive mt-1">{fieldErrors.lastName}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
