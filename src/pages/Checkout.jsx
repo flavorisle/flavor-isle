@@ -438,7 +438,12 @@ export default function Checkout() {
           )}
         </div>
 
-        <h1 className="font-heading text-3xl text-obsidian-roast mb-6">Checkout</h1>
+        <div className="mb-6">
+          <h1 className="font-heading text-3xl text-obsidian-roast leading-none">Checkout</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {step === 'details' ? 'Step 1 of 2 — Your details' : 'Step 2 of 2 — Payment'}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left – Form */}
