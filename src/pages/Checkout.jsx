@@ -638,8 +638,6 @@ export default function Checkout() {
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
-                <CheckoutRewardsPanel subtotal={subtotal} phone={form.phone} showRewards={false} />
-                <div className="mb-5" />
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     clientSecret={clientSecret}
