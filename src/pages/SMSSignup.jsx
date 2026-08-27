@@ -28,7 +28,7 @@ export default function SMSSignup() {
     setError('');
     const normalized = toE164(phone);
     if (!normalized) { setError('Please enter a valid 10-digit mobile number.'); return; }
-    if (!consent) { setError('Please agree to receive order updates and pay links by text.'); return; }
+    if (!consent) { setError('Please agree to receive order status updates and payment links by text.'); return; }
     setSubmitting(true);
     try {
       await base44.entities.SMSSubscriber.create({
@@ -55,18 +55,18 @@ export default function SMSSignup() {
             <MessageSquare size={28} />
           </div>
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>
-          <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Get Order Updates by Text</h1>
+          <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Order Updates, Straight to Your Phone</h1>
           <p className="text-muted-foreground mt-3 text-base">
-            Sign up to receive order status updates and secure pay-by-text links straight to your phone — so you always know when your food's ready and can pay without a call.
+            We'll text you the moment your order is confirmed, cooking, and ready for pickup — plus a secure pay-by-text link so you can settle up without picking up the phone. No marketing, no spam — just quick, helpful updates about your order.
           </p>
         </div>
 
         {done ? (
           <div className="card-diner p-8 text-center">
             <CheckCircle2 size={48} className="text-midnight-cherry mx-auto mb-4" />
-            <h2 className="font-heading text-2xl text-obsidian-roast mb-2">You're signed up!</h2>
+            <h2 className="font-heading text-2xl text-obsidian-roast mb-2">You're all set!</h2>
             <p className="text-muted-foreground text-sm mb-6">
-              We'll text you order status updates and pay-by-text links for your next order. You can text STOP anytime to opt out.
+              Next time you order, we'll send status updates and a quick pay-by-text link right here. You can text STOP anytime to opt out.
             </p>
             <Link to="/" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-block">Back to Home</Link>
           </div>
@@ -86,7 +86,7 @@ export default function SMSSignup() {
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
                 className="mt-1 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30" />
               <span className="text-sm text-muted-foreground leading-relaxed">
-                I agree to receive order status updates and pay-by-text links from Flavor Isle at the number provided. Msg & data rates may apply. Text STOP to opt out, HELP for help.
+                I agree to receive order status notifications and quick payment links from Flavor Isle at the number provided. This is for order updates only — no marketing texts. Msg & data rates may apply. Text STOP to opt out, HELP for help.
               </span>
             </label>
 
@@ -99,7 +99,7 @@ export default function SMSSignup() {
 
             <button type="submit" disabled={submitting}
               className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-              {submitting ? <><Loader2 size={16} className="animate-spin" /> Signing you up…</> : 'Send Me Updates'}
+              {submitting ? <><Loader2 size={16} className="animate-spin" /> Signing you up…</> : 'Sign Me Up for Updates'}
             </button>
             <p className="text-xs text-muted-foreground text-center">
               By signing up you agree to our <Link to="/terms-of-service" className="text-midnight-cherry underline">Terms of Service</Link> and <Link to="/privacy-policy" className="text-midnight-cherry underline">Privacy Policy</Link>.
