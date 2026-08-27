@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, TrendingUp, AlertCircle, Zap, Clock, CalendarClock, ShoppingBag, Utensils, Bike, ArrowRight, Info } from 'lucide-react';
+import { Flame, TrendingUp, AlertCircle, Zap, Clock, CalendarClock, ShoppingBag, Utensils, Bike, ArrowRight, Info, Share2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
@@ -41,6 +41,12 @@ export default function BusynessGuide() {
           <p className="text-muted-foreground mt-3 text-base max-w-xl mx-auto">
             We fire everything fresh to order. The kitchen status below updates live so you know exactly how long your food will take — and the best way to order.
           </p>
+          <button
+            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank', 'noopener,noreferrer')}
+            className="mt-5 inline-flex items-center gap-2 btn-mint chrome-hover px-5 py-2.5 text-sm font-heading"
+          >
+            <Share2 size={15} /> Share on Facebook
+          </button>
         </div>
 
         {/* Live status card */}
