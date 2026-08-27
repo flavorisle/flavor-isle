@@ -33,6 +33,10 @@ export function CartProvider({ children }) {
   const [people, setPeople] = useState(() => readSession('people', [])); // [{ id, name }]
   const [activePersonId, setActivePersonId] = useState(() => readSession('activePersonId', null));
 
+  // Applied Star Rewards discount — shared between the cart drawer (where the
+  // customer picks a reward) and checkout (where it reduces the total).
+  const [appliedReward, setAppliedReward] = useState(null);
+
   // Persist the cart for the current browser session so a refresh or a trip
   // through login doesn't lose the order.
   useEffect(() => {
@@ -172,7 +176,7 @@ export function CartProvider({ children }) {
     setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, person_id: personId, person_name: personName } : i));
   }, []);
 
-  const clearCart = useCallback(() => setCartItems([]), []);
+  const clearCart = useCallback(() => { setCartItems([]); setAppliedReward(null); }, []);
 
   // Group order helpers
   const addPerson = useCallback((name) => {
@@ -234,6 +238,7 @@ export function CartProvider({ children }) {
       groupMode, people, activePersonId, activePerson,
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,
+      appliedReward, setAppliedReward,
     }}>
       {children}
     </CartContext.Provider>

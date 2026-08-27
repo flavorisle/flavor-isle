@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
+import CheckoutRewardsPanel from '@/components/checkout/CheckoutRewardsPanel';
 
 const ORDER_TYPE_LABELS = {
   pickup: 'Pickup',
@@ -20,9 +21,11 @@ export default function CartDrawer() {
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
     groupMode, people, activePerson, startGroupOrder,
+    appliedReward, setAppliedReward,
   } = useCart();
   const navigate = useNavigate();
   const [assignFor, setAssignFor] = useState(null);
+  const [rewardsPhone, setRewardsPhone] = useState('');
 
   if (!isCartOpen) return null;
 
@@ -171,6 +174,28 @@ export default function CartDrawer() {
                 </div>
               </div>
             ))
+          )}
+          {cartItems.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 block">Phone (for Star Rewards)</label>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={rewardsPhone}
+                  onChange={e => { setRewardsPhone(e.target.value); setAppliedReward(null); }}
+                  placeholder="(270) 555-0000"
+                  className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                />
+              </div>
+              <CheckoutRewardsPanel
+                subtotal={subtotal}
+                phone={rewardsPhone}
+                appliedReward={appliedReward}
+                onApply={setAppliedReward}
+                showRewards={!groupMode}
+              />
+            </div>
           )}
         </div>
 

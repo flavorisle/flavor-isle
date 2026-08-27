@@ -8,7 +8,6 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
-import CheckoutRewardsPanel from '@/components/checkout/CheckoutRewardsPanel';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
@@ -94,7 +93,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -157,7 +156,6 @@ export default function Checkout() {
   const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
   // Whether the device actually supports a wallet (Apple Pay / Google Pay).
   // The express card stays hidden until the Stripe Payment Request confirms support.
   const [walletReady, setWalletReady] = useState(null);
@@ -194,10 +192,11 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
-  // Clear an applied reward when the loyalty identity or split mode changes.
+  // Clear an applied reward when split mode changes (separate split can't apply
+  // a single reward). The reward is now chosen in the cart drawer.
   useEffect(() => {
     setAppliedReward(null);
-  }, [form.phone, groupMode, payMode]);
+  }, [groupMode, payMode]);
 
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
@@ -598,16 +597,6 @@ export default function Checkout() {
                       className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
                 </div>
-
-                {/* Star Rewards — balance, tier progress, and redeemable rewards
-                    in one panel (rewards hidden during separate split payments). */}
-                <CheckoutRewardsPanel
-                  subtotal={subtotal}
-                  phone={form.phone}
-                  appliedReward={appliedReward}
-                  onApply={setAppliedReward}
-                  showRewards={!(groupMode && payMode === 'separate')}
-                />
 
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
