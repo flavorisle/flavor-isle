@@ -12,12 +12,14 @@ const DOT = {
 };
 
 // Dynamic CTA copy that shifts by kitchen load — the "Level + dynamic CTA"
-// treatment so guests get a nudge calibrated to the current wait.
+// treatment so guests get a nudge calibrated to the current wait. The minute
+// count is filled from the live backend estimate so it always matches the
+// wait time shown next to the level name.
 const CTA_BY_LEVEL = {
   'Running Smooth': 'Order now — no wait',
-  'A Little Busy': 'Order ahead — ~30 min',
-  Busy: 'Order ahead — ~40 min',
-  Slammed: 'Order ahead — ~60 min',
+  'A Little Busy': 'Order ahead',
+  Busy: 'Order ahead',
+  Slammed: 'Order ahead',
 };
 
 // Always-on-top live status bar. Replaces the old static navbar info bar with
@@ -31,6 +33,7 @@ export default function LiveStatusBar() {
     closingSoon,
     level,
     wait,
+    waitMin,
     orderingEnabled,
     minutesUntilClose,
     closeTime,
@@ -124,7 +127,12 @@ export default function LiveStatusBar() {
 
   // ── Live busyness level ──
   const dot = DOT[level.level] || 'bg-gray-300';
-  const cta = CTA_BY_LEVEL[level.level] || 'Order Now';
+  const baseCta = CTA_BY_LEVEL[level.level] || 'Order Now';
+  // Append the live wait estimate (when the kitchen is busy) so the CTA's
+  // minute count matches the wait shown next to the level name.
+  const cta = baseCta === 'Order ahead' && waitMin
+    ? `Order ahead — ~${waitMin} min`
+    : baseCta;
 
   return (
     <div className="w-full bg-vanilla-malt border-b border-border text-obsidian-roast">
