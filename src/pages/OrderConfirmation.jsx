@@ -15,7 +15,7 @@ export default function OrderConfirmation() {
   const sessionId = params.get('session_id');
   const orderNumber = params.get('order_number');
   const readyFor = params.get('ready_for');
-  const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : null;
+  const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }) : null;
   const [confetti, setConfetti] = useState(false);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';

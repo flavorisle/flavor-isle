@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
 import { lookupCustomersByIds, normalizePhone } from '../../shared/squareCustomer.ts';
+import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
 
 const PLACEHOLDER_EMAIL = 'square-pos@flavorisle.com';
 const SQUARE_VERSION = '2024-01-18';
@@ -148,17 +149,21 @@ Deno.serve(async (req) => {
       await Promise.all(updates);
     }
 
-    // Calculate hourly metrics for today (all statuses to show actual throughput)
-    const today = new Date().toISOString().split('T')[0];
+    // Calculate hourly metrics for today in store-local (America/Chicago) time
+    // so the date + hour keys match the Chicago-based busyness profiles. The
+    // Deno runtime is UTC, so raw getHours()/toISOString() would shift every
+    // order's hour by the UTC offset and mis-key the metrics.
+    const today = todayChicago().dateKey;
     const allOrders = await base44.asServiceRole.entities.Order.list();
-    const todayOrders = (allOrders || []).filter(o =>
-      o.created_date.startsWith(today)
-    );
+    const todayOrders = (allOrders || []).filter(o => {
+      const orderDate = chicagoParts(o.created_date).dateKey;
+      return orderDate === today;
+    });
 
     // Group by hour
     const hourlyMap = {};
     todayOrders.forEach(order => {
-      const hour = new Date(order.created_date).getHours();
+      const hour = chicagoParts(order.created_date).hour;
       hourlyMap[hour] = (hourlyMap[hour] || 0) + 1;
     });
 

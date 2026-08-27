@@ -4,6 +4,7 @@ import {
   MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { formatChicagoDateTime } from '@/lib/chicagoTime';
 import Navbar from '@/components/Navbar';
 import AdminNav from '@/components/admin/AdminNav';
 
@@ -106,7 +107,7 @@ function OrderCard({ order, onAdvance, onCancel }) {
           </div>
           <p className="text-sm font-semibold text-obsidian-roast">{order.customer_name}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1">
-            <span className="flex items-center gap-1"><Clock size={11} /> {new Date(order.created_date).toLocaleString()}</span>
+            <span className="flex items-center gap-1"><Clock size={11} /> {formatChicagoDateTime(order.created_date)}</span>
             {order.customer_phone && <span className="flex items-center gap-1"><Phone size={11} /> {order.customer_phone}</span>}
             {order.delivery_address && <span className="flex items-center gap-1"><MapPin size={11} /> {order.delivery_address}</span>}
           </div>
