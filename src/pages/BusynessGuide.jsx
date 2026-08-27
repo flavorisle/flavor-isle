@@ -127,7 +127,7 @@ export default function BusynessGuide() {
             Pickup gets you food the quickest. Delivery adds drive time on top of the kitchen wait.
           </TipCard>
           <TipCard Icon={Info} title="Fresh, never frozen">
-            Every burger is smashed to order and every shake is spun fresh — that's why wait times flex with how many orders are on the board.
+            Every burger is hand-patted to order and every shake is spun fresh — that's why wait times flex with how many orders are on the board.
           </TipCard>
         </div>
 
