@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, Users } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ArrowRight, Users, UserCircle, UserCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
@@ -23,14 +24,34 @@ export default function CartDrawer() {
     groupMode, people, activePerson, startGroupOrder,
     appliedReward, setAppliedReward,
   } = useCart();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [assignFor, setAssignFor] = useState(null);
   const [rewardsPhone, setRewardsPhone] = useState('');
+  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
 
   if (!isCartOpen) return null;
 
   const handleCheckout = () => {
+    // Signed-in customers go straight to checkout. Guests see a quick prompt
+    // to log in (for saved details + rewards) or continue as a guest.
+    if (isAuthenticated) {
+      setIsCartOpen(false);
+      navigate('/checkout');
+    } else {
+      setShowGuestPrompt(true);
+    }
+  };
+
+  const goToLogin = () => {
     setIsCartOpen(false);
+    setShowGuestPrompt(false);
+    navigate('/login?returnTo=%2Fcheckout');
+  };
+
+  const continueAsGuest = () => {
+    setIsCartOpen(false);
+    setShowGuestPrompt(false);
     navigate('/checkout');
   };
 
@@ -237,6 +258,41 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      {/* Guest checkout prompt — log in for saved details + rewards, or continue as guest */}
+      {showGuestPrompt && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowGuestPrompt(false)}>
+          <div className="bg-white rounded-3xl shadow-float-lg max-w-sm w-full p-6 animate-float-up" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 rounded-full bg-midnight-cherry/10 flex items-center justify-center mx-auto mb-3">
+                <UserCircle size={28} className="text-midnight-cherry" />
+              </div>
+              <h3 className="font-heading text-xl text-obsidian-roast mb-1">Checking out?</h3>
+              <p className="text-sm text-muted-foreground">Log in to save your details, track orders, and earn Star Rewards — or continue as a guest.</p>
+            </div>
+            <div className="space-y-2.5">
+              <button
+                onClick={goToLogin}
+                className="btn-cherry chrome-hover w-full py-3.5 text-sm font-heading flex items-center justify-center gap-2"
+              >
+                <UserCheck size={16} /> Log In to My Account
+              </button>
+              <button
+                onClick={continueAsGuest}
+                className="w-full py-3.5 text-sm font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-midnight-cherry/40 transition-colors"
+              >
+                Continue as Guest
+              </button>
+            </div>
+            <button
+              onClick={() => setShowGuestPrompt(false)}
+              className="mt-4 w-full text-xs text-muted-foreground hover:text-obsidian-roast transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
