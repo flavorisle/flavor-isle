@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image, Shirt, MessagesSquare } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Image, Shirt, MessagesSquare, MessageSquareQuote } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -47,6 +47,13 @@ const adminPages = [
   icon: MessagesSquare,
   path: '/admin/communications',
   color: 'patina-mint'
+},
+{
+  title: 'Reviews',
+  description: 'Approve customer feedback to feature as testimonials on the home page',
+  icon: MessageSquareQuote,
+  path: '/admin/reviews',
+  color: 'midnight-cherry'
 }];
 
 
