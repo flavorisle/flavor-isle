@@ -34,13 +34,14 @@ const NEXT_STATUS = {
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
 // Detect where an order came from.
-// POS sync stamps customer_email = 'square-pos@flavorisle.com'.
+// The POS sync (syncSquarePOS) reliably stamps order_source = 'in_store' on
+// every in-person order, whether or not the customer could be linked to a web
+// account. The old placeholder-email heuristic misclassified linked POS
+// orders as "online" (their email gets replaced with the real account email),
+// so order_source is the only reliable marker.
 // Phone orders get an order_number prefixed with 'PH' (logPhoneOrder).
-// Online orders have a real customer email + a Stripe payment; they also get
-// a square_order_id after payment (pushed to Square POS by the Stripe webhook),
-// so square_order_id alone is NOT a reliable POS marker.
 function getSource(order) {
-  if (order.customer_email === 'square-pos@flavorisle.com') return 'pos';
+  if (order.order_source === 'in_store') return 'pos';
   if (order.order_number?.startsWith('PH')) return 'phone';
   return 'online';
 }
