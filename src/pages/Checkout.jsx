@@ -667,25 +667,27 @@ export default function Checkout() {
             <div className="card-diner p-5 lg:sticky lg:top-32">
               <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details & Summary</h2>
 
-              {step === 'details' && (
-                <>
-                  {/* Order type — chosen in the cart, shown read-only here */}
-                  <div className="flex items-center gap-2 bg-midnight-cherry/5 text-midnight-cherry rounded-xl px-3 py-2.5 mb-3 font-heading text-sm">
+              {/* Order type + ready time merged into one card */}
+              <div className="rounded-xl bg-midnight-cherry/5 px-3 py-3 mb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
                     <img
                       src={ORDER_TYPE_IMAGES[orderType]}
                       alt={ORDER_TYPE_LABELS[orderType]}
-                      className="w-7 h-7 object-contain"
+                      className="w-7 h-7 object-contain flex-shrink-0"
                     />
-                    <span>{ORDER_TYPE_LABELS[orderType]}</span>
+                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
                   </div>
-                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
-                </>
-              )}
-
-              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-xl px-4 py-2.5 mb-4 text-sm font-heading">
-                <Clock size={16} />
-                <span>Ready by {readyLabel}</span>
+                  <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
+                    <Clock size={15} />
+                    <span>Ready by {readyLabel}</span>
+                  </div>
+                </div>
               </div>
+
+              {step === 'details' && (
+                <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
+              )}
 
               <div className="space-y-2 mb-4">
                 {groupMode ? (
