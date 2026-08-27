@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import SignUpNudge from '@/components/SignUpNudge';
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
+import PostOrderFeedback from '@/components/PostOrderFeedback';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -113,6 +114,11 @@ export default function OrderConfirmation() {
               Back to Home
             </Link>
           </div>
+        </div>
+
+        {/* Quick feedback — capture the moment while the experience is fresh */}
+        <div className="mt-6">
+          <PostOrderFeedback orderId={orderNumber || sessionId} />
         </div>
 
         <SignUpNudge variant="featured" />
