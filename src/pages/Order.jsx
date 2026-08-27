@@ -54,7 +54,7 @@ export default function Order() {
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>
           <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Order Online</h1>
           <p className="text-muted-foreground mt-3 text-base">
-            Smash burgers, shakes & more — fired up fresh. Pick how you want it and we'll get it started.
+            Hand-patted burgers, shakes & more — fired up fresh. Pick how you want it and we'll get it started.
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export default function Order() {
             <Utensils size={18} className="text-midnight-cherry" /> What to Expect
           </h3>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
-            <li>• Hand-patted smash burgers, shakes & fries — made fresh to order.</li>
+            <li>• Hand-patted burgers, shakes & fries — made fresh to order.</li>
             <li>• Most orders are ready in about {waitMin || 20} minutes; delivery adds a little extra.</li>
             <li>• Pay securely online with card, Apple Pay, or Google Pay.</li>
             <li>• Earn Star Rewards on every order and skip the line next time.</li>
