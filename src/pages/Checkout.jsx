@@ -448,7 +448,7 @@ export default function Checkout() {
               <>
                 {/* Express checkout — Apple Pay / Google Pay */}
                 {expressStripePromise && expressAvailable && (
-                  <div className={walletReady === true ? '' : 'hidden'}>
+                  <div>
                     <div className="card-diner p-4">
                       <Elements stripe={expressStripePromise}>
                         <ExpressCheckout
@@ -468,45 +468,6 @@ export default function Checkout() {
                     </div>
                   </div>
                 )}
-
-                {/* Order details — type + time in one compact card */}
-                <div className="card-diner p-4">
-                  <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details</h2>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
-                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
-                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
-                    ].map(({ type, label, sub }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          if (!cutoffStatus[type] && orderType !== type) {
-                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
-                          }
-                          setOrderType(type);
-                        }}
-                        disabled={cutoffStatus[type]}
-                        className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all font-heading text-sm ${
-                          cutoffStatus[type]
-                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                            : orderType === type
-                            ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                            : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        <img
-                          src={ORDER_TYPE_IMAGES[type]}
-                          alt={label}
-                          className={`w-10 h-10 object-contain ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
-                        />
-                        {label}
-                        <span className="text-[11px] font-body opacity-60 leading-tight">{cutoffStatus[type] ? 'Closed' : sub}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
-                </div>
 
                 {/* Add a Tip */}
                 <div className="card-diner p-4">
@@ -695,10 +656,50 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Right – Order Summary */}
-          <div className="lg:col-span-2">
-            <div className="card-diner p-5 sticky top-32">
-              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Summary</h2>
+          {/* Right – Order Details & Summary */}
+          <div className="lg:col-span-2 order-first lg:order-none">
+            <div className="card-diner p-5 lg:sticky lg:top-32">
+              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details & Summary</h2>
+
+              {step === 'details' && (
+                <>
+                  {/* Order type */}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[
+                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
+                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
+                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
+                    ].map(({ type, label, sub }) => (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          if (!cutoffStatus[type] && orderType !== type) {
+                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
+                          }
+                          setOrderType(type);
+                        }}
+                        disabled={cutoffStatus[type]}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all font-heading text-xs ${
+                          cutoffStatus[type]
+                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                            : orderType === type
+                            ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
+                            : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
+                        }`}
+                      >
+                        <img
+                          src={ORDER_TYPE_IMAGES[type]}
+                          alt={label}
+                          className={`w-8 h-8 object-contain ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
+                        />
+                        {label}
+                        <span className="text-[10px] font-body opacity-60 leading-tight">{cutoffStatus[type] ? 'Closed' : sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
+                </>
+              )}
 
               <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-xl px-4 py-2.5 mb-4 text-sm font-heading">
                 <Clock size={16} />
