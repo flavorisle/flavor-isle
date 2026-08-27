@@ -1,6 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { Twilio } from 'npm:twilio';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
+
+// Send an SMS via the Twilio REST API directly. The Twilio npm SDK throws
+// "Unsupported cache mode: default" under Deno, so we call the REST endpoint
+// with fetch + Basic auth instead — lighter and runtime-safe.
+async function sendTwilioSms(accountSid, authToken, from, to, body) {
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+  const params = new URLSearchParams({ From: from, To: to, Body: body });
+  const auth = btoa(`${accountSid}:${authToken}`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Twilio SMS failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
 
 Deno.serve(async (req) => {
   try {
@@ -33,11 +54,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Order has no phone number on file' }, { status: 400 });
     }
 
-    const client = new Twilio(
-      Deno.env.get('TWILIO_ACCOUNT_SID'),
-      Deno.env.get('TWILIO_AUTH_TOKEN')
-    );
-
     // Format message based on order type
     let message = '';
     if (order_type === 'delivery') {
@@ -49,11 +65,13 @@ Deno.serve(async (req) => {
       message = `✅ Your Flavor Isle order #${order.order_number} is ready for pickup!`;
     }
 
-    await client.messages.create({
-      from: Deno.env.get('TWILIO_PHONE_NUMBER'),
-      to: customer_phone,
-      body: message,
-    });
+    await sendTwilioSms(
+      Deno.env.get('TWILIO_ACCOUNT_SID'),
+      Deno.env.get('TWILIO_AUTH_TOKEN'),
+      Deno.env.get('TWILIO_PHONE_NUMBER'),
+      customer_phone,
+      message,
+    );
 
     console.log(`Order ready alert sent for order #${order.order_number}`);
     return Response.json({ success: true, message: 'Alert sent' });
