@@ -5,7 +5,6 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
-import WhatToExpectVideo from '@/components/WhatToExpectVideo';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -43,9 +42,6 @@ export default function BusynessGuide() {
             We fire everything fresh to order. The kitchen status below updates live so you know exactly how long your food will take — and the best way to order.
           </p>
         </div>
-
-        {/* Promo video — three 8-second clips playing back-to-back as one tour */}
-        <WhatToExpectVideo />
 
         {/* Live status card */}
         <div className={`card-diner p-6 mb-8 ${isClosed ? 'ring-2 ring-red-200' : ''}`}>
