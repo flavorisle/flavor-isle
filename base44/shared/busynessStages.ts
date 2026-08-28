@@ -15,10 +15,10 @@ export interface BusynessStage {
 }
 
 export const BUSYNESS_STAGES: BusynessStage[] = [
-  { min: 16, level: 'Slammed',         waitRange: '50–60 min', waitMin: 55, color: 'red' },
-  { min: 10, level: 'Busy',            waitRange: '35–40 min', waitMin: 38, color: 'orange' },
-  { min: 5,  level: 'A Little Busy',   waitRange: '~30 min',   waitMin: 30, color: 'yellow' },
-  { min: 0,  level: 'Running Smooth',  waitRange: '~20 min',   waitMin: 20, color: 'green' },
+  { min: 16, level: 'Slammed',         waitRange: '45+ min',  waitMin: 50, color: 'red' },
+  { min: 10, level: 'Busy',            waitRange: '30–45 min', waitMin: 38, color: 'orange' },
+  { min: 5,  level: 'A Little Busy',   waitRange: '20–30 min', waitMin: 25, color: 'yellow' },
+  { min: 0,  level: 'Running Smooth',  waitRange: '~14 min',   waitMin: 14, color: 'green' },
 ];
 
 export function getBusynessStage(rollingCount: number): BusynessStage {
@@ -40,7 +40,7 @@ export const COOK_CAPACITY_PER_HOUR = 8;
 export const RECENT_WINDOW_MINUTES = 18;
 // Normal (no-backlog) ticket time — the base cook time for a single order
 // with an empty board. The live wait starts here and grows with the queue.
-export const BASE_WAIT_MIN = 24;
+export const BASE_WAIT_MIN = 14;
 // Minutes of cook effort each order still in the active queue adds to the
 // base, so the estimate moves fluidly as orders enter and leave the kitchen.
 export const PER_ORDER_MINUTES = 3;
@@ -58,7 +58,7 @@ export interface RegressedWait {
 //
 //   wait = BASE_COOK_TIME + activeCount × PER_ORDER_MINUTES
 //
-// An empty board quotes the base cook time (~24 min). Each order in the
+// An empty board quotes the base cook time (~14 min). Each order in the
 // active queue adds a few minutes. The busyness LEVEL (Running Smooth →
 // Slammed) still comes from the rolling 60-min throughput and drives the
 // color/label/urgency — it just no longer caps the number.
