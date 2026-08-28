@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 function computeDiscount(tier, subtotal) {
@@ -68,6 +69,7 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
       <h3 className="font-heading text-sm text-obsidian-roast flex items-center gap-1">
         <Star size={13} className="text-smashie-yellow" fill="currentColor" /> Star Rewards
         <span className="text-xs text-muted-foreground font-body ml-1">· {balance.toLocaleString()} stars</span>
+        <Link to="/rewards" className="ml-auto text-xs text-patina-mint hover:text-midnight-cherry transition-colors font-body">Get / Redeem</Link>
       </h3>
       {redeemable.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
