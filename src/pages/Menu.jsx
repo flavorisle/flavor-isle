@@ -189,7 +189,7 @@ export default function Menu() {
           isShakeBanner ? (
             <div key={key}>
               <div className="flex items-center gap-4 mb-5">
-                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Milkshakes</h2>
+                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
                 <div className="flex-1 h-px bg-border" />
               </div>
               <MilkshakePromoBanner variant="strip" />
