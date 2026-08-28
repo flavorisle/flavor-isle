@@ -64,25 +64,29 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
     .sort((a, b) => a.points - b.points);
 
   return (
-    <div className="flex items-center gap-2 flex-wrap text-xs px-1">
-      <span className="flex items-center gap-1 font-heading text-obsidian-roast">
-        <Star size={12} className="text-smashie-yellow" fill="currentColor" />
-        {balance.toLocaleString()} stars
-      </span>
-      {redeemable.map(r => {
-        const applied = appliedReward?.tierId === r.id;
-        return (
-          <button
-            key={r.id}
-            onClick={() => onApply?.(applied ? null : { tierId: r.id, discountValue: r.discountValue, description: r.description })}
-            className={`px-2 py-0.5 rounded-full font-heading transition-colors ${
-              applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20'
-            }`}
-          >
-            {applied ? '✓ ' : '−$' + r.discountValue.toFixed(2) + ' '}{r.description || r.name}
-          </button>
-        );
-      })}
+    <div className="border-t border-border pt-3 mb-3 space-y-1.5">
+      <h3 className="font-heading text-sm text-obsidian-roast flex items-center gap-1">
+        <Star size={13} className="text-smashie-yellow" fill="currentColor" /> Star Rewards
+        <span className="text-xs text-muted-foreground font-body ml-1">· {balance.toLocaleString()} stars</span>
+      </h3>
+      {redeemable.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          {redeemable.map(r => {
+            const applied = appliedReward?.tierId === r.id;
+            return (
+              <button
+                key={r.id}
+                onClick={() => onApply?.(applied ? null : { tierId: r.id, discountValue: r.discountValue, description: r.description })}
+                className={`px-2 py-0.5 rounded-full font-heading transition-colors ${
+                  applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20'
+                }`}
+              >
+                {applied ? '✓ ' : '−$' + r.discountValue.toFixed(2) + ' '}{r.description || r.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

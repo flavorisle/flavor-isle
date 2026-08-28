@@ -597,14 +597,6 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Star Rewards — compact balance + redeemable rewards */}
-                <CheckoutLoyaltyBox
-                  subtotal={subtotal}
-                  phone={form.phone}
-                  appliedReward={appliedReward}
-                  onApply={setAppliedReward}
-                />
-
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
                 {groupMode && (
@@ -723,6 +715,14 @@ export default function Checkout() {
                   ))
                 )}
               </div>
+
+              {/* Star Rewards — compact balance + redeemable rewards */}
+              <CheckoutLoyaltyBox
+                subtotal={subtotal}
+                phone={form.phone}
+                appliedReward={appliedReward}
+                onApply={setAppliedReward}
+              />
 
               {/* Add a Tip — lives in the summary so the running total reflects it live */}
               <div className="border-t border-border pt-3 mb-3">
