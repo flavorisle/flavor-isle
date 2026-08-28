@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useCart } from '@/context/CartContext';
 import ReactMarkdown from 'react-markdown';
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
@@ -17,6 +18,10 @@ export default function SmashieChat() {
   const [sending, setSending] = useState(false);
   const [counterPhone, setCounterPhone] = useState('');
   const messagesEndRef = useRef(null);
+  const { totalItems } = useCart();
+  // When the cart has food in it, the floating cart bubble sits bottom-right —
+  // shift Smashie to the left so the two don't overlap.
+  const side = totalItems > 0 ? 'left' : 'right';
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -74,18 +79,18 @@ export default function SmashieChat() {
       {!open &&
       <button
         onClick={openChat}
-        className="hidden md:flex fixed right-6 bottom-6 z-[80] w-16 h-16 rounded-full shadow-float-lg hover:scale-110 transition-transform items-center justify-center ring-4 ring-white/90"
+        className={`hidden md:flex fixed ${side === 'left' ? 'left-6' : 'right-6'} bottom-6 z-[80] w-16 h-16 rounded-full shadow-float-lg hover:scale-110 transition-all items-center justify-center ring-4 ring-white/90`}
         aria-label="Chat with Smashie">
 
           <span className="absolute inset-0 rounded-full bg-midnight-cherry/40 animate-ping opacity-70" />
           <img src={SMASHIE_HEAD} alt="Smashie" className="relative w-full h-full object-cover rounded-full ring-2 ring-midnight-cherry" />
-          <span className="absolute -bottom-1 -right-1 bg-midnight-cherry text-white text-[10px] font-heading px-1.5 py-0.5 rounded-full shadow-float">CHAT</span>
+          <span className={`absolute -bottom-1 ${side === 'left' ? '-right-1' : '-right-1'} bg-midnight-cherry text-white text-[10px] font-heading px-1.5 py-0.5 rounded-full shadow-float`}>CHAT</span>
         </button>
       }
 
       {/* Chat Panel */}
       {open &&
-      <div className="fixed right-4 md:right-6 bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up">
+      <div className={`fixed ${side === 'left' ? 'left-4 md:left-6' : 'right-4 md:right-6'} bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up`}>
           {/* Header */}
           <div className="bg-midnight-cherry px-5 py-4 flex items-center gap-3 flex-shrink-0">
             <img src={SMASHIE_HEAD} alt="Smashie" className="w-10 h-10 object-cover rounded-full flex-shrink-0" />
