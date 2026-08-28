@@ -441,14 +441,14 @@ export default function AdminMenu() {
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-muted-foreground font-heading uppercase tracking-wider">Photo</span>
                           <BrandSelect
-                            value={item.image_position || 'top'}
+                            value={item.image_position || 'background'}
                             onValueChange={(v) => setImagePosition(item, v)}
                             className="flex-1 max-w-[220px] px-2.5 py-1.5 text-xs"
                           >
-                            <BrandOption value="top">Top (default)</BrandOption>
+                            <BrandOption value="background">Full photo (default)</BrandOption>
+                            <BrandOption value="top">Photo on top</BrandOption>
                             <BrandOption value="left">Left side</BrandOption>
                             <BrandOption value="right">Right side</BrandOption>
-                            <BrandOption value="background">Background</BrandOption>
                             <BrandOption value="none">No photo</BrandOption>
                           </BrandSelect>
                         </div>

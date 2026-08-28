@@ -42,8 +42,8 @@
         "background",
         "none"
       ],
-      "default": "top",
-      "description": "Where the item photo sits on the menu card. 'top' = photo above text (default), 'left'/'right' = photo beside the text, 'background' = photo as a full-card backdrop with overlaid text, 'none' = no photo (text-only compact card)."
+      "default": "background",
+      "description": "Where the item photo sits on the menu card. 'background' = photo fills the whole tile with overlaid title/price/add (default), 'top' = photo above text, 'left'/'right' = photo beside the text, 'none' = no photo (text-only compact card)."
     },
     "is_available": {
       "type": "boolean",

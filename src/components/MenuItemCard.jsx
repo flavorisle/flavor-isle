@@ -21,7 +21,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
-  const position = item.image_position || 'top';
+  const position = item.image_position || 'background';
 
   useEffect(() => {
     if (!user?.id) return;
