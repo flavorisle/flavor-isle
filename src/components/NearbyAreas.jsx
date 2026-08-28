@@ -31,7 +31,7 @@ export default function NearbyAreas() {
           <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">You're Closer Than You Think</p>
           <h2 className="font-heading text-4xl text-obsidian-roast mb-3">A Quick Stop Off I-65</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
-            Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, Flavor Isle is right off the interstate in Smiths Grove — easy on, easy off.
+            Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, Flavor Isle is right off the interstate in Smiths Grove — just 0.7 miles (about 2 minutes) from I-65, easy on, easy off.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function NearbyAreas() {
             <Navigation size={16} /> Get Directions to Flavor Isle
           </a>
           <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
-            <MapPin size={12} /> 103 N Main St, Smiths Grove, KY 42171 · Right off I-65
+            <MapPin size={12} /> 103 N Main St, Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65
           </p>
         </div>
       </div>
