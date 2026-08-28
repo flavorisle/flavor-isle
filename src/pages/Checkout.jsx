@@ -117,6 +117,7 @@ export default function Checkout() {
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
@@ -209,6 +210,17 @@ export default function Checkout() {
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
+  // Compose the kitchen-facing notes: customer instructions + requested extras.
+  const extrasList = Object.entries(extras)
+    .filter(([, v]) => v)
+    .map(([k]) => ({
+      forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
+    }[k]));
+  const instructionsWithExtras = [
+    form.instructions.trim(),
+    extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
+  ].filter(Boolean).join('\n');
+
   const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = appliedReward?.discountValue || 0;
   const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
@@ -294,7 +306,7 @@ export default function Checkout() {
           items: mappedItems,
           orderType,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip,
           scheduledFor, estimatedTime,
           splits,
@@ -379,7 +391,7 @@ export default function Checkout() {
       items: mappedItems,
       orderType,
       customer,
-      instructions: form.instructions,
+      instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
       scheduledFor, estimatedTime,
@@ -545,6 +557,36 @@ export default function Checkout() {
                       <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
                     </span>
                   </label>
+
+                  {/* Request extras — appended to kitchen order notes */}
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Need any extras?</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { key: 'forks', label: 'Forks' },
+                        { key: 'ketchup', label: 'Ketchup Packets' },
+                        { key: 'salt', label: 'Salt' },
+                        { key: 'napkins', label: 'Napkins' },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer text-sm transition-all ${
+                            extras[opt.key]
+                              ? 'border-midnight-cherry bg-midnight-cherry/5 text-obsidian-roast'
+                              : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={extras[opt.key]}
+                            onChange={e => setExtras(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                            className="w-4 h-4 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                          />
+                          <span className="font-body">{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="mt-4">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Special Instructions</label>
