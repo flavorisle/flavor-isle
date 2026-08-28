@@ -53,6 +53,7 @@ export default function Footer() {
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
+            <Link to="/facebook-order-food" className="hover:text-white transition-colors">Facebook Order Food</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
           </div>
