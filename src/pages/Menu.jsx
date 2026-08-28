@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
+import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -168,6 +169,7 @@ export default function Menu() {
         {!search && !loading && items.length > 0 && (
           <>
             <FanFavoritesSection items={items} />
+            <CravingsBox items={items} />
           </>
         )}
         {loading ?
