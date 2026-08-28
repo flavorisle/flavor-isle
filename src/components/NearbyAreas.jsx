@@ -18,7 +18,7 @@ const NEARBY_TOWNS = [
 const ATTRACTIONS = [
   { icon: Mountain, name: 'Mammoth Cave National Park', note: 'World-famous caves · ~25 min' },
   { icon: Landmark, name: 'National Corvette Museum', note: 'Bowling Green · ~20 min' },
-  { icon: Store, name: "Buckeyes I-65 Stop", note: 'Fuel & snacks · just off the interstate' },
+  { icon: Store, name: "Buc-ee's", note: 'Fuel & snacks · Bowling Green, south on I-65' },
 ];
 
 const DIRECTIONS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
