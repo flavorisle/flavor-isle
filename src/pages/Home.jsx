@@ -197,7 +197,7 @@ export default function Home() {
       </section>
 
       {/* ── NEARBY AREAS / I-65 WAYFINDING ── */}
-      <NearbyAreas />
+      <NearbyAreas hideCta />
 
       {/* ── FAQ + LOCATION ── */}
       <section className="py-12 px-4 sm:px-6">
@@ -222,7 +222,7 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                  <p className="text-sm text-muted-foreground">Kentucky, KY 42171</p>
+                  <p className="text-sm text-muted-foreground">Kentucky, KY 42171 · 0.7 mi / ~2 min from I-65</p>
                 </div>
               </div>
               <a

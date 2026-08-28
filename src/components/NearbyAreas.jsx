@@ -23,7 +23,7 @@ const ATTRACTIONS = [
 
 const DIRECTIONS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
 
-export default function NearbyAreas() {
+export default function NearbyAreas({ hideCta = false }) {
   return (
     <section className="py-16 px-4 sm:px-6 bg-vanilla-malt">
       <div className="max-w-7xl mx-auto">
@@ -70,7 +70,8 @@ export default function NearbyAreas() {
           </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA — hidden on pages that already show directions (e.g. landing FAQ box) */}
+        {!hideCta && (
         <div className="text-center mt-8">
           <a
             href={DIRECTIONS_URL}
@@ -84,6 +85,7 @@ export default function NearbyAreas() {
             <MapPin size={12} /> 103 N Main St, Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65
           </p>
         </div>
+        )}
       </div>
     </section>
   );
