@@ -13,19 +13,12 @@ import PushLogList from '@/components/PushLogList';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 import StoreMetrics from '@/components/admin/StoreMetrics';
 
-const adminPages = [
+const orderPages = [
 {
   title: 'All Orders',
   description: 'Unified live view of in-person, online & phone orders',
   icon: Receipt,
   path: '/admin/orders',
-  color: 'midnight-cherry'
-},
-{
-  title: 'Menu Manager',
-  description: 'Manage menu items, daily specials, and combo offers',
-  icon: UtensilsCrossed,
-  path: '/admin/menu',
   color: 'midnight-cherry'
 },
 {
@@ -36,18 +29,27 @@ const adminPages = [
   color: 'patina-mint'
 },
 {
-  title: 'Media Manager',
-  description: 'Browse and manage images from OneDrive',
-  icon: Image,
-  path: '/admin/media',
-  color: 'obsidian-roast'
-},
-{
   title: 'Merch Orders',
   description: 'Track Tasty Threads / Printful fulfillment & shipping',
   icon: Shirt,
   path: '/admin/merch-orders',
   color: 'midnight-cherry'
+}];
+
+const adminPages = [
+{
+  title: 'Menu Manager',
+  description: 'Manage menu items, daily specials, and combo offers',
+  icon: UtensilsCrossed,
+  path: '/admin/menu',
+  color: 'midnight-cherry'
+},
+{
+  title: 'Media Manager',
+  description: 'Browse and manage images from OneDrive',
+  icon: Image,
+  path: '/admin/media',
+  color: 'obsidian-roast'
 },
 {
   title: 'Communications',
@@ -101,8 +103,36 @@ export default function AdminDashboard() {
       {/* Live Orders Feed */}
       <LiveOrdersFeed />
 
-      {/* Admin Pages Grid */}
+      {/* Orders section */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Receipt size={20} className="text-midnight-cherry" />
+          <h2 className="font-heading text-xl text-obsidian-roast">Orders</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">Track and manage every order across all channels.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {orderPages.map((page) =>
+          <Link
+            key={page.path}
+            to={page.path}
+            className="card-diner p-6 group hover:shadow-float-lg transition-all">
+            
+              <div className={`w-12 h-12 bg-${page.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <page.icon size={24} className="text-white" />
+              </div>
+              <h2 className="font-heading text-lg text-obsidian-roast mb-2 group-hover:text-midnight-cherry transition-colors">{page.title}</h2>
+              <p className="text-sm text-muted-foreground mb-4">{page.description}</p>
+              <span className="inline-flex items-center text-sm font-heading text-midnight-cherry group-hover:gap-2 transition-all gap-1">
+                Open →
+              </span>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Other Admin Pages Grid */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+        <h2 className="font-heading text-xl text-obsidian-roast mb-6">Management</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {adminPages.map((page) =>
           <Link
