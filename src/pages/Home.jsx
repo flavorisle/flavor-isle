@@ -19,6 +19,7 @@ import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import FaqSection from '@/components/FaqSection';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
+import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -198,6 +199,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── NEARBY AREAS / I-65 WAYFINDING ── */}
+      <NearbyAreas />
 
       {/* ── DOWNLOAD APP BANNER ── */}
       <DownloadAppBanner />

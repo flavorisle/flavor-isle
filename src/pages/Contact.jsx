@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import FaqSection from '@/components/FaqSection';
+import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -111,6 +112,11 @@ export default function Contact() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Nearby areas / I-65 wayfinding */}
+        <div className="mb-12">
+          <NearbyAreas />
         </div>
 
         {/* FAQ */}
