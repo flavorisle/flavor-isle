@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
-import StartOrderBand from '@/components/StartOrderBand';
+
 
 import SocialProofStrip from '@/components/SocialProofStrip';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
@@ -63,9 +63,6 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <HeroSection />
-
-      {/* ── STICKY ORDER-TYPE SHORTCUTS ── */}
-      <StartOrderBand />
 
       {/* ── PROMO BANNERS ── */}
       <AdBannerStrip placement="home" />
