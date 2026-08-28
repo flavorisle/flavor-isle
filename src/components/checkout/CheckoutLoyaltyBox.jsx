@@ -64,12 +64,18 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
     .filter(t => t.discountValue != null && t.discountValue > 0)
     .sort((a, b) => a.points - b.points);
 
+  const discountLabel = (t) => {
+    if (t.discountType === 'FIXED_PERCENTAGE') return `${t.percentage}% off`;
+    if (t.discountType === 'FIXED_AMOUNT') return `$${((t.fixedAmountCents || 0) / 100).toFixed(0)} off`;
+    return t.description || t.name || 'Reward';
+  };
+
   return (
     <div className="border-t border-border pt-3 mb-3 space-y-1.5">
       <h3 className="font-heading text-sm text-obsidian-roast flex items-center gap-1">
         <Star size={13} className="text-smashie-yellow" fill="currentColor" /> Star Rewards
         <span className="text-xs text-muted-foreground font-body ml-1">· {balance.toLocaleString()} stars</span>
-        <Link to="/rewards" className="ml-auto text-xs text-patina-mint hover:text-midnight-cherry transition-colors font-body">Get / Redeem</Link>
+        <Link to="/rewards" className="ml-auto text-xs text-patina-mint hover:text-midnight-cherry transition-colors font-body">Learn more</Link>
       </h3>
       {redeemable.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
@@ -83,7 +89,7 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
                   applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20'
                 }`}
               >
-                {applied ? '✓ ' : '−$' + r.discountValue.toFixed(2) + ' '}{r.description || r.name}
+                {applied ? `✓ ${discountLabel(r)} applied` : `Redeem ${discountLabel(r)}`}
               </button>
             );
           })}
