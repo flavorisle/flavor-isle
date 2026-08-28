@@ -33,6 +33,18 @@
     "image_url": {
       "type": "string"
     },
+    "image_position": {
+      "type": "string",
+      "enum": [
+        "top",
+        "left",
+        "right",
+        "background",
+        "none"
+      ],
+      "default": "top",
+      "description": "Where the item photo sits on the menu card. 'top' = photo above text (default), 'left'/'right' = photo beside the text, 'background' = photo as a full-card backdrop with overlaid text, 'none' = no photo (text-only compact card)."
+    },
     "is_available": {
       "type": "boolean",
       "default": true

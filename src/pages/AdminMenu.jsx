@@ -164,6 +164,13 @@ export default function AdminMenu() {
     setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, display_category: display_category || undefined } : i));
   };
 
+  // Reposition the item photo on its menu card (top / left / right / background / none).
+  const setImagePosition = async (item, position) => {
+    const pos = position || 'top';
+    await base44.entities.MenuItem.update(item.id, { image_position: pos });
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, image_position: pos } : i));
+  };
+
   const grouped = {};
   items.
   filter((i) => !search || i.name.toLowerCase().includes(search.toLowerCase())).
@@ -429,6 +436,20 @@ export default function AdminMenu() {
                           >
                             <BrandOption value="__default__">{itemCategoryKey(item)} (default)</BrandOption>
                             {allCategoryKeys.map((k) => <BrandOption key={k} value={k}>{categoryLabel(k, renames)}</BrandOption>)}
+                          </BrandSelect>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground font-heading uppercase tracking-wider">Photo</span>
+                          <BrandSelect
+                            value={item.image_position || 'top'}
+                            onValueChange={(v) => setImagePosition(item, v)}
+                            className="flex-1 max-w-[220px] px-2.5 py-1.5 text-xs"
+                          >
+                            <BrandOption value="top">Top (default)</BrandOption>
+                            <BrandOption value="left">Left side</BrandOption>
+                            <BrandOption value="right">Right side</BrandOption>
+                            <BrandOption value="background">Background</BrandOption>
+                            <BrandOption value="none">No photo</BrandOption>
                           </BrandSelect>
                         </div>
                       </div>
