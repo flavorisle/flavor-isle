@@ -11,6 +11,7 @@ import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
 import PushLogList from '@/components/PushLogList';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
+import StoreMetrics from '@/components/admin/StoreMetrics';
 
 const adminPages = [
 {
@@ -93,6 +94,9 @@ export default function AdminDashboard() {
 
       <BroadcastPushCard />
       <PushLogList />
+
+      {/* Store metrics — daily volume, revenue, breakdowns */}
+      <StoreMetrics />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />
