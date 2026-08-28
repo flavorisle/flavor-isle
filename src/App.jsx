@@ -14,6 +14,7 @@ import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
+import CaramelAppleBlissPopup from './components/CaramelAppleBlissPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -188,6 +189,7 @@ function AppShell() {
               <BottomTabBar />
               <MobileHeader />
               <SmashieChat />
+              <CaramelAppleBlissPopup />
               <MerchCartDrawer />
             </Router>
             <Toaster />

@@ -29,7 +29,7 @@ const SHORT_NAMES = {
   '6a7b92470796edccdb26af34': 'Caramel Apple Bliss',
 };
 
-export default function PremiumShakesSection() {
+export default function PremiumShakesSection({ autoOpenId }) {
   const { addItem, setIsCartOpen, orderingEnabled } = useCart();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +41,19 @@ export default function PremiumShakesSection() {
       .then((fetched) => {
         // Removed (is_hidden) premium shakes are excluded entirely; sold-out
         // ones stay visible as disabled "Sold Out" cards.
-        setItems(fetched.filter(Boolean).filter((i) => i.is_hidden !== true));
+        const visible = fetched.filter(Boolean).filter((i) => i.is_hidden !== true);
+        setItems(visible);
+        // Deep-link from the Caramel Apple Bliss pop-up: auto-open the size
+        // picker for the requested shake once it's loaded and still available.
+        if (autoOpenId) {
+          const target = visible.find((i) => i.id === autoOpenId);
+          if (target && target.is_available !== false && target.modifiers?.length) {
+            setActiveItem(target);
+          }
+        }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [autoOpenId]);
 
   const handleCardClick = (item) => {
     if (!orderingEnabled) return;
