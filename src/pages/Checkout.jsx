@@ -11,6 +11,7 @@ import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
+import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -596,6 +597,14 @@ export default function Checkout() {
                   </div>
                 </div>
 
+                {/* Star Rewards — compact balance + redeemable rewards */}
+                <CheckoutLoyaltyBox
+                  subtotal={subtotal}
+                  phone={form.phone}
+                  appliedReward={appliedReward}
+                  onApply={setAppliedReward}
+                />
+
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
                 {groupMode && (
@@ -689,9 +698,8 @@ export default function Checkout() {
                         {cartItems.filter(i => i.person_id === p.id).map(item => (
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
                             <div>
-                              <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                              <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                               <CartItemModifiers modifiers={item.selectedModifiers} />
-                              <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                             </div>
                             <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                           </div>
@@ -707,9 +715,8 @@ export default function Checkout() {
                   cartItems.map(item => (
                     <div key={item.id} className="flex justify-between items-start gap-3">
                       <div>
-                        <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                        <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                         <CartItemModifiers modifiers={item.selectedModifiers} />
-                        <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                       </div>
                       <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
