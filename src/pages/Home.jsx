@@ -175,27 +175,24 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Stylized map placeholder */}
-            <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80">
-              <div className="w-full h-full bg-gradient-to-br from-patina-mint to-teal-700 flex items-center justify-center relative">
-                <div className="absolute inset-0 opacity-20" style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                }} />
-                <div className="text-center text-white z-10">
-                  <div className="w-16 h-16 bg-midnight-cherry rounded-full flex items-center justify-center mx-auto mb-4 shadow-float-lg">
-                    <MapPin size={28} />
-                  </div>
-                  <p className="font-heading text-xl">FLAVOR ISLE</p>
-                  <p className="text-sm opacity-80">Smiths Grove, KY</p>
-                  <a
-                    href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors">
-                    
-                    Get Directions <ArrowRight size={14} />
-                  </a>
-                </div>
+            {/* Storefront photo */}
+            <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80 group">
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
+                alt="Flavor Isle storefront in Smiths Grove, KY"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 text-center text-white">
+                <p className="font-heading text-xl drop-shadow-lg">FLAVOR ISLE</p>
+                <p className="text-sm opacity-90 drop-shadow">Smiths Grove, KY</p>
+                <a
+                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors shadow-float">
+                  Get Directions <ArrowRight size={14} />
+                </a>
               </div>
             </div>
           </div>
