@@ -147,13 +147,15 @@
   --secondary: 210 100% 20%;
   --secondary-foreground: 0 0% 100%;
   --muted: 42 40% 90%;
-  --muted-foreground: 210 30% 35%;
+  /* Darker than the global muted tone — checkout labels, line items, and
+     totals were washing out at small sizes. */
+  --muted-foreground: 210 45% 26%;
   --accent: 37 91% 55%;
   --accent-foreground: 210 100% 20%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 42 30% 85%;
-  --input: 42 30% 85%;
+  --border: 42 30% 78%;
+  --input: 42 30% 78%;
   --ring: 12 100% 40%;
   --vanilla-malt: #FDF6E3;
   --midnight-cherry: #CC3300;
@@ -171,6 +173,17 @@
   --sidebar-border: 42 30% 85%;
   --sidebar-ring: 12 100% 40%;
 }
+
+/* Checkout readability — the summary, field labels, and fine print used the
+   smallest type on the site. Bump the floor so it's legible on real devices. */
+.force-light .text-xs { font-size: 0.8125rem; line-height: 1.5; }
+.force-light .text-\[11px\] { font-size: 0.8125rem; }
+.force-light .text-sm { font-size: 0.9375rem; }
+.force-light input,
+.force-light textarea,
+.force-light select { font-size: 1rem; }
+.force-light input::placeholder,
+.force-light textarea::placeholder { color: hsl(210 25% 45%); }
 
 @layer base {
   * {
