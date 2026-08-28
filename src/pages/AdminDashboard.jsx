@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Image, Shirt, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
+import { Settings, UtensilsCrossed, Phone, Shirt, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -44,13 +44,7 @@ const adminPages = [
   path: '/admin/menu',
   color: 'midnight-cherry'
 },
-{
-  title: 'Media Manager',
-  description: 'Browse and manage images from OneDrive',
-  icon: Image,
-  path: '/admin/media',
-  color: 'obsidian-roast'
-},
+
 {
   title: 'Communications',
   description: 'Phone log, SMS log, message log, and Smashie AI settings',
