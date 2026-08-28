@@ -17,7 +17,6 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
-import FaqSection from '@/components/FaqSection';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
 import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
@@ -140,9 +139,6 @@ export default function Home() {
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
-
-      {/* ── FAQ ── */}
-      <FaqSection />
 
       {/* ── FAQ LINK ── */}
       <section className="py-12 px-4 sm:px-6">
