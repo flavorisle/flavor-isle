@@ -24,6 +24,47 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
+    // ── Keyword opt-in / opt-out / help handling ──
+    // Carriers recognize these standard keywords. We intercept them before
+    // routing to Smashie so consent is managed for the SMSSubscriber list.
+    const upper = body.trim().toUpperCase().replace(/[^A-Z]/g, '');
+    const OPT_IN = ['JOIN', 'SUBSCRIBE', 'START', 'YES', 'OPTIN', 'OPTIN'];
+    const OPT_OUT = ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT', 'STOPALL', 'UNSUB'];
+    const HELP = ['HELP', 'INFO'];
+
+    const xmlReply = (msg: string) =>
+      new Response(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${msg.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</Message></Response>`,
+        { headers: { 'Content-Type': 'text/xml' } }
+      );
+
+    if (OPT_OUT.includes(upper)) {
+      const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: from });
+      if (subs[0]) {
+        await base44.asServiceRole.entities.SMSSubscriber.update(subs[0].id, { status: 'unsubscribed', opted_in: false });
+      }
+      return xmlReply('Flavor Isle: You\'re unsubscribed and won\'t receive more texts. Reply JOIN to opt back in. Msg&data rates may apply.');
+    }
+
+    if (HELP.includes(upper)) {
+      return xmlReply('Flavor Isle: Get order updates, payment links & occasional offers. Msg&data rates may apply. Text STOP to opt out, JOIN to opt in. Questions? Call (270) 563-4618.');
+    }
+
+    if (OPT_IN.includes(upper)) {
+      const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: from });
+      if (subs[0]) {
+        await base44.asServiceRole.entities.SMSSubscriber.update(subs[0].id, { status: 'active', opted_in: true });
+      } else {
+        await base44.asServiceRole.entities.SMSSubscriber.create({
+          phone: from,
+          opted_in: true,
+          source: 'keyword',
+          status: 'active',
+        });
+      }
+      return xmlReply('Flavor Isle: You\'re subscribed! Get order updates, payment links & occasional offers. Msg&data rates may apply. Text STOP anytime to opt out.');
+    }
+
     // Look up existing SMS conversation for this phone number
     const existing = await base44.asServiceRole.entities.SmsConversation.filter({ phone_number: from });
     let smsRecord = existing[0] || null;
