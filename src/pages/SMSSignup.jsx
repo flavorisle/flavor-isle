@@ -57,7 +57,7 @@ export default function SMSSignup() {
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>
           <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Order Updates, Straight to Your Phone</h1>
           <p className="text-muted-foreground mt-3 text-base">
-            We'll text you the moment your order is confirmed, cooking, and ready for pickup — plus a secure pay-by-text link so you can settle up without picking up the phone. No marketing, no spam — just quick, helpful updates about your order.
+            We'll text you the moment your order is confirmed, cooking, and ready for pickup — plus a secure pay-by-text link so you can settle up without picking up the phone. You'll also get occasional offers and specials from Flavor Isle. Text STOP anytime to opt out.
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export default function SMSSignup() {
             <CheckCircle2 size={48} className="text-midnight-cherry mx-auto mb-4" />
             <h2 className="font-heading text-2xl text-obsidian-roast mb-2">You're all set!</h2>
             <p className="text-muted-foreground text-sm mb-6">
-              Next time you order, we'll send status updates and a quick pay-by-text link right here. You can text STOP anytime to opt out.
+              Next time you order, we'll send status updates and a quick pay-by-text link right here — plus occasional offers and specials. You can text STOP anytime to opt out.
             </p>
             <Link to="/" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-block">Back to Home</Link>
           </div>
@@ -86,7 +86,7 @@ export default function SMSSignup() {
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
                 className="mt-1 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30" />
               <span className="text-sm text-muted-foreground leading-relaxed">
-                I agree to receive order status notifications and quick payment links from Flavor Isle at the number provided. This is for order updates only — no marketing texts. Msg & data rates may apply. Text STOP to opt out, HELP for help.
+                I agree to receive order status notifications, payment links, and occasional promotional offers from Flavor Isle at the number provided. Msg & data rates may apply. Text STOP to opt out, HELP for help.
               </span>
             </label>
 
