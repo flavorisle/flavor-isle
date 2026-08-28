@@ -70,10 +70,12 @@
     --input: 210 60% 22%;
     --ring: 12 100% 40%;
 
-    /* Flavor Isle brand tokens — dark theme overrides */
+    /* Flavor Isle brand tokens — dark theme overrides.
+       --obsidian-roast / --patina-mint stay navy so branded backgrounds
+       (footer, buttons, navy sections) keep their identity in dark mode;
+       text utilities built from them are flipped light below. */
     --vanilla-malt: #071523;
     --cream-white: #0f1f2e;
-    --obsidian-roast: #f0f5fa;
 
     --sidebar-background: 210 100% 8%;
     --sidebar-foreground: 42 67% 94%;
@@ -85,6 +87,17 @@
     --sidebar-ring: 12 100% 40%;
   }
 }
+
+/* Dark mode surface + text fixes — brand bg tokens stay navy (footer, buttons,
+   navy sections keep their look), but text utilities built from those tokens
+   flip light so headings/accent text stay readable on the dark content bg.
+   bg-white (cards, nav, modals) becomes the dark card surface. */
+.dark .text-obsidian-roast { color: #f0f5fa; }
+.dark .text-patina-mint { color: #7FB2E8; }
+.dark .bg-white { background-color: hsl(var(--card)); }
+.dark .border-white\/10 { border-color: rgba(255, 255, 255, 0.12); }
+.dark .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
+.dark .bg-white\/10 { background-color: rgba(255, 255, 255, 0.08); }
 
 /* High-contrast accessibility mode — stronger text/bg contrast, darker borders,
    and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
@@ -268,7 +281,7 @@
   }
 
   .card-diner {
-    background: white;
+    background: hsl(var(--card));
     border-radius: 0.75rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
     transition: box-shadow 0.25s ease, transform 0.25s ease;
