@@ -80,7 +80,7 @@ export default function FaqSection() {
   ];
 
   return (
-    <section className="py-16 px-4 sm:px-6">
+    <section id="faq" className="py-16 px-4 sm:px-6 scroll-mt-24">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <div className="w-14 h-14 bg-midnight-cherry rounded-full flex items-center justify-center mx-auto mb-4">

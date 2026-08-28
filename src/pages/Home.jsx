@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -143,6 +143,27 @@ export default function Home() {
 
       {/* ── FAQ ── */}
       <FaqSection />
+
+      {/* ── FAQ LINK ── */}
+      <section className="py-12 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <Link
+            to="/contact#faq"
+            className="card-diner p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:border-midnight-cherry/40 transition-colors group"
+          >
+            <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <HelpCircle size={26} className="text-midnight-cherry" />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
+              <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
+            </div>
+            <span className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+              View FAQs <ArrowRight size={16} />
+            </span>
+          </Link>
+        </div>
+      </section>
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
