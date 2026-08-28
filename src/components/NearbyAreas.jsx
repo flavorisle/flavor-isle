@@ -5,13 +5,13 @@ import { MapPin, Navigation, Car, Mountain, Landmark, Store } from 'lucide-react
 // from Smiths Grove off I-65. Used for local SEO + wayfinding for travelers.
 const NEARBY_TOWNS = [
   { name: 'Smiths Grove', note: 'Right here at home', time: '0 min' },
-  { name: 'Park City', note: 'Exit 48 · I-65', time: '~10 min' },
-  { name: 'Cave City', note: 'Exit 53 · I-65', time: '~15 min' },
+  { name: 'Park City', note: 'Exit 48 · I-65', time: '~12 min' },
+  { name: 'Cave City', note: 'Exit 53 · I-65', time: '~21 min' },
   { name: 'Horse Cave', note: 'Exit 58 · I-65', time: '~20 min' },
   { name: 'Bowling Green', note: 'South on I-65', time: '~15 min' },
-  { name: 'Brownsville', note: 'Near Mammoth Cave', time: '~25 min' },
-  { name: 'Scottsville', note: 'South of Bowling Green', time: '~35 min' },
-  { name: 'Glasgow', note: 'South of Cave City', time: '~40 min' },
+  { name: 'Brownsville', note: 'Near Mammoth Cave', time: '~23 min' },
+  { name: 'Scottsville', note: 'South of Bowling Green', time: '~23 min' },
+  { name: 'Glasgow', note: 'South of Cave City', time: '~24 min' },
 ];
 
 // I-65 traveler attractions nearby — for folks passing through.
