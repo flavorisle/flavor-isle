@@ -140,27 +140,6 @@ export default function Home() {
       {/* ── REVIEWS ── */}
       <ReviewSection />
 
-      {/* ── FAQ LINK ── */}
-      <section className="py-12 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            to="/contact#faq"
-            className="card-diner p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:border-midnight-cherry/40 transition-colors group"
-          >
-            <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <HelpCircle size={26} className="text-midnight-cherry" />
-            </div>
-            <div className="flex-1">
-              <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
-              <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
-            </div>
-            <span className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
-              View FAQs <ArrowRight size={16} />
-            </span>
-          </Link>
-        </div>
-      </section>
-
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
@@ -219,6 +198,45 @@ export default function Home() {
 
       {/* ── NEARBY AREAS / I-65 WAYFINDING ── */}
       <NearbyAreas />
+
+      {/* ── FAQ + LOCATION ── */}
+      <section className="py-12 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="card-diner p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <HelpCircle size={26} className="text-midnight-cherry" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
+                <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
+              </div>
+              <Link to="/contact#faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+                View FAQs <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-5 pt-5 border-t border-border">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin size={18} className="text-midnight-cherry" />
+                </div>
+                <div>
+                  <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
+                  <p className="text-sm text-muted-foreground">Kentucky, KY 42171</p>
+                </div>
+              </div>
+              <a
+                href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0"
+              >
+                Get Directions <ArrowRight size={16} />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── DOWNLOAD APP BANNER ── */}
       <DownloadAppBanner />
