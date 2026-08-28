@@ -27,7 +27,7 @@ import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
 
-import AdminPhoneOrders from './pages/AdminPhoneOrders';
+
 import AdminOrders from './pages/AdminOrders';
 import AdminCommunications from './pages/AdminCommunications';
 import AccountNew from './pages/Account.jsx';
@@ -51,7 +51,6 @@ import Merch from './pages/Merch';
 import Order from './pages/Order';
 import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
-import AdminMerchOrders from './pages/AdminMerchOrders';
 import AdminMerchCategories from './pages/AdminMerchCategories';
 import AdminReviews from './pages/AdminReviews';
 import { MerchCartProvider } from '@/context/MerchCartContext';
@@ -163,9 +162,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
 
-        <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/merch-orders" element={<AdminMerchOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />

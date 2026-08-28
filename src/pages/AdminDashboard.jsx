@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, Phone, Shirt, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
+import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -16,23 +16,9 @@ import StoreMetrics from '@/components/admin/StoreMetrics';
 const orderPages = [
 {
   title: 'All Orders',
-  description: 'Unified live view of in-person, online & phone orders',
+  description: 'Food, phone, POS & merch orders — unified in one place',
   icon: Receipt,
   path: '/admin/orders',
-  color: 'midnight-cherry'
-},
-{
-  title: 'Phone Orders',
-  description: 'View and manage orders taken over the phone',
-  icon: Phone,
-  path: '/admin/phone-orders',
-  color: 'patina-mint'
-},
-{
-  title: 'Merch Orders',
-  description: 'Track Tasty Threads / Printful fulfillment & shipping',
-  icon: Shirt,
-  path: '/admin/merch-orders',
   color: 'midnight-cherry'
 }];
 

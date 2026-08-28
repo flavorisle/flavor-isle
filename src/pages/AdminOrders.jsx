@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, X,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
 import Navbar from '@/components/Navbar';
 import AdminNav from '@/components/admin/AdminNav';
+import OccupancyTracker from '@/components/OccupancyTracker';
+import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
+import MerchOrdersList from '@/components/admin/MerchOrdersList';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -35,12 +38,6 @@ const NEXT_STATUS = {
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
 // Detect where an order came from.
-// The POS sync (syncSquarePOS) reliably stamps order_source = 'in_store' on
-// every in-person order, whether or not the customer could be linked to a web
-// account. The old placeholder-email heuristic misclassified linked POS
-// orders as "online" (their email gets replaced with the real account email),
-// so order_source is the only reliable marker.
-// Phone orders get an order_number prefixed with 'PH' (logPhoneOrder).
 function getSource(order) {
   if (order.order_source === 'in_store') return 'pos';
   if (order.order_number?.startsWith('PH')) return 'phone';
@@ -193,6 +190,7 @@ function OrderCard({ order, onAdvance, onCancel }) {
 }
 
 export default function AdminOrders() {
+  const [tab, setTab] = useState('food'); // 'food' | 'merch'
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('active');
@@ -263,6 +261,10 @@ export default function AdminOrders() {
     return list;
   }, [orders, statusFilter, sourceFilter, typeFilter, search]);
 
+  // Dine-in busyness indicator (from the old Phone Orders page)
+  const dineInActive = orders.filter(o => o.order_type === 'dine_in' && ACTIVE_STATUSES.includes(o.status));
+  const busynessLevel = dineInActive.length > 10 ? 'Packed' : dineInActive.length > 5 ? 'Busy' : dineInActive.length > 0 ? 'Moderate' : 'Quiet';
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -273,104 +275,160 @@ export default function AdminOrders() {
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
             <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-1">Admin</p>
-            <h1 className="font-heading text-3xl text-white">All Orders</h1>
-            <p className="text-gray-300 mt-1 text-sm">In-person, online & phone — unified live view</p>
+            <h1 className="font-heading text-3xl text-white">Orders</h1>
+            <p className="text-gray-300 mt-1 text-sm">Food, phone, POS & merch — all in one place</p>
           </div>
-          <button onClick={load} className="flex items-center gap-2 btn-mint chrome-hover px-5 py-2.5 text-sm font-heading">
-            <RefreshCw size={14} /> Refresh
+          {tab === 'food' && (
+            <button onClick={load} className="flex items-center gap-2 btn-mint chrome-hover px-5 py-2.5 text-sm font-heading">
+              <RefreshCw size={14} /> Refresh
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTab('food')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-heading transition-all ${
+              tab === 'food' ? 'bg-midnight-cherry text-white' : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'
+            }`}
+          >
+            <Receipt size={15} /> Food Orders
+          </button>
+          <button
+            onClick={() => setTab('merch')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-heading transition-all ${
+              tab === 'merch' ? 'bg-midnight-cherry text-white' : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'
+            }`}
+          >
+            <Shirt size={15} /> Merch Orders
           </button>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Active Orders" value={stats.totalActive} Icon={ShoppingBag} tone="cherry" />
-          <StatCard label="In-Person (POS)" value={stats.pos} Icon={Store} tone="mint" />
-          <StatCard label="Online" value={stats.online} Icon={Globe} tone="mint" />
-          <StatCard label="Phone" value={stats.phone} Icon={Phone} tone="amber" />
-        </div>
+      {tab === 'food' ? (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          {/* Dine-in management widgets (folded in from the old Phone Orders page) */}
+          <OccupancyTracker />
+          <PhoneOrderSetup />
 
-        {/* Source tabs */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {SOURCES.map(({ key, label, Icon }) => {
-            const count = key === 'all'
-              ? orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length
-              : orders.filter(o => ACTIVE_STATUSES.includes(o.status) && getSource(o) === key).length;
-            return (
-              <button
-                key={key}
-                onClick={() => setSourceFilter(key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-heading transition-all ${
-                  sourceFilter === key
-                    ? 'bg-midnight-cherry text-white'
-                    : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'
-                }`}
-              >
-                <Icon size={14} /> {label}
-                {count > 0 && <span className="ml-1 bg-white/20 text-xs px-1.5 py-0.5 rounded-full">{count}</span>}
-              </button>
-            );
-          })}
-        </div>
+          {/* Dine-in busyness indicator */}
+          <div className="mb-6 mt-6">
+            <div className="card-diner p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Restaurant Status</p>
+                <p className="font-heading text-lg text-obsidian-roast">
+                  {dineInActive.length} Active Dine-In {dineInActive.length === 1 ? 'Order' : 'Orders'}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className={`text-sm font-heading px-3 py-1 rounded-full ${
+                  dineInActive.length > 10 ? 'bg-red-100 text-red-700' :
+                  dineInActive.length > 5 ? 'bg-orange-100 text-orange-700' :
+                  dineInActive.length > 0 ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {busynessLevel}
+                </span>
+              </div>
+            </div>
+          </div>
 
-        {/* Status + type filters + search */}
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          <div className="flex gap-2">
-            {[{ key: 'active', label: 'Active' }, { key: 'past', label: 'Past' }].map(f => (
-              <button
-                key={f.key}
-                onClick={() => setStatusFilter(f.key)}
-                className={`px-4 py-1.5 rounded-full text-xs font-heading transition-all ${
-                  statusFilter === f.key ? 'bg-patina-mint text-white' : 'bg-white text-muted-foreground border border-border hover:border-patina-mint/40'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="Active Orders" value={stats.totalActive} Icon={ShoppingBag} tone="cherry" />
+            <StatCard label="In-Person (POS)" value={stats.pos} Icon={Store} tone="mint" />
+            <StatCard label="Online" value={stats.online} Icon={Globe} tone="mint" />
+            <StatCard label="Phone" value={stats.phone} Icon={Phone} tone="amber" />
           </div>
-          <div className="flex gap-2">
-            {[{ key: 'all', label: 'All Types' }, { key: 'pickup', label: 'Pickup' }, { key: 'delivery', label: 'Delivery' }, { key: 'dine_in', label: 'Dine-In' }].map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTypeFilter(t.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-heading transition-all ${
-                  typeFilter === t.key ? 'bg-patina-mint text-white' : 'bg-white text-muted-foreground border border-border hover:border-patina-mint/40'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="relative flex-1 min-w-[180px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search name, phone, email, #…"
-              className="w-full pl-9 pr-3 py-2 rounded-full text-sm bg-white border border-border focus:border-midnight-cherry focus:outline-none"
-            />
-          </div>
-        </div>
 
-        {/* List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
+          {/* Source tabs */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {SOURCES.map(({ key, label, Icon }) => {
+              const count = key === 'all'
+                ? orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length
+                : orders.filter(o => ACTIVE_STATUSES.includes(o.status) && getSource(o) === key).length;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSourceFilter(key)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-heading transition-all ${
+                    sourceFilter === key
+                      ? 'bg-midnight-cherry text-white'
+                      : 'bg-white text-muted-foreground border border-border hover:border-midnight-cherry/40'
+                  }`}
+                >
+                  <Icon size={14} /> {label}
+                  {count > 0 && <span className="ml-1 bg-white/20 text-xs px-1.5 py-0.5 rounded-full">{count}</span>}
+                </button>
+              );
+            })}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <Receipt size={48} strokeWidth={1} className="mx-auto mb-4 text-muted-foreground" />
-            <p className="font-heading text-lg text-obsidian-roast">No orders match your filters</p>
+
+          {/* Status + type filters + search */}
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <div className="flex gap-2">
+              {[{ key: 'active', label: 'Active' }, { key: 'past', label: 'Past' }].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-heading transition-all ${
+                    statusFilter === f.key ? 'bg-patina-mint text-white' : 'bg-white text-muted-foreground border border-border hover:border-patina-mint/40'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {[{ key: 'all', label: 'All Types' }, { key: 'pickup', label: 'Pickup' }, { key: 'delivery', label: 'Delivery' }, { key: 'dine_in', label: 'Dine-In' }].map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setTypeFilter(t.key)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-heading transition-all ${
+                    typeFilter === t.key ? 'bg-patina-mint text-white' : 'bg-white text-muted-foreground border border-border hover:border-patina-mint/40'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="relative flex-1 min-w-[180px]">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search name, phone, email, #…"
+                className="w-full pl-9 pr-3 py-2 rounded-full text-sm bg-white border border-border focus:border-midnight-cherry focus:outline-none"
+              />
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(order => (
-              <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} />
-            ))}
-          </div>
-        )}
-      </div>
+
+          {/* List */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <Receipt size={48} strokeWidth={1} className="mx-auto mb-4 text-muted-foreground" />
+              <p className="font-heading text-lg text-obsidian-roast">No orders match your filters</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(order => (
+                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <MerchOrdersList />
+        </div>
+      )}
     </div>
   );
 }
