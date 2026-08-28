@@ -6,19 +6,19 @@ import { MapPin, Navigation, Car, Mountain, Landmark, Store } from 'lucide-react
 const NEARBY_TOWNS = [
   { name: 'Smiths Grove', note: 'Right here at home', time: '0 min' },
   { name: 'Park City', note: 'Exit 48 · I-65', time: '~10 min' },
-  { name: 'Horse Cave', note: 'Exit 58 · I-65', time: '~15 min' },
   { name: 'Cave City', note: 'Exit 53 · I-65', time: '~15 min' },
-  { name: 'Bowling Green', note: 'South on I-65', time: '~20 min' },
+  { name: 'Horse Cave', note: 'Exit 58 · I-65', time: '~20 min' },
+  { name: 'Bowling Green', note: 'South on I-65', time: '~15 min' },
   { name: 'Brownsville', note: 'Near Mammoth Cave', time: '~25 min' },
-  { name: 'Scottsville', note: 'South of Bowling Green', time: '~30 min' },
-  { name: 'Glasgow', note: 'South of Cave City', time: '~35 min' },
+  { name: 'Scottsville', note: 'South of Bowling Green', time: '~35 min' },
+  { name: 'Glasgow', note: 'South of Cave City', time: '~40 min' },
 ];
 
 // I-65 traveler attractions nearby — for folks passing through.
 const ATTRACTIONS = [
-  { icon: Mountain, name: 'Mammoth Cave National Park', note: 'World-famous caves · ~25 min' },
-  { icon: Landmark, name: 'National Corvette Museum', note: 'Bowling Green · ~20 min' },
-  { icon: Store, name: "Buc-ee's", note: 'Fuel & snacks · right here in Smiths Grove' },
+  { icon: Mountain, name: 'Mammoth Cave National Park', note: 'World-famous caves · ~30 min' },
+  { icon: Landmark, name: 'National Corvette Museum', note: 'Bowling Green · ~10 min' },
+  { icon: Store, name: "Buc-ee's", note: 'Right here in Smiths Grove · ~2 min' },
 ];
 
 const DIRECTIONS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
