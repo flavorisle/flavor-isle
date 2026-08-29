@@ -68,7 +68,16 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
     };
   }
 
-  const stage = getBusynessStage(liveCount);
+  // Extra-cook boost: when the admin flags today as an extra-cook day, the
+  // kitchen completes orders at double the rate — waits shrink and it takes
+  // more volume to hit each busyness stage. Auto-expires after the set date.
+  let speedFactor = 1;
+  try {
+    const settings = await base44.asServiceRole.entities.MenuSetting.list();
+    if (settings?.[0]?.extra_cook_date === today.dateKey) speedFactor = 2;
+  } catch { /* default to normal speed */ }
+
+  const stage = getBusynessStage(liveCount, speedFactor);
 
   let recentInflow;
   if (minute >= RECENT_WINDOW_MINUTES) {
@@ -78,7 +87,7 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
     recentInflow = curHourCount + prevSlice;
   }
 
-  const regressed = computeRegressedWait(liveCount, recentInflow, activeCount, stage);
+  const regressed = computeRegressedWait(liveCount, recentInflow, activeCount, stage, speedFactor);
 
   return {
     isClosed: false,

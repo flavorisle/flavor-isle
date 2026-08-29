@@ -21,8 +21,11 @@ export const BUSYNESS_STAGES: BusynessStage[] = [
   { min: 0,  level: 'Running Smooth',  waitRange: '~14 min',   waitMin: 14, color: 'green' },
 ];
 
-export function getBusynessStage(rollingCount: number): BusynessStage {
-  return BUSYNESS_STAGES.find(s => rollingCount >= s.min) || BUSYNESS_STAGES[BUSYNESS_STAGES.length - 1];
+// speedFactor scales kitchen capacity (2 = an extra cook working, orders
+// complete twice as fast) — thresholds stretch so it takes proportionally
+// more orders to reach each busyness stage.
+export function getBusynessStage(rollingCount: number, speedFactor = 1): BusynessStage {
+  return BUSYNESS_STAGES.find(s => rollingCount >= s.min * speedFactor) || BUSYNESS_STAGES[BUSYNESS_STAGES.length - 1];
 }
 
 // Cook time in minutes — orders older than this have been served and no
@@ -62,19 +65,23 @@ export interface RegressedWait {
 // active queue adds a few minutes. The busyness LEVEL (Running Smooth →
 // Slammed) still comes from the rolling 60-min throughput and drives the
 // color/label/urgency — it just no longer caps the number.
+// speedFactor: kitchen speed multiplier (2 = extra cook, queue clears twice
+// as fast so each queued order adds half the minutes; base single-order cook
+// time is unchanged — one burger doesn't grill faster with a second cook).
 export function computeRegressedWait(
   liveCount: number,
   recentInflow: number,
   activeCount: number,
-  stage: BusynessStage
+  stage: BusynessStage,
+  speedFactor = 1
 ): RegressedWait {
   const queue = Math.max(0, activeCount);
-  let waitMin = BASE_WAIT_MIN + queue * PER_ORDER_MINUTES;
+  let waitMin = Math.round(BASE_WAIT_MIN + (queue * PER_ORDER_MINUTES) / speedFactor);
 
   // Recovering: recent inflow has dropped below cook capacity while a
   // backlog is still clearing → the wait will ease back down over the next
   // few polls as orders leave the cook window.
-  const recovering = recentInflow < COOK_CAPACITY_PER_HOUR && queue > 0;
+  const recovering = recentInflow < COOK_CAPACITY_PER_HOUR * speedFactor && queue > 0;
 
   waitMin = Math.max(waitMin, BASE_WAIT_MIN);
   return { waitMin, waitRange: `≈ ${waitMin} min`, recovering };
