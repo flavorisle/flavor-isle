@@ -18,14 +18,14 @@ async function buildStatusContext() {
       ? `STORE STATUS: CLOSED${s.closure_message ? ` — ${s.closure_message}` : ''}`
       : `STORE STATUS: OPEN`;
     const busy = closed ? '' : `\nBUSYNESS: ${s.busyness_level}${s.estimated_wait ? ` (current wait ${s.estimated_wait})` : ''}`;
-    return `[[CTX]]${status}${busy}[[/CTX]]\n`;
+    const channel = `\nCHANNEL: website chat — counter transfers are NOT possible here. Never offer to transfer to the counter and never use the [[TRANSFER]] token; instead suggest calling (270) 563-4618 or leaving a message for management.`;
+    return `[[CTX]]${status}${busy}${channel}[[/CTX]]\n`;
   } catch {
     return '';
   }
 }
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
-const TRANSFER_TOKEN = /\[\[TRANSFER\]\]/i;
 
 const SMASHIE_HEAD = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png';
 
@@ -35,7 +35,6 @@ export default function SmashieChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [counterPhone, setCounterPhone] = useState('');
   const messagesEndRef = useRef(null);
   const { totalItems } = useCart();
   // When the cart has food in it, the floating cart bubble sits bottom-right —
@@ -52,15 +51,6 @@ export default function SmashieChat() {
     window.addEventListener('flavorisle:open-smashie', handler);
     return () => window.removeEventListener('flavorisle:open-smashie', handler);
   }, []);
-
-  // Lazily fetch the counter phone number so the chat can offer a
-  // "Call the Counter" button when Smashie hands off to a real person.
-  useEffect(() => {
-    if (counterPhone) return;
-    base44.functions.invoke('getCounterPhone', {}).then(res => {
-      if (res?.data?.phone) setCounterPhone(res.data.phone);
-    }).catch(() => {});
-  }, [counterPhone]);
 
   const openChat = async () => {
     setOpen(true);
@@ -147,7 +137,6 @@ export default function SmashieChat() {
             {messages.map((msg, i) => {
             if (msg.role === 'system') return null;
             const isUser = msg.role === 'user';
-            const wantsTransfer = !isUser && TRANSFER_TOKEN.test(msg.content);
             const cleanContent = isUser
               ? msg.content.replace(/\[\[CTX\]\][\s\S]*?\[\[\/CTX\]\]\n?/g, '').trim()
               : msg.content.replace(/\[\[TRANSFER\]\]/gi, '').trim();
@@ -176,14 +165,6 @@ export default function SmashieChat() {
                         <span className="text-base">🥤</span>
                         Build Your Shake →
                       </Link>
-                  }
-                  {wantsTransfer && counterPhone &&
-                  <a
-                    href={`tel:${counterPhone}`}
-                    className="flex items-center gap-2 bg-midnight-cherry text-white text-xs font-heading px-4 py-2.5 rounded-2xl hover:bg-red-800 transition-colors">
-                    <span className="text-base">📞</span>
-                    Call the Counter →
-                  </a>
                   }
                   </div>
                 </div>);
