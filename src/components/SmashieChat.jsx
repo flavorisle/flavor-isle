@@ -3,7 +3,26 @@ import { X, Send, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { fetchBusyness } from '@/lib/busynessCache';
 import ReactMarkdown from 'react-markdown';
+
+// Build the same STORE STATUS / BUSYNESS context the phone + SMS webhooks
+// attach, so web-chat Smashie never guesses whether the store is open.
+// Wrapped in [[CTX]]…[[/CTX]] and stripped before rendering the user's bubble.
+async function buildStatusContext() {
+  try {
+    const s = await fetchBusyness();
+    if (!s) return '';
+    const closed = s.busyness_level === 'Closed';
+    const status = closed
+      ? `STORE STATUS: CLOSED${s.closure_message ? ` — ${s.closure_message}` : ''}`
+      : `STORE STATUS: OPEN`;
+    const busy = closed ? '' : `\nBUSYNESS: ${s.busyness_level}${s.estimated_wait ? ` (current wait ${s.estimated_wait})` : ''}`;
+    return `[[CTX]]${status}${busy}[[/CTX]]\n`;
+  } catch {
+    return '';
+  }
+}
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 const TRANSFER_TOKEN = /\[\[TRANSFER\]\]/i;
@@ -64,7 +83,8 @@ export default function SmashieChat() {
     setSending(true);
     const msg = input.trim();
     setInput('');
-    await base44.agents.addMessage(conversation, { role: 'user', content: msg });
+    const ctx = await buildStatusContext();
+    await base44.agents.addMessage(conversation, { role: 'user', content: `${ctx}${msg}` });
   };
 
   const handleKey = (e) => {
@@ -128,7 +148,9 @@ export default function SmashieChat() {
             if (msg.role === 'system') return null;
             const isUser = msg.role === 'user';
             const wantsTransfer = !isUser && TRANSFER_TOKEN.test(msg.content);
-            const cleanContent = isUser ? msg.content : msg.content.replace(/\[\[TRANSFER\]\]/gi, '').trim();
+            const cleanContent = isUser
+              ? msg.content.replace(/\[\[CTX\]\][\s\S]*?\[\[\/CTX\]\]\n?/g, '').trim()
+              : msg.content.replace(/\[\[TRANSFER\]\]/gi, '').trim();
             return (
               <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser &&
