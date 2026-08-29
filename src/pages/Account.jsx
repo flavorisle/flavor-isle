@@ -208,7 +208,12 @@ function LoggedInAccount({ user, logout }) {
 
   const handleReorder = (order) => {
     if (!order.items || order.items.length === 0) return;
-    order.items.forEach(item => addItem(item));
+    order.items.forEach(item => {
+      // Rebuild each line fresh: respect the original quantity and drop stale
+      // group-order person tags from the past order.
+      const { quantity, person_id, person_name, ...rest } = item;
+      for (let n = 0; n < (quantity || 1); n++) addItem(rest);
+    });
     if (order.order_type) setOrderType(order.order_type);
     setIsCartOpen(true);
   };
