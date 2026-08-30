@@ -15,15 +15,31 @@ function haversineMiles(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Geocode a free-text address via OpenStreetMap Nominatim (no API key).
-async function geocode(query) {
+// Primary geocoder: US Census Bureau — free, no key, house-number precision,
+// and far better coverage of rural Kentucky roads than OpenStreetMap.
+async function geocodeCensus(query) {
+  const url = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(query)}&benchmark=Public_AR_Current&format=json`;
+  // The Census API occasionally hangs — cap it so we fall back fast.
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+  if (!res) return null;
+  if (!res.ok) return null;
+  const data = await res.json();
+  const m = data?.result?.addressMatches?.[0];
+  if (!m?.coordinates) return null;
+  return { lat: m.coordinates.y, lon: m.coordinates.x };
+}
+
+// Fallback geocoder: OpenStreetMap Nominatim (handles landmarks/partial queries).
+async function geocodeNominatim(query) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'FlavorIsle/1.0 (delivery quote; crave.flavor-isle.com)' },
   });
   if (!res.ok) return null;
   const data = await res.json();
-  return data?.[0] || null;
+  const hit = data?.[0];
+  if (!hit) return null;
+  return { lat: parseFloat(hit.lat), lon: parseFloat(hit.lon) };
 }
 
 export default async function(req) {
@@ -43,18 +59,19 @@ export default async function(req) {
       .sort((a, b) => Number(a.max_miles) - Number(b.max_miles));
     const flatFee = Number(s.delivery_fee ?? 0);
 
-    // Geocode — retry with a Kentucky hint when the bare address isn't found.
-    let hit = await geocode(query);
-    if (!hit && !/\b(ky|kentucky)\b/i.test(query)) {
-      hit = await geocode(`${query}, Kentucky`);
-    }
+    // Geocode: Census first (exact street addresses), then Nominatim,
+    // then Nominatim with a Kentucky hint.
+    const withKy = /\b(ky|kentucky)\b/i.test(query) ? query : `${query}, KY`;
+    let hit = await geocodeCensus(withKy);
+    if (!hit) hit = await geocodeNominatim(query);
+    if (!hit && withKy !== query) hit = await geocodeNominatim(withKy);
     if (!hit) {
       return Response.json({ ok: false, not_found: true });
     }
 
     const distanceMiles = +haversineMiles(
       STORE.lat, STORE.lon,
-      parseFloat(hit.lat), parseFloat(hit.lon)
+      hit.lat, hit.lon
     ).toFixed(1);
 
     // No tiers configured → fall back to the flat fee, no range limit.

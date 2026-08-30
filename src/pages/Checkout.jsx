@@ -219,7 +219,8 @@ export default function Checkout() {
     const timer = setTimeout(async () => {
       try {
         const res = await base44.functions.invoke('getDeliveryQuote', { address: form.address.trim() });
-        setDeliveryQuote(res.data?.ok ? res.data : null);
+        // Keep not_found so checkout can block instead of silently charging $0.
+        setDeliveryQuote(res.data?.ok ? res.data : (res.data?.not_found ? { not_found: true } : null));
       } catch {
         setDeliveryQuote(null);
       } finally {
@@ -284,6 +285,12 @@ export default function Checkout() {
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
     else if (orderType === 'delivery' && deliveryQuote?.out_of_range) {
       errors.address = `Sorry, this address is outside our ${deliveryQuote.max_miles}-mile delivery range.`;
+    }
+    else if (orderType === 'delivery' && (quoting || !deliveryQuote?.ok)) {
+      // Never charge without a verified distance — block until the quote resolves.
+      errors.address = quoting
+        ? 'Still checking your delivery distance — one moment, then tap again.'
+        : "We couldn't locate this address. Please double-check the street, city, and ZIP.";
     }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
 
@@ -428,7 +435,7 @@ export default function Checkout() {
 
   const expressAvailable = !cutoffStatus[orderType]
     && !(groupMode && payMode === 'separate')
-    && (orderType !== 'delivery' || form.address.trim() !== '');
+    && (orderType !== 'delivery' || (form.address.trim() !== '' && deliveryQuote?.ok && !deliveryQuote.out_of_range));
 
   if (!orderingEnabled || storeClosed) {
     return (
@@ -570,6 +577,11 @@ export default function Checkout() {
                       {/* Live distance-based delivery quote */}
                       {quoting && (
                         <p className="text-xs text-muted-foreground mt-1.5">Checking delivery distance…</p>
+                      )}
+                      {!quoting && deliveryQuote?.not_found && form.address.trim() && (
+                        <p className="text-xs text-destructive mt-1.5">
+                          We couldn't locate this address — please double-check the street, city, and ZIP.
+                        </p>
                       )}
                       {!quoting && deliveryQuote?.out_of_range && (
                         <p className="text-xs text-destructive mt-1.5">
