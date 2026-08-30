@@ -3,8 +3,9 @@ import { getLiveBusyness } from './liveBusyness.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
-// Public app URL used for in-email call-to-action links (reviews, merch).
-const APP_URL = 'https://taste-isle-express.base44.app';
+// Public app URL used for in-email call-to-action links (reviews, merch) —
+// always the branded custom domain, never the base44.app address.
+const APP_URL = 'https://crave.flavor-isle.com';
 
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
 export function merchPromoHtml() {
