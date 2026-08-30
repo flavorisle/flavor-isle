@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -33,6 +33,39 @@ export default function OrderLookup() {
   const [showArrival, setShowArrival] = useState(false);
   const [hasArrived, setHasArrived] = useState(false);
 
+  // Auto-load when the page is opened with ?order=123456 (e.g. from the
+  // confirmation email link) so the customer lands straight on their tracker.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('order');
+    if (q) {
+      setOrderNum(q);
+      lookup(q);
+    }
+  }, []);
+
+  const lookup = async (q) => {
+    setError('');
+    setLoading(true);
+    setOrder(null);
+    try {
+      // Backend lookup so guests (not signed in) can track their order too.
+      const res = await base44.functions.invoke('lookupOrder', { order_number: q });
+      if (res?.data?.order) {
+        setOrder(res.data.order);
+      } else {
+        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+      }
+    } catch (err) {
+      if (err?.response?.status === 404) {
+        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+      } else {
+        setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = async (e) => {
     e?.preventDefault();
     const q = orderNum.trim();
@@ -40,21 +73,7 @@ export default function OrderLookup() {
       setError('Drop your order number in, fam — we need it to pull up your order.');
       return;
     }
-    setError('');
-    setLoading(true);
-    setOrder(null);
-    try {
-      const results = await base44.entities.Order.filter({ order_number: q });
-      if (results && results.length > 0) {
-        setOrder(results[0]);
-      } else {
-        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
-      }
-    } catch (err) {
-      setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
-    } finally {
-      setLoading(false);
-    }
+    lookup(q);
   };
 
   const profile = order ? (STATUS_PROFILE[order.status] || STATUS_PROFILE.pending) : null;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
 
 // Visit pop-up promoting the limited-time Caramel Apple Bliss shake.
@@ -14,8 +14,11 @@ const CARAMEL_APPLE_BLISS_ID = '6a7b92470796edccdb26af34';
 export default function CaramelAppleBlissPopup() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Don't interrupt customers tracking an order or checking out.
+    if (location.pathname === '/order-status' || location.pathname === '/checkout') return;
     try {
       if (sessionStorage.getItem(STORAGE_KEY)) return;
     } catch (e) {
