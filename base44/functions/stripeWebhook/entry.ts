@@ -5,6 +5,7 @@ import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms
 import { brandedEmailHtml, merchPromoHtml } from '../../shared/sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
+import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 
 async function sendOrderConfirmationEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -327,6 +328,12 @@ Deno.serve(async (req) => {
             fulfillment_status: 'paid',
           });
           console.log(`Merch order ${mo.order_number} marked paid`);
+          // Confirmation email for the merch order.
+          try {
+            await sendMerchConfirmationEmail({ ...mo, payment_status: 'paid' });
+          } catch (mailErr) {
+            console.error('Merch confirmation email failed:', mailErr.message);
+          }
           try {
             await base44.functions.invoke('createPrintfulOrder', { merchOrderId: mo.id });
             console.log(`Printful order placed for merch order ${mo.order_number}`);
