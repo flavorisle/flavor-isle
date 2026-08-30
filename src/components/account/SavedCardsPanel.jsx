@@ -185,7 +185,7 @@ export default function SavedCardsPanel() {
               onError={setError}
             />
           </Elements>
-          <p className="text-xs text-muted-foreground mt-3">Your card is secured by Stripe. Flavor Isle never stores your card number.</p>
+          <p className="text-xs text-muted-foreground mt-3">Flavor Isle never stores your card number.</p>
         </div>
       )}
 
