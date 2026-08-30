@@ -339,6 +339,43 @@
   }
 }
 
+/* ── Printable in-store menu ──
+   When printing the admin Print Menu page, only the paper sheet is output:
+   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
+   is laid out edge-to-edge in black on white. */
+@media print {
+  @page { margin: 0.4in; }
+
+  body {
+    background: #ffffff !important;
+    padding-bottom: 0 !important;
+    font-size: 12px;
+  }
+
+  /* Hide global app chrome that isn't part of the menu sheet */
+  nav, footer, .glass-tab, .glass-back { display: none !important; }
+
+  #print-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #print-sheet * {
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* On-screen paper preview for the printable menu — US Letter proportions. */
+#print-sheet {
+  width: 8.5in;
+  max-width: 100%;
+}
+
 /* ── Mobile / iOS WebView polish (additive, desktop-safe) ── */
 @layer base {
   html, body {

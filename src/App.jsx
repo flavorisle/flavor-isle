@@ -26,6 +26,7 @@ import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
+import AdminPrintMenu from './pages/AdminPrintMenu';
 
 
 import AdminOrders from './pages/AdminOrders';
@@ -161,6 +162,7 @@ const AuthenticatedApp = () => {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
+        <Route path="/admin/print-menu" element={<AdminPrintMenu />} />
 
         <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
