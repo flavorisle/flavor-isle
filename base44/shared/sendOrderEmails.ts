@@ -68,6 +68,20 @@ export function accountCtaHtml() {
   </div>`;
 }
 
+// True when this email address already belongs to a registered app user, so
+// order emails can skip the "create your account" pitch. On lookup failure we
+// return true — better to omit the block than nag an existing customer.
+export async function isRegisteredUser(base44: any, email?: string) {
+  if (!email) return false;
+  try {
+    const users = await base44.asServiceRole.entities.User.filter({ email });
+    return (users || []).length > 0;
+  } catch (err) {
+    console.error('isRegisteredUser lookup failed:', err.message);
+    return true;
+  }
+}
+
 // Star Rewards block — shown when a guest order enrolled the customer in Star
 // Rewards (or earned stars). `newlyEnrolled` triggers the welcome-bonus line;
 // `balance` is their current star balance.

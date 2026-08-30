@@ -2,13 +2,17 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { brandedEmailHtml, merchPromoHtml, starsEarnedHtml } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, merchPromoHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from '../../shared/sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 
-async function sendOrderConfirmationEmail(order, loyalty = null) {
+async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+
+  // Only pitch account creation to guests — customers who already have an
+  // account shouldn't be asked to make one.
+  const hasAccount = await isRegisteredUser(base44, order.customer_email);
 
   const itemsHtml = (order.items || []).map(item =>
     `<tr>
@@ -60,6 +64,7 @@ async function sendOrderConfirmationEmail(order, loyalty = null) {
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
         ${loyalty && loyalty.pointsEarned > 0 ? starsEarnedHtml(loyalty) : ''}
+        ${hasAccount ? '' : accountCtaHtml()}
         ${merchPromoHtml()}
   `);
 
@@ -283,7 +288,7 @@ async function pushOrderToSquareAndKitchen(base44, order) {
   const loyalty = await processLoyalty(base44, order, squareOrderId);
 
   if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
-    await sendOrderConfirmationEmail(order, loyalty);
+    await sendOrderConfirmationEmail(base44, order, loyalty);
   }
 }
 

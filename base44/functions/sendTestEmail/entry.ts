@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">ORDER CONFIRMED · #PH123456</div>
         ${starsEarnedHtml({ pointsEarned: 18, balance: 44, newlyEnrolled: true })}
         ${rewardsEnrolledHtml({ newlyEnrolled: true, balance: 44 })}
-        ${accountCtaHtml()}
+        ${body.hasAccount ? '' : accountCtaHtml()}
         ${whatToExpectHtml()}
         ${reviewCtaHtml('sample-order-id')}
         ${merchPromoHtml()}`;
