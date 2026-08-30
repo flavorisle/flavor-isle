@@ -51,6 +51,46 @@ export function whatToExpectHtml() {
   </div>`;
 }
 
+// "Create your account" block — shown on order emails to guests who ordered
+// without signing in. Sells the benefits and links to registration.
+export function accountCtaHtml() {
+  return `
+  <div style="margin:24px 0 8px;border:2px solid #1A3A5C;border-radius:14px;padding:20px;background:#EAF1F8;">
+    <p style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">CREATE YOUR FLAVOR ISLE ACCOUNT</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">You ordered as a guest — make it official for a faster, smoother next time:</p>
+    <ul style="color:#141414;font-size:14px;line-height:1.7;margin:0 0 14px;padding-left:20px;">
+      <li>⚡ One-tap reorder of your favorites</li>
+      <li>📦 Full order history & live order tracking</li>
+      <li>⭐ Track your Star Rewards balance & unlock free food</li>
+      <li>💾 Saved addresses & info for checkout in seconds</li>
+    </ul>
+    <a href="${trackedLink('/register', 'account_cta')}" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">CREATE MY ACCOUNT →</a>
+  </div>`;
+}
+
+// Star Rewards block — shown when a guest order enrolled the customer in Star
+// Rewards (or earned stars). `newlyEnrolled` triggers the welcome-bonus line;
+// `balance` is their current star balance.
+export function rewardsEnrolledHtml({ newlyEnrolled, balance }: { newlyEnrolled?: boolean; balance?: number } = {}) {
+  const welcomeLine = newlyEnrolled
+    ? `Welcome to Flavor Isle Star Rewards! We dropped a <strong>40-star welcome bonus</strong> into your account to get you started. `
+    : '';
+  return `
+  <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#FFF8E7;border:2px dashed #F5A623;">
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ YOU'RE EARNING STAR REWARDS</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">${welcomeLine}You just earned stars on this order — <strong>earn 4 stars for every $10 spent</strong>. Rack 'em up and trade them in for free food:</p>
+    <ul style="color:#141414;font-size:13px;line-height:1.7;margin:0 0 12px;padding-left:20px;">
+      <li><strong>10 stars</strong> — Free cup of sauce</li>
+      <li><strong>25 stars</strong> — Free Sundae or Fry of choice</li>
+      <li><strong>40 stars</strong> — 10% off (up to $5)</li>
+      <li><strong>50 stars</strong> — Free Cravewave or 14 oz Milkshake</li>
+      <li><strong>70 stars</strong> — 10% off, no max</li>
+    </ul>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;">Current balance: <strong>${balance ?? 0} stars</strong>. Track your stars and rewards any time in your Flavor Isle account.</p>
+    <a href="${trackedLink('/rewards', 'rewards_track')}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">SEE MY REWARDS →</a>
+  </div>`;
+}
+
 // Branded email shell matching the website: centered logo, cherry header,
 // cream body, navy footer, Oswald headings / Open Sans body.
 export function brandedEmailHtml(bodyHtml) {

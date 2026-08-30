@@ -6,6 +6,8 @@ const LINK_LABELS = {
   merch_promo: 'Tasty Threads merch promo',
   review_request: 'Review request',
   what_to_expect: 'What to expect / live status',
+  account_cta: 'Create account (guest order)',
+  rewards_track: 'Star Rewards track',
 };
 
 export default function EmailClickStats() {
