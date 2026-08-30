@@ -23,6 +23,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
+const orderTypeLabel = (orderType, pickupMethod) =>
+  orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 // Brand-neutral card field styling — matches the app's diner aesthetic with
 // no Stripe logos or branding.
@@ -94,7 +96,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -323,6 +325,7 @@ export default function Checkout() {
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
+          pickupMethod,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: form.instructions,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
@@ -391,6 +394,7 @@ export default function Checkout() {
     const res = await base44.functions.invoke('createPaymentIntent', {
       items: mappedItems,
       orderType,
+      pickupMethod,
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
@@ -662,10 +666,10 @@ export default function Checkout() {
                   <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
                     <img
                       src={ORDER_TYPE_IMAGES[orderType]}
-                      alt={ORDER_TYPE_LABELS[orderType]}
+                      alt={orderTypeLabel(orderType, pickupMethod)}
                       className="w-7 h-7 object-contain flex-shrink-0"
                     />
-                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
+                    <span className="truncate">{orderTypeLabel(orderType, pickupMethod)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
                     <Clock size={15} />

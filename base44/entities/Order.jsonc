@@ -17,6 +17,14 @@
         "dine_in"
       ]
     },
+    "pickup_method": {
+      "type": "string",
+      "enum": [
+        "counter",
+        "curbside"
+      ],
+      "description": "For pickup orders: 'counter' = walk in and pick up at the counter, 'curbside' = we bring it to the car. Chosen by the customer in the cart."
+    },
     "order_source": {
       "type": "string",
       "enum": [
