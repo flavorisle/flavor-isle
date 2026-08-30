@@ -15,7 +15,7 @@ const DEFAULT_CONFIG = {
   title: 'FLAVOR ISLE',
   subtitle: 'Hand-Patted Burgers & Shakes · Since 1964',
   footer: '103 N Main St, Smiths Grove, KY 42171 · (270) 563-4618\nOrder online at crave.flavor-isle.com',
-  columns: 2,
+  columns: 4,
   showDescriptions: true,
   showLogo: true,
   showModifiers: true,

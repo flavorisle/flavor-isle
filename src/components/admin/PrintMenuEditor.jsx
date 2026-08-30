@@ -53,6 +53,9 @@ export default function PrintMenuEditor({
             <option value={1}>1 column</option>
             <option value={2}>2 columns</option>
             <option value={3}>3 columns</option>
+            <option value={4}>4 columns</option>
+            <option value={5}>5 columns</option>
+            <option value={6}>6 columns</option>
           </select>
         </Field>
         <label className="flex items-center gap-2 text-sm text-obsidian-roast mb-2">
