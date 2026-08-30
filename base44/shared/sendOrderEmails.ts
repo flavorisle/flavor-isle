@@ -7,19 +7,31 @@ const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 // always the branded custom domain, never the base44.app address.
 const APP_URL = 'https://crave.flavor-isle.com';
 
+// Build a click-tracked link. Routes the email CTA through the trackEmailClick
+// endpoint so each click is counted, then redirects to `path`. `linkId` labels
+// the link in the EmailClick stats; `orderId` ties order-specific links (review
+// requests) back to the order they came from.
+function trackedLink(path: string, linkId: string, orderId?: string) {
+  const to = encodeURIComponent(path);
+  let url = `${APP_URL}/functions/trackEmailClick?link=${linkId}&to=${to}`;
+  if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
+  return url;
+}
+
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
 export function merchPromoHtml() {
   return `
   <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
     <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
     <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
-    <a href="${APP_URL}/merch" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
+    <a href="${trackedLink('/merch', 'merch_promo')}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
   </div>`;
 }
 
 // Review CTA block — appended to the thank-you email to collect ratings.
 export function reviewCtaHtml(orderId?: string) {
-  const url = orderId ? `${APP_URL}/feedback?order=${orderId}` : `${APP_URL}/feedback`;
+  const dest = orderId ? `/feedback?order=${orderId}` : '/feedback';
+  const url = trackedLink(dest, 'review_request', orderId);
   return `
   <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#1A3A5C;color:#fff;">
     <p style="font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ HOW'D WE DO?</p>
@@ -35,7 +47,7 @@ export function whatToExpectHtml() {
   <div style="margin:18px 0 8px;border-radius:14px;padding:18px 20px;background:#EAF1F8;border:1px solid #C9D8E8;">
     <p style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:16px;margin:0 0 6px;letter-spacing:2px;">⏱ WHAT TO EXPECT WHILE YOU WAIT</p>
     <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">Curious how busy we are? Check our live kitchen status — it breaks down each level and the wait to expect.</p>
-    <a href="${APP_URL}/what-to-expect" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SEE LIVE STATUS →</a>
+    <a href="${trackedLink('/what-to-expect', 'what_to_expect')}" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SEE LIVE STATUS →</a>
   </div>`;
 }
 

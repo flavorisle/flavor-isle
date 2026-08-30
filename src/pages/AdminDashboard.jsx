@@ -12,6 +12,7 @@ import BroadcastPushCard from '@/components/BroadcastPushCard';
 import PushLogList from '@/components/PushLogList';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 import StoreMetrics from '@/components/admin/StoreMetrics';
+import EmailClickStats from '@/components/admin/EmailClickStats';
 
 const orderPages = [
 {
@@ -79,6 +80,9 @@ export default function AdminDashboard() {
 
       {/* Store metrics — daily volume, revenue, breakdowns */}
       <StoreMetrics />
+
+      {/* Email link click tracking — how often each email CTA is clicked */}
+      <EmailClickStats />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />
