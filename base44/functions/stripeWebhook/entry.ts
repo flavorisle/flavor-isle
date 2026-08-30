@@ -2,12 +2,12 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { brandedEmailHtml, merchPromoHtml } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, merchPromoHtml, starsEarnedHtml } from '../../shared/sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 
-async function sendOrderConfirmationEmail(order) {
+async function sendOrderConfirmationEmail(order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
   const itemsHtml = (order.items || []).map(item =>
@@ -59,6 +59,7 @@ async function sendOrderConfirmationEmail(order) {
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+        ${loyalty && loyalty.pointsEarned > 0 ? starsEarnedHtml(loyalty) : ''}
         ${merchPromoHtml()}
   `);
 
@@ -160,6 +161,7 @@ async function sendAdminReceiptEmail(order) {
 // same in-store program). Points are computed by Square from the order's spend
 // per the program's accrual rules.
 async function processLoyalty(base44, order, squareOrderId) {
+  let loyaltyResult = null;
   try {
     if (order.redemption_id) {
       try {
@@ -175,7 +177,7 @@ async function processLoyalty(base44, order, squareOrderId) {
       }
     }
 
-    if (!squareOrderId || !order.customer_email) return;
+    if (!squareOrderId || !order.customer_email) return null;
 
     // Retry the accrual with a short delay — Square's AccumulateLoyaltyPoints
     // API can fail if called the instant the order + external payment are
@@ -186,7 +188,7 @@ async function processLoyalty(base44, order, squareOrderId) {
     for (let attempt = 1; attempt <= 3 && !accrued; attempt++) {
       try {
         if (attempt > 1) await sleep(3000);
-        await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
+        loyaltyResult = await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
         accrued = true;
         console.log(`Square Star Rewards points accrued for order ${order.order_number} (attempt ${attempt})`);
       } catch (accrueErr) {
@@ -206,6 +208,7 @@ async function processLoyalty(base44, order, squareOrderId) {
   } catch (err) {
     console.error('Square loyalty accrual failed:', err.message);
   }
+  return loyaltyResult;
 }
 
 // Route a newly paid order to Square POS so staff can track and update its
@@ -252,10 +255,6 @@ async function pushOrderToSquareAndKitchen(base44, order) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
   }
 
-  if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
-    await sendOrderConfirmationEmail(order);
-  }
-
   // Send a copy of the receipt to the owner so the store has a full record.
   await sendAdminReceiptEmail(order);
 
@@ -279,7 +278,13 @@ async function pushOrderToSquareAndKitchen(base44, order) {
   }
 
   // Loyalty: consume applied reward + accrue Square Star Rewards for this order.
-  await processLoyalty(base44, order, squareOrderId);
+  // Runs before the confirmation email so the email can report the exact
+  // number of stars this order earned.
+  const loyalty = await processLoyalty(base44, order, squareOrderId);
+
+  if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
+    await sendOrderConfirmationEmail(order, loyalty);
+  }
 }
 
 Deno.serve(async (req) => {
