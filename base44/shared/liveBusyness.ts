@@ -10,6 +10,7 @@ import { todayChicago } from './busynessTime.ts';
 import {
   getBusynessStage,
   COOK_WINDOW_MINUTES,
+  THROUGHPUT_WINDOW_MINUTES,
   RECENT_WINDOW_MINUTES,
   QUIET_WINDOW_MINUTES,
   computeRegressedWait,
@@ -45,8 +46,13 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
   const prevCount = liveMap[prevHour] || 0;
   const minute = today.minute || 0;
 
-  // 60-min rolling count (throughput) — drives the busyness stage.
-  const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
+  // Rolling throughput count over THROUGHPUT_WINDOW_MINUTES — drives the
+  // busyness stage. Orders age out of it twice as fast as the old 60-min
+  // window, so the level recovers at double the rate.
+  const W = THROUGHPUT_WINDOW_MINUTES;
+  const liveCount = minute >= W
+    ? Math.round((curHourCount * W) / minute)
+    : curHourCount + Math.round((prevCount * (W - minute)) / 60);
 
   // Active queue depth over the cook window.
   let activeCount;
