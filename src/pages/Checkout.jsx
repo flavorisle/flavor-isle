@@ -73,11 +73,6 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
         onSuccess={onSuccess}
         onError={onError}
       />
-      <div className="flex items-center gap-3 mb-4 text-xs text-muted-foreground">
-        <div className="flex-1 h-px bg-border" />
-        <span className="font-heading uppercase tracking-wider">or pay with card</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
       <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
         <CardElement options={CARD_STYLE} />
       </div>

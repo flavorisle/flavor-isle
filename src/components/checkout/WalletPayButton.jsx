@@ -59,6 +59,11 @@ export default function WalletPayButton({ clientSecret, total, orderNumber, onSu
           },
         }}
       />
+      <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground">
+        <div className="flex-1 h-px bg-border" />
+        <span className="font-heading uppercase tracking-wider">or pay with card</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
     </div>
   );
 }
