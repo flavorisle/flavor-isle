@@ -5,7 +5,7 @@ import { MapPin, Car, Building2, TreePalm, ArrowRight } from 'lucide-react';
 // so curbside customers know exactly which area to select when they park.
 // Each zone has a color-coded pin, label, and short description.
 
-const ZONES = [
+export const ZONES = [
   {
     id: 'front',
     label: 'Zone A — Front Door',

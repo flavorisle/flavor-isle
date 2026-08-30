@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import PickupZoneMap from '@/components/PickupZoneMap';
+import PickupZoneMap, { ZONES } from '@/components/PickupZoneMap';
+import CurbsideArrivalModal from '@/components/CurbsideArrivalModal';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -29,6 +30,8 @@ export default function OrderLookup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
+  const [showArrival, setShowArrival] = useState(false);
+  const [hasArrived, setHasArrived] = useState(false);
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -199,9 +202,38 @@ export default function OrderLookup() {
                 selectedZone={selectedZone}
                 onSelectZone={setSelectedZone}
               />
+
+              {/* Curbside arrival — tell the kitchen you're here */}
+              {!['cancelled', 'completed', 'delivered'].includes(order.status) && (
+                hasArrived || order.arrival_details?.arrived_at ? (
+                  <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3">
+                    <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
+                    <p className="font-body text-sm text-obsidian-roast">
+                      Kitchen's been told you're here — your order's on its way out!
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowArrival(true)}
+                    className="btn-cherry chrome-hover w-full py-4 text-sm font-heading mt-4 tap-44"
+                  >
+                    I'm Here — Curbside Pickup
+                  </button>
+                )
+              )}
             </div>
           )}
         </div>
+      )}
+
+      {showArrival && order && (
+        <CurbsideArrivalModal
+          order={order}
+          zoneLabel={ZONES.find((z) => z.id === selectedZone)?.label || ''}
+          onClose={() => setShowArrival(false)}
+          onArrived={() => setHasArrived(true)}
+        />
       )}
 
       {!order && (
