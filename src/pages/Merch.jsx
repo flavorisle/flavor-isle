@@ -132,11 +132,12 @@ export default function Merch() {
       {/* Hero */}
       <section className="bg-obsidian-roast relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-          <div className="flex items-center gap-2 mb-4">
-            <Shirt size={20} className="text-[hsl(var(--primary))]" />
-            <p className="text-sm font-heading uppercase tracking-widest text-[hsl(var(--primary))]">FLAVOR ISLE MERCH</p>
-          </div>
-          <h1 className="font-heading text-5xl sm:text-7xl text-white leading-none">Tasty Threads</h1>
+          {/* Tasty Threads brand logo */}
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+            alt="Tasty Threads — Flavor Isle Apparel, est. 1964"
+            className="w-full max-w-md h-auto bg-white rounded-2xl p-4 mb-6"
+          />
           <p className="text-gray-300 mt-4 max-w-xl text-lg">
             Wear the flavor. Tees, cups, and gear printed on demand and shipped straight to your door.
           </p>
