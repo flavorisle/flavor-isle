@@ -22,7 +22,24 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Close the dropdown whenever the route changes so it never lingers open
+  // over the new page.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Primary links surfaced inline on desktop so users can always jump back to
+  // the homepage or menu without opening the hamburger.
+  const primaryLinks = [
+  { label: 'Home', to: '/' },
+  { label: 'Menu', to: '/menu' },
+  { label: 'Milkshakes', to: '/milkshakes' },
+  { label: 'Combos', to: '/combos' },
+  { label: 'Tasty Threads', to: '/merch' },
+  { label: 'Contact', to: '/contact' }];
+
   const navLinks = [
+  { label: 'Home', to: '/' },
   { label: 'Menu', to: '/menu' },
   { label: 'Milkshakes', to: '/milkshakes' },
   { label: 'Combos', to: '/combos' },
@@ -49,6 +66,26 @@ export default function Navbar() {
               <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
             </div>
           </Link>
+
+          {/* Desktop inline nav */}
+          <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            {primaryLinks.map((link) => {
+              const isActive = location.pathname === link.to;
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-3 py-2 rounded-full text-sm font-body font-semibold whitespace-nowrap transition-colors ${
+                    isActive
+                      ? 'bg-midnight-cherry/10 text-midnight-cherry'
+                      : 'text-obsidian-roast hover:text-midnight-cherry hover:bg-muted'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -102,8 +139,9 @@ export default function Navbar() {
             key={link.to}
             to={link.to}
             onClick={() => setMobileOpen(false)}
-            className="font-body font-semibold text-obsidian-roast hover:text-midnight-cherry transition-colors">
-            
+            className={`font-body font-semibold transition-colors ${
+              location.pathname === link.to ? 'text-midnight-cherry' : 'text-obsidian-roast hover:text-midnight-cherry'
+            }`}>
                 {link.label}
               </Link>
           )}
