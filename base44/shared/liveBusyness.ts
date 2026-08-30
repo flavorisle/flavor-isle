@@ -11,6 +11,8 @@ import {
   getBusynessStage,
   COOK_WINDOW_MINUTES,
   RECENT_WINDOW_MINUTES,
+  QUIET_WINDOW_MINUTES,
+  RUNNING_SMOOTH_STAGE,
   computeRegressedWait,
 } from './busynessStages.ts';
 import { getStoreStatus } from './storeClosure.ts';
@@ -76,6 +78,25 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
     const settings = await base44.asServiceRole.entities.MenuSetting.list();
     if (settings?.[0]?.extra_cook_date === today.dateKey) speedFactor = 2;
   } catch { /* default to normal speed */ }
+
+  // Quiet kitchen: if no new order has come in for QUIET_WINDOW_MINUTES, the
+  // board has cleared — snap back to Running Smooth at the base cook time
+  // rather than staying "busy" off the last hour's throughput.
+  try {
+    const [lastOrder] = await base44.asServiceRole.entities.Order.list('-created_date', 1);
+    if (lastOrder?.created_date) {
+      const quietMinutes = (Date.now() - new Date(lastOrder.created_date).getTime()) / 60000;
+      if (quietMinutes >= QUIET_WINDOW_MINUTES) {
+        return {
+          isClosed: false,
+          busyness_level: RUNNING_SMOOTH_STAGE.level,
+          estimated_wait: `≈ ${RUNNING_SMOOTH_STAGE.waitMin} min`,
+          estimated_wait_min: RUNNING_SMOOTH_STAGE.waitMin,
+          recovering: false,
+        };
+      }
+    }
+  } catch { /* fall through to the throughput-based stage */ }
 
   const stage = getBusynessStage(liveCount, speedFactor);
 

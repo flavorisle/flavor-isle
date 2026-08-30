@@ -32,6 +32,14 @@ export function getBusynessStage(rollingCount: number, speedFactor = 1): Busynes
 // longer contribute to the active queue / busyness level.
 export const COOK_WINDOW_MINUTES = 20;
 
+// Quiet-kitchen reset: once this many minutes pass with no new order coming
+// in, the board is considered cleared — the crew has caught up, so the status
+// drops straight back to Running Smooth with the base cook time instead of
+// riding the last hour's throughput.
+export const QUIET_WINDOW_MINUTES = 10;
+
+export const RUNNING_SMOOTH_STAGE = BUSYNESS_STAGES[BUSYNESS_STAGES.length - 1];
+
 // ── Wait regression constants ──
 // Cook capacity: orders/hour the kitchen handles at baseline before a
 // backlog builds. When recent inflow falls below this, the wait estimate
