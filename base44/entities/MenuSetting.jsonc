@@ -60,6 +60,22 @@
       "default": 0,
       "description": "Flat fee in USD applied to every delivery order. Set to 0 for free delivery."
     },
+    "delivery_tiers": {
+      "type": "array",
+      "description": "Distance-based delivery pricing tiers, sorted by max_miles ascending. Each tier charges `fee` for addresses up to `max_miles` (straight-line) from the store. The last tier's max_miles is the delivery range limit \u2014 addresses beyond it are out of range. When empty, the flat delivery_fee applies instead.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "max_miles": {
+            "type": "number"
+          },
+          "fee": {
+            "type": "number"
+          }
+        }
+      },
+      "default": []
+    },
     "extra_cook_date": {
       "type": "string",
       "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, the kitchen runs with an extra cook: order completion rate doubles, so quoted wait times shrink and busyness thresholds stretch. Auto-expires after the date passes."

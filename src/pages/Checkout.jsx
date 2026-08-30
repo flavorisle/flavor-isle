@@ -94,7 +94,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -206,6 +206,29 @@ export default function Checkout() {
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
 
+  // Distance-based delivery pricing — quote the fee from the typed address
+  // (debounced). Clears the quote when not delivering or the address is empty.
+  const [quoting, setQuoting] = useState(false);
+  useEffect(() => {
+    if (orderType !== 'delivery' || !form.address.trim()) {
+      setDeliveryQuote(null);
+      setQuoting(false);
+      return;
+    }
+    setQuoting(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await base44.functions.invoke('getDeliveryQuote', { address: form.address.trim() });
+        setDeliveryQuote(res.data?.ok ? res.data : null);
+      } catch {
+        setDeliveryQuote(null);
+      } finally {
+        setQuoting(false);
+      }
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [orderType, form.address, setDeliveryQuote]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
@@ -259,6 +282,9 @@ export default function Checkout() {
     if (!form.email.trim()) errors.email = 'Your email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
+    else if (orderType === 'delivery' && deliveryQuote?.out_of_range) {
+      errors.address = `Sorry, this address is outside our ${deliveryQuote.max_miles}-mile delivery range.`;
+    }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
 
     setFieldErrors(errors);
@@ -541,6 +567,20 @@ export default function Checkout() {
                         saved={savedAddress}
                       />
                       {fieldErrors.address && <p className="text-xs text-destructive mt-1">{fieldErrors.address}</p>}
+                      {/* Live distance-based delivery quote */}
+                      {quoting && (
+                        <p className="text-xs text-muted-foreground mt-1.5">Checking delivery distance…</p>
+                      )}
+                      {!quoting && deliveryQuote?.out_of_range && (
+                        <p className="text-xs text-destructive mt-1.5">
+                          This address is ~{deliveryQuote.distance_miles} mi away — outside our {deliveryQuote.max_miles}-mile delivery range.
+                        </p>
+                      )}
+                      {!quoting && deliveryQuote && !deliveryQuote.out_of_range && (
+                        <p className="text-xs text-patina-mint mt-1.5">
+                          ~{deliveryQuote.distance_miles} mi from the store — ${Number(deliveryQuote.fee || 0).toFixed(2)} delivery fee
+                        </p>
+                      )}
                     </div>
                   )}
 

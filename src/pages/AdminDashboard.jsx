@@ -6,6 +6,7 @@ import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
 import StoreStatusCard from '@/components/StoreStatusCard';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
+import DeliveryPricingTiers from '@/components/admin/DeliveryPricingTiers';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
@@ -72,6 +73,8 @@ export default function AdminDashboard() {
       <StoreClosurePanel />
 
       <OrderCutoffSettings />
+
+      <DeliveryPricingTiers />
 
       <BusinessHoursSettings />
 
