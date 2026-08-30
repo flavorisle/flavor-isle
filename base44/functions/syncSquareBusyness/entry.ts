@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { chicagoParts, todayChicago } from '../../shared/busynessTime.ts';
+import { squareOrderWeight } from '../../shared/orderBusynessWeight.ts';
 
 const SQUARE_VERSION = '2024-01-18';
 const FULL_LOOKBACK_DAYS = 90;
@@ -59,12 +60,15 @@ export default async function(req) {
         const o = orders[i];
         if (!o.created_at) continue;
         const p = chicagoParts(o.created_at);
-        if (p.dateKey === today.dateKey) todayCounts[p.hour] = (todayCounts[p.hour] || 0) + 1;
+        // Treat-only orders (shakes, bliss, crave waves, hot fudge cakes, …)
+        // don't hit the grill, so they only count 1/2 toward busyness.
+        const w = squareOrderWeight(o);
+        if (p.dateKey === today.dateKey) todayCounts[p.hour] = (todayCounts[p.hour] || 0) + w;
         if (mode === 'full') {
           const k = p.weekday + '-' + p.hour;
           if (!profileBuckets[k]) profileBuckets[k] = { total: 0, perDay: {} };
-          profileBuckets[k].total += 1;
-          profileBuckets[k].perDay[p.dateKey] = (profileBuckets[k].perDay[p.dateKey] || 0) + 1;
+          profileBuckets[k].total += w;
+          profileBuckets[k].perDay[p.dateKey] = (profileBuckets[k].perDay[p.dateKey] || 0) + w;
         }
       }
       ordersPulled += orders.length;
@@ -84,7 +88,7 @@ export default async function(req) {
     const hcUp = [];
     const hcCr = [];
     hoursToWrite.forEach(h => {
-      const rec = { date: today.dateKey, hour: h, weekday: today.weekday, order_count: todayCounts[h] || 0 };
+      const rec = { date: today.dateKey, hour: h, weekday: today.weekday, order_count: +((todayCounts[h] || 0).toFixed(1)) };
       const id = hcIds[h];
       if (id) hcUp.push({ id, ...rec }); else hcCr.push(rec);
     });
