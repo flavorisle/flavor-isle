@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { Twilio } from 'npm:twilio@5.3.3';
+import twilio, { Twilio } from 'npm:twilio@5.3.3';
 
 // Logs a curbside arrival from the order status page and notifies the kitchen
-// via Smashie's SMS line. Special notes (extra ketchup, napkins, etc.) are
-// rendered in their own clearly-marked section so the crew can't miss them.
+// by CALLING the counter phone in Smashie's voice. Special notes (extra
+// ketchup, napkins, etc.) get their own clearly-spoken section, and the whole
+// announcement repeats once so the crew can't miss it.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -38,34 +39,37 @@ export default async function(req) {
 
     const vehicle = [car_color, car_make, car_model].filter(Boolean).join(' ');
 
-    // Smashie's kitchen notification — notes get their own loud section.
-    let kitchenMessage =
-      `\n═══════════════════` +
-      `\n🚗 CURBSIDE ARRIVAL — ORDER #${order.order_number}` +
-      `\n═══════════════════` +
-      `\n👤 CUSTOMER: ${order.customer_name || 'N/A'}` +
-      `\n📍 ZONE: ${zone || 'Not specified'}` +
-      `\n🚘 VEHICLE: ${vehicle || 'Not specified'}`;
-
+    // Spoken announcement — order number read digit by digit so it's clear.
+    const spokenOrderNumber = String(order.order_number).split('').join(', ');
+    let announcement =
+      `Heads up crew, curbside arrival! Order number ${spokenOrderNumber}. ` +
+      `Customer: ${order.customer_name || 'unknown'}. ` +
+      `Parked at ${zone || 'an unspecified zone'}. ` +
+      `Vehicle: ${vehicle || 'not specified'}. `;
     if (cleanNotes) {
-      kitchenMessage +=
-        `\n───────────────────` +
-        `\n⚠️⚠️ SPECIAL NOTES ⚠️⚠️` +
-        `\n${cleanNotes.toUpperCase()}` +
-        `\n───────────────────`;
+      announcement += `Special notes: ${cleanNotes}. `;
     }
+    announcement += `Run it out!`;
 
-    kitchenMessage += `\n⏰ RUN IT OUT — Smashie` + `\n═══════════════════`;
+    // Speak in Smashie's voice via the TTS endpoint, and repeat once.
+    const ttsUrl = new URL('https://crave.flavor-isle.com/functions/smashieTts');
+    ttsUrl.searchParams.set('text', announcement);
+    const VoiceResponse = twilio.twiml.VoiceResponse;
+    const twiml = new VoiceResponse();
+    twiml.play({}, ttsUrl.toString());
+    twiml.pause({ length: 1 });
+    twiml.play({}, ttsUrl.toString());
+    twiml.hangup();
 
     const client = new Twilio(
       Deno.env.get('TWILIO_ACCOUNT_SID'),
       Deno.env.get('TWILIO_AUTH_TOKEN')
     );
 
-    await client.messages.create({
+    await client.calls.create({
       from: Deno.env.get('TWILIO_PHONE_NUMBER'),
-      to: '+12705634618', // Kitchen phone number (Flavor Isle main line)
-      body: kitchenMessage,
+      to: Deno.env.get('COUNTER_PHONE_NUMBER') || '+12705634618', // Counter phone (falls back to main line)
+      twiml: twiml.toString(),
     });
 
     console.log(`Curbside arrival logged for order #${order.order_number}, zone: ${zone}, notes: ${cleanNotes || 'none'}`);
