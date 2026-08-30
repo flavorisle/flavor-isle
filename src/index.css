@@ -344,7 +344,7 @@
    the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
    is laid out edge-to-edge in black on white. */
 @media print {
-  @page { margin: 0.4in; }
+  @page { size: A3; margin: 0.5in; }
 
   body {
     background: #ffffff !important;
@@ -370,9 +370,9 @@
   .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 }
 
-/* On-screen paper preview for the printable menu — US Letter proportions. */
+/* On-screen paper preview for the printable menu — A3 proportions (11.7in wide). */
 #print-sheet {
-  width: 8.5in;
+  width: 11.7in;
   max-width: 100%;
 }
 
