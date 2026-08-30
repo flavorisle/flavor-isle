@@ -18,6 +18,7 @@ const DEFAULT_CONFIG = {
   columns: 2,
   showDescriptions: true,
   showLogo: true,
+  showModifiers: true,
 };
 
 export default function AdminPrintMenu() {

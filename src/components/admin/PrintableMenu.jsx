@@ -1,11 +1,12 @@
 // The actual print sheet. Rendered on screen as a paper preview and printed
 // as-is (everything else on the page is hidden by the print stylesheet).
 import React from 'react';
+import PrintItemModifiers from './PrintItemModifiers';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
 export default function PrintableMenu({ sections, config }) {
-  const { title, subtitle, footer, columns, showDescriptions, showLogo } = config;
+  const { title, subtitle, footer, columns, showDescriptions, showLogo, showModifiers } = config;
 
   return (
     <div id="print-sheet" className="bg-white text-black mx-auto shadow-float print:shadow-none">
@@ -42,6 +43,7 @@ export default function PrintableMenu({ sections, config }) {
                     {showDescriptions && item.description && (
                       <p className="text-[10.5px] text-gray-700 leading-snug pr-10">{item.description}</p>
                     )}
+                    {showModifiers && <PrintItemModifiers item={item} />}
                   </li>
                 ))}
               </ul>

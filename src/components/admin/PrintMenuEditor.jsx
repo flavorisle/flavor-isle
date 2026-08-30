@@ -63,6 +63,14 @@ export default function PrintMenuEditor({
           />
           Show item descriptions
         </label>
+        <label className="flex items-center gap-2 text-sm text-obsidian-roast mb-2">
+          <input
+            type="checkbox"
+            checked={config.showModifiers}
+            onChange={e => update('showModifiers', e.target.checked)}
+          />
+          Show sizes & options (cups, drinks, toppings)
+        </label>
         <label className="flex items-center gap-2 text-sm text-obsidian-roast">
           <input type="checkbox" checked={config.showLogo} onChange={e => update('showLogo', e.target.checked)} />
           Show logo
