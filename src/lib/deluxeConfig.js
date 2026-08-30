@@ -17,6 +17,8 @@
 // back to true re-enables the feature everywhere.
 export const DELUXE_ENABLED = false;
 
+import { matchScore } from '@/lib/deluxeLabel';
+
 const STORAGE_KEY = 'flavor_isle_deluxe_presets';
 const LEGACY_KEY = 'flavor_isle_deluxe_config';
 
@@ -56,7 +58,9 @@ export function getDeluxePresets() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(cleanPreset);
+      // An empty saved list would silently hide every Deluxe button, so fall
+      // through to the defaults instead of returning [].
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(cleanPreset);
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
@@ -91,8 +95,10 @@ export function presetTrackedToppings(preset, availableNames) {
   const silent = new Set((preset.silentToppings || []).map(norm));
   const base = (preset.toppings || []).filter((t) => !silent.has(norm(t)));
   if (!availableNames) return base;
-  const avail = new Set(availableNames.map(norm));
-  return base.filter((t) => avail.has(norm(t)));
+  // Tolerant: a topping is "available" when any offered option matches it
+  // (exact > stem > contains), so "Mustard" stays tracked even when the item
+  // only offers "Honey Mustard", and "Onions" when it offers "Grilled Onions".
+  return base.filter((t) => availableNames.some((n) => matchScore(n, t) > 0));
 }
 
 // Resolves all presets that apply to a specific menu item.
@@ -107,16 +113,24 @@ export function getDeluxePresetsForItem(item) {
   const resolved = [];
   for (const preset of presets) {
     if (preset.appliesTo.length > 0 && !preset.appliesTo.includes(item.id)) continue;
-    const wanted = preset.toppings.map(norm);
+    // For each preset topping, pick the single best-matching Square option
+    // across all modifier groups (exact > stem > contains) so "Tomatoes" lands
+    // on "TOMATO", "Onions" on "DICED ONION"/"Grilled Onions", etc. Taking only
+    // the best match avoids selecting two options for one topping.
     const matched = [];
-    for (const group of item.modifiers) {
-      if (!group || !Array.isArray(group.modifiers)) continue;
-      for (const mod of group.modifiers) {
-        if (!mod || mod.sold_out) continue;
-        if (wanted.includes(norm(mod.name))) {
-          matched.push({ group: group.name, id: mod.id, name: mod.name, price: mod.price || 0 });
+    for (const topping of preset.toppings) {
+      let best = null;
+      for (const group of item.modifiers) {
+        if (!group || !Array.isArray(group.modifiers)) continue;
+        for (const mod of group.modifiers) {
+          if (!mod || mod.sold_out) continue;
+          const score = matchScore(mod.name, topping);
+          if (score > 0 && (!best || score > best.score)) {
+            best = { score, group: group.name, id: mod.id, name: mod.name, price: mod.price || 0 };
+          }
         }
       }
+      if (best) matched.push(best);
     }
     if (matched.length === 0) continue;
     resolved.push({ ...preset, modifiers: matched });

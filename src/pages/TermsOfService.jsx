@@ -87,6 +87,48 @@ const SECTIONS = [
     ],
   },
   {
+    title: 'Mobile App (iOS & Android)',
+    body: [
+      {
+        heading: 'App Availability',
+        text: 'Flavor Isle is also available as a mobile app for iOS and Android, built from the same platform as our website. By downloading and using the app, you agree to these Terms along with the terms of Apple\u2019s App Store or Google Play, as applicable.',
+      },
+      {
+        heading: 'Push Notifications',
+        text: 'When you allow notifications, we may send you push notifications about your order status, rewards, and occasional offers. You can turn notifications off at any time in your device settings. Turning them off does not affect order confirmation emails or texts.',
+      },
+      {
+        heading: 'App Updates',
+        text: 'We may release app updates with new features, fixes, or changes. Keeping the app updated helps ensure it works correctly. We are not liable for issues caused by using an outdated version of the app.',
+      },
+      {
+        heading: 'Account Sync',
+        text: 'Your account, orders, rewards, and cart sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.',
+      },
+    ],
+  },
+  {
+    title: 'Tasty Threads Merchandise',
+    body: [
+      {
+        heading: 'Merch Orders',
+        text: 'When you order from our Tasty Threads merchandise store, you agree to pay the total shown, including shipping and applicable taxes. Merchandise prices and availability may change without notice.',
+      },
+      {
+        heading: 'Print-on-Demand Fulfillment',
+        text: 'Merchandise is printed and shipped on demand by our fulfillment partner, Printful. Production typically takes 2–7 business days before shipping. Estimated delivery times are approximate and may vary.',
+      },
+      {
+        heading: 'Shipping',
+        text: 'Shipping costs are calculated at checkout based on your address and the items in your order. We are not responsible for delays caused by the shipping carrier or incorrect addresses provided at checkout.',
+      },
+      {
+        heading: 'Returns & Exchanges',
+        text: 'Because each item is made to order, we generally do not accept returns or exchanges for size or preference reasons. If your item arrives damaged, defective, or incorrect, contact us promptly with a photo and we will arrange a replacement or refund.',
+      },
+    ],
+  },
+  {
     title: 'Loyalty & Rewards',
     body: [
       {
@@ -121,14 +163,14 @@ const SECTIONS = [
       },
       {
         heading: 'Third-Party Services',
-        text: 'Our services rely on third parties (including Square, Twilio, and OpenAI). We are not responsible for their separate policies or service interruptions.',
+        text: 'Our services rely on third parties (including Square, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
       },
     ],
   },
 ];
 
 export default function TermsOfService() {
-  const lastUpdated = 'August 14, 2026';
+  const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -149,8 +191,8 @@ export default function TermsOfService() {
         <div className="card-diner p-6 mb-8">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Welcome to Flavor Isle! These Terms of Service explain the rules for using our website, placing orders,
-            earning rewards, chatting with our assistant Smashie, and receiving messages from us. By using our services,
-            you agree to these terms — including your consent to SMS and phone communications, the use of OpenAI for our
+            earning rewards, chatting with our assistant Smashie, using our mobile app, and receiving messages from us. By using our services,
+            you agree to these terms — including your consent to SMS, phone, and push notifications, the use of OpenAI for our
             assistant, and the promotional use of your information and photos as described here.
           </p>
         </div>

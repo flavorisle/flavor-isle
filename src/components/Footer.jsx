@@ -12,14 +12,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Brand */}
         <div className="md:col-span-1">
-          <div className="flex items-center gap-2 mb-4">
-            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-md" />
-            <div className="min-w-0 whitespace-nowrap">
-              <div className="font-heading text-xl leading-none">FLAVOR ISLE</div>
-              <div className="text-xs tracking-widest text-[hsl(var(--primary))]">SMITHS GROVE, KY</div>
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm leading-relaxed">
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
+            alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
+            className="w-full max-w-[200px] object-contain mb-4"
+          />
+          <p className="text-gray-300 text-sm leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
           </p>
           <div className="flex gap-3 mt-5">
@@ -38,7 +36,7 @@ export default function Footer() {
         {/* Hours */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">HOURS</h4>
-          <div className="space-y-2 text-sm text-gray-400">
+          <div className="space-y-2 text-sm text-gray-300">
             {hoursGroups(businessHours).map((g) =>
             <div key={g.days} className="flex justify-between gap-4">
                 <span>{g.days}</span>
@@ -51,10 +49,11 @@ export default function Footer() {
         {/* Quick Links */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">QUICK LINKS</h4>
-          <div className="flex flex-col gap-2 text-sm text-gray-400">
+          <div className="flex flex-col gap-2 text-sm text-gray-300">
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
-            <Link to="/menu" className="hover:text-white transition-colors">Full Menu</Link>
+            <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
+            <Link to="/what-to-expect" className="hover:text-white transition-colors">What to Expect</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
           </div>
@@ -63,7 +62,7 @@ export default function Footer() {
         {/* Contact */}
         <div>
           <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">FIND US</h4>
-          <div className="space-y-3 text-sm text-gray-400">
+          <div className="space-y-3 text-sm text-gray-300">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 flex-shrink-0 text-[hsl(var(--primary))]" />
               <a href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">103 N Main St, Smiths Grove<br />Kentucky, KY 42171</a>

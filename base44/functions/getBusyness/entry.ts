@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { getBusynessStage, COOK_WINDOW_MINUTES, RECENT_WINDOW_MINUTES, computeRegressedWait } from '../../shared/busynessStages.ts';
 import { getStoreStatus } from '../../shared/storeClosure.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 
 // Public read for the landing page "How busy are we?" card.
 // Returns today's 24-hour typical-traffic chart + the live current-hour status.
@@ -58,10 +59,11 @@ export default async function(req) {
       activeCount = curHourCount + prevSlice;
     }
 
-    // If the store is closed (admin closure or outside business hours),
-    // the status card should say "Closed" instead of a busyness level.
-    const storeStatus = await getStoreStatus(base44);
-    if (!storeStatus.open) {
+    // The busyness level + regressed wait come from the shared live helper so
+    // the site, status bar, and order emails all quote the same number.
+    const liveStatus = await getLiveBusyness(base44);
+
+    if (liveStatus.isClosed) {
       return Response.json({
         weekday: today.weekday,
         hour: today.hour,
@@ -76,11 +78,29 @@ export default async function(req) {
         busyness_level: 'Closed',
         estimated_wait: 'Closed',
         estimated_wait_min: 0,
-        closure_message: storeStatus.message,
+        recovering: false,
+        closure_message: liveStatus.closure_message,
       });
     }
 
-    const stage = getBusynessStage(activeCount);
+    // The busyness level is driven by the rolling 60-min order count
+    // (liveCount), which captures sustained rushes that the instantaneous
+    // 20-min queue depth misses. The numeric wait estimate additionally
+    // regresses toward the normal baseline when recent inflow slows, so
+    // quoted times ease back down as the kitchen clears a backlog.
+    const stage = getBusynessStage(liveCount);
+
+    // Recent inflow over the short window (same proration as activeCount,
+    // no extra entity reads). Used to detect a slowdown and decay the wait.
+    let recentInflow;
+    if (minute >= RECENT_WINDOW_MINUTES) {
+      recentInflow = Math.round((curHourCount * RECENT_WINDOW_MINUTES) / minute);
+    } else {
+      const prevSlice = Math.round((prevCount * (RECENT_WINDOW_MINUTES - minute)) / 60);
+      recentInflow = curHourCount + prevSlice;
+    }
+
+    const regressed = computeRegressedWait(liveCount, recentInflow, activeCount, stage);
 
     return Response.json({
       weekday: today.weekday,
@@ -90,12 +110,14 @@ export default async function(req) {
       peakAvg,
       liveCount,
       activeCount,
+      recentInflow,
       curHourCount,
       avgForHour,
       busyPercent,
-      busyness_level: stage.level,
-      estimated_wait: stage.waitRange,
-      estimated_wait_min: stage.waitMin,
+      busyness_level: liveStatus.busyness_level,
+      estimated_wait: liveStatus.estimated_wait,
+      estimated_wait_min: liveStatus.estimated_wait_min,
+      recovering: liveStatus.recovering,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

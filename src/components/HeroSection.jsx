@@ -4,6 +4,7 @@ import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import PopularTimesCard from '@/components/PopularTimesCard';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED' },
@@ -20,6 +21,9 @@ const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae
 export default function HeroSection() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
+  const { level, waitMin } = useLiveStatus();
+  const pickupTime = `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`;
+  const deliveryTime = `${waitMin + 15}–${waitMin + 25} min`;
 
   const handleOrder = (type) => {
     base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'hero' } });
@@ -38,16 +42,24 @@ export default function HeroSection() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70" />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white">
+          {/* Est. 1964 seal */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-white/80 bg-white/10 backdrop-blur-sm">
+              <span className="font-heading text-[10px] tracking-[0.2em] text-white/90 leading-none">EST.</span>
+              <span className="font-heading text-2xl leading-none my-0.5" style={{ color: '#F5A623' }}>1964</span>
+              <span className="font-heading text-[9px] tracking-[0.15em] text-white/80 leading-none">SMITHS GROVE</span>
+            </div>
+          </div>
           <h1 className="font-heading uppercase leading-[1.05] text-5xl sm:text-6xl md:text-7xl mb-5 drop-shadow-lg">
             Real Food.<br />Real Good.
           </h1>
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
-            Smiths Grove's burger restaurant. Fresh, never-frozen hand-patted burgers, thick shakes, and hot sides made fresh every day.
+            Smiths Grove's favorite burger restaurant, just off I-65 near Bowling Green. Fresh, never-frozen hand-patted smash burgers, thick milkshakes, and hot sides — made fresh every day. Order online for pickup or delivery, or dine in with us.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[
-              { type: 'pickup', label: 'Pickup', time: '15–25 min', Icon: ShoppingBag },
-              { type: 'delivery', label: 'Delivery', time: '35–50 min', Icon: Bike },
+              { type: 'pickup', label: 'Pickup', time: pickupTime, Icon: ShoppingBag },
+              { type: 'delivery', label: 'Delivery', time: deliveryTime, Icon: Bike },
               { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
             ].map(({ type, label, time, Icon }) => (
               <button

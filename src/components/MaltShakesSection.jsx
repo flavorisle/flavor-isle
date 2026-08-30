@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
 // Dedicated section for the malt milkshake on the Shake Isle page. Shows a
@@ -9,6 +9,7 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
   const shake = maltShakes[0];
   const name = flavorNameFromItem(shake.name);
   const emoji = flavorEmojiByName(name);
+  const soldOut = shake.is_available === false;
 
   return (
     <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
@@ -21,14 +22,24 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
         {/* Single centered malt tile */}
         <div className="flex justify-center mb-10">
           <button
-            onClick={() => onSelect(shake)}
-            className="card-diner p-6 text-center group flex flex-col items-center justify-center w-full max-w-xs"
+            onClick={() => !soldOut && onSelect(shake)}
+            disabled={soldOut}
+            className={`card-diner p-6 text-center group flex flex-col items-center justify-center w-full max-w-xs relative ${
+              soldOut ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
           >
-            <span className="text-5xl mb-2 group-hover:scale-110 transition-transform">{emoji}</span>
+            {soldOut && (
+              <span className="absolute top-3 right-3 bg-obsidian-roast text-white text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Sold Out
+              </span>
+            )}
+            <span className={`text-5xl mb-2 group-hover:scale-110 transition-transform ${soldOut ? 'grayscale' : ''}`}>{emoji}</span>
             <p className="font-heading text-obsidian-roast text-lg leading-tight">{name}</p>
             <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
-            <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-heading text-midnight-cherry opacity-0 group-hover:opacity-100 transition-opacity">
-              Customize <ArrowRight size={12} />
+            <span className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading px-3 py-1.5 rounded-full ${
+              soldOut ? 'bg-muted text-muted-foreground' : 'bg-patina-mint text-white'
+            }`}>
+              {soldOut ? 'Sold Out' : <><Plus size={12} /> Customize</>}
             </span>
           </button>
         </div>

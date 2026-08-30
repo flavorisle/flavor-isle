@@ -7,9 +7,10 @@ import { getBusynessStage } from '@/lib/busynessStages';
 // sources (online + in-store POS) — not just local app orders — so the status
 // reflects real kitchen load even when the rush is at the counter.
 //
-// The 4-stage model is based on kitchen capacity (2-3 orders at a time) and
-// a 20-min cook window. The backend returns the stage + estimated wait, and
-// "Closed" when the store is outside business hours or under admin closure.
+// The 4-stage model is driven by the rolling 60-minute order count, which
+// captures sustained rushes that the momentary 20-min queue depth misses.
+// The backend returns the stage + estimated wait, and "Closed" when the
+// store is outside business hours or under admin closure.
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -27,7 +28,8 @@ export default function BusynessStatus() {
           setIsClosed(true);
         } else {
           setIsClosed(false);
-          const count = data.activeCount ?? data.liveCount ?? 0;
+          // The level is driven by the rolling 60-min order count (liveCount).
+          const count = data.liveCount ?? data.activeCount ?? 0;
           setActiveCount(count);
           setStage(getBusynessStage(count));
         }
@@ -71,7 +73,7 @@ export default function BusynessStatus() {
         </div>
         <div className="text-right">
           <p className="text-2xl font-heading">{activeCount}</p>
-          <p className="text-xs opacity-75">In queue (20 min)</p>
+          <p className="text-xs opacity-75">Orders (last 60 min)</p>
         </div>
       </div>
       <div className="flex items-center justify-between mt-2 px-1">

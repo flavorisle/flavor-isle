@@ -14,9 +14,23 @@ export default function DailySpecialsSection() {
 
   const loadSpecials = async () => {
     const today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
-    const all = await base44.entities.DailySpecial.filter({ is_active: true });
-    const filtered = (all || []).filter((s) => s.day_of_week === today || s.day_of_week === 'Daily');
-    setSpecials(filtered);
+    const run = async () => {
+      const all = await base44.entities.DailySpecial.filter({ is_active: true });
+      return (all || []).filter((s) => s.day_of_week === today || s.day_of_week === 'Daily');
+    };
+    try {
+      setSpecials(await run());
+    } catch (err) {
+      // Rate limits on Home load are transient — pause and retry once.
+      console.warn('DailySpecialsSection: load failed, retrying', err.message);
+      try {
+        await new Promise((r) => setTimeout(r, 1200));
+        setSpecials(await run());
+      } catch (err2) {
+        console.warn('DailySpecialsSection: could not load specials', err2.message);
+        setSpecials([]);
+      }
+    }
   };
 
   if (specials.length === 0) return null;

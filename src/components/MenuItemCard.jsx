@@ -6,6 +6,11 @@ import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
 
+const PLACEHOLDER_EMOJI = {
+  Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
+  Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
+};
+
 export default function MenuItemCard({ item, onFavoriteChange }) {
   const { addItem, orderingEnabled, orderingClosedMessage } = useCart();
   const { user } = useAuth();
@@ -16,6 +21,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
+  const position = item.image_position || 'background';
 
   useEffect(() => {
     if (!user?.id) return;
@@ -28,7 +34,6 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     e?.stopPropagation();
     if (!user?.id) return;
     const wasFavorite = isFavorite;
-    // Optimistic: flip the heart instantly for a snappy, native feel.
     setIsFavorite(!wasFavorite);
     onFavoriteChange?.();
     setSavingFavorite(true);
@@ -49,7 +54,6 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
         });
       }
     } catch (err) {
-      // Revert the optimistic change if the DB operation fails.
       console.error('Error toggling favorite:', err);
       setIsFavorite(wasFavorite);
       onFavoriteChange?.();
@@ -70,133 +74,201 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost) => {
-    addItem({ ...item, price: item.price + extraCost, selectedModifiers: selectedMods });
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings) => {
+    addItem({
+      ...item,
+      price: item.price + extraCost,
+      selectedModifiers: selectedMods,
+      deluxeLabel: deluxeLabel || undefined,
+      deluxeToppings: deluxeToppings || [],
+    });
     setShowModal(false);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
   };
 
+  // ── Reusable pieces ──
+
+  const favoriteBtn = user && (
+    <button
+      onClick={toggleFavorite}
+      disabled={savingFavorite}
+      className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
+    >
+      <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
+    </button>
+  );
+
+  const badges = (
+    <>
+      {item.is_fan_favorite && !soldOut && (
+        <div className="absolute top-3 left-3 bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
+          <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
+        </div>
+      )}
+      {!item.is_fan_favorite && item.is_featured && !soldOut && (
+        <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10">
+          <Zap size={10} /> Special
+        </div>
+      )}
+      {soldOut && (
+        <div className="absolute top-3 left-3 bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider z-10">
+          Sold Out
+        </div>
+      )}
+    </>
+  );
+
+  const photo = item.image_url ? (
+    <img
+      src={item.image_url}
+      alt={item.name}
+      className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-amber-50 to-orange-100">
+      {PLACEHOLDER_EMOJI[item.category] || '⭐'}
+    </div>
+  );
+
+  // Hover quick-add overlay (used on top / left / right layouts)
+  const hoverAdd = !soldOut && (
+    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+      <button
+        onClick={handleAdd}
+        disabled={!orderingEnabled}
+        className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${added ? 'bg-patina-mint' : ''}`}
+        title={!orderingEnabled ? orderingClosedMessage : ''}
+      >
+        <Plus size={16} />
+        {!orderingEnabled ? 'Closed' : added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
+      </button>
+    </div>
+  );
+
+  // Text content block. `light` flips colors for the background layout.
+  const renderContent = (light = false, { showRatings = true } = {}) => {
+    const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
+    const addBtnClass = (soldOut || !orderingEnabled)
+      ? 'bg-muted text-muted-foreground cursor-not-allowed'
+      : added
+        ? 'bg-patina-mint text-white'
+        : light
+          ? 'bg-white/90 text-obsidian-roast hover:bg-white'
+          : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white';
+    return (
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
+          <span className={`font-heading text-lg flex-shrink-0 ${light ? 'text-white' : 'text-midnight-cherry'}`}>${item.price.toFixed(2)}</span>
+        </div>
+        {item.description && (
+          <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/80' : 'text-muted-foreground'}`}>{item.description}</p>
+        )}
+        {item.tags && item.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {item.tags.slice(0, 3).map(tag => (
+              <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${light ? 'bg-white/20 text-white' : 'bg-patina-mint/10 text-patina-mint'}`}>{tag}</span>
+            ))}
+          </div>
+        )}
+        {item.calories && (
+          <p className={`text-xs mb-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>{item.calories} cal</p>
+        )}
+        {showRatings && <ItemRatings item={item} />}
+        {hasModifiers && (
+          <p className={`text-xs mb-2 mt-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>
+            {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
+          </p>
+        )}
+        <button
+          onClick={handleAdd}
+          disabled={soldOut || !orderingEnabled}
+          className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${addBtnClass}`}
+        >
+          <Plus size={16} />
+          {addLabel}
+        </button>
+      </div>
+    );
+  };
+
+  const modal = showModal && (
+    <ModifierModal item={item} onClose={() => setShowModal(false)} onConfirm={handleModalConfirm} />
+  );
+
+  // ── Layouts ──
+
+  if (position === 'none') {
+    return (
+      <>
+        {modal}
+        <div className="group relative card-diner">
+          {favoriteBtn}
+          {renderContent(false)}
+        </div>
+      </>
+    );
+  }
+
+  if (position === 'background') {
+    return (
+      <>
+        {modal}
+        <div className="group relative card-diner overflow-hidden min-h-[240px] flex flex-col justify-end">
+          <div className="absolute inset-0">
+            {item.image_url ? (
+              <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-obsidian-roast to-midnight-cherry" />
+            )}
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+          {favoriteBtn}
+          {badges}
+          <div className="relative">
+            {renderContent(true, { showRatings: false })}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (position === 'left' || position === 'right') {
+    const imageBlock = (
+      <div className="relative w-full h-40 sm:w-40 sm:h-auto overflow-hidden bg-gray-100 flex-shrink-0">
+        {photo}
+        {badges}
+        {hoverAdd}
+      </div>
+    );
+    return (
+      <>
+        {modal}
+        <div className="group relative card-diner overflow-hidden flex flex-col sm:flex-row">
+          {position === 'left' && imageBlock}
+          <div className="relative flex-1 min-w-0">
+            {favoriteBtn}
+            {renderContent(false)}
+          </div>
+          {position === 'right' && imageBlock}
+        </div>
+      </>
+    );
+  }
+
+  // default: top
   return (
     <>
-      {showModal && (
-        <ModifierModal
-          item={item}
-          onClose={() => setShowModal(false)}
-          onConfirm={handleModalConfirm}
-        />
-      )}
-
+      {modal}
       <div className="group relative card-diner overflow-hidden">
-        {/* Favorite button */}
-        {user && (
-          <button
-            onClick={toggleFavorite}
-            disabled={savingFavorite}
-            className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
-          >
-            <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
-          </button>
-        )}
-
-        {/* Image */}
+        {favoriteBtn}
         <div className="relative h-48 overflow-hidden bg-gray-100">
-          {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-amber-50 to-orange-100">
-              {item.category === 'Burgers' ? '🍔' :
-               item.category === 'Shakes' ? '🥤' :
-               item.category === 'Sides' ? '🍟' :
-               item.category === 'Drinks' ? '🧃' :
-               item.category === 'Breakfast' ? '🍳' :
-               item.category === 'Chicken' ? '🍗' : '⭐'}
-            </div>
-          )}
-
-          {item.is_fan_favorite && !soldOut && (
-            <div className="absolute top-3 left-3 bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float">
-              <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
-            </div>
-          )}
-
-          {!item.is_fan_favorite && item.is_featured && !soldOut && (
-            <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
-              <Zap size={10} /> Special
-            </div>
-          )}
-
-          {soldOut ? (
-            <div className="absolute top-3 left-3 bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider">
-              Sold Out
-            </div>
-          ) : (
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-              <button
-                onClick={handleAdd}
-                disabled={!orderingEnabled}
-                className={`btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${added ? 'bg-patina-mint' : ''}`}
-                title={!orderingEnabled ? orderingClosedMessage : ''}
-              >
-                <Plus size={16} />
-                {!orderingEnabled ? 'Closed' : added ? 'Added!' : hasModifiers ? 'Customize' : 'Quick Add'}
-              </button>
-            </div>
-          )}
+          {photo}
+          {badges}
+          {hoverAdd}
         </div>
-
-        {/* Content */}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-heading text-base text-obsidian-roast leading-tight">{item.name}</h3>
-            <span className="text-midnight-cherry font-heading text-lg flex-shrink-0">${item.price.toFixed(2)}</span>
-          </div>
-
-          {item.description && (
-            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3">{item.description}</p>
-          )}
-
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-3">
-              {item.tags.slice(0, 3).map(tag => (
-                <span key={tag} className="bg-patina-mint/10 text-patina-mint text-xs px-2 py-0.5 rounded-full font-semibold">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {item.calories && (
-            <p className="text-xs text-muted-foreground mb-3">{item.calories} cal</p>
-          )}
-
-          <ItemRatings itemName={item.name} />
-
-          {hasModifiers && (
-            <p className="text-xs text-muted-foreground mb-2 mt-3">
-              {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
-            </p>
-          )}
-
-          <button
-            onClick={handleAdd}
-            disabled={soldOut || !orderingEnabled}
-            className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${
-              (soldOut || !orderingEnabled)
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : added
-                  ? 'bg-patina-mint text-white'
-                  : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'
-            }`}
-          >
-            <Plus size={16} />
-            {soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
-          </button>
-        </div>
+        {renderContent(false)}
       </div>
     </>
   );

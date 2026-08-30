@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
           person_name: i.person_name || '',
           catalog_object_id: i.catalog_object_id || '',
           isBuildShake: !!i.isBuildShake,
+          deluxeLabel: i.deluxeLabel || '',
+          deluxeToppings: i.deluxeToppings || [],
         })),
         subtotal,
         tax,

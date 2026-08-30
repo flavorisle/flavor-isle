@@ -2,6 +2,10 @@
   "name": "MenuSetting",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "hidden_categories": {
       "type": "array",
       "items": {
@@ -55,6 +59,10 @@
       "type": "number",
       "default": 0,
       "description": "Flat fee in USD applied to every delivery order. Set to 0 for free delivery."
+    },
+    "extra_cook_date": {
+      "type": "string",
+      "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, the kitchen runs with an extra cook: order completion rate doubles, so quoted wait times shrink and busyness thresholds stretch. Auto-expires after the date passes."
     },
     "business_hours": {
       "type": "object",

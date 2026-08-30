@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import { base44 } from '@/api/base44Client';
+import { formatChicagoDate } from '@/lib/chicagoTime';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
@@ -43,11 +44,12 @@ function OrderCard({ order, onReorder }) {
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
               </span>
+              {order.order_source === 'in_store' && <span className="text-xs px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
               {isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date(order.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {' · '}{order.order_type?.replace('_', ' ')}
+              {formatChicagoDate(order.created_date, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {' · '}{order.order_source === 'in_store' ? 'In-Store' : order.order_type?.replace('_', ' ')}
               {' · '}{(order.items || []).length} item{order.items?.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -206,7 +208,12 @@ function LoggedInAccount({ user, logout }) {
 
   const handleReorder = (order) => {
     if (!order.items || order.items.length === 0) return;
-    order.items.forEach(item => addItem(item));
+    order.items.forEach(item => {
+      // Rebuild each line fresh: respect the original quantity and drop stale
+      // group-order person tags from the past order.
+      const { quantity, person_id, person_name, ...rest } = item;
+      for (let n = 0; n < (quantity || 1); n++) addItem(rest);
+    });
     if (order.order_type) setOrderType(order.order_type);
     setIsCartOpen(true);
   };

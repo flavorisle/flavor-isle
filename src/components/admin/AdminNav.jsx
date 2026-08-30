@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, ShoppingBag, MessagesSquare, Image } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
-  { label: 'Orders', to: '/admin/phone-orders', Icon: ShoppingBag },
+  { label: 'Orders', to: '/admin/orders', Icon: Receipt },
+  { label: 'Reviews', to: '/admin/reviews', Icon: MessageSquareQuote },
+  { label: 'Merch Categories', to: '/admin/merch-categories', Icon: Tag },
   { label: 'Comms', to: '/admin/communications', Icon: MessagesSquare },
-  { label: 'Media', to: '/admin/media', Icon: Image },
 ];
 
 export default function AdminNav() {

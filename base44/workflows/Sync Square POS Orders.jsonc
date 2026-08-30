@@ -1,0 +1,45 @@
+{
+  "name": "Sync Square POS Orders",
+  "description": "Pulls in-store Square POS orders every 5 minutes and creates matching Order records so they populate the admin orders dashboard alongside online and phone orders. Also relinks POS orders to customer web accounts once a matching phone becomes available.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_square_pos_orders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync_pos": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncSquarePOS",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sync in-store POS orders",
+            "description": "Creates Order records from Square POS"
+          }
+        }
+      }
+    ]
+  }
+}

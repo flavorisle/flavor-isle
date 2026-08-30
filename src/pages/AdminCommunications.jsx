@@ -5,10 +5,15 @@ import AdminNav from '@/components/admin/AdminNav';
 import ConversationLog from '@/components/admin/ConversationLog';
 import ManagementMessageLog from '@/components/admin/ManagementMessageLog';
 import SmashieSettingsPanel from '@/components/admin/SmashieSettingsPanel';
+import SmsBroadcastPanel from '@/components/admin/SmsBroadcastPanel';
+import SmsSubscribersList from '@/components/admin/SmsSubscribersList';
+import { Send, Users } from 'lucide-react';
 
 const TABS = [
   { key: 'phone', label: 'Phone Log', Icon: Phone },
   { key: 'sms', label: 'SMS Log', Icon: MessageSquare },
+  { key: 'broadcast', label: 'Send Text', Icon: Send },
+  { key: 'subscribers', label: 'Subscribers', Icon: Users },
   { key: 'messages', label: 'Message Log', Icon: MessagesSquare },
   { key: 'settings', label: 'Smashie Settings', Icon: Bot },
 ];
@@ -51,6 +56,8 @@ export default function AdminCommunications() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {tab === 'phone' && <ConversationLog channel="voice" />}
         {tab === 'sms' && <ConversationLog channel="sms" />}
+        {tab === 'broadcast' && <SmsBroadcastPanel />}
+        {tab === 'subscribers' && <SmsSubscribersList />}
         {tab === 'messages' && <ManagementMessageLog />}
         {tab === 'settings' && <SmashieSettingsPanel />}
       </div>

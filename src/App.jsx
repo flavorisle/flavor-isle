@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { isKeepAliveTab } from '@/lib/keepAliveTabs';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -12,6 +14,7 @@ import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
+import CaramelAppleBlissPopup from './components/CaramelAppleBlissPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -23,13 +26,13 @@ import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
-import AdminMedia from './pages/AdminMedia';
-import AdminPhoneOrders from './pages/AdminPhoneOrders';
+
+
+import AdminOrders from './pages/AdminOrders';
 import AdminCommunications from './pages/AdminCommunications';
 import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
 import MeetSmashie from './pages/MeetSmashie';
-import KitchenStatus from './pages/KitchenStatus';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
@@ -40,12 +43,46 @@ import FacebookAd from './pages/FacebookAd';
 import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
+import SMSSignup from './pages/SMSSignup';
+import BusynessGuide from './pages/BusynessGuide';
+import Connect from './pages/Connect';
 import Rewards from './pages/Rewards';
 import OrderStatus from './pages/OrderStatus';
+import Merch from './pages/Merch';
+import Order from './pages/Order';
+import MerchCheckout from './pages/MerchCheckout';
+import MerchConfirmation from './pages/MerchConfirmation';
+import AdminMerchCategories from './pages/AdminMerchCategories';
+import AdminReviews from './pages/AdminReviews';
+import { MerchCartProvider } from '@/context/MerchCartContext';
+import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
+// Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
+  const scrollPositions = useRef({});
+
+  // Save the scroll position of the active keep-alive tab as the user scrolls.
+  useEffect(() => {
+    const onSave = () => {
+      if (isKeepAliveTab(location.pathname)) {
+        scrollPositions.current[location.pathname] = window.scrollY;
+      }
+    };
+    window.addEventListener('scroll', onSave, { passive: true });
+    return () => window.removeEventListener('scroll', onSave);
+  }, [location.pathname]);
+
+  // Restore the saved scroll position when landing on a keep-alive tab.
+  useEffect(() => {
+    if (!isKeepAliveTab(location.pathname)) return;
+    const saved = scrollPositions.current[location.pathname] ?? 0;
+    const raf = requestAnimationFrame(() =>
+      window.scrollTo({ top: saved, left: 0, behavior: 'instant' })
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -67,16 +104,30 @@ const AuthenticatedApp = () => {
     }
   }
 
+  const isTabPath = isKeepAliveTab(location.pathname);
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, x: 8 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -8 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
-      >
-        <Routes location={location}>
+    <>
+      {/* Keep-alive bottom-tab routes: stay mounted, toggled with `hidden` so
+          view state + scroll survive tab switches instead of remounting. */}
+      <div className={location.pathname === '/' ? '' : 'hidden'} aria-hidden={location.pathname !== '/'}>
+        <Home />
+      </div>
+      <div className={location.pathname === '/menu' ? '' : 'hidden'} aria-hidden={location.pathname !== '/menu'}>
+        <Menu />
+      </div>
+
+      {/* All other routes mount/unmount normally with the page transition. */}
+      {!isTabPath && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            <Routes location={location}>
       {/* Public — no login required */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -88,14 +139,20 @@ const AuthenticatedApp = () => {
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
-      <Route path="/kitchen-status" element={<KitchenStatus />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
+      <Route path="/sms-signup" element={<SMSSignup />} />
+      <Route path="/what-to-expect" element={<BusynessGuide />} />
+      <Route path="/connect" element={<Connect />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
+      <Route path="/order" element={<Order />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
+      <Route path="/merch" element={<Merch />} />
+      <Route path="/merch-checkout" element={<MerchCheckout />} />
+      <Route path="/merch-confirmation" element={<MerchConfirmation />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/order-status" element={<OrderStatus />} />
@@ -106,15 +163,19 @@ const AuthenticatedApp = () => {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
-        <Route path="/admin/media" element={<AdminMedia />} />
-        <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
+
+        <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      )}
+    </>
   );
 };
 
@@ -123,14 +184,18 @@ function AppShell() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <CartProvider>
-          <Router>
-            <ScrollToTop />
-            <AuthenticatedApp />
-            <BottomTabBar />
-            <MobileHeader />
-            <SmashieChat />
-          </Router>
-          <Toaster />
+          <MerchCartProvider>
+            <Router>
+              <ScrollToTop />
+              <AuthenticatedApp />
+              <BottomTabBar />
+              <MobileHeader />
+              <SmashieChat />
+              <CaramelAppleBlissPopup />
+              <MerchCartDrawer />
+            </Router>
+            <Toaster />
+          </MerchCartProvider>
         </CartProvider>
       </QueryClientProvider>
     </AuthProvider>

@@ -41,10 +41,16 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const flavorName = flavorNameFromItem(shakeItem.name);
   const flavorEmoji = flavorEmojiByName(flavorName);
 
+  // Same-flavor matching ignores the "Real Fruit"/"Crushed" wording, since all
+  // our fruit is real fruit — a Banana shake must not also charge for
+  // "Real Fruit Banana".
+  const coreFlavor = (n) =>
+    (n || '').toLowerCase().replace(/\b(real fruit|crushed)\b/g, '').replace(/\s+/g, ' ').trim();
+
   // Extra flavor options from the "Add as many flavors" list, excluding the
   // shake's own flavor (you're already getting it).
-  const allExtraOpts = flavorOpts.filter((m) =>
-    resolveFlavorName(m.id, m.name, config).toLowerCase() !== flavorName.toLowerCase()
+  const allExtraOpts = flavorOpts.filter(
+    (m) => coreFlavor(resolveFlavorName(m.id, m.name, config)) !== coreFlavor(flavorName)
   );
 
   const basePrice = shakeItem.price ?? 5;
@@ -69,8 +75,12 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
   const extraFlavorNames = extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config));
   const allFlavorNames = [flavorName, ...extraFlavorNames];
-  const baseLabel = base ? resolveFlavorName(base.id, base.name, config).replace(/ Ice Cream/i, '') : '';
-  const cartName = `${allFlavorNames.join(' + ')} Milkshake${baseLabel ? ` (${baseLabel})` : ''}`;
+  // Only call out the base when it differs from the shake's own flavor —
+  // otherwise it reads "Vanilla Milkshake (Vanilla)" and confuses the crew.
+  // The ice cream base already prints in the modifier line, so it never goes in
+  // the item name — "Banana Milkshake (Vanilla) (…, Vanilla Ice Cream)" read as
+  // redundant on tickets.
+  const cartName = `${allFlavorNames.join(' + ')} Milkshake`;
 
   const handleAddToCart = () => {
     const selectedModifiers = [
