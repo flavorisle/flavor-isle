@@ -8,9 +8,11 @@ import { base44 } from '@/api/base44Client';
 // kitchen in a clearly-marked notes section.
 
 export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArrived }) {
-  const [carColor, setCarColor] = useState('');
-  const [carMake, setCarMake] = useState('');
-  const [carModel, setCarModel] = useState('');
+  // Prefill from the vehicle details captured at checkout so the customer
+  // doesn't have to retype them when they arrive.
+  const [carColor, setCarColor] = useState(order?.arrival_details?.car_color || '');
+  const [carMake, setCarMake] = useState(order?.arrival_details?.car_make || '');
+  const [carModel, setCarModel] = useState(order?.arrival_details?.car_model || '');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);

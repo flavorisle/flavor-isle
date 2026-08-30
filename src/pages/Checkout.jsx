@@ -12,6 +12,7 @@ import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
+import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -120,6 +121,8 @@ export default function Checkout() {
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
+  const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -261,6 +264,10 @@ export default function Checkout() {
     if (!form.email.trim()) errors.email = 'Your email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
+    if (isCurbside) {
+      if (!vehicle.color.trim()) errors.carColor = 'Car color is required.';
+      if (!vehicle.make.trim()) errors.carMake = 'Car make is required.';
+    }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
 
     setFieldErrors(errors);
@@ -332,6 +339,7 @@ export default function Checkout() {
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
+          vehicle: isCurbside ? vehicle : null,
         });
 
         const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -400,6 +408,7 @@ export default function Checkout() {
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
       scheduledFor, estimatedTime,
+      vehicle: isCurbside ? vehicle : null,
     });
     return res.data;
   };
@@ -546,6 +555,11 @@ export default function Checkout() {
                       />
                       {fieldErrors.address && <p className="text-xs text-destructive mt-1">{fieldErrors.address}</p>}
                     </div>
+                  )}
+
+                  {/* Curbside — vehicle details so the crew knows what car to bring the order to */}
+                  {isCurbside && (
+                    <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
                   )}
 
                   {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}

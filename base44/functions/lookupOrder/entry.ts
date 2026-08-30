@@ -27,7 +27,14 @@ Deno.serve(async (req) => {
         estimated_time: order.estimated_time || null,
         total: order.total,
         items: (order.items || []).map((i) => ({ name: i.name, quantity: i.quantity || 1 })),
-        arrival_details: order.arrival_details ? { arrived_at: order.arrival_details.arrived_at } : null,
+        arrival_details: order.arrival_details
+          ? {
+              arrived_at: order.arrival_details.arrived_at || null,
+              car_color: order.arrival_details.car_color || '',
+              car_make: order.arrival_details.car_make || '',
+              car_model: order.arrival_details.car_model || '',
+            }
+          : null,
       },
     });
   } catch (error) {
