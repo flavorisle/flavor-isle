@@ -18,7 +18,6 @@ const DEFAULT_CONFIG = {
   columns: 4,
   showDescriptions: true,
   showLogo: true,
-  showModifiers: true,
 };
 
 export default function AdminPrintMenu() {
@@ -29,6 +28,8 @@ export default function AdminPrintMenu() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [hiddenIds, setHiddenIds] = useState([]);
   const [overrides, setOverrides] = useState({});
+  // Print-only section heading overrides, keyed by category key.
+  const [sectionTitles, setSectionTitles] = useState({});
 
   // Load menu + saved print settings.
   useEffect(() => {
@@ -48,14 +49,18 @@ export default function AdminPrintMenu() {
       setConfig({ ...DEFAULT_CONFIG, ...(parsed.config || {}) });
       setHiddenIds(parsed.hiddenIds || []);
       setOverrides(parsed.overrides || {});
+      setSectionTitles(parsed.sectionTitles || {});
     }
   }, []);
 
   // Persist edits so the sheet can be tweaked and reprinted later.
   useEffect(() => {
     if (loading) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ config, hiddenIds, overrides }));
-  }, [config, hiddenIds, overrides, loading]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ config, hiddenIds, overrides, sectionTitles }));
+  }, [config, hiddenIds, overrides, sectionTitles, loading]);
+
+  const setSectionTitle = (key, value) =>
+    setSectionTitles(prev => ({ ...prev, [key]: value }));
 
   const toggleItem = id =>
     setHiddenIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
@@ -67,6 +72,7 @@ export default function AdminPrintMenu() {
     setConfig(DEFAULT_CONFIG);
     setHiddenIds([]);
     setOverrides({});
+    setSectionTitles({});
   };
 
   // Group the menu the same way the public menu does, then apply print edits.
@@ -96,12 +102,12 @@ export default function AdminPrintMenu() {
       });
       return {
         key,
-        label: categoryLabel(key, renames),
+        label: sectionTitles[key] ?? categoryLabel(key, renames),
         allItems: applied,
         items: applied.filter(i => !hiddenIds.includes(i.id)),
       };
     });
-  }, [items, settings, overrides, hiddenIds]);
+  }, [items, settings, overrides, hiddenIds, sectionTitles]);
 
   const printSections = sections.filter(s => s.items.length > 0);
 
@@ -146,6 +152,7 @@ export default function AdminPrintMenu() {
               toggleItem={toggleItem}
               overrides={overrides}
               setOverride={setOverride}
+              setSectionTitle={setSectionTitle}
               resetAll={resetAll}
             />
           </div>

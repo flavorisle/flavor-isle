@@ -22,6 +22,7 @@ export default function PrintMenuEditor({
   toggleItem,
   overrides,
   setOverride,
+  setSectionTitle,
   resetAll,
 }) {
   const update = (key, value) => setConfig(prev => ({ ...prev, [key]: value }));
@@ -66,14 +67,6 @@ export default function PrintMenuEditor({
           />
           Show item descriptions
         </label>
-        <label className="flex items-center gap-2 text-sm text-obsidian-roast mb-2">
-          <input
-            type="checkbox"
-            checked={config.showModifiers}
-            onChange={e => update('showModifiers', e.target.checked)}
-          />
-          Show sizes & options (cups, drinks, toppings)
-        </label>
         <label className="flex items-center gap-2 text-sm text-obsidian-roast">
           <input type="checkbox" checked={config.showLogo} onChange={e => update('showLogo', e.target.checked)} />
           Show logo
@@ -91,13 +84,18 @@ export default function PrintMenuEditor({
           </button>
         </div>
         <p className="text-xs text-muted-foreground mb-4">
-          Rename or reprice items for the printout only — your live online menu isn't touched.
+          Rename sections, items, or reprice for the printout only — your live online menu isn't touched.
         </p>
 
         <div className="space-y-5 max-h-[32rem] overflow-y-auto pr-1">
           {sections.map(section => (
             <div key={section.key}>
-              <p className="font-heading text-sm text-midnight-cherry uppercase tracking-wider mb-2">{section.label}</p>
+              <input
+                className="w-full mb-2 px-2 py-1 font-heading text-sm text-midnight-cherry uppercase tracking-wider bg-transparent rounded border border-transparent hover:border-border focus:border-border"
+                value={section.label}
+                onChange={e => setSectionTitle(section.key, e.target.value)}
+                aria-label={`Section heading for ${section.key}`}
+              />
               <div className="space-y-2">
                 {section.allItems.map(item => {
                   const hidden = hiddenIds.includes(item.id);
