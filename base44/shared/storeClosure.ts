@@ -20,14 +20,15 @@ function formatHour(time) {
   return m ? `${hour12}:${String(m).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
 }
 
+const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 function nextOpeningTime(businessHours, now) {
-  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  // Same Monday-first index convention getStoreStatus uses for DAY_KEYS.
+  const todayIdx = (now.weekday + 6) % 7;
 
   // If today isn't closed and we're still before today's open time, we open
   // later today at the configured hour.
-  const todayKey = DAY_KEYS[now.weekday];
-  const todayHours = (businessHours || {})[todayKey] || {};
+  const todayHours = (businessHours || {})[DAY_KEYS[todayIdx]] || {};
   const nowMins = now.hour * 60 + now.minute;
   const todayOpenMins = toMins(todayHours.open);
   if (!todayHours.closed && todayOpenMins != null && nowMins < todayOpenMins) {
@@ -36,11 +37,10 @@ function nextOpeningTime(businessHours, now) {
 
   // Otherwise scan the next 7 days for the first non-closed day.
   for (let i = 1; i <= 7; i++) {
-    const dow = (now.weekday + i) % 7;
-    const key = DAY_KEYS[dow];
-    const hours = (businessHours || {})[key] || {};
+    const idx = (todayIdx + i) % 7;
+    const hours = (businessHours || {})[DAY_KEYS[idx]] || {};
     if (!hours.closed) {
-      const label = i === 1 ? 'tomorrow' : DAY_LABELS[dow];
+      const label = i === 1 ? 'tomorrow' : DAY_LABELS[idx];
       return `${formatHour(hours.open)} ${label}`;
     }
   }
