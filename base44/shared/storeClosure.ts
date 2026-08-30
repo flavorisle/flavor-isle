@@ -8,6 +8,36 @@ function toMins(t) {
   return h * 60 + (m || 0);
 }
 
+// Compute the next opening time (store-local) as a friendly string like
+// "8 AM today" or "8 AM Monday". Walks forward day-by-day from `now` skipping
+// any day flagged closed, and uses the 8 AM online-ordering unlock as the open
+// time (matches the ORDER_OPEN_MINS gate in getStoreStatus).
+function nextOpeningTime(businessHours, now) {
+  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const ORDER_OPEN_HOUR = 8;
+
+  // If we're before 8 AM today and today isn't closed, we open later today.
+  const todayKey = DAY_KEYS[now.weekday];
+  const todayHours = (businessHours || {})[todayKey] || {};
+  const nowMins = now.hour * 60 + now.minute;
+  if (!todayHours.closed && nowMins < ORDER_OPEN_HOUR * 60) {
+    return `${ORDER_OPEN_HOUR} AM today`;
+  }
+
+  // Otherwise scan the next 7 days for the first non-closed day.
+  for (let i = 1; i <= 7; i++) {
+    const dow = (now.weekday + i) % 7;
+    const key = DAY_KEYS[dow];
+    const hours = (businessHours || {})[key] || {};
+    if (!hours.closed) {
+      const label = i === 1 ? 'tomorrow' : DAY_LABELS[dow];
+      return `${ORDER_OPEN_HOUR} AM ${label}`;
+    }
+  }
+  return '8 AM';
+}
+
 // Full store-open check: admin closure + per-day business hours.
 // Returns { open: boolean, message: string }. Defaults to open on error
 // so the busyness card never falsely says "Closed" due to a fetch failure.
@@ -40,7 +70,10 @@ export async function getStoreStatus(base44) {
     const nowMins = now.hour * 60 + now.minute;
 
     if (nowMins < ORDER_OPEN_MINS || nowMins >= closeMins) {
-      return { open: false, message: 'closed right now' };
+      // Compute the next opening time so Smashie and the status bar can tell
+      // customers exactly when we reopen instead of leaving them to guess.
+      const nextOpen = nextOpeningTime(s.business_hours, now);
+      return { open: false, message: `we open at ${nextOpen}` };
     }
 
     return { open: true, message: '' };
