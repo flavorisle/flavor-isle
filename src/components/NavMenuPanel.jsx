@@ -71,6 +71,16 @@ export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user,
             </div>
           ))}
 
+          <a
+            href="tel:+12705634618"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body font-semibold text-obsidian-roast hover:bg-muted transition-colors"
+          >
+            <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-midnight-cherry">
+              <Phone size={16} />
+            </span>
+            (270) 563-4618
+          </a>
+
           <Link
             to="/menu"
             onClick={onClose}
@@ -80,17 +90,7 @@ export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user,
           </Link>
         </div>
 
-        <div className="border-t border-border bg-muted/40 p-3 space-y-1">
-          <a
-            href="tel:+12705634618"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body font-semibold text-obsidian-roast hover:bg-white transition-colors"
-          >
-            <span className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-midnight-cherry">
-              <Phone size={16} />
-            </span>
-            (270) 563-4618
-          </a>
-
+        <div className="border-t-2 border-border bg-muted/40 p-3 space-y-1">
           {isAuthenticated ? (
             <>
               <Link
@@ -101,7 +101,7 @@ export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user,
                 <span className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-patina-mint">
                   <User size={16} />
                 </span>
-                <span className="flex-1 truncate">{user?.full_name || user?.email}</span>
+                <span className="flex-1 truncate">My Account</span>
               </Link>
               <button
                 onClick={() => { logout(); onClose(); }}
