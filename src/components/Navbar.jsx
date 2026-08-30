@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Phone, LogOut, Contrast } from 'lucide-react';
+import { Menu, X, Phone, Contrast } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useMerchCart } from '@/context/MerchCartContext';
 import MerchCartButton from '@/components/merch/MerchCartButton';
 import LiveStatusBar from '@/components/LiveStatusBar';
 import { useAuth } from '@/lib/AuthContext';
 import useHighContrast from '@/hooks/useHighContrast';
+import NavMenuPanel from '@/components/NavMenuPanel';
 
 export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
@@ -28,35 +29,12 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // Primary links surfaced inline on desktop so users can always jump back to
-  // the homepage or menu without opening the hamburger.
-  const primaryLinks = [
-  { label: 'Home', to: '/' },
-  { label: 'Menu', to: '/menu' },
-  { label: 'Milkshakes', to: '/milkshakes' },
-  { label: 'Combos', to: '/combos' },
-  { label: 'Tasty Threads', to: '/merch' },
-  { label: 'Contact', to: '/contact' }];
-
-  const navLinks = [
-  { label: 'Home', to: '/' },
-  { label: 'Menu', to: '/menu' },
-  { label: 'Milkshakes', to: '/milkshakes' },
-  { label: 'Combos', to: '/combos' },
-  { label: 'Tasty Threads', to: '/merch' },
-  { label: 'Meet Smashie', to: '/meet-smashie' },
-  { label: 'Connect AI', to: '/connect' },
-  { label: 'Feedback', to: '/feedback' },
-  { label: 'Contact', to: '/contact' },
-  { label: 'My Account', to: '/account' }];
-
-
   return (
     <>
       {/* Sticky header: live status bar + main nav stay pinned together */}
       <div className="sticky top-0 z-50">
         <LiveStatusBar />
-        <nav className={`transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
+        <nav className={`relative transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 min-w-0">
@@ -66,26 +44,6 @@ export default function Navbar() {
               <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
             </div>
           </Link>
-
-          {/* Desktop inline nav */}
-          <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
-            {primaryLinks.map((link) => {
-              const isActive = location.pathname === link.to;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`px-3 py-2 rounded-full text-sm font-body font-semibold whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'bg-midnight-cherry/10 text-midnight-cherry'
-                      : 'text-obsidian-roast hover:text-midnight-cherry hover:bg-muted'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -123,61 +81,26 @@ export default function Navbar() {
               }
             </button>
             <button
-              className="p-2 text-obsidian-roast"
+              aria-label="Open menu"
+              aria-expanded={mobileOpen}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full font-heading text-sm tracking-wider transition-colors tap-44 ${
+                mobileOpen ? 'bg-midnight-cherry text-white' : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'
+              }`}
               onClick={() => setMobileOpen(!mobileOpen)}>
-              
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+              <span className="hidden sm:inline">MENU</span>
             </button>
           </div>
         </div>
 
-        {/* Menu */}
         {mobileOpen &&
-        <div className="bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
-            {navLinks.map((link) =>
-          <Link
-            key={link.to}
-            to={link.to}
-            onClick={() => setMobileOpen(false)}
-            className={`font-body font-semibold transition-colors ${
-              location.pathname === link.to ? 'text-midnight-cherry' : 'text-obsidian-roast hover:text-midnight-cherry'
-            }`}>
-                {link.label}
-              </Link>
-          )}
-            <Link
-            to="/menu"
-            onClick={() => setMobileOpen(false)}
-            className="btn-cherry chrome-hover px-5 py-3 text-center text-sm font-heading">
-            
-              Order Now
-            </Link>
-            
-            {/* Auth Section */}
-            <div className="border-t border-border pt-4 mt-2">
-              {isAuthenticated ?
-            <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground font-body">Signed in as <span className="font-semibold text-obsidian-roast">{user?.full_name || user?.email}</span></p>
-                  <button
-                onClick={() => {
-                  logout();
-                  setMobileOpen(false);
-                }}
-                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-body text-obsidian-roast hover:bg-muted rounded-lg transition-colors">
-                    <LogOut size={16} />
-                    Sign Out
-                  </button>
-                </div> :
-
-            <Link
-              to="/login"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center justify-center px-4 py-2.5 bg-patina-mint text-white rounded-lg text-sm font-heading hover:bg-opacity-90 transition-colors">
-                  Sign In
-                </Link>
-            }
-            </div>
-          </div>
+        <NavMenuPanel
+          pathname={location.pathname}
+          onClose={() => setMobileOpen(false)}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          logout={logout}
+        />
         }
         </nav>
       </div>
