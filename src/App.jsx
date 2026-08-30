@@ -41,6 +41,7 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import Rewards from './pages/Rewards';
+import OrderStatus from './pages/OrderStatus';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
+      <Route path="/order-status" element={<OrderStatus />} />
 
       {/* Login required to view account, rewards, or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

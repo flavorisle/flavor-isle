@@ -1,0 +1,47 @@
+{
+  "name": "EmailClick",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "link_id": {
+      "type": "string",
+      "description": "Identifier for the email link that was clicked, e.g. merch_promo, review_request, what_to_expect"
+    },
+    "target_url": {
+      "type": "string",
+      "description": "The destination path/URL the click redirected to"
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Optional order id when the click came from an order-specific email (e.g. a review request)"
+    }
+  },
+  "required": [
+    "link_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

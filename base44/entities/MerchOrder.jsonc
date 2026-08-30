@@ -1,0 +1,156 @@
+{
+  "name": "MerchOrder",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string"
+    },
+    "customer_phone": {
+      "type": "string"
+    },
+    "shipping_address": {
+      "type": "object",
+      "description": "Recipient address sent to Printful for fulfillment",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address1": {
+          "type": "string"
+        },
+        "address2": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state_code": {
+          "type": "string"
+        },
+        "country_code": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "default": 0
+    },
+    "shipping": {
+      "type": "number",
+      "default": 0
+    },
+    "total": {
+      "type": "number",
+      "default": 0
+    },
+    "stripe_session_id": {
+      "type": "string"
+    },
+    "printful_order_id": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "fulfillment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "placed",
+        "in_production",
+        "fulfilled",
+        "shipped",
+        "canceled",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "tracking_number": {
+      "type": "string"
+    },
+    "tracking_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_email",
+    "items",
+    "total"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.customer_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.customer_email": "{{user.email}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
