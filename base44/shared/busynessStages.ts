@@ -15,9 +15,9 @@ export interface BusynessStage {
 }
 
 export const BUSYNESS_STAGES: BusynessStage[] = [
-  { min: 16, level: 'Slammed',         waitRange: '45+ min',  waitMin: 50, color: 'red' },
-  { min: 10, level: 'Busy',            waitRange: '30–45 min', waitMin: 38, color: 'orange' },
-  { min: 5,  level: 'A Little Busy',   waitRange: '20–30 min', waitMin: 25, color: 'yellow' },
+  { min: 30, level: 'Slammed',         waitRange: '45+ min',  waitMin: 50, color: 'red' },
+  { min: 22, level: 'Busy',            waitRange: '30–45 min', waitMin: 38, color: 'orange' },
+  { min: 14, level: 'A Little Busy',   waitRange: '20–30 min', waitMin: 25, color: 'yellow' },
   { min: 0,  level: 'Running Smooth',  waitRange: '~14 min',   waitMin: 14, color: 'green' },
 ];
 
