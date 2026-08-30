@@ -175,13 +175,33 @@ async function processLoyalty(base44, order, squareOrderId) {
     }
 
     if (!squareOrderId || !order.customer_email) return;
-    await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
-    console.log(`Square Star Rewards points accrued for order ${order.order_number}`);
-    try {
-      await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
-    } catch (markErr) {
-      console.error('Failed to mark loyalty_accrued:', markErr.message);
+
+    // Retry the accrual with a short delay — Square's AccumulateLoyaltyPoints
+    // API can fail if called the instant the order + external payment are
+    // created (the payment hasn't settled yet). Waiting a few seconds and
+    // retrying lets Square process the payment so the accrual succeeds.
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    let accrued = false;
+    for (let attempt = 1; attempt <= 3 && !accrued; attempt++) {
+      try {
+        if (attempt > 1) await sleep(3000);
+        await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
+        accrued = true;
+        console.log(`Square Star Rewards points accrued for order ${order.order_number} (attempt ${attempt})`);
+      } catch (accrueErr) {
+        console.error(`Loyalty accrual attempt ${attempt} failed for order ${order.order_number}:`, accrueErr.message);
+      }
     }
+
+    if (accrued) {
+      try {
+        await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+      } catch (markErr) {
+        console.error('Failed to mark loyalty_accrued:', markErr.message);
+      }
+    }
+    // If all retries failed, the syncSquareOrderStatus self-healing retry will
+    // catch it on the next 5-minute run.
   } catch (err) {
     console.error('Square loyalty accrual failed:', err.message);
   }
