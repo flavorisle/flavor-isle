@@ -16,7 +16,7 @@ export default function MerchPromoCard() {
         const res = await base44.functions.invoke('getPrintfulProducts', {});
         if (cancelled) return;
         const products = (res.data?.products || []).filter(p => p.thumbnail_url);
-        setPreviews(products.slice(0, 3));
+        setPreviews(products.slice(0, 12));
       } catch (err) {
         // Silent fail — the promo still renders without previews.
       } finally {
@@ -37,21 +37,38 @@ export default function MerchPromoCard() {
         Rep the flavor while you wait — tees, cups, and gear shipped to your door.
       </p>
 
-      <div className="flex gap-2 mb-4">
-        {loading
-          ? [0, 1, 2].map(i => (
-              <div key={i} className="w-20 h-20 rounded-xl bg-white/10 animate-pulse" />
-            ))
-          : previews.map(p => (
-              <Link
-                key={p.id}
-                to="/merch"
-                className="block w-20 h-20 rounded-xl overflow-hidden bg-white/10 border border-white/20 hover:scale-105 transition-transform"
-              >
-                <img src={p.thumbnail_url} alt={p.name} className="w-full h-full object-cover" />
-              </Link>
-            ))}
+      {/* Horizontal carousel — swipe/scroll through the collection */}
+      <div className="relative -mx-1 mb-4">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory px-1 pb-1">
+          {loading
+            ? [0, 1, 2, 3].map(i => (
+                <div key={i} className="w-28 flex-shrink-0">
+                  <div className="w-28 h-28 rounded-xl bg-white/10 animate-pulse" />
+                </div>
+              ))
+            : previews.map(p => (
+                <Link
+                  key={p.id}
+                  to="/merch"
+                  className="w-28 flex-shrink-0 snap-start group"
+                >
+                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-white/10 border border-white/20 group-hover:scale-105 transition-transform">
+                    <img src={p.thumbnail_url} alt={p.name} className="w-full h-full object-cover" />
+                  </div>
+                  <p className="text-white text-[11px] font-heading mt-1.5 leading-tight line-clamp-2">{p.name}</p>
+                  {p.fromPrice ? (
+                    <p className="text-red-200 text-[11px]">from ${p.fromPrice.toFixed(2)}</p>
+                  ) : null}
+                </Link>
+              ))}
+        </div>
+        {/* Fade hint that there's more to scroll */}
+        <div className="pointer-events-none absolute top-0 right-0 h-full w-10 bg-gradient-to-l from-midnight-cherry to-transparent" />
       </div>
+
+      {!loading && previews.length > 3 && (
+        <p className="text-white/60 text-[11px] mb-3">← Swipe for more</p>
+      )}
 
       <Link
         to="/merch"
