@@ -1,5 +1,3 @@
-import twilio from 'npm:twilio@5.3.3';
-
 // Normalize a phone string to E.164 (Twilio requirement).
 // Handles US 10/11-digit, strips everything but digits and a leading +.
 export function normalizePhone(phone) {
@@ -14,6 +12,8 @@ export function normalizePhone(phone) {
 
 // Send an outbound SMS to a customer using the app's Twilio credentials.
 // Returns true on success, false on any failure (so callers can log + move on).
+// Calls the Twilio REST API directly — the npm SDK throws
+// "Unsupported cache mode: default" under Deno.
 export async function sendSmashieSms(to, body) {
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
@@ -31,15 +31,28 @@ export async function sendSmashieSms(to, body) {
   }
 
   try {
-    const client = twilio(accountSid, authToken);
-    // Send through the A2P-registered Messaging Service so carriers associate
-    // each message with the approved campaign (required for US delivery).
-    const message = await client.messages.create({
-      body,
-      messagingServiceSid: 'MGaec5a9f6d45927317bd4d62930596589',
-      to: normalizedTo,
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams({
+      From: from,
+      To: normalizedTo,
+      Body: body,
     });
-    console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${message.sid})`);
+    const auth = btoa(`${accountSid}:${authToken}`);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`sendSmashieSms: failed to send to ${normalizedTo}: Twilio ${res.status} ${text}`);
+      return false;
+    }
+    const data = await res.json();
+    console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${data.sid})`);
     return true;
   } catch (err) {
     console.error(`sendSmashieSms: failed to send to ${normalizedTo}:`, err.message);

@@ -28,6 +28,7 @@ export default function Navbar() {
   { label: 'Combos', to: '/combos' },
   { label: 'Tasty Threads', to: '/merch' },
   { label: 'Meet Smashie', to: '/meet-smashie' },
+  { label: 'Connect AI', to: '/connect' },
   { label: 'Feedback', to: '/feedback' },
   { label: 'Contact', to: '/contact' },
   { label: 'My Account', to: '/account' }];

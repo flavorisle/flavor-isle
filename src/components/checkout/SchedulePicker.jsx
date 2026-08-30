@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Zap, Calendar, Clock } from 'lucide-react';
+import { Zap, Calendar } from 'lucide-react';
 import { DAY_KEYS, DAY_LABELS, formatTime12 } from '@/lib/businessHours';
 import useBusinessHours from '@/hooks/useBusinessHours';
 
@@ -126,12 +126,7 @@ export default function SchedulePicker({ onChange, prepMinutes = 20, compact = f
         </button>
       </div>
 
-      {mode === 'asap' ? (
-        <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 text-sm font-heading">
-          <Clock size={16} />
-          Ready in about {prepMinutes} minutes from order time.
-        </div>
-      ) : (
+      {mode === 'asap' ? null : (
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Pick a day</label>

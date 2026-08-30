@@ -8,7 +8,7 @@ import ReviewForm from './ReviewForm';
 // triggered rate limits and UI jank on menu-heavy pages).
 let approvedReviewsCache = null;
 let approvedReviewsPromise = null;
-function loadApprovedReviews() {
+export function loadApprovedReviews() {
   if (approvedReviewsCache) return Promise.resolve(approvedReviewsCache);
   if (!approvedReviewsPromise) {
     approvedReviewsPromise = base44.entities.Review.filter({ is_approved: true })

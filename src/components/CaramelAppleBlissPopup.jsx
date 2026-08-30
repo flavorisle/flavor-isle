@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
 
-// Visit pop-up promoting Flavor Isle's full shake, bliss, and malt lineup.
+// Visit pop-up promoting the limited-time Caramel Apple Bliss shake.
 // Shows once per browser session (sessionStorage) so it doesn't nag repeat
-// visitors. Matches the chrome-diner brand: vanilla malt backdrop, midnight
-// cherry + patina mint accents, smashie yellow highlight.
-
-const STORAGE_KEY = 'fi_shake_promo_seen';
+// visitors. CTA deep-links into the Shake Isle page and auto-opens the size
+// picker for the Caramel Apple Bliss premium shake.
+const STORAGE_KEY = 'fi_caramel_apple_bliss_seen';
 const PROMO_IMAGE =
-  'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c3ff967a_generated_image.png';
+  'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/170e2d430_attTKamXBOjFy4zFpNJ1vGMqwXd-Wh3NxdzIhUaQjy3Q20.jpeg';
+const CARAMEL_APPLE_BLISS_ID = '6a7b92470796edccdb26af34';
 
-export default function ShakePromoPopup() {
+export default function CaramelAppleBlissPopup() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     try {
@@ -34,6 +35,11 @@ export default function ShakePromoPopup() {
     }
   };
 
+  const goToBliss = () => {
+    close();
+    navigate(`/milkshakes?bliss=${CARAMEL_APPLE_BLISS_ID}`);
+  };
+
   if (!open) return null;
 
   return (
@@ -42,11 +48,11 @@ export default function ShakePromoPopup() {
       style={{ backgroundColor: 'rgba(0, 20, 40, 0.78)' }}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="shake-promo-title"
+      aria-labelledby="caramel-apple-bliss-title"
       onClick={close}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-3xl shadow-float-lg animate-float-up"
+        className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl shadow-float-lg animate-float-up"
         style={{ backgroundColor: 'var(--vanilla-malt)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -63,7 +69,7 @@ export default function ShakePromoPopup() {
         <div className="relative">
           <img
             src={PROMO_IMAGE}
-            alt="Flavor Isle chrome diner milkshake promo — 22 signature shakes and 680 mix & match combos"
+            alt="Caramel Apple Bliss shake — new limited-time flavor at Flavor Isle"
             className="w-full h-auto block"
             loading="eager"
           />
@@ -75,23 +81,22 @@ export default function ShakePromoPopup() {
         >
           <div className="text-center sm:text-left">
             <p
-              className="font-heading text-xl leading-tight"
+              className="font-heading text-lg leading-tight"
               style={{ color: 'var(--patina-mint)' }}
             >
-              Hot Food. Cold Flex.
+              Limited Time Only
             </p>
             <p className="text-xs font-heading tracking-widest uppercase" style={{ color: 'var(--midnight-cherry)' }}>
-              They Not Like Us.
+              Try it before it's gone
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/milkshakes"
-              onClick={close}
+            <button
+              onClick={goToBliss}
               className="btn-cherry chrome-hover px-6 py-3 text-sm flex items-center gap-2"
             >
-              Explore the Shakes <ArrowRight size={16} />
-            </Link>
+              Order Now <ArrowRight size={16} />
+            </button>
             <button
               onClick={close}
               className="font-heading text-sm px-4 py-3 rounded-full border-2 transition-colors hover:bg-black/5"

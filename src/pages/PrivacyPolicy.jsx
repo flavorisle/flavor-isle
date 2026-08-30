@@ -81,6 +81,27 @@ const SECTIONS = [
     ],
   },
   {
+    title: 'Mobile App (iOS & Android)',
+    body: [
+      {
+        heading: 'Device & App Data',
+        text: 'Our mobile app (available on iOS and Android) collects the same order and account information described above. When you use the app, we may also receive a push notification token and basic device identifiers so we can deliver order updates and keep your session secure.',
+      },
+      {
+        heading: 'Push Notifications',
+        text: 'If you allow notifications, we send push notifications about your order status, rewards, and occasional offers. You can turn notifications off at any time in your device settings. We do not use push notifications to track your location.',
+      },
+      {
+        heading: 'Permissions',
+        text: 'The app may request permission to send notifications. It does not require access to your camera, contacts, microphone, or location to place an order. Any permission prompts come from your device and can be managed in your device settings.',
+      },
+      {
+        heading: 'Data Sync',
+        text: 'When you sign in, your account, orders, rewards, and cart sync across the website and the app. If you use the app without signing in, your order and cart data stays on that device and is not shared with other devices.',
+      },
+    ],
+  },
+  {
     title: 'Tasty Threads Merchandise',
     body: [
       {
@@ -172,7 +193,7 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicy() {
-  const lastUpdated = 'August 26, 2026';
+  const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
@@ -193,8 +214,8 @@ export default function PrivacyPolicy() {
         <div className="card-diner p-6 mb-8">
           <p className="text-sm text-muted-foreground leading-relaxed">
             At Flavor Isle, your privacy is important to us. This policy explains what information we collect
-            from guests who order online, dine with us, or use our website, and how we use, share, and protect
-            that information. By using our website or placing an order, you agree to the practices described here.
+            from guests who order online, dine with us, use our website, or use our mobile app, and how we use, share, and protect
+            that information. By using our website, mobile app, or placing an order, you agree to the practices described here.
           </p>
         </div>
 

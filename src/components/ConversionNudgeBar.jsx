@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -7,6 +8,7 @@ export default function ConversionNudgeBar() {
   const [activeOrders, setActiveOrders] = useState(null);
   const [index, setIndex] = useState(0);
   const timerRef = useRef(null);
+  const { waitMin } = useLiveStatus();
 
   useEffect(() => {
     base44.entities.Order.list('-created_date', 200)
@@ -22,7 +24,7 @@ export default function ConversionNudgeBar() {
       ? `🔥 ${activeOrders} order${activeOrders !== 1 ? 's' : ''} on the grill right now`
       : null,
     '⭐ Earn points on your very first order → redeem for free food',
-    '🚚 Pickup ready in 15–25 min · Delivery in 35–50 min',
+    `🚚 Pickup ready in ~${waitMin || 20} min · Delivery in ~${(waitMin || 20) + 20} min`,
     '❤️ Family-owned in Smiths Grove since 1964',
   ].filter(Boolean);
 

@@ -1,8 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
 import { lookupCustomersByIds, normalizePhone } from '../../shared/squareCustomer.ts';
+import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
 
 const PLACEHOLDER_EMAIL = 'square-pos@flavorisle.com';
+const SQUARE_VERSION = '2024-01-18';
 
 Deno.serve(async (req) => {
   try {
@@ -13,33 +15,58 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Square not connected' }, { status: 400 });
     }
 
-    // Fetch Square orders from the last 7 days. The wider window lets us both
-    // sync new POS orders and relink recently-synced ones whose customer had
-    // no resolvable email on the first pass (e.g. they added their online
-    // account phone to their profile later).
-    const squareResponse = await fetch('https://connect.squareup.com/v2/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${connection.accessToken}`,
-        'Content-Type': 'application/json',
-        'Square-Version': '2024-01-18'
-      },
-      body: JSON.stringify({
-        query: {
-          filter: {
-            date_time_filter: {
-              created_at: {
-                start_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-              }
-            }
-          },
-          limit: 500
-        }
-      })
-    });
+    // Resolve the Square location id — the connection's merchantId is NOT the
+    // location id. Without location_ids the SearchOrders call returns nothing.
+    let locationId = connection.connectionConfig?.locationId;
+    if (!locationId) {
+      const locRes = await fetch('https://connect.squareup.com/v2/locations', {
+        headers: { 'Authorization': `Bearer ${connection.accessToken}`, 'Square-Version': SQUARE_VERSION }
+      });
+      const locData = await locRes.json();
+      locationId = locData.locations?.[0]?.id;
+    }
+    if (!locationId) throw new Error('Could not resolve Square location ID');
 
-    const squareData = await squareResponse.json();
-    const squareOrders = squareData.orders || [];
+    // Fetch Square orders from the last 7 days via SearchOrders (the correct
+    // endpoint — the old code POSTed to /v2/orders, which is the create-order
+    // endpoint and silently returned no orders). The wider window lets us both
+    // sync new POS orders and relink recently-synced ones whose customer had
+    // no resolvable email on the first pass.
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const squareOrders = [];
+    let cursor = undefined;
+    // Page through all results so a busy week doesn't leave orders behind.
+    for (let page = 0; page < 5; page++) {
+      const res = await fetch('https://connect.squareup.com/v2/orders/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${connection.accessToken}`,
+          'Content-Type': 'application/json',
+          'Square-Version': SQUARE_VERSION
+        },
+        body: JSON.stringify({
+          location_ids: [locationId],
+          query: {
+            filter: {
+              date_time_filter: {
+                created_at: { start_at: since }
+              }
+            },
+            sort: { sort_field: 'CREATED_AT', sort_order: 'DESC' }
+          },
+          limit: 500,
+          ...(cursor ? { cursor } : {})
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Square SearchOrders error:', JSON.stringify(data));
+        return Response.json({ error: 'Square API error', details: data }, { status: 500 });
+      }
+      if (data.orders) squareOrders.push(...data.orders);
+      cursor = data.cursor;
+      if (!cursor || (data.orders || []).length === 0) break;
+    }
 
     // Index existing orders by square_order_id so we can skip already-synced
     // orders and relink ones still carrying the placeholder email.
@@ -122,17 +149,21 @@ Deno.serve(async (req) => {
       await Promise.all(updates);
     }
 
-    // Calculate hourly metrics for today (all statuses to show actual throughput)
-    const today = new Date().toISOString().split('T')[0];
+    // Calculate hourly metrics for today in store-local (America/Chicago) time
+    // so the date + hour keys match the Chicago-based busyness profiles. The
+    // Deno runtime is UTC, so raw getHours()/toISOString() would shift every
+    // order's hour by the UTC offset and mis-key the metrics.
+    const today = todayChicago().dateKey;
     const allOrders = await base44.asServiceRole.entities.Order.list();
-    const todayOrders = (allOrders || []).filter(o =>
-      o.created_date.startsWith(today)
-    );
+    const todayOrders = (allOrders || []).filter(o => {
+      const orderDate = chicagoParts(o.created_date).dateKey;
+      return orderDate === today;
+    });
 
     // Group by hour
     const hourlyMap = {};
     todayOrders.forEach(order => {
-      const hour = new Date(order.created_date).getHours();
+      const hour = chicagoParts(order.created_date).hour;
       hourlyMap[hour] = (hourlyMap[hour] || 0) + 1;
     });
 
@@ -165,6 +196,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
+      squareOrdersPulled: squareOrders.length,
       newOrders: newOrders.length,
       relinkedOrders: updates.length,
       metricsUpdated: true

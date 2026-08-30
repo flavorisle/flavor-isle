@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
+import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -118,17 +119,25 @@ export default function Menu() {
                   key={type}
                   onClick={() => setOrderType(type)}
                   className={`group relative overflow-hidden rounded-2xl transition-all ${
-                    active ? 'ring-2 ring-smashie-yellow shadow-float' : 'ring-1 ring-white/15 hover:ring-white/40'
+                    active ? 'ring-4 ring-smashie-yellow shadow-float' : 'ring-2 ring-white/40 hover:ring-white/70'
                   }`}
                 >
                   <img
                     src={ORDER_TYPE_IMAGES[type]}
                     alt={config.label}
-                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-80 group-hover:opacity-100'}`}
+                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-90 group-hover:opacity-100'}`}
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-center">
-                    <span className="block font-heading text-sm text-white leading-none">{config.label}</span>
-                    <span className="text-[11px] font-body text-white/70">{config.time}</span>
+                  {/* Solid label plate — the old translucent gradient let the
+                      artwork wash out the label text, making the buttons hard to read. */}
+                  <div
+                    className={`absolute inset-x-0 bottom-0 px-2 py-2.5 text-center ${active ? 'bg-smashie-yellow' : 'bg-obsidian-roast/95'}`}
+                  >
+                    <span className={`block font-heading text-base leading-none ${active ? 'text-obsidian-roast' : 'text-white'}`}>
+                      {config.label}
+                    </span>
+                    <span className={`text-xs font-body font-semibold ${active ? 'text-obsidian-roast/80' : 'text-white/90'}`}>
+                      {config.time}
+                    </span>
                   </div>
                 </button>
               );
@@ -168,6 +177,7 @@ export default function Menu() {
         {!search && !loading && items.length > 0 && (
           <>
             <FanFavoritesSection items={items} />
+            <CravingsBox items={items} />
           </>
         )}
         {loading ?
@@ -187,7 +197,7 @@ export default function Menu() {
           isShakeBanner ? (
             <div key={key}>
               <div className="flex items-center gap-4 mb-5">
-                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Milkshakes</h2>
+                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
                 <div className="flex-1 h-px bg-border" />
               </div>
               <MilkshakePromoBanner variant="strip" />

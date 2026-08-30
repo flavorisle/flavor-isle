@@ -8,6 +8,45 @@ function toMins(t) {
   return h * 60 + (m || 0);
 }
 
+// Compute the next opening time (store-local) as a friendly string like
+// "11 AM today" or "10:30 AM Monday". Walks forward day-by-day from `now`
+// skipping any day flagged closed, using the actual `open` time configured
+// in admin business hours for that day.
+function formatHour(time) {
+  if (!time) return '';
+  const [h, m] = String(time).split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return m ? `${hour12}:${String(m).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
+}
+
+function nextOpeningTime(businessHours, now) {
+  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // If today isn't closed and we're still before today's open time, we open
+  // later today at the configured hour.
+  const todayKey = DAY_KEYS[now.weekday];
+  const todayHours = (businessHours || {})[todayKey] || {};
+  const nowMins = now.hour * 60 + now.minute;
+  const todayOpenMins = toMins(todayHours.open);
+  if (!todayHours.closed && todayOpenMins != null && nowMins < todayOpenMins) {
+    return `${formatHour(todayHours.open)} today`;
+  }
+
+  // Otherwise scan the next 7 days for the first non-closed day.
+  for (let i = 1; i <= 7; i++) {
+    const dow = (now.weekday + i) % 7;
+    const key = DAY_KEYS[dow];
+    const hours = (businessHours || {})[key] || {};
+    if (!hours.closed) {
+      const label = i === 1 ? 'tomorrow' : DAY_LABELS[dow];
+      return `${formatHour(hours.open)} ${label}`;
+    }
+  }
+  return 'soon';
+}
+
 // Full store-open check: admin closure + per-day business hours.
 // Returns { open: boolean, message: string }. Defaults to open on error
 // so the busyness card never falsely says "Closed" due to a fetch failure.
@@ -40,7 +79,10 @@ export async function getStoreStatus(base44) {
     const nowMins = now.hour * 60 + now.minute;
 
     if (nowMins < ORDER_OPEN_MINS || nowMins >= closeMins) {
-      return { open: false, message: 'closed right now' };
+      // Compute the next opening time so Smashie and the status bar can tell
+      // customers exactly when we reopen instead of leaving them to guess.
+      const nextOpen = nextOpeningTime(s.business_hours, now);
+      return { open: false, message: `we open at ${nextOpen}` };
     }
 
     return { open: true, message: '' };

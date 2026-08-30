@@ -1,9 +1,22 @@
 import { Resend } from 'npm:resend@3.2.0';
+import { getLiveBusyness } from './liveBusyness.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
-// Public app URL used for in-email call-to-action links (reviews, merch).
-const APP_URL = 'https://taste-isle-express.base44.app';
+// Public app URL used for in-email call-to-action links (reviews, merch) —
+// always the branded custom domain, never the base44.app address.
+const APP_URL = 'https://crave.flavor-isle.com';
+
+// Build a click-tracked link. Routes the email CTA through the trackEmailClick
+// endpoint so each click is counted, then redirects to `path`. `linkId` labels
+// the link in the EmailClick stats; `orderId` ties order-specific links (review
+// requests) back to the order they came from.
+function trackedLink(path: string, linkId: string, orderId?: string) {
+  const to = encodeURIComponent(path);
+  let url = `${APP_URL}/functions/trackEmailClick?link=${linkId}&to=${to}`;
+  if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
+  return url;
+}
 
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
 export function merchPromoHtml() {
@@ -11,18 +24,70 @@ export function merchPromoHtml() {
   <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
     <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
     <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
-    <a href="${APP_URL}/merch" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
+    <a href="${trackedLink('/merch', 'merch_promo')}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
   </div>`;
 }
 
 // Review CTA block — appended to the thank-you email to collect ratings.
 export function reviewCtaHtml(orderId?: string) {
-  const url = orderId ? `${APP_URL}/feedback?order=${orderId}` : `${APP_URL}/feedback`;
+  const dest = orderId ? `/feedback?order=${orderId}` : '/feedback';
+  const url = trackedLink(dest, 'review_request', orderId);
   return `
   <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#1A3A5C;color:#fff;">
     <p style="font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ HOW'D WE DO?</p>
     <p style="margin:0 0 14px;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;">Loved your order? Drop a quick review and help your neighbors find their next favorite meal.</p>
     <a href="${url}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">LEAVE A REVIEW →</a>
+  </div>`;
+}
+
+// "What to expect" block — links to the live busyness guide so customers
+// waiting on their order can see the current kitchen level and wait times.
+export function whatToExpectHtml() {
+  return `
+  <div style="margin:18px 0 8px;border-radius:14px;padding:18px 20px;background:#EAF1F8;border:1px solid #C9D8E8;">
+    <p style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:16px;margin:0 0 6px;letter-spacing:2px;">⏱ WHAT TO EXPECT WHILE YOU WAIT</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">Curious how busy we are? Check our live kitchen status — it breaks down each level and the wait to expect.</p>
+    <a href="${trackedLink('/what-to-expect', 'what_to_expect')}" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SEE LIVE STATUS →</a>
+  </div>`;
+}
+
+// "Create your account" block — shown on order emails to guests who ordered
+// without signing in. Sells the benefits and links to registration.
+export function accountCtaHtml() {
+  return `
+  <div style="margin:24px 0 8px;border:2px solid #1A3A5C;border-radius:14px;padding:20px;background:#EAF1F8;">
+    <p style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">CREATE YOUR FLAVOR ISLE ACCOUNT</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">You ordered as a guest — make it official for a faster, smoother next time:</p>
+    <ul style="color:#141414;font-size:14px;line-height:1.7;margin:0 0 14px;padding-left:20px;">
+      <li>⚡ One-tap reorder of your favorites</li>
+      <li>📦 Full order history & live order tracking</li>
+      <li>⭐ Track your Star Rewards balance & unlock free food</li>
+      <li>💾 Saved addresses & info for checkout in seconds</li>
+    </ul>
+    <a href="${trackedLink('/register', 'account_cta')}" style="display:inline-block;background:#1A3A5C;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">CREATE MY ACCOUNT →</a>
+  </div>`;
+}
+
+// Star Rewards block — shown when a guest order enrolled the customer in Star
+// Rewards (or earned stars). `newlyEnrolled` triggers the welcome-bonus line;
+// `balance` is their current star balance.
+export function rewardsEnrolledHtml({ newlyEnrolled, balance }: { newlyEnrolled?: boolean; balance?: number } = {}) {
+  const welcomeLine = newlyEnrolled
+    ? `Welcome to Flavor Isle Star Rewards! We dropped a <strong>40-star welcome bonus</strong> into your account to get you started. `
+    : '';
+  return `
+  <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#FFF8E7;border:2px dashed #F5A623;">
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ YOU'RE EARNING STAR REWARDS</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">${welcomeLine}You just earned stars on this order — <strong>earn 4 stars for every $10 spent</strong>. Rack 'em up and trade them in for free food:</p>
+    <ul style="color:#141414;font-size:13px;line-height:1.7;margin:0 0 12px;padding-left:20px;">
+      <li><strong>10 stars</strong> — Free cup of sauce</li>
+      <li><strong>25 stars</strong> — Free Sundae or Fry of choice</li>
+      <li><strong>40 stars</strong> — 10% off (up to $5)</li>
+      <li><strong>50 stars</strong> — Free Cravewave or 14 oz Milkshake</li>
+      <li><strong>70 stars</strong> — 10% off, no max</li>
+    </ul>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;">Current balance: <strong>${balance ?? 0} stars</strong>. Track your stars and rewards any time in your Flavor Isle account.</p>
+    <a href="${trackedLink('/rewards', 'rewards_track')}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">SEE MY REWARDS →</a>
   </div>`;
 }
 
@@ -155,18 +220,36 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
   }
 }
 
-// "On the grill" email — sent when the order hits the kitchen. Includes a
-// Tasty Threads merch promo to cross-sell while the customer waits.
-export async function sendOrderPreparingEmail(order: any) {
+// "On the grill" email — sent when the order hits the kitchen. Includes the
+// live kitchen wait (same number the site shows) and a Tasty Threads merch
+// promo to cross-sell while the customer waits. `base44` is optional but
+// recommended — when passed, the email quotes the current dynamic wait.
+export async function sendOrderPreparingEmail(order: any, base44?: any) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
+
+  // Pull the same live wait the site/status bar show. Falls back to a soft
+  // message if the busyness lookup fails so the email still sends.
+  let waitLine = "We'll hit you up the second it's ready.";
+  try {
+    if (base44) {
+      const live = await getLiveBusyness(base44);
+      if (!live.isClosed && live.estimated_wait_min > 0) {
+        waitLine = `The kitchen is <strong>${live.busyness_level}</strong> right now — expect about <strong>~${live.estimated_wait_min} min</strong> until it's ready.`;
+      }
+    }
+  } catch (e) {
+    console.error('sendOrderPreparingEmail live wait lookup failed:', e.message);
+  }
+
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
     <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">🍔 Order #${orderNum} is on the grill</h2>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
-    <p style="color:#666;margin:0 0 4px;font-size:14px;">We'll hit you up the second it's ready.</p>
+    <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${whatToExpectHtml()}
     ${merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
 }

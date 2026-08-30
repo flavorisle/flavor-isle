@@ -3,6 +3,8 @@ import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms
 import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
+import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -141,6 +143,11 @@ Deno.serve(async (req) => {
     let updated = 0;
     let notified = 0;
     const pendingUpdates = [];
+    // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
+    // lookup, and bursting through dozens at once trips Square's rate limit.
+    // Spreads the backfill across scheduled runs instead.
+    let loyaltyRetriesThisRun = 0;
+    const LOYALTY_RETRY_CAP = 3;
 
     for (const sqOrder of squareOrders) {
       const newStatus = mapSquareStateToStatus(sqOrder);
@@ -149,6 +156,38 @@ Deno.serve(async (req) => {
       // Look up the matching Order entity from the in-memory index
       const order = orderBySquareId.get(sqOrder.id);
       if (!order) continue;
+
+      // Loyalty accrual retry — online orders paid via Stripe sometimes miss
+      // Star Rewards points because the Square order isn't in a computed state
+      // the instant payment lands. Retry here for any paid online order that
+      // hasn't been marked accrued. Safe: we first check Square's loyalty
+      // ledger for an existing ACCUMULATE_POINTS event on this order — if one
+      // exists, the order was already credited and we just mark it, never
+      // re-accruing (so already-credited orders, even from before this flag
+      // existed, are backfilled without double-awarding).
+      if (
+        order.order_source === 'online' &&
+        order.payment_status === 'paid' &&
+        order.square_order_id &&
+        order.customer_email &&
+        !order.loyalty_accrued &&
+        loyaltyRetriesThisRun < LOYALTY_RETRY_CAP
+      ) {
+        loyaltyRetriesThisRun++;
+        try {
+          const alreadyAccrued = await hasAccrualEventForOrder(order.square_order_id);
+          if (alreadyAccrued) {
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty already accrued for order ${order.order_number} — marked`);
+          } else {
+            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone });
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty accrual retry succeeded for order ${order.order_number}`);
+          }
+        } catch (retryErr) {
+          console.error(`Loyalty accrual retry failed for order ${order.order_number}:`, retryErr.message);
+        }
+      }
 
       // Only update if status actually changed
       if (order.status === newStatus) continue;
@@ -168,19 +207,32 @@ Deno.serve(async (req) => {
       const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
-      if (!customerEmail) continue;
+      // Never notify placeholder addresses used for in-store POS / walk-in
+      // orders — those aren't real customers and just burn email credits.
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      if (!customerEmail || isPlaceholderEmail) continue;
 
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
-          await sendOrderPreparingEmail(order);
+          await sendOrderPreparingEmail(order, base44);
           notified++;
+          // Live wait for the push body — same number the email and site show.
+          let pushWait = '';
+          try {
+            const live = await getLiveBusyness(base44);
+            if (!live.isClosed && live.estimated_wait_min > 0) {
+              pushWait = ` Expect ~${live.estimated_wait_min} min — kitchen is ${live.busyness_level.toLowerCase()}.`;
+            }
+          } catch (e) {
+            console.error('live wait for push failed:', e.message);
+          }
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
-            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen. We'll ping you the second it's ready!`,
+            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
             url: '/account',
             tag: `order-${order.id}`,
           });

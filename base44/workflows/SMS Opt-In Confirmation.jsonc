@@ -1,0 +1,40 @@
+{
+  "name": "SMS Opt-In Confirmation",
+  "description": "Texts a welcome/confirmation message the moment a customer opts in to SMS updates (website or checkout). Keyword JOIN opt-ins are excluded \u2014 the Twilio webhook already auto-replies to those.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "SMSSubscriber",
+      "events": [
+        "create"
+      ]
+    },
+    "condition": "${ .trigger.data.opted_in == true and (.trigger.data.source // \"\") != \"keyword\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sms_opt_in_confirmation",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_confirmation": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendOptInConfirmation",
+            "args": {
+              "subscriber_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send welcome text",
+            "description": "Confirms the SMS opt-in"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -14,7 +14,7 @@ import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
-import ShakePromoPopup from './components/ShakePromoPopup';
+import CaramelAppleBlissPopup from './components/CaramelAppleBlissPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -26,8 +26,9 @@ import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
-import AdminMedia from './pages/AdminMedia';
-import AdminPhoneOrders from './pages/AdminPhoneOrders';
+
+
+import AdminOrders from './pages/AdminOrders';
 import AdminCommunications from './pages/AdminCommunications';
 import AccountNew from './pages/Account.jsx';
 import Milkshakes from './pages/Milkshakes';
@@ -43,13 +44,15 @@ import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import SMSSignup from './pages/SMSSignup';
+import BusynessGuide from './pages/BusynessGuide';
+import Connect from './pages/Connect';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
 import Order from './pages/Order';
 import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
-import AdminMerchOrders from './pages/AdminMerchOrders';
 import AdminMerchCategories from './pages/AdminMerchCategories';
+import AdminReviews from './pages/AdminReviews';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
@@ -138,6 +141,8 @@ const AuthenticatedApp = () => {
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
       <Route path="/sms-signup" element={<SMSSignup />} />
+      <Route path="/what-to-expect" element={<BusynessGuide />} />
+      <Route path="/connect" element={<Connect />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
@@ -156,11 +161,11 @@ const AuthenticatedApp = () => {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
-        <Route path="/admin/media" element={<AdminMedia />} />
-        <Route path="/admin/phone-orders" element={<AdminPhoneOrders />} />
-        <Route path="/admin/merch-orders" element={<AdminMerchOrders />} />
+
+        <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
@@ -184,7 +189,7 @@ function AppShell() {
               <BottomTabBar />
               <MobileHeader />
               <SmashieChat />
-              <ShakePromoPopup />
+              <CaramelAppleBlissPopup />
               <MerchCartDrawer />
             </Router>
             <Toaster />

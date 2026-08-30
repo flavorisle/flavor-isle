@@ -35,6 +35,33 @@ export async function getLoyaltyProgram(): Promise<any | null> {
   return data?.program || null;
 }
 
+// Check the Square loyalty ledger for an existing ACCUMULATE_POINTS event on a
+// given order. Used by the order-status sync's accrual retry to guarantee an
+// order is never credited twice — if an event already exists we just mark the
+// order accrued and skip, regardless of which idempotency key was used.
+export async function hasAccrualEventForOrder(orderId: string): Promise<boolean> {
+  if (!orderId) return false;
+  const res = await fetch(`${SQUARE_API}/loyalty/events/search`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ query: { filter: { order_filter: { order_id: orderId } } }, limit: 30 }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`SearchLoyaltyEvents failed: ${JSON.stringify(data?.errors || data)}`);
+  const events = data?.events || [];
+  return events.some((e: any) => e.type === 'ACCUMULATE_POINTS' || e.type === 'ACCUMULATE_PROMOTION_POINTS');
+}
+
+// Resolve the merchant's primary Square location id — needed by
+// AccumulateLoyaltyPoints, which requires a location_id for the purchase.
+export async function getLocationId(): Promise<string | null> {
+  const res = await fetch(`${SQUARE_API}/locations`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`ListLocations failed: ${JSON.stringify(data?.errors || data)}`);
+  const loc = (data?.locations || []).find((l: any) => l.status === 'ACTIVE');
+  return loc?.id || data?.locations?.[0]?.id || null;
+}
+
 export async function searchSquareCustomerIdByEmail(email: string): Promise<string | null> {
   if (!email) return null;
   const res = await fetch(`${SQUARE_API}/customers/search`, {
@@ -100,9 +127,9 @@ export async function createLoyaltyAccount({
   customerId: string;
   phone?: string | null;
 }): Promise<any> {
-  const loyalty_account: any = { loyalty_program_id: programId, customer_id: customerId };
+  const loyalty_account: any = { program_id: programId, customer_id: customerId };
   const e164 = toE164Phone(phone);
-  if (e164) loyalty_account.mapping = { type: 'PHONE', id: e164, value: e164 };
+  if (e164) loyalty_account.mapping = { phone_number: e164 };
   const res = await fetch(`${SQUARE_API}/loyalty/accounts`, {
     method: 'POST',
     headers: authHeaders(),
@@ -117,17 +144,22 @@ export async function accumulateLoyaltyPoints({
   accountId,
   programId,
   orderId,
+  locationId,
+  idempotencyKey,
 }: {
   accountId: string;
   programId: string;
   orderId: string;
+  locationId: string;
+  idempotencyKey?: string;
 }): Promise<any | null> {
   const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/accumulate`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
       accumulate_points: { loyalty_program_id: programId, order_id: orderId },
-      idempotency_key: crypto.randomUUID(),
+      location_id: locationId,
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
     }),
   });
   const data = await res.json();
@@ -141,17 +173,19 @@ export async function adjustLoyaltyPoints({
   accountId,
   points,
   reason,
+  idempotencyKey,
 }: {
   accountId: string;
   points: number;
   reason: string;
+  idempotencyKey?: string;
 }): Promise<any | null> {
   const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/adjust`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
       adjust_points: { points, reason },
-      idempotency_key: crypto.randomUUID(),
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
     }),
   });
   const data = await res.json();
@@ -213,6 +247,9 @@ export async function accrueForOrder({
   if (!program?.id) throw new Error('Square loyalty program not found');
   if (program.status === 'INACTIVE') throw new Error('Square loyalty program is not active');
 
+  const locationId = await getLocationId();
+  if (!locationId) throw new Error('Could not resolve Square location for loyalty accrual');
+
   // Phone is the primary identifier for Square loyalty — look up the account
   // by phone mapping first, then fall back to email-based customer lookup.
   let account: any | null = null;
@@ -238,6 +275,7 @@ export async function accrueForOrder({
         accountId: account.id,
         points: WELCOME_BONUS_STARS,
         reason: 'Welcome bonus for joining Star Rewards',
+        idempotencyKey: `loyalty-welcome:${account.id}`,
       });
       console.log(`Welcome bonus of ${WELCOME_BONUS_STARS} stars granted to new loyalty account ${account.id}`);
     } catch (err) {
@@ -245,7 +283,7 @@ export async function accrueForOrder({
     }
   }
 
-  await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId });
+  await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
 }
 
 // Build the status payload shown on the Account rewards screen. Finds (or

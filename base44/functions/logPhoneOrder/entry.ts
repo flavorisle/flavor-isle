@@ -10,6 +10,12 @@ export default async function(req) {
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_phone, items' }, { status: 400 });
     }
+    // Email is the ONLY working delivery channel for payment links right now
+    // (outbound SMS is blocked until the A2P 10DLC campaign is approved), so an
+    // order without an email address can never be paid for.
+    if (!customer_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
+      return Response.json({ error: 'A valid customer_email is required — the payment link is delivered by email.' }, { status: 400 });
+    }
     if (order_type === 'delivery' && !delivery_address) {
       return Response.json({ error: 'A delivery address is required for delivery orders' }, { status: 400 });
     }
@@ -34,7 +40,7 @@ export default async function(req) {
       total: finalTotal,
       customer_name,
       customer_phone,
-      customer_email: customer_email || 'phone-order@flavorisle.com',
+      customer_email,
       delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
@@ -209,9 +215,9 @@ export default async function(req) {
       payment_url: paymentUrl,
       payment_link_sent: paymentLinkSent,
       payment_link_emailed: paymentLinkEmailed,
-      message: deliveredVia
-        ? `Phone order #${orderNumber} is pending payment. A secure Square link for $${finalTotal.toFixed(2)} was ${deliveredVia}.`
-        : `Phone order #${orderNumber} is pending payment, but the payment link could not be delivered. Transfer the caller to the counter for help.`,
+      message: paymentLinkEmailed
+        ? `Order #${orderNumber} is pending payment. A secure Square link for $${finalTotal.toFixed(2)} was ${deliveredVia}.`
+        : `Order #${orderNumber} is pending payment, but the payment link could not be emailed to ${customer_email}. Confirm the email address or send them to the counter for help.`,
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);

@@ -8,11 +8,11 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
-import CheckoutRewardsPanel from '@/components/checkout/CheckoutRewardsPanel';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import SavedCardSelector from '@/components/checkout/SavedCardSelector';
+import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -136,7 +136,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -158,8 +158,9 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
@@ -183,8 +184,11 @@ export default function Checkout() {
       const p = profiles?.[0] || {};
       if (cancelled) return;
       if (p.delivery_address || p.address) setSavedAddress(true);
+      const [firstPart, ...rest] = (p.name || me.full_name || '').trim().split(/\s+/);
       setForm(prev => ({
         ...prev,
+        firstName: prev.firstName || firstPart || '',
+        lastName: prev.lastName || rest.join(' ') || '',
         email: prev.email || me.email || '',
         phone: prev.phone || p.phone || '',
         address: prev.address || p.delivery_address || p.address || '',
@@ -199,7 +203,6 @@ export default function Checkout() {
   const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [appliedReward, setAppliedReward] = useState(null); // { tierId, discountValue, description }
   // Whether the device actually supports a wallet (Apple Pay / Google Pay).
   // The express card stays hidden until the Stripe Payment Request confirms support.
   const [walletReady, setWalletReady] = useState(null);
@@ -245,10 +248,11 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
-  // Clear an applied reward when the loyalty identity or split mode changes.
+  // Clear an applied reward when split mode changes (separate split can't apply
+  // a single reward). The reward is now chosen in the cart drawer.
   useEffect(() => {
     setAppliedReward(null);
-  }, [form.phone, groupMode, payMode]);
+  }, [groupMode, payMode]);
 
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
@@ -258,15 +262,28 @@ export default function Checkout() {
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
+  // Compose the kitchen-facing notes: customer instructions + requested extras.
+  const extrasList = Object.entries(extras)
+    .filter(([, v]) => v)
+    .map(([k]) => ({
+      forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
+    }[k]));
+  const instructionsWithExtras = [
+    form.instructions.trim(),
+    extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
+  ].filter(Boolean).join('\n');
+
+  const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = appliedReward?.discountValue || 0;
   const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
-  const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
-  const readyLabel = readyAt
-    ? schedule.mode === 'asap' && schedule.estimatedTime > prepMinutes
-      ? readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ` (≈ ${prepMinutes} min)` : ''}`
-    : `ASAP (≈ ${prepMinutes} min)`;
+  // Single combined ready-by label: "~N min · clock time". For ASAP the clock
+  // time is order time + prep minutes; for a scheduled order it's the chosen slot.
+  const readyAt = schedule.scheduledFor
+    ? new Date(schedule.scheduledFor)
+    : new Date(Date.now() + prepMinutes * 60000);
+  const readyMinutes = schedule.mode === 'schedule' ? schedule.estimatedTime : prepMinutes;
+  const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const updateForm = (field, val) => {
     setForm(prev => ({ ...prev, [field]: val }));
@@ -288,7 +305,8 @@ export default function Checkout() {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.name.trim()) errors.name = 'Your name is required.';
+    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
+    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
     if (!form.email.trim()) errors.email = 'Your email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
@@ -336,12 +354,11 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip,
           scheduledFor, estimatedTime,
           splits,
@@ -354,7 +371,6 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
@@ -438,7 +454,7 @@ export default function Checkout() {
       deluxeToppings: i.deluxeToppings || [],
     }));
     const customer = {
-      name: walletCustomer.name || form.name,
+      name: walletCustomer.name || fullName,
       email: walletCustomer.email || form.email,
       phone: walletCustomer.phone || form.phone,
       address: orderType === 'delivery' ? form.address : '',
@@ -448,7 +464,7 @@ export default function Checkout() {
       items: mappedItems,
       orderType,
       customer,
-      instructions: form.instructions,
+      instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
       scheduledFor, estimatedTime,
@@ -510,7 +526,12 @@ export default function Checkout() {
           )}
         </div>
 
-        <h1 className="font-heading text-3xl text-obsidian-roast mb-6">Checkout</h1>
+        <div className="mb-6">
+          <h1 className="font-heading text-3xl text-obsidian-roast leading-none">Checkout</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {step === 'details' ? 'Step 1 of 2 — Your details' : 'Step 2 of 2 — Payment'}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left – Form */}
@@ -518,88 +539,49 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
-                {/* Express checkout — Apple Pay / Google Pay */}
-                {expressStripePromise && expressAvailable && (
-                  <div className={walletReady === true ? '' : 'hidden'}>
-                    <div className="card-diner p-4">
-                      <Elements stripe={expressStripePromise}>
-                        <ExpressCheckout
-                          total={totalWithTip}
-                          label="Flavor Isle"
-                          createIntent={createIntent}
-                          onSuccess={handleSuccess}
-                          onError={setError}
-                          onAvailability={setWalletReady}
-                        />
-                      </Elements>
-                      <div className="flex items-center gap-3 mt-4">
-                        <div className="h-px bg-border flex-1" />
-                        <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
-                        <div className="h-px bg-border flex-1" />
-                      </div>
+                {/* Express checkout — one-tap Apple Pay / Google Pay first.
+                    Hidden entirely when the device has no wallet (walletReady === false). */}
+                {expressStripePromise && expressAvailable && walletReady !== false && (
+                  <div className="card-diner p-5 border-2 border-midnight-cherry/20 bg-white">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="font-heading text-lg text-obsidian-roast">One-Tap Checkout</h2>
+                      <span className="text-xs bg-midnight-cherry/10 text-midnight-cherry px-2.5 py-1 rounded-full font-heading">Fastest</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">Skip the form — pay instantly with your wallet and we'll grab the details we need from it.</p>
+                    <Elements stripe={expressStripePromise}>
+                      <ExpressCheckout
+                        total={totalWithTip}
+                        label="Flavor Isle"
+                        createIntent={createIntent}
+                        onSuccess={handleSuccess}
+                        onError={setError}
+                        onAvailability={setWalletReady}
+                      />
+                    </Elements>
+                    <div className="flex items-center gap-3 mt-5">
+                      <div className="h-px bg-border flex-1" />
+                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
+                      <div className="h-px bg-border flex-1" />
                     </div>
                   </div>
                 )}
-
-                {/* Order details — type + time in one compact card */}
-                <div className="card-diner p-4">
-                  <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details</h2>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                      { type: 'pickup', label: 'Pickup', sub: openFromLabel || `${Math.max(10, prepMinutes - 5)}–${prepMinutes + 5} min` },
-                      { type: 'delivery', label: 'Delivery', sub: openFromLabel || `${prepMinutes + 15}–${prepMinutes + 25} min` },
-                      { type: 'dine_in', label: 'Dine-In', sub: openFromLabel || 'Seat yourself' },
-                    ].map(({ type, label, sub }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          if (!cutoffStatus[type] && orderType !== type) {
-                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
-                          }
-                          setOrderType(type);
-                        }}
-                        disabled={cutoffStatus[type]}
-                        className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all font-heading text-sm ${
-                          cutoffStatus[type]
-                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                            : orderType === type
-                            ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                            : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        <img
-                          src={ORDER_TYPE_IMAGES[type]}
-                          alt={label}
-                          className={`w-10 h-10 object-contain ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
-                        />
-                        {label}
-                        <span className="text-[11px] font-body opacity-60 leading-tight">{cutoffStatus[type] ? 'Closed' : sub}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
-                </div>
-
-                {/* Star Rewards — balance, tier progress, and redeemable rewards
-                    in one panel (rewards hidden during separate split payments). */}
-                <CheckoutRewardsPanel
-                  subtotal={subtotal}
-                  phone={form.phone}
-                  appliedReward={appliedReward}
-                  onApply={setAppliedReward}
-                  showRewards={!(groupMode && payMode === 'separate')}
-                />
 
                 {/* Contact Info — delivery address moved up front so a new guest
                     sees the most important field first, before consent/instructions. */}
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
-                      <input ref={nameRef} type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
-                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.name ? 'border-destructive' : 'border-border'}`} />
-                      {fieldErrors.name && <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>}
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
+                      <input ref={nameRef} type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.firstName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.firstName && <p className="text-xs text-destructive mt-1">{fieldErrors.firstName}</p>}
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
+                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.lastName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.lastName && <p className="text-xs text-destructive mt-1">{fieldErrors.lastName}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
@@ -649,66 +631,42 @@ export default function Checkout() {
                     </span>
                   </label>
 
+                  {/* Request extras — appended to kitchen order notes */}
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Need any extras?</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { key: 'forks', label: 'Forks' },
+                        { key: 'ketchup', label: 'Ketchup Packets' },
+                        { key: 'salt', label: 'Salt' },
+                        { key: 'napkins', label: 'Napkins' },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer text-sm transition-all ${
+                            extras[opt.key]
+                              ? 'border-midnight-cherry bg-midnight-cherry/5 text-obsidian-roast'
+                              : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={extras[opt.key]}
+                            onChange={e => setExtras(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                            className="w-4 h-4 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                          />
+                          <span className="font-body">{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="mt-4">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Special Instructions</label>
                     <textarea value={form.instructions} onChange={e => updateForm('instructions', e.target.value)}
                       placeholder="Allergies, extra sauce, no pickles…" rows={3}
                       className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
-                </div>
-
-                {/* Add a Tip */}
-                <div className="card-diner p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h2 className="font-heading text-base text-obsidian-roast">Add a Tip</h2>
-                    <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">100% goes to the kitchen crew.</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {tipPresets.map(preset => (
-                      <button
-                        key={preset.key}
-                        onClick={() => setTipPreset(preset.key)}
-                        className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
-                          tipPreset === preset.key
-                            ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                            : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setTipPreset('custom')}
-                      className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
-                        tipPreset === 'custom'
-                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                      }`}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                  {tipPreset === 'custom' && (
-                    <div className="mt-3 relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.50"
-                        value={customTip}
-                        onChange={e => setCustomTip(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
-                      />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => { setTipPreset('0'); setCustomTip(''); }}
-                    className="mt-3 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
-                  >
-                    No tip
-                  </button>
                 </div>
 
                 {/* Group payment mode — the whole group pays one fee; choose
@@ -749,8 +707,6 @@ export default function Checkout() {
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
-                <CheckoutRewardsPanel subtotal={subtotal} phone={form.phone} showRewards={false} />
-                <div className="mb-5" />
                 {savedCards.length > 0 && (
                   <SavedCardSelector
                     cards={savedCards}
@@ -778,15 +734,32 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Right – Order Summary */}
-          <div className="lg:col-span-2">
-            <div className="card-diner p-5 sticky top-32">
-              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Summary</h2>
+          {/* Right – Order Details & Summary */}
+          <div className="lg:col-span-2 order-first lg:order-none">
+            <div className="card-diner p-5 lg:sticky lg:top-32">
+              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details & Summary</h2>
 
-              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-xl px-4 py-2.5 mb-4 text-sm font-heading">
-                <Clock size={16} />
-                <span>Ready by {readyLabel}</span>
+              {/* Order type + ready time merged into one card */}
+              <div className="rounded-xl bg-midnight-cherry/5 px-3 py-3 mb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
+                    <img
+                      src={ORDER_TYPE_IMAGES[orderType]}
+                      alt={ORDER_TYPE_LABELS[orderType]}
+                      className="w-7 h-7 object-contain flex-shrink-0"
+                    />
+                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
+                    <Clock size={15} />
+                    <span>Ready by {readyLabel}</span>
+                  </div>
+                </div>
               </div>
+
+              {step === 'details' && (
+                <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
+              )}
 
               <div className="space-y-2 mb-4">
                 {groupMode ? (
@@ -800,9 +773,8 @@ export default function Checkout() {
                         {cartItems.filter(i => i.person_id === p.id).map(item => (
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
                             <div>
-                              <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                              <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                               <CartItemModifiers modifiers={item.selectedModifiers} />
-                              <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                             </div>
                             <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                           </div>
@@ -818,14 +790,75 @@ export default function Checkout() {
                   cartItems.map(item => (
                     <div key={item.id} className="flex justify-between items-start gap-3">
                       <div>
-                        <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                        <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                         <CartItemModifiers modifiers={item.selectedModifiers} />
-                        <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                       </div>
                       <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))
                 )}
+              </div>
+
+              {/* Star Rewards — compact balance + redeemable rewards */}
+              <CheckoutLoyaltyBox
+                subtotal={subtotal}
+                phone={form.phone}
+                appliedReward={appliedReward}
+                onApply={setAppliedReward}
+              />
+
+              {/* Add a Tip — lives in the summary so the running total reflects it live */}
+              <div className="border-t border-border pt-3 mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-heading text-base text-obsidian-roast">Add a Tip</h3>
+                  <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">100% goes to the kitchen crew.</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {tipPresets.map(preset => (
+                    <button
+                      key={preset.key}
+                      onClick={() => setTipPreset(preset.key)}
+                      className={`py-2 rounded-xl border-2 font-heading text-sm transition-all ${
+                        tipPreset === preset.key
+                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setTipPreset('custom')}
+                    className={`py-2 rounded-xl border-2 font-heading text-sm transition-all ${
+                      tipPreset === 'custom'
+                        ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                        : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+                {tipPreset === 'custom' && (
+                  <div className="mt-2 relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.50"
+                      value={customTip}
+                      onChange={e => setCustomTip(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={() => { setTipPreset('0'); setCustomTip(''); }}
+                  className="mt-2 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
+                >
+                  No tip
+                </button>
               </div>
 
               <div className="border-t border-border pt-3 space-y-2 text-sm mb-4">

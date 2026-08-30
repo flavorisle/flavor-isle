@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { todayChicago } from '../../shared/busynessTime.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES, RECENT_WINDOW_MINUTES, computeRegressedWait } from '../../shared/busynessStages.ts';
 import { getStoreStatus } from '../../shared/storeClosure.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 
 // Public read for the landing page "How busy are we?" card.
 // Returns today's 24-hour typical-traffic chart + the live current-hour status.
@@ -58,10 +59,11 @@ export default async function(req) {
       activeCount = curHourCount + prevSlice;
     }
 
-    // If the store is closed (admin closure or outside business hours),
-    // the status card should say "Closed" instead of a busyness level.
-    const storeStatus = await getStoreStatus(base44);
-    if (!storeStatus.open) {
+    // The busyness level + regressed wait come from the shared live helper so
+    // the site, status bar, and order emails all quote the same number.
+    const liveStatus = await getLiveBusyness(base44);
+
+    if (liveStatus.isClosed) {
       return Response.json({
         weekday: today.weekday,
         hour: today.hour,
@@ -77,7 +79,7 @@ export default async function(req) {
         estimated_wait: 'Closed',
         estimated_wait_min: 0,
         recovering: false,
-        closure_message: storeStatus.message,
+        closure_message: liveStatus.closure_message,
       });
     }
 
@@ -112,10 +114,10 @@ export default async function(req) {
       curHourCount,
       avgForHour,
       busyPercent,
-      busyness_level: stage.level,
-      estimated_wait: regressed.waitRange,
-      estimated_wait_min: regressed.waitMin,
-      recovering: regressed.recovering,
+      busyness_level: liveStatus.busyness_level,
+      estimated_wait: liveStatus.estimated_wait,
+      estimated_wait_min: liveStatus.estimated_wait_min,
+      recovering: liveStatus.recovering,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

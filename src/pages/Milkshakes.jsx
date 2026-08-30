@@ -7,7 +7,7 @@ import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
@@ -17,6 +17,8 @@ import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 // ShakeCustomizer where the customer picks size, base, and extra flavors.
 export default function Milkshakes() {
   const { setIsCartOpen } = useCart();
+  const [searchParams] = useSearchParams();
+  const blissId = searchParams.get('bliss');
   const [shakes, setShakes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeShake, setActiveShake] = useState(null);
@@ -164,7 +166,7 @@ export default function Milkshakes() {
 
       {/* Premium Bliss Shakes */}
       <section className="py-16 px-4 sm:px-6 bg-gradient-to-b from-vanilla-malt to-amber-50/40">
-        <PremiumShakesSection />
+        <PremiumShakesSection autoOpenId={blissId} />
       </section>
 
       {/* CTA — heading */}

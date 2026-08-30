@@ -15,7 +15,7 @@
 // Master switch — set to false to hide all deluxe preset buttons and badges
 // from the customer-facing UI. Admin can still manage presets; flipping this
 // back to true re-enables the feature everywhere.
-export const DELUXE_ENABLED = true;
+export const DELUXE_ENABLED = false;
 
 import { matchScore } from '@/lib/deluxeLabel';
 
@@ -58,7 +58,9 @@ export function getDeluxePresets() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(cleanPreset);
+      // An empty saved list would silently hide every Deluxe button, so fall
+      // through to the defaults instead of returning [].
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(cleanPreset);
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
