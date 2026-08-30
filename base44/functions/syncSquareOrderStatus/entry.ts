@@ -169,7 +169,10 @@ Deno.serve(async (req) => {
       const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
-      if (!customerEmail) continue;
+      // Never notify placeholder addresses used for in-store POS / walk-in
+      // orders — those aren't real customers and just burn email credits.
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      if (!customerEmail || isPlaceholderEmail) continue;
 
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
