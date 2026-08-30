@@ -177,6 +177,11 @@ async function processLoyalty(base44, order, squareOrderId) {
     if (!squareOrderId || !order.customer_email) return;
     await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
     console.log(`Square Star Rewards points accrued for order ${order.order_number}`);
+    try {
+      await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+    } catch (markErr) {
+      console.error('Failed to mark loyalty_accrued:', markErr.message);
+    }
   } catch (err) {
     console.error('Square loyalty accrual failed:', err.message);
   }

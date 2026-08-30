@@ -110,6 +110,11 @@
         "refunded"
       ],
       "default": "pending"
+    },
+    "loyalty_accrued": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Square Star Rewards points have been successfully accrued for this order. Set true by the Stripe webhook after a successful accrual, and by the Square order-status sync's self-healing retry (which first checks the Square loyalty ledger for an existing ACCUMULATE_POINTS event so already-credited orders are never re-accrued)."
     }
   },
   "required": [

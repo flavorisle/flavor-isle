@@ -4,6 +4,7 @@ import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail }
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
+import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -142,6 +143,11 @@ Deno.serve(async (req) => {
     let updated = 0;
     let notified = 0;
     const pendingUpdates = [];
+    // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
+    // lookup, and bursting through dozens at once trips Square's rate limit.
+    // Spreads the backfill across scheduled runs instead.
+    let loyaltyRetriesThisRun = 0;
+    const LOYALTY_RETRY_CAP = 3;
 
     for (const sqOrder of squareOrders) {
       const newStatus = mapSquareStateToStatus(sqOrder);
@@ -150,6 +156,38 @@ Deno.serve(async (req) => {
       // Look up the matching Order entity from the in-memory index
       const order = orderBySquareId.get(sqOrder.id);
       if (!order) continue;
+
+      // Loyalty accrual retry — online orders paid via Stripe sometimes miss
+      // Star Rewards points because the Square order isn't in a computed state
+      // the instant payment lands. Retry here for any paid online order that
+      // hasn't been marked accrued. Safe: we first check Square's loyalty
+      // ledger for an existing ACCUMULATE_POINTS event on this order — if one
+      // exists, the order was already credited and we just mark it, never
+      // re-accruing (so already-credited orders, even from before this flag
+      // existed, are backfilled without double-awarding).
+      if (
+        order.order_source === 'online' &&
+        order.payment_status === 'paid' &&
+        order.square_order_id &&
+        order.customer_email &&
+        !order.loyalty_accrued &&
+        loyaltyRetriesThisRun < LOYALTY_RETRY_CAP
+      ) {
+        loyaltyRetriesThisRun++;
+        try {
+          const alreadyAccrued = await hasAccrualEventForOrder(order.square_order_id);
+          if (alreadyAccrued) {
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty already accrued for order ${order.order_number} — marked`);
+          } else {
+            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone });
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty accrual retry succeeded for order ${order.order_number}`);
+          }
+        } catch (retryErr) {
+          console.error(`Loyalty accrual retry failed for order ${order.order_number}:`, retryErr.message);
+        }
+      }
 
       // Only update if status actually changed
       if (order.status === newStatus) continue;
