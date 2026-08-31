@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight, Shirt } from 'lucide-react';
 
 // Visit pop-up promoting the two $19.99 Tasty Threads tees. Shows once per
-// browser session, and waits for the Caramel Apple Bliss pop-up to be
-// dismissed first so the two never stack on top of each other.
+// browser session.
 const STORAGE_KEY = 'fi_tasty_threads_tees_seen';
-const BLISS_KEY = 'fi_caramel_apple_bliss_seen';
 
 const SHIRTS = [
   {
@@ -31,19 +29,9 @@ export default function TastyThreadsPopup() {
     } catch (e) {
       // fall through to show
     }
-    // Wait until the shake pop-up has been dismissed, then layer in.
-    const interval = setInterval(() => {
-      try {
-        if (sessionStorage.getItem(BLISS_KEY)) {
-          clearInterval(interval);
-          setTimeout(() => setOpen(true), 800);
-        }
-      } catch (e) {
-        clearInterval(interval);
-        setOpen(true);
-      }
-    }, 500);
-    return () => clearInterval(interval);
+    // Small delay so the hero paints first, then the pop-up layers in.
+    const t = setTimeout(() => setOpen(true), 600);
+    return () => clearTimeout(t);
   }, []);
 
   const close = () => {
