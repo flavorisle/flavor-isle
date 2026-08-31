@@ -41,6 +41,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import FacebookAd from './pages/FacebookAd';
+import TastyThreadsAd from './pages/TastyThreadsAd';
 import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
+      <Route path="/tasty-threads-ad" element={<TastyThreadsAd />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
