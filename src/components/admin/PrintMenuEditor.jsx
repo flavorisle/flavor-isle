@@ -48,6 +48,28 @@ export default function PrintMenuEditor({
       </div>
 
       <div className="card-diner p-5">
+        <h3 className="font-heading text-lg text-obsidian-roast mb-3">Account Info</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Printed as its own separated block at the bottom of the sheet. Clear the text to remove it.
+        </p>
+        <Field label="Heading">
+          <input
+            className={inputCls}
+            value={config.accountTitle ?? ''}
+            onChange={e => update('accountTitle', e.target.value)}
+          />
+        </Field>
+        <Field label="Text">
+          <textarea
+            rows={3}
+            className={inputCls}
+            value={config.accountInfo ?? ''}
+            onChange={e => update('accountInfo', e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <div className="card-diner p-5">
         <h3 className="font-heading text-lg text-obsidian-roast mb-3">Layout</h3>
         <Field label="Columns">
           <select className={inputCls} value={config.columns} onChange={e => update('columns', Number(e.target.value))}>
