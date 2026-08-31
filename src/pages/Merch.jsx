@@ -35,9 +35,16 @@ export default function Merch() {
           base44.entities.MerchProductAssignment.list('-sort_order', 500).catch(() => []),
         ]);
         if (cancelled) return;
-        setProducts(prodRes.data?.products || []);
+        const loaded = prodRes.data?.products || [];
+        setProducts(loaded);
         setCategories(cats || []);
         setAssignments(assigns || []);
+        // Shared link deep-linking: /merch?product=<id> opens that product.
+        const sharedId = new URLSearchParams(window.location.search).get('product');
+        if (sharedId) {
+          const match = loaded.find((p) => String(p.id) === sharedId);
+          if (match) setActiveProduct(match);
+        }
       } catch (err) {
         if (!cancelled) setError(err?.response?.data?.error || err.message || 'Could not load the store.');
       } finally {
