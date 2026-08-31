@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight, Shirt } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 // Visit pop-up promoting the two $19.99 Tasty Threads tees. Shows once per
 // browser session.
 const STORAGE_KEY = 'fi_tasty_threads_tees_seen';
+const POPUP_ID = 'tasty_threads_tees';
+
+// Fire-and-forget click tracking — never block or break the pop-up UI.
+const track = (action, target) => {
+  base44.entities.PopupClick.create({ popup_id: POPUP_ID, action, ...(target ? { target } : {}) }).catch(() => {});
+};
 
 const SHIRTS = [
   {
@@ -30,7 +37,7 @@ export default function TastyThreadsPopup() {
       // fall through to show
     }
     // Small delay so the hero paints first, then the pop-up layers in.
-    const t = setTimeout(() => setOpen(true), 600);
+    const t = setTimeout(() => { setOpen(true); track('view'); }, 600);
     return () => clearTimeout(t);
   }, []);
 
@@ -43,9 +50,15 @@ export default function TastyThreadsPopup() {
     }
   };
 
-  const goToShirt = (id) => {
+  const dismiss = () => {
+    track('dismiss');
     close();
-    navigate(`/merch?product=${id}`);
+  };
+
+  const goToShirt = (shirt) => {
+    track('shirt_click', shirt.name);
+    close();
+    navigate(`/merch?product=${shirt.id}`);
   };
 
   if (!open) return null;
@@ -57,7 +70,7 @@ export default function TastyThreadsPopup() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="tasty-threads-popup-title"
-      onClick={close}
+      onClick={dismiss}
     >
       <div
         className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl shadow-float-lg animate-float-up"
@@ -66,7 +79,7 @@ export default function TastyThreadsPopup() {
       >
         {/* Close */}
         <button
-          onClick={close}
+          onClick={dismiss}
           aria-label="Close"
           className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full flex items-center justify-center bg-black/40 text-white hover:bg-black/60 transition-colors"
         >
@@ -98,7 +111,7 @@ export default function TastyThreadsPopup() {
           {SHIRTS.map((s) => (
             <button
               key={s.id}
-              onClick={() => goToShirt(s.id)}
+              onClick={() => goToShirt(s)}
               className="card-diner overflow-hidden text-left group"
             >
               <div className="aspect-square overflow-hidden bg-white">
@@ -127,13 +140,13 @@ export default function TastyThreadsPopup() {
           style={{ borderColor: 'var(--midnight-cherry)' }}
         >
           <button
-            onClick={() => { close(); navigate('/merch'); }}
+            onClick={() => { track('shop_all'); close(); navigate('/merch'); }}
             className="btn-cherry chrome-hover px-6 py-3 text-sm flex items-center gap-2"
           >
             Shop All Tasty Threads <ArrowRight size={16} />
           </button>
           <button
-            onClick={close}
+            onClick={dismiss}
             className="font-heading text-sm px-4 py-3 rounded-full border-2 transition-colors hover:bg-black/5"
             style={{ borderColor: 'var(--patina-mint)', color: 'var(--patina-mint)' }}
           >

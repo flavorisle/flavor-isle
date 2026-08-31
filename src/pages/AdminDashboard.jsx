@@ -13,6 +13,7 @@ import PushLogList from '@/components/PushLogList';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 import StoreMetrics from '@/components/admin/StoreMetrics';
 import EmailClickStats from '@/components/admin/EmailClickStats';
+import PopupClickStats from '@/components/admin/PopupClickStats';
 
 const orderPages = [
 {
@@ -83,6 +84,9 @@ export default function AdminDashboard() {
 
       {/* Email link click tracking — how often each email CTA is clicked */}
       <EmailClickStats />
+
+      {/* Promo pop-up engagement — views, clicks, and CTR */}
+      <PopupClickStats />
 
       {/* Live Orders Feed */}
       <LiveOrdersFeed />
