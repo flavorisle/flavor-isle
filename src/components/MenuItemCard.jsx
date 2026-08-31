@@ -102,7 +102,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
   const badges = (
     <>
       {item.is_fan_favorite && !soldOut && (
-        <div className="absolute top-3 left-3 bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
+        <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
           <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
         </div>
       )}
@@ -154,7 +154,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       : added
         ? 'bg-patina-mint text-white'
         : light
-          ? 'bg-white/90 text-obsidian-roast hover:bg-white'
+          ? 'bg-white/90 text-[#003366] hover:bg-white'
           : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white';
     return (
       <div className="p-4">

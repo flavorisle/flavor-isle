@@ -132,10 +132,10 @@ export default function Menu() {
                   <div
                     className={`absolute inset-x-0 bottom-0 px-2 py-2.5 text-center ${active ? 'bg-smashie-yellow' : 'bg-obsidian-roast/95'}`}
                   >
-                    <span className={`block font-heading text-base leading-none ${active ? 'text-obsidian-roast' : 'text-white'}`}>
+                    <span className={`block font-heading text-base leading-none ${active ? 'text-[#003366]' : 'text-white'}`}>
                       {config.label}
                     </span>
-                    <span className={`text-xs font-body font-semibold ${active ? 'text-obsidian-roast/80' : 'text-white/90'}`}>
+                    <span className={`text-xs font-body font-semibold ${active ? 'text-[#003366]/80' : 'text-white/90'}`}>
                       {config.time}
                     </span>
                   </div>
