@@ -99,11 +99,16 @@ export default function TastyThreadsPopup() {
             className="font-heading text-3xl leading-tight"
             style={{ color: 'var(--patina-mint)' }}
           >
-            Fresh Tees, Hot Off the Press
+            NEW TASTY THREADS — just $19.99! 👕🍔
           </h2>
-          <p className="font-heading text-lg mt-1" style={{ color: 'var(--midnight-cherry)' }}>
-            $19.99 each
-          </p>
+          <div className="text-sm font-body mt-3 space-y-2 text-left sm:text-center" style={{ color: 'var(--patina-mint)' }}>
+            <p>Two fresh tees, hot off the press:</p>
+            <p className="font-semibold">
+              • "All You Need is Flavor Isle"<br />
+              • "Feed Me Flavor Isle and Tell Me I'm Pretty"
+            </p>
+            <p>Soft, comfy, and printed to order in your size and color. Wear the flavor, Smiths Grove. 💙❤️</p>
+          </div>
         </div>
 
         {/* Shirts */}
