@@ -9,8 +9,25 @@ const ACTION_LABELS = {
   dismiss: 'Dismissed',
 };
 
+// Group events into per-day rows (store local time), newest first.
+function buildDaily(events) {
+  const byDay = {};
+  events.forEach((e) => {
+    const day = new Date(e.created_date).toLocaleDateString('en-US', {
+      timeZone: 'America/Chicago', year: 'numeric', month: 'short', day: 'numeric',
+    });
+    const d = (byDay[day] ||= { day, sort: new Date(e.created_date).getTime(), views: 0, clicks: 0, dismisses: 0 });
+    d.sort = Math.max(d.sort, new Date(e.created_date).getTime());
+    if (e.action === 'view') d.views += 1;
+    else if (e.action === 'shirt_click' || e.action === 'shop_all') d.clicks += 1;
+    else if (e.action === 'dismiss') d.dismisses += 1;
+  });
+  return Object.values(byDay).sort((a, b) => b.sort - a.sort).slice(0, 14);
+}
+
 export default function PopupClickStats() {
   const [rows, setRows] = useState([]);
+  const [daily, setDaily] = useState([]);
   const [ctr, setCtr] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +35,7 @@ export default function PopupClickStats() {
     (async () => {
       try {
         const events = await base44.entities.PopupClick.list('-created_date', 1000);
+        setDaily(buildDaily(events || []));
         const counts = {};
         (events || []).forEach((e) => {
           counts[e.action] = (counts[e.action] || 0) + 1;
@@ -72,6 +90,27 @@ export default function PopupClickStats() {
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <span className="text-sm font-heading text-obsidian-roast">CLICK-THROUGH RATE</span>
                 <span className="text-sm font-heading text-midnight-cherry">{ctr}%</span>
+              </div>
+            )}
+
+            {/* Per-day breakdown — last 14 days with activity */}
+            {daily.length > 0 && (
+              <div className="pt-4 border-t border-border">
+                <p className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">By Day</p>
+                <div className="grid grid-cols-4 gap-2 text-xs font-heading uppercase tracking-wider text-muted-foreground pb-1">
+                  <span>Date</span>
+                  <span className="text-right">Shown</span>
+                  <span className="text-right">Clicks</span>
+                  <span className="text-right">Dismissed</span>
+                </div>
+                {daily.map((d) => (
+                  <div key={d.day} className="grid grid-cols-4 gap-2 text-sm py-1 border-t border-border/50">
+                    <span className="font-body text-obsidian-roast">{d.day}</span>
+                    <span className="text-right font-heading text-obsidian-roast">{d.views}</span>
+                    <span className="text-right font-heading text-midnight-cherry">{d.clicks}</span>
+                    <span className="text-right font-heading text-obsidian-roast">{d.dismisses}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
