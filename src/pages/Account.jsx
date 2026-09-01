@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
+import SavedCardsPanel from '@/components/account/SavedCardsPanel';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
 import {
@@ -294,6 +295,7 @@ function LoggedInAccount({ user, logout }) {
             { key: 'track', label: 'Track Order', icon: ClipboardList },
             { key: 'favorites', label: 'Favorites', icon: Heart },
             { key: 'rewards', label: 'Rewards', icon: Gift },
+            { key: 'payments', label: 'Payment Methods', icon: CreditCard },
             { key: 'profile', label: 'Profile & Preferences', icon: User },
           ].map(({ key, label, icon: Icon }) => (
             <button
@@ -363,6 +365,12 @@ function LoggedInAccount({ user, logout }) {
 
         {tab === 'rewards' && (
           <StarRewardsPanel status={starStatus} loading={starLoading} onAddPhone={() => setTab('profile')} />
+        )}
+
+        {tab === 'payments' && (
+          <div className="max-w-2xl">
+            <SavedCardsPanel />
+          </div>
         )}
 
         {tab === 'favorites' && (

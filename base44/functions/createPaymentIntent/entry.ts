@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime } = body;
+    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, stripeCustomerId } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -17,7 +17,10 @@ Deno.serve(async (req) => {
     const orderNumber = Date.now().toString().slice(-6);
     const amountCents = Math.round(total * 100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    // When a signed-in customer has saved cards (or wants to save this card),
+    // attach the Stripe Customer so saved payment methods can be charged and
+    // the card can be reused after this payment (setup_future_usage).
+    const piParams = {
       amount: amountCents,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
@@ -32,7 +35,14 @@ Deno.serve(async (req) => {
         table_number: customer.table || '',
         special_instructions: instructions || '',
       },
-    });
+    };
+    // Attach the Stripe Customer when present so saved payment methods can be
+    // charged. We intentionally do NOT set setup_future_usage here — new cards
+    // are only saved when the customer explicitly opts in after payment.
+    if (stripeCustomerId) {
+      piParams.customer = stripeCustomerId;
+    }
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     // Save order entity as pending
     try {
