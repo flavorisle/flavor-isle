@@ -68,6 +68,20 @@ export function accountCtaHtml() {
   </div>`;
 }
 
+// True when this email address already belongs to a registered app user, so
+// order emails can skip the "create your account" pitch. On lookup failure we
+// return true — better to omit the block than nag an existing customer.
+export async function isRegisteredUser(base44: any, email?: string) {
+  if (!email) return false;
+  try {
+    const users = await base44.asServiceRole.entities.User.filter({ email });
+    return (users || []).length > 0;
+  } catch (err) {
+    console.error('isRegisteredUser lookup failed:', err.message);
+    return true;
+  }
+}
+
 // Star Rewards block — shown when a guest order enrolled the customer in Star
 // Rewards (or earned stars). `newlyEnrolled` triggers the welcome-bonus line;
 // `balance` is their current star balance.
@@ -88,6 +102,24 @@ export function rewardsEnrolledHtml({ newlyEnrolled, balance }: { newlyEnrolled?
     </ul>
     <p style="color:#141414;font-size:14px;margin:0 0 14px;">Current balance: <strong>${balance ?? 0} stars</strong>. Track your stars and rewards any time in your Flavor Isle account.</p>
     <a href="${trackedLink('/rewards', 'rewards_track')}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">SEE MY REWARDS →</a>
+  </div>`;
+}
+
+// Stars-earned block — shown on order confirmation emails with the exact
+// number of stars the order earned and a link to the rewards page.
+export function starsEarnedHtml({ pointsEarned, balance, newlyEnrolled }: { pointsEarned: number; balance?: number; newlyEnrolled?: boolean }) {
+  const welcomeLine = newlyEnrolled
+    ? ` Plus a <strong>40-star welcome bonus</strong> for joining Star Rewards!`
+    : '';
+  const balanceLine = typeof balance === 'number'
+    ? `<p style="color:#141414;font-size:14px;margin:0 0 14px;">Your balance is now <strong>${balance} stars</strong>.</p>`
+    : '';
+  return `
+  <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#FFF8E7;border:2px dashed #F5A623;">
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ YOU EARNED ${pointsEarned} STAR${pointsEarned === 1 ? '' : 'S'}!</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">This order just added <strong>${pointsEarned} star${pointsEarned === 1 ? '' : 's'}</strong> to your Star Rewards.${welcomeLine} Rack 'em up and trade them in for free food.</p>
+    ${balanceLine}
+    <a href="${trackedLink('/rewards', 'stars_earned')}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">SEE MY REWARDS →</a>
   </div>`;
 }
 

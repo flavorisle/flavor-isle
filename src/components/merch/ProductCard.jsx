@@ -1,12 +1,16 @@
 // Tasty Threads product card.
 import React from 'react';
+import MerchSocialShare from './MerchSocialShare';
 
 export default function ProductCard({ product, onClick }) {
   const fromLabel = product.fromPrice ? `$${product.fromPrice.toFixed(2)}` : '';
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(product)}
-      className="card-diner overflow-hidden text-left flex flex-col group"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(product); } }}
+      className="card-diner overflow-hidden text-left flex flex-col group cursor-pointer"
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
         {product.thumbnail_url ? (
@@ -29,10 +33,13 @@ export default function ProductCard({ product, onClick }) {
         {product.description && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
         )}
-        <span className="mt-3 text-xs font-heading text-midnight-cherry uppercase tracking-widest group-hover:gap-2 inline-flex items-center gap-1 transition-all">
-          View options →
-        </span>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="text-xs font-heading text-midnight-cherry uppercase tracking-widest group-hover:gap-2 inline-flex items-center gap-1 transition-all">
+            View options →
+          </span>
+          <MerchSocialShare product={product} />
+        </div>
       </div>
-    </button>
+    </div>
   );
 }

@@ -1,0 +1,55 @@
+{
+  "name": "NewsPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Headline of the announcement"
+    },
+    "body": {
+      "type": "string",
+      "description": "Full announcement text"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "community_event",
+        "diner_update",
+        "local_partnership"
+      ],
+      "default": "diner_update",
+      "description": "What kind of news this is"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional photo for the post"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Only published posts show on the public news page"
+    }
+  },
+  "required": [
+    "title",
+    "body"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

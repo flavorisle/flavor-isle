@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Check, ShoppingBag } from 'lucide-react';
+import MerchShareButton from './MerchShareButton';
 
 export default function ProductDetailModal({ product, onClose, onAdd }) {
   const variants = product?.variants || [];
@@ -72,9 +73,12 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{product.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <MerchShareButton product={product} />
+            <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

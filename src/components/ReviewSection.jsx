@@ -1,52 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Camera, X, CheckCircle, Share2, Check } from 'lucide-react';
+import { Camera, X, CheckCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ReviewForm from '@/components/ReviewForm';
-
-const SHARE_URL = 'https://taste-isle-express.base44.app';
-
-function ReviewCard({ review }) {
-  const [shared, setShared] = useState(false);
-
-  const handleShare = async () => {
-    const text = `"${review.text}" — ${review.customer_name}, ${review.rating}★ on Flavor Isle`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Flavor Isle review', text, url: SHARE_URL });
-      } else {
-        await navigator.clipboard.writeText(`${text} — ${SHARE_URL}`);
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
-      }
-    } catch { /* user cancelled share */ }
-  };
-
-  return (
-    <div className="card-diner p-6 flex flex-col gap-3">
-      {review.photo_url && (
-        <div className="w-full h-40 rounded-2xl overflow-hidden">
-          <img src={review.photo_url} alt="Visit photo" className="w-full h-full object-cover" />
-        </div>
-      )}
-      <div className="flex gap-1">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} size={14} className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'} />
-        ))}
-      </div>
-      <p className="text-muted-foreground text-sm leading-relaxed">"{review.text}"</p>
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-heading text-sm text-obsidian-roast">— {review.customer_name}</p>
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-midnight-cherry transition-colors tap-44"
-          aria-label="Share review"
-        >
-          {shared ? <><Check size={12} /> Copied!</> : <><Share2 size={12} /> Share</>}
-        </button>
-      </div>
-    </div>
-  );
-}
+import ReviewCarousel from '@/components/ReviewCarousel';
 
 export default function ReviewSection() {
   const [reviews, setReviews] = useState([]);
@@ -81,20 +37,10 @@ export default function ReviewSection() {
           )}
         </div>
 
-        {/* Review Grid */}
-        {reviews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {[
-              { customer_name: 'Sarah M.', text: 'Best burger in Smiths Grove — hands down. The smash burger is everything!', rating: 5 },
-              { customer_name: 'James T.', text: 'The milkshakes are thick and creamy. My kids beg to come here every weekend.', rating: 5 },
-              { customer_name: 'Linda K.', text: 'Classic diner vibes with amazing food. The all-day breakfast is a must!', rating: 5 },
-            ].map(r => <ReviewCard key={r.customer_name} review={r} />)}
-          </div>
-        )}
+        {/* Real approved customer reviews — swipeable carousel */}
+        <div className="mb-10">
+          <ReviewCarousel reviews={reviews} />
+        </div>
 
         {/* Submit Form Modal — uses the shared ReviewForm, so reviews posted
             here land in the same Review feed and show up after approval. */}

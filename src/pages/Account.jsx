@@ -445,6 +445,20 @@ function LoggedInAccount({ user, logout }) {
               )}
             </div>
 
+            {/* Sign out — always visible here, since the header button is tight on mobile */}
+            <div className="card-diner p-6 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-heading text-lg text-obsidian-roast mb-1">Sign Out</h3>
+                <p className="text-sm text-muted-foreground">Log out of your Flavor Isle account on this device.</p>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="btn-mint chrome-hover flex items-center gap-2 px-5 py-3 text-sm tap-44 flex-shrink-0"
+              >
+                <LogOut size={16} /> Sign Out
+              </button>
+            </div>
+
             {/* Danger Zone — account deletion (App Store requirement) */}
             <div className="rounded-2xl border-2 border-red-200 bg-red-50/50 p-6">
               <h3 className="font-heading text-lg text-obsidian-roast mb-1">Delete Account</h3>

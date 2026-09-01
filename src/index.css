@@ -339,6 +339,49 @@
   }
 }
 
+/* ── Printable in-store menu ──
+   When printing the admin Print Menu page, only the paper sheet is output:
+   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
+   is laid out edge-to-edge in black on white. */
+@media print {
+  @page { size: A3 landscape; margin: 0.35in; }
+
+  /* Everything must land on a single A3 landscape sheet — tighten the type
+     and let sections flow across columns instead of breaking to page 2. */
+  #print-sheet { font-size: 10px; }
+  #print-sheet .px-10 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  #print-sheet .py-8 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+
+  body {
+    background: #ffffff !important;
+    padding-bottom: 0 !important;
+    font-size: 12px;
+  }
+
+  /* Hide global app chrome that isn't part of the menu sheet */
+  nav, footer, .glass-tab, .glass-back { display: none !important; }
+
+  #print-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #print-sheet * {
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* On-screen paper preview for the printable menu — A3 landscape (16.5in wide). */
+#print-sheet {
+  width: 16.5in;
+  max-width: 100%;
+}
+
 /* ── Mobile / iOS WebView polish (additive, desktop-safe) ── */
 @layer base {
   html, body {

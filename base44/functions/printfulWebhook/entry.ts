@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
+import { sendMerchShippedEmail } from "../../shared/sendMerchEmails.ts";
 
 // Receives Printful webhook events and mirrors fulfillment status + tracking
 // onto the matching MerchOrder. Register this endpoint URL in your Printful
@@ -31,6 +32,15 @@ export default async function (req: Request) {
     if (existing?.[0]) {
       await base44.asServiceRole.entities.MerchOrder.update(existing[0].id, updates);
       console.log(`Printful webhook ${type}: updated merch order ${existing[0].order_number}`);
+
+      // Shipping email — send once, when tracking first arrives.
+      if (updates.tracking_number && !existing[0].tracking_number && existing[0].customer_email) {
+        try {
+          await sendMerchShippedEmail({ ...existing[0], ...updates });
+        } catch (mailErr) {
+          console.error("Merch shipping email failed:", mailErr.message);
+        }
+      }
     } else {
       console.warn(`Printful webhook ${type}: no MerchOrder for printful_order_id ${printfulOrderId}`);
     }
