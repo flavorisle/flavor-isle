@@ -14,6 +14,7 @@ import StoreClosurePanel from '@/components/StoreClosurePanel';
 import StoreMetrics from '@/components/admin/StoreMetrics';
 import EmailClickStats from '@/components/admin/EmailClickStats';
 import PopupClickStats from '@/components/admin/PopupClickStats';
+import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
 
 const orderPages = [
 {
@@ -81,6 +82,9 @@ export default function AdminDashboard() {
 
       {/* Store metrics — daily volume, revenue, breakdowns */}
       <StoreMetrics />
+
+      {/* Google Search Console — clicks, impressions, top searches & pages */}
+      <SearchPerformanceCard />
 
       {/* Email link click tracking — how often each email CTA is clicked */}
       <EmailClickStats />
