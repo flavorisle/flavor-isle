@@ -48,6 +48,7 @@ import DownloadApp from './pages/DownloadApp';
 import SMSSignup from './pages/SMSSignup';
 import BusynessGuide from './pages/BusynessGuide';
 import Connect from './pages/Connect';
+import Gallery from './pages/Gallery';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
 import Order from './pages/Order';
@@ -146,6 +147,7 @@ const AuthenticatedApp = () => {
       <Route path="/sms-signup" element={<SMSSignup />} />
       <Route path="/what-to-expect" element={<BusynessGuide />} />
       <Route path="/connect" element={<Connect />} />
+      <Route path="/gallery" element={<Gallery />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />

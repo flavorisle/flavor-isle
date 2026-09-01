@@ -5,7 +5,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Home, UtensilsCrossed, IceCream2, Layers, Shirt, Sparkles, Bot,
-  MessageSquareHeart, MapPin, User, LogOut, ChevronRight, Phone,
+  MessageSquareHeart, MapPin, User, LogOut, ChevronRight, Phone, Camera,
 } from 'lucide-react';
 
 const GROUPS = [
@@ -22,6 +22,7 @@ const GROUPS = [
   {
     title: 'More',
     links: [
+      { label: 'Gallery', to: '/gallery', icon: Camera },
       { label: 'Meet Smashie', to: '/meet-smashie', icon: Sparkles },
       { label: 'Connect AI', to: '/connect', icon: Bot },
       { label: 'Feedback', to: '/feedback', icon: MessageSquareHeart },
