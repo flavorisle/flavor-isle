@@ -4,7 +4,7 @@ export const GALLERY_CATEGORIES = ['All', 'Food', 'The Diner', 'Our People'];
 export const GALLERY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png', alt: 'Double cheeseburger with lettuce, tomato and onion', category: 'Food', caption: 'The Double, stacked right' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d03ee300c_IMG_9874.jpg', alt: 'Loaded cheese fries with bacon and ranch', category: 'Food', caption: 'Loaded bacon cheese fries' },
-  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/bb9b490bf_IMG_0371.png', alt: 'Brownie dessert with fudge and peanuts', category: 'Food', caption: 'Fudge brownie stack' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/bb9b490bf_IMG_0371.png', alt: 'Brownie dessert with fudge and peanuts', category: 'Food', caption: 'Hot fudge cake' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c5a5ce796_IMG_0407.png', alt: 'Plate of crinkle-cut fries', category: 'Food', caption: 'Golden crinkle fries' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png', alt: 'Plate of onion rings', category: 'Food', caption: 'Crispy onion rings' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff2952347_IMG_5382_Original.jpg', alt: 'Fresh basket of tater tots', category: 'Food', caption: 'Hot out of the fryer' },
