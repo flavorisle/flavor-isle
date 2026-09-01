@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import {
   Home, UtensilsCrossed, IceCream2, Layers, Shirt, Sparkles, Bot,
   MessageSquareHeart, MapPin, User, LogOut, ChevronRight, Phone, Camera,
+  PackageSearch, Instagram, Newspaper,
 } from 'lucide-react';
 
 const GROUPS = [
@@ -17,12 +18,15 @@ const GROUPS = [
       { label: 'Milkshakes', to: '/milkshakes', icon: IceCream2 },
       { label: 'Combos', to: '/combos', icon: Layers },
       { label: 'Tasty Threads', to: '/merch', icon: Shirt },
+      { label: 'Order Status', to: '/order-status', icon: PackageSearch },
     ],
   },
   {
     title: 'More',
     links: [
       { label: 'Gallery', to: '/gallery', icon: Camera },
+      { label: 'Community News', to: '/community-news', icon: Newspaper },
+      { label: 'Social Reviews', to: '/social-reviews', icon: Instagram },
       { label: 'Meet Smashie', to: '/meet-smashie', icon: Sparkles },
       { label: 'Connect AI', to: '/connect', icon: Bot },
       { label: 'Feedback', to: '/feedback', icon: MessageSquareHeart },
