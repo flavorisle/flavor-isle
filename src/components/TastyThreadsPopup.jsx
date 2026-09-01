@@ -123,7 +123,8 @@ export default function TastyThreadsPopup() {
                 <img
                   src={s.image}
                   alt={`${s.name} tee`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover scale-[1.7] group-hover:scale-[1.8] transition-transform duration-500"
+                  style={{ transformOrigin: '50% 42%' }}
                   loading="eager"
                 />
               </div>
