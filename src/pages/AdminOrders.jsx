@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, X,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Banknote
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
@@ -75,13 +75,14 @@ function StatCard({ label, value, Icon, tone }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onCancel }) {
+function OrderCard({ order, onAdvance, onCancel, onMarkPaid }) {
   const [expanded, setExpanded] = useState(false);
   const source = getSource(order);
   const badge = SOURCE_BADGE[source];
   const items = order.items || [];
   const canAdvance = !!NEXT_STATUS[order.status];
   const isActive = ACTIVE_STATUSES.includes(order.status);
+  const dueAtPickup = order.payment_method === 'pay_at_pickup' && order.payment_status === 'pending';
 
   return (
     <div className="card-diner overflow-hidden">
@@ -116,8 +117,8 @@ function OrderCard({ order, onAdvance, onCancel }) {
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <p className="font-heading text-midnight-cherry text-xl">${order.total?.toFixed(2)}</p>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${PAYMENT_COLORS[order.payment_status] || PAYMENT_COLORS.pending}`}>
-            {order.payment_status}
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${dueAtPickup ? 'bg-midnight-cherry/10 text-midnight-cherry border-midnight-cherry/30' : (PAYMENT_COLORS[order.payment_status] || PAYMENT_COLORS.pending)}`}>
+            {dueAtPickup ? 'Due at pickup' : order.payment_status}
           </span>
           {expanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
         </div>
@@ -160,6 +161,21 @@ function OrderCard({ order, onAdvance, onCancel }) {
           {order.discount > 0 && (
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>Discount</span><span>-${order.discount?.toFixed(2)}</span>
+            </div>
+          )}
+
+          {dueAtPickup && (
+            <div className="mt-4 p-3 rounded-xl bg-midnight-cherry/5 border border-midnight-cherry/20">
+              <p className="text-xs text-obsidian-roast mb-2">
+                <span className="font-semibold">Collect ${order.total?.toFixed(2)} at the counter.</span>{' '}
+                Paying by card? Pull up the saved ticket in Square POS (Orders → search #{order.order_number} or "{order.customer_name}") and take payment there.
+              </p>
+              <button
+                onClick={() => onMarkPaid(order)}
+                className="w-full btn-mint py-2.5 text-sm font-heading flex items-center justify-center gap-2"
+              >
+                <Banknote size={16} /> Mark Paid at Counter
+              </button>
             </div>
           )}
 
@@ -226,6 +242,11 @@ export default function AdminOrders() {
   const cancel = async (order) => {
     await base44.entities.Order.update(order.id, { status: 'cancelled' });
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
+  };
+
+  const markPaid = async (order) => {
+    await base44.entities.Order.update(order.id, { payment_status: 'paid' });
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, payment_status: 'paid' } : o));
   };
 
   const stats = useMemo(() => {
@@ -419,7 +440,7 @@ export default function AdminOrders() {
           ) : (
             <div className="space-y-3">
               {filtered.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} />
+                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} onMarkPaid={markPaid} />
               ))}
             </div>
           )}

@@ -194,8 +194,14 @@ Deno.serve(async (req) => {
 
       const prevStatus = order.status;
 
-      // Stage the status update; applied in a single bulkUpdate after the loop
-      pendingUpdates.push({ id: order.id, status: newStatus });
+      // Stage the status update; applied in a single bulkUpdate after the loop.
+      // A pay-at-pickup ticket closed out on the register means the counter
+      // collected payment — flip it to paid so staff don't have to.
+      const update = { id: order.id, status: newStatus };
+      if (newStatus === 'completed' && order.payment_method === 'pay_at_pickup' && order.payment_status !== 'paid') {
+        update.payment_status = 'paid';
+      }
+      pendingUpdates.push(update);
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 

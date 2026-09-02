@@ -111,6 +111,14 @@
       ],
       "default": "pending"
     },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "card_online",
+        "pay_at_pickup"
+      ],
+      "description": "How the customer chose to pay a phone/chat order. 'card_online' = Square payment link sent at order time (order stays pending until paid). 'pay_at_pickup' = the order is saved as an open Square ticket, fires to the kitchen immediately, and is paid by cash or card at the counter when the customer arrives."
+    },
     "loyalty_accrued": {
       "type": "boolean",
       "default": false,
