@@ -45,7 +45,7 @@ export default function FooterSmsOptIn() {
           </h4>
           <p className="text-gray-300 text-sm leading-relaxed">
             Get order status alerts (confirmed, preparing, ready), pay-by-text links, and occasional offers by SMS.{' '}
-            <Link to="/sms-signup" className="underline hover:text-white">Full sign-up page &amp; in-store QR code →</Link>
+            <Link to="/sms-signup" className="underline hover:text-white">Full sign-up page →</Link>
           </p>
         </div>
 
