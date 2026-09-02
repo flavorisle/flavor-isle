@@ -172,6 +172,25 @@
   --sidebar-accent-foreground: 210 100% 20%;
   --sidebar-border: 42 30% 85%;
   --sidebar-ring: 12 100% 40%;
+  /* Inputs inherit `color` from body, which is the light cream in system dark
+     mode — on the light field background that made typed text invisible on
+     Android. Pin the text color and tell the browser this subtree is light so
+     native form controls (autofill, caret, selection) render for a light UI. */
+  color: hsl(var(--foreground));
+  color-scheme: light;
+}
+
+.force-light input,
+.force-light textarea,
+.force-light select {
+  color: hsl(var(--foreground));
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+}
+.force-light input:-webkit-autofill,
+.force-light textarea:-webkit-autofill {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  box-shadow: 0 0 0 1000px hsl(var(--muted)) inset;
 }
 
 /* Checkout readability — the summary, field labels, and fine print used the
