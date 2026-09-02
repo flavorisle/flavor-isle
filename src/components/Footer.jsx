@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
+import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
@@ -78,6 +79,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* SMS opt-in + A2P disclosure */}
+      <FooterSmsOptIn />
 
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">

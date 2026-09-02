@@ -4,6 +4,7 @@ import { MessageSquare, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SmsQrCode from '@/components/SmsQrCode';
 
 // Normalize a US phone number to E.164. Accepts 10-digit, 11-digit (leading 1),
 // or already-international numbers.
@@ -106,6 +107,7 @@ export default function SMSSignup() {
             </p>
           </form>
         )}
+        <SmsQrCode />
       </main>
       <Footer />
     </div>
