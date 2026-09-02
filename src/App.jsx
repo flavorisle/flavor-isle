@@ -59,6 +59,7 @@ import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
 import AdminMerchCategories from './pages/AdminMerchCategories';
 import AdminReviews from './pages/AdminReviews';
+import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
@@ -139,6 +140,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Home />} />
+      <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
