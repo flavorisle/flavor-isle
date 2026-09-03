@@ -240,8 +240,10 @@ export default function AdminOrders() {
   };
 
   const cancel = async (order) => {
-    await base44.entities.Order.update(order.id, { status: 'cancelled' });
+    if (!window.confirm(`Cancel order #${order.order_number || ''}?${order.square_order_id ? ' This also voids the saved Square ticket.' : ''}`)) return;
+    const res = await base44.functions.invoke('cancelSquareOrder', { order_id: order.id });
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
+    if (res.data?.message && !res.data?.square_cancelled && order.square_order_id) window.alert(res.data.message);
   };
 
   const markPaid = async (order) => {
