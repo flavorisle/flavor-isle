@@ -99,6 +99,19 @@
 .dark .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
 .dark .bg-white\/10 { background-color: rgba(255, 255, 255, 0.08); }
 
+/* Forced-light subtrees (checkout, merch checkout) keep light surfaces even in
+   system dark mode, so the dark text overrides above must not apply inside them
+   — otherwise headings render near-white on white cards and disappear. */
+.dark .force-light .text-obsidian-roast,
+.dark .force-light.text-obsidian-roast { color: var(--patina-mint); }
+.dark .force-light .text-patina-mint,
+.dark .force-light.text-patina-mint { color: var(--patina-mint); }
+.dark .force-light .bg-white,
+.dark .force-light.bg-white { background-color: #ffffff; }
+.dark .force-light .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+.dark .force-light .bg-white\/5 { background-color: rgba(255, 255, 255, 0.6); }
+.dark .force-light .bg-white\/10 { background-color: rgba(255, 255, 255, 0.7); }
+
 /* High-contrast accessibility mode — stronger text/bg contrast, darker borders,
    and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
 .high-contrast {
