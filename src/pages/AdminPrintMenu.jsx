@@ -159,7 +159,7 @@ export default function AdminPrintMenu() {
           <div>
             <h1 className="font-heading text-3xl text-obsidian-roast">In-Store Printable Menu</h1>
             <p className="text-sm text-muted-foreground">
-              Edit the printed copy on the left, then print or save as PDF. Your online menu stays unchanged.
+              Edit the printed copy on the left or click any item text on the sheet to edit it in place, then print or save as PDF. Your online menu stays unchanged.
             </p>
           </div>
           <button
@@ -187,7 +187,12 @@ export default function AdminPrintMenu() {
           </div>
 
           <div id="print-area">
-            <PrintableMenu sections={printSections} config={config} />
+            <PrintableMenu
+              sections={printSections}
+              config={config}
+              onEditItem={setOverride}
+              onEditSection={setSectionTitle}
+            />
           </div>
         </div>
       </div>

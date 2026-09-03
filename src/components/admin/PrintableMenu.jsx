@@ -14,7 +14,28 @@ function sizePrices(item) {
     .map(o => ({ label: o.name, price: Number(item.price) + Number(o.price || 0) }));
 }
 
-export default function PrintableMenu({ sections, config }) {
+// Click-to-edit text on the preview. Commits on blur; plain text only.
+function Editable({ as: Tag = 'span', value, onCommit, className, placeholder }) {
+  if (!onCommit) return <Tag className={className}>{value}</Tag>;
+  return (
+    <Tag
+      className={`${className} outline-none rounded print:!bg-transparent hover:bg-yellow-50 focus:bg-yellow-50 cursor-text ${!value ? 'text-gray-400 print:hidden' : ''}`}
+      contentEditable
+      suppressContentEditableWarning
+      data-placeholder={placeholder}
+      onBlur={e => {
+        const text = e.currentTarget.textContent.trim();
+        onCommit(text === placeholder ? '' : text);
+      }}
+      onFocus={e => { if (!value && placeholder) e.currentTarget.textContent = ''; }}
+      onKeyDown={e => { if (e.key === 'Enter' && Tag !== 'p') { e.preventDefault(); e.currentTarget.blur(); } }}
+    >
+      {value || placeholder}
+    </Tag>
+  );
+}
+
+export default function PrintableMenu({ sections, config, onEditItem, onEditSection }) {
   const { title, subtitle, footer, columns, showDescriptions, showLogo, accountTitle, accountInfo } = config;
 
   return (
@@ -36,16 +57,23 @@ export default function PrintableMenu({ sections, config }) {
         >
           {sections.map(section => (
             <div key={section.key} className="mb-5 break-inside-avoid">
-              <h2 className="font-heading text-xl tracking-wider border-b-2 border-black pb-1 mb-2 uppercase">
-                {section.label}
-              </h2>
+              <Editable
+                as="h2"
+                className="font-heading text-xl tracking-wider border-b-2 border-black pb-1 mb-2 uppercase"
+                value={section.label}
+                onCommit={onEditSection && (v => onEditSection(section.key, v))}
+              />
               <ul className="space-y-1.5">
                 {section.items.map(item => {
                   const sizes = sizePrices(item);
                   return (
                     <li key={item.id}>
                       <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-[13px] leading-snug">{item.name}</span>
+                        <Editable
+                          className="font-semibold text-[13px] leading-snug"
+                          value={item.name}
+                          onCommit={onEditItem && (v => onEditItem(item.id, 'name', v))}
+                        />
                         <span className="flex-1 border-b border-dotted border-gray-400 translate-y-[-3px]" />
                         {!sizes && (
                           <span className="font-semibold text-[13px]">
@@ -63,8 +91,14 @@ export default function PrintableMenu({ sections, config }) {
                           ))}
                         </p>
                       )}
-                      {showDescriptions && item.description && (
-                        <p className="text-[10.5px] text-gray-700 leading-snug pr-10">{item.description}</p>
+                      {showDescriptions && (item.description || onEditItem) && (
+                        <Editable
+                          as="p"
+                          className="text-[10.5px] text-gray-700 leading-snug pr-10"
+                          value={item.description || ''}
+                          placeholder="Add description…"
+                          onCommit={onEditItem && (v => onEditItem(item.id, 'description', v))}
+                        />
                       )}
                     </li>
                   );
