@@ -7,6 +7,8 @@ import AboutStory from '@/components/about/AboutStory';
 import AboutValues from '@/components/about/AboutValues';
 import AboutSmashie from '@/components/about/AboutSmashie';
 import AboutVisit from '@/components/about/AboutVisit';
+import AboutTastyThreads from '@/components/about/AboutTastyThreads';
+import AboutExplore from '@/components/about/AboutExplore';
 
 export default function About() {
   return (
@@ -17,7 +19,9 @@ export default function About() {
       <AboutStory />
       <AboutValues />
       <AboutSmashie />
+      <AboutTastyThreads />
       <AboutVisit />
+      <AboutExplore />
       <Footer />
     </div>
   );
