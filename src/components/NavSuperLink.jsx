@@ -6,6 +6,28 @@ import { ChevronDown } from 'lucide-react';
 
 export default function NavSuperLink({ group, pathname, open, onToggle, onClose }) {
   const Icon = group.icon;
+
+  // Direct link: same row styling as a super link, but navigates instead of expanding.
+  if (group.to) {
+    const active = pathname === group.to;
+    return (
+      <Link
+        to={group.to}
+        onClick={onClose}
+        className={`flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm font-heading tracking-wider uppercase transition-colors tap-44 ${
+          active ? 'bg-midnight-cherry text-white' : 'text-obsidian-roast hover:bg-muted'
+        }`}
+      >
+        <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          active ? 'bg-white/20 text-white' : 'bg-muted text-midnight-cherry'
+        }`}>
+          <Icon size={16} />
+        </span>
+        <span className="flex-1 text-left">{group.title}</span>
+      </Link>
+    );
+  }
+
   const hasActive = group.links.some(l => l.to === pathname);
 
   return (

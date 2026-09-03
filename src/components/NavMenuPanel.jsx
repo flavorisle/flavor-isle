@@ -20,13 +20,8 @@ const GROUPS = [
       { label: 'Order Status', to: '/order-status' },
     ],
   },
-  {
-    title: 'Shop',
-    icon: Shirt,
-    links: [
-      { label: 'Tasty Threads', to: '/merch' },
-    ],
-  },
+  // Direct link (no children) — renders as a non-collapsible row.
+  { title: 'Tasty Threads', icon: Shirt, to: '/merch' },
   {
     title: 'Smashie AI',
     icon: Sparkles,
@@ -60,7 +55,7 @@ const GROUPS = [
 export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user, logout }) {
   // Start with the section containing the current page expanded.
   const [openGroup, setOpenGroup] = useState(
-    () => GROUPS.find(g => g.links.some(l => l.to === pathname))?.title ?? null
+    () => GROUPS.find(g => g.links?.some(l => l.to === pathname))?.title ?? null
   );
   const homeActive = pathname === '/';
 
