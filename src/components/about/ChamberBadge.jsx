@@ -3,7 +3,7 @@
 import React from 'react';
 import { Award, ExternalLink } from 'lucide-react';
 
-const CHAMBER_URL = 'https://www.barrenchamber.com/';
+const CHAMBER_URL = 'https://www.barreninc.com/';
 
 export default function ChamberBadge() {
   return (
