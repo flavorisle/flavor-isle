@@ -220,6 +220,9 @@ async function processLoyalty(base44, order, squareOrderId) {
 // status, persist the returned Square order id so later status syncs can
 // match the record back, alert the kitchen printer, and email the customer.
 async function pushOrderToSquareAndKitchen(base44, order) {
+  // Declared out here so the loyalty step below can see it — it lives past the
+  // Square push block.
+  let squareOrderId = null;
   try {
     const squareRes = await base44.functions.invoke('createSquareOrder', {
       items: order.items || [],
@@ -238,7 +241,7 @@ async function pushOrderToSquareAndKitchen(base44, order) {
       tip: order.tip || 0,
       discount: order.discount || 0,
     });
-    const squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
+    squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
     if (squareOrderId) {
       await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
       console.log(`Order ${order.order_number} sent to Square (id ${squareOrderId})`);
