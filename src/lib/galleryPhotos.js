@@ -17,4 +17,11 @@ export const GALLERY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c655b439_IMG_8923.jpg', alt: 'Guests gathered outside under the Flavor Isle sign', category: 'Our People', caption: 'A good crowd on a fall afternoon' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a0b6bcef9_NorthWarrenCommunityWalk.jpg', alt: 'Community walk group holding milkshakes under the sign', category: 'Our People', caption: 'North Warren Community Walk' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/99f75bee4_CD56F694-082A-4650-9E1C-5F5F95B2F288.jpg', alt: 'Busy lunch crowd at the outdoor tables', category: 'Our People', caption: 'Busy lunch rush' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/742efcb4d_IMG_0429.jpeg', alt: 'Hand-patted burgers and buns on the flat-top grill', category: 'Food', caption: 'Fresh patties on the grill' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/590e97d65_IMG_8855.jpeg', alt: 'Inside the Flavor Isle dining room looking toward the front door', category: 'The Diner', caption: 'The dining room' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/31cacd6b0_Screenshot_20250607-195606_Maps_Original.jpeg', alt: 'Order counter with a view into the kitchen', category: 'The Diner', caption: 'The order counter' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b563c5b72_IMG_0987_Original.jpeg', alt: 'Flavor Isle sign glowing at night over the picnic tables', category: 'The Diner', caption: 'The sign at night' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1ade54fbc_IMG_0427.jpeg', alt: 'Walk-up window and blue picnic tables under the awning', category: 'The Diner', caption: 'Under the awning' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e291f1489_IMG_1724_Original.jpeg', alt: 'Classic cars parked on Main Street during the 50th anniversary', category: 'Our People', caption: '50th anniversary, May 2014' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg', alt: 'Crowd with balloons celebrating the 50th anniversary', category: 'Our People', caption: 'Celebrating 50 years with Joyce' },
 ];

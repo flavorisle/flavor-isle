@@ -1,6 +1,8 @@
 import React from 'react';
 
-const DINER_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e0abb3484_IMG_8841.png';
+const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8e8348119_IMG_0157.png';
+const PHOTO_GUESTBOOK = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/49f86bd0c_IMG_1445_Original.jpeg';
+const PHOTO_50TH = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg';
 
 export default function AboutStory() {
   return (
@@ -13,22 +15,22 @@ export default function AboutStory() {
           </h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p className="text-obsidian-roast text-lg">
-              Flavor Isle started with a simple idea: cook real food, cook it fresh, and treat every guest like a neighbor.
+              In May 1964, Joyce bought a little ice cream stand on North Main Street from Mrs. Ethel Hardy and named it Joyce's Flavor Isle.
             </p>
             <p>
-              Since 1964, our corner of North Main Street has been where Smiths Grove meets up — after ball games, on Friday nights, and on slow summer evenings under the patio lights. Travelers pull off I-65 for a burger and end up coming back every trip through Kentucky.
+              She served old-fashioned milkshakes and floats from the walk-up window for fifty years — and in 2014, Smiths Grove lined the sidewalk with balloons and classic cars to celebrate her 50th anniversary with the very menu she opened with in '64.
             </p>
             <p>
-              Owners have changed, the sign has been repainted, and Smashie showed up to answer the phones. But the grill, the recipes, and the promise haven't moved an inch: fresh ingredients, made to order, served with a smile.
+              The sign has been repainted, the grill has gotten busier, and Smashie showed up to answer the phones. But the promise hasn't moved an inch: fresh ingredients, made to order, served to neighbors like family.
             </p>
           </div>
         </div>
         <div className="order-1 md:order-2">
           <div className="relative">
             <img
-              src={DINER_PHOTO}
-              alt="Families eating at picnic tables under string lights at Flavor Isle"
-              className="w-full aspect-[4/3] object-cover rounded-3xl shadow-float-lg"
+              src={PHOTO_1964}
+              alt="Joyce's Flavor Isle walk-up stand, summer of 1964"
+              className="w-full aspect-square object-cover rounded-3xl shadow-float-lg"
             />
             <div className="absolute -bottom-5 -left-3 sm:-left-6 bg-smashie-yellow text-obsidian-roast rounded-2xl px-5 py-3 shadow-float">
               <p className="font-heading text-3xl leading-none">60+</p>
@@ -36,6 +38,18 @@ export default function AboutStory() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 50th anniversary, May 2014 */}
+      <div className="max-w-6xl mx-auto mt-20 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <figure>
+          <img src={PHOTO_50TH} alt="Crowd gathered outside Flavor Isle with balloons for the 50th anniversary" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
+          <figcaption className="mt-3 text-sm text-muted-foreground">May 3, 2014 — the 50th anniversary celebration on Main Street</figcaption>
+        </figure>
+        <figure>
+          <img src={PHOTO_GUESTBOOK} alt="Guest book and anniversary note for Joyce at the 50th celebration" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
+          <figcaption className="mt-3 text-sm text-muted-foreground">Neighbors signed Joyce's guest book with memories from fifty years of shakes</figcaption>
+        </figure>
       </div>
     </section>
   );

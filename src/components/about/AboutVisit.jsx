@@ -4,7 +4,7 @@ import { MapPin, Clock, ArrowRight } from 'lucide-react';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 
-const STREET_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0c28555d1_IMG_8924.jpg';
+const STREET_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1ade54fbc_IMG_0427.jpeg';
 
 export default function AboutVisit() {
   const businessHours = useBusinessHours();
@@ -13,7 +13,7 @@ export default function AboutVisit() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <img
           src={STREET_PHOTO}
-          alt="Smiths Grove street signs at dusk"
+          alt="Flavor Isle walk-up window and picnic tables under the awning"
           className="w-full aspect-[4/3] object-cover rounded-3xl shadow-float-lg"
         />
         <div>

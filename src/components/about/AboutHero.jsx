@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 
-const HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c655b439_IMG_8923.jpg';
+const HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b563c5b72_IMG_0987_Original.jpeg';
 const SMASHIE_WAVE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png';
 
 export default function AboutHero() {
