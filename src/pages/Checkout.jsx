@@ -375,7 +375,7 @@ export default function Checkout() {
           items: mappedItems,
           orderType,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,

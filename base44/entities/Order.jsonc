@@ -101,6 +101,10 @@
     "square_order_id": {
       "type": "string"
     },
+    "payment_url": {
+      "type": "string",
+      "description": "Square-hosted checkout link generated for orders that are paid after the fact (phone orders taken by Smashie). Stored so staff can re-send or look up the link later."
+    },
     "payment_status": {
       "type": "string",
       "enum": [
