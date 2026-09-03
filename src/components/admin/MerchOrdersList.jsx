@@ -1,7 +1,8 @@
 // Merch orders list — extracted for embedding inside the unified Orders page.
 import React, { useState, useEffect } from 'react';
-import { Shirt, Truck, RefreshCw, ExternalLink } from 'lucide-react';
+import { Shirt, Truck, RefreshCw, ExternalLink, History, ChevronDown } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import MerchStatusTimeline from '@/components/merch/MerchStatusTimeline';
 
 const STATUS_COLORS = {
   pending: 'bg-gray-100 text-gray-600',
@@ -18,6 +19,7 @@ export default function MerchOrdersList() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(null);
+  const [expanded, setExpanded] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -107,6 +109,13 @@ export default function MerchOrdersList() {
                   {order.printful_order_id && <span className="text-xs text-muted-foreground ml-3">Printful #{order.printful_order_id}</span>}
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setExpanded(expanded === order.id ? null : order.id)}
+                    aria-expanded={expanded === order.id}
+                    className="text-sm text-patina-mint hover:text-midnight-cherry inline-flex items-center gap-1 transition-colors"
+                  >
+                    <History size={14} /> Timeline <ChevronDown size={14} className={`transition-transform ${expanded === order.id ? 'rotate-180' : ''}`} />
+                  </button>
                   {order.tracking_number && (
                     <a
                       href={order.tracking_url || `https://tools.usps.com/go/TrackConfirmAction?tLabels=${order.tracking_number}`}
@@ -127,6 +136,12 @@ export default function MerchOrdersList() {
                   )}
                 </div>
               </div>
+
+              {expanded === order.id && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <MerchStatusTimeline order={order} />
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -70,6 +70,62 @@ export async function sendMerchConfirmationEmail(order) {
   else console.log(`Merch confirmation sent to ${order.customer_email}`);
 }
 
+// In production — sent the first time Printful reports the order is being printed.
+export async function sendMerchInProductionEmail(order) {
+  const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+  const html = brandedEmailHtml(`
+    <p style="color:#666;margin:0 0 10px;font-size:16px;">Heads up,</p>
+    <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">${order.customer_name || 'Friend'} — your gear is being printed! 🎨</h2>
+    <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Order #${order.order_number || ''} just hit the print floor. Ink's going down as we speak — next stop is packing, then it's on its way to you.</p>
+
+    <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
+      IN PRODUCTION · #${order.order_number || ''}
+    </div>
+
+    ${itemsTable(order)}
+    ${addressBlock(order)}
+
+    <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+  `);
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: order.customer_email,
+    subject: `Your Tasty Threads gear is being printed 🎨 #${order.order_number || ''}`,
+    html,
+  });
+  if (error) console.error('Merch in-production email error:', error);
+  else console.log(`Merch in-production email sent to ${order.customer_email}`);
+}
+
+// Fulfilled — printing is done, order is being packed for shipment.
+export async function sendMerchFulfilledEmail(order) {
+  const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+  const html = brandedEmailHtml(`
+    <p style="color:#666;margin:0 0 10px;font-size:16px;">Almost there,</p>
+    <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">${order.customer_name || 'Friend'} — printing's done, packing's next! 📦</h2>
+    <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Order #${order.order_number || ''} came off the press looking sharp. It's getting boxed up now — you'll get tracking the second it ships.</p>
+
+    <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
+      PRINTED &amp; PACKING · #${order.order_number || ''}
+    </div>
+
+    ${itemsTable(order)}
+    ${addressBlock(order)}
+
+    <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+  `);
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: order.customer_email,
+    subject: `Printing's done — your Tasty Threads order is packing up 📦 #${order.order_number || ''}`,
+    html,
+  });
+  if (error) console.error('Merch fulfilled email error:', error);
+  else console.log(`Merch fulfilled email sent to ${order.customer_email}`);
+}
+
 // Shipping notification — sent when Printful hands over tracking info.
 export async function sendMerchShippedEmail(order) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
