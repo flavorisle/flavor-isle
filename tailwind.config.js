@@ -61,11 +61,11 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'vanilla-malt': '#FDF6E3',
-        'midnight-cherry': '#CC3300',
-        'patina-mint': '#003366',
-        'smashie-yellow': '#F5A623',
-        'obsidian-roast': '#003366',
+        'vanilla-malt': '#F7E7D3',
+        'midnight-cherry': '#B5421B',
+        'patina-mint': '#5C2A2A',
+        'smashie-yellow': '#D4912A',
+        'obsidian-roast': '#5C2A2A',
         'chrome-silver': '#C0C0C0',
   		},
   		fontFamily: {

@@ -6,85 +6,87 @@
 
 @layer base {
   :root {
-    --background: 42 67% 94%;
-    --foreground: 210 100% 20%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 100% 20%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 100% 20%;
-    --primary: 12 100% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 100% 20%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 42 40% 90%;
-    --muted-foreground: 210 30% 35%;
-    --accent: 37 91% 55%;
-    --accent-foreground: 210 100% 20%;
+    /* Fall theme — warm cream, burnt orange, harvest gold, deep burgundy */
+    --background: 38 60% 93%;
+    --foreground: 25 55% 18%;
+    --card: 40 50% 99%;
+    --card-foreground: 25 55% 18%;
+    --popover: 40 50% 99%;
+    --popover-foreground: 25 55% 18%;
+    --primary: 18 78% 42%;
+    --primary-foreground: 40 60% 97%;
+    --secondary: 5 45% 28%;
+    --secondary-foreground: 40 60% 97%;
+    --muted: 38 45% 88%;
+    --muted-foreground: 25 40% 32%;
+    --accent: 38 75% 52%;
+    --accent-foreground: 25 55% 18%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 42 30% 85%;
-    --input: 42 30% 85%;
-    --ring: 12 100% 40%;
+    --border: 35 38% 82%;
+    --input: 35 38% 82%;
+    --ring: 18 78% 42%;
     --radius: 0.75rem;
     --font-heading: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
     --font-body: 'Nunito', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Flavor Isle × Smashie Brand Tokens */
-    --vanilla-malt: #FDF6E3;
-    --midnight-cherry: #CC3300;
-    --patina-mint: #003366;
-    --smashie-yellow: #F5A623;
-    --obsidian-roast: #003366;
+    /* Flavor Isle × Smashie Brand Tokens — Fall */
+    --vanilla-malt: #F7E7D3;
+    --midnight-cherry: #B5421B;
+    --patina-mint: #5C2A2A;
+    --smashie-yellow: #D4912A;
+    --obsidian-roast: #5C2A2A;
     --chrome-silver: #C0C0C0;
-    --cream-white: #FDF6E3;
-    --sidebar-background: 42 67% 94%;
-    --sidebar-foreground: 210 100% 20%;
-    --sidebar-primary: 12 100% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 42 40% 90%;
-    --sidebar-accent-foreground: 210 100% 20%;
-    --sidebar-border: 42 30% 85%;
-    --sidebar-ring: 12 100% 40%;
+    --cream-white: #F7E7D3;
+    --sidebar-background: 38 60% 93%;
+    --sidebar-foreground: 25 55% 18%;
+    --sidebar-primary: 18 78% 42%;
+    --sidebar-primary-foreground: 40 60% 97%;
+    --sidebar-accent: 38 45% 88%;
+    --sidebar-accent-foreground: 25 55% 18%;
+    --sidebar-border: 35 38% 82%;
+    --sidebar-ring: 18 78% 42%;
   }
 
   .dark {
-    --background: 210 100% 10%;
-    --foreground: 42 67% 94%;
-    --card: 210 100% 14%;
-    --card-foreground: 42 67% 94%;
-    --popover: 210 100% 14%;
-    --popover-foreground: 42 67% 94%;
-    --primary: 12 100% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 37 91% 55%;
-    --secondary-foreground: 210 100% 20%;
-    --muted: 210 60% 18%;
-    --muted-foreground: 42 30% 65%;
-    --accent: 37 91% 55%;
-    --accent-foreground: 210 100% 20%;
+    /* Fall theme — dark mode: deep espresso + warm amber */
+    --background: 25 30% 10%;
+    --foreground: 38 50% 88%;
+    --card: 25 28% 14%;
+    --card-foreground: 38 50% 88%;
+    --popover: 25 28% 14%;
+    --popover-foreground: 38 50% 88%;
+    --primary: 18 78% 48%;
+    --primary-foreground: 40 60% 97%;
+    --secondary: 38 75% 52%;
+    --secondary-foreground: 25 55% 18%;
+    --muted: 25 25% 18%;
+    --muted-foreground: 38 35% 65%;
+    --accent: 38 75% 52%;
+    --accent-foreground: 25 55% 18%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 60% 22%;
-    --input: 210 60% 22%;
-    --ring: 12 100% 40%;
+    --border: 25 25% 22%;
+    --input: 25 25% 22%;
+    --ring: 18 78% 48%;
 
     /* Flavor Isle brand tokens — dark theme overrides.
-       --obsidian-roast / --patina-mint stay navy so branded backgrounds
-       (footer, buttons, navy sections) keep their identity in dark mode;
+       --obsidian-roast / --patina-mint stay burgundy so branded backgrounds
+       (footer, buttons, dark sections) keep their identity in dark mode;
        text utilities built from them are flipped light below. */
-    --vanilla-malt: #071523;
-    --cream-white: #0f1f2e;
+    --vanilla-malt: #1A0F0A;
+    --cream-white: #241712;
 
-    --sidebar-background: 210 100% 8%;
-    --sidebar-foreground: 42 67% 94%;
-    --sidebar-primary: 12 100% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 60% 18%;
-    --sidebar-accent-foreground: 42 67% 94%;
-    --sidebar-border: 210 60% 22%;
-    --sidebar-ring: 12 100% 40%;
+    --sidebar-background: 25 30% 8%;
+    --sidebar-foreground: 38 50% 88%;
+    --sidebar-primary: 18 78% 48%;
+    --sidebar-primary-foreground: 40 60% 97%;
+    --sidebar-accent: 25 25% 18%;
+    --sidebar-accent-foreground: 38 50% 88%;
+    --sidebar-border: 25 25% 22%;
+    --sidebar-ring: 18 78% 48%;
   }
 }
 
@@ -92,8 +94,8 @@
    navy sections keep their look), but text utilities built from those tokens
    flip light so headings/accent text stay readable on the dark content bg.
    bg-white (cards, nav, modals) becomes the dark card surface. */
-.dark .text-obsidian-roast { color: #f0f5fa; }
-.dark .text-patina-mint { color: #7FB2E8; }
+.dark .text-obsidian-roast { color: #F2D9B8; }
+.dark .text-patina-mint { color: #E8A87C; }
 .dark .bg-white { background-color: hsl(var(--card)); }
 .dark .border-white\/10 { border-color: rgba(255, 255, 255, 0.12); }
 .dark .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
@@ -116,26 +118,26 @@
    and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
 .high-contrast {
   --background: 0 0% 100%;
-  --foreground: 210 100% 6%;
+  --foreground: 25 55% 6%;
   --card: 0 0% 100%;
-  --card-foreground: 210 100% 6%;
+  --card-foreground: 25 55% 6%;
   --popover: 0 0% 100%;
-  --popover-foreground: 210 100% 6%;
-  --muted: 0 0% 92%;
-  --muted-foreground: 210 35% 22%;
-  --border: 210 50% 35%;
-  --input: 210 50% 35%;
-  --ring: 12 100% 35%;
+  --popover-foreground: 25 55% 6%;
+  --muted: 38 40% 92%;
+  --muted-foreground: 25 45% 22%;
+  --border: 25 45% 35%;
+  --input: 25 45% 35%;
+  --ring: 18 78% 35%;
   --vanilla-malt: #FFFFFF;
   --cream-white: #FFFFFF;
-  --midnight-cherry: #B82600;
-  --patina-mint: #001F4D;
-  --obsidian-roast: #001F4D;
+  --midnight-cherry: #8F3215;
+  --patina-mint: #3D1A1A;
+  --obsidian-roast: #3D1A1A;
 }
 
-.high-contrast .btn-cherry { background-color: #B82600; color: #ffffff; }
-.high-contrast .btn-mint { background-color: #001F4D; color: #ffffff; }
-.high-contrast .btn-yellow { background-color: #E09500; color: #001F4D; }
+.high-contrast .btn-cherry { background-color: #8F3215; color: #ffffff; }
+.high-contrast .btn-mint { background-color: #3D1A1A; color: #ffffff; }
+.high-contrast .btn-yellow { background-color: #B5761E; color: #3D1A1A; }
 .high-contrast .card-diner { border: 2px solid hsl(var(--border)); }
 .high-contrast button:focus-visible,
 .high-contrast a:focus-visible,
@@ -149,42 +151,42 @@
 /* Force a subtree back onto the light palette regardless of system dark mode.
    Used on high-contrast forms (checkout) so fields stay readable on Android. */
 .force-light {
-  --background: 42 67% 94%;
-  --foreground: 210 100% 20%;
-  --card: 0 0% 100%;
-  --card-foreground: 210 100% 20%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 100% 20%;
-  --primary: 12 100% 40%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 210 100% 20%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 42 40% 90%;
+  --background: 38 60% 93%;
+  --foreground: 25 55% 18%;
+  --card: 40 50% 99%;
+  --card-foreground: 25 55% 18%;
+  --popover: 40 50% 99%;
+  --popover-foreground: 25 55% 18%;
+  --primary: 18 78% 42%;
+  --primary-foreground: 40 60% 97%;
+  --secondary: 5 45% 28%;
+  --secondary-foreground: 40 60% 97%;
+  --muted: 38 45% 88%;
   /* Darker than the global muted tone — checkout labels, line items, and
      totals were washing out at small sizes. */
-  --muted-foreground: 210 45% 26%;
-  --accent: 37 91% 55%;
-  --accent-foreground: 210 100% 20%;
+  --muted-foreground: 25 50% 26%;
+  --accent: 38 75% 52%;
+  --accent-foreground: 25 55% 18%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
-  --border: 42 30% 78%;
-  --input: 42 30% 78%;
-  --ring: 12 100% 40%;
-  --vanilla-malt: #FDF6E3;
-  --midnight-cherry: #CC3300;
-  --patina-mint: #003366;
-  --smashie-yellow: #F5A623;
-  --obsidian-roast: #003366;
+  --border: 35 38% 78%;
+  --input: 35 38% 78%;
+  --ring: 18 78% 42%;
+  --vanilla-malt: #F7E7D3;
+  --midnight-cherry: #B5421B;
+  --patina-mint: #5C2A2A;
+  --smashie-yellow: #D4912A;
+  --obsidian-roast: #5C2A2A;
   --chrome-silver: #C0C0C0;
-  --cream-white: #FDF6E3;
-  --sidebar-background: 42 67% 94%;
-  --sidebar-foreground: 210 100% 20%;
-  --sidebar-primary: 12 100% 40%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 42 40% 90%;
-  --sidebar-accent-foreground: 210 100% 20%;
-  --sidebar-border: 42 30% 85%;
-  --sidebar-ring: 12 100% 40%;
+  --cream-white: #F7E7D3;
+  --sidebar-background: 38 60% 93%;
+  --sidebar-foreground: 25 55% 18%;
+  --sidebar-primary: 18 78% 42%;
+  --sidebar-primary-foreground: 40 60% 97%;
+  --sidebar-accent: 38 45% 88%;
+  --sidebar-accent-foreground: 25 55% 18%;
+  --sidebar-border: 35 38% 82%;
+  --sidebar-ring: 18 78% 42%;
   /* Inputs inherit `color` from body, which is the light cream in system dark
      mode — on the light field background that made typed text invisible on
      Android. Pin the text color and tell the browser this subtree is light so
@@ -215,7 +217,7 @@
 .force-light textarea,
 .force-light select { font-size: 1rem; }
 .force-light input::placeholder,
-.force-light textarea::placeholder { color: hsl(210 25% 45%); }
+.force-light textarea::placeholder { color: hsl(25 30% 45%); }
 
 @layer base {
   * {
@@ -293,8 +295,8 @@
   }
 
   .btn-cherry:hover {
-    background-color: #aa2900;
-    box-shadow: 0 6px 20px rgba(204, 51, 0, 0.35);
+    background-color: #92340F;
+    box-shadow: 0 6px 20px rgba(181, 66, 27, 0.35);
   }
 
   .btn-mint {
@@ -307,8 +309,8 @@
   }
 
   .btn-mint:hover {
-    background-color: #002a55;
-    box-shadow: 0 6px 20px rgba(0, 51, 102, 0.35);
+    background-color: #3D1A1A;
+    box-shadow: 0 6px 20px rgba(92, 42, 42, 0.35);
   }
 
   .btn-yellow {
@@ -321,8 +323,8 @@
   }
 
   .btn-yellow:hover {
-    background-color: #e09500;
-    box-shadow: 0 6px 20px rgba(245, 166, 35, 0.4);
+    background-color: #B5761E;
+    box-shadow: 0 6px 20px rgba(212, 145, 42, 0.4);
   }
 
   .card-diner {
