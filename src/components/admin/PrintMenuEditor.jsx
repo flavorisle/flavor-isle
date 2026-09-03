@@ -1,7 +1,7 @@
 // Editing sidebar for the in-store printable menu: header/footer text, layout
 // options, and per-item include / rename / reprice controls.
 import React from 'react';
-import { Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { Eye, EyeOff, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 
 function Field({ label, children }) {
   return (
@@ -23,6 +23,7 @@ export default function PrintMenuEditor({
   overrides,
   setOverride,
   setSectionTitle,
+  moveSection,
   resetAll,
 }) {
   const update = (key, value) => setConfig(prev => ({ ...prev, [key]: value }));
@@ -106,18 +107,36 @@ export default function PrintMenuEditor({
           </button>
         </div>
         <p className="text-xs text-muted-foreground mb-4">
-          Rename sections, items, or reprice for the printout only — your live online menu isn't touched.
+          Reorder or rename sections, edit items, or reprice for the printout only — your live online menu isn't touched.
         </p>
 
         <div className="space-y-5 max-h-[32rem] overflow-y-auto pr-1">
-          {sections.map(section => (
+          {sections.map((section, sIdx) => (
             <div key={section.key}>
-              <input
-                className="w-full mb-2 px-2 py-1 font-heading text-sm text-midnight-cherry uppercase tracking-wider bg-transparent rounded border border-transparent hover:border-border focus:border-border"
-                value={section.label}
-                onChange={e => setSectionTitle(section.key, e.target.value)}
-                aria-label={`Section heading for ${section.key}`}
-              />
+              <div className="flex items-center gap-1 mb-2">
+                <input
+                  className="flex-1 min-w-0 px-2 py-1 font-heading text-sm text-midnight-cherry uppercase tracking-wider bg-transparent rounded border border-transparent hover:border-border focus:border-border"
+                  value={section.label}
+                  onChange={e => setSectionTitle(section.key, e.target.value)}
+                  aria-label={`Section heading for ${section.key}`}
+                />
+                <button
+                  onClick={() => moveSection(section.key, -1)}
+                  disabled={sIdx === 0}
+                  aria-label={`Move ${section.label} up`}
+                  className="p-1 rounded text-muted-foreground hover:text-midnight-cherry disabled:opacity-30 disabled:hover:text-muted-foreground"
+                >
+                  <ChevronUp size={15} />
+                </button>
+                <button
+                  onClick={() => moveSection(section.key, 1)}
+                  disabled={sIdx === sections.length - 1}
+                  aria-label={`Move ${section.label} down`}
+                  className="p-1 rounded text-muted-foreground hover:text-midnight-cherry disabled:opacity-30 disabled:hover:text-muted-foreground"
+                >
+                  <ChevronDown size={15} />
+                </button>
+              </div>
               <div className="space-y-2">
                 {section.allItems.map(item => {
                   const hidden = hiddenIds.includes(item.id);

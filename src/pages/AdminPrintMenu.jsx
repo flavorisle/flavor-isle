@@ -32,6 +32,8 @@ export default function AdminPrintMenu() {
   const [overrides, setOverrides] = useState({});
   // Print-only section heading overrides, keyed by category key.
   const [sectionTitles, setSectionTitles] = useState({});
+  // Print-only category order (list of category keys). Empty = use menu order.
+  const [sectionOrder, setSectionOrder] = useState([]);
 
   // Load menu + saved print settings.
   useEffect(() => {
@@ -52,14 +54,15 @@ export default function AdminPrintMenu() {
       setHiddenIds(parsed.hiddenIds || []);
       setOverrides(parsed.overrides || {});
       setSectionTitles(parsed.sectionTitles || {});
+      setSectionOrder(parsed.sectionOrder || []);
     }
   }, []);
 
   // Persist edits so the sheet can be tweaked and reprinted later.
   useEffect(() => {
     if (loading) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ config, hiddenIds, overrides, sectionTitles }));
-  }, [config, hiddenIds, overrides, sectionTitles, loading]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ config, hiddenIds, overrides, sectionTitles, sectionOrder }));
+  }, [config, hiddenIds, overrides, sectionTitles, sectionOrder, loading]);
 
   const setSectionTitle = (key, value) =>
     setSectionTitles(prev => ({ ...prev, [key]: value }));
@@ -75,6 +78,19 @@ export default function AdminPrintMenu() {
     setHiddenIds([]);
     setOverrides({});
     setSectionTitles({});
+    setSectionOrder([]);
+  };
+
+  // Move a category up/down on the printed sheet. Seeds the order from the
+  // current section list the first time it's used.
+  const moveSection = (key, dir) => {
+    const current = sectionOrder.length ? sectionOrder : sections.map(s => s.key);
+    const from = current.indexOf(key);
+    const to = from + dir;
+    if (from === -1 || to < 0 || to >= current.length) return;
+    const next = [...current];
+    [next[from], next[to]] = [next[to], next[from]];
+    setSectionOrder(next);
   };
 
   // Group the menu the same way the public menu does, then apply print edits.
@@ -91,7 +107,17 @@ export default function AdminPrintMenu() {
       (grouped[key] ||= []).push(item);
     }
 
-    return sortCategories(Object.keys(grouped), settings.category_sort_order || []).map(key => {
+    // Print-only order wins when set; otherwise fall back to the online order.
+    const baseKeys = sortCategories(Object.keys(grouped), settings.category_sort_order || []);
+    const orderedKeys = sectionOrder.length
+      ? [...baseKeys].sort((a, b) => {
+          const ia = sectionOrder.indexOf(a);
+          const ib = sectionOrder.indexOf(b);
+          return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib);
+        })
+      : baseKeys;
+
+    return orderedKeys.map(key => {
       const ordered = sortItemsInCategory(grouped[key], (settings.category_item_order || {})[key] || []);
       const applied = ordered.map(i => {
         const ov = overrides[i.id] || {};
@@ -109,7 +135,7 @@ export default function AdminPrintMenu() {
         items: applied.filter(i => !hiddenIds.includes(i.id)),
       };
     });
-  }, [items, settings, overrides, hiddenIds, sectionTitles]);
+  }, [items, settings, overrides, hiddenIds, sectionTitles, sectionOrder]);
 
   const printSections = sections.filter(s => s.items.length > 0);
 
@@ -155,6 +181,7 @@ export default function AdminPrintMenu() {
               overrides={overrides}
               setOverride={setOverride}
               setSectionTitle={setSectionTitle}
+              moveSection={moveSection}
               resetAll={resetAll}
             />
           </div>
