@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import FaqSection from '@/components/FaqSection';
 import NearbyAreas from '@/components/NearbyAreas';
+import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -112,6 +113,11 @@ export default function Contact() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Google reviews */}
+        <div className="max-w-3xl mx-auto mb-12">
+          <GoogleReviewsCard />
         </div>
 
         {/* Nearby areas / I-65 wayfinding */}

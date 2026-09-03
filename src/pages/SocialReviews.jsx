@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import InstagramReviewForm from '@/components/social/InstagramReviewForm';
+import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import { useAuth } from '@/lib/AuthContext';
 
 const STEPS = [
@@ -43,6 +44,10 @@ export default function SocialReviews() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-8">
+        <GoogleReviewsCard />
       </section>
 
       <section className="max-w-xl mx-auto px-4 sm:px-6 pb-16">
