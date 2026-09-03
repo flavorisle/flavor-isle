@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8e8348119_IMG_0157.png';
+const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0dfcdf627_1CCAA2A1-AA3C-4C56-9922-CB1452069518.JPG';
 const PHOTO_GUESTBOOK = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/49f86bd0c_IMG_1445_Original.jpeg';
 const PHOTO_50TH = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg';
 
@@ -29,7 +29,7 @@ export default function AboutStory() {
           <div className="relative">
             <img
               src={PHOTO_1964}
-              alt="Joyce's Flavor Isle walk-up stand, summer of 1964"
+              alt="Original black-and-white photo of Joyce's Flavor Isle walk-up stand, 1964"
               className="w-full aspect-square object-cover rounded-3xl shadow-float-lg"
             />
             <div className="absolute -bottom-5 -left-3 sm:-left-6 bg-smashie-yellow text-obsidian-roast rounded-2xl px-5 py-3 shadow-float">
