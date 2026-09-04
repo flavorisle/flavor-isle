@@ -196,7 +196,7 @@ export async function sendOrderReadyEmail(order) {
     ? `It's rolling your way right now — enjoy! 🚗`
     : orderType === 'dine_in'
     ? `It's headed to your table — dig in! 🍔`
-    : `Pull up whenever you're ready — we'll have it hot and waiting.`;
+    : `Come on inside the dining room — your order will be ready on the counter. We don't hand orders out the window (especially for larger ones), so just head on in and we'll get you taken care of.`;
 
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
