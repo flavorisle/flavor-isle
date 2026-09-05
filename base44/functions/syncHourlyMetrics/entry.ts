@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { chicagoParts } from '../../shared/busynessTime.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -15,9 +16,9 @@ Deno.serve(async (req) => {
     // Group by hour and date
     const metrics = {};
     recentOrders.forEach(order => {
-      const date = new Date(order.created_date);
-      const dateStr = date.toISOString().split('T')[0];
-      const hour = date.getHours();
+      const chicago = chicagoParts(order.created_date);
+      const dateStr = chicago.dateKey;
+      const hour = chicago.hour;
       const key = `${dateStr}-${hour}`;
       
       if (!metrics[key]) {

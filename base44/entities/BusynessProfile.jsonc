@@ -2,6 +2,10 @@
   "name": "BusynessProfile",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "weekday": {
       "type": "number",
       "description": "0=Sunday through 6=Saturday"

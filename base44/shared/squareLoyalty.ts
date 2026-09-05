@@ -35,6 +35,33 @@ export async function getLoyaltyProgram(): Promise<any | null> {
   return data?.program || null;
 }
 
+// Check the Square loyalty ledger for an existing ACCUMULATE_POINTS event on a
+// given order. Used by the order-status sync's accrual retry to guarantee an
+// order is never credited twice — if an event already exists we just mark the
+// order accrued and skip, regardless of which idempotency key was used.
+export async function hasAccrualEventForOrder(orderId: string): Promise<boolean> {
+  if (!orderId) return false;
+  const res = await fetch(`${SQUARE_API}/loyalty/events/search`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ query: { filter: { order_filter: { order_id: orderId } } }, limit: 30 }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`SearchLoyaltyEvents failed: ${JSON.stringify(data?.errors || data)}`);
+  const events = data?.events || [];
+  return events.some((e: any) => e.type === 'ACCUMULATE_POINTS' || e.type === 'ACCUMULATE_PROMOTION_POINTS');
+}
+
+// Resolve the merchant's primary Square location id — needed by
+// AccumulateLoyaltyPoints, which requires a location_id for the purchase.
+export async function getLocationId(): Promise<string | null> {
+  const res = await fetch(`${SQUARE_API}/locations`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`ListLocations failed: ${JSON.stringify(data?.errors || data)}`);
+  const loc = (data?.locations || []).find((l: any) => l.status === 'ACTIVE');
+  return loc?.id || data?.locations?.[0]?.id || null;
+}
+
 export async function searchSquareCustomerIdByEmail(email: string): Promise<string | null> {
   if (!email) return null;
   const res = await fetch(`${SQUARE_API}/customers/search`, {
@@ -82,7 +109,7 @@ export async function searchLoyaltyAccountByPhone(phone: string): Promise<any | 
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
-      query: { filter: { mapping: { type: 'PHONE', id: e164, value: e164 } } },
+      query: { mappings: [{ phone_number: e164 }] },
       limit: 1,
     }),
   });
@@ -100,9 +127,9 @@ export async function createLoyaltyAccount({
   customerId: string;
   phone?: string | null;
 }): Promise<any> {
-  const loyalty_account: any = { loyalty_program_id: programId, customer_id: customerId };
+  const loyalty_account: any = { program_id: programId, customer_id: customerId };
   const e164 = toE164Phone(phone);
-  if (e164) loyalty_account.mapping = { type: 'PHONE', id: e164, value: e164 };
+  if (e164) loyalty_account.mapping = { phone_number: e164 };
   const res = await fetch(`${SQUARE_API}/loyalty/accounts`, {
     method: 'POST',
     headers: authHeaders(),
@@ -117,23 +144,58 @@ export async function accumulateLoyaltyPoints({
   accountId,
   programId,
   orderId,
+  locationId,
+  idempotencyKey,
 }: {
   accountId: string;
   programId: string;
   orderId: string;
+  locationId: string;
+  idempotencyKey?: string;
 }): Promise<any | null> {
   const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/accumulate`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({
       accumulate_points: { loyalty_program_id: programId, order_id: orderId },
-      idempotency_key: crypto.randomUUID(),
+      location_id: locationId,
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
     }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`AccumulateLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
+  return data;
+}
+
+// Flat star grant/ deduction outside the spend-based accrual rules. Used to
+// award the new-member welcome bonus to first-time enrollees.
+export async function adjustLoyaltyPoints({
+  accountId,
+  points,
+  reason,
+  idempotencyKey,
+}: {
+  accountId: string;
+  points: number;
+  reason: string;
+  idempotencyKey?: string;
+}): Promise<any | null> {
+  const res = await fetch(`${SQUARE_API}/loyalty/accounts/${accountId}/adjust`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      adjust_points: { points, reason },
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`AdjustLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
   return data?.loyalty_account || null;
 }
+
+// Welcome bonus granted once to every customer the first time they're enrolled
+// in Star Rewards from an online order.
+export const WELCOME_BONUS_STARS = 40;
 
 export function describeRewardTier(tier: any): string {
   const def = tier?.definition || {};
@@ -171,7 +233,8 @@ export function earnTextForProgram(program: any): string | null {
 
 // Find (or create) the buyer's loyalty account, then accrue square-computed
 // points for a paid Square order. Called from the Stripe webhook after an
-// online order is tendered.
+// online order is tendered. Returns the stars earned + resulting balance so
+// callers (order confirmation emails) can tell the customer what they got.
 export async function accrueForOrder({
   squareOrderId,
   email,
@@ -180,14 +243,18 @@ export async function accrueForOrder({
   squareOrderId: string;
   email: string;
   phone?: string;
-}): Promise<void> {
+}): Promise<{ pointsEarned: number; balance: number; newlyEnrolled: boolean }> {
   const program = await getLoyaltyProgram();
   if (!program?.id) throw new Error('Square loyalty program not found');
   if (program.status === 'INACTIVE') throw new Error('Square loyalty program is not active');
 
+  const locationId = await getLocationId();
+  if (!locationId) throw new Error('Could not resolve Square location for loyalty accrual');
+
   // Phone is the primary identifier for Square loyalty — look up the account
   // by phone mapping first, then fall back to email-based customer lookup.
   let account: any | null = null;
+  let newlyEnrolled = false;
   if (phone) account = await searchLoyaltyAccountByPhone(phone);
 
   if (!account) {
@@ -197,9 +264,34 @@ export async function accrueForOrder({
     account = await findLoyaltyAccountByCustomer(customerId);
     if (!account) {
       account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
+      newlyEnrolled = true;
     }
   }
-  await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId });
+
+  // Welcome bonus: grant 40 stars to first-time enrollees before the spend-based
+  // accrual so a new member always starts with a head start on their first reward.
+  if (newlyEnrolled) {
+    try {
+      await adjustLoyaltyPoints({
+        accountId: account.id,
+        points: WELCOME_BONUS_STARS,
+        reason: 'Welcome bonus for joining Star Rewards',
+        idempotencyKey: `loyalty-welcome:${account.id}`,
+      });
+      console.log(`Welcome bonus of ${WELCOME_BONUS_STARS} stars granted to new loyalty account ${account.id}`);
+    } catch (err) {
+      console.error('Welcome bonus adjust failed:', (err as Error).message);
+    }
+  }
+
+  const accrual = await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
+
+  // Points earned come back on the accrual event; balance = pre-accrual
+  // balance + welcome bonus (if any) + stars just earned.
+  const event = accrual?.event || accrual?.events?.[0];
+  const pointsEarned = event?.accumulate_points?.points || 0;
+  const balance = (account.balance || 0) + (newlyEnrolled ? WELCOME_BONUS_STARS : 0) + pointsEarned;
+  return { pointsEarned, balance, newlyEnrolled };
 }
 
 // Build the status payload shown on the Account rewards screen. Finds (or
@@ -229,6 +321,9 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
       points: t.points,
       description: describeRewardTier(t),
       scope: t.definition?.scope || 'ORDER',
+      discountType: t.definition?.discount_type || null,
+      percentage: t.definition?.percentage_discount || 0,
+      fixedAmountCents: t.definition?.fixed_discount_money?.amount || 0,
     });
   });
 
@@ -281,4 +376,50 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
     result.accountId = account.id;
   }
   return result;
+}
+
+// Redeem a Square loyalty reward tier for a buyer — deducts points from their
+// loyalty account and creates a Square redemption record. Called from the
+// Stripe webhook after an online order paid with an applied reward. A
+// deterministic idempotency key (per order + tier) keeps webhook retries from
+// double-deducting points.
+export async function redeemReward({
+  email,
+  phone,
+  rewardTierId,
+  idempotencyKey,
+}: {
+  email: string;
+  phone?: string;
+  rewardTierId: string;
+  idempotencyKey?: string;
+}): Promise<void> {
+  if (!rewardTierId) return;
+  const program = await getLoyaltyProgram();
+  if (!program?.id) throw new Error('Square loyalty program not found');
+
+  let account: any | null = null;
+  if (phone) {
+    try { account = await searchLoyaltyAccountByPhone(phone); }
+    catch (e) { console.error('Loyalty phone search failed:', (e as Error).message); }
+  }
+  if (!account) {
+    let customerId: string | null = null;
+    if (phone) customerId = await searchSquareCustomerIdByPhone(phone);
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) throw new Error('No Square customer found for loyalty redemption');
+    account = await findLoyaltyAccountByCustomer(customerId);
+  }
+  if (!account) throw new Error('No loyalty account found to redeem from');
+
+  const res = await fetch(`${SQUARE_API}/loyalty/rewards`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      loyalty_reward: { loyalty_account_id: account.id, reward_tier_id: rewardTierId },
+      idempotency_key: idempotencyKey || crypto.randomUUID(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`CreateLoyaltyReward failed: ${JSON.stringify(data?.errors || data)}`);
 }

@@ -23,6 +23,14 @@
     },
     "order_id": {
       "type": "string"
+    },
+    "menu_item_id": {
+      "type": "string",
+      "description": "MenuItem id this review is about, when the review targets a specific food item. Null for general visit reviews."
+    },
+    "menu_item_name": {
+      "type": "string",
+      "description": "Snapshot of the menu item name being reviewed, for display when the item is hidden or unavailable."
     }
   },
   "required": [

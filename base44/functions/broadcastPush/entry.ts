@@ -20,6 +20,22 @@ export default async function(req) {
       url: url || '/menu',
     });
 
+    const errorCount = (result.errors || []).length;
+    const status = result.sent > 0 ? (errorCount > 0 ? 'partial' : 'sent') : 'failed';
+    try {
+      await base44.asServiceRole.entities.PushLog.create({
+        title: title || 'Flavor Isle',
+        body,
+        url: url || '/menu',
+        sent_count: result.sent,
+        recipient_count: subs.length,
+        error_count: errorCount,
+        status,
+      });
+    } catch (logErr) {
+      console.error('PushLog create failed:', logErr.message);
+    }
+
     return Response.json({ success: true, sent: result.sent, subCount: subs.length, errors: result.errors });
   } catch (error) {
     return Response.json({ error: error.message, stack: error.stack }, { status: 500 });

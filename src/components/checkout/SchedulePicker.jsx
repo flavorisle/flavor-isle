@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Zap, Calendar, Clock } from 'lucide-react';
+import { Zap, Calendar } from 'lucide-react';
 import { DAY_KEYS, DAY_LABELS, formatTime12 } from '@/lib/businessHours';
 import useBusinessHours from '@/hooks/useBusinessHours';
 
-const PREP_MINUTES = 20;
 const SLOT_INTERVAL = 15;
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -11,7 +10,7 @@ const dateKeyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.ge
 const timeStr = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dayKeyFor = (d) => DAY_KEYS[(d.getDay() + 6) % 7]; // Sun(0) → 'sunday' at index 6
 
-export default function SchedulePicker({ onChange }) {
+export default function SchedulePicker({ onChange, prepMinutes = 20, compact = false }) {
   const businessHours = useBusinessHours();
   const [mode, setMode] = useState('asap');
   const [date, setDate] = useState(() => dateKeyOf(new Date()));
@@ -35,7 +34,7 @@ export default function SchedulePicker({ onChange }) {
   }, [businessHours]);
 
   // Time slots for the selected date, bounded by business hours.
-  // For today, the earliest slot is now + PREP_MINUTES (rounded up to the next interval).
+  // For today, the earliest slot is now + prepMinutes (rounded up to the next interval).
   const slots = useMemo(() => {
     const sel = new Date(date + 'T00:00:00');
     const dh = businessHours[dayKeyFor(sel)];
@@ -48,7 +47,7 @@ export default function SchedulePicker({ onChange }) {
     const today = new Date();
     let earliest;
     if (dateKeyOf(sel) === dateKeyOf(today)) {
-      earliest = new Date(today.getTime() + PREP_MINUTES * 60000);
+      earliest = new Date(today.getTime() + prepMinutes * 60000);
       const rem = earliest.getMinutes() % SLOT_INTERVAL;
       if (rem !== 0) earliest.setMinutes(earliest.getMinutes() + (SLOT_INTERVAL - rem));
       earliest.setSeconds(0, 0);
@@ -61,7 +60,7 @@ export default function SchedulePicker({ onChange }) {
       if (t >= earliest) list.push(timeStr(t));
     }
     return list;
-  }, [date, businessHours]);
+  }, [date, businessHours, prepMinutes]);
 
   // Keep a valid slot whenever the selected day's slot list changes
   useEffect(() => {
@@ -72,33 +71,45 @@ export default function SchedulePicker({ onChange }) {
   useEffect(() => {
     const n = new Date();
     if (mode === 'asap') {
-      const ready = new Date(n.getTime() + PREP_MINUTES * 60000);
-      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: PREP_MINUTES, label: 'ASAP' });
+      let ready = new Date(n.getTime() + prepMinutes * 60000);
+      // Orders placed before the store opens are ready at opening, not before.
+      const dh = businessHours[dayKeyFor(n)];
+      if (dh && !dh.closed) {
+        const [oh, om] = dh.open.split(':').map(Number);
+        const storeOpen = new Date(n); storeOpen.setHours(oh, om, 0, 0);
+        if (ready < storeOpen) ready = storeOpen;
+      }
+      const est = Math.max(prepMinutes, Math.round((ready - n) / 60000));
+      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: est, label: 'ASAP' });
     } else if (slot) {
       const ready = new Date(date + 'T' + slot + ':00');
       onChange?.({
         mode: 'schedule',
         scheduledFor: ready.toISOString(),
-        estimatedTime: Math.max(PREP_MINUTES, Math.round((ready - n) / 60000)),
+        estimatedTime: Math.max(prepMinutes, Math.round((ready - n) / 60000)),
         label: formatTime12(slot),
       });
     } else {
-      onChange?.({ mode: 'schedule', scheduledFor: '', estimatedTime: PREP_MINUTES, label: '' });
+      onChange?.({ mode: 'schedule', scheduledFor: '', estimatedTime: prepMinutes, label: '' });
     }
-  }, [mode, date, slot, onChange]);
+  }, [mode, date, slot, onChange, prepMinutes]);
 
   return (
     <div>
-      <h2 className="font-heading text-lg text-obsidian-roast">When do you want it?</h2>
-      <p className="text-sm text-muted-foreground mb-4">
-        Most orders are ready in about {PREP_MINUTES} minutes. Schedule ahead to lock in your time.
-      </p>
+      {!compact && (
+        <>
+          <h2 className="font-heading text-lg text-obsidian-roast">When do you want it?</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Most orders are ready in about {prepMinutes} minutes. Schedule ahead to lock in your time.
+          </p>
+        </>
+      )}
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className={`grid grid-cols-2 gap-3 ${compact ? 'mb-3' : 'mb-4'}`}>
         <button
           type="button"
           onClick={() => setMode('asap')}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+          className={`flex items-center justify-center gap-2 ${compact ? 'py-2.5 rounded-xl' : 'py-3 rounded-2xl'} border-2 font-heading text-sm transition-all ${
             mode === 'asap' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
           }`}
         >
@@ -107,7 +118,7 @@ export default function SchedulePicker({ onChange }) {
         <button
           type="button"
           onClick={() => setMode('schedule')}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
+          className={`flex items-center justify-center gap-2 ${compact ? 'py-2.5 rounded-xl' : 'py-3 rounded-2xl'} border-2 font-heading text-sm transition-all ${
             mode === 'schedule' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
           }`}
         >
@@ -115,12 +126,7 @@ export default function SchedulePicker({ onChange }) {
         </button>
       </div>
 
-      {mode === 'asap' ? (
-        <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 text-sm font-heading">
-          <Clock size={16} />
-          Ready in about {PREP_MINUTES} minutes from order time.
-        </div>
-      ) : (
+      {mode === 'asap' ? null : (
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Pick a day</label>

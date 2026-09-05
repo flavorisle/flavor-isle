@@ -15,6 +15,19 @@ export function getCutoffStatus(setting) {
   const deliveryCutoff = setting?.delivery_cutoff_minutes ?? 30;
   const pickupCutoff = setting?.pickup_cutoff_minutes ?? 15;
   const closedFallback = toMins(setting?.closing_time) ?? toMins('20:00');
+  // Admin can pause delivery entirely — it stays unavailable regardless of hours.
+  const deliveryPaused = setting?.delivery_enabled === false;
+
+  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
+  // When active and today falls within the inclusive date range, every order
+  // type is cut off — same as a closed weekday.
+  const closure = setting?.closure;
+  if (closure?.active) {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
+    const start = closure.start_date || todayStr;
+    const end = closure.end_date || start;
+    if (todayStr >= start && todayStr <= end) return allClosed;
+  }
 
   const allClosed = {
     delivery: true,
@@ -29,16 +42,19 @@ export function getCutoffStatus(setting) {
   const today = setting?.business_hours?.[dayKey] || {};
   if (today.closed) return allClosed;
 
-  const openMins = toMins(today.open) ?? toMins('10:30');
+  // Online ordering unlocks at 8:00 AM every day — earlier than the store's
+  // pickup open time so guests can pre-order ahead. Pickup/dine-in ready
+  // times are clamped to the store open in the schedule picker.
+  const ORDER_OPEN_MINS = 8 * 60;
   const closeMins = toMins(today.close) ?? closedFallback;
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
-  if (nowMins < openMins) return allClosed;   // before opening
-  if (nowMins >= closeMins) return allClosed; // after closing
+  if (nowMins < ORDER_OPEN_MINS) return allClosed;   // before 8 AM — ordering locked
+  if (nowMins >= closeMins) return allClosed;        // after closing
 
   const minsToClose = closeMins - nowMins;
   return {
-    delivery: minsToClose < deliveryCutoff,
+    delivery: deliveryPaused || minsToClose < deliveryCutoff,
     pickup: minsToClose < pickupCutoff,
     dine_in: minsToClose < pickupCutoff,
     deliveryCutoff,

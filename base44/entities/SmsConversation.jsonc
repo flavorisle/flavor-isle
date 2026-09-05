@@ -2,11 +2,28 @@
   "name": "SmsConversation",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "phone_number": {
       "type": "string"
     },
     "conversation_id": {
       "type": "string"
+    },
+    "call_sid": {
+      "type": "string",
+      "description": "Twilio call identifier used to keep each call and transcript separate."
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "sms",
+        "voice"
+      ],
+      "default": "sms",
+      "description": "Whether this conversation started as an SMS text or a voice call"
     },
     "last_message_at": {
       "type": "string",
@@ -23,6 +40,92 @@
         "completed"
       ],
       "default": "active"
+    },
+    "message_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Smashie is currently collecting a management message during this call."
+    },
+    "message_draft": {
+      "type": "object",
+      "description": "Message details collected across voice turns before delivery.",
+      "properties": {
+        "caller_name": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "transcript": {
+      "type": "array",
+      "description": "Complete caller and Smashie transcript captured during this phone call.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Resolved Square customer name for the caller's phone number, if a matching customer exists. Null when no match is found."
+    },
+    "square_customer_id": {
+      "type": "string",
+      "description": "Square customer id matching this caller's phone, when resolved."
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Email resolved from the caller's Square customer record at call start. Used to email payment links so callers don't have to repeat their email every time."
+    },
+    "call_duration": {
+      "type": "number",
+      "description": "Voice call duration in seconds, captured from the Twilio status callback."
+    },
+    "call_status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "ringing",
+        "in-progress",
+        "completed",
+        "failed",
+        "busy",
+        "no-answer",
+        "canceled"
+      ],
+      "description": "Final Twilio call status for voice conversations."
+    },
+    "call_direction": {
+      "type": "string",
+      "enum": [
+        "inbound",
+        "outbound"
+      ],
+      "description": "Direction of the voice call."
+    },
+    "call_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the voice call started (Twilio StartTime)."
     }
   },
   "required": [

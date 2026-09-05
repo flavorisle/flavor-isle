@@ -1,5 +1,3 @@
-import twilio from 'npm:twilio@5.3.3';
-
 // Normalize a phone string to E.164 (Twilio requirement).
 // Handles US 10/11-digit, strips everything but digits and a leading +.
 export function normalizePhone(phone) {
@@ -14,6 +12,8 @@ export function normalizePhone(phone) {
 
 // Send an outbound SMS to a customer using the app's Twilio credentials.
 // Returns true on success, false on any failure (so callers can log + move on).
+// Calls the Twilio REST API directly — the npm SDK throws
+// "Unsupported cache mode: default" under Deno.
 export async function sendSmashieSms(to, body) {
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
@@ -31,13 +31,28 @@ export async function sendSmashieSms(to, body) {
   }
 
   try {
-    const client = twilio(accountSid, authToken);
-    const message = await client.messages.create({
-      body,
-      from,
-      to: normalizedTo,
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams({
+      From: from,
+      To: normalizedTo,
+      Body: body,
     });
-    console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${message.sid})`);
+    const auth = btoa(`${accountSid}:${authToken}`);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`sendSmashieSms: failed to send to ${normalizedTo}: Twilio ${res.status} ${text}`);
+      return false;
+    }
+    const data = await res.json();
+    console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${data.sid})`);
     return true;
   } catch (err) {
     console.error(`sendSmashieSms: failed to send to ${normalizedTo}:`, err.message);
@@ -51,6 +66,10 @@ export const smashieSmsTemplates = {
   confirmed: (order) =>
     `Flavor Isle: Hey ${order.customer_name || 'fam'}! Order #${order.order_number} is locked in — the crew's firing the grill right now. We'll text you the second it's ready. 🔥`,
 
+  // Fired when the order hits the kitchen.
+  preparing: (order) =>
+    `Flavor Isle: Order #${order.order_number} just hit the grill! 🔥 The crew's cooking it up fresh — we'll text you the second it's ready.`,
+
   // Fired when the order hits ready-for-pickup.
   ready: (order) => {
     const line = order.order_type === 'delivery'
@@ -58,4 +77,8 @@ export const smashieSmsTemplates = {
       : `Slide through Flavor Isle — 103 N Main St, Smiths Grove whenever you're ready`;
     return `Flavor Isle: Order #${order.order_number} is READY, fam! 🍔 Bag sealed, fries hot, vibes immaculate. ${line}. Questions? (270) 563-4618`;
   },
+
+  // Fired when the order is fully wrapped / completed.
+  completed: (order) =>
+    `Flavor Isle: Order #${order.order_number} is all wrapped — hope you ate good! 🍔 Thanks for rolling with us, fam. We'd love to see you back soon. Questions? (270) 563-4618`,
 };

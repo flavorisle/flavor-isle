@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
+import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -15,16 +16,19 @@ import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
-import ShakeIslePromo from '@/components/ShakeIslePromo';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
-const ORDER_TYPE_CONFIG = {
-  pickup: { icon: ShoppingBag, label: 'Pickup', time: '15–25 min' },
-  delivery: { icon: Bike, label: 'Delivery', time: '35–50 min' },
+// Pickup / delivery estimates scale with the live kitchen load so the menu
+// matches the hero, status bar, and checkout everywhere times are shown.
+const ORDER_TYPE_CONFIG = (waitMin) => ({
+  pickup: { icon: ShoppingBag, label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
+  delivery: { icon: Bike, label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min` },
   dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
-};
+});
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -35,6 +39,8 @@ export default function Menu() {
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
   const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
+  const { level } = useLiveStatus();
+  const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
 
   const reload = async () => {
     try {
@@ -54,10 +60,15 @@ export default function Menu() {
   useEffect(() => { reload(); }, []);
   const { pull, refreshing } = usePullToRefresh(reload);
 
-  // Items matching the search, excluding hidden categories.
+  // Milkshakes live on their own page — pull them out of the menu and promote
+  // the Shake Isle page in their place.
+  const SHAKE_KEY = 'Whirl & Twirl';
+
+  // Items matching the search, excluding hidden categories and the shake category.
   const visibleItems = items.filter((item) => {
     const key = itemCategoryKey(item);
     if (hiddenCats.includes(key)) return false;
+    if (key === SHAKE_KEY) return false;
     const matchSearch = !search ||
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     (item.description || '').toLowerCase().includes(search.toLowerCase());
@@ -65,9 +76,10 @@ export default function Menu() {
   });
 
   // Group items by effective category; one row per category (items scroll left→right).
+  // The shake category is replaced by a promo banner row linking to Shake Isle.
   const rows = (() => {
     if (search) {
-      return [{ key: 'Results', items: visibleItems }];
+      return [{ key: 'Results', items: visibleItems, isShakeBanner: false }];
     }
     const map = {};
     for (const item of visibleItems) {
@@ -75,9 +87,11 @@ export default function Menu() {
       if (!map[key]) map[key] = [];
       map[key].push(item);
     }
-    return sortCategories(Object.keys(map), categoryOrder).map((key) => ({
+    const keys = [...Object.keys(map), SHAKE_KEY];
+    return sortCategories(keys, categoryOrder).map((key) => ({
       key,
-      items: sortItemsInCategory(map[key], itemOrder[key] || [])
+      items: key === SHAKE_KEY ? [] : sortItemsInCategory(map[key], itemOrder[key] || []),
+      isShakeBanner: key === SHAKE_KEY,
     }));
   })();
 
@@ -98,24 +112,32 @@ export default function Menu() {
 
           {/* Order type switcher */}
           <div className="grid grid-cols-3 gap-3 max-w-2xl">
-            {Object.entries(ORDER_TYPE_CONFIG).map(([type, config]) => {
+            {Object.entries(ORDER_TYPES).map(([type, config]) => {
               const active = orderType === type;
               return (
                 <button
                   key={type}
                   onClick={() => setOrderType(type)}
                   className={`group relative overflow-hidden rounded-2xl transition-all ${
-                    active ? 'ring-2 ring-smashie-yellow shadow-float' : 'ring-1 ring-white/15 hover:ring-white/40'
+                    active ? 'ring-4 ring-smashie-yellow shadow-float' : 'ring-2 ring-white/40 hover:ring-white/70'
                   }`}
                 >
                   <img
                     src={ORDER_TYPE_IMAGES[type]}
                     alt={config.label}
-                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-80 group-hover:opacity-100'}`}
+                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-90 group-hover:opacity-100'}`}
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pt-6 pb-2 text-center">
-                    <span className="block font-heading text-sm text-white leading-none">{config.label}</span>
-                    <span className="text-[11px] font-body text-white/70">{config.time}</span>
+                  {/* Solid label plate — the old translucent gradient let the
+                      artwork wash out the label text, making the buttons hard to read. */}
+                  <div
+                    className={`absolute inset-x-0 bottom-0 px-2 py-2.5 text-center ${active ? 'bg-smashie-yellow' : 'bg-obsidian-roast/95'}`}
+                  >
+                    <span className={`block font-heading text-base leading-none ${active ? 'text-[#003366]' : 'text-white'}`}>
+                      {config.label}
+                    </span>
+                    <span className={`text-xs font-body font-semibold ${active ? 'text-[#003366]/80' : 'text-white/90'}`}>
+                      {config.time}
+                    </span>
                   </div>
                 </button>
               );
@@ -155,9 +177,7 @@ export default function Menu() {
         {!search && !loading && items.length > 0 && (
           <>
             <FanFavoritesSection items={items} />
-            <div className="mt-8">
-              <ShakeIslePromo />
-            </div>
+            <CravingsBox items={items} />
           </>
         )}
         {loading ?
@@ -165,7 +185,7 @@ export default function Menu() {
             <div className="w-10 h-10 border-4 border-gray-200 rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
             <p className="font-heading">Loading menu…</p>
           </div> :
-        rows.length === 0 || rows.every((r) => r.items.length === 0) ?
+        !rows.some((r) => r.isShakeBanner || r.items.length > 0) ?
         <div className="text-center py-20 text-muted-foreground">
             <p className="text-4xl mb-4">🍽️</p>
             <p className="font-heading text-lg">No items found</p>
@@ -173,7 +193,16 @@ export default function Menu() {
           </div> :
 
         <div className="space-y-12">
-            {rows.map(({ key, items: rowItems }) =>
+            {rows.map(({ key, items: rowItems, isShakeBanner }) =>
+          isShakeBanner ? (
+            <div key={key}>
+              <div className="flex items-center gap-4 mb-5">
+                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <MilkshakePromoBanner variant="strip" />
+            </div>
+          ) : (
           <div key={key}>
                 <div className="flex items-center gap-4 mb-5">
                   <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
@@ -190,6 +219,7 @@ export default function Menu() {
               )}
                 </div>
               </div>
+          )
           )}
           </div>
         }

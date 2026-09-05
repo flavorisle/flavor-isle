@@ -18,6 +18,7 @@ export default function BroadcastPushCard() {
       setResult(res.data);
       setBody('');
       setTitle('');
+      window.dispatchEvent(new CustomEvent('flavorisle:push-sent'));
     } catch (err) {
       setResult({ error: err.message || 'Failed to send' });
     } finally {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, UtensilsCrossed, User, ShoppingBag } from 'lucide-react';
+import { Home, UtensilsCrossed, User, ShoppingBag, Shirt, Bot } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 // Routes where the persistent bottom tab bar would conflict with a
@@ -17,7 +17,9 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
+    { to: '/merch', label: 'Merch', icon: Shirt },
     { cart: true, label: 'Cart', icon: ShoppingBag },
+    { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
   ];
 
@@ -45,33 +47,39 @@ export default function BottomTabBar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      <div className="flex items-stretch justify-around h-16 px-1">
+      <div className="flex items-stretch justify-around h-20 px-1">
         {tabs.map((tab) => {
           const active = tab.to && location.pathname === tab.to;
           const Icon = tab.icon;
           const content = (
-            <span className="flex flex-col items-center justify-center gap-0.5 w-full">
+            <span className="flex flex-col items-center justify-center gap-1 w-full">
               <span className="relative">
                 {tab.cart ? (
                   <img
-                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1371a20d4_CartEmblem.png"
+                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
                     alt="Cart"
-                    className="w-7 h-7 object-contain"
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : tab.smashie ? (
+                  <img
+                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png"
+                    alt="Smashie"
+                    className={`w-8 h-8 object-cover rounded-full ${active ? 'ring-2 ring-midnight-cherry' : ''}`}
                   />
                 ) : (
                   <Icon
-                    size={22}
-                    strokeWidth={active ? 2.4 : 2}
+                    size={26}
+                    strokeWidth={active ? 2.6 : 2.1}
                     className={active ? 'text-midnight-cherry' : 'text-muted-foreground'}
                   />
                 )}
                 {tab.cart && totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2.5 bg-midnight-cherry text-white text-[10px] font-heading leading-none w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2.5 bg-midnight-cherry text-white text-xs font-heading leading-none w-5 h-5 rounded-full flex items-center justify-center">
                     {totalItems}
                   </span>
                 )}
               </span>
-              <span className={`text-[10px] font-heading uppercase tracking-wide ${active ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
+              <span className={`text-xs font-heading uppercase tracking-wide ${active ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
                 {tab.label}
               </span>
             </span>
@@ -84,6 +92,19 @@ export default function BottomTabBar() {
                 onClick={() => setIsCartOpen(true)}
                 className="tap-44 flex-1 flex items-center justify-center select-none"
                 aria-label={`Cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          if (tab.smashie) {
+            return (
+              <button
+                key="smashie"
+                onClick={() => window.dispatchEvent(new CustomEvent('flavorisle:open-smashie'))}
+                className="tap-44 flex-1 flex items-center justify-center select-none"
+                aria-label="Chat with Smashie"
               >
                 {content}
               </button>

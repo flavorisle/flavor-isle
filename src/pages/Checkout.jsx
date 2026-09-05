@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -8,16 +8,18 @@ import { base44 } from '@/api/base44Client';
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
-import CheckoutLoyaltyBar from '@/components/checkout/CheckoutLoyaltyBar';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
+import WalletPayButton from '@/components/checkout/WalletPayButton';
+import ExpressCheckout from '@/components/checkout/ExpressCheckout';
+import SavedCardSelector from '@/components/checkout/SavedCardSelector';
+import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
-import DownloadAppBanner from '@/components/DownloadAppBanner';
-import SignUpNudge from '@/components/SignUpNudge';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
-import { hoursSummary } from '@/lib/businessHours';
+import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
+import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
@@ -40,34 +42,83 @@ const CARD_STYLE = {
 };
 
 // Inner payment form — must be rendered inside <Elements>
-function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
+function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
 
   const handlePay = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe) return;
     setPaying(true);
     onError('');
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card: elements.getElement(CardElement) },
-    });
+    let result;
+    if (savedCard) {
+      // Charge a saved card by its PaymentMethod id.
+      result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: savedCard.stripe_payment_method_id,
+      });
+    } else {
+      if (!elements) { setPaying(false); return; }
+      result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: elements.getElement(CardElement) },
+      });
+    }
 
     if (result.error) {
       onError(result.error.message);
       setPaying(false);
     } else if (result.paymentIntent.status === 'succeeded') {
+      // Save the new card for next time if the customer opted in. Done after
+      // a successful charge so a failed payment never saves a card.
+      if (!savedCard && saveNewCard && canSaveCard && result.paymentIntent.payment_method) {
+        try {
+          await base44.functions.invoke('manageSavedCards', {
+            action: 'save',
+            paymentMethodId: String(result.paymentIntent.payment_method),
+          });
+        } catch (err) {
+          console.error('Save new card failed:', err);
+        }
+      }
       onSuccess(orderNumber);
     }
   };
 
   return (
-    <form onSubmit={handlePay}>
-      <div className="border border-border rounded-2xl px-4 py-4 bg-muted mb-5">
-        <CardElement options={CARD_STYLE} />
-      </div>
+    <div>
+      {!savedCard && (
+        <WalletPayButton
+          clientSecret={clientSecret}
+          total={total}
+          label={`Flavor Isle #${orderNumber}`}
+          onSuccess={() => onSuccess(orderNumber)}
+          onError={onError}
+        />
+      )}
+      <form onSubmit={handlePay}>
+      {savedCard ? (
+        <div className="flex items-center gap-3 border border-border rounded-2xl px-4 py-4 bg-white mb-5">
+          <div className="w-9 h-9 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
+            <Lock size={16} className="text-midnight-cherry" />
+          </div>
+          <div className="flex-1">
+            <p className="font-heading text-sm text-obsidian-roast capitalize">{savedCard.brand} •••• {savedCard.last4}</p>
+            <p className="text-xs text-muted-foreground">Expires {String(savedCard.exp_month).padStart(2, '0')}/{String(savedCard.exp_year).slice(-2)} · saved card</p>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-3">
+          <CardElement options={CARD_STYLE} />
+        </div>
+      )}
+      {!savedCard && canSaveCard && (
+        <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
+          <input type="checkbox" checked={saveNewCard} onChange={e => setSaveNewCard(e.target.checked)} className="w-4 h-4 rounded accent-midnight-cherry" />
+          <span className="text-sm text-obsidian-roast">Save this card for faster checkout next time</span>
+        </label>
+      )}
       <button
         type="submit"
         disabled={paying || !stripe}
@@ -79,20 +130,46 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
           <><Lock size={15} /> Pay ${total.toFixed(2)}</>
         )}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people } = useCart();
+  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
+  const { level, waitMin } = useLiveStatus();
+  // Kitchen prep estimate scales with the live busyness level so checkout
+  // ready times match what the hero/status bar advertise. Uses the regressed
+  // wait from the backend so it eases back to normal as inflow slows.
+  const prepMinutes = waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  // Before the store opens for pickup, ready times are clamped to opening —
+  // show "from {open}" on the order-type tiles instead of a minute estimate.
+  const orderNow = new Date();
+  const orderDayKey = DAY_KEYS[(orderNow.getDay() + 6) % 7];
+  const orderTodayHours = businessHours?.[orderDayKey] || {};
+  const beforeStoreOpen = !orderTodayHours.closed && orderTodayHours.open && (() => {
+    const [oh, om] = orderTodayHours.open.split(':').map(Number);
+    const so = new Date(orderNow); so.setHours(oh, om, 0, 0);
+    return orderNow < so;
+  })();
+  const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
+
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
+  const nameRef = useRef(null);
+
+  // Auto-focus the first field so a guest can start typing their name
+  // immediately without hunting for the input — especially on desktop.
+  useEffect(() => { nameRef.current?.focus(); }, []);
 
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
@@ -107,8 +184,11 @@ export default function Checkout() {
       const p = profiles?.[0] || {};
       if (cancelled) return;
       if (p.delivery_address || p.address) setSavedAddress(true);
+      const [firstPart, ...rest] = (p.name || me.full_name || '').trim().split(/\s+/);
       setForm(prev => ({
         ...prev,
+        firstName: prev.firstName || firstPart || '',
+        lastName: prev.lastName || rest.join(' ') || '',
         email: prev.email || me.email || '',
         phone: prev.phone || p.phone || '',
         address: prev.address || p.delivery_address || p.address || '',
@@ -120,13 +200,26 @@ export default function Checkout() {
   // Payment step state
   const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
   const [stripePromise, setStripePromise] = useState(null);
+  const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  // Whether the device actually supports a wallet (Apple Pay / Google Pay).
+  // The express card stays hidden until the Stripe Payment Request confirms support.
+  const [walletReady, setWalletReady] = useState(null);
 
   // Group split-payment state
   const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
   const [splitIntents, setSplitIntents] = useState([]);
   const [splitPublishable, setSplitPublishable] = useState('');
+
+  // Saved cards (logged-in customers) — lets them charge a stored card or
+  // save a new one for next time. stripeCustomerId is attached to the
+  // PaymentIntent so saved methods can be charged.
+  const [savedCards, setSavedCards] = useState([]);
+  const [stripeCustomerId, setStripeCustomerId] = useState(null);
+  const [canSaveCard, setCanSaveCard] = useState(false); // signed-in customer can save cards
+  const [selectedCardId, setSelectedCardId] = useState('new'); // 'new' | stripe_payment_method_id
+  const [saveNewCard, setSaveNewCard] = useState(false);
 
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
@@ -155,19 +248,47 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
+  // Clear an applied reward when split mode changes (separate split can't apply
+  // a single reward). The reward is now chosen in the cart drawer.
+  useEffect(() => {
+    setAppliedReward(null);
+  }, [groupMode, payMode]);
+
+  // Clear stale field errors (e.g. delivery address) when the order type changes.
+  useEffect(() => { setFieldErrors({}); }, [orderType]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
-  const totalWithTip = +(Math.max(0, total) + tipAmount).toFixed(2);
+  // Compose the kitchen-facing notes: customer instructions + requested extras.
+  const extrasList = Object.entries(extras)
+    .filter(([, v]) => v)
+    .map(([k]) => ({
+      forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
+    }[k]));
+  const instructionsWithExtras = [
+    form.instructions.trim(),
+    extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
+  ].filter(Boolean).join('\n');
 
-  const readyAt = schedule.scheduledFor ? new Date(schedule.scheduledFor) : null;
-  const readyLabel = readyAt
-    ? `${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${schedule.mode === 'asap' ? ' (≈ 20 min)' : ''}`
-    : 'ASAP (≈ 20 min)';
+  const fullName = `${form.firstName} ${form.lastName}`.trim();
+  const rewardDiscount = appliedReward?.discountValue || 0;
+  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
-  const updateForm = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
+  // Single combined ready-by label: "~N min · clock time". For ASAP the clock
+  // time is order time + prep minutes; for a scheduled order it's the chosen slot.
+  const readyAt = schedule.scheduledFor
+    ? new Date(schedule.scheduledFor)
+    : new Date(Date.now() + prepMinutes * 60000);
+  const readyMinutes = schedule.mode === 'schedule' ? schedule.estimatedTime : prepMinutes;
+  const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+
+  const updateForm = (field, val) => {
+    setForm(prev => ({ ...prev, [field]: val }));
+    setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
+  };
 
   // Scroll to top when moving to the payment or split step so the card form
   // is immediately visible instead of leaving the user scrolled down past it.
@@ -179,28 +300,27 @@ export default function Checkout() {
 
   const handleContinue = async () => {
     setError('');
+    const errors = {};
     if (cutoffStatus[orderType]) {
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Please fill in your name and email.');
-      return;
-    }
-    if (orderType === 'delivery' && !form.address.trim()) {
-      setError('Please enter a delivery address.');
-      return;
-    }
-    if (schedule.mode === 'schedule' && !schedule.scheduledFor) {
-      setError('Please choose a time for your order.');
+    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
+    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
+    if (!form.email.trim()) errors.email = 'Your email is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
+    if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setError('Please complete the highlighted fields to continue.');
       return;
     }
 
-    // Fresh ready time at submit — ASAP = now + 20 min; scheduled = chosen slot
-    const scheduledFor = schedule.mode === 'asap'
-      ? new Date(Date.now() + 20 * 60000).toISOString()
-      : schedule.scheduledFor;
-    const estimatedTime = schedule.mode === 'asap' ? 20 : schedule.estimatedTime;
+    // Fresh ready time at submit — ASAP = now + prepMinutes; scheduled = chosen slot
+    const scheduledFor = schedule.scheduledFor;
+    const estimatedTime = schedule.estimatedTime;
 
     const mappedItems = cartItems.map(i => ({
       name: i.name,
@@ -211,6 +331,8 @@ export default function Checkout() {
       person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
       isBuildShake: !!i.isBuildShake,
+      deluxeLabel: i.deluxeLabel || '',
+      deluxeToppings: i.deluxeToppings || [],
     }));
 
     setLoading(true);
@@ -232,12 +354,11 @@ export default function Checkout() {
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip,
           scheduledFor, estimatedTime,
           splits,
@@ -250,16 +371,16 @@ export default function Checkout() {
         setOrderNumber(on);
         setStep('split');
       } else {
-        const fullName = form.name.trim();
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: 0, redemptionId: null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
+          stripeCustomerId: stripeCustomerId || undefined,
         });
 
         const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -280,9 +401,84 @@ export default function Checkout() {
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
 
+  // Load the Stripe publishable key once so Apple Pay / Google Pay can render
+  // on the first step (before a payment intent exists).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke('getStripePublishableKey', {});
+        if (!cancelled && res?.data?.publishableKey) {
+          setExpressStripePromise(loadStripe(res.data.publishableKey));
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load saved cards for signed-in customers so they can pick one for checkout.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!isAuthed || cancelled) return;
+      try {
+        const res = await base44.functions.invoke('manageSavedCards', { action: 'list' });
+        if (cancelled) return;
+        setCanSaveCard(true); // list succeeded → customer is signed in
+        const cards = res.data?.cards || [];
+        setSavedCards(cards);
+        setStripeCustomerId(res.data?.customerId || null);
+        const def = cards.find(c => c.is_default) || cards[0];
+        if (def) setSelectedCardId(def.stripe_payment_method_id);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Build a single-pay intent from the current cart + wallet-provided contact
+  // details. Used by the express Apple Pay / Google Pay button.
+  const createIntent = async (walletCustomer) => {
+    const scheduledFor = schedule.scheduledFor;
+    const estimatedTime = schedule.estimatedTime;
+    const mappedItems = cartItems.map(i => ({
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      image_url: i.image_url,
+      selectedModifiers: i.selectedModifiers || [],
+      person_name: i.person_name || '',
+      catalog_object_id: i.catalog_object_id || '',
+      isBuildShake: !!i.isBuildShake,
+      deluxeLabel: i.deluxeLabel || '',
+      deluxeToppings: i.deluxeToppings || [],
+    }));
+    const customer = {
+      name: walletCustomer.name || fullName,
+      email: walletCustomer.email || form.email,
+      phone: walletCustomer.phone || form.phone,
+      address: orderType === 'delivery' ? form.address : '',
+      table: form.table || '',
+    };
+    const res = await base44.functions.invoke('createPaymentIntent', {
+      items: mappedItems,
+      orderType,
+      customer,
+      instructions: instructionsWithExtras,
+      subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+      scheduledFor, estimatedTime,
+    });
+    return res.data;
+  };
+
+  const expressAvailable = !cutoffStatus[orderType]
+    && !(groupMode && payMode === 'separate')
+    && (orderType !== 'delivery' || form.address.trim() !== '');
+
   if (!orderingEnabled || storeClosed) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -299,7 +495,7 @@ export default function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
@@ -313,7 +509,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+    <div className="min-h-screen force-light" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
 
@@ -330,165 +526,155 @@ export default function Checkout() {
           )}
         </div>
 
-        <h1 className="font-heading text-4xl text-obsidian-roast mb-10">Checkout</h1>
+        <div className="mb-6">
+          <h1 className="font-heading text-3xl text-obsidian-roast leading-none">Checkout</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {step === 'details' ? 'Step 1 of 2 — Your details' : 'Step 2 of 2 — Payment'}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left – Form */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4">
 
             {step === 'details' && (
               <>
-                {/* Order Type */}
-                <div className="card-diner p-6">
-                  <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Type</h2>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { type: 'pickup', label: 'Pickup', sub: '15–25 min' },
-                      { type: 'delivery', label: 'Delivery', sub: '35–50 min' },
-                      { type: 'dine_in', label: 'Dine-In', sub: 'Seat yourself' },
-                    ].map(({ type, label, sub }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          if (!cutoffStatus[type] && orderType !== type) {
-                            base44.analytics.track({ eventName: 'checkout_order_type_selected', properties: { order_type: type } });
-                          }
-                          setOrderType(type);
-                        }}
-                        disabled={cutoffStatus[type]}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all font-heading text-sm ${
-                          cutoffStatus[type]
-                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                            : orderType === type
-                            ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                            : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        <img
-                          src={ORDER_TYPE_IMAGES[type]}
-                          alt={label}
-                          className={`w-16 h-16 object-contain rounded-lg ${cutoffStatus[type] ? 'opacity-40 grayscale' : ''}`}
-                        />
-                        {label}
-                        <span className="text-xs font-body opacity-60">{cutoffStatus[type] ? 'Closed for tonight' : sub}</span>
-                      </button>
-                    ))}
+                {/* Express checkout — one-tap Apple Pay / Google Pay first.
+                    Hidden entirely when the device has no wallet (walletReady === false). */}
+                {expressStripePromise && expressAvailable && walletReady !== false && (
+                  <div className="card-diner p-5 border-2 border-midnight-cherry/20 bg-white">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="font-heading text-lg text-obsidian-roast">One-Tap Checkout</h2>
+                      <span className="text-xs bg-midnight-cherry/10 text-midnight-cherry px-2.5 py-1 rounded-full font-heading">Fastest</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">Skip the form — pay instantly with your wallet and we'll grab the details we need from it.</p>
+                    <Elements stripe={expressStripePromise}>
+                      <ExpressCheckout
+                        total={totalWithTip}
+                        label="Flavor Isle"
+                        createIntent={createIntent}
+                        onSuccess={handleSuccess}
+                        onError={setError}
+                        onAvailability={setWalletReady}
+                      />
+                    </Elements>
+                    <div className="flex items-center gap-3 mt-5">
+                      <div className="h-px bg-border flex-1" />
+                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
+                      <div className="h-px bg-border flex-1" />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Pickup Time */}
-                <div className="card-diner p-6">
-                  <SchedulePicker onChange={setSchedule} />
-                </div>
-
-                {/* Loyalty & Rewards — stars-earned preview for members,
-                    earn-rewards nudge for guests */}
-                <CheckoutLoyaltyBar subtotal={subtotal} />
-
-                {/* Contact Info */}
-                <div className="card-diner p-6">
-                  <h2 className="font-heading text-lg text-obsidian-roast mb-4">Your Info</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
-                      <input type="text" autoComplete="name" value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="Jane Smith"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                {/* Contact Info — delivery address moved up front so a new guest
+                    sees the most important field first, before consent/instructions. */}
+                <div className="card-diner p-4">
+                  <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">First Name *</label>
+                      <input ref={nameRef} type="text" autoComplete="given-name" value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} placeholder="Jane"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.firstName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.firstName && <p className="text-xs text-destructive mt-1">{fieldErrors.firstName}</p>}
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Last Name *</label>
+                      <input type="text" autoComplete="family-name" value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} placeholder="Smith"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.lastName ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.lastName && <p className="text-xs text-destructive mt-1">{fieldErrors.lastName}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
-                      <input type="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      <input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
+                        className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.email ? 'border-destructive' : 'border-border'}`} />
+                      {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
-                      <input type="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
-                        className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
+                        className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                     </div>
                     {orderType === 'dine_in' && (
                       <div>
                         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Table Number</label>
                         <input type="text" value={form.table} onChange={e => updateForm('table', e.target.value)} placeholder="e.g. 7"
-                          className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                          className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       </div>
                     )}
                   </div>
 
+                  {/* Delivery address — shown right after contact for delivery
+                      orders so a new guest fills the most important field first. */}
                   {orderType === 'delivery' && (
-                    <SavedAddressField
-                      value={form.address}
-                      onChange={val => updateForm('address', val)}
-                      saved={savedAddress}
-                    />
+                    <div className={fieldErrors.address ? 'ring-2 ring-destructive/30 rounded-2xl mt-4' : 'mt-4'}>
+                      <SavedAddressField
+                        value={form.address}
+                        onChange={val => updateForm('address', val)}
+                        saved={savedAddress}
+                      />
+                      {fieldErrors.address && <p className="text-xs text-destructive mt-1">{fieldErrors.address}</p>}
+                    </div>
                   )}
+
+                  {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
+                  <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={smsConsent}
+                      onChange={e => setSmsConsent(e.target.checked)}
+                      className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                    />
+                    <span className="text-xs text-muted-foreground leading-relaxed">
+                      Text me order status updates from Flavor Isle (confirmed, preparing, ready). Reply STOP to cancel, HELP for help. Msg &amp; data rates may apply. See our{' '}
+                      <Link to="/privacy-policy" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</Link>{' '}and{' '}
+                      <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
+                    </span>
+                  </label>
+
+                  {/* Request extras — appended to kitchen order notes */}
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Need any extras?</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { key: 'forks', label: 'Forks' },
+                        { key: 'ketchup', label: 'Ketchup Packets' },
+                        { key: 'salt', label: 'Salt' },
+                        { key: 'napkins', label: 'Napkins' },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 cursor-pointer text-sm transition-all ${
+                            extras[opt.key]
+                              ? 'border-midnight-cherry bg-midnight-cherry/5 text-obsidian-roast'
+                              : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={extras[opt.key]}
+                            onChange={e => setExtras(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                            className="w-4 h-4 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                          />
+                          <span className="font-body">{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="mt-4">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Special Instructions</label>
                     <textarea value={form.instructions} onChange={e => updateForm('instructions', e.target.value)}
                       placeholder="Allergies, extra sauce, no pickles…" rows={3}
-                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
+                      className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
-                </div>
-
-                {/* Add a Tip */}
-                <div className="card-diner p-6">
-                  <div className="flex items-center justify-between mb-1">
-                    <h2 className="font-heading text-lg text-obsidian-roast">Add a Tip</h2>
-                    <span className="text-midnight-cherry font-heading text-lg">${tipAmount.toFixed(2)}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">100% goes to the kitchen crew.</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {tipPresets.map(preset => (
-                      <button
-                        key={preset.key}
-                        onClick={() => setTipPreset(preset.key)}
-                        className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
-                          tipPreset === preset.key
-                            ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                            : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setTipPreset('custom')}
-                      className={`py-3 rounded-2xl border-2 font-heading text-sm transition-all ${
-                        tipPreset === 'custom'
-                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                      }`}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                  {tipPreset === 'custom' && (
-                    <div className="mt-3 relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.50"
-                        value={customTip}
-                        onChange={e => setCustomTip(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full pl-8 pr-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
-                      />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => { setTipPreset('0'); setCustomTip(''); }}
-                    className="mt-3 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
-                  >
-                    No tip
-                  </button>
                 </div>
 
                 {/* Group payment mode — the whole group pays one fee; choose
                     whether one person pays everything or each pays their share. */}
                 {groupMode && (
-                  <div className="card-diner p-6">
-                    <h2 className="font-heading text-lg text-obsidian-roast mb-1">Group Payment</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Split into per-person card charges, or pay the full total at once. The delivery fee is charged once either way.</p>
+                  <div className="card-diner p-4">
+                    <h2 className="font-heading text-base text-obsidian-roast mb-1">Group Payment</h2>
+                    <p className="text-xs text-muted-foreground mb-3">Split into per-person charges, or pay the full total. Delivery fee is charged once.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => setPayMode('together')}
                         className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'together' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
@@ -518,11 +704,16 @@ export default function Checkout() {
             )}
 
             {step === 'payment' && stripePromise && clientSecret && (
-              <div className="card-diner p-6">
-                <h2 className="font-heading text-lg text-obsidian-roast mb-1">Payment</h2>
-                <p className="text-sm text-muted-foreground mb-5">Enter your card details below to complete your order.</p>
-                <CheckoutLoyaltyBar subtotal={subtotal} />
-                <div className="mb-5" />
+              <div className="card-diner p-4">
+                <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
+                <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
+                {savedCards.length > 0 && (
+                  <SavedCardSelector
+                    cards={savedCards}
+                    selectedId={selectedCardId}
+                    onSelect={setSelectedCardId}
+                  />
+                )}
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     clientSecret={clientSecret}
@@ -530,6 +721,10 @@ export default function Checkout() {
                     onSuccess={handleSuccess}
                     onError={setError}
                     total={totalWithTip}
+                    savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
+                    saveNewCard={saveNewCard}
+                    setSaveNewCard={setSaveNewCard}
+                    canSaveCard={canSaveCard}
                   />
                 </Elements>
                 <div className="mt-5">
@@ -539,17 +734,34 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Right – Order Summary */}
-          <div className="lg:col-span-2">
-            <div className="card-diner p-6 sticky top-32">
-              <h2 className="font-heading text-lg text-obsidian-roast mb-4">Order Summary</h2>
+          {/* Right – Order Details & Summary */}
+          <div className="lg:col-span-2 order-first lg:order-none">
+            <div className="card-diner p-5 lg:sticky lg:top-32">
+              <h2 className="font-heading text-base text-obsidian-roast mb-3">Order Details & Summary</h2>
 
-              <div className="flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 mb-5 text-sm font-heading">
-                <Clock size={16} />
-                <span>Ready by {readyLabel}</span>
+              {/* Order type + ready time merged into one card */}
+              <div className="rounded-xl bg-midnight-cherry/5 px-3 py-3 mb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
+                    <img
+                      src={ORDER_TYPE_IMAGES[orderType]}
+                      alt={ORDER_TYPE_LABELS[orderType]}
+                      className="w-7 h-7 object-contain flex-shrink-0"
+                    />
+                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
+                    <Clock size={15} />
+                    <span>Ready by {readyLabel}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3 mb-5">
+              {step === 'details' && (
+                <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
+              )}
+
+              <div className="space-y-2 mb-4">
                 {groupMode ? (
                   personSubtotals.filter(p => p.itemCount > 0).map(p => (
                     <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
@@ -561,9 +773,8 @@ export default function Checkout() {
                         {cartItems.filter(i => i.person_id === p.id).map(item => (
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
                             <div>
-                              <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                              <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                               <CartItemModifiers modifiers={item.selectedModifiers} />
-                              <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                             </div>
                             <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                           </div>
@@ -579,9 +790,8 @@ export default function Checkout() {
                   cartItems.map(item => (
                     <div key={item.id} className="flex justify-between items-start gap-3">
                       <div>
-                        <p className="font-heading text-sm text-obsidian-roast">{item.name}</p>
+                        <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                         <CartItemModifiers modifiers={item.selectedModifiers} />
-                        <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                       </div>
                       <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
@@ -589,7 +799,69 @@ export default function Checkout() {
                 )}
               </div>
 
-              <div className="border-t border-border pt-4 space-y-2 text-sm mb-5">
+              {/* Star Rewards — compact balance + redeemable rewards */}
+              <CheckoutLoyaltyBox
+                subtotal={subtotal}
+                phone={form.phone}
+                appliedReward={appliedReward}
+                onApply={setAppliedReward}
+              />
+
+              {/* Add a Tip — lives in the summary so the running total reflects it live */}
+              <div className="border-t border-border pt-3 mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-heading text-base text-obsidian-roast">Add a Tip</h3>
+                  <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">100% goes to the kitchen crew.</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {tipPresets.map(preset => (
+                    <button
+                      key={preset.key}
+                      onClick={() => setTipPreset(preset.key)}
+                      className={`py-2 rounded-xl border-2 font-heading text-sm transition-all ${
+                        tipPreset === preset.key
+                          ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                          : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setTipPreset('custom')}
+                    className={`py-2 rounded-xl border-2 font-heading text-sm transition-all ${
+                      tipPreset === 'custom'
+                        ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                        : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                    }`}
+                  >
+                    Custom
+                  </button>
+                </div>
+                {tipPreset === 'custom' && (
+                  <div className="mt-2 relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.50"
+                      value={customTip}
+                      onChange={e => setCustomTip(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={() => { setTipPreset('0'); setCustomTip(''); }}
+                  className="mt-2 text-xs text-muted-foreground underline hover:text-midnight-cherry transition-colors"
+                >
+                  No tip
+                </button>
+              </div>
+
+              <div className="border-t border-border pt-3 space-y-2 text-sm mb-4">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
                 </div>
@@ -604,6 +876,11 @@ export default function Checkout() {
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {rewardDiscount > 0 && (
+                  <div className="flex justify-between text-patina-mint">
+                    <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">
@@ -637,11 +914,6 @@ export default function Checkout() {
                 </div>
               )}
 
-              <DownloadAppBanner variant="compact" />
-
-              <div className="mt-4">
-                <SignUpNudge variant="compact" />
-              </div>
             </div>
           </div>
         </div>

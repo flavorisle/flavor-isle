@@ -17,7 +17,7 @@
     --secondary: 210 100% 20%;
     --secondary-foreground: 0 0% 100%;
     --muted: 42 40% 90%;
-    --muted-foreground: 210 30% 45%;
+    --muted-foreground: 210 30% 35%;
     --accent: 37 91% 55%;
     --accent-foreground: 210 100% 20%;
     --destructive: 0 84.2% 60.2%;
@@ -70,10 +70,12 @@
     --input: 210 60% 22%;
     --ring: 12 100% 40%;
 
-    /* Flavor Isle brand tokens — dark theme overrides */
+    /* Flavor Isle brand tokens — dark theme overrides.
+       --obsidian-roast / --patina-mint stay navy so branded backgrounds
+       (footer, buttons, navy sections) keep their identity in dark mode;
+       text utilities built from them are flipped light below. */
     --vanilla-malt: #071523;
     --cream-white: #0f1f2e;
-    --obsidian-roast: #f0f5fa;
 
     --sidebar-background: 210 100% 8%;
     --sidebar-foreground: 42 67% 94%;
@@ -86,6 +88,135 @@
   }
 }
 
+/* Dark mode surface + text fixes — brand bg tokens stay navy (footer, buttons,
+   navy sections keep their look), but text utilities built from those tokens
+   flip light so headings/accent text stay readable on the dark content bg.
+   bg-white (cards, nav, modals) becomes the dark card surface. */
+.dark .text-obsidian-roast { color: #f0f5fa; }
+.dark .text-patina-mint { color: #7FB2E8; }
+.dark .bg-white { background-color: hsl(var(--card)); }
+.dark .border-white\/10 { border-color: rgba(255, 255, 255, 0.12); }
+.dark .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
+.dark .bg-white\/10 { background-color: rgba(255, 255, 255, 0.08); }
+
+/* Forced-light subtrees (checkout, merch checkout) keep light surfaces even in
+   system dark mode, so the dark text overrides above must not apply inside them
+   — otherwise headings render near-white on white cards and disappear. */
+.dark .force-light .text-obsidian-roast,
+.dark .force-light.text-obsidian-roast { color: var(--patina-mint); }
+.dark .force-light .text-patina-mint,
+.dark .force-light.text-patina-mint { color: var(--patina-mint); }
+.dark .force-light .bg-white,
+.dark .force-light.bg-white { background-color: #ffffff; }
+.dark .force-light .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+.dark .force-light .bg-white\/5 { background-color: rgba(255, 255, 255, 0.6); }
+.dark .force-light .bg-white\/10 { background-color: rgba(255, 255, 255, 0.7); }
+
+/* High-contrast accessibility mode — stronger text/bg contrast, darker borders,
+   and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 210 100% 6%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 100% 6%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 100% 6%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 210 35% 22%;
+  --border: 210 50% 35%;
+  --input: 210 50% 35%;
+  --ring: 12 100% 35%;
+  --vanilla-malt: #FFFFFF;
+  --cream-white: #FFFFFF;
+  --midnight-cherry: #B82600;
+  --patina-mint: #001F4D;
+  --obsidian-roast: #001F4D;
+}
+
+.high-contrast .btn-cherry { background-color: #B82600; color: #ffffff; }
+.high-contrast .btn-mint { background-color: #001F4D; color: #ffffff; }
+.high-contrast .btn-yellow { background-color: #E09500; color: #001F4D; }
+.high-contrast .card-diner { border: 2px solid hsl(var(--border)); }
+.high-contrast button:focus-visible,
+.high-contrast a:focus-visible,
+.high-contrast input:focus-visible,
+.high-contrast select:focus-visible,
+.high-contrast textarea:focus-visible {
+  outline: 3px solid #FFD400;
+  outline-offset: 2px;
+}
+
+/* Force a subtree back onto the light palette regardless of system dark mode.
+   Used on high-contrast forms (checkout) so fields stay readable on Android. */
+.force-light {
+  --background: 42 67% 94%;
+  --foreground: 210 100% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 100% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 100% 20%;
+  --primary: 12 100% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 100% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 42 40% 90%;
+  /* Darker than the global muted tone — checkout labels, line items, and
+     totals were washing out at small sizes. */
+  --muted-foreground: 210 45% 26%;
+  --accent: 37 91% 55%;
+  --accent-foreground: 210 100% 20%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 42 30% 78%;
+  --input: 42 30% 78%;
+  --ring: 12 100% 40%;
+  --vanilla-malt: #FDF6E3;
+  --midnight-cherry: #CC3300;
+  --patina-mint: #003366;
+  --smashie-yellow: #F5A623;
+  --obsidian-roast: #003366;
+  --chrome-silver: #C0C0C0;
+  --cream-white: #FDF6E3;
+  --sidebar-background: 42 67% 94%;
+  --sidebar-foreground: 210 100% 20%;
+  --sidebar-primary: 12 100% 40%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 42 40% 90%;
+  --sidebar-accent-foreground: 210 100% 20%;
+  --sidebar-border: 42 30% 85%;
+  --sidebar-ring: 12 100% 40%;
+  /* Inputs inherit `color` from body, which is the light cream in system dark
+     mode — on the light field background that made typed text invisible on
+     Android. Pin the text color and tell the browser this subtree is light so
+     native form controls (autofill, caret, selection) render for a light UI. */
+  color: hsl(var(--foreground));
+  color-scheme: light;
+}
+
+.force-light input,
+.force-light textarea,
+.force-light select {
+  color: hsl(var(--foreground));
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+}
+.force-light input:-webkit-autofill,
+.force-light textarea:-webkit-autofill {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  box-shadow: 0 0 0 1000px hsl(var(--muted)) inset;
+}
+
+/* Checkout readability — the summary, field labels, and fine print used the
+   smallest type on the site. Bump the floor so it's legible on real devices. */
+.force-light .text-xs { font-size: 0.8125rem; line-height: 1.5; }
+.force-light .text-\[11px\] { font-size: 0.8125rem; }
+.force-light .text-sm { font-size: 0.9375rem; }
+.force-light input,
+.force-light textarea,
+.force-light select { font-size: 1rem; }
+.force-light input::placeholder,
+.force-light textarea::placeholder { color: hsl(210 25% 45%); }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -94,8 +225,8 @@
   body {
     @apply bg-background text-foreground font-body;
     background-color: var(--vanilla-malt);
-    font-size: 14.4px;
-    line-height: 1.6;
+    font-size: 17px;
+    line-height: 1.7;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -195,7 +326,7 @@
   }
 
   .card-diner {
-    background: white;
+    background: hsl(var(--card));
     border-radius: 0.75rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
     transition: box-shadow 0.25s ease, transform 0.25s ease;
@@ -219,7 +350,7 @@
   .safe-left { padding-left: env(safe-area-inset-left); }
   .safe-right { padding-right: env(safe-area-inset-right); }
 
-  .tap-44 { min-width: 44px; min-height: 44px; }
+  .tap-44 { min-width: 48px; min-height: 48px; }
 
   .glass-tab {
     background: rgba(255, 255, 255, 0.72);
@@ -240,6 +371,51 @@
   }
 }
 
+/* ── Printable in-store menu ──
+   When printing the admin Print Menu page, only the paper sheet is output:
+   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
+   is laid out edge-to-edge in black on white. */
+@media print {
+  @page { size: A3 landscape; margin: 0.35in; }
+
+  /* Everything must land on a single A3 landscape sheet — tighten the type
+     and let sections flow across columns instead of breaking to page 2. */
+  #print-sheet { font-size: 10px; }
+  #print-sheet .px-10 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  #print-sheet .py-8 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+
+  body {
+    background: #ffffff !important;
+    padding-bottom: 0 !important;
+    font-size: 12px;
+  }
+
+  /* Hide global app chrome that isn't part of the menu sheet */
+  nav, footer, .glass-tab, .glass-back { display: none !important; }
+  /* Hide the Smashie chat widget */
+  .smashie-chat-root { display: none !important; }
+
+  #print-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #print-sheet * {
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* On-screen paper preview for the printable menu — A3 landscape (16.5in wide). */
+#print-sheet {
+  width: 16.5in;
+  max-width: 100%;
+}
+
 /* ── Mobile / iOS WebView polish (additive, desktop-safe) ── */
 @layer base {
   html, body {
@@ -251,7 +427,7 @@
   /* Reserve space for the mobile bottom tab bar so content isn't obscured */
   @media (max-width: 767px) {
     body {
-      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
   }
 

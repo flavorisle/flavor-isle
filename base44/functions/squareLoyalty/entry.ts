@@ -15,11 +15,24 @@ Deno.serve(async (req) => {
       if (!square_order_id || (!email && !phone)) {
         return Response.json({ error: 'square_order_id and either email or phone are required' }, { status: 400 });
       }
-      await accrueForOrder({ squareOrderId: square_order_id, email, phone });
-      return Response.json({ success: true });
+      try {
+        await accrueForOrder({ squareOrderId: square_order_id, email, phone });
+        return Response.json({ success: true });
+      } catch (accrueErr) {
+        console.error('accrueForOrder failed:', accrueErr.message);
+        return Response.json({ error: accrueErr.message }, { status: 500 });
+      }
     }
 
-    // default: live loyalty status for the signed-in customer
+    // default: live loyalty status. A phone number passed in the body (e.g.
+    // from a guest at checkout) drives a phone-first lookup — Square Star
+    // Rewards are keyed by phone, so this works without a signed-in account.
+    if (body?.phone) {
+      const phoneStatus = await buildLoyaltyStatus({ email: '', phone: body.phone });
+      return Response.json(phoneStatus);
+    }
+
+    // No phone provided — fall back to the signed-in customer's saved profile.
     const user = await base44.auth.me();
     if (!user?.email) return Response.json({ error: 'Not signed in' }, { status: 401 });
 

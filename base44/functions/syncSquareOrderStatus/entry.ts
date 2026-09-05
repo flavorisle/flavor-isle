@@ -1,7 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
-import { sendOrderStatusEmail, sendOrderReadyEmail } from '../../shared/sendOrderEmails.ts';
+import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
+import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getLiveBusyness } from '../../shared/liveBusyness.ts';
+import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -126,26 +129,73 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${squareOrders.length} Square orders to check`);
 
+    const smashieSettings = await getSmashieSettings(base44);
+
+    // Fetch recent Order entities ONCE and index by square_order_id, instead
+    // of one filter() call per Square order — the per-order calls were
+    // exhausting the entity API rate limit every 5-minute run.
+    const recentOrders = await base44.asServiceRole.entities.Order.list('-created_date', 1000);
+    const orderBySquareId = new Map();
+    (recentOrders || []).forEach(o => {
+      if (o.square_order_id) orderBySquareId.set(o.square_order_id, o);
+    });
+
     let updated = 0;
     let notified = 0;
+    const pendingUpdates = [];
+    // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
+    // lookup, and bursting through dozens at once trips Square's rate limit.
+    // Spreads the backfill across scheduled runs instead.
+    let loyaltyRetriesThisRun = 0;
+    const LOYALTY_RETRY_CAP = 3;
 
     for (const sqOrder of squareOrders) {
       const newStatus = mapSquareStateToStatus(sqOrder);
       if (!newStatus) continue;
 
-      // Find matching Order entity by square_order_id
-      const matches = await base44.asServiceRole.entities.Order.filter({ square_order_id: sqOrder.id });
-      if (!matches || matches.length === 0) continue;
+      // Look up the matching Order entity from the in-memory index
+      const order = orderBySquareId.get(sqOrder.id);
+      if (!order) continue;
 
-      const order = matches[0];
+      // Loyalty accrual retry — online orders paid via Stripe sometimes miss
+      // Star Rewards points because the Square order isn't in a computed state
+      // the instant payment lands. Retry here for any paid online order that
+      // hasn't been marked accrued. Safe: we first check Square's loyalty
+      // ledger for an existing ACCUMULATE_POINTS event on this order — if one
+      // exists, the order was already credited and we just mark it, never
+      // re-accruing (so already-credited orders, even from before this flag
+      // existed, are backfilled without double-awarding).
+      if (
+        order.order_source === 'online' &&
+        order.payment_status === 'paid' &&
+        order.square_order_id &&
+        order.customer_email &&
+        !order.loyalty_accrued &&
+        loyaltyRetriesThisRun < LOYALTY_RETRY_CAP
+      ) {
+        loyaltyRetriesThisRun++;
+        try {
+          const alreadyAccrued = await hasAccrualEventForOrder(order.square_order_id);
+          if (alreadyAccrued) {
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty already accrued for order ${order.order_number} — marked`);
+          } else {
+            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone });
+            await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
+            console.log(`Loyalty accrual retry succeeded for order ${order.order_number}`);
+          }
+        } catch (retryErr) {
+          console.error(`Loyalty accrual retry failed for order ${order.order_number}:`, retryErr.message);
+        }
+      }
 
       // Only update if status actually changed
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
 
-      // Update the order status
-      await base44.asServiceRole.entities.Order.update(order.id, { status: newStatus });
+      // Stage the status update; applied in a single bulkUpdate after the loop
+      pendingUpdates.push({ id: order.id, status: newStatus });
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
@@ -157,20 +207,32 @@ Deno.serve(async (req) => {
       const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
-      if (!customerEmail) continue;
+      // Never notify placeholder addresses used for in-store POS / walk-in
+      // orders — those aren't real customers and just burn email credits.
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      if (!customerEmail || isPlaceholderEmail) continue;
 
       const milestones = missedMilestones(prevStatus, newStatus);
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `🍔 Order #${orderNum} is on the grill`,
-            `Hey ${customerName},\n\nOrder #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥\n\nWe'll hit you up the second it's ready.\n\n— Smashie & The Flavor Isle Team 🍔`
-          );
+          await sendOrderPreparingEmail(order, base44);
           notified++;
+          // Live wait for the push body — same number the email and site show.
+          let pushWait = '';
+          try {
+            const live = await getLiveBusyness(base44);
+            if (!live.isClosed && live.estimated_wait_min > 0) {
+              pushWait = ` Expect ~${live.estimated_wait_min} min — kitchen is ${live.busyness_level.toLowerCase()}.`;
+            }
+          } catch (e) {
+            console.error('live wait for push failed:', e.message);
+          }
+          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
+          }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
-            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen. We'll ping you the second it's ready!`,
+            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
             url: '/account',
             tag: `order-${order.id}`,
           });
@@ -179,7 +241,7 @@ Deno.serve(async (req) => {
         if (milestone === 'ready') {
           await sendOrderReadyEmail(order);
           notified++;
-          if (order.customer_phone) {
+          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
           }
           await sendPushToEmail(base44, customerEmail, {
@@ -193,12 +255,11 @@ Deno.serve(async (req) => {
         }
 
         if (milestone === 'completed') {
-          await sendOrderStatusEmail(
-            customerEmail,
-            `Thanks for rolling with us! 🙌`,
-            `Hey ${customerName},\n\nOrder #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔\n\nWe'd love to see you back soon, fam.\n\n— Smashie & The Flavor Isle Team`
-          );
+          await sendOrderCompletedEmail(order);
           notified++;
+          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
+          }
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
@@ -207,6 +268,10 @@ Deno.serve(async (req) => {
           });
         }
       }
+    }
+
+    if (pendingUpdates.length > 0) {
+      await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
     }
 
     return Response.json({ checked: squareOrders.length, updated, notified });

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
+import SavedCardsPanel from '@/components/account/SavedCardsPanel';
 import { base44 } from '@/api/base44Client';
+import { formatChicagoDate } from '@/lib/chicagoTime';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
@@ -43,11 +45,12 @@ function OrderCard({ order, onReorder }) {
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
               </span>
+              {order.order_source === 'in_store' && <span className="text-xs px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
               {isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date(order.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {' · '}{order.order_type?.replace('_', ' ')}
+              {formatChicagoDate(order.created_date, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {' · '}{order.order_source === 'in_store' ? 'In-Store' : order.order_type?.replace('_', ' ')}
               {' · '}{(order.items || []).length} item{order.items?.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -187,6 +190,14 @@ function LoggedInAccount({ user, logout }) {
       await base44.entities.CustomerProfile.update(profile.id, form);
       setProfile(p => ({ ...p, ...form }));
       setEditing(false);
+      // Push name + phone to the Square customer directory so the online
+      // account and the in-store POS customer stay in sync. Fire-and-forget
+      // after the profile save so the UI stays responsive — a Square failure
+      // shouldn't block the local profile update.
+      base44.functions.invoke('syncCustomerToSquare', {
+        full_name: form.name,
+        phone: form.phone,
+      }).catch((e) => console.error('Square customer sync failed:', e));
       // Re-sync Star Rewards whenever the profile changes — phone is what
       // links the online account to the in-store Square loyalty program, so
       // adding/updating it should surface the customer's star progress live.
@@ -198,7 +209,12 @@ function LoggedInAccount({ user, logout }) {
 
   const handleReorder = (order) => {
     if (!order.items || order.items.length === 0) return;
-    order.items.forEach(item => addItem(item));
+    order.items.forEach(item => {
+      // Rebuild each line fresh: respect the original quantity and drop stale
+      // group-order person tags from the past order.
+      const { quantity, person_id, person_name, ...rest } = item;
+      for (let n = 0; n < (quantity || 1); n++) addItem(rest);
+    });
     if (order.order_type) setOrderType(order.order_type);
     setIsCartOpen(true);
   };
@@ -279,6 +295,7 @@ function LoggedInAccount({ user, logout }) {
             { key: 'track', label: 'Track Order', icon: ClipboardList },
             { key: 'favorites', label: 'Favorites', icon: Heart },
             { key: 'rewards', label: 'Rewards', icon: Gift },
+            { key: 'payments', label: 'Payment Methods', icon: CreditCard },
             { key: 'profile', label: 'Profile & Preferences', icon: User },
           ].map(({ key, label, icon: Icon }) => (
             <button
@@ -348,6 +365,12 @@ function LoggedInAccount({ user, logout }) {
 
         {tab === 'rewards' && (
           <StarRewardsPanel status={starStatus} loading={starLoading} onAddPhone={() => setTab('profile')} />
+        )}
+
+        {tab === 'payments' && (
+          <div className="max-w-2xl">
+            <SavedCardsPanel />
+          </div>
         )}
 
         {tab === 'favorites' && (
@@ -420,6 +443,20 @@ function LoggedInAccount({ user, logout }) {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Sign out — always visible here, since the header button is tight on mobile */}
+            <div className="card-diner p-6 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-heading text-lg text-obsidian-roast mb-1">Sign Out</h3>
+                <p className="text-sm text-muted-foreground">Log out of your Flavor Isle account on this device.</p>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="btn-mint chrome-hover flex items-center gap-2 px-5 py-3 text-sm tap-44 flex-shrink-0"
+              >
+                <LogOut size={16} /> Sign Out
+              </button>
             </div>
 
             {/* Danger Zone — account deletion (App Store requirement) */}

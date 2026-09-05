@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime } = body;
+    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, stripeCustomerId } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -17,9 +17,13 @@ Deno.serve(async (req) => {
     const orderNumber = Date.now().toString().slice(-6);
     const amountCents = Math.round(total * 100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    // When a signed-in customer has saved cards (or wants to save this card),
+    // attach the Stripe Customer so saved payment methods can be charged and
+    // the card can be reused after this payment (setup_future_usage).
+    const piParams = {
       amount: amountCents,
       currency: 'usd',
+      automatic_payment_methods: { enabled: true },
       metadata: {
         base44_app_id: Deno.env.get('BASE44_APP_ID'),
         order_number: orderNumber,
@@ -31,7 +35,14 @@ Deno.serve(async (req) => {
         table_number: customer.table || '',
         special_instructions: instructions || '',
       },
-    });
+    };
+    // Attach the Stripe Customer when present so saved payment methods can be
+    // charged. We intentionally do NOT set setup_future_usage here — new cards
+    // are only saved when the customer explicitly opts in after payment.
+    if (stripeCustomerId) {
+      piParams.customer = stripeCustomerId;
+    }
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     // Save order entity as pending
     try {
@@ -40,7 +51,7 @@ Deno.serve(async (req) => {
         order_type: orderType,
         status: 'pending',
         payment_status: 'pending',
-        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', isBuildShake: !!i.isBuildShake })),
+        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [] })),
         subtotal,
         tax,
         delivery_fee: deliveryFee || 0,

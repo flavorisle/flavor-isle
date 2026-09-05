@@ -6,19 +6,50 @@ import { base44 } from '@/api/base44Client';
 let _cachedSetting = null;
 let _fetchPromise = null;
 
+// Safe default used when the settings record can't be loaded (e.g. API rate
+// limit). Keeps the menu rendering with no hidden categories / default order
+// instead of crashing the page.
+const DEFAULT_SETTING = {
+  id: null,
+  hidden_categories: [],
+  category_sort_order: [],
+  category_renames: {},
+  category_item_order: {},
+  ordering_enabled: true,
+  ordering_closed_message: 'Ordering is temporarily closed',
+  closing_time: '20:00',
+  delivery_cutoff_minutes: 30,
+  pickup_cutoff_minutes: 15,
+  delivery_fee: 0,
+  business_hours: null,
+  closure: null,
+};
+
 export async function getMenuSetting() {
   if (_cachedSetting) return _cachedSetting;
   if (_fetchPromise) return _fetchPromise;
   _fetchPromise = (async () => {
-    const list = await base44.entities.MenuSetting.list();
-    const existing = (list || [])[0];
-    if (existing) {
-      _cachedSetting = existing;
-      return existing;
+    try {
+      const list = await base44.entities.MenuSetting.list();
+      const existing = (list || [])[0];
+      if (existing) {
+        _cachedSetting = existing;
+        return existing;
+      }
+      const created = await base44.entities.MenuSetting.create({ hidden_categories: [] });
+      _cachedSetting = created;
+      return created;
+    } catch (err) {
+      // Transient API failure (rate limit, network, etc.): fall back to
+      // defaults so callers keep working. Cache it briefly to avoid a
+      // retry storm hammering the rate-limited endpoint.
+      console.warn('getMenuSetting: using default fallback —', err?.message || err);
+      const fallback = { ...DEFAULT_SETTING };
+      _cachedSetting = fallback;
+      // Clear the fallback after a short delay so a later retry can succeed.
+      setTimeout(() => { _cachedSetting = null; }, 15000);
+      return fallback;
     }
-    const created = await base44.entities.MenuSetting.create({ hidden_categories: [] });
-    _cachedSetting = created;
-    return created;
   })();
   try {
     return await _fetchPromise;
@@ -117,4 +148,16 @@ export async function setCategoryItemOrder(order) {
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], category_item_order: order });
   bustMenuSettingCache();
   return created.id;
+}
+
+export async function setClosure(closure) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { closure });
+    bustMenuSettingCache();
+    return { ...setting, closure };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], closure });
+  bustMenuSettingCache();
+  return created;
 }

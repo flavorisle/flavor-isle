@@ -55,6 +55,10 @@
     },
     "notes": {
       "type": "string"
+    },
+    "cart": {
+      "type": "object",
+      "description": "Saved cart for cross-device sync: { cartItems, orderType, groupMode, people, activePersonId, savedAt }. Hydrated only for authenticated users so the same cart follows them across phones, tablets, and desktops."
     }
   },
   "required": [

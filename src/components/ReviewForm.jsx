@@ -25,7 +25,7 @@ function StarPicker({ value, onChange }) {
   );
 }
 
-export default function ReviewForm({ onSuccess, submitLabel = 'Submit Feedback' }) {
+export default function ReviewForm({ onSuccess, submitLabel = 'Submit Feedback', menuItem = null, orderId = null }) {
   const [form, setForm] = useState({ customer_name: '', customer_email: '', rating: 0, text: '', photo_url: '' });
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -56,8 +56,18 @@ export default function ReviewForm({ onSuccess, submitLabel = 'Submit Feedback' 
     setSubmitting(true);
     try {
       // Creates a Review pending approval — once an admin approves it, it
-      // shows up on the home page in "What Our Neighbors Are Saying".
-      await base44.entities.Review.create({ ...form, is_approved: false });
+      // shows up on the home page in "What Our Neighbors Are Saying". When
+      // menuItem is provided, the review is linked to that food item so it
+      // also surfaces on the menu card.
+      const payload = { ...form, is_approved: false };
+      if (menuItem?.id) {
+        payload.menu_item_id = menuItem.id;
+        payload.menu_item_name = menuItem.name;
+      }
+      if (orderId) {
+        payload.order_id = orderId;
+      }
+      await base44.entities.Review.create(payload);
       setSubmitted(true);
       onSuccess?.();
     } catch {

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -93,7 +94,9 @@ Deno.serve(async (req) => {
       // modifier option ids. Emit as an ad-hoc named line with the selected
       // modifiers folded into the name so the POS ticket prints correctly.
       // item.price already includes all modifier upcharges from the cart.
-      const mods = (item.selectedModifiers || []).map(m => m.name).filter(Boolean).join(', ');
+      // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
+      // no Tomato") instead of a raw topping list.
+      const mods = formatItemModifiers(item).join(', ');
       return {
         name: mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item'),
         quantity: String(item.quantity || 1),

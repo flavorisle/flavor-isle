@@ -2,6 +2,10 @@
   "name": "HourlyMetrics",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "hour": {
       "type": "number",
       "description": "Hour of day (0-23)"

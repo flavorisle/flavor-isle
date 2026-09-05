@@ -2,6 +2,10 @@
   "name": "PushSubscription",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "user_id": {
       "type": "string",
       "description": "Base44 user id of the subscriber"

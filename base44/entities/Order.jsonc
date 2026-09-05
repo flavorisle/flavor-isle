@@ -2,6 +2,10 @@
   "name": "Order",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "order_number": {
       "type": "string"
     },
@@ -12,6 +16,15 @@
         "delivery",
         "dine_in"
       ]
+    },
+    "order_source": {
+      "type": "string",
+      "enum": [
+        "online",
+        "in_store"
+      ],
+      "default": "online",
+      "description": "Where the order originated. 'online' for web/app orders placed through the site; 'in_store' for Square POS orders synced from the register."
     },
     "status": {
       "type": "string",
@@ -88,6 +101,10 @@
     "square_order_id": {
       "type": "string"
     },
+    "payment_url": {
+      "type": "string",
+      "description": "Square-hosted checkout link generated for orders that are paid after the fact (phone orders taken by Smashie). Stored so staff can re-send or look up the link later."
+    },
     "payment_status": {
       "type": "string",
       "enum": [
@@ -97,6 +114,11 @@
         "refunded"
       ],
       "default": "pending"
+    },
+    "loyalty_accrued": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Square Star Rewards points have been successfully accrued for this order. Set true by the Stripe webhook after a successful accrual, and by the Square order-status sync's self-healing retry (which first checks the Square loyalty ledger for an existing ACCUMULATE_POINTS event so already-credited orders are never re-accrued)."
     }
   },
   "required": [

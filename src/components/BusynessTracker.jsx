@@ -3,14 +3,16 @@ import { base44 } from '@/api/base44Client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const BUSYNESS_COLORS = {
-  'Running Smooth': '#22c55e',      // green
-  'A Little Busy': '#eab308',       // yellow
-  'Expecting a Short Wait': '#ef4444' // red
+  'Running Smooth': '#22c55e',   // green
+  'A Little Busy': '#eab308',    // yellow
+  'Busy': '#f97316',             // orange
+  'Slammed': '#ef4444',          // red
 };
 
 const getBusynessColor = (count) => {
-  if (count >= 8) return 'Expecting a Short Wait';
-  if (count >= 5) return 'A Little Busy';
+  if (count >= 13) return 'Slammed';
+  if (count >= 8) return 'Busy';
+  if (count >= 4) return 'A Little Busy';
   return 'Running Smooth';
 };
 
@@ -92,18 +94,22 @@ export default function BusynessTracker() {
       </ResponsiveContainer>
 
       {/* Legend */}
-      <div className="flex gap-6 mt-6 justify-center text-xs">
+      <div className="flex flex-wrap gap-4 mt-6 justify-center text-xs">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-green-500" />
-          <span>Running Smooth (&lt;5 orders)</span>
+          <span>Smooth (0–3)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-yellow-400" />
-          <span>A Little Busy (5–7 orders)</span>
+          <span>A Little Busy (4–7)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-orange-500" />
+          <span>Busy (8–12)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-red-500" />
-          <span>Expecting Wait (8+ orders)</span>
+          <span>Slammed (13+)</span>
         </div>
       </div>
     </div>

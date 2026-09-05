@@ -1,5 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { Twilio } from 'npm:twilio';
+import { formatItemModifiers } from '../../shared/ticketFormat.ts';
+
+// Send an SMS via the Twilio REST API directly. The Twilio npm SDK throws
+// "Unsupported cache mode: default" under Deno, so we call the REST endpoint
+// with fetch + Basic auth instead — lighter and runtime-safe.
+async function sendTwilioSms(accountSid, authToken, from, to, body) {
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+  const params = new URLSearchParams({ From: from, To: to, Body: body });
+  const auth = btoa(`${accountSid}:${authToken}`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Twilio SMS failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
 
 Deno.serve(async (req) => {
   try {
@@ -12,9 +34,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing order_number' }, { status: 400 });
     }
 
-    // Format items for kitchen display
+    // Format items for kitchen display. Deluxe preset toppings print as the
+    // preset label ("Deluxe" / "Deluxe, no Tomato") instead of a raw list.
     const itemsText = (items || [])
-      .map(item => `${item.quantity}x ${item.name}${item.selectedModifiers ? ' (' + item.selectedModifiers.map(m => m.name).join(', ') + ')' : ''}`)
+      .map(item => {
+        const mods = formatItemModifiers(item).join(', ');
+        return `${item.quantity}x ${item.name}${mods ? ' (' + mods + ')' : ''}`;
+      })
       .join('\n');
 
     // Format message based on order type with customer info
@@ -43,16 +69,13 @@ Deno.serve(async (req) => {
     kitchenMessage += `\n───────────────────\n${itemsText}${special_instructions ? '\n───────────────────\n⚠️  SPECIAL INSTRUCTIONS:\n' + special_instructions : ''}\n═══════════════════`;
 
     // Send to kitchen via Twilio SMS to kitchen phone
-    const client = new Twilio(
+    await sendTwilioSms(
       Deno.env.get('TWILIO_ACCOUNT_SID'),
-      Deno.env.get('TWILIO_AUTH_TOKEN')
+      Deno.env.get('TWILIO_AUTH_TOKEN'),
+      Deno.env.get('TWILIO_PHONE_NUMBER'),
+      '+12705634618', // Kitchen phone number (Flavor Isle main line)
+      kitchenMessage,
     );
-
-    await client.messages.create({
-      from: Deno.env.get('TWILIO_PHONE_NUMBER'),
-      to: '+12705634618', // Kitchen phone number (Flavor Isle main line)
-      body: kitchenMessage,
-    });
 
     console.log(`Kitchen notification sent for order #${order_number}`);
     return Response.json({ success: true, message: 'Kitchen notified' });
