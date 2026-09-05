@@ -156,6 +156,14 @@ export async function getShippingRates({ recipient, items }: { recipient: any; i
   return rates;
 }
 
+// Fetch a single order's live status + shipments from Printful.
+export async function fetchOrder(printfulOrderId: string) {
+  const res = await fetch(`${PRINTFUL_BASE}/orders/${printfulOrderId}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || "Failed to fetch Printful order");
+  return data.result;
+}
+
 // Get the current Printful webhook configuration for the store.
 export async function getWebhookConfig() {
   const res = await fetch(`${PRINTFUL_BASE}/webhooks`, { headers: authHeaders() });
