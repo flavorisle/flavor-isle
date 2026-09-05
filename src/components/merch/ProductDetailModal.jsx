@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Check, ShoppingBag } from 'lucide-react';
 import MerchShareButton from './MerchShareButton';
+import ProductionTimeNotice from './ProductionTimeNotice';
 
 export default function ProductDetailModal({ product, onClose, onAdd }) {
   const variants = product?.variants || [];
@@ -148,12 +149,13 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
                 </div>
               </div>
 
-              <div className="mt-auto">
+              <div className="mt-auto space-y-3">
                 {selectedVariant && (
-                  <p className="font-heading text-2xl text-midnight-cherry mb-3">
+                  <p className="font-heading text-2xl text-midnight-cherry">
                     ${selectedVariant.price.toFixed(2)}
                   </p>
                 )}
+                <ProductionTimeNotice variant="compact" />
               </div>
             </div>
           </div>

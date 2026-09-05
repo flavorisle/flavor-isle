@@ -1,6 +1,7 @@
 // Tasty Threads product card.
 import React from 'react';
 import MerchSocialShare from './MerchSocialShare';
+import { ProductionTimeBadge } from './ProductionTimeNotice';
 
 export default function ProductCard({ product, onClick }) {
   const fromLabel = product.fromPrice ? `$${product.fromPrice.toFixed(2)}` : '';
@@ -27,13 +28,19 @@ export default function ProductCard({ product, onClick }) {
             from {fromLabel}
           </span>
         )}
+        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur text-patina-mint text-[10px] font-heading uppercase tracking-widest px-2 py-1 rounded-full shadow-sm">
+          Made to order
+        </span>
       </div>
       <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-heading text-base text-obsidian-roast leading-tight">{product.name}</h3>
         {product.description && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
         )}
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-3 mb-3">
+          <ProductionTimeBadge />
+        </div>
+        <div className="mt-auto flex items-center justify-between gap-2">
           <span className="text-xs font-heading text-midnight-cherry uppercase tracking-widest group-hover:gap-2 inline-flex items-center gap-1 transition-all">
             View options →
           </span>

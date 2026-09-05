@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
+import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -265,7 +266,7 @@ export default function MerchCheckout() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-border pt-4 space-y-2 text-sm mb-5">
+              <div className="border-t border-border pt-4 space-y-2 text-sm mb-4">
                 <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
@@ -275,6 +276,8 @@ export default function MerchCheckout() {
                   <span>Total</span><span>${total.toFixed(2)}</span>
                 </div>
               </div>
+
+              <ProductionTimeNotice variant="compact" className="mb-5" />
 
               {error && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
