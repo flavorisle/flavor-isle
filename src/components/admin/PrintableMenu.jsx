@@ -15,11 +15,12 @@ function sizePrices(item) {
 }
 
 // Click-to-edit text on the preview. Commits on blur; plain text only.
-function Editable({ as: Tag = 'span', value, onCommit, className, placeholder }) {
-  if (!onCommit) return <Tag className={className}>{value}</Tag>;
+function Editable({ as: Tag = 'span', value, onCommit, className, placeholder, style }) {
+  if (!onCommit) return <Tag className={className} style={style}>{value}</Tag>;
   return (
     <Tag
       className={`${className} outline-none rounded print:!bg-transparent hover:bg-yellow-50 focus:bg-yellow-50 cursor-text ${!value ? 'text-gray-400 print:hidden' : ''}`}
+      style={style}
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder}
@@ -50,16 +51,15 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
           {subtitle && <p className="text-[11px] tracking-[0.3em] mt-2 uppercase">{subtitle}</p>}
         </div>
 
-        {/* Sections */}
-        <div
-          className="gap-6"
-          style={{ columnCount: columns, columnGap: '1.5rem' }}
-        >
+        {/* Sections — CSS multi-column. Sections flow naturally across columns;
+            only individual items avoid breaking mid-item. */}
+        <div style={{ columnCount: columns, columnGap: '1.5rem' }}>
           {sections.map(section => (
-            <div key={section.key} className="mb-4" style={{ breakInside: 'avoid-column' }}>
+            <div key={section.key} className="mb-4">
               <Editable
                 as="h2"
                 className="font-heading text-xl tracking-wider border-b-2 border-black pb-1 mb-2 uppercase"
+                style={{ breakAfter: 'avoid' }}
                 value={section.label}
                 onCommit={onEditSection && (v => onEditSection(section.key, v))}
               />
