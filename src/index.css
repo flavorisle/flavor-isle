@@ -376,7 +376,7 @@
    the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
    is laid out edge-to-edge in black on white. */
 @media print {
-  @page { size: A3 landscape; margin: 0.35in; }
+  @page { size: A3 landscape; margin: 0.25in 0.2in; }
 
   body {
     background: #ffffff !important;

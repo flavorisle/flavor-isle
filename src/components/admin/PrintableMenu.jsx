@@ -41,11 +41,11 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
 
   return (
     <div id="print-sheet" className="bg-white text-black mx-auto shadow-float print:shadow-none">
-      <div className="px-10 py-8">
+      <div className="px-6 py-6">
         {/* Header */}
         <div className="text-center border-b-4 border-black pb-4 mb-6">
           {showLogo && (
-            <img src={LOGO} alt="Flavor Isle" className="w-16 h-16 mx-auto mb-2 rounded-full" />
+            <img src={LOGO} alt="Flavor Isle" className="w-16 h-16 mx-auto mb-2" style={{ borderRadius: '50%', display: 'block' }} />
           )}
           <h1 className="font-heading text-4xl tracking-widest leading-none">{title}</h1>
           {subtitle && <p className="text-[11px] tracking-[0.3em] mt-2 uppercase">{subtitle}</p>}
