@@ -130,7 +130,7 @@ export function brandedEmailHtml(bodyHtml) {
   <div style="background:#F5EDD6;padding:24px 12px;font-family:'Open Sans',Arial,sans-serif;">
     <div style="max-width:600px;margin:0 auto;background:#FFFDF8;border-radius:16px;overflow:hidden;">
       <div style="background:#C0392B;padding:28px 24px;text-align:center;">
-        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:50%;display:block;margin:0 auto 12px;" />
+        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:12px;display:block;margin:0 auto 12px;object-fit:contain;" />
         <h1 style="color:#ffffff;font-family:'Oswald',Arial,sans-serif;margin:0;font-size:26px;letter-spacing:3px;">FLAVOR ISLE</h1>
         <p style="color:rgba(255,255,255,0.85);margin:4px 0 0;font-size:12px;letter-spacing:2px;">SMITHS GROVE, KY</p>
       </div>
