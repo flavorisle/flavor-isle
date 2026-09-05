@@ -59,6 +59,7 @@ import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
 import AdminMerchCategories from './pages/AdminMerchCategories';
 import AdminReviews from './pages/AdminReviews';
+import AdminStoreSettings from './pages/AdminStoreSettings';
 import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
@@ -180,6 +181,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

@@ -1,16 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt } from 'lucide-react';
+import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt, Store, Tag, Printer } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
-import StoreStatusCard from '@/components/StoreStatusCard';
-import OrderCutoffSettings from '@/components/OrderCutoffSettings';
-import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import BroadcastPushCard from '@/components/BroadcastPushCard';
 import PushLogList from '@/components/PushLogList';
-import StoreClosurePanel from '@/components/StoreClosurePanel';
 import StoreMetrics from '@/components/admin/StoreMetrics';
 import EmailClickStats from '@/components/admin/EmailClickStats';
 import PopupClickStats from '@/components/admin/PopupClickStats';
@@ -33,7 +29,27 @@ const adminPages = [
   path: '/admin/menu',
   color: 'midnight-cherry'
 },
-
+{
+  title: 'Print Menu',
+  description: 'Edit and print the in-store paper menu',
+  icon: Printer,
+  path: '/admin/print-menu',
+  color: 'patina-mint'
+},
+{
+  title: 'Store Settings',
+  description: 'Hours, closures, delivery pause, and customer notice banner',
+  icon: Store,
+  path: '/admin/store-settings',
+  color: 'midnight-cherry'
+},
+{
+  title: 'Merch Categories',
+  description: 'Group Tasty Threads products into store categories',
+  icon: Tag,
+  path: '/admin/merch-categories',
+  color: 'patina-mint'
+},
 {
   title: 'Communications',
   description: 'Phone log, SMS log, message log, and Smashie AI settings',
@@ -68,14 +84,6 @@ export default function AdminDashboard() {
           <p className="text-gray-300 mt-3 max-w-2xl">Manage your restaurant's menu, orders, and media from one place.</p>
         </div>
       </div>
-
-      <StoreStatusCard />
-
-      <StoreClosurePanel />
-
-      <OrderCutoffSettings />
-
-      <BusinessHoursSettings />
 
       <BroadcastPushCard />
       <PushLogList />

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
   { label: 'Print Menu', to: '/admin/print-menu', Icon: Printer },
   { label: 'Orders', to: '/admin/orders', Icon: Receipt },
+  { label: 'Store Settings', to: '/admin/store-settings', Icon: Store },
   { label: 'Reviews', to: '/admin/reviews', Icon: MessageSquareQuote },
   { label: 'Merch Categories', to: '/admin/merch-categories', Icon: Tag },
   { label: 'Comms', to: '/admin/communications', Icon: MessagesSquare },

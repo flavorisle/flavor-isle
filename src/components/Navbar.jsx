@@ -8,6 +8,7 @@ import LiveStatusBar from '@/components/LiveStatusBar';
 import { useAuth } from '@/lib/AuthContext';
 import useHighContrast from '@/hooks/useHighContrast';
 import NavMenuPanel from '@/components/NavMenuPanel';
+import SiteNoticeBanner from '@/components/SiteNoticeBanner';
 
 export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
@@ -31,8 +32,9 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Sticky header: live status bar + main nav stay pinned together */}
+      {/* Sticky header: site notice + live status bar + main nav stay pinned together */}
       <div className="sticky top-0 z-50">
+        <SiteNoticeBanner />
         <LiveStatusBar />
         <nav className={`relative transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">

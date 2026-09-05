@@ -23,6 +23,7 @@ const DEFAULT_SETTING = {
   delivery_fee: 0,
   business_hours: null,
   closure: null,
+  site_notice: null,
 };
 
 export async function getMenuSetting() {
@@ -171,6 +172,18 @@ export async function setClosure(closure) {
     return { ...setting, closure };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], closure });
+  bustMenuSettingCache();
+  return created;
+}
+
+export async function setSiteNotice(siteNotice) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { site_notice: siteNotice });
+    bustMenuSettingCache();
+    return { ...setting, site_notice: siteNotice };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], site_notice: siteNotice });
   bustMenuSettingCache();
   return created;
 }
