@@ -392,6 +392,8 @@
 
   /* Hide global app chrome that isn't part of the menu sheet */
   nav, footer, .glass-tab, .glass-back { display: none !important; }
+  /* Hide the Smashie chat widget */
+  .smashie-chat-root { display: none !important; }
 
   #print-sheet {
     box-shadow: none !important;

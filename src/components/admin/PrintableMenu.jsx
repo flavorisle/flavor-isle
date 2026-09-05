@@ -52,40 +52,40 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
 
         {/* Sections */}
         <div
-          className="gap-8"
-          style={{ columnCount: columns, columnGap: '2rem' }}
+          className="gap-6"
+          style={{ columnCount: columns, columnGap: '1.5rem' }}
         >
           {sections.map(section => (
-            <div key={section.key} className="mb-5 break-inside-avoid">
+            <div key={section.key} className="mb-4" style={{ breakInside: 'avoid-column' }}>
               <Editable
                 as="h2"
                 className="font-heading text-xl tracking-wider border-b-2 border-black pb-1 mb-2 uppercase"
                 value={section.label}
                 onCommit={onEditSection && (v => onEditSection(section.key, v))}
               />
-              <ul className="space-y-1.5">
+              <ul className="space-y-1">
                 {section.items.map(item => {
                   const sizes = sizePrices(item);
                   return (
-                    <li key={item.id}>
-                      <div className="flex items-baseline gap-2">
+                    <li key={item.id} style={{ breakInside: 'avoid' }}>
+                      <div className="flex items-baseline gap-1">
                         <Editable
-                          className="font-semibold text-[13px] leading-snug"
+                          className="font-semibold text-[12px] leading-snug flex-shrink-0 max-w-[60%]"
                           value={item.name}
                           onCommit={onEditItem && (v => onEditItem(item.id, 'name', v))}
                         />
-                        <span className="flex-1 border-b border-dotted border-gray-400 translate-y-[-3px]" />
+                        <span className="flex-1 border-b border-dotted border-gray-400 translate-y-[-2px] min-w-[8px]" />
                         {!sizes && (
-                          <span className="font-semibold text-[13px]">
+                          <span className="font-semibold text-[12px] flex-shrink-0">
                             {item.price > 0 ? `$${Number(item.price).toFixed(2)}` : ''}
                           </span>
                         )}
                       </div>
                       {sizes && (
-                        <p className="text-[11px] font-semibold leading-snug">
+                        <p className="text-[10px] font-semibold leading-snug text-gray-600">
                           {sizes.map((s, i) => (
                             <span key={s.label}>
-                              {i > 0 && <span className="text-gray-500"> · </span>}
+                              {i > 0 && <span className="text-gray-400"> · </span>}
                               {s.label} ${s.price.toFixed(2)}
                             </span>
                           ))}
@@ -94,7 +94,7 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
                       {showDescriptions && (item.description || onEditItem) && (
                         <Editable
                           as="p"
-                          className="text-[10.5px] text-gray-700 leading-snug pr-10"
+                          className="text-[9.5px] text-gray-600 leading-snug"
                           value={item.description || ''}
                           placeholder="Add description…"
                           onCommit={onEditItem && (v => onEditItem(item.id, 'description', v))}

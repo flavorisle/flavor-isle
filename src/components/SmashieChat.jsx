@@ -84,7 +84,7 @@ export default function SmashieChat() {
   const isThinking = sending || messages[messages.length - 1]?.role === 'user';
 
   return (
-    <>
+    <div className="smashie-chat-root">
       {/* Floating Button */}
       {!open &&
       <button
@@ -204,6 +204,6 @@ export default function SmashieChat() {
           </div>
         </div>
       }
-    </>);
+    </div>);
 
 }
