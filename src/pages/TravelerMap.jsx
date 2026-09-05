@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Share2, X, Loader2, LogIn, Sparkles, Search, Camera } from 'lucide-react';
+import { MapPin, Share2, X, Loader2, LogIn, Sparkles, Search, Camera, Plus, UtensilsCrossed, MapPinned, Compass } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -211,32 +212,83 @@ export default function TravelerMap() {
     setForm({ name: '', comment: '', location_name: '' });
   };
 
+  // Pink (+) button — drops a pin at the user's current location, or nudges
+  // them to tap the map if geolocation isn't available.
+  const handleAddPin = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Sign in to drop a pin',
+        description: 'Create an account or sign in to mark where you visited from.',
+        variant: 'default',
+      });
+      return;
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setPending(latlng);
+          setForm({ name: '', comment: '', location_name: '' });
+          if (mapRef) mapRef.flyTo([latlng.lat, latlng.lng], 6, { duration: 1 });
+          const place = await reverseGeocode(latlng.lat, latlng.lng);
+          setForm((f) => ({ ...f, location_name: place }));
+        },
+        () => {
+          toast({
+            title: 'Tap the map to drop your pin',
+            description: "We couldn't find your location — tap anywhere on the map to mark your hometown.",
+            variant: 'default',
+          });
+        }
+      );
+    } else {
+      toast({
+        title: 'Tap the map to drop your pin',
+        description: 'Tap anywhere on the map to mark your hometown.',
+        variant: 'default',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h1 className="font-heading text-3xl sm:text-4xl text-obsidian-roast leading-none">
-              Traveler's Map
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-              Guests from near and far. {isAuthenticated
-                ? 'Tap the map to drop your pin and leave a note.'
-                : 'Sign in to drop your own pin and share where you visited from.'}
-            </p>
-          </div>
+      {/* Storytelling hero */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center">
+        <h1 className="font-heading text-4xl sm:text-5xl text-midnight-cherry leading-none">
+          THE FLAVOR ISLE TRAVELER'S LOG
+        </h1>
+        <div className="mt-5 space-y-4 text-sm sm:text-base text-obsidian-roast/80 leading-relaxed text-left">
+          <p>
+            Since 1964, people have been rolling into Smiths Grove from every direction — locals, road-trippers, and travelers who heard about the little diner with big energy. This map shows just how far the Flavor Isle story reaches. Every pin is a hometown, a memory, and a reminder that <strong>They Not Like Us</strong> for a reason.
+          </p>
+          <p>
+            <strong>This map is proof.</strong> Every pin, every hometown, every traveler who finds their way to our window adds another chapter to a story that started right here and now stretches across the world. You're not just stopping for a burger or a shake — you're joining a legacy that's been growing for over sixty years.
+          </p>
+          <p>
+            Add your hometown to the Flavor Isle Traveler's Log and see how visitors from across the country — and around the world — connect back to our corner of Kentucky. Tap the pink (+) button, drop a photo, and leave your mark on the map.
+          </p>
+        </div>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button
+            onClick={handleAddPin}
+            className="btn-cherry chrome-hover inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-heading tap-44"
+          >
+            <Plus size={18} /> Add My Hometown
+          </button>
           <button
             onClick={handleShare}
-            className="btn-mint chrome-hover inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-heading tap-44"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-heading text-obsidian-roast border border-border rounded-full bg-white hover:bg-vanilla-malt transition-colors tap-44"
           >
-            <Share2 size={16} /> Share Map
+            <Share2 size={16} /> Share
           </button>
         </div>
+      </div>
 
-        {/* Search bar */}
-        <form onSubmit={handleSearch} className="mt-3 flex gap-2">
+      {/* Search bar */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-4">
+        <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -258,8 +310,17 @@ export default function TravelerMap() {
       </div>
 
       {/* Map */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
-        <div className="relative rounded-3xl overflow-hidden shadow-float-lg border border-border" style={{ height: '70vh', minHeight: '420px' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-10">
+        <div className="rounded-t-3xl px-5 py-4 text-white" style={{ backgroundColor: '#63B7E2' }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-lg leading-none">Where Our Fans Are From</h2>
+              <p className="text-xs text-white/90 mt-1">From Smiths Grove to the World! 🌎 Tap the pink (+) button to drop a pin on your hometown.</p>
+            </div>
+            <span className="text-xs text-white/80 font-body hidden sm:block whitespace-nowrap">{pins.length} pins</span>
+          </div>
+        </div>
+        <div className="relative rounded-b-3xl overflow-hidden shadow-float-lg border border-t-0 border-border" style={{ height: '70vh', minHeight: '420px' }}>
           <MapContainer
             center={HOME_CENTER}
             zoom={3}
@@ -315,6 +376,16 @@ export default function TravelerMap() {
               <span>Sign in to drop your pin.</span>
             </div>
           )}
+
+          {/* Pink (+) floating button */}
+          <button
+            onClick={handleAddPin}
+            className="absolute bottom-5 right-5 z-[500] w-14 h-14 rounded-full flex items-center justify-center shadow-float-lg transition-transform hover:scale-105 active:scale-95 tap-44"
+            style={{ backgroundColor: '#E0218A' }}
+            aria-label="Add your pin"
+          >
+            <Plus size={28} className="text-white" />
+          </button>
         </div>
 
         {/* Pin counter */}
@@ -323,6 +394,45 @@ export default function TravelerMap() {
           <span>{pins.length} traveler{pins.length !== 1 ? 's' : ''} on the map</span>
         </div>
       </div>
+
+      {/* Hungry CTA */}
+      <section className="bg-midnight-cherry text-white py-12">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="font-heading text-3xl sm:text-4xl leading-none">Hungry? Let's Fix That!</h2>
+          <p className="mt-3 text-sm text-white/85">Order online for pickup, delivery, or dine-in. Hot food, fast.</p>
+          <Link
+            to="/menu"
+            className="inline-flex items-center gap-2 mt-5 bg-white text-midnight-cherry font-heading px-7 py-3 rounded-full text-sm hover:bg-white/90 transition-colors tap-44"
+          >
+            <UtensilsCrossed size={16} /> Order Now
+          </Link>
+        </div>
+      </section>
+
+      {/* Info cards */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid gap-6 sm:grid-cols-3">
+        <InfoCard
+          icon={<Compass size={22} />}
+          title="Coming Through Smiths Grove"
+          body="Everything you need to know before you roll into Flavor Isle — hours, location, parking, and what to expect when you pull up to Smiths Grove's favorite stop since 1964."
+          cta="Visit Us"
+          to="/contact"
+        />
+        <InfoCard
+          icon={<MapPinned size={22} />}
+          title="See What Smiths Grove Has to Offer"
+          body="Explore the local shops, attractions, and hidden gems that make Smiths Grove a must-stop town. From antiques to vineyards to family-owned favorites, here's everything worth checking out while you're here."
+          cta="Discover Smiths Grove"
+          to="/contact"
+        />
+        <InfoCard
+          icon={<Sparkles size={22} />}
+          title="Find Out Why"
+          body="Discover how a small Kentucky diner became a coast-to-coast favorite. Explore the stories, travelers, and traditions that turned Flavor Isle into a destination since 1964."
+          cta="Hometown Fame"
+          to="/menu"
+        />
+      </section>
 
       {/* Add-pin form */}
       {pending && (
@@ -400,6 +510,21 @@ export default function TravelerMap() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function InfoCard({ icon, title, body, cta, to }) {
+  return (
+    <div className="card-diner p-6 flex flex-col">
+      <div className="w-11 h-11 rounded-full bg-midnight-cherry/10 text-midnight-cherry flex items-center justify-center mb-3">
+        {icon}
+      </div>
+      <h3 className="font-heading text-lg text-obsidian-roast leading-tight">{title}</h3>
+      <p className="text-sm text-muted-foreground mt-2 leading-relaxed flex-1">{body}</p>
+      <Link to={to} className="mt-4 inline-flex items-center gap-1.5 text-sm font-heading text-midnight-cherry hover:gap-2.5 transition-all">
+        {cta} <span aria-hidden>→</span>
+      </Link>
     </div>
   );
 }

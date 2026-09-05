@@ -1,0 +1,68 @@
+{
+  "name": "PushLog",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Notification title used for the broadcast."
+    },
+    "body": {
+      "type": "string",
+      "description": "Notification message body that was sent to subscribers."
+    },
+    "url": {
+      "type": "string",
+      "description": "Tap destination path the notification opened."
+    },
+    "sent_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of push subscriptions the notification was successfully delivered to."
+    },
+    "recipient_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of push subscriptions the broadcast targeted."
+    },
+    "error_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of delivery failures for this broadcast."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "partial",
+        "failed"
+      ],
+      "default": "sent",
+      "description": "Outcome of the broadcast: all delivered, some failed, or none delivered."
+    }
+  },
+  "required": [
+    "body"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

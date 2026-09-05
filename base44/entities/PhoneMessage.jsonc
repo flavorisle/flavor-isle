@@ -1,0 +1,79 @@
+{
+  "name": "PhoneMessage",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "caller_name": {
+      "type": "string",
+      "description": "Name of the person who left the message"
+    },
+    "caller_phone": {
+      "type": "string",
+      "description": "Callback phone number for the caller"
+    },
+    "recipient": {
+      "type": "string",
+      "description": "Who the message is for \u2014 e.g. 'staff', 'management', 'owner', or a staff member's name"
+    },
+    "message": {
+      "type": "string",
+      "description": "The message the caller asked Smashie to pass along"
+    },
+    "conversation_id": {
+      "type": "string",
+      "description": "Related voice conversation containing the full call transcript"
+    },
+    "call_sid": {
+      "type": "string",
+      "description": "Twilio identifier for the related call"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "voice",
+        "sms"
+      ],
+      "default": "voice",
+      "description": "Whether the message came in via a voice call or an SMS text"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "read",
+        "handled"
+      ],
+      "default": "new",
+      "description": "Workflow state for staff: new \u2192 read \u2192 handled"
+    }
+  },
+  "required": [
+    "caller_name",
+    "message"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

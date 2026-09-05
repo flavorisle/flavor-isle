@@ -1,0 +1,58 @@
+{
+  "name": "SmashieSettings",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "greeting": {
+      "type": "string",
+      "default": "Hey fam, Flavor Isle\u2014Smashie here. What can I get started for you?",
+      "description": "Smashie's short opening greeting for voice calls and SMS replies."
+    },
+    "sms_status_updates_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, customers receive automated SMS as their order moves through confirmed \u2192 preparing \u2192 ready \u2192 completed"
+    },
+    "sms_auto_reply_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, incoming SMS texts are answered automatically by Smashie"
+    },
+    "voice_ordering_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, inbound voice calls are handled by the Smashie AI voice agent"
+    },
+    "personality_notes": {
+      "type": "string",
+      "default": "",
+      "description": "Admin notes about Smashie's persona, tone, or things to emphasize"
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
