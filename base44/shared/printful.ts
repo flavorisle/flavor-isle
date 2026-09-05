@@ -156,6 +156,28 @@ export async function getShippingRates({ recipient, items }: { recipient: any; i
   return rates;
 }
 
+// Get the current Printful webhook configuration for the store.
+export async function getWebhookConfig() {
+  const res = await fetch(`${PRINTFUL_BASE}/webhooks`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || "Failed to fetch Printful webhook config");
+  return data.result;
+}
+
+// Register (or replace) the store's webhook configuration. Printful accepts a
+// single webhook URL plus the list of event types to forward. Returns the
+// saved configuration.
+export async function setWebhookConfig({ url, types }: { url: string; types: string[] }) {
+  const res = await fetch(`${PRINTFUL_BASE}/webhooks`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ url, types }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || "Failed to set Printful webhook config");
+  return data.result;
+}
+
 // Place a fulfillment order with Printful. confirm=1 auto-submits it for production.
 export async function placeOrder({ external_id, recipient, items, retail_costs }: any) {
   const body = {
