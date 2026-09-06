@@ -60,7 +60,7 @@ export default function Flyer() {
           {/* Headline */}
           <div className="px-8 pt-4 text-center">
             <h1 className="font-heading text-4xl text-obsidian-roast leading-tight">
-              FRESH SMASH BURGERS <span className="text-midnight-cherry">&</span> THICK SHAKES
+              FRESH HAND-PATTED BURGERS <span className="text-midnight-cherry">&</span> THICK SHAKES
             </h1>
             <p className="font-body text-base text-muted-foreground mt-2">
               Smiths Grove's favorite roadside stop — hand-patted, never frozen, made to order.
@@ -70,7 +70,7 @@ export default function Flyer() {
           {/* Feature trio */}
           <div className="px-8 py-6 grid grid-cols-3 gap-4">
             {[
-              { icon: Flame, title: 'Fresh Smash Burgers', sub: 'Hand-patted, never frozen, made to order' },
+              { icon: Flame, title: 'Fresh Hand-Patted Burgers', sub: 'Hand-patted, never frozen, made to order' },
               { icon: IceCream2, title: 'Thick Shakes', sub: 'Hand spun. Custom flavors' },
               { icon: UtensilsCrossed, title: 'Hot Sides', sub: 'Crispy fries, tots & more' },
             ].map((f) => (

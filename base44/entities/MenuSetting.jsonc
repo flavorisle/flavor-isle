@@ -22,7 +22,7 @@
     },
     "category_renames": {
       "type": "object",
-      "description": "Map of category key -> display name shown to customers (e.g. { 'Smash Burgers': 'Signature Smash' }). Keys are the underlying Square/custom category; the label is what renders.",
+      "description": "Map of category key -> display name shown to customers (e.g. { 'Burgers': 'Signature Burgers' }). Keys are the underlying Square/custom category; the label is what renders.",
       "default": {}
     },
     "category_item_order": {
