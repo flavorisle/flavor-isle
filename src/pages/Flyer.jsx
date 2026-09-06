@@ -9,9 +9,22 @@ export default function Flyer() {
     <>
       <style>{`
         @media print {
-          @page { size: letter portrait; margin: 0.4in; }
+          @page { size: letter portrait !important; margin: 0.4in !important; }
+          html, body { background: #ffffff !important; }
+          /* Hide every element on the page, then reveal only the flyer sheet. */
+          body * { visibility: hidden !important; }
           .flyer-no-print { display: none !important; }
-          #flyer-sheet { box-shadow: none !important; border: none !important; }
+          #flyer-sheet, #flyer-sheet * { visibility: visible !important; }
+          #flyer-sheet {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
           #flyer-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
