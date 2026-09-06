@@ -84,6 +84,45 @@ export default function Flyer() {
             ))}
           </div>
 
+          {/* Menu highlights */}
+          <div className="px-8 pb-2">
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                {
+                  name: 'Cheeseburger',
+                  desc: 'A Flavor Isle original — hand-patted fresh beef, never frozen, topped with melty American cheese. Craveable comfort.',
+                  price: '$5.25',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/e047ff800c9d6b9047cca2ea959ea752a8e83a20/original.png',
+                },
+                {
+                  name: 'French Fries',
+                  desc: '(Crinkle-Cut) — Crisp crinkle edges with a fluffy center — the classic fry bite. (Original 1964)',
+                  price: '$3.25',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/4e92f3bb902bfa24b9bc258513d0b8b7396edfa0/original.jpeg',
+                },
+                {
+                  name: 'Banana Pudding Bliss Milkshake',
+                  desc: 'Banana pudding turned shake — creamy, nostalgic comfort.',
+                  price: '$5.99',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/bc5ca3ebadbb5e4ac86c3782d0c4d4d58cc2d693/original.jpeg',
+                },
+              ].map((m) => (
+                <div key={m.name} className="rounded-2xl overflow-hidden border border-patina-mint/15 bg-patina-mint/5">
+                  <div className="h-28 overflow-hidden">
+                    <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-heading text-base text-obsidian-roast leading-none">{m.name}</div>
+                      <div className="font-heading text-base text-midnight-cherry leading-none">{m.price}</div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug">{m.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* CTA band */}
           <div className="mx-8 bg-midnight-cherry text-white rounded-2xl px-6 py-5 flex items-center justify-between">
             <div>
