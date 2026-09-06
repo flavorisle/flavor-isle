@@ -24,10 +24,10 @@ export default function Contact() {
     if (!form.name || !form.email || !form.message) return;
     setLoading(true);
     try {
-      await base44.integrations.Core.SendEmail({
-        to: 'hello@order.flavor-isle.com',
-        subject: `Website Message from ${form.name}`,
-        body: `Name: ${form.name}\nEmail: ${form.email}\n\nMessage:\n${form.message}`,
+      await base44.functions.invoke('sendContactMessage', {
+        name: form.name,
+        email: form.email,
+        message: form.message,
       });
       setSent(true);
     } catch {
