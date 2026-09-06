@@ -2,6 +2,10 @@
   "name": "PopupClick",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "popup_id": {
       "type": "string",
       "description": "Which promo pop-up fired the event, e.g. tasty_threads_tees"
