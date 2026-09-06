@@ -14,9 +14,9 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
-            alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
-            className="w-full max-w-[200px] object-contain mb-4"
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+            alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
+            className="w-full max-w-[260px] object-contain mb-4"
           />
           <p className="text-gray-300 text-sm leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
