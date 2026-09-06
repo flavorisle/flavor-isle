@@ -12,6 +12,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
+import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
 import TastyThreadsPopup from './components/TastyThreadsPopup';
@@ -204,6 +205,7 @@ function AppShell() {
               <AuthenticatedApp />
               <BottomTabBar />
               <MobileHeader />
+              <ConsentBanner />
               <SmashieChat />
               <TastyThreadsPopup />
               <MerchCartDrawer />
