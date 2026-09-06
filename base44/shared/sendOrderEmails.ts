@@ -1,5 +1,6 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
+import { fetchStoreProducts } from './printful.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -19,11 +20,54 @@ function trackedLink(path: string, linkId: string, orderId?: string) {
 }
 
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
-export function merchPromoHtml() {
+// Pulls two random products live from Printful so each email shows fresh gear
+// with real product photos. Falls back to a generic text CTA if the catalog
+// can't be reached so the email still sends.
+export async function merchPromoHtml() {
+  let productCards = '';
+  try {
+    const all = await fetchStoreProducts();
+    if (Array.isArray(all) && all.length > 0) {
+      // Fisher–Yates shuffle, then take 2.
+      const pool = [...all];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const picks = pool.slice(0, 2);
+      productCards = `<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:0 0 14px;"><tr>${
+        picks.map(p => {
+          const img = p.thumbnail_url || (p.images && p.images[0]) || '';
+          const price = p.fromPrice ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px;">from $${Number(p.fromPrice).toFixed(2)}</div>` : '';
+          const imgHtml = img
+            ? `<img src="${img}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:10px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />`
+            : `<div style="width:100%;aspect-ratio:1/1;border-radius:10px;background:#f5edd6;"></div>`;
+          return `<td style="width:50%;vertical-align:top;">
+            <a href="${trackedLink(`/merch?product=${p.id}`, 'merch_promo_product')}" style="text-decoration:none;color:#141414;display:block;">
+              ${imgHtml}
+              <div style="font-family:'Oswald',Arial,sans-serif;font-size:14px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Tasty Threads'}</div>
+              ${price}
+            </a>
+          </td>`;
+        }).join('')
+      }</tr></table>`;
+    }
+  } catch (err) {
+    console.error('merchPromoHtml product fetch failed:', err.message);
+  }
+
+  const headline = productCards
+    ? '🛍️ TASTY THREADS — FRESH PICKS FOR YOU'
+    : '🛍️ TASTY THREADS — NOW SHIPPING';
+  const subline = productCards
+    ? 'Two fresh picks, printed to order and shipped straight to your door. Tap a shirt to shop.'
+    : 'Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.';
+
   return `
   <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
-    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
-    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">${headline}</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">${subline}</p>
+    ${productCards}
     <a href="${trackedLink('/merch', 'merch_promo')}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
   </div>`;
 }
@@ -207,7 +251,7 @@ export async function sendOrderReadyEmail(order) {
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
 
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -282,7 +326,7 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${whatToExpectHtml()}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
 }
 
@@ -299,6 +343,6 @@ export async function sendOrderCompletedEmail(order: any) {
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'd love to see you back soon, fam.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team</p>
     ${reviewCtaHtml(order.id)}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `Thanks for rolling with us! 🙌`, body);
 }
