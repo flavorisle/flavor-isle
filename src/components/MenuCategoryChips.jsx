@@ -36,7 +36,13 @@ export default function MenuCategoryChips({ rows, renames }) {
       .track({ eventName: 'menu_category_selected', properties: { category: label } })
       .catch(() => {});
     const el = document.getElementById(`menu-cat-${row.key.replace(/[^a-zA-Z0-9]/g, '')}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return;
+    // Offset by the sticky header height (site notice + live status + nav) so
+    // the target section lands below it instead of scrolling underneath.
+    const nav = document.querySelector('nav');
+    const offset = nav ? nav.getBoundingClientRect().bottom : 0;
+    const y = el.getBoundingClientRect().top + window.scrollY - offset - 12;
+    window.scrollTo({ top: y, behavior: 'smooth' });
   };
 
   return (
