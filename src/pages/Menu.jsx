@@ -17,6 +17,7 @@ import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
+import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
@@ -154,6 +155,10 @@ export default function Menu() {
 
       <AdBannerStrip placement="menu" />
 
+      {!search && !loading && rows.some((r) => r.isShakeBanner || r.items.length > 0) && (
+        <MenuCategoryChips rows={rows} renames={renames} />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <SignUpNudge variant="compact" />
       </div>
@@ -195,7 +200,7 @@ export default function Menu() {
         <div className="space-y-12">
             {rows.map(({ key, items: rowItems, isShakeBanner }) =>
           isShakeBanner ? (
-            <div key={key}>
+            <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
               <div className="flex items-center gap-4 mb-5">
                 <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
                 <div className="flex-1 h-px bg-border" />
@@ -203,7 +208,7 @@ export default function Menu() {
               <MilkshakePromoBanner variant="strip" />
             </div>
           ) : (
-          <div key={key}>
+          <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
                 <div className="flex items-center gap-4 mb-5">
                   <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
                     {search ? 'Search Results' : categoryLabel(key, renames)}
