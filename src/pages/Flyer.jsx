@@ -89,10 +89,10 @@ export default function Flyer() {
             <div className="grid grid-cols-3 gap-4">
               {[
                 {
-                  name: 'Cheeseburger',
-                  desc: 'A Flavor Isle original — hand-patted fresh beef, never frozen, topped with melty American cheese. Craveable comfort.',
-                  price: '$5.25',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/e047ff800c9d6b9047cca2ea959ea752a8e83a20/original.png',
+                  name: 'Double Cheeseburger',
+                  desc: 'Twice the patties, twice the cheese. Built fresh by hand, stacked high with big burger energy.',
+                  price: '$9.50',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
                 },
                 {
                   name: 'French Fries',
@@ -126,7 +126,7 @@ export default function Flyer() {
           {/* More on the menu */}
           <div className="px-8 pb-2 text-center">
             <p className="text-[11px] text-obsidian-roast/80 leading-snug">
-              <span className="font-heading tracking-wide">PLUS:</span> Mini Cheeseburger &middot; Tenderloin &middot; Chuck Wagon &middot; Curly Fries &middot; Sweet Potato Fries &middot; Bacon Cheeseburger &middot; Double Cheeseburger &middot; Loaded Cajun Chili Fries &middot; Shakes &amp; more!
+              <span className="font-heading tracking-wide">PLUS:</span> Mini Cheeseburger &middot; Tenderloin &middot; Chuck Wagon &middot; Curly Fries &middot; Sweet Potato Fries &middot; Bacon Cheeseburger &middot; Cheeseburger &middot; Loaded Cajun Chili Fries &middot; Shakes &amp; more!
             </p>
           </div>
 
@@ -162,7 +162,7 @@ export default function Flyer() {
               <Phone size={16} className="text-midnight-cherry flex-shrink-0 mt-0.5" />
               <div className="text-xs leading-snug">
                 <div className="font-heading text-sm">CALL AHEAD</div>
-                (270) 563-4618<br />Ask for Smashie!
+                (270) 563-4618
               </div>
             </div>
           </div>
