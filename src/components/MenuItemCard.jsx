@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
+import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -66,6 +67,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     e?.stopPropagation();
     if (!orderingEnabled) return;
     if (hasModifiers) {
+      trackSelectItem(foodItemToGa4(item));
       setShowModal(true);
     } else {
       addItem(item);

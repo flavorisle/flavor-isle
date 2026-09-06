@@ -2,6 +2,7 @@
 import React from 'react';
 import MerchSocialShare from './MerchSocialShare';
 import { ProductionTimeBadge } from './ProductionTimeNotice';
+import { trackSelectItem, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 export default function ProductCard({ product, onClick }) {
   const fromLabel = product.fromPrice ? `$${product.fromPrice.toFixed(2)}` : '';
@@ -9,8 +10,8 @@ export default function ProductCard({ product, onClick }) {
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onClick(product)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(product); } }}
+      onClick={() => { trackSelectItem(merchItemToGa4(product), { item_list_id: 'merch', item_list_name: 'Tasty Threads' }); onClick(product); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trackSelectItem(merchItemToGa4(product), { item_list_id: 'merch', item_list_name: 'Tasty Threads' }); onClick(product); } }}
       className="card-diner overflow-hidden text-left flex flex-col group cursor-pointer"
     >
       <div className="relative aspect-square overflow-hidden bg-muted">

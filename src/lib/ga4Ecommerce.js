@@ -53,6 +53,14 @@ export function trackViewItemList(items, { item_list_id, item_list_name } = {}) 
   });
 }
 
+export function trackSelectItem(item, { item_list_id, item_list_name } = {}) {
+  gtag('event', 'select_item', {
+    item_list_id,
+    item_list_name,
+    items: [item],
+  });
+}
+
 export function trackViewItem(item, { value } = {}) {
   gtag('event', 'view_item', {
     currency: CURRENCY,

@@ -14,7 +14,7 @@ export default function MerchCartDrawer() {
       trackViewCart(items.map(merchItemToGa4), subtotal);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCartOpen]);
 
   if (!isCartOpen) return null;
 
