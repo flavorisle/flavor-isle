@@ -64,6 +64,7 @@ import AdminStoreSettings from './pages/AdminStoreSettings';
 import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
+import Flyer from './pages/Flyer';
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
@@ -158,6 +159,7 @@ const AuthenticatedApp = () => {
       <Route path="/social-reviews" element={<SocialReviews />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/community-news" element={<CommunityNews />} />
+      <Route path="/flyer" element={<Flyer />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
