@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { X, Plus, Check, ShoppingBag } from 'lucide-react';
 import MerchShareButton from './MerchShareButton';
 import ProductionTimeNotice from './ProductionTimeNotice';
+import { trackViewItem, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 export default function ProductDetailModal({ product, onClose, onAdd }) {
   const variants = product?.variants || [];
@@ -18,6 +19,10 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
     setActiveImage(0);
     const firstInStock = product?.variants?.find(v => v.in_stock);
     setSelectedVariant(firstInStock || product?.variants?.[0] || null);
+  }, [product]);
+
+  useEffect(() => {
+    if (product) trackViewItem(merchItemToGa4(product), { value: product?.price || 0 });
   }, [product]);
 
   useEffect(() => {

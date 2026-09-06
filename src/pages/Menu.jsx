@@ -22,6 +22,7 @@ import SignUpNudge from '@/components/SignUpNudge';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Pickup / delivery estimates scale with the live kitchen load so the menu
 // matches the hero, status bar, and checkout everywhere times are shown.
@@ -53,7 +54,9 @@ export default function Menu() {
     } catch (e) {}
     try {
       const data = await base44.entities.MenuItem.list();
-      setItems((data || []).filter((i) => !i.is_hidden));
+      const visible = (data || []).filter((i) => !i.is_hidden);
+      setItems(visible);
+      trackViewItemList(visible.map(foodItemToGa4), { item_list_id: 'menu', item_list_name: 'Menu' });
     } catch (e) {}
     setLoading(false);
   };

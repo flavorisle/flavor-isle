@@ -1,12 +1,20 @@
 // Tasty Threads cart drawer.
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Plus, Minus, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useMerchCart } from '@/context/MerchCartContext';
 import { useNavigate } from 'react-router-dom';
+import { trackViewCart, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 export default function MerchCartDrawer() {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeItem, clearCart, subtotal, totalItems } = useMerchCart();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isCartOpen && items.length > 0) {
+      trackViewCart(items.map(merchItemToGa4), subtotal);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!isCartOpen) return null;
 

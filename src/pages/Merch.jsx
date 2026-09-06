@@ -9,6 +9,7 @@ import ProductDetailModal from '@/components/merch/ProductDetailModal';
 import MerchCartButton from '@/components/merch/MerchCartButton';
 import { useMerchCart } from '@/context/MerchCartContext';
 import { useToast } from '@/components/ui/use-toast';
+import { trackViewItemList, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const UNGROUPED = 'Other';
 
@@ -37,6 +38,7 @@ export default function Merch() {
         if (cancelled) return;
         const loaded = prodRes.data?.products || [];
         setProducts(loaded);
+        trackViewItemList(loaded.map(merchItemToGa4), { item_list_id: 'merch', item_list_name: 'Tasty Threads' });
         setCategories(cats || []);
         setAssignments(assigns || []);
         // Shared link deep-linking: /merch?product=<id> opens that product.

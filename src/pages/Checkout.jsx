@@ -22,6 +22,7 @@ import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 
@@ -170,6 +171,14 @@ export default function Checkout() {
   // Auto-focus the first field so a guest can start typing their name
   // immediately without hunting for the input — especially on desktop.
   useEffect(() => { nameRef.current?.focus(); }, []);
+
+  // GA4 ecommerce: fire begin_checkout once when the customer lands on checkout.
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      trackBeginCheckout(cartItems.map(foodItemToGa4), totalWithTip, { coupon: appliedReward?.description });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
@@ -397,6 +406,13 @@ export default function Checkout() {
   };
 
   const handleSuccess = (on) => {
+    trackPurchase(cartItems.map(foodItemToGa4), {
+      transaction_id: on,
+      value: totalWithTip,
+      tax,
+      shipping: deliveryFee,
+      coupon: appliedReward?.description,
+    });
     clearCart();
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };

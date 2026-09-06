@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
+import { trackBeginCheckout, trackPurchase, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -43,6 +44,11 @@ export default function MerchCheckout() {
         if (cancelled) { checkout.destroy(); return; }
         checkout.mount('#merch-embedded-checkout');
         checkout.onComplete(() => {
+          trackPurchase(items.map(merchItemToGa4), {
+            transaction_id: embedded.orderNumber,
+            value: total,
+            shipping,
+          });
           clearCart();
           navigate(`/merch-confirmation?session_id=${embedded.session_id}&order_number=${embedded.orderNumber}`);
         });
@@ -54,6 +60,14 @@ export default function MerchCheckout() {
     })();
     return () => { cancelled = true; if (checkout) checkout.destroy(); };
   }, [embedded, stripePromise]);
+
+  // GA4 ecommerce: fire begin_checkout once when the customer lands on merch checkout.
+  useEffect(() => {
+    if (items.length > 0) {
+      trackBeginCheckout(items.map(merchItemToGa4), total);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const update = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
