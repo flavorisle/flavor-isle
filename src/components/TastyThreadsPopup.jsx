@@ -3,32 +3,38 @@ import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight, Shirt } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
-// Visit pop-up promoting the two $19.99 Tasty Threads tees. Shows once per
-// browser session.
-const STORAGE_KEY = 'fi_tasty_threads_tees_seen';
-const POPUP_ID = 'tasty_threads_tees';
+// Visit pop-up promoting the newest Tasty Threads merch. Pulls the most
+// recently added Printful products so the pop-up always shows what's fresh.
+// Shows once per browser session.
+const STORAGE_KEY = 'fi_new_merch_seen';
+const POPUP_ID = 'tasty_threads_new_merch';
 
 // Fire-and-forget click tracking — never block or break the pop-up UI.
 const track = (action, target) => {
   base44.entities.PopupClick.create({ popup_id: POPUP_ID, action, ...(target ? { target } : {}) }).catch(() => {});
 };
 
-const SHIRTS = [
-  {
-    id: 462593857,
-    name: 'All You Need is Flavor Isle',
-    image: 'https://files.cdn.printful.com/files/196/1969f01ea3bcd65b3ee5d20ee0897ca5_preview.png',
-  },
-  {
-    id: 462577528,
-    name: 'Feed Me Flavor Isle & Tell Me I\'m Pretty',
-    image: 'https://files.cdn.printful.com/files/e3e/e3e9215aebc273152926012ae11e2a1d_preview.png',
-  },
-];
-
 export default function TastyThreadsPopup() {
   const [open, setOpen] = useState(false);
+  const [products, setProducts] = useState([]);
   const navigate = useNavigate();
+
+  // Fetch the newest Printful products — sorted by id descending (Printful
+  // assigns sequential ids, so the highest ids are the most recently added).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke('getPrintfulProducts', {});
+        if (cancelled) return;
+        const all = res.data?.products || [];
+        const newest = [...all].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 2);
+        if (!cancelled) setProducts(newest);
+      } catch (err) {
+        // If the fetch fails, the pop-up simply won't show product cards.
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     try {
@@ -55,10 +61,10 @@ export default function TastyThreadsPopup() {
     close();
   };
 
-  const goToShirt = (shirt) => {
-    track('shirt_click', shirt.name);
+  const goToProduct = (product) => {
+    track('shirt_click', product.name);
     close();
-    navigate(`/merch?product=${shirt.id}`);
+    navigate(`/merch?product=${product.id}`);
   };
 
   if (!open) return null;
@@ -99,46 +105,53 @@ export default function TastyThreadsPopup() {
             className="font-heading text-3xl leading-tight"
             style={{ color: 'var(--patina-mint)' }}
           >
-            NEW TASTY THREADS — just $19.99! 👕🍔
+            NEW MERCH JUST DROPPED! 👕🍔
           </h2>
           <div className="text-sm font-body mt-3 space-y-2 text-left sm:text-center" style={{ color: 'var(--patina-mint)' }}>
-            <p>Two fresh tees, hot off the press:</p>
+            <p>Fresh threads, hot off the press:</p>
             <p className="font-semibold">
-              • "All You Need is Flavor Isle"<br />
-              • "Feed Me Flavor Isle and Tell Me I'm Pretty"
+              {products.length > 0
+                ? products.map((p) => `• ${p.name}`).join('\n')
+                : '• New tees, hoodies & more'}
             </p>
             <p>Soft, comfy, and printed to order in your size and color. Wear the flavor, Smiths Grove. 💙❤️</p>
           </div>
         </div>
 
-        {/* Shirts */}
-        <div className="grid grid-cols-2 gap-4 px-6 pb-4">
-          {SHIRTS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => goToShirt(s)}
-              className="card-diner overflow-hidden text-left group"
-            >
-              <div className="aspect-square overflow-hidden bg-white">
-                <img
-                  src={s.image}
-                  alt={`${s.name} tee`}
-                  className="w-full h-full object-cover scale-[1.7] group-hover:scale-[1.8] transition-transform duration-500"
-                  style={{ transformOrigin: '50% 42%' }}
-                  loading="eager"
-                />
-              </div>
-              <div className="p-3">
-                <p className="font-heading text-sm leading-tight" style={{ color: 'var(--patina-mint)' }}>
-                  {s.name}
-                </p>
-                <span className="mt-1 text-xs font-heading uppercase tracking-widest inline-flex items-center gap-1" style={{ color: 'var(--midnight-cherry)' }}>
-                  Grab yours <ArrowRight size={12} />
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+        {/* Products */}
+        {products.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 px-6 pb-4">
+            {products.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => goToProduct(p)}
+                className="card-diner overflow-hidden text-left group"
+              >
+                <div className="aspect-square overflow-hidden bg-white">
+                  <img
+                    src={p.thumbnail_url || (p.images && p.images[0]) || ''}
+                    alt={p.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="eager"
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="font-heading text-sm leading-tight line-clamp-2" style={{ color: 'var(--patina-mint)' }}>
+                    {p.name}
+                  </p>
+                  {p.fromPrice > 0 && (
+                    <span className="text-xs font-heading" style={{ color: 'var(--midnight-cherry)' }}>
+                      from ${p.fromPrice.toFixed(2)}
+                    </span>
+                  )}
+                  <span className="mt-1 text-xs font-heading uppercase tracking-widest inline-flex items-center gap-1" style={{ color: 'var(--midnight-cherry)' }}>
+                    Grab yours <ArrowRight size={12} />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* CTA bar */}
         <div
