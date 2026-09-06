@@ -6,6 +6,7 @@ import { brandedEmailHtml, merchPromoHtml, starsEarnedHtml, accountCtaHtml, isRe
 import { accrueForOrder, redeemReward } from '../../shared/squareLoyalty.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
+import { sendFacebookEvent } from '../../shared/facebookConversions.ts';
 
 async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
