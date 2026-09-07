@@ -9,11 +9,17 @@ export default function Flyer() {
     <>
       <style>{`
         @media print {
-          @page { size: letter portrait !important; margin: 0.4in !important; }
+          @page { size: letter portrait !important; margin: 0.25in !important; }
           html, body { background: #ffffff !important; }
           /* Hide every element on the page, then reveal only the flyer sheet. */
           body * { visibility: hidden !important; }
           .flyer-no-print { display: none !important; }
+          #flyer-wrap {
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+          }
           #flyer-sheet, #flyer-sheet * { visibility: visible !important; }
           #flyer-sheet {
             position: absolute !important;
@@ -21,6 +27,8 @@ export default function Flyer() {
             top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-height: 0 !important;
+            height: auto !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
@@ -40,7 +48,7 @@ export default function Flyer() {
       </div>
 
       {/* Flyer sheet — 8.5x11 letter proportions */}
-      <div className="min-h-screen flex items-start justify-center bg-vanilla-malt p-4 sm:p-8">
+      <div id="flyer-wrap" className="min-h-screen flex items-start justify-center bg-vanilla-malt p-4 sm:p-8">
         <div
           id="flyer-sheet"
           className="bg-white rounded-2xl shadow-float-lg overflow-hidden flex flex-col"
