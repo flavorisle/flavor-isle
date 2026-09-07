@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -19,7 +19,6 @@ import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
-import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 
@@ -204,8 +203,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── NEARBY AREAS / I-65 WAYFINDING ── */}
-      <NearbyAreas hideCta />
+      {/* ── I-65 EXIT 38 WAYFINDING ── */}
+      <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
+        <div className="max-w-4xl mx-auto">
+          <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
+            <div className="sm:col-span-2 relative min-h-[180px]">
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+                alt="Flavor Isle roadside stand off I-65 Exit 38"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="sm:col-span-3 p-6 sm:p-8 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
+                <Car size={14} /> I-65 Exit 38 · Smiths Grove, KY
+              </div>
+              <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">You're Closer Than You Think</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.
+              </p>
+              <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
+                Plan Your Stop <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── FAQ + LOCATION ── */}
       <section className="py-12 px-4 sm:px-6">
