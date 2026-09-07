@@ -92,8 +92,8 @@ export default function Flyer() {
           <div className="px-8 py-6 grid grid-cols-3 gap-4">
             {[
               { icon: Flame, title: 'Fresh Hand-Patted Burgers', sub: 'Hand-patted, never frozen, made to order' },
-              { icon: IceCream2, title: 'Thick Shakes', sub: 'Hand spun. Custom flavors' },
               { icon: UtensilsCrossed, title: 'Hot Sides', sub: 'Crispy fries, tots & more' },
+              { icon: IceCream2, title: 'Thick Shakes', sub: 'Hand spun. Custom flavors' },
             ].map((f) => (
               <div key={f.title} className="text-center">
                 <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center mx-auto mb-2">
