@@ -1,15 +1,16 @@
+# Flavor Isle — robots.txt (crave.flavor-isle.com)
+# Public content is fully crawlable. Only private/transactional paths are blocked.
+
 User-agent: *
 Allow: /
-Disallow: /checkout
-Disallow: /order-confirmation
-Disallow: /merch-checkout
-Disallow: /merch-confirmation
-Disallow: /account
 Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /merch-checkout
+Disallow: /order-confirmation
 Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
-Disallow: /order-status
 
 Sitemap: https://crave.flavor-isle.com/sitemap.xml
