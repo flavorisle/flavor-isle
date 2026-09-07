@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, Check, Sparkles } from 'lucide-react';
 import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
+import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -20,6 +21,10 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   };
 
   const [selections, setSelections] = useState(initSelections);
+
+  useEffect(() => {
+    trackViewItem(foodItemToGa4(item), { value: item.price });
+  }, [item]);
 
   // Deluxe presets — one-tap shortcuts that each select a fixed set of toppings.
   const deluxePresets = DELUXE_ENABLED ? getDeluxePresetsForItem(item) : [];

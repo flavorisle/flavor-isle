@@ -1,5 +1,6 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
+import { fetchStoreProducts } from './printful.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -19,11 +20,54 @@ function trackedLink(path: string, linkId: string, orderId?: string) {
 }
 
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
-export function merchPromoHtml() {
+// Pulls two random products live from Printful so each email shows fresh gear
+// with real product photos. Falls back to a generic text CTA if the catalog
+// can't be reached so the email still sends.
+export async function merchPromoHtml() {
+  let productCards = '';
+  try {
+    const all = await fetchStoreProducts();
+    if (Array.isArray(all) && all.length > 0) {
+      // Fisher–Yates shuffle, then take 2.
+      const pool = [...all];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const picks = pool.slice(0, 2);
+      productCards = `<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:0 0 14px;"><tr>${
+        picks.map(p => {
+          const img = p.thumbnail_url || (p.images && p.images[0]) || '';
+          const price = p.fromPrice ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px;">from $${Number(p.fromPrice).toFixed(2)}</div>` : '';
+          const imgHtml = img
+            ? `<img src="${img}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:10px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />`
+            : `<div style="width:100%;aspect-ratio:1/1;border-radius:10px;background:#f5edd6;"></div>`;
+          return `<td style="width:50%;vertical-align:top;">
+            <a href="${trackedLink(`/merch?product=${p.id}`, 'merch_promo_product')}" style="text-decoration:none;color:#141414;display:block;">
+              ${imgHtml}
+              <div style="font-family:'Oswald',Arial,sans-serif;font-size:14px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Tasty Threads'}</div>
+              ${price}
+            </a>
+          </td>`;
+        }).join('')
+      }</tr></table>`;
+    }
+  } catch (err) {
+    console.error('merchPromoHtml product fetch failed:', err.message);
+  }
+
+  const headline = productCards
+    ? '🛍️ TASTY THREADS — FRESH PICKS FOR YOU'
+    : '🛍️ TASTY THREADS — NOW SHIPPING';
+  const subline = productCards
+    ? 'Two fresh picks, printed to order and shipped straight to your door. Tap a shirt to shop.'
+    : 'Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.';
+
   return `
   <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
-    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
-    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">${headline}</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">${subline}</p>
+    ${productCards}
     <a href="${trackedLink('/merch', 'merch_promo')}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
   </div>`;
 }
@@ -68,6 +112,20 @@ export function accountCtaHtml() {
   </div>`;
 }
 
+// True when this email address already belongs to a registered app user, so
+// order emails can skip the "create your account" pitch. On lookup failure we
+// return true — better to omit the block than nag an existing customer.
+export async function isRegisteredUser(base44: any, email?: string) {
+  if (!email) return false;
+  try {
+    const users = await base44.asServiceRole.entities.User.filter({ email });
+    return (users || []).length > 0;
+  } catch (err) {
+    console.error('isRegisteredUser lookup failed:', err.message);
+    return true;
+  }
+}
+
 // Star Rewards block — shown when a guest order enrolled the customer in Star
 // Rewards (or earned stars). `newlyEnrolled` triggers the welcome-bonus line;
 // `balance` is their current star balance.
@@ -91,6 +149,24 @@ export function rewardsEnrolledHtml({ newlyEnrolled, balance }: { newlyEnrolled?
   </div>`;
 }
 
+// Stars-earned block — shown on order confirmation emails with the exact
+// number of stars the order earned and a link to the rewards page.
+export function starsEarnedHtml({ pointsEarned, balance, newlyEnrolled }: { pointsEarned: number; balance?: number; newlyEnrolled?: boolean }) {
+  const welcomeLine = newlyEnrolled
+    ? ` Plus a <strong>40-star welcome bonus</strong> for joining Star Rewards!`
+    : '';
+  const balanceLine = typeof balance === 'number'
+    ? `<p style="color:#141414;font-size:14px;margin:0 0 14px;">Your balance is now <strong>${balance} stars</strong>.</p>`
+    : '';
+  return `
+  <div style="margin:24px 0 8px;border-radius:14px;padding:20px;background:#FFF8E7;border:2px dashed #F5A623;">
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">⭐ YOU EARNED ${pointsEarned} STAR${pointsEarned === 1 ? '' : 'S'}!</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 12px;line-height:1.5;">This order just added <strong>${pointsEarned} star${pointsEarned === 1 ? '' : 's'}</strong> to your Star Rewards.${welcomeLine} Rack 'em up and trade them in for free food.</p>
+    ${balanceLine}
+    <a href="${trackedLink('/rewards', 'stars_earned')}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:bold;">SEE MY REWARDS →</a>
+  </div>`;
+}
+
 // Branded email shell matching the website: centered logo, cherry header,
 // cream body, navy footer, Oswald headings / Open Sans body.
 export function brandedEmailHtml(bodyHtml) {
@@ -98,7 +174,7 @@ export function brandedEmailHtml(bodyHtml) {
   <div style="background:#F5EDD6;padding:24px 12px;font-family:'Open Sans',Arial,sans-serif;">
     <div style="max-width:600px;margin:0 auto;background:#FFFDF8;border-radius:16px;overflow:hidden;">
       <div style="background:#C0392B;padding:28px 24px;text-align:center;">
-        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:50%;display:block;margin:0 auto 12px;" />
+        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:12px;display:block;margin:0 auto 12px;object-fit:contain;" />
         <h1 style="color:#ffffff;font-family:'Oswald',Arial,sans-serif;margin:0;font-size:26px;letter-spacing:3px;">FLAVOR ISLE</h1>
         <p style="color:rgba(255,255,255,0.85);margin:4px 0 0;font-size:12px;letter-spacing:2px;">SMITHS GROVE, KY</p>
       </div>
@@ -164,7 +240,7 @@ export async function sendOrderReadyEmail(order) {
     ? `It's rolling your way right now — enjoy! 🚗`
     : orderType === 'dine_in'
     ? `It's headed to your table — dig in! 🍔`
-    : `Pull up whenever you're ready — we'll have it hot and waiting.`;
+    : `Come on inside the dining room — your order will be ready on the counter. We don't hand orders out the window (especially for larger ones), so just head on in and we'll get you taken care of.`;
 
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
@@ -175,7 +251,7 @@ export async function sendOrderReadyEmail(order) {
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
 
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -250,7 +326,7 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${whatToExpectHtml()}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
 }
 
@@ -267,6 +343,6 @@ export async function sendOrderCompletedEmail(order: any) {
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'd love to see you back soon, fam.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team</p>
     ${reviewCtaHtml(order.id)}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `Thanks for rolling with us! 🙌`, body);
 }

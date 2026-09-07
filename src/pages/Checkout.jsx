@@ -11,6 +11,7 @@ import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
+import SavedCardSelector from '@/components/checkout/SavedCardSelector';
 import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
 import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
@@ -22,6 +23,7 @@ import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -44,42 +46,83 @@ const CARD_STYLE = {
 };
 
 // Inner payment form — must be rendered inside <Elements>
-function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total }) {
+function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
 
   const handlePay = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe) return;
     setPaying(true);
     onError('');
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card: elements.getElement(CardElement) },
-    });
+    let result;
+    if (savedCard) {
+      // Charge a saved card by its PaymentMethod id.
+      result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: savedCard.stripe_payment_method_id,
+      });
+    } else {
+      if (!elements) { setPaying(false); return; }
+      result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: elements.getElement(CardElement) },
+      });
+    }
 
     if (result.error) {
       onError(result.error.message);
       setPaying(false);
     } else if (result.paymentIntent.status === 'succeeded') {
+      // Save the new card for next time if the customer opted in. Done after
+      // a successful charge so a failed payment never saves a card.
+      if (!savedCard && saveNewCard && canSaveCard && result.paymentIntent.payment_method) {
+        try {
+          await base44.functions.invoke('manageSavedCards', {
+            action: 'save',
+            paymentMethodId: String(result.paymentIntent.payment_method),
+          });
+        } catch (err) {
+          console.error('Save new card failed:', err);
+        }
+      }
       onSuccess(orderNumber);
     }
   };
 
   return (
     <div>
-      <WalletPayButton
-        clientSecret={clientSecret}
-        total={total}
-        label={`Flavor Isle #${orderNumber}`}
-        onSuccess={() => onSuccess(orderNumber)}
-        onError={onError}
-      />
+      {!savedCard && (
+        <WalletPayButton
+          clientSecret={clientSecret}
+          total={total}
+          label={`Flavor Isle #${orderNumber}`}
+          onSuccess={() => onSuccess(orderNumber)}
+          onError={onError}
+        />
+      )}
       <form onSubmit={handlePay}>
-      <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-5">
-        <CardElement options={CARD_STYLE} />
-      </div>
+      {savedCard ? (
+        <div className="flex items-center gap-3 border border-border rounded-2xl px-4 py-4 bg-white mb-5">
+          <div className="w-9 h-9 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
+            <Lock size={16} className="text-midnight-cherry" />
+          </div>
+          <div className="flex-1">
+            <p className="font-heading text-sm text-obsidian-roast capitalize">{savedCard.brand} •••• {savedCard.last4}</p>
+            <p className="text-xs text-muted-foreground">Expires {String(savedCard.exp_month).padStart(2, '0')}/{String(savedCard.exp_year).slice(-2)} · saved card</p>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-3">
+          <CardElement options={CARD_STYLE} />
+        </div>
+      )}
+      {!savedCard && canSaveCard && (
+        <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
+          <input type="checkbox" checked={saveNewCard} onChange={e => setSaveNewCard(e.target.checked)} className="w-4 h-4 rounded accent-midnight-cherry" />
+          <span className="text-sm text-obsidian-roast">Save this card for faster checkout next time</span>
+        </label>
+      )}
       <button
         type="submit"
         disabled={paying || !stripe}
@@ -134,6 +177,14 @@ export default function Checkout() {
   // immediately without hunting for the input — especially on desktop.
   useEffect(() => { nameRef.current?.focus(); }, []);
 
+  // GA4 ecommerce: fire begin_checkout once when the customer lands on checkout.
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      trackBeginCheckout(cartItems.map(foodItemToGa4), totalWithTip, { coupon: appliedReward?.description });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
   useEffect(() => {
@@ -174,6 +225,15 @@ export default function Checkout() {
   const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
   const [splitIntents, setSplitIntents] = useState([]);
   const [splitPublishable, setSplitPublishable] = useState('');
+
+  // Saved cards (logged-in customers) — lets them charge a stored card or
+  // save a new one for next time. stripeCustomerId is attached to the
+  // PaymentIntent so saved methods can be charged.
+  const [savedCards, setSavedCards] = useState([]);
+  const [stripeCustomerId, setStripeCustomerId] = useState(null);
+  const [canSaveCard, setCanSaveCard] = useState(false); // signed-in customer can save cards
+  const [selectedCardId, setSelectedCardId] = useState('new'); // 'new' | stripe_payment_method_id
+  const [saveNewCard, setSaveNewCard] = useState(false);
 
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
@@ -334,12 +394,13 @@ export default function Checkout() {
           orderType,
           pickupMethod,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: form.instructions,
+          instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
+          stripeCustomerId: stripeCustomerId || undefined,
         });
 
         const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -356,6 +417,13 @@ export default function Checkout() {
   };
 
   const handleSuccess = (on) => {
+    trackPurchase(cartItems.map(foodItemToGa4), {
+      transaction_id: on,
+      value: totalWithTip,
+      tax,
+      shipping: deliveryFee,
+      coupon: appliedReward?.description,
+    });
     clearCart();
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
@@ -370,6 +438,26 @@ export default function Checkout() {
         if (!cancelled && res?.data?.publishableKey) {
           setExpressStripePromise(loadStripe(res.data.publishableKey));
         }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load saved cards for signed-in customers so they can pick one for checkout.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!isAuthed || cancelled) return;
+      try {
+        const res = await base44.functions.invoke('manageSavedCards', { action: 'list' });
+        if (cancelled) return;
+        setCanSaveCard(true); // list succeeded → customer is signed in
+        const cards = res.data?.cards || [];
+        setSavedCards(cards);
+        setStripeCustomerId(res.data?.customerId || null);
+        const def = cards.find(c => c.is_default) || cards[0];
+        if (def) setSelectedCardId(def.stripe_payment_method_id);
       } catch {}
     })();
     return () => { cancelled = true; };
@@ -653,6 +741,13 @@ export default function Checkout() {
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
+                {savedCards.length > 0 && (
+                  <SavedCardSelector
+                    cards={savedCards}
+                    selectedId={selectedCardId}
+                    onSelect={setSelectedCardId}
+                  />
+                )}
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     clientSecret={clientSecret}
@@ -660,6 +755,10 @@ export default function Checkout() {
                     onSuccess={handleSuccess}
                     onError={setError}
                     total={totalWithTip}
+                    savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
+                    saveNewCard={saveNewCard}
+                    setSaveNewCard={setSaveNewCard}
+                    canSaveCard={canSaveCard}
                   />
                 </Elements>
                 <div className="mt-5">

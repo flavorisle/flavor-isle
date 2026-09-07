@@ -45,13 +45,18 @@ export default function MerchConfirmation() {
               <p className="font-mono text-sm text-obsidian-roast">{orderNumber}</p>
             </div>
           )}
-          <div className="border border-border rounded-2xl p-4 mb-8 flex items-center gap-3 text-left">
+          <div className="border border-border rounded-2xl p-4 mb-8 flex items-start gap-3 text-left">
             <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
               <Truck size={18} className="text-midnight-cherry" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-heading text-sm text-obsidian-roast">Printed on demand</p>
-              <p className="text-sm text-muted-foreground">Fulfilled by Printful · typically 3–7 business days</p>
+              <p className="text-sm text-muted-foreground mb-2">Fulfilled by Printful — your gear is made just for you.</p>
+              <div className="flex flex-wrap gap-2 text-[11px] font-heading uppercase tracking-widest">
+                <span className="bg-patina-mint/10 text-patina-mint px-2.5 py-1 rounded-full">2–7 days production</span>
+                <span className="bg-patina-mint/10 text-patina-mint px-2.5 py-1 rounded-full">2–5 days shipping</span>
+                <span className="bg-midnight-cherry/10 text-midnight-cherry px-2.5 py-1 rounded-full">Tracking emailed</span>
+              </div>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">

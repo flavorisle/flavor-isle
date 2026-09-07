@@ -16,4 +16,4 @@ export function getBusynessStage(count) {
   return BUSYNESS_STAGES.find(s => count >= s.min) || BUSYNESS_STAGES[BUSYNESS_STAGES.length - 1];
 }
 
-export const COOK_WINDOW_MINUTES = 20;
+export const COOK_WINDOW_MINUTES = 10;

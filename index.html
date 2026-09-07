@@ -32,19 +32,21 @@
     <link rel="canonical" href="https://crave.flavor-isle.com" />
     <link rel="alternate" hreflang="en-us" href="https://crave.flavor-isle.com" />
 
-    <!-- Restaurant structured data helps Google Business & local "near me" search -->
-    <script type="application/ld+json">
+    <!-- Restaurant structured data helps Google Business & local "near me" search.
+         openingHoursSpecification is kept accurate at runtime by RestaurantSchema,
+         which pulls the live schedule from the MenuSetting business_hours entity. -->
+    <script type="application/ld+json" id="restaurant-schema">
     {
       "@context": "https://schema.org",
       "@type": "Restaurant",
       "name": "Flavor Isle",
-      "description": "Smiths Grove's favorite burger restaurant. Fresh, never-frozen hand-patted smash burgers, thick milkshakes, and hot sides. Order online for pickup or delivery, or dine in.",
+      "description": "Family-owned burger and ice cream diner since 1964, just off I-65 Exit 38, 15 minutes north of Bowling Green.",
       "image": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg",
       "logo": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png",
       "url": "https://crave.flavor-isle.com",
       "telephone": "+12705634618",
-      "priceRange": "$$",
-      "servesCuisine": ["American", "Burgers", "Milkshakes", "Fast Casual"],
+      "priceRange": "$",
+      "servesCuisine": ["Burgers", "American", "Ice Cream"],
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "103 N Main St",
@@ -73,7 +75,7 @@
         { "@type": "AdministrativeArea", "name": "Hart County" }
       ],
       "menu": "https://crave.flavor-isle.com/menu",
-      "acceptsReservations": "False",
+      "acceptsReservations": false,
       "hasMenu": {
         "@type": "Menu",
         "url": "https://crave.flavor-isle.com/menu",
@@ -93,23 +95,57 @@
         }
       ],
       "sameAs": [
-        "https://instagram.com/flavor_isle",
-        "https://facebook.com/flavorisle"
+        "https://www.facebook.com/flavorisle/"
       ]
     }
     </script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGKV9E220Q"></script>
+    <!-- Google tag (gtag.js) — GA4 Ordering Site stream -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SHXK97DNTD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-LGKV9E220Q');
+      // Google consent mode v2 — deny ad/analytics storage by default until the
+      // visitor accepts the cookie banner. Tags send cookieless pings so GA4
+      // can model missing data; full cookies apply once consent is granted.
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'functionality_storage': 'granted',
+        'security_storage': 'granted',
+        'ads_data_redaction': true,
+        'url_passthrough': true,
+        'wait_for_update': 500
+      });
+
+      gtag('config', 'G-SHXK97DNTD');
     </script>
+
+    <!-- Meta Pixel Code -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('consent', 'revoke');
+      fbq('init', '2006793429980228');
+      fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel Code -->
   </head>
   <body>
+    <!-- Meta Pixel noscript fallback -->
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=2006793429980228&ev=PageView&noscript=1"
+    /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

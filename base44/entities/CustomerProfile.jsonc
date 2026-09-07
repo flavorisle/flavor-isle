@@ -59,6 +59,11 @@
     "cart": {
       "type": "object",
       "description": "Saved cart for cross-device sync: { cartItems, orderType, groupMode, people, activePersonId, savedAt }. Hydrated only for authenticated users so the same cart follows them across phones, tablets, and desktops."
+    },
+    "cart_reminder_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last cart-abandonment reminder email was sent. Compared against cart.savedAt so a cart modified after a reminder becomes eligible for another reminder after one more hour."
     }
   },
   "required": [

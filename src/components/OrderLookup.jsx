@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import PickupZoneMap, { ZONES } from '@/components/PickupZoneMap';
 import CurbsideArrivalModal from '@/components/CurbsideArrivalModal';
+import MerchOrderStatusCard from '@/components/merch/MerchOrderStatusCard';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -27,6 +28,7 @@ const stageIndex = (status) => STATUS_PROFILE[status]?.stage;
 export default function OrderLookup() {
   const [orderNum, setOrderNum] = useState('');
   const [order, setOrder] = useState(null);
+  const [merchOrder, setMerchOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
@@ -47,20 +49,27 @@ export default function OrderLookup() {
     setError('');
     setLoading(true);
     setOrder(null);
+    setMerchOrder(null);
     try {
-      // Backend lookup so guests (not signed in) can track their order too.
-      const res = await base44.functions.invoke('lookupOrder', { order_number: q });
-      if (res?.data?.order) {
-        setOrder(res.data.order);
-      } else {
-        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+      // Backend lookup so guests (not signed in) can track their food order too.
+      try {
+        const res = await base44.functions.invoke('lookupOrder', { order_number: q });
+        if (res?.data?.order) {
+          setOrder(res.data.order);
+          return;
+        }
+      } catch (err) {
+        if (err?.response?.status !== 404) throw err;
       }
+      // No food order — try a Tasty Threads merch order next.
+      const merch = await base44.entities.MerchOrder.filter({ order_number: q });
+      if (merch && merch.length > 0) {
+        setMerchOrder(merch[0]);
+        return;
+      }
+      setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
     } catch (err) {
-      if (err?.response?.status === 404) {
-        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
-      } else {
-        setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
-      }
+      setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
     } finally {
       setLoading(false);
     }
@@ -111,9 +120,11 @@ export default function OrderLookup() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-3 font-body">
-          Tip: your order number's on your confirmation email, right under "ORDER CONFIRMED".
+          Tip: your order number's on your confirmation email, right under "ORDER CONFIRMED". Works for Tasty Threads merch orders too.
         </p>
       </form>
+
+      {merchOrder && <MerchOrderStatusCard order={merchOrder} />}
 
       {error && !order && (
         <div className="card-diner p-5 border-l-4" style={{ borderLeftColor: 'var(--midnight-cherry)' }}>
@@ -255,7 +266,7 @@ export default function OrderLookup() {
         />
       )}
 
-      {!order && (
+      {!order && !merchOrder && (
         <div className="text-center">
           <p className="text-muted-foreground font-body text-sm">
             No order number yet?{' '}

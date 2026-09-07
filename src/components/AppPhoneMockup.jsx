@@ -55,7 +55,7 @@ export default function AppPhoneMockup() {
 
         {/* App header */}
         <div className="flex items-center justify-between px-4 py-2">
-          <img src={LOGO} alt="Flavor Isle" className="w-8 h-8 rounded-full object-contain" />
+          <img src={LOGO} alt="Flavor Isle" className="w-8 h-8 rounded-lg object-contain" />
           <div className="text-center leading-none">
             <div className="font-heading text-sm" style={{ color: '#003366' }}>FLAVOR ISLE</div>
             <div className="text-[8px] tracking-widest" style={{ color: '#7a8fa6' }}>SMITHS GROVE, KY</div>
@@ -71,7 +71,7 @@ export default function AppPhoneMockup() {
           <div className="rounded-2xl overflow-hidden relative h-36 mb-3">
             <img src={HERO_BURGER} alt="Flavor Isle double cheeseburger" className="w-full h-full object-cover" style={{ objectPosition: 'center 78%' }} />
             <div className="absolute inset-0 flex flex-col items-center justify-end pb-2" style={{ background: 'linear-gradient(to top, rgba(0,51,102,0.78) 0%, rgba(0,51,102,0) 55%)' }}>
-              <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-full object-contain mb-0.5 bg-white/90 p-0.5" />
+              <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-lg object-contain mb-0.5 bg-white/90 p-0.5" />
               <div className="font-heading text-white text-base leading-none">FLAVOR ISLE</div>
               <div className="text-white/80 text-[8px] tracking-widest">SMITHS GROVE, KY</div>
             </div>

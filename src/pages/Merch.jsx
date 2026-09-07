@@ -1,6 +1,6 @@
 // Tasty Threads storefront — powered by Printful, grouped by admin-defined categories.
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, AlertCircle, Shirt } from 'lucide-react';
+import { ShoppingBag, AlertCircle, Shirt, Clock, Truck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -9,6 +9,7 @@ import ProductDetailModal from '@/components/merch/ProductDetailModal';
 import MerchCartButton from '@/components/merch/MerchCartButton';
 import { useMerchCart } from '@/context/MerchCartContext';
 import { useToast } from '@/components/ui/use-toast';
+import { trackViewItemList, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const UNGROUPED = 'Other';
 
@@ -35,9 +36,17 @@ export default function Merch() {
           base44.entities.MerchProductAssignment.list('-sort_order', 500).catch(() => []),
         ]);
         if (cancelled) return;
-        setProducts(prodRes.data?.products || []);
+        const loaded = prodRes.data?.products || [];
+        setProducts(loaded);
+        trackViewItemList(loaded.map(merchItemToGa4), { item_list_id: 'merch', item_list_name: 'Tasty Threads' });
         setCategories(cats || []);
         setAssignments(assigns || []);
+        // Shared link deep-linking: /merch?product=<id> opens that product.
+        const sharedId = new URLSearchParams(window.location.search).get('product');
+        if (sharedId) {
+          const match = loaded.find((p) => String(p.id) === sharedId);
+          if (match) setActiveProduct(match);
+        }
       } catch (err) {
         if (!cancelled) setError(err?.response?.data?.error || err.message || 'Could not load the store.');
       } finally {
@@ -131,17 +140,70 @@ export default function Merch() {
 
       {/* Hero */}
       <section className="bg-obsidian-roast relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-          <div className="flex items-center gap-2 mb-4">
-            <Shirt size={20} className="text-[hsl(var(--primary))]" />
-            <p className="text-sm font-heading uppercase tracking-widest text-[hsl(var(--primary))]">FLAVOR ISLE MERCH</p>
-          </div>
-          <h1 className="font-heading text-5xl sm:text-7xl text-white leading-none">Tasty Threads</h1>
-          <p className="text-gray-300 mt-4 max-w-xl text-lg">
-            Wear the flavor. Tees, cups, and gear printed on demand and shipped straight to your door.
-          </p>
-          <div className="mt-6 inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm">
-            <ShoppingBag size={14} /> Free shipping quotes at checkout
+        {/* Subtle diner-grid texture overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+        {/* Warm glow accents */}
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-midnight-cherry/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-64 h-64 bg-smashie-yellow/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 relative">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            {/* Left — brand + copy */}
+            <div>
+              <div className="inline-flex items-center gap-2 bg-smashie-yellow/15 text-smashie-yellow px-3 py-1.5 rounded-full text-xs font-heading uppercase tracking-widest mb-5">
+                <Shirt size={12} /> Est. 1964 · Flavor Isle
+              </div>
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+                alt="Tasty Threads — Flavor Isle Apparel, est. 1964"
+                className="w-full max-w-sm h-auto bg-white rounded-2xl p-4 mb-6 shadow-float"
+              />
+              <p className="text-gray-200 max-w-xl text-lg leading-relaxed">
+                Wear the flavor. Tees, cups, and gear printed on demand and shipped straight to your door.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2.5">
+                <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm">
+                  <ShoppingBag size={14} /> Free shipping quotes at checkout
+                </span>
+                <span className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm">
+                  <Clock size={14} /> Ships in 4–12 business days
+                </span>
+              </div>
+            </div>
+
+            {/* Right — production timeline card */}
+            <div className="bg-white/5 backdrop-blur rounded-3xl border border-white/10 p-6 sm:p-8">
+              <h2 className="font-heading text-xl text-white mb-1">How it works</h2>
+              <p className="text-gray-400 text-sm mb-5">Every Tasty Threads piece is made to order — no warehouse, no waste.</p>
+              <div className="space-y-4">
+                {[
+                  { step: '1', title: 'You order', desc: 'Pick your tee, cup, or gear and check out.', icon: ShoppingBag },
+                  { step: '2', title: 'We print', desc: 'Your item goes into production within 2–7 business days.', icon: Shirt },
+                  { step: '3', title: 'It ships', desc: 'Tracking emailed to you, delivered in 2–5 more business days.', icon: Truck },
+                ].map(({ step, title, desc, icon: Icon }) => (
+                  <div key={step} className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-midnight-cherry flex items-center justify-center flex-shrink-0">
+                      <Icon size={16} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading text-sm text-white tracking-wide">{title}</p>
+                      <p className="text-gray-400 text-xs leading-snug">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-gray-400">
+                <Clock size={13} className="text-smashie-yellow" />
+                <span>Total turnaround: <span className="text-white font-heading">4–12 business days</span> from order to door</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

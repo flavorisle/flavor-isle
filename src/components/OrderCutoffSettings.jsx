@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Save, Check } from 'lucide-react';
-import { getMenuSetting, setOrderCutoffs } from '@/lib/menuSettings';
+import { Clock, Save, Check, Truck } from 'lucide-react';
+import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled } from '@/lib/menuSettings';
 
 export default function OrderCutoffSettings() {
   const [closingTime, setClosingTime] = useState('20:00');
   const [deliveryCutoff, setDeliveryCutoff] = useState(30);
   const [pickupCutoff, setPickupCutoff] = useState(15);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryEnabled, setDeliveryEnabledState] = useState(true);
+  const [togglingDelivery, setTogglingDelivery] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -17,9 +19,20 @@ export default function OrderCutoffSettings() {
         if (s.delivery_cutoff_minutes != null) setDeliveryCutoff(s.delivery_cutoff_minutes);
         if (s.pickup_cutoff_minutes != null) setPickupCutoff(s.pickup_cutoff_minutes);
         if (s.delivery_fee != null) setDeliveryFee(s.delivery_fee);
+        if (s.delivery_enabled != null) setDeliveryEnabledState(s.delivery_enabled);
       })
       .catch(() => {});
   }, []);
+
+  const toggleDelivery = async (enabled) => {
+    setTogglingDelivery(true);
+    try {
+      const updated = await setDeliveryEnabled(enabled);
+      setDeliveryEnabledState(updated.delivery_enabled !== false);
+    } finally {
+      setTogglingDelivery(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -48,6 +61,37 @@ export default function OrderCutoffSettings() {
             <h2 className="font-heading text-lg text-obsidian-roast">Order Settings</h2>
             <p className="text-sm text-muted-foreground">Cutoff times and delivery fees for online orders.</p>
           </div>
+        </div>
+
+        {/* Delivery pause toggle — when off, the Delivery order type is hidden
+            from customers regardless of hours, and anyone already on delivery
+            is moved back to pickup. */}
+        <div className={`rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 ${deliveryEnabled ? 'bg-patina-mint/5 border-patina-mint/20' : 'bg-midnight-cherry/5 border-midnight-cherry/20'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${deliveryEnabled ? 'bg-patina-mint/10' : 'bg-midnight-cherry/10'}`}>
+              <Truck size={18} className={deliveryEnabled ? 'text-patina-mint' : 'text-midnight-cherry'} />
+            </div>
+            <div>
+              <p className="font-heading text-sm text-obsidian-roast">
+                Delivery {deliveryEnabled ? 'Available' : 'Paused'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {deliveryEnabled
+                  ? 'Customers can place delivery orders during open hours.'
+                  : 'Delivery is turned off — customers can still pick up or dine in.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => toggleDelivery(!deliveryEnabled)}
+            disabled={togglingDelivery}
+            role="switch"
+            aria-checked={deliveryEnabled}
+            aria-label={deliveryEnabled ? 'Pause delivery' : 'Resume delivery'}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-60 flex-shrink-0 ${deliveryEnabled ? 'bg-patina-mint' : 'bg-muted-foreground/30'}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${deliveryEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

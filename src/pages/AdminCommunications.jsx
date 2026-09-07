@@ -7,6 +7,7 @@ import ManagementMessageLog from '@/components/admin/ManagementMessageLog';
 import SmashieSettingsPanel from '@/components/admin/SmashieSettingsPanel';
 import SmsBroadcastPanel from '@/components/admin/SmsBroadcastPanel';
 import SmsSubscribersList from '@/components/admin/SmsSubscribersList';
+import SmsQrCode from '@/components/SmsQrCode';
 import { Send, Users } from 'lucide-react';
 
 const TABS = [
@@ -57,7 +58,12 @@ export default function AdminCommunications() {
         {tab === 'phone' && <ConversationLog channel="voice" />}
         {tab === 'sms' && <ConversationLog channel="sms" />}
         {tab === 'broadcast' && <SmsBroadcastPanel />}
-        {tab === 'subscribers' && <SmsSubscribersList />}
+        {tab === 'subscribers' && (
+          <>
+            <SmsSubscribersList />
+            <SmsQrCode />
+          </>
+        )}
         {tab === 'messages' && <ManagementMessageLog />}
         {tab === 'settings' && <SmashieSettingsPanel />}
       </div>

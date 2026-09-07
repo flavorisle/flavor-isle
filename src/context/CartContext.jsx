@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { getCutoffStatus } from '@/lib/orderCutoff';
+import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const CartContext = createContext(null);
 
@@ -143,6 +144,7 @@ export function CartProvider({ children }) {
   const activePerson = people.find(p => p.id === activePersonId) || null;
 
   const addItem = useCallback((item) => {
+    trackAddToCart(foodItemToGa4(item));
     setCartItems(prev => {
       // Tag with the active person when in group mode (unless item already has one).
       const tagged = groupMode && !item.person_id

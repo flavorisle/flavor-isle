@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Minus, Trash2, ArrowRight, Users, UserCircle, UserCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
+import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
@@ -30,6 +31,13 @@ export default function CartDrawer() {
   const navigate = useNavigate();
   const [assignFor, setAssignFor] = useState(null);
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+
+  useEffect(() => {
+    if (isCartOpen && cartItems.length > 0) {
+      trackViewCart(cartItems.map(foodItemToGa4), cartItems.reduce((s, i) => s + i.price * i.quantity, 0));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCartOpen]);
 
   if (!isCartOpen) return null;
 

@@ -99,6 +99,19 @@
 .dark .bg-white\/5 { background-color: rgba(255, 255, 255, 0.06); }
 .dark .bg-white\/10 { background-color: rgba(255, 255, 255, 0.08); }
 
+/* Forced-light subtrees (checkout, merch checkout) keep light surfaces even in
+   system dark mode, so the dark text overrides above must not apply inside them
+   — otherwise headings render near-white on white cards and disappear. */
+.dark .force-light .text-obsidian-roast,
+.dark .force-light.text-obsidian-roast { color: var(--patina-mint); }
+.dark .force-light .text-patina-mint,
+.dark .force-light.text-patina-mint { color: var(--patina-mint); }
+.dark .force-light .bg-white,
+.dark .force-light.bg-white { background-color: #ffffff; }
+.dark .force-light .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+.dark .force-light .bg-white\/5 { background-color: rgba(255, 255, 255, 0.6); }
+.dark .force-light .bg-white\/10 { background-color: rgba(255, 255, 255, 0.7); }
+
 /* High-contrast accessibility mode — stronger text/bg contrast, darker borders,
    and a yellow focus ring for keyboard users. Toggled by useHighContrast hook. */
 .high-contrast {
@@ -172,6 +185,25 @@
   --sidebar-accent-foreground: 210 100% 20%;
   --sidebar-border: 42 30% 85%;
   --sidebar-ring: 12 100% 40%;
+  /* Inputs inherit `color` from body, which is the light cream in system dark
+     mode — on the light field background that made typed text invisible on
+     Android. Pin the text color and tell the browser this subtree is light so
+     native form controls (autofill, caret, selection) render for a light UI. */
+  color: hsl(var(--foreground));
+  color-scheme: light;
+}
+
+.force-light input,
+.force-light textarea,
+.force-light select {
+  color: hsl(var(--foreground));
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+}
+.force-light input:-webkit-autofill,
+.force-light textarea:-webkit-autofill {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  box-shadow: 0 0 0 1000px hsl(var(--muted)) inset;
 }
 
 /* Checkout readability — the summary, field labels, and fine print used the
@@ -318,6 +350,11 @@
   .safe-left { padding-left: env(safe-area-inset-left); }
   .safe-right { padding-right: env(safe-area-inset-right); }
 
+  .consent-banner-pos { bottom: 1rem; }
+  @media (max-width: 767px) {
+    .consent-banner-pos { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+  }
+
   .tap-44 { min-width: 48px; min-height: 48px; }
 
   .glass-tab {
@@ -336,6 +373,53 @@
     border-radius: 9999px;
     border: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ── Printable in-store menu ──
+   When printing the admin Print Menu page, only the paper sheet is output:
+   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
+   is laid out edge-to-edge in black on white. */
+@media print {
+  @page { size: A3 landscape; margin: 0.25in 0.2in; }
+
+  body {
+    background: #ffffff !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Hide global app chrome that isn't part of the menu sheet */
+  nav, footer, .glass-tab, .glass-back { display: none !important; }
+  /* Hide the Smashie chat widget */
+  .smashie-chat-root { display: none !important; }
+
+  #print-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #print-sheet * {
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* On-screen paper preview for the printable menu. On screen the sheet fills
+   its container so the editor + preview fit side-by-side; when printing it
+   expands to the full A3 landscape width (16.5in). */
+#print-sheet {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media print {
+  #print-sheet {
+    width: 16.5in !important;
+    max-width: 16.5in !important;
   }
 }
 

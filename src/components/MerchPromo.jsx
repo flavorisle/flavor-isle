@@ -1,7 +1,7 @@
 // Homepage promo block for the Tasty Threads store — pulls live product previews.
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shirt, ArrowRight } from 'lucide-react';
+import { Shirt, ArrowRight, Clock } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 export default function MerchPromo() {
@@ -61,6 +61,9 @@ export default function MerchPromo() {
           <h2 className="font-heading text-4xl text-white mb-2">Tasty Threads</h2>
           <p className="text-red-200 max-w-xl">
             Rep the flavor with tees, cups, and gear — printed on demand and shipped to your door.
+          </p>
+          <p className="text-white/60 text-xs mt-2 inline-flex items-center gap-1">
+            <Clock size={12} /> Made to order · ships in 4–12 business days
           </p>
           {previews.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-4 justify-center md:justify-start">

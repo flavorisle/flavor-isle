@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { Resend } from 'npm:resend@3.2.0';
-import { brandedEmailHtml, accountCtaHtml, rewardsEnrolledHtml, merchPromoHtml, reviewCtaHtml, whatToExpectHtml } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, accountCtaHtml, rewardsEnrolledHtml, merchPromoHtml, reviewCtaHtml, whatToExpectHtml, starsEarnedHtml } from '../../shared/sendOrderEmails.ts';
 
 // Admin-only diagnostic: sends a fully branded test email to verify the
 // ready-email pipeline and Resend creds.
@@ -23,8 +23,9 @@ Deno.serve(async (req) => {
         <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">Jordan — your order is locked in. 🎉</h2>
         <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, and the crew's already firing up the grill. 🔥</p>
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">ORDER CONFIRMED · #PH123456</div>
+        ${starsEarnedHtml({ pointsEarned: 18, balance: 44, newlyEnrolled: true })}
         ${rewardsEnrolledHtml({ newlyEnrolled: true, balance: 44 })}
-        ${accountCtaHtml()}
+        ${body.hasAccount ? '' : accountCtaHtml()}
         ${whatToExpectHtml()}
         ${reviewCtaHtml('sample-order-id')}
         ${merchPromoHtml()}`;
