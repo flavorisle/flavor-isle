@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /order-confirmation
+Disallow: /merch-checkout
+Disallow: /merch-confirmation
+Disallow: /account
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /order-status
+
+Sitemap: https://crave.flavor-isle.com/sitemap.xml

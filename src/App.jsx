@@ -65,6 +65,9 @@ import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 import Flyer from './pages/Flyer';
+import I65Exit38 from './pages/I65Exit38';
+import RestaurantSchema from './components/RestaurantSchema';
+import CanonicalLink from './components/CanonicalLink';
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
@@ -160,6 +163,7 @@ const AuthenticatedApp = () => {
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/community-news" element={<CommunityNews />} />
       <Route path="/flyer" element={<Flyer />} />
+      <Route path="/i65-exit-38" element={<I65Exit38 />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
@@ -204,6 +208,8 @@ function AppShell() {
           <MerchCartProvider>
             <Router>
               <ScrollToTop />
+              <RestaurantSchema />
+              <CanonicalLink />
               <AuthenticatedApp />
               <BottomTabBar />
               <MobileHeader />

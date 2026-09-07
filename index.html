@@ -32,19 +32,21 @@
     <link rel="canonical" href="https://crave.flavor-isle.com" />
     <link rel="alternate" hreflang="en-us" href="https://crave.flavor-isle.com" />
 
-    <!-- Restaurant structured data helps Google Business & local "near me" search -->
-    <script type="application/ld+json">
+    <!-- Restaurant structured data helps Google Business & local "near me" search.
+         openingHoursSpecification is kept accurate at runtime by RestaurantSchema,
+         which pulls the live schedule from the MenuSetting business_hours entity. -->
+    <script type="application/ld+json" id="restaurant-schema">
     {
       "@context": "https://schema.org",
       "@type": "Restaurant",
       "name": "Flavor Isle",
-      "description": "Smiths Grove's favorite burger restaurant. Fresh, never-frozen hand-patted smash burgers, thick milkshakes, and hot sides. Order online for pickup or delivery, or dine in.",
+      "description": "Family-owned burger and ice cream diner since 1964, just off I-65 Exit 38, 15 minutes north of Bowling Green.",
       "image": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg",
       "logo": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png",
       "url": "https://crave.flavor-isle.com",
       "telephone": "+12705634618",
-      "priceRange": "$$",
-      "servesCuisine": ["American", "Burgers", "Milkshakes", "Fast Casual"],
+      "priceRange": "$",
+      "servesCuisine": ["Burgers", "American", "Ice Cream"],
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "103 N Main St",
@@ -73,7 +75,7 @@
         { "@type": "AdministrativeArea", "name": "Hart County" }
       ],
       "menu": "https://crave.flavor-isle.com/menu",
-      "acceptsReservations": "False",
+      "acceptsReservations": false,
       "hasMenu": {
         "@type": "Menu",
         "url": "https://crave.flavor-isle.com/menu",
@@ -93,8 +95,7 @@
         }
       ],
       "sameAs": [
-        "https://instagram.com/flavor_isle",
-        "https://facebook.com/flavorisle"
+        "https://www.facebook.com/flavorisle/"
       ]
     }
     </script>
