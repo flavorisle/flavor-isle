@@ -102,6 +102,18 @@ export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutof
   return { ...setting, ...updates };
 }
 
+export async function setDeliveryTiers(tiers) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { delivery_tiers: tiers });
+    bustMenuSettingCache();
+    return setting.id;
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], delivery_tiers: tiers });
+  bustMenuSettingCache();
+  return created.id;
+}
+
 export async function setBusinessHours(hours) {
   const setting = await getMenuSetting();
   await base44.entities.MenuSetting.update(setting.id, { business_hours: hours });

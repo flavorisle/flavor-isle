@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 
@@ -113,6 +114,9 @@ export default function I65Exit38() {
           </p>
         </div>
       </section>
+
+      {/* Nearby areas + I-65 wayfinding */}
+      <NearbyAreas hideCta />
 
       {/* Fan favorites */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">

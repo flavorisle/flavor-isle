@@ -39,6 +39,11 @@ export function CartProvider({ children }) {
   // customer picks a reward) and checkout (where it reduces the total).
   const [appliedReward, setAppliedReward] = useState(null);
 
+  // Distance-based delivery quote — set by checkout once the customer's
+  // address is quoted ({ fee, distance_miles, out_of_range }). When present,
+  // it overrides the flat delivery_fee for delivery orders.
+  const [deliveryQuote, setDeliveryQuote] = useState(null);
+
   // Persist the cart for the current browser session so a refresh or a trip
   // through login doesn't lose the order.
   useEffect(() => {
@@ -218,7 +223,9 @@ export function CartProvider({ children }) {
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const deliveryFee = orderType === 'delivery' ? Number(menuSetting?.delivery_fee ?? 0) : 0;
+  const deliveryFee = orderType === 'delivery'
+    ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
+    : 0;
   const tax = subtotal * 0.06;
   const total = subtotal + deliveryFee + tax;
 
@@ -243,6 +250,7 @@ export function CartProvider({ children }) {
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,
       appliedReward, setAppliedReward,
+      deliveryQuote, setDeliveryQuote,
     }}>
       {children}
     </CartContext.Provider>
