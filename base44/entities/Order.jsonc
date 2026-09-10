@@ -17,6 +17,14 @@
         "dine_in"
       ]
     },
+    "pickup_method": {
+      "type": "string",
+      "enum": [
+        "counter",
+        "curbside"
+      ],
+      "description": "For pickup orders: 'counter' = walk in and pick up at the counter, 'curbside' = we bring it to the car. Chosen by the customer in the cart."
+    },
     "order_source": {
       "type": "string",
       "enum": [
@@ -119,6 +127,32 @@
       "type": "boolean",
       "default": false,
       "description": "Whether Square Star Rewards points have been successfully accrued for this order. Set true by the Stripe webhook after a successful accrual, and by the Square order-status sync's self-healing retry (which first checks the Square loyalty ledger for an existing ACCUMULATE_POINTS event so already-credited orders are never re-accrued)."
+    },
+    "arrival_details": {
+      "type": "object",
+      "description": "Curbside arrival info logged when the customer taps 'I'm Here' on the order status page: vehicle, parking zone, special notes (extra ketchup, napkins, etc.), and arrival timestamp.",
+      "properties": {
+        "arrived_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "zone": {
+          "type": "string"
+        },
+        "car_color": {
+          "type": "string"
+        },
+        "car_make": {
+          "type": "string"
+        },
+        "car_model": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Customer's special requests at arrival, e.g. extra ketchup packets or napkins."
+        }
+      }
     }
   },
   "required": [

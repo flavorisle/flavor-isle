@@ -175,6 +175,7 @@ const AuthenticatedApp = () => {
       <Route path="/merch-confirmation" element={<MerchConfirmation />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
+      <Route path="/order-status" element={<OrderStatus />} />
 
       {/* Login required to view account, rewards, or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

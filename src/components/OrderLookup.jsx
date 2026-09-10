@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import PickupZoneMap, { ZONES } from '@/components/PickupZoneMap';
+import CurbsideArrivalModal from '@/components/CurbsideArrivalModal';
 import MerchOrderStatusCard from '@/components/merch/MerchOrderStatusCard';
 
 const STAGES = [
@@ -29,6 +31,49 @@ export default function OrderLookup() {
   const [merchOrder, setMerchOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedZone, setSelectedZone] = useState('');
+  const [showArrival, setShowArrival] = useState(false);
+  const [hasArrived, setHasArrived] = useState(false);
+
+  // Auto-load when the page is opened with ?order=123456 (e.g. from the
+  // confirmation email link) so the customer lands straight on their tracker.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('order');
+    if (q) {
+      setOrderNum(q);
+      lookup(q);
+    }
+  }, []);
+
+  const lookup = async (q) => {
+    setError('');
+    setLoading(true);
+    setOrder(null);
+    setMerchOrder(null);
+    try {
+      // Backend lookup so guests (not signed in) can track their food order too.
+      try {
+        const res = await base44.functions.invoke('lookupOrder', { order_number: q });
+        if (res?.data?.order) {
+          setOrder(res.data.order);
+          return;
+        }
+      } catch (err) {
+        if (err?.response?.status !== 404) throw err;
+      }
+      // No food order — try a Tasty Threads merch order next.
+      const merch = await base44.entities.MerchOrder.filter({ order_number: q });
+      if (merch && merch.length > 0) {
+        setMerchOrder(merch[0]);
+        return;
+      }
+      setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+    } catch (err) {
+      setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -37,27 +82,7 @@ export default function OrderLookup() {
       setError('Drop your order number in, fam — we need it to pull up your order.');
       return;
     }
-    setError('');
-    setLoading(true);
-    setOrder(null);
-    setMerchOrder(null);
-    try {
-      const results = await base44.entities.Order.filter({ order_number: q });
-      if (results && results.length > 0) {
-        setOrder(results[0]);
-      } else {
-        const merch = await base44.entities.MerchOrder.filter({ order_number: q });
-        if (merch && merch.length > 0) {
-          setMerchOrder(merch[0]);
-        } else {
-          setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
-        }
-      }
-    } catch (err) {
-      setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
-    } finally {
-      setLoading(false);
-    }
+    lookup(q);
   };
 
   const profile = order ? (STATUS_PROFILE[order.status] || STATUS_PROFILE.pending) : null;
@@ -193,7 +218,52 @@ export default function OrderLookup() {
               </a>
             )}
           </div>
+
+          {/* Pickup zone map for pickup/curbside orders */}
+          {order.order_type === 'pickup' && (
+            <div className="px-6 pb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin size={16} className="text-midnight-cherry" />
+                <p className="font-heading text-sm text-obsidian-roast uppercase tracking-wider">
+                  {selectedZone ? 'Your Parking Zone' : 'Where Are You Parked?'}
+                </p>
+              </div>
+              <PickupZoneMap
+                selectedZone={selectedZone}
+                onSelectZone={setSelectedZone}
+              />
+
+              {/* Curbside arrival — tell the kitchen you're here */}
+              {!['cancelled', 'completed', 'delivered'].includes(order.status) && (
+                hasArrived || order.arrival_details?.arrived_at ? (
+                  <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3">
+                    <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
+                    <p className="font-body text-sm text-obsidian-roast">
+                      Kitchen's been told you're here — your order's on its way out!
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowArrival(true)}
+                    className="btn-cherry chrome-hover w-full py-4 text-sm font-heading mt-4 tap-44"
+                  >
+                    I'm Here — Curbside Pickup
+                  </button>
+                )
+              )}
+            </div>
+          )}
         </div>
+      )}
+
+      {showArrival && order && (
+        <CurbsideArrivalModal
+          order={order}
+          zoneLabel={ZONES.find((z) => z.id === selectedZone)?.label || ''}
+          onClose={() => setShowArrival(false)}
+          onArrived={() => setHasArrived(true)}
+        />
       )}
 
       {!order && !merchOrder && (

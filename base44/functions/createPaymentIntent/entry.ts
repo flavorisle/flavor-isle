@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, stripeCustomerId } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -49,6 +49,16 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
+        ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
+        // Vehicle captured at checkout for curbside orders — the crew knows
+        // what car to look for before the customer even taps "I'm Here".
+        ...(vehicle && (vehicle.color || vehicle.make || vehicle.model) ? {
+          arrival_details: {
+            car_color: vehicle.color || '',
+            car_make: vehicle.make || '',
+            car_model: vehicle.model || '',
+          },
+        } : {}),
         status: 'pending',
         payment_status: 'pending',
         items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [] })),

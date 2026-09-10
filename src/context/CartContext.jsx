@@ -22,6 +22,7 @@ const readSession = (key, fallback) => {
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => readSession('cartItems', []));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
+  const [pickupMethod, setPickupMethod] = useState(() => readSession('pickupMethod', 'counter')); // counter | curbside (pickup only)
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderingEnabled, setOrderingEnabledState] = useState(true);
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');
@@ -47,9 +48,9 @@ export function CartProvider({ children }) {
   // through login doesn't lose the order.
   useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, groupMode, people, activePersonId }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, pickupMethod, groupMode, people, activePersonId }));
     } catch { /* storage unavailable */ }
-  }, [cartItems, orderType, groupMode, people, activePersonId]);
+  }, [cartItems, orderType, pickupMethod, groupMode, people, activePersonId]);
 
   // Cross-device cart sync for signed-in customers. On mount we load the cart
   // saved to their CustomerProfile; on every change we debounce-save it back so
@@ -240,6 +241,7 @@ export function CartProvider({ children }) {
     <CartContext.Provider value={{
       cartItems, addItem, removeItem, updateQuantity, clearCart, reassignItem,
       orderType, setOrderType,
+      pickupMethod, setPickupMethod,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
       orderingEnabled, orderingClosedMessage,

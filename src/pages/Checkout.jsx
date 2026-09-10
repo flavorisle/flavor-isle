@@ -13,6 +13,7 @@ import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import SavedCardSelector from '@/components/checkout/SavedCardSelector';
 import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
+import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -25,6 +26,8 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
+const orderTypeLabel = (orderType, pickupMethod) =>
+  orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 // Brand-neutral card field styling — matches the app's diner aesthetic with
 // no Stripe logos or branding.
@@ -137,7 +140,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -161,6 +164,8 @@ export default function Checkout() {
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
+  const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -352,6 +357,10 @@ export default function Checkout() {
         ? 'Still checking your delivery distance — one moment, then tap again.'
         : "We couldn't locate this address. Please double-check the street, city, and ZIP.";
     }
+    if (isCurbside) {
+      if (!vehicle.color.trim()) errors.carColor = 'Car color is required.';
+      if (!vehicle.make.trim()) errors.carMake = 'Car make is required.';
+    }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
 
     setFieldErrors(errors);
@@ -416,12 +425,14 @@ export default function Checkout() {
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
+          pickupMethod,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
+          vehicle: isCurbside ? vehicle : null,
           stripeCustomerId: stripeCustomerId || undefined,
         });
 
@@ -512,11 +523,13 @@ export default function Checkout() {
     const res = await base44.functions.invoke('createPaymentIntent', {
       items: mappedItems,
       orderType,
+      pickupMethod,
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
       scheduledFor, estimatedTime,
+      vehicle: isCurbside ? vehicle : null,
     });
     return res.data;
   };
@@ -684,6 +697,11 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {/* Curbside — vehicle details so the crew knows what car to bring the order to */}
+                  {isCurbside && (
+                    <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
+                  )}
+
                   {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
                     <input
@@ -813,10 +831,10 @@ export default function Checkout() {
                   <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
                     <img
                       src={ORDER_TYPE_IMAGES[orderType]}
-                      alt={ORDER_TYPE_LABELS[orderType]}
+                      alt={orderTypeLabel(orderType, pickupMethod)}
                       className="w-7 h-7 object-contain flex-shrink-0"
                     />
-                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
+                    <span className="truncate">{orderTypeLabel(orderType, pickupMethod)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
                     <Clock size={15} />

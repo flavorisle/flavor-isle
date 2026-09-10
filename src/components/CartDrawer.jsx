@@ -7,17 +7,21 @@ import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
-const ORDER_TYPE_LABELS = {
-  pickup: 'Pickup',
-  delivery: 'Delivery',
-  dine_in: 'Dine-In',
-};
+// Curbside is a pickup method — it maps to orderType 'pickup' with
+// pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
+const ORDER_OPTIONS = [
+  { key: 'pickup', label: 'Pickup', orderType: 'pickup', method: 'counter' },
+  { key: 'curbside', label: 'Curbside', orderType: 'pickup', method: 'curbside' },
+  { key: 'delivery', label: 'Delivery', orderType: 'delivery' },
+  { key: 'dine_in', label: 'Dine-In', orderType: 'dine_in' },
+];
 
 export default function CartDrawer() {
   const {
     cartItems, isCartOpen, setIsCartOpen,
     updateQuantity, removeItem, reassignItem,
     orderType, setOrderType,
+    pickupMethod, setPickupMethod,
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
@@ -91,23 +95,27 @@ export default function CartDrawer() {
         {/* Order Type Selector */}
         <div className="p-4 bg-white border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Order Type</p>
-          <div className="flex gap-2">
-            {['pickup', 'delivery', 'dine_in'].map(type => (
-              <button
-                key={type}
-                onClick={() => setOrderType(type)}
-                disabled={cutoffStatus[type]}
-                className={`flex-1 py-2 text-xs font-heading rounded-xl transition-all ${
-                  cutoffStatus[type]
-                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    : orderType === type
-                    ? 'bg-midnight-cherry text-white shadow-float'
-                    : 'bg-muted text-muted-foreground hover:bg-gray-200'
-                }`}
-              >
-                {ORDER_TYPE_LABELS[type]}
-              </button>
-            ))}
+          <div className="grid grid-cols-4 gap-2">
+            {ORDER_OPTIONS.map(opt => {
+              const disabled = cutoffStatus[opt.orderType];
+              const active = orderType === opt.orderType && (!opt.method || pickupMethod === opt.method);
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => { setOrderType(opt.orderType); if (opt.method) setPickupMethod(opt.method); }}
+                  disabled={disabled}
+                  className={`py-2 text-xs font-heading rounded-xl transition-all ${
+                    disabled
+                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      : active
+                      ? 'bg-midnight-cherry text-white shadow-float'
+                      : 'bg-muted text-muted-foreground hover:bg-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
