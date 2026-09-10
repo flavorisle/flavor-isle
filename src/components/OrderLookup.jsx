@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Flame, ChefHat, BaggageClaim, CheckCircle2, XCircle, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import MerchOrderStatusCard from '@/components/merch/MerchOrderStatusCard';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -25,6 +26,7 @@ const stageIndex = (status) => STATUS_PROFILE[status]?.stage;
 export default function OrderLookup() {
   const [orderNum, setOrderNum] = useState('');
   const [order, setOrder] = useState(null);
+  const [merchOrder, setMerchOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,12 +40,18 @@ export default function OrderLookup() {
     setError('');
     setLoading(true);
     setOrder(null);
+    setMerchOrder(null);
     try {
       const results = await base44.entities.Order.filter({ order_number: q });
       if (results && results.length > 0) {
         setOrder(results[0]);
       } else {
-        setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+        const merch = await base44.entities.MerchOrder.filter({ order_number: q });
+        if (merch && merch.length > 0) {
+          setMerchOrder(merch[0]);
+        } else {
+          setError(`No order found for "${q}". Double-check the number — every order's got one on your confirmation email.`);
+        }
       }
     } catch (err) {
       setError("Couldn't pull up your order right now. Hit the line at (270) 563-4618 and we'll sort it.");
@@ -87,9 +95,11 @@ export default function OrderLookup() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-3 font-body">
-          Tip: your order number's on your confirmation email, right under "ORDER CONFIRMED".
+          Tip: your order number's on your confirmation email, right under "ORDER CONFIRMED". Works for Tasty Threads merch orders too.
         </p>
       </form>
+
+      {merchOrder && <MerchOrderStatusCard order={merchOrder} />}
 
       {error && !order && (
         <div className="card-diner p-5 border-l-4" style={{ borderLeftColor: 'var(--midnight-cherry)' }}>
@@ -186,7 +196,7 @@ export default function OrderLookup() {
         </div>
       )}
 
-      {!order && (
+      {!order && !merchOrder && (
         <div className="text-center">
           <p className="text-muted-foreground font-body text-sm">
             No order number yet?{' '}

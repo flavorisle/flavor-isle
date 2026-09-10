@@ -2,7 +2,7 @@
 // confirmation page, where the full-width homepage MerchPromo is too heavy.
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shirt, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 export default function MerchPromoCard() {
@@ -28,11 +28,12 @@ export default function MerchPromoCard() {
 
   return (
     <div className="bg-midnight-cherry rounded-2xl p-5 text-left">
-      <div className="flex items-center gap-2 mb-1">
-        <Shirt size={16} className="text-white/80" />
-        <p className="text-[11px] font-heading uppercase tracking-widest text-white/70">Flavor Isle Merch</p>
-      </div>
-      <h3 className="font-heading text-2xl text-white mb-1">Tasty Threads</h3>
+      {/* Tasty Threads brand logo */}
+      <img
+        src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+        alt="Tasty Threads — Flavor Isle Apparel"
+        className="w-40 h-auto bg-white rounded-xl p-2 mb-3"
+      />
       <p className="text-red-200 text-sm mb-4">
         Rep the flavor while you wait — tees, cups, and gear shipped to your door.
       </p>

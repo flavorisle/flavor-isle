@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
+import { sendFacebookEvent } from '../../shared/facebookConversions.ts';
 
 // Sends the welcome/confirmation text the moment someone opts in to SMS updates.
 // Invoked by the "SMS Opt-In Confirmation" workflow on new SMSSubscriber records.

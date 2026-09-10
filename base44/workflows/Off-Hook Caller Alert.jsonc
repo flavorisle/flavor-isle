@@ -1,0 +1,41 @@
+{
+  "name": "Off-Hook Caller Alert",
+  "description": "When Smashie answers a voice call, checks if the same number already called in the last 15 minutes \u2014 a sign the phone may be off the hook \u2014 and emails the admins.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "SmsConversation",
+      "events": [
+        "create"
+      ]
+    },
+    "condition": "${ .trigger.data.channel == \"voice\" and (.trigger.data.call_direction // \"inbound\") == \"inbound\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "off_hook_caller_alert",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "check_repeat_caller": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "checkOffHookCaller",
+            "args": {
+              "conversation_id": "${ .trigger.entity_id }",
+              "phone_number": "${ .trigger.data.phone_number }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Check for repeat caller",
+            "description": "Emails admins on 2nd call in 15 min"
+          }
+        }
+      }
+    ]
+  }
+}

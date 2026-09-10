@@ -12,9 +12,10 @@ import ScrollToTop from './components/ScrollToTop';
 import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
+import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
-import CaramelAppleBlissPopup from './components/CaramelAppleBlissPopup';
+import TastyThreadsPopup from './components/TastyThreadsPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports
@@ -26,6 +27,7 @@ import Contact from './pages/Contact';
 import Account from './pages/Account';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMenu from './pages/AdminMenu';
+import AdminPrintMenu from './pages/AdminPrintMenu';
 
 
 import AdminOrders from './pages/AdminOrders';
@@ -40,12 +42,17 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import FacebookAd from './pages/FacebookAd';
+import TastyThreadsAd from './pages/TastyThreadsAd';
 import Feedback from './pages/Feedback';
 import Combos from './pages/Combos';
 import DownloadApp from './pages/DownloadApp';
 import SMSSignup from './pages/SMSSignup';
 import BusynessGuide from './pages/BusynessGuide';
 import Connect from './pages/Connect';
+import Gallery from './pages/Gallery';
+import SocialReviews from './pages/SocialReviews';
+import OrderStatus from './pages/OrderStatus';
+import CommunityNews from './pages/CommunityNews';
 import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
 import Order from './pages/Order';
@@ -53,8 +60,14 @@ import MerchCheckout from './pages/MerchCheckout';
 import MerchConfirmation from './pages/MerchConfirmation';
 import AdminMerchCategories from './pages/AdminMerchCategories';
 import AdminReviews from './pages/AdminReviews';
+import AdminStoreSettings from './pages/AdminStoreSettings';
+import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
+import Flyer from './pages/Flyer';
+import I65Exit38 from './pages/I65Exit38';
+import RestaurantSchema from './components/RestaurantSchema';
+import CanonicalLink from './components/CanonicalLink';
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
@@ -133,16 +146,24 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Home />} />
+      <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
+      <Route path="/tasty-threads-ad" element={<TastyThreadsAd />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/download" element={<DownloadApp />} />
       <Route path="/sms-signup" element={<SMSSignup />} />
       <Route path="/what-to-expect" element={<BusynessGuide />} />
       <Route path="/connect" element={<Connect />} />
+      <Route path="/gallery" element={<Gallery />} />
+      <Route path="/social-reviews" element={<SocialReviews />} />
+      <Route path="/order-status" element={<OrderStatus />} />
+      <Route path="/community-news" element={<CommunityNews />} />
+      <Route path="/flyer" element={<Flyer />} />
+      <Route path="/i65-exit-38" element={<I65Exit38 />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
@@ -161,11 +182,13 @@ const AuthenticatedApp = () => {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
+        <Route path="/admin/print-menu" element={<AdminPrintMenu />} />
 
         <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
@@ -185,11 +208,14 @@ function AppShell() {
           <MerchCartProvider>
             <Router>
               <ScrollToTop />
+              <RestaurantSchema />
+              <CanonicalLink />
               <AuthenticatedApp />
               <BottomTabBar />
               <MobileHeader />
+              <ConsentBanner />
               <SmashieChat />
-              <CaramelAppleBlissPopup />
+              <TastyThreadsPopup />
               <MerchCartDrawer />
             </Router>
             <Toaster />

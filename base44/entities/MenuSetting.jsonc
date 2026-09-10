@@ -22,7 +22,7 @@
     },
     "category_renames": {
       "type": "object",
-      "description": "Map of category key -> display name shown to customers (e.g. { 'Smash Burgers': 'Signature Smash' }). Keys are the underlying Square/custom category; the label is what renders.",
+      "description": "Map of category key -> display name shown to customers (e.g. { 'Burgers': 'Signature Burgers' }). Keys are the underlying Square/custom category; the label is what renders.",
       "default": {}
     },
     "category_item_order": {
@@ -79,6 +79,30 @@
     "extra_cook_date": {
       "type": "string",
       "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, the kitchen runs with an extra cook: order completion rate doubles, so quoted wait times shrink and busyness thresholds stretch. Auto-expires after the date passes."
+    },
+    "site_notice": {
+      "type": "object",
+      "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "default": false
+        },
+        "message": {
+          "type": "string",
+          "description": "The text shown in the banner, e.g. 'Delivery is paused today \u2014 no driver available. Pickup is still open!'"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "urgent"
+          ],
+          "default": "warning",
+          "description": "Visual tone of the banner: info (navy), warning (yellow), urgent (cherry red)."
+        }
+      }
     },
     "business_hours": {
       "type": "object",

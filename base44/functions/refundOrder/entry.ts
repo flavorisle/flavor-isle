@@ -80,6 +80,41 @@ Deno.serve(async (req) => {
       console.error('Refund email send failed:', emailErr.message);
     }
 
+    // GA4 ecommerce: record the refund server-side via the Measurement Protocol
+    // so refunds are attributed even though the customer is not on a page.
+    try {
+      const apiSecret = Deno.env.get('GA4_MEASUREMENT_PROTOCOL_SECRET');
+      if (apiSecret) {
+        const refundItems = (order.items || []).map((i) => ({
+          item_id: i.catalog_object_id || i.square_item_id || i.name,
+          item_name: i.name,
+          price: Number(i.price) || 0,
+          quantity: i.quantity || 1,
+        }));
+        await fetch(
+          `https://www.google-analytics.com/mp/collect?measurement_id=G-SHXK97DNTD&api_secret=${apiSecret}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              client_id: order.order_number || 'admin-refund',
+              events: [{
+                name: 'refund',
+                params: {
+                  transaction_id: order.order_number || order.id,
+                  currency: 'USD',
+                  value: Number(order.total) || 0,
+                  items: refundItems,
+                },
+              }],
+            }),
+          },
+        );
+      }
+    } catch (gaErr) {
+      console.error('GA4 refund event failed:', gaErr.message);
+    }
+
     return Response.json({
       status: 'ok',
       order_number: order.order_number,

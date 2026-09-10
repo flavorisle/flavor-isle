@@ -1,0 +1,40 @@
+{
+  "name": "Sync Customer Profile Stats",
+  "description": "When an Order transitions to completed with payment_status=paid, increment the matching CustomerProfile's total_orders and total_spent (or create the profile if missing). Skips POS walk-ins and unpaid orders.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Order",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.data.status == \"completed\" and .trigger.old_data.status != \"completed\" and .trigger.data.payment_status == \"paid\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_customer_profile_stats",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync_profile": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncCustomerProfileStats",
+            "args": {
+              "order_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sync customer profile stats",
+            "description": "Increment totals or create profile"
+          }
+        }
+      }
+    ]
+  }
+}

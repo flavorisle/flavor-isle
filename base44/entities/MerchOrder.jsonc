@@ -99,6 +99,33 @@
       ],
       "default": "pending"
     },
+    "status_history": {
+      "type": "array",
+      "default": [],
+      "description": "Timestamped log of every fulfillment_status transition reported by Printful, oldest first. Deduped so a repeated webhook for the same stage is logged once.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "placed",
+              "in_production",
+              "fulfilled",
+              "shipped",
+              "canceled",
+              "failed"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
     "tracking_number": {
       "type": "string"
     },

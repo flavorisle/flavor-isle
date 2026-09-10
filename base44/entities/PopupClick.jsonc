@@ -1,0 +1,50 @@
+{
+  "name": "PopupClick",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "popup_id": {
+      "type": "string",
+      "description": "Which promo pop-up fired the event, e.g. tasty_threads_tees"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "view",
+        "shirt_click",
+        "shop_all",
+        "dismiss"
+      ],
+      "description": "What the visitor did: saw the pop-up, clicked a shirt, clicked Shop All, or dismissed it"
+    },
+    "target": {
+      "type": "string",
+      "description": "Optional detail, e.g. the shirt name that was clicked"
+    }
+  },
+  "required": [
+    "popup_id",
+    "action"
+  ],
+  "rls": {
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

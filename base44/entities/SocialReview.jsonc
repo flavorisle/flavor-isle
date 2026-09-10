@@ -1,0 +1,73 @@
+{
+  "name": "SocialReview",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Loyalty member's email that claimed the Instagram review reward"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Optional customer display name"
+    },
+    "instagram_post_url": {
+      "type": "string",
+      "description": "URL of the Instagram post submitted for points"
+    },
+    "points_awarded": {
+      "type": "number",
+      "default": 100,
+      "description": "How many loyalty points were awarded for this submission"
+    },
+    "loyalty_id": {
+      "type": "string",
+      "description": "Id of the Loyalty account that received the points"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected"
+      ],
+      "default": "verified"
+    }
+  },
+  "required": [
+    "customer_email",
+    "instagram_post_url"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.customer_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

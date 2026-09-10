@@ -10,7 +10,9 @@ import { todayChicago } from './busynessTime.ts';
 import {
   getBusynessStage,
   COOK_WINDOW_MINUTES,
+  THROUGHPUT_WINDOW_MINUTES,
   RECENT_WINDOW_MINUTES,
+  QUIET_WINDOW_MINUTES,
   computeRegressedWait,
 } from './busynessStages.ts';
 import { getStoreStatus } from './storeClosure.ts';
@@ -44,8 +46,13 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
   const prevCount = liveMap[prevHour] || 0;
   const minute = today.minute || 0;
 
-  // 60-min rolling count (throughput) — drives the busyness stage.
-  const liveCount = Math.round((prevCount * (60 - minute)) / 60) + curHourCount;
+  // Rolling throughput count over THROUGHPUT_WINDOW_MINUTES — drives the
+  // busyness stage. Orders age out of it twice as fast as the old 60-min
+  // window, so the level recovers at double the rate.
+  const W = THROUGHPUT_WINDOW_MINUTES;
+  const liveCount = minute >= W
+    ? Math.round((curHourCount * W) / minute)
+    : curHourCount + Math.round((prevCount * (W - minute)) / 60);
 
   // Active queue depth over the cook window.
   let activeCount;
@@ -76,6 +83,19 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
     const settings = await base44.asServiceRole.entities.MenuSetting.list();
     if (settings?.[0]?.extra_cook_date === today.dateKey) speedFactor = 2;
   } catch { /* default to normal speed */ }
+
+  // Quiet kitchen: with no new order for QUIET_WINDOW_MINUTES, the crew is
+  // catching up with nothing new landing — so the board drains at double the
+  // normal rate. Doubling the speed factor halves each queued order's minutes
+  // and stretches the stage thresholds, letting the status walk itself back
+  // down to Running Smooth instead of snapping there.
+  try {
+    const [lastOrder] = await base44.asServiceRole.entities.Order.list('-created_date', 1);
+    if (lastOrder?.created_date) {
+      const quietMinutes = (Date.now() - new Date(lastOrder.created_date).getTime()) / 60000;
+      if (quietMinutes >= QUIET_WINDOW_MINUTES) speedFactor *= 2;
+    }
+  } catch { /* keep the normal drain rate */ }
 
   const stage = getBusynessStage(liveCount, speedFactor);
 

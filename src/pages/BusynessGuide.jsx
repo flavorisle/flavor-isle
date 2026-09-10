@@ -5,6 +5,8 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -33,6 +35,7 @@ export default function BusynessGuide() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Navbar />
       <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-14">
         {/* Header */}
         <div className="text-center mb-8">
@@ -189,6 +192,7 @@ export default function BusynessGuide() {
           Wait times are estimates based on live kitchen load and can shift quickly. Thanks for your patience — we're cooking as fast as we can.
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

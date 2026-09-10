@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Check, ShoppingBag } from 'lucide-react';
+import MerchShareButton from './MerchShareButton';
+import ProductionTimeNotice from './ProductionTimeNotice';
+import { trackViewItem, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 export default function ProductDetailModal({ product, onClose, onAdd }) {
   const variants = product?.variants || [];
@@ -16,6 +19,10 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
     setActiveImage(0);
     const firstInStock = product?.variants?.find(v => v.in_stock);
     setSelectedVariant(firstInStock || product?.variants?.[0] || null);
+  }, [product]);
+
+  useEffect(() => {
+    if (product) trackViewItem(merchItemToGa4(product), { value: product?.price || 0 });
   }, [product]);
 
   useEffect(() => {
@@ -72,9 +79,12 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{product.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <MerchShareButton product={product} />
+            <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -144,12 +154,13 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
                 </div>
               </div>
 
-              <div className="mt-auto">
+              <div className="mt-auto space-y-3">
                 {selectedVariant && (
-                  <p className="font-heading text-2xl text-midnight-cherry mb-3">
+                  <p className="font-heading text-2xl text-midnight-cherry">
                     ${selectedVariant.price.toFixed(2)}
                   </p>
                 )}
+                <ProductionTimeNotice variant="compact" />
               </div>
             </div>
           </div>

@@ -1,6 +1,8 @@
 // Dedicated merch cart context — kept separate from the food cart.
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
+import { trackAddToCart, merchItemToGa4 } from '@/lib/ga4Ecommerce';
+
 const MerchCartContext = createContext(null);
 const SESSION_KEY = 'flavor-isle-merch-cart';
 
@@ -27,6 +29,7 @@ export function MerchCartProvider({ children }) {
 
   // Each variant is its own line; adding the same variant merges quantities.
   const addItem = useCallback((item) => {
+    trackAddToCart(merchItemToGa4(item));
     setItems(prev => {
       const id = String(item.sync_variant_id);
       const existing = prev.find(i => i.id === id);

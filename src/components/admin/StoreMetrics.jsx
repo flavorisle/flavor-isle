@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, ShoppingBag, DollarSign, Calendar, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { TrendingUp, ShoppingBag, DollarSign, Calendar, Loader2, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -33,25 +33,52 @@ const startOfWeek = (now) => {
 export default function StoreMetrics() {
   const [orders, setOrders] = useState(null);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const loadOrders = useCallback(async () => {
+    try {
+      // Pull paid orders from the last 7 days (store-local time).
+      const since = startOfWeek(new Date());
+      const list = await base44.entities.Order.filter(
+        { payment_status: 'paid', created_date: { $gte: since.toISOString() } },
+        '-created_date',
+        500
+      );
+      setOrders(list || []);
+      setError('');
+      setLastUpdated(new Date());
+    } catch (err) {
+      setError(err.message || 'Could not load metrics');
+      setOrders((prev) => prev || []);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        // Pull paid orders from the last 7 days (store-local time).
-        const since = startOfWeek(new Date());
-        const list = await base44.entities.Order.filter(
-          { payment_status: 'paid', created_date: { $gte: since.toISOString() } },
-          '-created_date',
-          500
-        );
-        if (!cancelled) setOrders(list || []);
-      } catch (err) {
-        if (!cancelled) { setError(err.message || 'Could not load metrics'); setOrders([]); }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    loadOrders();
+
+    // Auto-refresh every 60s so the dashboard stays live while it's open.
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') loadOrders();
+    }, 60000);
+
+    // Refresh immediately when the admin returns to the tab.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadOrders();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadOrders]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadOrders();
+    setRefreshing(false);
+  };
 
   const stats = useMemo(() => {
     if (!orders) return null;
@@ -150,9 +177,25 @@ export default function StoreMetrics() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      <div className="flex items-center gap-2 mb-6">
-        <TrendingUp size={22} className="text-midnight-cherry" />
-        <h2 className="font-heading text-2xl text-obsidian-roast">Store Metrics</h2>
+      <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={22} className="text-midnight-cherry" />
+          <h2 className="font-heading text-2xl text-obsidian-roast">Store Metrics</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-xs text-muted-foreground">
+              Updated {lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1.5 text-xs font-heading text-patina-mint bg-patina-mint/10 hover:bg-patina-mint/20 px-3 py-2 rounded-full transition-colors tap-44 disabled:opacity-60"
+          >
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}

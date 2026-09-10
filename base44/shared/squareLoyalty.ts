@@ -164,7 +164,7 @@ export async function accumulateLoyaltyPoints({
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`AccumulateLoyaltyPoints failed: ${JSON.stringify(data?.errors || data)}`);
-  return data?.loyalty_account || null;
+  return data;
 }
 
 // Flat star grant/ deduction outside the spend-based accrual rules. Used to
@@ -233,7 +233,8 @@ export function earnTextForProgram(program: any): string | null {
 
 // Find (or create) the buyer's loyalty account, then accrue square-computed
 // points for a paid Square order. Called from the Stripe webhook after an
-// online order is tendered.
+// online order is tendered. Returns the stars earned + resulting balance so
+// callers (order confirmation emails) can tell the customer what they got.
 export async function accrueForOrder({
   squareOrderId,
   email,
@@ -242,7 +243,7 @@ export async function accrueForOrder({
   squareOrderId: string;
   email: string;
   phone?: string;
-}): Promise<void> {
+}): Promise<{ pointsEarned: number; balance: number; newlyEnrolled: boolean }> {
   const program = await getLoyaltyProgram();
   if (!program?.id) throw new Error('Square loyalty program not found');
   if (program.status === 'INACTIVE') throw new Error('Square loyalty program is not active');
@@ -283,7 +284,14 @@ export async function accrueForOrder({
     }
   }
 
-  await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
+  const accrual = await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
+
+  // Points earned come back on the accrual event; balance = pre-accrual
+  // balance + welcome bonus (if any) + stars just earned.
+  const event = accrual?.event || accrual?.events?.[0];
+  const pointsEarned = event?.accumulate_points?.points || 0;
+  const balance = (account.balance || 0) + (newlyEnrolled ? WELCOME_BONUS_STARS : 0) + pointsEarned;
+  return { pointsEarned, balance, newlyEnrolled };
 }
 
 // Build the status payload shown on the Account rewards screen. Finds (or
