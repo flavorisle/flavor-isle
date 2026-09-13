@@ -326,7 +326,11 @@ Deno.serve(async (req) => {
       // from Stripe metadata for non-group pending orders.
       if ((!orders || orders.length === 0) && orderNumber) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
-        const candidates = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        const candidates = (byNumber || []).filter(o =>
+          o.stripe_session_id !== 'GROUP' &&
+          o.payment_status !== 'paid' &&
+          !o.stripe_session_id
+        );
         if (candidates.length === 1) {
           orders = candidates;
         } else if (candidates.length > 1) {
@@ -391,7 +395,11 @@ Deno.serve(async (req) => {
       // for non-group pending orders.
       if ((!orders || orders.length === 0) && orderNumber) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
-        const candidates = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        const candidates = (byNumber || []).filter(o =>
+          o.stripe_session_id !== 'GROUP' &&
+          o.payment_status !== 'paid' &&
+          !o.stripe_session_id
+        );
         if (candidates.length === 1) {
           orders = candidates;
         } else if (candidates.length > 1) {
