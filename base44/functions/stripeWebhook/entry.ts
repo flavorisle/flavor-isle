@@ -316,6 +316,7 @@ Deno.serve(async (req) => {
     const stripeSessionId = session.id;
     const paymentStatus = session.payment_status;
     const orderNumber = session?.metadata?.order_number || '';
+    const customerEmail = String(session?.customer_details?.email || session?.customer_email || '').toLowerCase().trim();
 
     console.log(`checkout.session.completed: ${stripeSessionId}, payment_status: ${paymentStatus}`);
 
@@ -324,12 +325,13 @@ Deno.serve(async (req) => {
 
       // Fallback: if no exact stripe_session_id match, recover by order number
       // from Stripe metadata for non-group pending orders.
-      if ((!orders || orders.length === 0) && orderNumber) {
+      if ((!orders || orders.length === 0) && orderNumber && customerEmail) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
         const candidates = (byNumber || []).filter(o =>
           o.stripe_session_id !== 'GROUP' &&
           o.payment_status !== 'paid' &&
-          !o.stripe_session_id
+          !o.stripe_session_id &&
+          String(o.customer_email || '').toLowerCase().trim() === customerEmail
         );
         if (candidates.length === 1) {
           orders = candidates;
@@ -387,18 +389,20 @@ Deno.serve(async (req) => {
     const pi = event.data.object;
     console.log(`payment_intent.succeeded: ${pi.id}`);
     const orderNumber = pi?.metadata?.order_number || '';
+    const customerEmail = String(pi?.metadata?.customer_email || pi?.receipt_email || '').toLowerCase().trim();
 
     try {
       let orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: pi.id });
 
       // Fallback: if no exact intent-id match, recover by order number metadata
       // for non-group pending orders.
-      if ((!orders || orders.length === 0) && orderNumber) {
+      if ((!orders || orders.length === 0) && orderNumber && customerEmail) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
         const candidates = (byNumber || []).filter(o =>
           o.stripe_session_id !== 'GROUP' &&
           o.payment_status !== 'paid' &&
-          !o.stripe_session_id
+          !o.stripe_session_id &&
+          String(o.customer_email || '').toLowerCase().trim() === customerEmail
         );
         if (candidates.length === 1) {
           orders = candidates;
