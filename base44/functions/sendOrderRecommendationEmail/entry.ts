@@ -3,6 +3,8 @@ import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 
 const APP_URL = 'https://flavor-isle.com';
+// Backend function endpoints are NOT reachable through the custom domain.
+const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 
 // Internal/test emails that should never receive a recommendation email.
@@ -76,7 +78,7 @@ function itemCopy(item) {
 // Click-tracked link through the existing trackEmailClick endpoint.
 function trackedLink(path, linkId, orderId) {
   const to = encodeURIComponent(path);
-  let url = `${APP_URL}/functions/trackEmailClick?link=${linkId}&to=${to}`;
+  let url = `${FUNCTION_BASE}/functions/trackEmailClick?link=${linkId}&to=${to}`;
   if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
   return url;
 }

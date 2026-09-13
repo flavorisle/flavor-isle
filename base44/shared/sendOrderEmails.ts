@@ -8,13 +8,18 @@ const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 // always the branded custom domain, never the base44.app address.
 const APP_URL = 'https://flavor-isle.com';
 
+// Backend function endpoints are NOT reachable through the custom domain
+// (they return "unauthorized" there). Email clients must hit the base44.app
+// function URL; the function then 302-redirects to the custom domain.
+const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
+
 // Build a click-tracked link. Routes the email CTA through the trackEmailClick
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
 // the link in the EmailClick stats; `orderId` ties order-specific links (review
 // requests) back to the order they came from.
 function trackedLink(path: string, linkId: string, orderId?: string) {
   const to = encodeURIComponent(path);
-  let url = `${APP_URL}/functions/trackEmailClick?link=${linkId}&to=${to}`;
+  let url = `${FUNCTION_BASE}/functions/trackEmailClick?link=${linkId}&to=${to}`;
   if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
   return url;
 }

@@ -19,7 +19,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // After sending, cart_reminder_sent_at is stamped so the same idle cart can't
 // trigger a second reminder.
 const ONE_HOUR_MS = 60 * 60 * 1000;
-const SITE_URL = 'https://crave.flavor-isle.com';
+const SITE_URL = 'https://flavor-isle.com';
 
 const escapeHtml = (s) =>
   String(s ?? '')
@@ -65,7 +65,7 @@ function buildReminderEmail(name, items, subtotal) {
           <p style="font-size:12px;color:#8a9aa8;line-height:1.5;margin:0;">Prices, availability, and tax are confirmed at checkout. You're receiving this because items are saved to your Flavor Isle account.</p>
         </td></tr>
         <tr><td style="padding:14px 30px 24px 30px;">
-          <p style="font-size:11px;color:#a0acb8;text-align:center;margin:0;">Flavor Isle &middot; 103 N Main St, Smiths Grove, KY &middot; <a href="${SITE_URL}" style="color:#a0acb8;">crave.flavor-isle.com</a></p>
+          <p style="font-size:11px;color:#a0acb8;text-align:center;margin:0;">Flavor Isle &middot; 103 N Main St, Smiths Grove, KY &middot; <a href="${SITE_URL}" style="color:#a0acb8;">flavor-isle.com</a></p>
         </td></tr>
       </table>
     </td></tr>

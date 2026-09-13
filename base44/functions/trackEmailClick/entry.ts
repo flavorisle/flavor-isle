@@ -38,8 +38,11 @@ export default async function (req: Request) {
       console.error('EmailClick log failed:', logErr.message);
     }
 
-    const origin = url.origin;
-    return Response.redirect(new URL(safeTarget, origin).toString(), 302);
+    // Always redirect to the custom domain — the function is called via the
+    // base44.app URL (custom domain can't serve /functions), but the visitor
+    // should land on flavor-isle.com.
+    const REDIRECT_BASE = 'https://flavor-isle.com';
+    return Response.redirect(new URL(safeTarget, REDIRECT_BASE).toString(), 302);
   } catch (error) {
     console.error('trackEmailClick error:', error.message);
     // Never dead-end a click — fall back to the homepage.
