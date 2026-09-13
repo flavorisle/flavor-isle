@@ -158,7 +158,7 @@ export default function Flyer() {
               <div className="text-sm text-white/90 mt-1">Pickup &middot; Delivery &middot; Dine-In</div>
             </div>
             <div className="text-right">
-              <div className="font-heading text-xl text-smashie-yellow leading-none">crave.flavor-isle.com</div>
+              <div className="font-heading text-xl text-smashie-yellow leading-none">flavor-isle.com</div>
               <div className="text-sm text-white/90 mt-1">(270) 563-4618</div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function Flyer() {
           <div className="mt-auto bg-obsidian-roast text-white px-8 py-4 text-center">
             <div className="font-heading text-lg tracking-wide text-smashie-yellow">SEE YOU AT THE ISLE!</div>
             <div className="text-[10px] tracking-widest text-white/70 mt-1 flex items-center justify-center gap-1">
-              <Globe size={10} /> crave.flavor-isle.com &nbsp;&middot;&nbsp; @flavor_isle
+              <Globe size={10} /> flavor-isle.com &nbsp;&middot;&nbsp; @flavor_isle
             </div>
           </div>
         </div>

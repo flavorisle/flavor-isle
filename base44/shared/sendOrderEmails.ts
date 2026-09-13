@@ -6,7 +6,7 @@ const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 
 // Public app URL used for in-email call-to-action links (reviews, merch) —
 // always the branded custom domain, never the base44.app address.
-const APP_URL = 'https://crave.flavor-isle.com';
+const APP_URL = 'https://flavor-isle.com';
 
 // Build a click-tracked link. Routes the email CTA through the trackEmailClick
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
