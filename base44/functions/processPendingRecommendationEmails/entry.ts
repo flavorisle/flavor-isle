@@ -14,16 +14,24 @@ export default async function (req: Request) {
     const lowerBound = new Date(Date.now() - 30 * 60 * 1000);
     const upperBound = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
-    // Recent paid online orders (sorted newest first)
+    // Recent online orders (sorted newest first). We do NOT filter by
+    // payment_status here because many completed online orders sit at
+    // payment_status 'pending' (pay-at-pickup / payment sync lag) and those
+    // customers still deserve a recommendation email. The per-order function
+    // owns the real guardrails (skip cancelled / failed / refunded).
     const orders = await base44.asServiceRole.entities.Order.filter(
-      { payment_status: 'paid', order_source: 'online' },
+      { order_source: 'online' },
       '-created_date',
       100,
     );
 
-    // Keep only orders created between 30 min and 2 hours ago
+    // Keep only orders created between 30 min and 2 hours ago, and exclude
+    // cancelled / failed / refunded orders up front so we don't waste a send
+    // attempt on them.
     const qualifying = (orders || []).filter((o) => {
       if (!o.created_date) return false;
+      if (o.status === 'cancelled') return false;
+      if (o.payment_status === 'failed' || o.payment_status === 'refunded') return false;
       const created = new Date(o.created_date);
       return created <= lowerBound && created >= upperBound;
     });

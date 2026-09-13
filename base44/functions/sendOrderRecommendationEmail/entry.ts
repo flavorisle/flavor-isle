@@ -100,34 +100,44 @@ function heroCardHtml(item, orderId) {
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
-    const { order_id } = await req.json();
+    const { order_id, test_email } = await req.json();
     if (!order_id) return Response.json({ error: 'order_id is required' }, { status: 400 });
+
+    // test_email: when provided, sends to that address instead of the order's
+    // customer, bypasses the skip-list check, and does NOT create a
+    // RecommendationEmail record (so it never affects the 7-day dedup).
+    const isTest = !!test_email;
 
     // ── Load the order ──
     const order = await base44.asServiceRole.entities.Order.get(order_id);
     if (!order) return Response.json({ skipped: true, reason: 'order not found' });
 
     // ── Guardrails ──
-    if (isSkipEmail(order.customer_email)) {
+    // Skip only cancelled orders, or payments that failed / were refunded.
+    // Completed orders with pending payment (pay-at-pickup / sync lag) still
+    // qualify — they're real customers who should get a recommendation.
+    if (order.status === 'cancelled' || order.payment_status === 'failed' || order.payment_status === 'refunded') {
+      return Response.json({ skipped: true, reason: 'order cancelled or payment failed/refunded' });
+    }
+    if (!isTest && isSkipEmail(order.customer_email)) {
       return Response.json({ skipped: true, reason: 'skip email (POS/test/internal)' });
     }
-    if (order.status === 'cancelled' || order.payment_status !== 'paid') {
-      return Response.json({ skipped: true, reason: 'order cancelled or not paid' });
-    }
 
-    // Already sent for THIS order
-    const existing = await base44.asServiceRole.entities.RecommendationEmail.filter({ order_id: order.id });
-    if (existing && existing.length > 0) {
-      return Response.json({ skipped: true, reason: 'already sent for this order' });
-    }
+    // Already sent for THIS order (skip dedup in test mode)
+    if (!isTest) {
+      const existing = await base44.asServiceRole.entities.RecommendationEmail.filter({ order_id: order.id });
+      if (existing && existing.length > 0) {
+        return Response.json({ skipped: true, reason: 'already sent for this order' });
+      }
 
-    // Customer already received one in the last 7 days
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recent = await base44.asServiceRole.entities.RecommendationEmail.filter({
-      customer_email: order.customer_email,
-    });
-    if (recent && recent.some((r) => r.sent_at && new Date(r.sent_at) > sevenDaysAgo)) {
-      return Response.json({ skipped: true, reason: 'customer received one in last 7 days' });
+      // Customer already received one in the last 7 days
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recent = await base44.asServiceRole.entities.RecommendationEmail.filter({
+        customer_email: order.customer_email,
+      });
+      if (recent && recent.some((r) => r.sent_at && new Date(r.sent_at) > sevenDaysAgo)) {
+        return Response.json({ skipped: true, reason: 'customer received one in last 7 days' });
+      }
     }
 
     // ── Load all menu items & build lookup maps ──
@@ -245,11 +255,12 @@ export default async function (req: Request) {
     const html = brandedEmailHtml(bodyHtml);
 
     // ── Send via Resend ──
+    const recipient = isTest ? test_email : order.customer_email;
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     const { error } = await resend.emails.send({
       from: FROM,
-      to: order.customer_email,
-      subject,
+      to: recipient,
+      subject: isTest ? `[TEST] ${subject}` : subject,
       html,
     });
     if (error) {
@@ -257,20 +268,24 @@ export default async function (req: Request) {
       return Response.json({ ok: false, error: 'email send failed' }, { status: 500 });
     }
 
-    // ── Track it ──
-    await base44.asServiceRole.entities.RecommendationEmail.create({
-      order_id: order.id,
-      customer_email: order.customer_email,
-      sent_at: new Date().toISOString(),
-      suggested_item_ids: recommendations.map((r) => r.id).filter(Boolean),
-      email_type: emailType,
-    });
+    // ── Track it (skip record creation in test mode) ──
+    if (!isTest) {
+      await base44.asServiceRole.entities.RecommendationEmail.create({
+        order_id: order.id,
+        customer_email: order.customer_email,
+        sent_at: new Date().toISOString(),
+        suggested_item_ids: recommendations.map((r) => r.id).filter(Boolean),
+        email_type: emailType,
+      });
+    }
 
-    console.log(`Recommendation email (${emailType}) sent to ${order.customer_email} for order ${order.order_number || order.id}`);
+    console.log(`Recommendation email (${emailType}) sent to ${recipient}${isTest ? ' [TEST]' : ''} for order ${order.order_number || order.id}`);
     return Response.json({
       ok: true,
       email_type: emailType,
       suggested: recommendations.map((r) => r.name),
+      test: isTest,
+      recipient,
     });
   } catch (error) {
     console.error('sendOrderRecommendationEmail error:', error.message);
