@@ -13,6 +13,7 @@ import {
   rewardsEnrolledHtml,
   foodHeroHtml,
 } from '../../shared/sendOrderEmails.ts';
+import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 
 // Admin-only: sends one of every customer-facing email type to a single
 // address so the team can review each template end-to-end.
@@ -132,20 +133,18 @@ Deno.serve(async (req) => {
     }
     await sleep(500);
 
-    // 6. Cart Abandonment Reminder
+    // 6. Cart Abandonment Reminder — same rich format as the real workflow.
     try {
-      const cartBody = `
-        <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey Jordan,</p>
-        <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 8px;">Your cart's getting cold! 🛒</h2>
-        <p style="color:#141414;font-size:16px;line-height:1.5;margin:6px 0 18px;">You left some tasty picks behind — your Deluxe Burger and Crinkle-Cut Fries are still waiting. Tap below to finish your order before the grill cools down.</p>
-        <a href="https://flavor-isle.com/menu" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:12px 28px;border-radius:999px;font-size:14px;">FINISH MY ORDER →</a>
-        ${await foodHeroHtml(base44)}
-        ${await merchPromoHtml()}`;
+      const html = await buildCartReminderHtml(base44, 'Jordan', [
+        { name: 'Deluxe Burger', quantity: 1, price: 8.99, image_url: '' },
+        { name: 'Crinkle-Cut Fries', quantity: 1, price: 3.49, image_url: '' },
+        { name: '14 oz Chocolate Shake', quantity: 1, price: 5.99, image_url: '' },
+      ], 18.47);
       const { error } = await resend.emails.send({
         from: 'Flavor Isle <smashie@order.flavor-isle.com>',
         to,
-        subject: '🛒 Your cart is waiting, Jordan!',
-        html: brandedEmailHtml(cartBody),
+        subject: "🔥 Your cart's getting cold, Jordan — the grill's still hot!",
+        html,
       });
       results.push({ email: '6. Cart Abandonment Reminder', success: !error, error: error?.message });
     } catch (e) {

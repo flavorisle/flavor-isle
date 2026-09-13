@@ -17,7 +17,7 @@ const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
 // the link in the EmailClick stats; `orderId` ties order-specific links (review
 // requests) back to the order they came from.
-function trackedLink(path: string, linkId: string, orderId?: string) {
+export function trackedLink(path: string, linkId: string, orderId?: string) {
   const to = encodeURIComponent(path);
   let url = `${FUNCTION_BASE}/functions/trackEmailClick?link=${linkId}&to=${to}`;
   if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
