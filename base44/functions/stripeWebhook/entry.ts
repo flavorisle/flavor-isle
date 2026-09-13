@@ -259,6 +259,10 @@ async function pushOrderToSquareAndKitchen(base44, order) {
       items: order.items || [],
       special_instructions: order.special_instructions || '',
       order_type: order.order_type,
+      customer_name: order.customer_name || '',
+      customer_phone: order.customer_phone || '',
+      table_number: order.table_number || '',
+      delivery_address: order.delivery_address || '',
     });
   } catch (printerErr) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
@@ -315,11 +319,20 @@ Deno.serve(async (req) => {
     const session = event.data.object;
     const stripeSessionId = session.id;
     const paymentStatus = session.payment_status;
+    const orderNumber = session?.metadata?.order_number || '';
 
     console.log(`checkout.session.completed: ${stripeSessionId}, payment_status: ${paymentStatus}`);
 
     try {
-      const orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: stripeSessionId });
+      let orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: stripeSessionId });
+
+      // Fallback: if no exact stripe_session_id match, recover by order number
+      // from Stripe metadata for non-group pending orders.
+      if ((!orders || orders.length === 0) && orderNumber) {
+        const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
+        orders = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+      }
+
       if (orders && orders.length > 0) {
         const order = orders[0];
         const updates = { payment_status: paymentStatus === 'paid' ? 'paid' : 'pending' };
@@ -367,9 +380,18 @@ Deno.serve(async (req) => {
   if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object;
     console.log(`payment_intent.succeeded: ${pi.id}`);
+    const orderNumber = pi?.metadata?.order_number || '';
 
     try {
-      const orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: pi.id });
+      let orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: pi.id });
+
+      // Fallback: if no exact intent-id match, recover by order number metadata
+      // for non-group pending orders.
+      if ((!orders || orders.length === 0) && orderNumber) {
+        const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
+        orders = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+      }
+
       if (orders && orders.length > 0) {
         const order = orders[0];
         if (order.payment_status !== 'paid') {
