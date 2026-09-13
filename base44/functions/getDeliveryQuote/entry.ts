@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 // Flavor Isle — 103 N Main St, Smiths Grove, KY 42171
 const STORE = { lat: 37.0532, lon: -86.2061 };
+// Store coordinates verified against Google Maps (Smiths Grove, KY city center).
 
 // Straight-line distance in miles between two lat/lon points.
 function haversineMiles(lat1, lon1, lat2, lon2) {

@@ -6,6 +6,25 @@
 const API_VERSION = 'v21.0';
 const GRAPH_ENDPOINT = `https://graph.facebook.com/${API_VERSION}`;
 
+// In-memory cache for the access token (fetched from the SmashieSettings
+// entity, not from env — the token exceeds Cloudflare's env-var size limit
+// and blocks all function deployments when stored as a secret).
+let _cachedToken: string | null = null;
+let _cachedAt = 0;
+const _TOKEN_TTL = 5 * 60 * 1000; // 5 minutes
+
+export async function getFacebookAccessToken(base44: any): Promise<string | null> {
+  if (_cachedToken !== null && Date.now() - _cachedAt < _TOKEN_TTL) return _cachedToken;
+  try {
+    const settings = await base44.asServiceRole.entities.SmashieSettings.list();
+    _cachedToken = settings?.[0]?.facebook_access_token || null;
+    _cachedAt = Date.now();
+  } catch (e) {
+    console.error('Facebook CAPI: failed to fetch access token from SmashieSettings:', e.message);
+  }
+  return _cachedToken;
+}
+
 async function sha256(value: string): Promise<string> {
   const data = new TextEncoder().encode(value);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -99,12 +118,11 @@ export interface FacebookEvent {
 
 // Send one or more events to the Meta Conversions API.
 // Returns the API response, or null if secrets are missing / the call fails.
-export async function sendFacebookEvents(events: FacebookEvent[]): Promise<any> {
+export async function sendFacebookEvents(events: FacebookEvent[], accessToken: string): Promise<any> {
   const pixelId = Deno.env.get('FACEBOOK_PIXEL_ID');
-  const accessToken = Deno.env.get('FACEBOOK_ACCESS_TOKEN');
 
   if (!pixelId || !accessToken) {
-    console.warn('Facebook CAPI: missing FACEBOOK_PIXEL_ID or FACEBOOK_ACCESS_TOKEN — skipping event send');
+    console.warn('Facebook CAPI: missing FACEBOOK_PIXEL_ID or access token — skipping event send');
     return null;
   }
 
@@ -146,6 +164,6 @@ export async function sendFacebookEvents(events: FacebookEvent[]): Promise<any> 
 }
 
 // Convenience: send a single event (fire-and-forget friendly).
-export async function sendFacebookEvent(event: FacebookEvent): Promise<any> {
-  return sendFacebookEvents([event]);
+export async function sendFacebookEvent(event: FacebookEvent, accessToken: string): Promise<any> {
+  return sendFacebookEvents([event], accessToken);
 }

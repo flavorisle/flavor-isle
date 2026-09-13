@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { sendFacebookEvent } from '../../shared/facebookConversions.ts';
+import { sendFacebookEvent, getFacebookAccessToken } from '../../shared/facebookConversions.ts';
 
 // Client-callable Facebook Conversions API endpoint.
 // The frontend invokes this for browser-side events (AddToCart, InitiateCheckout,
@@ -24,6 +24,7 @@ export default async function(req) {
     const clientIp = forwarded ? forwarded.split(',')[0].trim() : '';
     const userAgent = req.headers.get('user-agent') || '';
 
+    const accessToken = await getFacebookAccessToken(base44);
     await sendFacebookEvent({
       event_name,
       event_time: Math.floor(Date.now() / 1000),
@@ -36,7 +37,7 @@ export default async function(req) {
         client_user_agent: userAgent,
       },
       custom_data,
-    });
+    }, accessToken);
 
     return Response.json({ sent: true });
   } catch (error) {
