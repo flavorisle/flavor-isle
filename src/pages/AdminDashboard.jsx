@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt, Store, Tag, Printer } from 'lucide-react';
+import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt, Store, Tag, Printer, Mail } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -63,6 +63,13 @@ const adminPages = [
   icon: MessageSquareQuote,
   path: '/admin/reviews',
   color: 'midnight-cherry'
+},
+{
+  title: 'Email Campaigns',
+  description: 'Manage post-order recommendation emails — send tests, trigger sends, view log',
+  icon: Mail,
+  path: '/admin/emails',
+  color: 'patina-mint'
 }];
 
 
