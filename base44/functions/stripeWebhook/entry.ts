@@ -259,10 +259,6 @@ async function pushOrderToSquareAndKitchen(base44, order) {
       items: order.items || [],
       special_instructions: order.special_instructions || '',
       order_type: order.order_type,
-      customer_name: order.customer_name || '',
-      customer_phone: order.customer_phone || '',
-      table_number: order.table_number || '',
-      delivery_address: order.delivery_address || '',
     });
   } catch (printerErr) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
@@ -330,7 +326,13 @@ Deno.serve(async (req) => {
       // from Stripe metadata for non-group pending orders.
       if ((!orders || orders.length === 0) && orderNumber) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
-        orders = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        const candidates = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        if (candidates.length === 1) {
+          orders = candidates;
+        } else if (candidates.length > 1) {
+          console.warn(`Ambiguous checkout.session.completed fallback for order_number ${orderNumber}: ${candidates.length} candidates`);
+          orders = [];
+        }
       }
 
       if (orders && orders.length > 0) {
@@ -389,7 +391,13 @@ Deno.serve(async (req) => {
       // for non-group pending orders.
       if ((!orders || orders.length === 0) && orderNumber) {
         const byNumber = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
-        orders = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        const candidates = (byNumber || []).filter(o => o.stripe_session_id !== 'GROUP' && o.payment_status !== 'paid');
+        if (candidates.length === 1) {
+          orders = candidates;
+        } else if (candidates.length > 1) {
+          console.warn(`Ambiguous payment_intent.succeeded fallback for order_number ${orderNumber}: ${candidates.length} candidates`);
+          orders = [];
+        }
       }
 
       if (orders && orders.length > 0) {
