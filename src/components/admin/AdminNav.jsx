@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const LINKS = [
   { label: 'Merch Categories', to: '/admin/merch-categories', Icon: Tag },
   { label: 'Comms', to: '/admin/communications', Icon: MessagesSquare },
   { label: 'Emails', to: '/admin/emails', Icon: Mail },
+  { label: 'Square Logs', to: '/admin/square-logs', Icon: Activity },
 ];
 
 export default function AdminNav() {

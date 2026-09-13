@@ -4,6 +4,25 @@ import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accoun
 import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
 import { sendPushToEmail } from './sendPush.ts';
 
+// Log every attempt to push an order to Square POS so admins can see exactly
+// why an order might fail to sync. Best-effort — never blocks fulfillment.
+async function logSquareSyncAttempt(base44, order, status, squareOrderId = null, errorMessage = null) {
+  try {
+    await base44.asServiceRole.entities.SquareSyncLog.create({
+      order_id: order.id,
+      order_number: order.order_number,
+      customer_name: order.customer_name,
+      customer_email: order.customer_email,
+      total: order.total,
+      status,
+      square_order_id: squareOrderId,
+      error_message: errorMessage,
+    });
+  } catch (logErr) {
+    console.error('Failed to log Square sync attempt:', logErr.message);
+  }
+}
+
 // Shared order-fulfillment logic used by both the Stripe webhook and the
 // client-side confirmOnlinePayment fallback. Centralizing it guarantees both
 // paths push the order to Square POS, fire the kitchen printer, and send the
@@ -222,6 +241,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
     const latest = await base44.asServiceRole.entities.Order.get(order.id);
     if (latest?.square_order_id) {
       console.log(`Order ${order.order_number} already pushed to Square (${latest.square_order_id}) — skipping duplicate fulfillment`);
+      await logSquareSyncAttempt(base44, order, 'skipped', latest.square_order_id, 'Already pushed — duplicate fulfillment skipped');
       return;
     }
   } catch (checkErr) {
@@ -229,6 +249,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   }
 
   let squareOrderId = null;
+  let squareError = null;
   try {
     const squareRes = await base44.functions.invoke('createSquareOrder', {
       items: order.items || [],
@@ -252,11 +273,15 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
       console.log(`Order ${order.order_number} sent to Square (id ${squareOrderId})`);
     } else {
-      console.log(`Order ${order.order_number} sent to Square (no id returned)`);
+      squareError = squareRes?.data?.error || squareRes?.error || 'No order_id returned from Square';
+      console.error(`Order ${order.order_number} — Square returned no order_id:`, squareError);
     }
   } catch (squareErr) {
+    squareError = squareErr.message;
     console.error('Failed to send order to Square:', squareErr.message);
   }
+
+  await logSquareSyncAttempt(base44, order, squareOrderId ? 'success' : 'failed', squareOrderId, squareError);
 
   try {
     await base44.functions.invoke('printKitchenOrder', {

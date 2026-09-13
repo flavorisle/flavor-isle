@@ -62,6 +62,7 @@ import AdminMerchCategories from './pages/AdminMerchCategories';
 import AdminReviews from './pages/AdminReviews';
 import AdminStoreSettings from './pages/AdminStoreSettings';
 import AdminEmails from './pages/AdminEmails';
+import AdminSquareLogs from './pages/AdminSquareLogs';
 import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
@@ -191,6 +192,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/communications" element={<AdminCommunications />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />
         <Route path="/admin/emails" element={<AdminEmails />} />
+        <Route path="/admin/square-logs" element={<AdminSquareLogs />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
       </Route>
 
