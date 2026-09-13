@@ -1,6 +1,6 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { sendSmashieSms, smashieSmsTemplates } from './sendSmashieSms.ts';
-import { brandedEmailHtml, merchPromoHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
+import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
 import { sendPushToEmail } from './sendPush.ts';
 
@@ -64,9 +64,10 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+        ${await foodHeroHtml(base44)}
         ${loyalty && loyalty.pointsEarned > 0 ? starsEarnedHtml(loyalty) : ''}
         ${hasAccount ? '' : accountCtaHtml()}
-        ${merchPromoHtml()}
+        ${await merchPromoHtml()}
   `);
 
   const { error } = await resend.emails.send({

@@ -72,6 +72,38 @@ export async function merchPromoHtml() {
   </div>`;
 }
 
+// Food hero photo — pulls a random fan-favorite menu item with a real photo
+// and renders it as a hero image block with a "try this next time" CTA.
+// Uses only real Flavor Isle menu photography (MenuItem.image_url).
+export async function foodHeroHtml(base44?: any) {
+  if (!base44) return '';
+  try {
+    const items = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 100);
+    const withPhotos = (items || []).filter(m =>
+      m.is_available !== false &&
+      m.is_hidden !== true &&
+      m.image_url &&
+      (m.is_fan_favorite || m.is_featured)
+    );
+    if (withPhotos.length === 0) return '';
+    const pick = withPhotos[Math.floor(Math.random() * withPhotos.length)];
+    const price = typeof pick.price === 'number' ? `$${pick.price.toFixed(2)}` : '';
+    const link = trackedLink('/menu', 'food_hero');
+    return `
+    <a href="${link}" style="text-decoration:none;color:#141414;display:block;margin:20px 0 8px;">
+      <img src="${pick.image_url}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
+      <div style="padding:12px 4px 0;">
+        <div style="font-family:'Oswald',Arial,sans-serif;font-size:20px;color:#C0392B;letter-spacing:1px;">${pick.name || 'Flavor Isle Favorite'}</div>
+        ${price ? `<div style="font-family:'Oswald',Arial,sans-serif;font-size:16px;color:#141414;margin-top:2px;">${price}</div>` : ''}
+        <p style="font-size:14px;color:#666;margin:6px 0 0;">Loved by the regulars — try it next time you order.</p>
+      </div>
+    </a>`;
+  } catch (err) {
+    console.error('foodHeroHtml failed:', err.message);
+    return '';
+  }
+}
+
 // Review CTA block — appended to the thank-you email to collect ratings.
 export function reviewCtaHtml(orderId?: string) {
   const dest = orderId ? `/feedback?order=${orderId}` : '/feedback';
@@ -217,7 +249,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
 
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
-export async function sendOrderReadyEmail(order) {
+export async function sendOrderReadyEmail(order, base44?) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
@@ -251,6 +283,7 @@ export async function sendOrderReadyEmail(order) {
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${await foodHeroHtml(base44)}
     ${await merchPromoHtml()}`;
 
   try {
@@ -325,6 +358,7 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${await foodHeroHtml(base44)}
     ${whatToExpectHtml()}
     ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
@@ -332,7 +366,7 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
 
 // Thank-you email — sent when the order is completed. Asks for a review and
 // promotes the merch line.
-export async function sendOrderCompletedEmail(order: any) {
+export async function sendOrderCompletedEmail(order: any, base44?: any) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
@@ -342,6 +376,7 @@ export async function sendOrderCompletedEmail(order: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'd love to see you back soon, fam.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team</p>
+    ${await foodHeroHtml(base44)}
     ${reviewCtaHtml(order.id)}
     ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `Thanks for rolling with us! 🙌`, body);

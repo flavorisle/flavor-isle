@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
         }
 
         if (milestone === 'ready') {
-          await sendOrderReadyEmail(order);
+          await sendOrderReadyEmail(order, base44);
           notified++;
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
         }
 
         if (milestone === 'completed') {
-          await sendOrderCompletedEmail(order);
+          await sendOrderCompletedEmail(order, base44);
           notified++;
           if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
