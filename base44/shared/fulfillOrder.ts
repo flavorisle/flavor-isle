@@ -284,7 +284,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       await sendPushToEmail(base44, order.customer_email, {
         title: '🍔 Order locked in!',
         body: `Hey ${order.customer_name || 'fam'}, order #${order.order_number || ''} is confirmed — the crew's firing up the grill. We'll ping you as it moves along!`,
-        url: '/account',
+        url: '/order-status',
         tag: `order-${order.id}`,
       });
     } catch (pushErr) {

@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
             body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
             body: order.order_type === 'delivery'
               ? `Order #${orderNum} is ready and on its way!`
               : `Order #${orderNum} is ready for pickup. See you soon!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
