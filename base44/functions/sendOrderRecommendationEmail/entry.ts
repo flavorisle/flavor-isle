@@ -102,13 +102,18 @@ function heroCardHtml(item, orderId) {
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
-    const { order_id, test_email } = await req.json();
+    const { order_id, test_email, test_mode, test_recipient_email } = await req.json();
     if (!order_id) return Response.json({ error: 'order_id is required' }, { status: 400 });
 
-    // test_email: when provided, sends to that address instead of the order's
-    // customer, bypasses the skip-list check, and does NOT create a
-    // RecommendationEmail record (so it never affects the 7-day dedup).
-    const isTest = !!test_email;
+    // Test mode: send to a specified address instead of the order's customer,
+    // bypass the skip-list / frequency-cap / already-sent checks, and do NOT
+    // create a RecommendationEmail tracking record. Supports both the new
+    // (test_mode + test_recipient_email) and legacy (test_email) param styles.
+    const isTest = !!(test_mode || test_email);
+    const testEmail = test_recipient_email || test_email;
+    if (isTest && !testEmail) {
+      return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
+    }
 
     // ── Load the order ──
     const order = await base44.asServiceRole.entities.Order.get(order_id);
@@ -257,7 +262,7 @@ export default async function (req: Request) {
     const html = brandedEmailHtml(bodyHtml);
 
     // ── Send via Resend ──
-    const recipient = isTest ? test_email : order.customer_email;
+    const recipient = isTest ? testEmail : order.customer_email;
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     const { error } = await resend.emails.send({
       from: FROM,
