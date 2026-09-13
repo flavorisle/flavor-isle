@@ -1,0 +1,66 @@
+{
+  "name": "RecommendationEmail",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "order_id": {
+      "type": "string",
+      "description": "The Order this recommendation email was sent for"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Recipient email \u2014 used for the 7-day dedup check so a customer never gets two recommendation emails within a week"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the recommendation email was sent"
+    },
+    "suggested_item_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "MenuItem ids of the items recommended in this email"
+    },
+    "email_type": {
+      "type": "string",
+      "enum": [
+        "dessert",
+        "similar_main",
+        "pairing"
+      ],
+      "description": "Which recommendation strategy was used: dessert upsell, similar main suggestion, or side+dessert pairing"
+    }
+  },
+  "required": [
+    "order_id",
+    "customer_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

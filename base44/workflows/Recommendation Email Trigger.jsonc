@@ -1,0 +1,44 @@
+{
+  "name": "Recommendation Email Trigger",
+  "description": "Every 10 minutes, sends post-order recommendation emails for paid online orders ~30 minutes old that haven't received one yet.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/10 * * * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "recommendation_email_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "processPendingRecommendationEmails"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send pending recommendations",
+            "description": "Find ~30-min-old paid orders and email recommendations"
+          }
+        }
+      }
+    ]
+  }
+}
