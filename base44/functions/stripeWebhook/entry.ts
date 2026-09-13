@@ -37,7 +37,14 @@ Deno.serve(async (req) => {
         console.log(`Order ${order.order_number} updated: payment_status=${updates.payment_status}, status=${updates.status || order.status}`);
 
         if (paymentStatus === 'paid') {
-          await pushOrderToSquareAndKitchen(base44, order);
+          // Skip if already pushed by the client-side confirmOnlinePayment
+          // fallback (or the payment_intent.succeeded handler) to avoid a
+          // duplicate Square order and repeat notifications.
+          if (order.square_order_id) {
+            console.log(`Order ${order.order_number} already pushed to Square — skipping checkout.session.completed push`);
+          } else {
+            await pushOrderToSquareAndKitchen(base44, { ...order, ...updates });
+          }
         }
       } else {
         // Merch order — paid merch orders are fulfilled by Printful.

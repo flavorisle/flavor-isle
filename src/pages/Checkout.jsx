@@ -457,6 +457,15 @@ export default function Checkout() {
       shipping: deliveryFee,
       coupon: appliedReward?.description,
     });
+    // Client-side fulfillment fallback: the moment Stripe confirms the
+    // payment, tell the backend to mark the order paid and push it to Square
+    // POS + the kitchen printer. This is the safety net for when the Stripe
+    // webhook is delayed or dropped — and the ONLY path for group/split
+    // orders (which use stripe_session_id 'GROUP' so the webhook can't match
+    // them). Idempotent, so it's safe when the webhook also fires.
+    base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(on) }).catch((err) => {
+      console.error('confirmOnlinePayment fallback failed:', err);
+    });
     clearCart();
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };

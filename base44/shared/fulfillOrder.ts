@@ -213,6 +213,21 @@ async function processLoyalty(base44, order, squareOrderId) {
 // and email/text/push the customer. Shared by the Stripe webhook and the
 // client-side confirmOnlinePayment fallback.
 export async function pushOrderToSquareAndKitchen(base44, order) {
+  // Idempotency guard: re-read the freshest order state so a race between the
+  // Stripe webhook and the client-side confirmOnlinePayment fallback can't
+  // push the same order to Square twice (which would create a duplicate ticket,
+  // double-charge loyalty, and send repeat emails/SMS). If square_order_id is
+  // already set, the order has been fully processed — skip everything.
+  try {
+    const latest = await base44.asServiceRole.entities.Order.get(order.id);
+    if (latest?.square_order_id) {
+      console.log(`Order ${order.order_number} already pushed to Square (${latest.square_order_id}) — skipping duplicate fulfillment`);
+      return;
+    }
+  } catch (checkErr) {
+    console.warn('Idempotency re-read failed, proceeding:', checkErr.message);
+  }
+
   let squareOrderId = null;
   try {
     const squareRes = await base44.functions.invoke('createSquareOrder', {
