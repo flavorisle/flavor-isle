@@ -213,7 +213,7 @@ export function brandedEmailHtml(bodyHtml) {
       </div>
       <div style="padding:28px 24px;color:#141414;font-size:16px;line-height:1.6;">${bodyHtml}</div>
       <div style="background:#1A3A5C;padding:18px 24px;text-align:center;">
-        <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png" alt="Smashie" width="64" height="64" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
+        <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png" alt="Smashie" width="64" height="64" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
         <p style="color:#ffffff;margin:0;font-size:14px;">Questions? Call <a href="tel:+12705634618" style="color:#F5EDD6;">(270) 563-4618</a></p>
         <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:12px;">103 N Main St, Smiths Grove, KY 42171</p>
       </div>
