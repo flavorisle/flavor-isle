@@ -6,6 +6,76 @@ import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const WINBACK_POINTS = 150;
 
+// Win-back themed photo block — a big "We miss you" hero overlay on a
+// fan-favorite photo, then a 2-column grid of what they've been missing.
+// Uses only real Flavor Isle menu photography. Falls back gracefully.
+async function winbackPhotosHtml(base44) {
+  try {
+    const items = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 200);
+    const withPhotos = (items || []).filter(m =>
+      m.is_available !== false && m.is_hidden !== true && m.image_url
+    );
+
+    // Hero: a fan-favorite burger or main (the thing they're missing)
+    const mains = withPhotos.filter(m => {
+      const cat = (m.category || '').toLowerCase();
+      return (cat === 'burgers' || cat === 'chicken') && m.is_fan_favorite;
+    });
+    const heroPool = mains.length > 0 ? mains : withPhotos.filter(m => m.is_fan_favorite);
+    const hero = heroPool[Math.floor(Math.random() * heroPool.length)] || withPhotos[0];
+
+    // Grid: 2 fan favorites (any category, not the hero)
+    const fanFaves = withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
+    const pool = [...fanFaves];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const gridPicks = pool.slice(0, 2);
+
+    let heroHtml = '';
+    if (hero) {
+      const heroLink = trackedLink('/menu', 'winback_hero');
+      heroHtml = `
+      <a href="${heroLink}" style="text-decoration:none;color:#141414;display:block;margin:0 0 20px;">
+        <div style="position:relative;border-radius:16px;overflow:hidden;">
+          <img src="${hero.image_url}" alt="${(hero.name || 'Flavor Isle favorite').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.55) 100%);border-radius:16px;"></div>
+          <div style="position:absolute;bottom:16px;left:20px;right:20px;">
+            <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🍦 WE MISS YOU</p>
+            <p style="color:#fff;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0;letter-spacing:1px;">${hero.name || 'Your favorite is waiting'}</p>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    let gridHtml = '';
+    if (gridPicks.length > 0) {
+      const cells = gridPicks.map(p => {
+        const link = trackedLink('/menu', 'winback_grid');
+        const price = typeof p.price === 'number' ? `$${p.price.toFixed(2)}` : '';
+        return `<td style="width:50%;vertical-align:top;padding:0 5px;">
+          <a href="${link}" style="text-decoration:none;color:#141414;display:block;">
+            <img src="${p.image_url}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:12px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />
+            <div style="font-family:'Oswald',Arial,sans-serif;font-size:15px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Flavor Isle Favorite'}</div>
+            ${price ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:13px;font-weight:bold;margin-top:2px;">${price}</div>` : ''}
+          </a>
+        </td>`;
+      }).join('');
+      gridHtml = `
+      <div style="margin:20px 0 8px;">
+        <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:15px;margin:0 0 10px;letter-spacing:2px;text-align:center;">🔥 WHAT YOU'VE BEEN MISSING</p>
+        <table style="width:100%;border-collapse:separate;border-spacing:5px 0;"><tr>${cells}</tr></table>
+      </div>`;
+    }
+
+    return `${heroHtml}${gridHtml}`;
+  } catch (err) {
+    console.error('winbackPhotosHtml failed:', err.message);
+    return '';
+  }
+}
+
 const SKIP_EMAILS = new Set([
   'square-pos@flavorisle.com',
   'wesley@flavor-isle.com',
@@ -134,7 +204,8 @@ export default async function (req: Request) {
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
         <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the shakes are still thick, and the family's still here. We just dropped <strong>150 points</strong> in your Flavor Isle account — that's a free small cone or cup of ice cream, waiting on you. No strings attached. Just come see us.</p>
-        <div style="text-align:center;margin:28px 0 8px;">
+        ${await winbackPhotosHtml(base44)}
+        <div style="text-align:center;margin:24px 0 8px;">
           <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Claim your cone →</a>
         </div>
         <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you've ordered from Flavor Isle before. Don't want these emails? <a href="mailto:smashie@order.flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
