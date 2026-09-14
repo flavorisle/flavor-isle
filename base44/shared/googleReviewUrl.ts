@@ -8,4 +8,4 @@
 // │  Both sendReviewRequestEmail and trackReviewClick import this single   │
 // │  constant, so the real link only needs to be dropped in HERE.          │
 // └───────────────────────────────────────────────────────────────────────┘
-export const GOOGLE_REVIEW_URL = 'REPLACE_WITH_GOOGLE_REVIEW_LINK';
+export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
