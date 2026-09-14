@@ -7,7 +7,7 @@ const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const WINBACK_POINTS = 150;
 
 // Win-back themed photo block — a big "We miss you" hero overlay on a
-// fan-favorite photo, then a 2-column grid of what they've been missing.
+// premium dessert photo, then a 2-column grid of what they've been missing.
 // Uses only real Flavor Isle menu photography. Falls back gracefully.
 async function winbackPhotosHtml(base44) {
   try {
@@ -16,17 +16,29 @@ async function winbackPhotosHtml(base44) {
       m.is_available !== false && m.is_hidden !== true && m.image_url
     );
 
-    // Hero: a fan-favorite burger or main (the thing they're missing)
-    const mains = withPhotos.filter(m => {
-      const cat = (m.category || '').toLowerCase();
-      return (cat === 'burgers' || cat === 'chicken') && m.is_fan_favorite;
+    // Premium desserts — the indulgent treats we want to tempt lapsed
+    // customers back with. Excludes basic malts and sundaes (the everyday
+    // items every customer already knows about).
+    const PREMIUM_DESSERT = /banana split|hot fudge cake|caramel apple bliss|banana pudding bliss|strawberry shortcake|pineapple delight|banana split bliss/;
+    const premiumDesserts = withPhotos.filter(m => {
+      const name = (m.name || '').toLowerCase();
+      // Exclude the plain "Malt" and plain "Sundae" — only match the
+      // premium dessert names above.
+      if (name === 'malt' || name === 'sundae') return false;
+      return PREMIUM_DESSERT.test(name);
     });
-    const heroPool = mains.length > 0 ? mains : withPhotos.filter(m => m.is_fan_favorite);
+
+    // Fallback: if no premium desserts have photos, use fan favorites.
+    const heroPool = premiumDesserts.length > 0
+      ? premiumDesserts
+      : withPhotos.filter(m => m.is_fan_favorite);
     const hero = heroPool[Math.floor(Math.random() * heroPool.length)] || withPhotos[0];
 
-    // Grid: 2 fan favorites (any category, not the hero)
-    const fanFaves = withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
-    const pool = [...fanFaves];
+    // Grid: 2 more premium desserts (not the hero)
+    const gridPool = premiumDesserts.filter(m => m.id !== hero?.id);
+    const pool = gridPool.length >= 2
+      ? gridPool
+      : withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -42,7 +54,7 @@ async function winbackPhotosHtml(base44) {
           <img src="${hero.image_url}" alt="${(hero.name || 'Flavor Isle favorite').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
           <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.55) 100%);border-radius:16px;"></div>
           <div style="position:absolute;bottom:16px;left:20px;right:20px;">
-            <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🍦 WE MISS YOU</p>
+            <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🍦 A SWEET TREAT IS WAITING</p>
             <p style="color:#fff;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0;letter-spacing:1px;">${hero.name || 'Your favorite is waiting'}</p>
           </div>
         </div>
@@ -64,7 +76,7 @@ async function winbackPhotosHtml(base44) {
       }).join('');
       gridHtml = `
       <div style="margin:20px 0 8px;">
-        <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:15px;margin:0 0 10px;letter-spacing:2px;text-align:center;">🔥 WHAT YOU'VE BEEN MISSING</p>
+        <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:15px;margin:0 0 10px;letter-spacing:2px;text-align:center;">🍨 INDULGE IN SOMETHING SWEET</p>
         <table style="width:100%;border-collapse:separate;border-spacing:5px 0;"><tr>${cells}</tr></table>
       </div>`;
     }
@@ -203,7 +215,7 @@ export default async function (req: Request) {
       const ctaLink = trackedLink('/menu', 'winback_cta');
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
-        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the shakes are still thick, and the family's still here. We just dropped <strong>150 points</strong> in your Flavor Isle account — that's a free small cone or cup of ice cream, waiting on you. No strings attached. Just come see us.</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the desserts are still decadent, and the family's still here. We just dropped <strong>150 points</strong> in your Flavor Isle account — that's a free small cone or cup of ice cream, waiting on you. No strings attached. And while you're here, treat yourself to a banana split, a hot fudge cake, or one of our other premium desserts. Just come see us.</p>
         ${await winbackPhotosHtml(base44)}
         <div style="text-align:center;margin:24px 0 8px;">
           <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Claim your cone →</a>
