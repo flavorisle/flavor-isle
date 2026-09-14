@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import SavedCardsPanel from '@/components/account/SavedCardsPanel';
 import { base44 } from '@/api/base44Client';
@@ -105,7 +105,8 @@ const EMPTY_FORM = {
   car_model: '', 
   car_color: '',
   no_contact_delivery: false,
-  preferred_communication: 'email'
+  preferred_communication: 'email',
+  birthday: ''
 };
 
 // ── Logged-in account view ──
@@ -165,7 +166,8 @@ function LoggedInAccount({ user, logout }) {
           car_model: p.car_model || '',
           car_color: p.car_color || '',
           no_contact_delivery: p.no_contact_delivery || false,
-          preferred_communication: p.preferred_communication || 'email'
+          preferred_communication: p.preferred_communication || 'email',
+          birthday: p.birthday || ''
         });
       } else {
         const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
@@ -245,6 +247,7 @@ function LoggedInAccount({ user, logout }) {
   const personalFields = [
     { label: 'Full Name', key: 'name', icon: User, placeholder: 'Jane Smith' },
     { label: 'Phone', key: 'phone', icon: Phone, placeholder: '(270) 555-0000', type: 'tel' },
+    { label: 'Birthday', key: 'birthday', icon: Cake, type: 'date', format: (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : null },
     { label: 'Billing Address', key: 'address', icon: MapPin, placeholder: '123 Main St, City, KY' },
   ];
 
@@ -484,15 +487,15 @@ function LoggedInAccount({ user, logout }) {
                     <p className="text-sm text-obsidian-roast">{user.email}</p>
                   </div>
                 </div>
-                {personalFields.map(({ label, key, icon: Icon, placeholder, type }) => (
+                {personalFields.map(({ label, key, icon: Icon, placeholder, type, format }) => (
                   <div key={key} className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
                       {editing ? (
-                        <input type={type || 'text'} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       ) : (
-                        <p className="text-sm text-obsidian-roast">{profile?.[key] || <span className="text-muted-foreground italic">Not set</span>}</p>
+                        <p className="text-sm text-obsidian-roast">{(format ? format(profile?.[key]) : profile?.[key]) || <span className="text-muted-foreground italic">Not set</span>}</p>
                       )}
                     </div>
                   </div>

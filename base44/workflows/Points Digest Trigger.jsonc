@@ -1,0 +1,44 @@
+{
+  "name": "Points Digest Trigger",
+  "description": "1st of each month at 10 AM store local: sends every loyalty member with a positive balance a points digest email showing their current balance, next reward tier, and how close they are to unlocking it.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 10 1 * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "points_digest_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendPointsDigest"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send monthly points digest",
+            "description": "Email every loyalty member their balance and next reward tier"
+          }
+        }
+      }
+    ]
+  }
+}

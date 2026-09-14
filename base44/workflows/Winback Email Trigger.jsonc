@@ -1,0 +1,44 @@
+{
+  "name": "Winback Email Trigger",
+  "description": "Daily at 10 AM store local: finds customers whose most recent completed order was 30-35 days ago, auto-grants 150 loyalty points, and sends a 'we miss you' win-back email. 90-day frequency cap per customer.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 10 * * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "winback_email_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendWinbackEmail"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send win-back emails",
+            "description": "Find 30-35 day lapsed customers, grant 150 points, send win-back email"
+          }
+        }
+      }
+    ]
+  }
+}

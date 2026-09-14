@@ -423,3 +423,59 @@ export async function redeemReward({
   const data = await res.json();
   if (!res.ok) throw new Error(`CreateLoyaltyReward failed: ${JSON.stringify(data?.errors || data)}`);
 }
+
+// Find a customer's Square loyalty account by phone/email lookup (read-only,
+// no account creation side effect). Used by automations that need the current
+// balance without enrolling new accounts.
+export async function findLoyaltyAccountByEmail({
+  email,
+  phone,
+}: {
+  email: string;
+  phone?: string;
+}): Promise<any | null> {
+  let account: any | null = null;
+  if (phone) {
+    try { account = await searchLoyaltyAccountByPhone(phone); }
+    catch (e) { console.error('Loyalty phone search failed:', (e as Error).message); }
+  }
+  if (!account) {
+    let customerId: string | null = null;
+    if (phone) customerId = await searchSquareCustomerIdByPhone(phone);
+    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
+    if (!customerId) return null;
+    try { account = await findLoyaltyAccountByCustomer(customerId); }
+    catch (e) { console.error('Loyalty customer search failed:', (e as Error).message); }
+  }
+  return account;
+}
+
+// Grant flat loyalty points to a customer's Square loyalty account by
+// email/phone lookup. Used by win-back and birthday email automations to
+// award free-item points outside the spend-based accrual rules. Returns the
+// resulting balance + account id, or null if no loyalty account could be
+// resolved (customer not in Square directory or no loyalty account).
+export async function grantLoyaltyPointsByEmail({
+  email,
+  phone,
+  points,
+  reason,
+  idempotencyKey,
+}: {
+  email: string;
+  phone?: string;
+  points: number;
+  reason: string;
+  idempotencyKey?: string;
+}): Promise<{ balance: number; accountId: string } | null> {
+  const account = await findLoyaltyAccountByEmail({ email, phone });
+  if (!account) return null;
+
+  const updated = await adjustLoyaltyPoints({
+    accountId: account.id,
+    points,
+    reason,
+    idempotencyKey,
+  });
+  return { balance: updated?.balance ?? (account.balance || 0) + points, accountId: account.id };
+}

@@ -1,0 +1,63 @@
+{
+  "name": "LoyaltyEmail",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "email_type": {
+      "type": "string",
+      "enum": [
+        "winback",
+        "digest",
+        "birthday"
+      ],
+      "description": "Which loyalty automation sent this email: winback (30-day lapsed customer), digest (monthly points summary), birthday (annual birthday treat)"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Recipient email \u2014 used for frequency caps (1 birthday/year, 1 winback/90 days)"
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Optional order id when the email is tied to a specific order (win-back uses the customer's most recent completed order)"
+    },
+    "points_granted": {
+      "type": "number",
+      "default": 0,
+      "description": "How many loyalty points were auto-granted with this email (150 for win-back and birthday, 0 for digest)"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the email was sent"
+    }
+  },
+  "required": [
+    "email_type",
+    "customer_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
