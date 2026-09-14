@@ -1,0 +1,49 @@
+{
+  "name": "ReviewRequestEmail",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "order_id": {
+      "type": "string",
+      "description": "The Order this Google review-request email was sent for"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Recipient email \u2014 used for the 30-day frequency cap so a customer never gets two review-request emails within a month"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the review-request email was sent"
+    }
+  },
+  "required": [
+    "order_id",
+    "customer_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
