@@ -235,10 +235,6 @@ export default function Checkout() {
   const [selectedCardId, setSelectedCardId] = useState('new'); // 'new' | stripe_payment_method_id
   const [saveNewCard, setSaveNewCard] = useState(false);
 
-  // Star Rewards October promo — $5 off for loyalty members, checked when
-  // the customer's email is known. Auto-starts/stops Oct 1–31 2026.
-  const [starPromo, setStarPromo] = useState(null);
-
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
 
@@ -317,8 +313,7 @@ export default function Checkout() {
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = appliedReward?.discountValue || 0;
-  const promoDiscount = starPromo?.eligible ? (starPromo.discountAmount || 0) : 0;
-  const totalWithTip = +(Math.max(0, total - rewardDiscount - promoDiscount) + tipAmount).toFixed(2);
+  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
 
   // Single combined ready-by label: "~N min · clock time". For ASAP the clock
   // time is order time + prep minutes; for a scheduled order it's the chosen slot.
@@ -434,8 +429,7 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount + promoDiscount, redemptionId: appliedReward?.tierId || null,
-          promoApplied: starPromo?.eligible ? 'star_rewards' : null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
@@ -514,28 +508,6 @@ export default function Checkout() {
     return () => { cancelled = true; };
   }, []);
 
-  // Star Rewards promo eligibility — debounced check whenever the email or
-  // subtotal changes. Returns { eligible, discountAmount, message, alreadyUsed }.
-  useEffect(() => {
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setStarPromo(null);
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const res = await base44.functions.invoke('checkStarRewardsPromo', {
-          email: form.email.trim(),
-          subtotal,
-        });
-        if (!cancelled) setStarPromo(res.data);
-      } catch {
-        if (!cancelled) setStarPromo(null);
-      }
-    }, 600);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [form.email, subtotal]);
-
   // Build a single-pay intent from the current cart + wallet-provided contact
   // details. Used by the express Apple Pay / Google Pay button.
   const createIntent = async (walletCustomer) => {
@@ -567,8 +539,7 @@ export default function Checkout() {
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount + promoDiscount, redemptionId: appliedReward?.tierId || null,
-      promoApplied: starPromo?.eligible ? 'star_rewards' : null,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
@@ -1008,16 +979,6 @@ export default function Checkout() {
                 {rewardDiscount > 0 && (
                   <div className="flex justify-between text-patina-mint">
                     <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                {promoDiscount > 0 && (
-                  <div className="flex justify-between text-patina-mint">
-                    <span>Star Rewards</span><span>−${promoDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                {starPromo?.alreadyUsed && (
-                  <div className="text-xs text-muted-foreground italic">
-                    Star Rewards applied to your first order today — back again tomorrow 🍦
                   </div>
                 )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">
