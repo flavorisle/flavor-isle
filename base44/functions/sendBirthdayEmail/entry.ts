@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
-import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, trackedLink, foodHeroHtml } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
 
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
@@ -112,6 +112,7 @@ export default async function (req: Request) {
         <div style="text-align:center;margin:28px 0 8px;">
           <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Claim your birthday treat →</a>
         </div>
+        ${await foodHeroHtml(base44)}
         <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you told us your birthday in your Flavor Isle account. Don't want these emails? <a href="mailto:smashie@order.flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
       `;
       const html = brandedEmailHtml(bodyHtml);
