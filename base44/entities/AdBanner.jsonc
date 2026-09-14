@@ -48,6 +48,16 @@
       "type": "boolean",
       "default": true
     },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional start date (YYYY-MM-DD, store local time). When set, the banner only shows on or after this date."
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional end date (YYYY-MM-DD, exclusive). When set, the banner only shows before this date."
+    },
     "sort_order": {
       "type": "number",
       "default": 0

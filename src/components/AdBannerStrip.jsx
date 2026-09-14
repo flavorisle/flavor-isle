@@ -20,11 +20,20 @@ export default function AdBannerStrip({ placement, compact = false }) {
       .catch(() => setBanners([]));
   }, [placement]);
 
-  if (banners.length === 0) return null;
+  // Filter by optional date window (start_date / end_date) so seasonal promos
+  // auto-start and auto-stop without manual is_active toggling.
+  const now = new Date();
+  const visibleBanners = banners.filter(b => {
+    if (b.start_date && new Date(b.start_date + 'T00:00:00') > now) return false;
+    if (b.end_date && new Date(b.end_date + 'T00:00:00') <= now) return false;
+    return true;
+  });
+
+  if (visibleBanners.length === 0) return null;
 
   return (
     <div className={compact ? 'space-y-2' : 'max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-4'}>
-      {banners.map(b => {
+      {visibleBanners.map(b => {
         const t = THEMES[b.theme] || THEMES.cherry;
         return (
           <div key={b.id} className={`${t.bg} rounded-3xl overflow-hidden flex items-center gap-4 ${compact ? 'p-3' : 'p-5 sm:p-6'}`}>

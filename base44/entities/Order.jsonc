@@ -73,6 +73,10 @@
     "redemption_id": {
       "type": "string"
     },
+    "promo_applied": {
+      "type": "string",
+      "description": "Promo flag applied to this order. 'star_rewards' = October Star Rewards $5-off loyalty promo. Used to count promo usage, enforce once-per-day, and calculate promo cost per day."
+    },
     "total": {
       "type": "number"
     },
