@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
     let updated = 0;
     let notified = 0;
     const pendingUpdates = [];
+    const completedThisRun = [];
     // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
     // lookup, and bursting through dozens at once trips Square's rate limit.
     // Spreads the backfill across scheduled runs instead.
@@ -198,6 +199,13 @@ Deno.serve(async (req) => {
       pendingUpdates.push({ id: order.id, status: newStatus });
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
+
+      // Track orders transitioning to completed so we can sync customer
+      // profile stats after the bulkUpdate (bulkUpdate skips entity triggers,
+      // so the "Sync Customer Profile Stats" workflow never fires from here).
+      if (newStatus === 'completed') {
+        completedThisRun.push(order.id);
+      }
 
       // Send email/push/SMS for the new status AND any intermediate milestones
       // the polling interval skipped (e.g. confirmed → completed should also
@@ -274,7 +282,20 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
     }
 
-    return Response.json({ checked: squareOrders.length, updated, notified });
+    // Sync customer profile stats for orders that just completed. The entity
+    // trigger workflow doesn't fire on bulkUpdate (bulk methods skip side
+    // effects), so we invoke the sync directly here.
+    for (const completedOrderId of completedThisRun) {
+      try {
+        await base44.functions.invoke('syncCustomerProfileStats', {
+          order_id: completedOrderId,
+        });
+      } catch (syncErr) {
+        console.error(`Profile sync failed for order ${completedOrderId}:`, syncErr.message);
+      }
+    }
+
+    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length });
   } catch (error) {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

@@ -2,15 +2,27 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 // Keeps CustomerProfile.total_orders / total_spent in sync when an order
 // completes as paid. Invoked by the "Sync Customer Profile Stats" workflow
-// (entity trigger on Order update → completed + paid), so there is no user
-// auth context — all entity work runs as the service role.
+// (entity trigger on Order update → completed + paid) AND called directly
+// from syncSquareOrderStatus after bulkUpdate (bulk methods skip entity
+// triggers, so the workflow alone is unreliable).
 //
 // Rules (per the owner's spec):
 //   1. Match the order's customer_email to a profile (case-insensitive).
-//   2. Increment total_orders by 1 and add order.total to total_spent.
-//   3. If no profile exists for the email, create one from the order.
-//   4. Skip square-pos@flavorisle.com (POS walk-ins) and any order that is
-//      not status="completed" with payment_status="paid".
+//   2. Recompute total_orders / total_spent from ALL paid+completed orders
+//      for that email — not increment — so any drift self-heals.
+//   3. If no profile exists, create one (name + email + preferred_communication
+//      "email"), with the email normalized to lowercase.
+//   4. Skip square-pos@flavorisle.com, wesleyrbooker1@gmail.com,
+//      wesley@flavor-isle.com, test@example.com.
+//   5. Only count orders with status="completed" AND payment_status="paid".
+
+const SKIP_EMAILS = new Set([
+  'square-pos@flavorisle.com',
+  'wesleyrbooker1@gmail.com',
+  'wesley@flavor-isle.com',
+  'test@example.com',
+]);
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -27,8 +39,7 @@ export default async function(req) {
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Defense in depth: the workflow already gates on these, but re-check so
-    // a manual invoke or a future caller can't inflate stats incorrectly.
+    // Defense in depth: re-check so a manual invoke can't inflate stats.
     if (order.status !== 'completed' || order.payment_status !== 'paid') {
       return Response.json({ skipped: true, reason: 'not_completed_or_paid' });
     }
@@ -39,54 +50,71 @@ export default async function(req) {
       return Response.json({ skipped: true, reason: 'no_customer_email' });
     }
 
-    // Skip POS walk-in orders.
-    if (emailKey === 'square-pos@flavorisle.com') {
-      return Response.json({ skipped: true, reason: 'pos_walkin' });
+    if (SKIP_EMAILS.has(emailKey)) {
+      return Response.json({ skipped: true, reason: 'skip_email' });
     }
 
-    const orderTotal = Number(order.total) || 0;
+    // The SDK filter is case-sensitive, so try multiple case variants and
+    // combine. This catches profiles/orders stored with mixed case (e.g.
+    // KYLAPRICE54@YAHOO.COM vs kylaprice54@yahoo.com).
+    const emailVariants = Array.from(new Set([rawEmail, emailKey, rawEmail.toUpperCase()]));
 
-    // Case-insensitive match: the SDK filter is case-sensitive, so try the
-    // exact stored email and the lowercased form. Covers the common cases
-    // (profiles created from the order's own email, or seeded with mixed case).
-    let profile = null;
-    const byExact = await base44.asServiceRole.entities.CustomerProfile.filter({ email: rawEmail });
-    if (byExact && byExact.length > 0) {
-      profile = byExact[0];
-    } else if (rawEmail !== emailKey) {
-      const byLower = await base44.asServiceRole.entities.CustomerProfile.filter({ email: emailKey });
-      if (byLower && byLower.length > 0) profile = byLower[0];
-    }
+    // --- Recompute totals from ALL paid+completed orders for this email ---
+    // Self-heals any drift from missed syncs or manual edits.
+    const orderSets = await Promise.all(
+      emailVariants.map(v =>
+        base44.asServiceRole.entities.Order.filter({ customer_email: v }, '-created_date', 500)
+          .catch(() => [])
+      )
+    );
+    const seenOrderIds = new Set();
+    const qualifyingOrders = orderSets.flat().filter(o => {
+      if (seenOrderIds.has(o.id)) return false;
+      seenOrderIds.add(o.id);
+      return o.status === 'completed' && o.payment_status === 'paid';
+    });
+    const totalOrders = qualifyingOrders.length;
+    const totalSpent = Number(qualifyingOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0).toFixed(2));
+
+    // --- Case-insensitive profile match ---
+    const profileSets = await Promise.all(
+      emailVariants.map(v =>
+        base44.asServiceRole.entities.CustomerProfile.filter({ email: v })
+          .catch(() => [])
+      )
+    );
+    let profile = profileSets.flat().find(p => (p.email || '').toLowerCase() === emailKey) || null;
 
     if (profile) {
-      const newTotalOrders = (profile.total_orders || 0) + 1;
-      const newTotalSpent = Number(((profile.total_spent || 0) + orderTotal).toFixed(2));
-      await base44.asServiceRole.entities.CustomerProfile.update(profile.id, {
-        total_orders: newTotalOrders,
-        total_spent: newTotalSpent,
-      });
+      const updates = { total_orders: totalOrders, total_spent: totalSpent };
+      // Normalize stored email to lowercase if it's not already.
+      if (profile.email !== emailKey) {
+        updates.email = emailKey;
+      }
+      await base44.asServiceRole.entities.CustomerProfile.update(profile.id, updates);
       return Response.json({
         action: 'updated',
         profile_id: profile.id,
-        email: profile.email,
-        total_orders: newTotalOrders,
-        total_spent: newTotalSpent,
+        email: emailKey,
+        total_orders: totalOrders,
+        total_spent: totalSpent,
       });
     }
 
-    // No existing profile — create one from the order.
+    // No existing profile — create one with normalized lowercase email.
     const created = await base44.asServiceRole.entities.CustomerProfile.create({
       name: order.customer_name || '',
-      email: rawEmail,
-      total_orders: 1,
-      total_spent: Number(orderTotal.toFixed(2)),
+      email: emailKey,
+      preferred_communication: 'email',
+      total_orders: totalOrders,
+      total_spent: totalSpent,
     });
     return Response.json({
       action: 'created',
       profile_id: created.id,
-      email: created.email,
-      total_orders: 1,
-      total_spent: Number(orderTotal.toFixed(2)),
+      email: emailKey,
+      total_orders: totalOrders,
+      total_spent: totalSpent,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
