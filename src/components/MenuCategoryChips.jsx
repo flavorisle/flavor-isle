@@ -41,11 +41,16 @@ export default function MenuCategoryChips({ rows, renames }) {
 
   // Measure the sticky header height (site notice + live status + nav) once
   // on mount and on resize so the chip bar sticks right below it and scroll
-  // offsets account for it.
+  // offsets account for it. Also stamps scroll-margin-top onto every menu
+  // section so scrollIntoView lands below the sticky header.
   useEffect(() => {
     const measure = () => {
       const nav = document.querySelector('nav');
-      if (nav) setHeaderHeight(Math.round(nav.getBoundingClientRect().bottom));
+      const h = nav ? Math.round(nav.getBoundingClientRect().bottom) : 0;
+      setHeaderHeight(h);
+      document.querySelectorAll('[id^="menu-cat-"]').forEach((el) => {
+        el.style.scrollMarginTop = `${h + 12}px`;
+      });
     };
     const raf = requestAnimationFrame(measure);
     window.addEventListener('resize', measure);
@@ -64,11 +69,11 @@ export default function MenuCategoryChips({ rows, renames }) {
     } catch {}
     const el = document.getElementById(sectionId(row.key));
     if (!el) return;
-    const offset = headerHeight || 0;
-    const y = el.getBoundingClientRect().top + window.scrollY - offset - 12;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    // scrollIntoView with block:'start' respects scroll-margin-top (set above)
+    // and is more reliable than manual window.scrollTo across browsers.
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveKey(row.key);
-  }, [renames, headerHeight]);
+  }, [renames]);
 
   // Scroll-spy: highlight the pill for the section currently in view.
   useEffect(() => {
