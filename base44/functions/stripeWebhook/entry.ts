@@ -86,7 +86,12 @@ Deno.serve(async (req) => {
       const orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: pi.id });
       if (orders && orders.length > 0) {
         const order = orders[0];
-        if (order.payment_status !== 'paid') {
+        // Skip if already pushed to Square by the client-side confirmOnlinePayment
+        // fallback or the checkout.session.completed handler — prevents the
+        // duplicate Square order that occurs when both triggers fire ~1s apart.
+        if (order.square_order_id) {
+          console.log(`Order ${order.order_number} already pushed to Square (${order.square_order_id}) — skipping payment_intent.succeeded push`);
+        } else if (order.payment_status !== 'paid') {
           const paidOrder = { ...order, payment_status: 'paid', status: 'confirmed' };
           await base44.asServiceRole.entities.Order.update(order.id, { payment_status: 'paid', status: 'confirmed' });
           console.log(`Order ${order.order_number} marked paid via payment_intent.succeeded`);

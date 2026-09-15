@@ -6,7 +6,23 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
+
+    // Idempotency guard #1: if the app order already has a square_order_id,
+    // another trigger already pushed it — return the existing id instead of
+    // creating a duplicate Square order. This catches the race where the
+    // Stripe webhook and client-side confirmOnlinePayment fire ~1s apart.
+    if (orderId) {
+      try {
+        const existing = await base44.asServiceRole.entities.Order.get(orderId);
+        if (existing?.square_order_id) {
+          console.log(`Order ${orderNumber} already has square_order_id ${existing.square_order_id} — skipping duplicate create`);
+          return Response.json({ order_id: existing.square_order_id, already_synced: true });
+        }
+      } catch (checkErr) {
+        console.warn('Idempotency pre-check failed, proceeding:', checkErr.message);
+      }
+    }
 
     const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[orderType] || 'Pickup';
     const displayName = orderNumber
@@ -85,7 +101,10 @@ Deno.serve(async (req) => {
       console.error('Square customer lookup/create failed:', err.message);
     }
 
-    const idempotencyKey = crypto.randomUUID();
+    // Deterministic idempotency key derived from the app order id so Square
+    // rejects a duplicate create even if two triggers race past the pre-check
+    // above. Square returns the SAME order for a repeated key.
+    const idempotencyKey = orderId ? `flavor-isle-order-${orderId}` : crypto.randomUUID();
 
     const lineItems = items.map(item => {
       // Milkshakes are built from a single Square "Milkshake" item, but that
@@ -187,6 +206,7 @@ Deno.serve(async (req) => {
           customer_email: customer.email,
           order_source: 'flavor-isle-website',
           order_type: orderType,
+          ...(orderId ? { app_order_id: orderId } : {}),
         },
       },
     };
@@ -210,6 +230,18 @@ Deno.serve(async (req) => {
 
     console.log('Square order created:', data.order?.id);
 
+    // Persist square_order_id on the app order immediately so concurrent
+    // triggers see it and skip. This narrows the race window to just the
+    // Square API call duration.
+    if (orderId && data.order?.id) {
+      try {
+        await base44.asServiceRole.entities.Order.update(orderId, { square_order_id: data.order.id });
+        console.log(`App order ${orderNumber} updated with square_order_id ${data.order.id}`);
+      } catch (updateErr) {
+        console.error('Failed to update app order with square_order_id:', updateErr.message);
+      }
+    }
+
     // Record the payment (already collected via Stripe) as an EXTERNAL payment.
     // Square POS only surfaces PAID orders as active tickets, so without this
     // step the order never appears on the register.
@@ -223,7 +255,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          idempotency_key: crypto.randomUUID(),
+          idempotency_key: orderId ? `flavor-isle-payment-${orderId}` : crypto.randomUUID(),
           source_id: 'EXTERNAL',
           external_details: { type: 'CARD', source: 'Card' },
           order_id: data.order.id,
@@ -241,7 +273,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ order_id: data.order?.id, order: data.order });
+    return Response.json({ order_id: data.order?.id, order: data.order, already_synced: false });
   } catch (error) {
     console.error('Square order error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

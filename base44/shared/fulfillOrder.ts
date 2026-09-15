@@ -255,6 +255,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       items: order.items || [],
       orderType: order.order_type || 'pickup',
       orderNumber: order.order_number,
+      orderId: order.id,
       customer: {
         name: order.customer_name,
         phone: order.customer_phone,
@@ -269,8 +270,28 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       discount: order.discount || 0,
     });
     squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
+    const alreadySynced = squareRes?.data?.already_synced || squareRes?.already_synced;
+
+    if (alreadySynced) {
+      // Another trigger already pushed this order to Square and handled all
+      // notifications — skip everything else to avoid duplicate tickets,
+      // double emails, and repeat kitchen prints.
+      console.log(`Order ${order.order_number} was already synced by a concurrent call — skipping notifications`);
+      await logSquareSyncAttempt(base44, order, 'skipped', squareOrderId, 'Already synced by concurrent trigger — notifications skipped');
+      return;
+    }
+
     if (squareOrderId) {
-      await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
+      // square_order_id is already persisted inside createSquareOrder, but
+      // update here too in case the inner update failed (defense in depth).
+      try {
+        const latest = await base44.asServiceRole.entities.Order.get(order.id);
+        if (!latest?.square_order_id) {
+          await base44.asServiceRole.entities.Order.update(order.id, { square_order_id: squareOrderId });
+        }
+      } catch (e) {
+        console.warn('Redundant square_order_id update failed:', e.message);
+      }
       console.log(`Order ${order.order_number} sent to Square (id ${squareOrderId})`);
     } else {
       squareError = squareRes?.data?.error || squareRes?.error || 'No order_id returned from Square';

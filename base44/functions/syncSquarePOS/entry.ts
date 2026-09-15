@@ -97,6 +97,15 @@ Deno.serve(async (req) => {
     const newOrders = [];
     const updates = [];
     for (const so of squareOrders) {
+      // Skip Square orders that were pushed from our website (online orders
+      // we created via createSquareOrder). These have metadata.order_source
+      // = 'flavor-isle-website'. Without this, a duplicate Square order (from
+      // the double-push race) gets re-imported as a ghost in-store order,
+      // inflating counts and revenue.
+      if (so.metadata?.order_source === 'flavor-isle-website') {
+        continue;
+      }
+
       const cust = so.customer_id ? customerMap.get(so.customer_id) : null;
       const sqEmail = cust?.email || '';
       const sqPhone = cust?.phone || '';
