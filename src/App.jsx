@@ -64,6 +64,7 @@ import AdminStoreSettings from './pages/AdminStoreSettings';
 import AdminEmails from './pages/AdminEmails';
 import AdminSquareLogs from './pages/AdminSquareLogs';
 import AdminKitchen from './pages/AdminKitchen';
+import AdminAnalytics from './pages/AdminAnalytics';
 import About from './pages/About';
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
@@ -195,6 +196,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/emails" element={<AdminEmails />} />
         <Route path="/admin/square-logs" element={<AdminSquareLogs />} />
         <Route path="/admin/kitchen" element={<AdminKitchen />} />
+        <Route path="/admin-analytics" element={<AdminAnalytics />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
       </Route>
 
