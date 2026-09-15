@@ -5,6 +5,11 @@
 //
 // Every helper no-ops when gtag is unavailable (SSR, ad blockers, preview)
 // so tracking can never break the ordering flow.
+//
+// Meta Pixel (fbq) calls are placed alongside each gtag call so both
+// platforms fire at the same user action. The fbq helpers no-op when
+// window.fbq is missing or consent hasn't been granted.
+import { fbqViewContent, fbqAddToCart, fbqInitiateCheckout, fbqPurchase } from '@/lib/metaPixel';
 
 const CURRENCY = 'USD';
 
@@ -67,6 +72,7 @@ export function trackViewItem(item, { value } = {}) {
     value: value ?? item.price,
     items: [item],
   });
+  fbqViewContent(item, value);
 }
 
 export function trackAddToCart(item, { value } = {}) {
@@ -75,6 +81,7 @@ export function trackAddToCart(item, { value } = {}) {
     value: value ?? Number((item.price * (item.quantity || 1)).toFixed(2)),
     items: [item],
   });
+  fbqAddToCart(item, value);
 }
 
 export function trackViewCart(items, value) {
@@ -92,6 +99,7 @@ export function trackBeginCheckout(items, value, { coupon } = {}) {
     coupon,
     items,
   });
+  fbqInitiateCheckout(items, value);
 }
 
 export function trackPurchase(items, { transaction_id, value, tax, shipping, coupon } = {}) {
@@ -104,4 +112,5 @@ export function trackPurchase(items, { transaction_id, value, tax, shipping, cou
     coupon,
     items,
   });
+  fbqPurchase(items, value);
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
 import { isKeepAliveTab } from "@/lib/keepAliveTabs";
+import { fbqPageView } from "@/lib/metaPixel";
 
 const getHashId = (hash) => {
   const rawId = hash.slice(1);
@@ -17,6 +18,9 @@ export default function ScrollToTop() {
   const navigationType = useNavigationType();
 
   useEffect(() => {
+    // Fire Meta Pixel PageView on every route change (consent-gated inside).
+    fbqPageView();
+
     if (navigationType === "POP") return;
 
     // Keep-alive tab routes restore their own saved scroll position (handled
