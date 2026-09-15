@@ -244,6 +244,19 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       await logSquareSyncAttempt(base44, order, 'skipped', latest.square_order_id, 'Already pushed — duplicate fulfillment skipped');
       return;
     }
+    // If another call is currently claiming the sync (recent square_sync_claimed_at),
+    // skip — the atomic claim in createSquareOrder will block it anyway, but this
+    // avoids unnecessary work. Stale claims (>5 min) are allowed through so crashed
+    // syncs can be retried.
+    if (latest?.square_sync_claimed_at) {
+      const claimAge = Date.now() - new Date(latest.square_sync_claimed_at).getTime();
+      if (claimAge < 5 * 60 * 1000) {
+        console.log(`Order ${order.order_number} is being synced by another call (claimed ${Math.round(claimAge / 1000)}s ago) — skipping`);
+        await logSquareSyncAttempt(base44, order, 'skipped', null, 'Another call is syncing — skipped');
+        return;
+      }
+      console.log(`Order ${order.order_number} has stale sync claim (${Math.round(claimAge / 1000)}s old) — proceeding with retry`);
+    }
   } catch (checkErr) {
     console.warn('Idempotency re-read failed, proceeding:', checkErr.message);
   }

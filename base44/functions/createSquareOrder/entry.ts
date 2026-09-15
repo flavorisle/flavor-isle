@@ -8,19 +8,37 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
 
-    // Idempotency guard #1: if the app order already has a square_order_id,
-    // another trigger already pushed it — return the existing id instead of
-    // creating a duplicate Square order. This catches the race where the
-    // Stripe webhook and client-side confirmOnlinePayment fire ~1s apart.
+    // Atomic claim: try to set square_sync_claimed_at only if it's currently
+    // null/empty. If another concurrent call already claimed or pushed the
+    // order, updated === 0 and we skip — preventing duplicate Square orders
+    // when the Stripe webhook fires both checkout.session.completed and
+    // payment_intent.succeeded ~1s apart. This is a database-level atomic
+    // operation (conditional updateMany), so the race window is eliminated.
     if (orderId) {
       try {
-        const existing = await base44.asServiceRole.entities.Order.get(orderId);
-        if (existing?.square_order_id) {
-          console.log(`Order ${orderNumber} already has square_order_id ${existing.square_order_id} — skipping duplicate create`);
-          return Response.json({ order_id: existing.square_order_id, already_synced: true });
+        const claim = await base44.asServiceRole.entities.Order.updateMany(
+          { id: orderId, square_sync_claimed_at: null },
+          { $set: { square_sync_claimed_at: new Date().toISOString() } }
+        );
+        if (!claim || claim.updated === 0) {
+          const existing = await base44.asServiceRole.entities.Order.get(orderId);
+          if (existing?.square_order_id) {
+            console.log(`Order ${orderNumber} already pushed (${existing.square_order_id}) — skipping duplicate create`);
+            return Response.json({ order_id: existing.square_order_id, already_synced: true });
+          }
+          console.log(`Order ${orderNumber} is being claimed by another call — skipping`);
+          return Response.json({ order_id: null, already_synced: true });
         }
-      } catch (checkErr) {
-        console.warn('Idempotency pre-check failed, proceeding:', checkErr.message);
+      } catch (claimErr) {
+        console.warn('Atomic claim failed, falling back to pre-check:', claimErr.message);
+        try {
+          const existing = await base44.asServiceRole.entities.Order.get(orderId);
+          if (existing?.square_order_id) {
+            return Response.json({ order_id: existing.square_order_id, already_synced: true });
+          }
+        } catch (e) {
+          // proceed with creation
+        }
       }
     }
 
@@ -225,6 +243,17 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error('Square error:', JSON.stringify(data));
+      // Release the claim so the order can be retried by autoSyncUnpushedOrders
+      if (orderId) {
+        try {
+          await base44.asServiceRole.entities.Order.updateMany(
+            { id: orderId, square_sync_claimed_at: { $ne: null } },
+            { $unset: { square_sync_claimed_at: "" } }
+          );
+        } catch (e) {
+          console.warn('Failed to release Square sync claim:', e.message);
+        }
+      }
       return Response.json({ error: 'Square order creation failed', details: data }, { status: 500 });
     }
 

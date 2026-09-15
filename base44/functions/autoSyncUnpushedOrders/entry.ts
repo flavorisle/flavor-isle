@@ -21,6 +21,23 @@ export default async function (req: Request) {
     // Recent orders, newest first
     const orders = await base44.asServiceRole.entities.Order.list('-created_date', 60);
     const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+
+    // Clear stale sync claims (>5 min old with no square_order_id) so orders
+    // whose createSquareOrder call crashed or timed out can be retried.
+    for (const o of (orders || [])) {
+      if (o.square_sync_claimed_at && !o.square_order_id && new Date(o.square_sync_claimed_at).getTime() < fiveMinAgo) {
+        try {
+          await base44.asServiceRole.entities.Order.updateMany(
+            { id: o.id, square_sync_claimed_at: o.square_sync_claimed_at },
+            { $unset: { square_sync_claimed_at: "" } }
+          );
+          console.log(`Cleared stale sync claim for order ${o.order_number}`);
+        } catch (e) {
+          console.warn(`Failed to clear stale claim for ${o.order_number}:`, e.message);
+        }
+      }
+    }
 
     // Candidates: no square_order_id yet, not cancelled, not a POS-synced order,
     // and created within the last 2 hours (don't bother with very old orders).

@@ -66,6 +66,17 @@ export default async function (req: Request) {
       if (recent && recent.some((r) => r.sent_at && new Date(r.sent_at) > thirtyDaysAgo)) {
         return Response.json({ skipped: true, reason: 'customer received one in last 30 days' });
       }
+
+      // Atomic claim: try to set review_email_sent_at on the order. If another
+      // concurrent call already set it, updated === 0 and we skip — preventing
+      // duplicate emails when two triggers race past the log-based check above.
+      const claim = await base44.asServiceRole.entities.Order.updateMany(
+        { id: order.id, review_email_sent_at: null },
+        { $set: { review_email_sent_at: new Date().toISOString() } }
+      );
+      if (!claim || claim.updated === 0) {
+        return Response.json({ skipped: true, reason: 'already sent for this order (atomic claim)' });
+      }
     }
 
     // ── Build email HTML ──
@@ -98,6 +109,17 @@ export default async function (req: Request) {
     });
     if (error) {
       console.error('Review request email send error:', error);
+      // Release the claim so it can be retried on the next workflow run
+      if (!isTest) {
+        try {
+          await base44.asServiceRole.entities.Order.updateMany(
+            { id: order.id },
+            { $unset: { review_email_sent_at: "" } }
+          );
+        } catch (e) {
+          console.warn('Failed to release review_email claim:', e.message);
+        }
+      }
       return Response.json({ ok: false, error: 'email send failed' }, { status: 500 });
     }
 
