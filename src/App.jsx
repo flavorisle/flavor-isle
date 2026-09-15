@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { isKeepAliveTab } from '@/lib/keepAliveTabs';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PageNotFound from './lib/PageNotFound';
@@ -18,60 +18,75 @@ import SmashieChat from './components/SmashieChat';
 import TastyThreadsPopup from './components/TastyThreadsPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Page imports
+// Page imports — keep-alive tabs (Home, Menu, Merch, Account) are eagerly
+// imported so they stay mounted across tab switches. All other pages are
+// lazy-loaded via React.lazy to shrink the initial bundle. The Suspense
+// fallback in AuthenticatedApp matches the app loading screen so the
+// lazy chunk download feels seamless.
 import Home from './pages/Home';
 import Menu from './pages/Menu';
-import Checkout from './pages/Checkout';
-import OrderConfirmation from './pages/OrderConfirmation';
-import Contact from './pages/Contact';
-import Account from './pages/Account';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminMenu from './pages/AdminMenu';
-import AdminPrintMenu from './pages/AdminPrintMenu';
-
-
-import AdminOrders from './pages/AdminOrders';
-import AdminCommunications from './pages/AdminCommunications';
-import AccountNew from './pages/Account.jsx';
-import Milkshakes from './pages/Milkshakes';
-import MeetSmashie from './pages/MeetSmashie';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import FacebookAd from './pages/FacebookAd';
-import TastyThreadsAd from './pages/TastyThreadsAd';
-import Feedback from './pages/Feedback';
-import Combos from './pages/Combos';
-import DownloadApp from './pages/DownloadApp';
-import SMSSignup from './pages/SMSSignup';
-import BusynessGuide from './pages/BusynessGuide';
-import Connect from './pages/Connect';
-import Gallery from './pages/Gallery';
-import SocialReviews from './pages/SocialReviews';
-import OrderStatus from './pages/OrderStatus';
-import CommunityNews from './pages/CommunityNews';
-import Rewards from './pages/Rewards';
 import Merch from './pages/Merch';
-import Order from './pages/Order';
-import MerchCheckout from './pages/MerchCheckout';
-import MerchConfirmation from './pages/MerchConfirmation';
-import AdminMerchCategories from './pages/AdminMerchCategories';
-import AdminReviews from './pages/AdminReviews';
-import AdminStoreSettings from './pages/AdminStoreSettings';
-import AdminEmails from './pages/AdminEmails';
-import AdminSquareLogs from './pages/AdminSquareLogs';
-import AdminKitchen from './pages/AdminKitchen';
-import AdminAnalytics from './pages/AdminAnalytics';
-import About from './pages/About';
+import AccountNew from './pages/Account.jsx';
+
+const Checkout = lazy(() => import('./pages/Checkout'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const Contact = lazy(() => import('./pages/Contact'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminMenu = lazy(() => import('./pages/AdminMenu'));
+const AdminPrintMenu = lazy(() => import('./pages/AdminPrintMenu'));
+const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
+const Milkshakes = lazy(() => import('./pages/Milkshakes'));
+const MeetSmashie = lazy(() => import('./pages/MeetSmashie'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const FacebookAd = lazy(() => import('./pages/FacebookAd'));
+const TastyThreadsAd = lazy(() => import('./pages/TastyThreadsAd'));
+const Feedback = lazy(() => import('./pages/Feedback'));
+const Combos = lazy(() => import('./pages/Combos'));
+const DownloadApp = lazy(() => import('./pages/DownloadApp'));
+const SMSSignup = lazy(() => import('./pages/SMSSignup'));
+const BusynessGuide = lazy(() => import('./pages/BusynessGuide'));
+const Connect = lazy(() => import('./pages/Connect'));
+const Gallery = lazy(() => import('./pages/Gallery'));
+const SocialReviews = lazy(() => import('./pages/SocialReviews'));
+const OrderStatus = lazy(() => import('./pages/OrderStatus'));
+const CommunityNews = lazy(() => import('./pages/CommunityNews'));
+const Rewards = lazy(() => import('./pages/Rewards'));
+const Order = lazy(() => import('./pages/Order'));
+const MerchCheckout = lazy(() => import('./pages/MerchCheckout'));
+const MerchConfirmation = lazy(() => import('./pages/MerchConfirmation'));
+const AdminMerchCategories = lazy(() => import('./pages/AdminMerchCategories'));
+const AdminReviews = lazy(() => import('./pages/AdminReviews'));
+const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
+const AdminEmails = lazy(() => import('./pages/AdminEmails'));
+const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
+const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
+const About = lazy(() => import('./pages/About'));
+const Flyer = lazy(() => import('./pages/Flyer'));
+const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
-import Flyer from './pages/Flyer';
-import I65Exit38 from './pages/I65Exit38';
 import RestaurantSchema from './components/RestaurantSchema';
 import CanonicalLink from './components/CanonicalLink';
+
+// Suspense fallback — matches the app's initial loading screen so lazy
+// page loads feel seamless rather than flashing a blank white page.
+function LoadingFallback() {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin mx-auto mb-4" style={{ borderTopColor: 'var(--midnight-cherry)' }}></div>
+        <p className="font-heading text-obsidian-roast text-sm">Loading Flavor Isle…</p>
+      </div>
+    </div>
+  );
+}
 // Tasty Threads (Printful) merch store — storefront, checkout, confirmation, admin.
 
 const AuthenticatedApp = () => {
@@ -132,9 +147,16 @@ const AuthenticatedApp = () => {
       <div className={location.pathname === '/menu' ? '' : 'hidden'} aria-hidden={location.pathname !== '/menu'}>
         <Menu />
       </div>
+      <div className={location.pathname === '/merch' ? '' : 'hidden'} aria-hidden={location.pathname !== '/merch'}>
+        <Merch />
+      </div>
+      <div className={location.pathname === '/account' ? '' : 'hidden'} aria-hidden={location.pathname !== '/account'}>
+        <AccountNew />
+      </div>
 
       {/* All other routes mount/unmount normally with the page transition. */}
       {!isTabPath && (
+        <Suspense fallback={<LoadingFallback />}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -204,6 +226,7 @@ const AuthenticatedApp = () => {
             </Routes>
           </motion.div>
         </AnimatePresence>
+        </Suspense>
       )}
     </>
   );

@@ -1,10 +1,12 @@
 // Tasty Threads storefront — powered by Printful, grouped by admin-defined categories.
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ShoppingBag, AlertCircle, Shirt, Clock, Truck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/merch/ProductCard';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ProductDetailModal from '@/components/merch/ProductDetailModal';
 import MerchCartButton from '@/components/merch/MerchCartButton';
 import { useMerchCart } from '@/context/MerchCartContext';
@@ -24,37 +26,35 @@ export default function Merch() {
   const { addItem, setIsCartOpen } = useMerchCart();
   const { toast } = useToast();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const [prodRes, cats, assigns] = await Promise.all([
-          base44.functions.invoke('getPrintfulProducts', {}),
-          base44.entities.MerchCategory.list('-sort_order', 200).catch(() => []),
-          base44.entities.MerchProductAssignment.list('-sort_order', 500).catch(() => []),
-        ]);
-        if (cancelled) return;
-        const loaded = prodRes.data?.products || [];
-        setProducts(loaded);
-        trackViewItemList(loaded.map(merchItemToGa4), { item_list_id: 'merch', item_list_name: 'Tasty Threads' });
-        setCategories(cats || []);
-        setAssignments(assigns || []);
-        // Shared link deep-linking: /merch?product=<id> opens that product.
-        const sharedId = new URLSearchParams(window.location.search).get('product');
-        if (sharedId) {
-          const match = loaded.find((p) => String(p.id) === sharedId);
-          if (match) setActiveProduct(match);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err?.response?.data?.error || err.message || 'Could not load the store.');
-      } finally {
-        if (!cancelled) setLoading(false);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [prodRes, cats, assigns] = await Promise.all([
+        base44.functions.invoke('getPrintfulProducts', {}),
+        base44.entities.MerchCategory.list('-sort_order', 200).catch(() => []),
+        base44.entities.MerchProductAssignment.list('-sort_order', 500).catch(() => []),
+      ]);
+      const loaded = prodRes.data?.products || [];
+      setProducts(loaded);
+      trackViewItemList(loaded.map(merchItemToGa4), { item_list_id: 'merch', item_list_name: 'Tasty Threads' });
+      setCategories(cats || []);
+      setAssignments(assigns || []);
+      // Shared link deep-linking: /merch?product=<id> opens that product.
+      const sharedId = new URLSearchParams(window.location.search).get('product');
+      if (sharedId) {
+        const match = loaded.find((p) => String(p.id) === sharedId);
+        if (match) setActiveProduct(match);
       }
-    })();
-    return () => { cancelled = true; };
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Could not load the store.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { reload(); }, []);
+  const { pull, refreshing } = usePullToRefresh(reload);
 
   // Resolve grouping for each product.
   const { supers, grouped } = useMemo(() => {
@@ -136,6 +136,7 @@ export default function Merch() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
 
       {/* Hero */}

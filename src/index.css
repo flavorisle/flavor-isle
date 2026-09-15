@@ -208,8 +208,8 @@
 
 /* Checkout readability — the summary, field labels, and fine print used the
    smallest type on the site. Bump the floor so it's legible on real devices. */
-.force-light .text-xs { font-size: 0.8125rem; line-height: 1.5; }
-.force-light .text-\[11px\] { font-size: 0.8125rem; }
+.force-light .text-xs { font-size: 0.875rem; line-height: 1.5; }
+.force-light .text-\[11px\] { font-size: 0.875rem; }
 .force-light .text-sm { font-size: 0.9375rem; }
 .force-light input,
 .force-light textarea,

@@ -33,7 +33,7 @@ export default function Navbar() {
   return (
     <>
       {/* Sticky header: site notice + live status bar + main nav stay pinned together */}
-      <div className="sticky top-0 z-50">
+      <div className="sticky top-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <SiteNoticeBanner />
         <LiveStatusBar />
         <nav className={`relative transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>

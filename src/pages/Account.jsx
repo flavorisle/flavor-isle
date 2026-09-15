@@ -18,6 +18,8 @@ import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -42,13 +44,13 @@ function OrderCard({ order, onReorder }) {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <p className="font-heading text-sm text-obsidian-roast">Order #{order.order_number || order.id?.slice(-6).toUpperCase()}</p>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+              <span className={`text-sm px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
               </span>
-              {order.order_source === 'in_store' && <span className="text-xs px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
-              {isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
+              {order.order_source === 'in_store' && <span className="text-sm px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
+              {isActive && <span className="text-sm px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {formatChicagoDate(order.created_date, { month: 'short', day: 'numeric', year: 'numeric' })}
               {' · '}{order.order_source === 'in_store' ? 'In-Store' : order.order_type?.replace('_', ' ')}
               {' · '}{(order.items || []).length} item{order.items?.length !== 1 ? 's' : ''}
@@ -62,13 +64,13 @@ function OrderCard({ order, onReorder }) {
         <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => onReorder(order)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-patina-mint hover:text-teal-700 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold text-patina-mint hover:text-teal-700 transition-colors tap-44"
           >
             <RotateCcw size={13} /> Reorder
           </button>
           <button
             onClick={() => setExpanded(e => !e)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-obsidian-roast transition-colors ml-auto"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors ml-auto tap-44"
           >
             {expanded ? <><ChevronUp size={14} /> Hide details</> : <><ChevronDown size={14} /> Track order</>}
           </button>
@@ -435,12 +437,12 @@ function LoggedInAccount({ user, logout }) {
             {/* Top action bar */}
             <div className="flex items-center justify-between">
               {!editing ? (
-                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors">
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors tap-44">
                   <Edit2 size={14} /> Edit Profile
                 </button>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
+                  <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors tap-44"><X size={16} /></button>
                   <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 text-sm btn-cherry px-4 py-1.5 font-heading disabled:opacity-60">
                     <Save size={14} /> {saving ? 'Saving…' : 'Save Changes'}
                   </button>
@@ -773,9 +775,11 @@ function GuestAuth({ onSuccess }) {
 
 export default function Account() {
   const { user, isLoadingAuth, logout } = useAuth();
+  const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
 

@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 // Floating mobile back control, shown only on nested (non-home) routes
 // under the md breakpoint as a native-style back affordance.
 // Root tab screens — no back button there (the bottom tab bar is the nav affordance).
-const PRIMARY = ['/', '/menu', '/account'];
+const PRIMARY = ['/', '/menu', '/merch', '/account'];
 // Full-screen flows that have their own back affordance and a sticky CTA —
 // the floating back button would overlap the fixed bottom action bar here.
 const HIDDEN_PATHS = ['/checkout', '/order-confirmation'];

@@ -14,7 +14,9 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const email = (user.email || '').toLowerCase().trim();
 
-    // Best-effort cleanup of associated personal data.
+    // Best-effort cleanup of all personal data linked to this account.
+    // Covers every entity that stores user-identifiable information so the
+    // deletion satisfies App Store / WebView account-erasure requirements.
     const cleanup = [
       base44.asServiceRole.entities.CustomerProfile.deleteMany({ email }).catch((e) =>
         console.error('CustomerProfile cleanup failed:', e.message),
@@ -30,6 +32,27 @@ Deno.serve(async (req) => {
       ),
       base44.asServiceRole.entities.Review.deleteMany({ customer_email: email }).catch((e) =>
         console.error('Review cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.SavedPaymentMethod.deleteMany({ user_id: userId }).catch((e) =>
+        console.error('SavedPaymentMethod cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.PushSubscription.deleteMany({ user_id: userId }).catch((e) =>
+        console.error('PushSubscription cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.SocialReview.deleteMany({ customer_email: email }).catch((e) =>
+        console.error('SocialReview cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.SMSSubscriber.deleteMany({ email }).catch((e) =>
+        console.error('SMSSubscriber cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.RecommendationEmail.deleteMany({ customer_email: email }).catch((e) =>
+        console.error('RecommendationEmail cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.ReviewRequestEmail.deleteMany({ customer_email: email }).catch((e) =>
+        console.error('ReviewRequestEmail cleanup failed:', e.message),
+      ),
+      base44.asServiceRole.entities.LoyaltyEmail.deleteMany({ customer_email: email }).catch((e) =>
+        console.error('LoyaltyEmail cleanup failed:', e.message),
       ),
     ];
     await Promise.all(cleanup);

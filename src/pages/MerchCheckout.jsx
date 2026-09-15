@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
+import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, trackPurchase, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
@@ -212,10 +213,9 @@ export default function MerchCheckout() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">State *</label>
-                  <select value={form.state_code} onChange={e => update('state_code', e.target.value)}
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry">
-                    {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <BrandSelect value={form.state_code} onValueChange={(v) => update('state_code', v)}>
+                    {US_STATES.map(s => <BrandOption key={s} value={s}>{s}</BrandOption>)}
+                  </BrandSelect>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">ZIP *</label>

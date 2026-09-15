@@ -5,6 +5,8 @@ import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import HeroSection from '@/components/HeroSection';
@@ -48,6 +50,7 @@ export default function Home() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
+  const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
 
   const handleOrder = (type) => {
     setOrderType(type);
@@ -56,6 +59,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
 
