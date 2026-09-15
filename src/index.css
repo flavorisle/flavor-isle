@@ -423,6 +423,22 @@
   }
 }
 
+/* ── Bag ticket print ──
+   When body has .printing-bag-ticket, the app (#root) is hidden and only
+   the #bag-ticket-print-root portal (rendered to document.body) is shown.
+   The @page size override (80mm receipt) is injected at print time by
+   bagTicketPrint.js so it doesn't conflict with the print menu's A3 page. */
+#bag-ticket-print-root { display: none; }
+
+@media print {
+  body.printing-bag-ticket > #root { display: none !important; }
+  body.printing-bag-ticket #bag-ticket-print-root { display: block !important; }
+  body.printing-bag-ticket .bag-ticket {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+}
+
 /* ── Mobile / iOS WebView polish (additive, desktop-safe) ── */
 @layer base {
   html, body {

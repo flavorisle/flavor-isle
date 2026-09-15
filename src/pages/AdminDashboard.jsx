@@ -11,6 +11,7 @@ import StoreMetrics from '@/components/admin/StoreMetrics';
 import EmailClickStats from '@/components/admin/EmailClickStats';
 import PopupClickStats from '@/components/admin/PopupClickStats';
 import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
+import AutoPrintToggle from '@/components/admin/AutoPrintToggle';
 
 const orderPages = [
 {
@@ -94,6 +95,9 @@ export default function AdminDashboard() {
 
       <BroadcastPushCard />
       <PushLogList />
+
+      {/* Auto-print bag tickets for new online orders */}
+      <AutoPrintToggle />
 
       {/* Store metrics — daily volume, revenue, breakdowns */}
       <StoreMetrics />
