@@ -3,7 +3,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Internal/test emails that should never receive a promo broadcast.
 const SKIP_EMAILS = new Set([

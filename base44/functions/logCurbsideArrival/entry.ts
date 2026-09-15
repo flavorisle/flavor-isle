@@ -52,7 +52,7 @@ export default async function(req) {
     announcement += `Run it out!`;
 
     // Speak in Smashie's voice via the TTS endpoint, and repeat once.
-    const ttsUrl = new URL('https://crave.flavor-isle.com/functions/smashieTts');
+    const ttsUrl = new URL('https://flavor-isle.com/functions/smashieTts');
     ttsUrl.searchParams.set('text', announcement);
     const VoiceResponse = twilio.twiml.VoiceResponse;
     const twiml = new VoiceResponse();

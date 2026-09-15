@@ -4,7 +4,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { Check, Copy, MapPin, Phone, ThumbsUp, Share, MessageCircle } from 'lucide-react';
 
-const ORDER_URL = 'https://crave.flavor-isle.com';
+const ORDER_URL = 'https://flavor-isle.com';
 const ADDRESS = '103 N Main St, Smiths Grove, KY 42171';
 const PHONE = '(270) 563-4618';
 const HOURS = 'Mon–Sat 11am–9pm · Sun 12pm–7pm';

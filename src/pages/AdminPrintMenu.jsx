@@ -14,9 +14,9 @@ const STORAGE_KEY = 'flavorisle_print_menu_v1';
 const DEFAULT_CONFIG = {
   title: 'FLAVOR ISLE',
   subtitle: 'Hand-Patted Burgers & Shakes · Since 1964',
-  footer: '103 N Main St, Smiths Grove, KY 42171 · (270) 563-4618\nOrder online at crave.flavor-isle.com',
+  footer: '103 N Main St, Smiths Grove, KY 42171 · (270) 563-4618\nOrder online at flavor-isle.com',
   accountTitle: 'Create a Free Account & Earn Rewards',
-  accountInfo: 'Sign up at crave.flavor-isle.com to earn Star Rewards points on every order, save your favorites, skip the line with online ordering, and get a text the moment your food is ready.',
+  accountInfo: 'Sign up at flavor-isle.com to earn Star Rewards points on every order, save your favorites, skip the line with online ordering, and get a text the moment your food is ready.',
   columns: 4,
   showDescriptions: true,
   showLogo: true,

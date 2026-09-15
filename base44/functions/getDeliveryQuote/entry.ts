@@ -34,7 +34,7 @@ async function geocodeCensus(query) {
 async function geocodeNominatim(query) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`;
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'FlavorIsle/1.0 (delivery quote; crave.flavor-isle.com)' },
+    headers: { 'User-Agent': 'FlavorIsle/1.0 (delivery quote; flavor-isle.com)' },
   });
   if (!res.ok) return null;
   const data = await res.json();

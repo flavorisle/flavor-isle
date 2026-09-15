@@ -237,7 +237,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
     const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@order.flavor-isle.com>`,
+      from: `${fromName} <smashie@flavor-isle.com>`,
       to,
       subject,
       html: brandedEmailHtml(body.replace(/\n/g, '<br>')),
@@ -296,7 +296,7 @@ export async function sendOrderReadyEmail(order, base44?) {
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     const { error } = await resend.emails.send({
-      from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+      from: 'Flavor Isle <smashie@flavor-isle.com>',
       to: order.customer_email,
       subject: `✅ Order #${orderNum} is ready!`,
       html: brandedEmailHtml(body),
@@ -319,7 +319,7 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
     const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@order.flavor-isle.com>`,
+      from: `${fromName} <smashie@flavor-isle.com>`,
       to,
       subject,
       html: brandedEmailHtml(bodyHtml),

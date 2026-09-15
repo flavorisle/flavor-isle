@@ -114,7 +114,7 @@ export default async function(req) {
     // instead of waiting here for generation plus a second file upload.
     const speak = async (twiml, text) => {
       const cleanText = forTTS(text);
-      const audioUrl = new URL('https://crave.flavor-isle.com/functions/smashieTts');
+      const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
       twiml.play({}, audioUrl.toString());
     };

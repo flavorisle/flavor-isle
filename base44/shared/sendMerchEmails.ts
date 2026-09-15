@@ -1,7 +1,7 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from './sendOrderEmails.ts';
 
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 function itemsTable(order) {
   const rows = (order.items || []).map(item => {

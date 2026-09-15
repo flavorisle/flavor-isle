@@ -19,7 +19,7 @@ export default async function(req) {
     }
 
     await base44.integrations.Core.SendEmail({
-      to: 'hello@order.flavor-isle.com',
+      to: 'hello@flavor-isle.com',
       subject: `Website Message from ${name}`,
       body: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
     });

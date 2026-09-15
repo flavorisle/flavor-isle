@@ -7,7 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import { MapPin, ThumbsUp, Share, MessageCircle, ExternalLink } from 'lucide-react';
 import CopyTextButton from '@/components/marketing/CopyTextButton';
 
-const SHOP_URL = 'https://crave.flavor-isle.com/merch';
+const SHOP_URL = 'https://flavor-isle.com/merch';
 
 const SHIRTS = [
   {
@@ -102,7 +102,7 @@ export default function TastyThreadsAd() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast leading-tight truncate">
-                    crave.flavor-isle.com/merch
+                    flavor-isle.com/merch
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug truncate">
                     Tasty Threads · Tees from $19.99 · Ships to your door
