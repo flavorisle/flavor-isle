@@ -39,13 +39,19 @@ export default async function (req: Request) {
       }
     }
 
-    // Candidates: no square_order_id yet, not cancelled, not a POS-synced order,
-    // and created within the last 2 hours (don't bother with very old orders).
+    // Candidates: orders that need either a Square push or an email retry.
+    // 1. No square_order_id yet — needs full push + emails.
+    // 2. Has square_order_id but missing confirmation_email_sent_at or
+    //    staff_alert_sent_at — Square push done but emails failed; retry emails
+    //    only (pushOrderToSquareAndKitchen skips the push, tries emails).
     const candidates = (orders || []).filter((o) =>
-      !o.square_order_id &&
       o.status !== 'cancelled' &&
       o.order_source !== 'in_store' &&
-      o.created_date && new Date(o.created_date).getTime() > twoHoursAgo
+      o.created_date && new Date(o.created_date).getTime() > twoHoursAgo &&
+      (
+        !o.square_order_id ||
+        (o.square_order_id && (!o.confirmation_email_sent_at || !o.staff_alert_sent_at))
+      )
     );
 
     let pushed = 0;
@@ -55,7 +61,12 @@ export default async function (req: Request) {
     for (const order of candidates) {
       let paymentConfirmed = false;
 
-      if (order.payment_status === 'paid') {
+      if (order.square_order_id) {
+        // Square push already done — payment was verified when it pushed.
+        // Just retry the missing emails (confirmOnlinePayment → pushOrderToSquareAndKitchen
+        // skips the push, tries emails with per-action dedupe).
+        paymentConfirmed = true;
+      } else if (order.payment_status === 'paid') {
         // Webhook marked it paid but it never reached Square — push it.
         paymentConfirmed = true;
       } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('pi_')) {

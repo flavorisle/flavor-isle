@@ -114,6 +114,16 @@
       "format": "date-time",
       "description": "Atomic claim timestamp used by createSquareOrder to prevent duplicate Square order creation when the Stripe webhook fires both checkout.session.completed and payment_intent.succeeded ~1s apart. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on failure or when the real square_order_id is persisted. Stale claims (>5 min old) are cleared by autoSyncUnpushedOrders so crashed syncs can be retried."
     },
+    "confirmation_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate customer confirmation emails ('Order locked in'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the email fires exactly once even if the Square push was handled by a concurrent call."
+    },
+    "staff_alert_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate staff alert emails ('New online order'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the alert fires exactly once even if the Square push was handled by a concurrent call."
+    },
     "rec_email_sent_at": {
       "type": "string",
       "format": "date-time",

@@ -33,11 +33,6 @@ Deno.serve(async (req) => {
     }
     const order = orders[0];
 
-    // Already fully processed (webhook won the race) — nothing to do.
-    if (order.square_order_id) {
-      return Response.json({ skipped: true, reason: 'already pushed to Square', square_order_id: order.square_order_id });
-    }
-
     // Mark paid + confirmed if the webhook hasn't already.
     if (order.payment_status !== 'paid' || order.status === 'pending') {
       await base44.asServiceRole.entities.Order.update(order.id, {
@@ -47,8 +42,11 @@ Deno.serve(async (req) => {
       console.log(`Order ${order.order_number} confirmed via client fallback`);
     }
 
-    // Push to Square + kitchen + notifications. Idempotent — skips if
-    // square_order_id is already set by the time it re-reads the order.
+    // Always call pushOrderToSquareAndKitchen — per-action dedupe inside
+    // handles the Square push (skips if square_order_id already set) and the
+    // emails (independent atomic claims via staff_alert_sent_at /
+    // confirmation_email_sent_at). This ensures emails fire exactly once even
+    // if the webhook already pushed to Square but failed to send emails.
     await pushOrderToSquareAndKitchen(base44, { ...order, payment_status: 'paid', status: 'confirmed' });
 
     return Response.json({ ok: true, order_number: order.order_number });
