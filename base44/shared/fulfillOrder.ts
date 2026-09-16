@@ -89,17 +89,28 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
         ${await merchPromoHtml()}
   `);
 
-  const { error } = await resend.emails.send({
-    from: 'Flavor Isle <smashie@flavor-isle.com>',
-    to: order.customer_email,
-    subject: `Order locked in — #${order.order_number} 🍔`,
-    html,
-  });
-
-  if (error) {
-    console.error('Resend email error:', error);
-  } else {
-    console.log(`Order confirmation email sent to ${order.customer_email}`);
+  // Retry the Resend send up to 3 times so a transient API failure
+  // doesn't silently drop the customer's order confirmation email.
+  let sent = false;
+  for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
+    try {
+      const { error } = await resend.emails.send({
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
+        to: order.customer_email,
+        subject: `Order locked in — #${order.order_number} 🍔`,
+        html,
+      });
+      if (error) {
+        console.error(`Resend email error (attempt ${attempt}):`, error);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+      } else {
+        console.log(`Order confirmation email sent to ${order.customer_email} (attempt ${attempt})`);
+        sent = true;
+      }
+    } catch (sendErr) {
+      console.error(`Resend send exception (attempt ${attempt}):`, sendErr.message);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+    }
   }
 }
 
@@ -332,7 +343,11 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
     console.warn('Kitchen printer alert failed:', printerErr.message);
   }
 
-  await sendAdminReceiptEmail(order);
+  try {
+    await sendAdminReceiptEmail(order);
+  } catch (adminErr) {
+    console.error('Admin receipt email failed:', adminErr.message);
+  }
 
   if (order.customer_phone) {
     await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
@@ -354,6 +369,10 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   const loyalty = await processLoyalty(base44, order, squareOrderId);
 
   if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
-    await sendOrderConfirmationEmail(base44, order, loyalty);
+    try {
+      await sendOrderConfirmationEmail(base44, order, loyalty);
+    } catch (confirmErr) {
+      console.error('Order confirmation email failed:', confirmErr.message);
+    }
   }
 }
