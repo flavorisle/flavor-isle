@@ -1,6 +1,7 @@
 // Horizontal, swipeable carousel of customer reviews with desktop arrow controls.
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ArrowRight, Star } from 'lucide-react';
 import ReviewCard from '@/components/ReviewCard';
 
 export default function ReviewCarousel({ reviews }) {
@@ -42,6 +43,27 @@ export default function ReviewCarousel({ reviews }) {
             <ReviewCard review={r} />
           </div>
         ))}
+
+        {/* CTA card — links to the full reviews page */}
+        <div className="snap-start flex-shrink-0 w-[85%] sm:w-[48%] lg:w-[31.5%]">
+          <Link
+            to="/reviews"
+            className="block h-full rounded-2xl bg-obsidian-roast text-white p-6 flex flex-col items-center justify-center text-center min-h-[220px] hover:shadow-float-lg transition-all group"
+          >
+            <div className="flex gap-1 mb-4">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star key={i} size={18} className="text-amber-400 fill-amber-400" />
+              ))}
+            </div>
+            <p className="font-heading text-xl mb-2">See What People Are Saying</p>
+            <p className="text-sm text-gray-300 mb-5 max-w-xs">
+              Watch TikTok & Instagram food reviews and read more from our neighbors.
+            </p>
+            <span className="inline-flex items-center gap-2 bg-midnight-cherry px-5 py-2.5 rounded-full text-sm font-heading group-hover:gap-3 transition-all">
+              View All Reviews <ArrowRight size={16} />
+            </span>
+          </Link>
+        </div>
       </div>
 
       {/* Desktop arrows */}
