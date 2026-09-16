@@ -222,7 +222,7 @@ export default function CartDrawer() {
               </div>
               {happyHourDiscount > 0 && (
                 <div className="flex justify-between text-midnight-cherry font-semibold">
-                  <span>Happy Hour — 50% off drinks</span>
+                  <span>Happy Hour — 50% off drinks (online)</span>
                   <span>−${happyHourDiscount.toFixed(2)}</span>
                 </div>
               )}

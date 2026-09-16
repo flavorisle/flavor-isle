@@ -33,7 +33,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
         active ? 'bg-midnight-cherry text-white' : 'bg-midnight-cherry/10 text-midnight-cherry'
       }`}>
         <Tag size={14} className="flex-shrink-0" />
-        <span>Happy Hour · {pct}% off drinks · {window} daily</span>
+        <span>Happy Hour · {pct}% off drinks · {window} daily · Online</span>
         {active && <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse">NOW</span>}
       </div>
     );
@@ -63,7 +63,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
             )}
           </div>
           <p className={`text-sm mt-1 ${active ? 'text-white/85' : 'text-muted-foreground'}`}>
-            Half off all Classic Drinks — Coke, Coke Zero, Dr Pepper, Sprite, Root Beer & Sweet Tea. {window} daily.
+            Half off Classic Drinks when you order online — Coke, Coke Zero, Dr Pepper, Sprite, Root Beer & Sweet Tea. {window} daily, online orders only.
           </p>
         </div>
       </div>

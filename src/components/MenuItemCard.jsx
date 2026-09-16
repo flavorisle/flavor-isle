@@ -126,7 +126,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           className="absolute left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10"
           style={{ top: (item.is_fan_favorite || item.is_featured) ? '2.75rem' : '0.75rem' }}
         >
-          <Clock size={10} /> Happy Hour
+          <Clock size={10} /> Happy Hour · Online
         </div>
       )}
     </>
