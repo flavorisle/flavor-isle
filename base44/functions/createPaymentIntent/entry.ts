@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
         delivery_fee: deliveryFee || 0,
         tip: tip || 0,
         discount: discount || 0,
+        happy_hour_discount: happyHourDiscount || 0,
         redemption_id: redemptionId || '',
         total,
         customer_name: customer.name,

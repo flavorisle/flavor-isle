@@ -140,7 +140,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -398,7 +398,7 @@ export default function Checkout() {
         const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
         const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
         const splits = withItems.map((p, idx) => {
-          const pSub = p.subtotal;
+          const pSub = +(p.subtotal - (p.happyHourDiscount || 0)).toFixed(2);
           const pTax = +(pSub * 0.06).toFixed(2);
           const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
           const pTotal = +(pSub + pTax + feeTip).toFixed(2);
@@ -414,6 +414,7 @@ export default function Checkout() {
           scheduledFor, estimatedTime,
           splits,
           groupName: people.map(p => p.name).join(', '),
+          happyHourDiscount,
         });
 
         const { intents, publishableKey, orderNumber: on } = res.data;
@@ -429,7 +430,7 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
@@ -539,7 +540,7 @@ export default function Checkout() {
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
@@ -974,6 +975,11 @@ export default function Checkout() {
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {happyHourDiscount > 0 && (
+                  <div className="flex justify-between text-midnight-cherry font-semibold">
+                    <span>Happy Hour — 50% off drinks</span><span>−${happyHourDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {rewardDiscount > 0 && (

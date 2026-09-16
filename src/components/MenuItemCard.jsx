@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Zap, Heart, Star } from 'lucide-react';
+import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
+import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -13,7 +14,9 @@ const PLACEHOLDER_EMOJI = {
 };
 
 export default function MenuItemCard({ item, onFavoriteChange }) {
-  const { addItem, orderingEnabled, orderingClosedMessage } = useCart();
+  const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
+  const isHappyHour = isHappyHourItem(item, menuSetting);
+  const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -118,6 +121,14 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           Sold Out
         </div>
       )}
+      {isHappyHour && !soldOut && (
+        <div
+          className="absolute left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10"
+          style={{ top: (item.is_fan_favorite || item.is_featured) ? '2.75rem' : '0.75rem' }}
+        >
+          <Clock size={10} /> Happy Hour
+        </div>
+      )}
     </>
   );
 
@@ -162,7 +173,14 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
-          <span className={`font-heading text-lg flex-shrink-0 ${light ? 'text-white' : 'text-midnight-cherry'}`}>${item.price.toFixed(2)}</span>
+          {isHappyHour && happyHourPrice !== null ? (
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className={`text-xs line-through ${light ? 'text-white/55' : 'text-muted-foreground'}`}>${item.price.toFixed(2)}</span>
+              <span className={`font-heading text-lg leading-none ${light ? 'text-white' : 'text-midnight-cherry'}`}>${happyHourPrice.toFixed(2)}</span>
+            </div>
+          ) : (
+            <span className={`font-heading text-lg flex-shrink-0 ${light ? 'text-white' : 'text-midnight-cherry'}`}>${item.price.toFixed(2)}</span>
+          )}
         </div>
         {item.description && (
           <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/80' : 'text-muted-foreground'}`}>{item.description}</p>

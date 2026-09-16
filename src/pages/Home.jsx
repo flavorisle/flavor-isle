@@ -19,6 +19,7 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
+import HappyHourBanner from '@/components/HappyHourBanner';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
@@ -68,6 +69,9 @@ export default function Home() {
       <HeroSection />
 
       {/* ── PROMO BANNERS ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <HappyHourBanner />
+      </div>
       <AdBannerStrip placement="home" />
 
       {/* ── WHY FLAVOR ISLE ── */}

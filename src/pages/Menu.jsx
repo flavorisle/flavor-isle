@@ -16,6 +16,7 @@ import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
 import SocialProofStrip from '@/components/SocialProofStrip';
 import AdBannerStrip from '@/components/AdBannerStrip';
+import HappyHourBanner from '@/components/HappyHourBanner';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
@@ -156,6 +157,9 @@ export default function Menu() {
         </div>
       }
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <HappyHourBanner />
+      </div>
       <AdBannerStrip placement="menu" />
 
       {!search && !loading && rows.some((r) => r.isShakeBanner || r.items.length > 0) && (

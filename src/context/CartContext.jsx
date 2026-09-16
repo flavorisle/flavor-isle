@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { getCutoffStatus } from '@/lib/orderCutoff';
+import { getHappyHourDiscount } from '@/lib/happyHour';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const CartContext = createContext(null);
@@ -223,18 +224,24 @@ export function CartProvider({ children }) {
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const happyHourDiscount = getHappyHourDiscount(cartItems, menuSetting);
+  const adjustedSubtotal = subtotal - happyHourDiscount;
   const deliveryFee = orderType === 'delivery'
     ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
     : 0;
-  const tax = subtotal * 0.06;
-  const total = subtotal + deliveryFee + tax;
+  const tax = adjustedSubtotal * 0.06;
+  const total = adjustedSubtotal + deliveryFee + tax;
 
   // Per-person subtotal (group mode breakdown)
-  const personSubtotals = people.map(p => ({
-    ...p,
-    subtotal: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.price * i.quantity, 0),
-    itemCount: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.quantity, 0),
-  })).filter(p => p.itemCount > 0 || people.length > 0);
+  const personSubtotals = people.map(p => {
+    const personItems = cartItems.filter(i => i.person_id === p.id);
+    return {
+      ...p,
+      subtotal: personItems.reduce((s, i) => s + i.price * i.quantity, 0),
+      happyHourDiscount: getHappyHourDiscount(personItems, menuSetting),
+      itemCount: personItems.reduce((s, i) => s + i.quantity, 0),
+    };
+  }).filter(p => p.itemCount > 0 || people.length > 0);
   const unassignedSubtotal = cartItems.filter(i => !i.person_id).reduce((s, i) => s + i.price * i.quantity, 0);
 
   return (
@@ -246,6 +253,8 @@ export function CartProvider({ children }) {
       totalItems, subtotal, deliveryFee, tax, total,
       orderingEnabled, orderingClosedMessage,
       cutoffStatus,
+      menuSetting,
+      happyHourDiscount,
       groupMode, people, activePersonId, activePerson,
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,

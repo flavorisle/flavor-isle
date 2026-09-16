@@ -25,6 +25,7 @@ export default function CartDrawer() {
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
+    happyHourDiscount,
     groupMode, people, activePerson, startGroupOrder,
   } = useCart();
   const { isAuthenticated, user } = useAuth();
@@ -219,6 +220,12 @@ export default function CartDrawer() {
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
+              {happyHourDiscount > 0 && (
+                <div className="flex justify-between text-midnight-cherry font-semibold">
+                  <span>Happy Hour — 50% off drinks</span>
+                  <span>−${happyHourDiscount.toFixed(2)}</span>
+                </div>
+              )}
               {deliveryFee > 0 && (
                 <div className="flex justify-between text-muted-foreground">
                   <span>Delivery Fee</span>

@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount } = body;
 
     // Atomic claim: try to set square_sync_claimed_at only if it's currently
     // null/empty. If another concurrent call already claimed or pushed the
@@ -170,9 +170,20 @@ Deno.serve(async (req) => {
         scope: 'ORDER',
       });
     }
+    // Happy Hour drink discount as a separate order-level fixed discount so
+    // reporting can track it independently from loyalty rewards.
+    if (happyHourDiscount > 0) {
+      orderDiscounts.push({
+        uid: 'happy-hour',
+        name: 'Happy Hour 50% Off Drinks',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(happyHourDiscount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
     // Square applies the ADDITIVE tax to the post-discount amount, so base the
     // percentage on the discounted subtotal to keep the applied tax equal to ours.
-    const taxBase = itemsSubtotal - (discount || 0);
+    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0);
     const orderTaxes = [];
     if (tax > 0 && taxBase > 0) {
       const pct = ((tax / taxBase) * 100).toFixed(2);

@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
       scheduledFor, estimatedTime,
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
+      happyHourDiscount,
     } = body;
 
     if (!items || items.length === 0) {
@@ -54,6 +55,7 @@ Deno.serve(async (req) => {
         delivery_fee: deliveryFee || 0,
         tip: 0,
         discount: 0,
+        happy_hour_discount: happyHourDiscount || 0,
         total,
         customer_name: customer.name,
         customer_email: customer.email,

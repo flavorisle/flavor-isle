@@ -70,6 +70,11 @@
       "type": "number",
       "default": 0
     },
+    "happy_hour_discount": {
+      "type": "number",
+      "default": 0,
+      "description": "Happy Hour drink discount amount auto-applied when the order was placed during the active happy hour window. Separate from the loyalty reward `discount` field so reporting can track each independently. Carried to Square as its own order-level discount line."
+    },
     "redemption_id": {
       "type": "string"
     },

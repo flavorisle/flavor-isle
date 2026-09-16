@@ -143,6 +143,46 @@
           "description": "Reason shown to customers in the website banner and spoken by Smashie, e.g. 'closed for maintenance and the heat'."
         }
       }
+    },
+    "happy_hour": {
+      "type": "object",
+      "description": "Daily Happy Hour discount on drinks. When active and the current store-local time (America/Chicago) falls within the start_time\u2013end_time window, eligible drink line items get discount_percent off. The discount is auto-applied at checkout (no code needed) and shown as a line item. Orders PLACED inside the window get it; scheduled orders placed outside the window do not.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "default": true
+        },
+        "start_time": {
+          "type": "string",
+          "default": "14:00",
+          "description": "24h HH:MM, store local time (America/Chicago)"
+        },
+        "end_time": {
+          "type": "string",
+          "default": "18:00",
+          "description": "24h HH:MM, store local time (America/Chicago)"
+        },
+        "discount_percent": {
+          "type": "number",
+          "default": 50,
+          "description": "Percentage off eligible drink items (e.g. 50 = half off)"
+        },
+        "square_item_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "MTOVX3FLW3QYAZRHAXMZMWYN"
+          ],
+          "description": "Square catalog item IDs of the menu items eligible for the Happy Hour discount. Default: Classic Drinks."
+        },
+        "label": {
+          "type": "string",
+          "default": "Happy Hour \u2014 50% off drinks",
+          "description": "Display label shown on the menu badge and checkout discount line."
+        }
+      }
     }
   },
   "required": [],

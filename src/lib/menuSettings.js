@@ -24,6 +24,14 @@ const DEFAULT_SETTING = {
   business_hours: null,
   closure: null,
   site_notice: null,
+  happy_hour: {
+    active: true,
+    start_time: '14:00',
+    end_time: '18:00',
+    discount_percent: 50,
+    square_item_ids: ['MTOVX3FLW3QYAZRHAXMZMWYN'],
+    label: 'Happy Hour — 50% off drinks',
+  },
 };
 
 export async function getMenuSetting() {
@@ -184,6 +192,18 @@ export async function setClosure(closure) {
     return { ...setting, closure };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], closure });
+  bustMenuSettingCache();
+  return created;
+}
+
+export async function setHappyHour(happyHour) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { happy_hour: happyHour });
+    bustMenuSettingCache();
+    return { ...setting, happy_hour: happyHour };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], happy_hour: happyHour });
   bustMenuSettingCache();
   return created;
 }
