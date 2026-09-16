@@ -377,26 +377,35 @@
 }
 
 /* ── Printable in-store menu ──
-   When printing the admin Print Menu page, only the paper sheet is output:
-   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
-   is laid out edge-to-edge in black on white. */
+   Isolates #print-sheet so only it prints. Everything else on the page
+   (nav, editor sidebar, chat, tab bar) is hidden via visibility without
+   collapsing layout. The sheet is lifted out of its grid container with
+   position:absolute so it prints at the full A3 page width. Skipped when
+   printing a bag ticket (body.printing-bag-ticket). */
 @media print {
-  @page { size: A3 landscape; margin: 0.25in 0.2in; }
+  @page { size: A3 landscape; margin: 0.3in; }
 
-  body {
+  html, body {
     background: #ffffff !important;
-    padding-bottom: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
-  /* Hide global app chrome that isn't part of the menu sheet */
-  nav, footer, .glass-tab, .glass-back { display: none !important; }
-  /* Hide the Smashie chat widget */
-  .smashie-chat-root { display: none !important; }
+  /* Hide every element on the page without collapsing layout */
+  body:not(.printing-bag-ticket) * { visibility: hidden !important; }
 
-  #print-sheet {
-    box-shadow: none !important;
+  /* Reveal only the print sheet and its contents */
+  #print-sheet, #print-sheet * { visibility: visible !important; }
+
+  /* Lift the sheet out of its grid container so it spans the full page */
+  body:not(.printing-bag-ticket) #print-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
   }
 
   #print-sheet * {
@@ -408,19 +417,11 @@
   .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 }
 
-/* On-screen paper preview for the printable menu. On screen the sheet fills
-   its container so the editor + preview fit side-by-side; when printing it
-   expands to the full A3 landscape width (16.5in). */
+/* On-screen paper preview — fills its container so the editor + preview sit
+   side-by-side. Print width is handled by the @media print block above. */
 #print-sheet {
   width: 100%;
   max-width: 100%;
-}
-
-@media print {
-  #print-sheet {
-    width: 16.5in !important;
-    max-width: 16.5in !important;
-  }
 }
 
 /* ── Bag ticket print ──
