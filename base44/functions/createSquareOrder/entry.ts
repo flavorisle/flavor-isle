@@ -36,8 +36,19 @@ Deno.serve(async (req) => {
           if (existing?.square_order_id) {
             return Response.json({ order_id: existing.square_order_id, already_synced: true });
           }
+          // Another call has a sync claim but hasn't set square_order_id yet
+          // (still in the Square API call). Return already_synced to avoid a
+          // duplicate — autoSyncUnpushedOrders will retry if no call succeeds.
+          if (existing?.square_sync_claimed_at) {
+            console.log(`Order ${orderNumber} has a sync claim from another call — skipping to avoid duplicate`);
+            return Response.json({ order_id: null, already_synced: true });
+          }
+          // No claim and no square_order_id — the atomic claim threw for a
+          // transient reason and no other call is in flight. Safe to proceed.
+          console.log(`Order ${orderNumber} — atomic claim threw but no existing claim, proceeding`);
         } catch (e) {
-          // proceed with creation
+          // Can't read the order — be conservative, let autoSync retry.
+          return Response.json({ order_id: null, already_synced: true });
         }
       }
     }
