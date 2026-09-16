@@ -295,18 +295,23 @@ export async function sendOrderReadyEmail(order, base44?) {
 
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
-    const { error } = await resend.emails.send({
-      from: 'Flavor Isle <smashie@flavor-isle.com>',
-      to: order.customer_email,
-      subject: `✅ Order #${orderNum} is ready!`,
-      html: brandedEmailHtml(body),
-    });
-    if (error) {
-      console.error('sendOrderReadyEmail error:', error);
-      return false;
+    let sent = false;
+    for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
+      const { error } = await resend.emails.send({
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
+        to: order.customer_email,
+        subject: `✅ Order #${orderNum} is ready!`,
+        html: brandedEmailHtml(body),
+      });
+      if (error) {
+        console.error(`sendOrderReadyEmail error (attempt ${attempt}):`, error);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+      } else {
+        console.log(`Order ready email sent to ${order.customer_email} for order ${orderNum} (attempt ${attempt})`);
+        sent = true;
+      }
     }
-    console.log(`Order ready email sent to ${order.customer_email} for order ${orderNum}`);
-    return true;
+    return sent;
   } catch (err) {
     console.error('sendOrderReadyEmail exception:', err.message);
     return false;
@@ -318,18 +323,23 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
   if (!to) return false;
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
-    const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@flavor-isle.com>`,
-      to,
-      subject,
-      html: brandedEmailHtml(bodyHtml),
-    });
-    if (error) {
-      console.error(`sendBrandedHtml error:`, error);
-      return false;
+    let sent = false;
+    for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
+      const { error } = await resend.emails.send({
+        from: `${fromName} <smashie@flavor-isle.com>`,
+        to,
+        subject,
+        html: brandedEmailHtml(bodyHtml),
+      });
+      if (error) {
+        console.error(`sendBrandedHtml error (attempt ${attempt}):`, error);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+      } else {
+        console.log(`Branded email sent to ${to}: ${subject} (attempt ${attempt})`);
+        sent = true;
+      }
     }
-    console.log(`Branded email sent to ${to}: ${subject}`);
-    return true;
+    return sent;
   } catch (err) {
     console.error('sendBrandedHtml exception:', err.message);
     return false;
