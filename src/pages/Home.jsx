@@ -8,7 +8,6 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import HeroSection from '@/components/HeroSection';
 
 
@@ -143,13 +142,6 @@ export default function Home() {
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
-
-      {/* ── GOOGLE REVIEWS ── */}
-      <section className="pb-12 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <GoogleReviewsCard />
-        </div>
-      </section>
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
