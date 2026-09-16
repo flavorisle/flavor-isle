@@ -47,6 +47,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const FacebookAd = lazy(() => import('./pages/FacebookAd'));
 const TastyThreadsAd = lazy(() => import('./pages/TastyThreadsAd'));
 const Feedback = lazy(() => import('./pages/Feedback'));
+const Reviews = lazy(() => import('./pages/Reviews'));
 const Combos = lazy(() => import('./pages/Combos'));
 const DownloadApp = lazy(() => import('./pages/DownloadApp'));
 const SMSSignup = lazy(() => import('./pages/SMSSignup'));
@@ -180,6 +181,7 @@ const AuthenticatedApp = () => {
       <Route path="/tasty-threads-ad" element={<TastyThreadsAd />} />
       <Route path="/meet-smashie" element={<MeetSmashie />} />
       <Route path="/feedback" element={<Feedback />} />
+      <Route path="/reviews" element={<Reviews />} />
       <Route path="/download" element={<DownloadApp />} />
       <Route path="/sms-signup" element={<SMSSignup />} />
       <Route path="/what-to-expect" element={<BusynessGuide />} />
