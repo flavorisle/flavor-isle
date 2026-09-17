@@ -21,7 +21,7 @@ import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 // After sending, cart_reminder_sent_at is stamped so the same idle cart can't
 // trigger a second reminder.
 const ONE_HOUR_MS = 60 * 60 * 1000;
-const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 
 export default async function (req) {
   try {

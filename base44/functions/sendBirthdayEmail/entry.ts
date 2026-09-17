@@ -3,7 +3,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
 
-const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const BIRTHDAY_POINTS = 150;
 
 // Birthday-themed photo block — a big celebratory shake/dessert hero up top

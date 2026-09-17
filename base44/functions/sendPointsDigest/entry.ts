@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 
-const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 
 const TIERS = [
   { points: 150, label: 'a free small cone or cup of ice cream' },
