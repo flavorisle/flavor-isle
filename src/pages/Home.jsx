@@ -99,7 +99,7 @@ export default function Home() {
               name: 'Double Cheeseburger',
               desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
               price: '$9.50',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/500x500.jpeg',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
               tag: 'Best Seller'
             },
             {
@@ -113,7 +113,7 @@ export default function Home() {
               name: 'Hot Fudge Cake',
               desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
               price: '$6.99',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/500x500.jpeg',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
               tag: 'Fan Fave'
             }].
             map((item) =>
