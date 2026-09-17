@@ -8,6 +8,7 @@ import SignUpNudge from '@/components/SignUpNudge';
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
 import PostOrderFeedback from '@/components/PostOrderFeedback';
+import CheckoutSmsOptIn from '@/components/CheckoutSmsOptIn';
 import MerchPromoCard from '@/components/merch/MerchPromoCard';
 import useLiveStatus from '@/hooks/useLiveStatus';
 
@@ -169,6 +170,11 @@ export default function OrderConfirmation() {
         {/* Quick feedback — capture the moment while the experience is fresh */}
         <div className="mt-6">
           <PostOrderFeedback orderId={orderNumber || sessionId} />
+        </div>
+
+        {/* SMS opt-in capture — order updates + deals by text */}
+        <div className="mt-6">
+          <CheckoutSmsOptIn />
         </div>
 
         {/* Tasty Threads merch promo — cross-sell while the order is prepped */}

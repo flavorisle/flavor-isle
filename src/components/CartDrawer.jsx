@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
+import CartDessertUpsell from './CartDessertUpsell';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
@@ -151,7 +152,8 @@ export default function CartDrawer() {
               </button>
             </div>
           ) : (
-            cartItems.map(item => (
+            <>
+            {cartItems.map(item => (
               <div key={item.id} className="card-diner p-3 flex gap-3">
                 {item.image_url && (
                   <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
@@ -208,7 +210,9 @@ export default function CartDrawer() {
                   </div>
                 </div>
               </div>
-            ))
+            ))}
+            <CartDessertUpsell />
+            </>
           )}
         </div>
 

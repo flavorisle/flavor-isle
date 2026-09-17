@@ -40,8 +40,8 @@ export default function SignUpNudge({ variant = 'compact' }) {
             <Star size={22} className="text-smashie-yellow" fill="currentColor" />
           </div>
           <div>
-            <h3 className="font-heading text-xl text-obsidian-roast leading-none">Create an account to save your order history</h3>
-            <p className="text-xs text-muted-foreground mt-1">Track your Star Rewards loyalty points — it takes 30 seconds.</p>
+            <h3 className="font-heading text-xl text-obsidian-roast leading-none">Create an account to earn 1 point per $1</h3>
+            <p className="text-xs text-muted-foreground mt-1">Earn 1 Star Reward point for every $1 you spend — redeem for free food. It takes 30 seconds.</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 mb-5">
