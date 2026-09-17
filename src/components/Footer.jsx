@@ -16,6 +16,7 @@ export default function Footer() {
           <img
             src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
             alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
+            loading="lazy"
             className="w-full max-w-[260px] object-contain mb-4"
           />
           <p className="text-gray-300 text-sm leading-relaxed">

@@ -99,7 +99,7 @@ export default function Home() {
               name: 'Double Cheeseburger',
               desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
               price: '$9.50',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/500x500.jpeg',
               tag: 'Best Seller'
             },
             {
@@ -113,13 +113,13 @@ export default function Home() {
               name: 'Hot Fudge Cake',
               desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
               price: '$6.99',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
+              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/500x500.jpeg',
               tag: 'Fan Fave'
             }].
             map((item) =>
             <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">
                 <div className="relative h-52 overflow-hidden">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={item.img} alt={item.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 right-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">{item.tag}</div>
                 </div>
                 <div className="p-5">
@@ -184,6 +184,7 @@ export default function Home() {
               <img
                 src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
                 alt="Flavor Isle storefront in Smiths Grove, KY"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -211,6 +212,7 @@ export default function Home() {
               <img
                 src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
                 alt="Flavor Isle roadside stand off I-65 Exit 38"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>

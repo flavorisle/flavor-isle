@@ -113,19 +113,19 @@ export default function Flyer() {
                   name: 'Double Cheeseburger',
                   desc: 'Twice the patties, twice the cheese. Built fresh by hand, stacked high with big burger energy.',
                   price: '$9.50',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/500x500.jpeg',
                 },
                 {
                   name: 'French Fries',
                   desc: '(Crinkle-Cut) — Crisp crinkle edges with a fluffy center — the classic fry bite. (Original 1964)',
                   price: '$3.25',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/4e92f3bb902bfa24b9bc258513d0b8b7396edfa0/original.jpeg',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/4e92f3bb902bfa24b9bc258513d0b8b7396edfa0/500x500.jpeg',
                 },
                 {
                   name: 'Banana Pudding Bliss Milkshake',
                   desc: 'Banana pudding turned shake — creamy, nostalgic comfort.',
                   price: '$5.99',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/bc5ca3ebadbb5e4ac86c3782d0c4d4d58cc2d693/original.jpeg',
+                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/bc5ca3ebadbb5e4ac86c3782d0c4d4d58cc2d693/500x500.jpeg',
                 },
               ].map((m) => (
                 <div key={m.name} className="rounded-2xl overflow-hidden border border-patina-mint/15 bg-patina-mint/5">

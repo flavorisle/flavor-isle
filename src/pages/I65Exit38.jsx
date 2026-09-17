@@ -33,7 +33,7 @@ export default function I65Exit38() {
       {/* Hero */}
       <section className="relative bg-patina-mint text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img src={BUILDING} alt="" className="w-full h-full object-cover" />
+          <img src={BUILDING} alt="" loading="lazy" className="w-full h-full object-cover" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">
@@ -107,7 +107,7 @@ export default function I65Exit38() {
       {/* Story */}
       <section className="bg-white border-y border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 text-center">
-          <img src={LOGO} alt="Flavor Isle" className="w-16 h-16 object-contain mx-auto mb-4 rounded-xl" />
+          <img src={LOGO} alt="Flavor Isle" loading="lazy" className="w-16 h-16 object-contain mx-auto mb-4 rounded-xl" />
           <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">A Roadside Favorite Since 1964</h2>
           <p className="text-muted-foreground mt-4 leading-relaxed">
             Flavor Isle has been feeding I-65 travelers and Smiths Grove locals for three generations. What started as a small roadside burger stand is still the same family recipe today — hand-patted burgers, hand-cut fries, and thick milkshakes made to order. No freezers, no shortcuts. Just a quick, friendly stop worth pulling off for.

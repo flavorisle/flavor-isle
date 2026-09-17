@@ -164,6 +164,7 @@ export default function Merch() {
               <img
                 src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
                 alt="Tasty Threads — Flavor Isle Apparel, est. 1964"
+                loading="lazy"
                 className="w-full max-w-sm h-auto bg-white rounded-2xl p-4 mb-6 shadow-float"
               />
               <p className="text-gray-200 max-w-xl text-lg leading-relaxed">
