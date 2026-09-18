@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, X, Check, Sparkles } from 'lucide-react';
+import { Plus, X, Check, Sparkles, Clock } from 'lucide-react';
 import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
+import { useCart } from '@/context/CartContext';
+import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
+import { base44 } from '@/api/base44Client';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -21,6 +24,35 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   };
 
   const [selections, setSelections] = useState(initSelections);
+  const [isCombo, setIsCombo] = useState(false);
+  const [comboSides, setComboSides] = useState(null);
+
+  const { menuSetting } = useCart();
+
+  // Happy Hour pricing — eligible items show a struck-through base price and
+  // discounted total so the modal matches what the cart will actually charge.
+  const isHappyHour = isHappyHourItem(item, menuSetting);
+  const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
+  const hhConfig = isHappyHour ? getHappyHourConfig(menuSetting) : null;
+  const hhPct = hhConfig ? (hhConfig.discount_percent || 0) / 100 : 0;
+
+  // Combo toggle — only for burger items. Fetches the fries + shake so the
+  // customer can bundle them into an Isle Combo right from the item modal.
+  const isBurger = /burger/i.test(item.name);
+  useEffect(() => {
+    if (!isBurger) return;
+    let cancelled = false;
+    base44.entities.MenuItem.list('-name', 200).then(items => {
+      if (cancelled) return;
+      const fries = items.find(i => i.name === 'French Fries' && i.is_available && !i.is_hidden);
+      const shake = items.find(i => i.name === 'Vanilla Milkshake' && i.is_available && !i.is_hidden);
+      if (fries && shake) setComboSides({ fries, shake });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isBurger]);
+
+  const COMBO_DISCOUNT = 1.50;
+  const comboAddOn = comboSides ? +(comboSides.fries.price + comboSides.shake.price - COMBO_DISCOUNT).toFixed(2) : 0;
 
   useEffect(() => {
     trackViewItem(foodItemToGa4(item), { value: item.price });
@@ -78,6 +110,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     return sum + (sel.price || 0);
   }, 0);
 
+  // Total shown in the footer — reflects happy hour discount and combo add-on
+  // so it matches what the cart will actually charge.
+  const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
+  const footerTotal = itemTotal + (isCombo ? comboAddOn : 0);
+
   const handleConfirm = () => {
     const selectedMods = [];
     for (const [groupName, sel] of Object.entries(selections)) {
@@ -91,7 +128,13 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     const { label, allToppings } = DELUXE_ENABLED
       ? buildDeluxeLabelFull(selectedMods, labelPresets)
       : { label: null, allToppings: [] };
-    onConfirm(selectedMods, extraCost, label, allToppings);
+    const comboItems = isCombo && comboSides
+      ? [
+          { ...comboSides.fries, id: `combo-${comboSides.fries.id}`, quantity: 1, selectedModifiers: [] },
+          { ...comboSides.shake, id: `combo-${comboSides.shake.id}`, name: `${comboSides.shake.name} (Isle Combo)`, price: +(comboSides.shake.price - COMBO_DISCOUNT).toFixed(2), quantity: 1, selectedModifiers: [] },
+        ]
+      : [];
+    onConfirm(selectedMods, extraCost, label, allToppings, comboItems);
   };
 
   return createPortal(
@@ -103,6 +146,17 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             <h3 className="font-heading text-xl text-obsidian-roast">{item.name}</h3>
             {item.description && (
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.description}</p>
+            )}
+            {isHappyHour && (
+              <div className="mt-2 inline-flex items-center gap-1.5 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">
+                <Clock size={12} /> Happy Hour · Online
+              </div>
+            )}
+            {isHappyHour && happyHourPrice !== null && (
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-sm text-muted-foreground line-through">${item.price.toFixed(2)}</span>
+                <span className="font-heading text-lg text-midnight-cherry">${happyHourPrice.toFixed(2)}</span>
+              </div>
             )}
             {deluxeLabel && (
               <div className="mt-2 inline-flex items-center gap-1.5 bg-midnight-cherry/10 text-midnight-cherry text-xs font-heading px-3 py-1 rounded-full">
@@ -118,6 +172,61 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
+          {/* Isle Combo toggle — burgers only */}
+          {isBurger && comboSides && (
+            <div className="space-y-2">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Make it a combo?</h4>
+              <button
+                type="button"
+                onClick={() => setIsCombo(false)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                  !isCombo
+                    ? 'border-midnight-cherry bg-red-50'
+                    : 'border-border hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
+                    !isCombo ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'
+                  }`}>
+                    {!isCombo && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className="font-body text-sm text-obsidian-roast">Burger Only</span>
+                </div>
+                <span className="text-sm text-patina-mint font-semibold">${item.price.toFixed(2)}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCombo(true)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                  isCombo
+                    ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                    : 'border-midnight-cherry/40 bg-midnight-cherry/5 text-midnight-cherry hover:bg-midnight-cherry/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
+                    isCombo ? 'bg-white border-white' : 'border-midnight-cherry'
+                  }`}>
+                    {isCombo && <Check size={12} className="text-midnight-cherry" />}
+                  </div>
+                  <div>
+                    <span className="font-heading text-sm flex items-center gap-1.5">
+                      <Sparkles size={14} /> Make it an Isle Combo
+                    </span>
+                    <span className={`block text-xs mt-0.5 ${isCombo ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      Crinkle Fries + Hand-Dipped Shake
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-semibold">+${comboAddOn.toFixed(2)}</span>
+                  <span className={`block text-xs ${isCombo ? 'text-white/80' : 'text-midnight-cherry'}`}>save ${COMBO_DISCOUNT.toFixed(2)}</span>
+                </div>
+              </button>
+            </div>
+          )}
+
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
             return (
@@ -207,7 +316,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2"
           >
             <Plus size={16} />
-            Add to Order — ${(item.price + extraCost).toFixed(2)}
+            Add to Order — ${footerTotal.toFixed(2)}
           </button>
         </div>
       </div>

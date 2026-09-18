@@ -79,7 +79,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
     addItem({
       ...item,
       price: item.price + extraCost,
@@ -87,6 +87,9 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
     });
+    if (comboItems && comboItems.length > 0) {
+      comboItems.forEach(ci => addItem(ci));
+    }
     setShowModal(false);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);

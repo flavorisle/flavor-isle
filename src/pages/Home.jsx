@@ -23,6 +23,9 @@ import HappyHourBanner from '@/components/HappyHourBanner';
 import WhyOrderDirect from '@/components/WhyOrderDirect';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
+import ExpressPickupStrip from '@/components/ExpressPickupStrip';
+import HeritageBadges from '@/components/HeritageBadges';
+import StickyOrderBar from '@/components/StickyOrderBar';
 
 
 const SPECIALS_TICKER = [
@@ -67,6 +70,7 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <HeroSection />
+      <ExpressPickupStrip />
 
       {/* ── PROMO BANNERS ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
@@ -79,6 +83,7 @@ export default function Home() {
 
       {/* ── WHY ORDER DIRECT (incl. Star Rewards) ── */}
       <WhyOrderDirect />
+      <HeritageBadges />
 
       {/* ── FEATURED MENU ITEMS ── */}
       <section className="py-16 bg-obsidian-roast">
@@ -274,6 +279,7 @@ export default function Home() {
       {/* ── DOWNLOAD APP BANNER ── */}
       <DownloadAppBanner />
 
+      <StickyOrderBar />
       <Footer />
     </div>);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 import { base44 } from '@/api/base44Client';
@@ -140,7 +140,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, addItem } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -169,6 +169,7 @@ export default function Checkout() {
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mugAdded, setMugAdded] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
@@ -806,6 +807,25 @@ export default function Checkout() {
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
+                {subtotal > 25 && !mugAdded && !cartItems.some(i => i.id === 'souvenir-mug') && (
+                  <div className="mb-4 rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
+                        <Coffee size={22} className="text-midnight-cherry" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-heading text-sm text-obsidian-roast">Add a Flavor Isle souvenir mug</p>
+                        <p className="text-xs text-muted-foreground">Take a piece of the Isle home — $6.00</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { addItem({ id: 'souvenir-mug', name: 'Flavor Isle Souvenir Mug', price: 6.00, quantity: 1, selectedModifiers: [] }); setMugAdded(true); }}
+                      className="btn-cherry px-4 py-2.5 text-xs font-heading whitespace-nowrap flex-shrink-0"
+                    >
+                      Add — $6.00
+                    </button>
+                  </div>
+                )}
                 {savedCards.length > 0 && (
                   <SavedCardSelector
                     cards={savedCards}

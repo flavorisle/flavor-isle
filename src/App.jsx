@@ -71,6 +71,8 @@ const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const About = lazy(() => import('./pages/About'));
 const Flyer = lazy(() => import('./pages/Flyer'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
+const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
+const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 import RestaurantSchema from './components/RestaurantSchema';
@@ -192,6 +194,8 @@ const AuthenticatedApp = () => {
       <Route path="/community-news" element={<CommunityNews />} />
       <Route path="/flyer" element={<Flyer />} />
       <Route path="/i65-exit-38" element={<I65Exit38 />} />
+      <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
+      <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
