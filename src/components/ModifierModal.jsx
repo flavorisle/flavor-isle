@@ -4,6 +4,7 @@ import { Plus, X, Check, Sparkles, Clock } from 'lucide-react';
 import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
 import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
+import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 import { base44 } from '@/api/base44Client';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
@@ -26,6 +27,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   const [selections, setSelections] = useState(initSelections);
   const [isCombo, setIsCombo] = useState(false);
   const [comboSides, setComboSides] = useState(null);
+  const [comboFlavor, setComboFlavor] = useState(null);
 
   const { menuSetting } = useCart();
 
@@ -52,7 +54,17 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   }, [isBurger]);
 
   const COMBO_DISCOUNT = 1.50;
-  const comboAddOn = comboSides ? +(comboSides.fries.price + comboSides.shake.price - COMBO_DISCOUNT).toFixed(2) : 0;
+
+  // Shake flavor options from the Vanilla Milkshake's FLAVOR CHOICE modifier
+  // list — reuses the same Square modifier system as the ShakeCustomizer.
+  const shakeFlavorOpts = comboSides ? (() => {
+    const groups = comboSides.shake.modifiers || [];
+    const flavorGroup = groups.find(g => (g.name || '').toLowerCase().includes('flavor'));
+    return (flavorGroup?.modifiers || []).filter(m => !m.sold_out);
+  })() : [];
+
+  const flavorExtra = comboFlavor?.price || 0;
+  const comboAddOn = comboSides ? +(comboSides.fries.price + comboSides.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2) : 0;
 
   useEffect(() => {
     trackViewItem(foodItemToGa4(item), { value: item.price });
@@ -128,10 +140,17 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     const { label, allToppings } = DELUXE_ENABLED
       ? buildDeluxeLabelFull(selectedMods, labelPresets)
       : { label: null, allToppings: [] };
-    const comboItems = isCombo && comboSides
+    const comboItems = isCombo && comboSides && comboFlavor
       ? [
           { ...comboSides.fries, id: `combo-${comboSides.fries.id}`, quantity: 1, selectedModifiers: [] },
-          { ...comboSides.shake, id: `combo-${comboSides.shake.id}`, name: `${comboSides.shake.name} (Isle Combo)`, price: +(comboSides.shake.price - COMBO_DISCOUNT).toFixed(2), quantity: 1, selectedModifiers: [] },
+          {
+            ...comboSides.shake,
+            id: `combo-${comboSides.shake.id}`,
+            name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
+            price: +(comboSides.shake.price + (comboFlavor.price || 0) - COMBO_DISCOUNT).toFixed(2),
+            quantity: 1,
+            selectedModifiers: [{ id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price }],
+          },
         ]
       : [];
     onConfirm(selectedMods, extraCost, label, allToppings, comboItems);
@@ -227,6 +246,35 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             </div>
           )}
 
+          {/* Shake flavor picker — shown when combo is selected */}
+          {isBurger && comboSides && isCombo && shakeFlavorOpts.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Pick your shake flavor</h4>
+              <div className="flex flex-wrap gap-2">
+                {shakeFlavorOpts.map(opt => {
+                  const selected = comboFlavor?.id === opt.id;
+                  const name = resolveFlavorName(opt.id, opt.name);
+                  const emoji = resolveFlavorEmoji(opt.id);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setComboFlavor(opt)}
+                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      }`}
+                    >
+                      <span className="text-base leading-none">{emoji}</span>
+                      {name}
+                      {opt.price > 0 && <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>}
+                      {selected && <Check size={13} className="ml-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
             return (
@@ -313,10 +361,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
           <button
             type="button"
             onClick={handleConfirm}
-            className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2"
+            disabled={isCombo && !comboFlavor}
+            className={`btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${isCombo && !comboFlavor ? 'opacity-40 cursor-not-allowed' : ''}`}
           >
             <Plus size={16} />
-            Add to Order — ${footerTotal.toFixed(2)}
+            {isCombo && !comboFlavor ? 'Pick a shake flavor' : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>
