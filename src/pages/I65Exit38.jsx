@@ -77,7 +77,7 @@ export default function I65Exit38() {
               <h3 className="font-heading text-xl text-obsidian-roast">Northbound (toward Louisville)</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Take I-65 North to <strong>Exit 38 (Smiths Grove)</strong>. Turn right off the ramp onto US-31W / N Main St. Flavor Isle is about a quarter mile ahead on the right at 103 N Main St.
+              Take I-65 North to <strong>Exit 38 (Smiths Grove)</strong>. Turn right off the ramp onto US-31W / N Main St. Flavor Isle is just 0.7 miles ahead on the left at 103 N Main St.
             </p>
           </div>
           <div className="card-diner p-6">
@@ -88,7 +88,7 @@ export default function I65Exit38() {
               <h3 className="font-heading text-xl text-obsidian-roast">Southbound (toward Nashville)</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Take I-65 South to <strong>Exit 38 (Smiths Grove)</strong>. Turn left off the ramp onto US-31W / N Main St. Flavor Isle is about a quarter mile ahead on the right at 103 N Main St.
+              Take I-65 South to <strong>Exit 38 (Smiths Grove)</strong>. Turn left off the ramp onto US-31W / N Main St. Flavor Isle is just 0.7 miles ahead on the left at 103 N Main St.
             </p>
           </div>
         </div>
