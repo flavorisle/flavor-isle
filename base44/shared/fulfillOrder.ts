@@ -368,6 +368,8 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
       const squareRes = await base44.functions.invoke('createSquareOrder', {
         items: order.items || [],
         orderType: order.order_type || 'pickup',
+        pickupMethod: order.pickup_method || '',
+        vehicle: order.arrival_details || null,
         orderNumber: order.order_number,
         orderId: order.id,
         customer: {

@@ -410,9 +410,11 @@ export default function Checkout() {
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
+          pickupMethod,
+          vehicle: isCurbside ? vehicle : null,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip,
+          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           scheduledFor, estimatedTime,
           splits,
           groupName: people.map(p => p.name).join(', '),

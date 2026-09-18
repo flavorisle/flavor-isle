@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, pickupMethod, vehicle } = body;
 
     // Atomic claim: try to set square_sync_claimed_at only if it's currently
     // null/empty. If another concurrent call already claimed or pushed the
@@ -136,14 +136,16 @@ Deno.serve(async (req) => {
     const idempotencyKey = orderId ? `flavor-isle-order-${orderId}` : crypto.randomUUID();
 
     // Batch-retrieve catalog objects so each line item can reference its ITEM
-    // VARIATION (not the top-level item) via catalog_object_id. The Orders API
-    // requires the variation id — square_item_id stores the ITEM id, so we
-    // resolve the default variation here. Items without a Square catalog match
-    // fall back to ad-hoc line items (name + price only) so they still push.
+    // VARIATION (not the top-level item) via catalog_object_id, and modifier
+    // options via the modifiers array. The Orders API requires the variation
+    // id — square_item_id stores the ITEM id, so we resolve the default
+    // variation here. Items without a Square catalog match fall back to ad-hoc
+    // line items (name + price only) so they still push.
     const squareItemIds = [...new Set(
       items.map(i => i.square_item_id || i.catalog_object_id).filter(Boolean)
     )];
-    const catalogMap: Record<string, any[]> = {};
+    const catalogMap: Record<string, { variations: any[]; modifierListIds: string[] }> = {};
+    const allModifierListIds = new Set<string>();
     if (squareItemIds.length > 0) {
       try {
         const catRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
@@ -154,7 +156,12 @@ Deno.serve(async (req) => {
         const catData = await catRes.json();
         for (const obj of (catData.objects || [])) {
           if (obj.type === 'ITEM' && obj.item_data) {
-            catalogMap[obj.id] = obj.item_data.variations || [];
+            const variations = obj.item_data.variations || [];
+            const modifierListIds = (obj.item_data.modifier_list_info || [])
+              .filter((mli: any) => mli.enabled && !mli.hidden_from_customer)
+              .map((mli: any) => mli.modifier_list_id);
+            catalogMap[obj.id] = { variations, modifierListIds };
+            modifierListIds.forEach((id: string) => allModifierListIds.add(id));
           }
         }
       } catch (catErr) {
@@ -162,41 +169,101 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Batch-retrieve modifier lists so we can reference modifier options by
+    // their catalog IDs (line item modifiers) instead of ad-hoc text. This
+    // makes modifier-level sales and pricing report correctly in Square.
+    const modifierOptionToList: Record<string, string> = {};
+    if (allModifierListIds.size > 0) {
+      try {
+        const modRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+          method: 'POST',
+          headers: sqHeaders,
+          body: JSON.stringify({ object_ids: [...allModifierListIds] }),
+        });
+        const modData = await modRes.json();
+        for (const obj of (modData.objects || [])) {
+          if (obj.type === 'MODIFIER_LIST' && obj.modifier_list_data) {
+            for (const mod of (obj.modifier_list_data.modifiers || [])) {
+              modifierOptionToList[mod.id] = obj.id;
+            }
+          }
+        }
+      } catch (modErr) {
+        console.warn('Modifier list batch-retrieve failed:', modErr.message);
+      }
+    }
+
     const lineItems = items.map(item => {
       // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
       // no Tomato") instead of a raw topping list. Modifiers are folded into
-      // the line item name so the POS ticket prints correctly.
-      // item.price already includes all modifier upcharges from the cart.
+      // the line item name so the POS/kitchen ticket prints correctly.
       const mods = formatItemModifiers(item).join(', ');
       const name = mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item');
 
       // Resolve the ITEM VARIATION id from the catalog so Square reports the
-      // item under its proper category instead of "Uncategorized". For
-      // multi-variation items (e.g. drinks with sizes), match the selected
-      // Size modifier's id to the variation id; otherwise use the first
-      // variation. Falls back to ad-hoc (no catalog_object_id) if the item
-      // isn't in the catalog.
+      // item under its proper category. For multi-variation items (e.g. drinks
+      // with sizes), match the selected Size modifier's id to the variation
+      // id; otherwise use the first variation. Falls back to ad-hoc if the
+      // item isn't in the catalog.
       let catalogObjectId: string | null = null;
       const squareItemId = item.square_item_id || item.catalog_object_id;
-      if (squareItemId && catalogMap[squareItemId]) {
-        const variations = catalogMap[squareItemId];
-        if (variations.length > 0) {
-          const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
-          const matched = variations.find((v: any) => modIds.includes(v.id));
-          catalogObjectId = (matched || variations[0]).id;
-        }
+      const catEntry = squareItemId ? catalogMap[squareItemId] : null;
+      const variations = catEntry?.variations || [];
+      const variationIds = new Set(variations.map((v: any) => v.id));
+      const itemModListIds = new Set(catEntry?.modifierListIds || []);
+
+      if (variations.length > 0) {
+        const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
+        const matched = variations.find((v: any) => modIds.includes(v.id));
+        catalogObjectId = (matched || variations[0]).id;
       }
+
+      // Separate selected modifiers into catalog-referenced (added as Square
+      // line item modifiers with catalog_object_id) and ad-hoc (kept in the
+      // name only). Size selections (id = variation id) are skipped — they're
+      // already handled by catalog_object_id. Only modifiers from the item's
+      // own attached modifier lists are catalog-referenced; everything else
+      // (e.g. milkshake flavors on an item with no modifier lists) stays
+      // ad-hoc so Square doesn't reject the order.
+      // Square computes each modifier's total as base_price_money × line item
+      // quantity, so we set the per-unit price and let Square scale it.
+      const appliedModifiers: any[] = [];
+      let catalogModPerUnit = 0;
+      for (const sm of (item.selectedModifiers || [])) {
+        if (!sm?.id) continue;
+        if (variationIds.has(sm.id)) continue; // Size selection
+        const modListId = modifierOptionToList[sm.id];
+        if (modListId && itemModListIds.has(modListId)) {
+          const mod: any = { catalog_object_id: sm.id };
+          if (typeof sm.price === 'number' && sm.price !== 0) {
+            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
+          }
+          appliedModifiers.push(mod);
+          catalogModPerUnit += (sm.price || 0);
+        }
+        // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
+        // and their prices stay in base_price_money.
+      }
+
+      // base_price_money = item price minus catalog modifier upcharges (those
+      // are added via the modifiers array). Ad-hoc modifier prices and size
+      // upcharges stay in the base price so the line item total matches what
+      // the customer paid: (base + ad-hoc + size) × qty + catalog_mods × qty.
+      const basePrice = (item.price || 0) - catalogModPerUnit;
 
       const lineItem: any = {
         name,
         quantity: String(item.quantity || 1),
         base_price_money: {
-          amount: Math.round((item.price || 0) * 100),
+          amount: Math.round(basePrice * 100),
           currency: 'USD',
         },
       };
       if (catalogObjectId) {
         lineItem.catalog_object_id = catalogObjectId;
+      }
+      if (appliedModifiers.length > 0) {
+        lineItem.modifiers = appliedModifiers;
       }
       return lineItem;
     });
@@ -254,10 +321,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Format note based on order type for kitchen printing
+    // Format note based on order type for kitchen/counter printing
     let pickupNote = '';
     if (orderType === 'pickup') {
-      pickupNote = `PICKUP\n${customer.name}\n${customer.phone || ''}`;
+      const curbside = pickupMethod === 'curbside' && vehicle;
+      const carDesc = curbside ? [vehicle.car_color, vehicle.car_make, vehicle.car_model].filter(Boolean).join(' ') : '';
+      pickupNote = `${curbside ? 'CURBSIDE' : 'PICKUP'}\n${customer.name}\n${customer.phone || ''}${curbside && carDesc ? `\nCar: ${carDesc}` : ''}`;
     } else if (orderType === 'delivery') {
       pickupNote = `DELIVERY\n${customer.name}\n${customer.address || ''}\n${customer.phone || ''}`;
     } else if (orderType === 'dine_in') {
@@ -282,6 +351,18 @@ Deno.serve(async (req) => {
             },
             pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
             note: pickupNote + (instructions ? '\n\nNOTES: ' + instructions : ''),
+            // Curbside pickup — add car details so staff know what to look for.
+            // Square doesn't have a DINE_IN fulfillment type and DELIVERY
+            // requires a formal Square partnership (would hide the order from
+            // POS), so all order types use PICKUP with the type in the note.
+            ...(pickupMethod === 'curbside' && vehicle ? {
+              curbside_pickup_details: {
+                buyer_curbside_info: {
+                  car_description: [vehicle.car_color, vehicle.car_make, vehicle.car_model]
+                    .filter(Boolean).join(' ') || 'Not specified',
+                },
+              },
+            } : {}),
           },
         }],
         line_items: lineItems,

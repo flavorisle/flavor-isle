@@ -11,8 +11,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const {
-      items, orderType, customer, instructions,
-      subtotal, deliveryFee, tax, total,
+      items, orderType, pickupMethod, vehicle, customer, instructions,
+      subtotal, deliveryFee, tax, total, tip,
       scheduledFor, estimatedTime,
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
@@ -36,6 +36,14 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
+        ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
+        ...(vehicle && (vehicle.color || vehicle.make || vehicle.model) ? {
+          arrival_details: {
+            car_color: vehicle.color || '',
+            car_make: vehicle.make || '',
+            car_model: vehicle.model || '',
+          },
+        } : {}),
         status: 'pending',
         payment_status: 'pending',
         items: items.map(i => ({
@@ -54,7 +62,7 @@ Deno.serve(async (req) => {
         subtotal,
         tax,
         delivery_fee: deliveryFee || 0,
-        tip: 0,
+        tip: tip || 0,
         discount: 0,
         happy_hour_discount: happyHourDiscount || 0,
         total,
