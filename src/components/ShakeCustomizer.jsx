@@ -91,6 +91,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
     const cartItem = {
       id: shakeItem.id,
+      square_item_id: shakeItem.square_item_id,
       catalog_object_id: shakeItem.square_item_id,
       name: cartName,
       price: unitPrice,

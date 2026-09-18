@@ -135,24 +135,70 @@ Deno.serve(async (req) => {
     // above. Square returns the SAME order for a repeated key.
     const idempotencyKey = orderId ? `flavor-isle-order-${orderId}` : crypto.randomUUID();
 
+    // Batch-retrieve catalog objects so each line item can reference its ITEM
+    // VARIATION (not the top-level item) via catalog_object_id. The Orders API
+    // requires the variation id — square_item_id stores the ITEM id, so we
+    // resolve the default variation here. Items without a Square catalog match
+    // fall back to ad-hoc line items (name + price only) so they still push.
+    const squareItemIds = [...new Set(
+      items.map(i => i.square_item_id || i.catalog_object_id).filter(Boolean)
+    )];
+    const catalogMap: Record<string, any[]> = {};
+    if (squareItemIds.length > 0) {
+      try {
+        const catRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+          method: 'POST',
+          headers: sqHeaders,
+          body: JSON.stringify({ object_ids: squareItemIds }),
+        });
+        const catData = await catRes.json();
+        for (const obj of (catData.objects || [])) {
+          if (obj.type === 'ITEM' && obj.item_data) {
+            catalogMap[obj.id] = obj.item_data.variations || [];
+          }
+        }
+      } catch (catErr) {
+        console.warn('Catalog batch-retrieve failed, using ad-hoc line items:', catErr.message);
+      }
+    }
+
     const lineItems = items.map(item => {
-      // Milkshakes are built from a single Square "Milkshake" item, but that
-      // item has NO modifier lists attached in the catalog — so we can't
-      // reference the catalog object (an ITEM id, not a variation id) or the
-      // modifier option ids. Emit as an ad-hoc named line with the selected
-      // modifiers folded into the name so the POS ticket prints correctly.
-      // item.price already includes all modifier upcharges from the cart.
       // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
-      // no Tomato") instead of a raw topping list.
+      // no Tomato") instead of a raw topping list. Modifiers are folded into
+      // the line item name so the POS ticket prints correctly.
+      // item.price already includes all modifier upcharges from the cart.
       const mods = formatItemModifiers(item).join(', ');
-      return {
-        name: mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item'),
+      const name = mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item');
+
+      // Resolve the ITEM VARIATION id from the catalog so Square reports the
+      // item under its proper category instead of "Uncategorized". For
+      // multi-variation items (e.g. drinks with sizes), match the selected
+      // Size modifier's id to the variation id; otherwise use the first
+      // variation. Falls back to ad-hoc (no catalog_object_id) if the item
+      // isn't in the catalog.
+      let catalogObjectId: string | null = null;
+      const squareItemId = item.square_item_id || item.catalog_object_id;
+      if (squareItemId && catalogMap[squareItemId]) {
+        const variations = catalogMap[squareItemId];
+        if (variations.length > 0) {
+          const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
+          const matched = variations.find((v: any) => modIds.includes(v.id));
+          catalogObjectId = (matched || variations[0]).id;
+        }
+      }
+
+      const lineItem: any = {
+        name,
         quantity: String(item.quantity || 1),
         base_price_money: {
           amount: Math.round((item.price || 0) * 100),
           currency: 'USD',
         },
       };
+      if (catalogObjectId) {
+        lineItem.catalog_object_id = catalogObjectId;
+      }
+      return lineItem;
     });
 
     // Send tax as a real order-level tax (not a service charge) so Square

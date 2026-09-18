@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
           selectedModifiers: i.selectedModifiers || [],
           person_name: i.person_name || '',
           catalog_object_id: i.catalog_object_id || '',
+          square_item_id: i.square_item_id || '',
           isBuildShake: !!i.isBuildShake,
           deluxeLabel: i.deluxeLabel || '',
           deluxeToppings: i.deluxeToppings || [],

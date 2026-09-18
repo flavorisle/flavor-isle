@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         order_type: orderType,
         status: 'pending',
         payment_status: 'pending',
-        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '' })),
+        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', square_item_id: i.square_item_id || '' })),
         subtotal,
         tax,
         delivery_fee: deliveryFee || 0,
