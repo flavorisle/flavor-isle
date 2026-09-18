@@ -92,7 +92,7 @@ export default function MammothCaveDining() {
             <h3 className="font-heading text-xl text-obsidian-roast">From the park to our counter</h3>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Head north from Mammoth Cave on the Mammoth Cave Parkway to I-65 North. Take <strong>Exit 38 (Smiths Grove)</strong> — just 0.7 miles off the exit. Turn right off the ramp and you'll find us on your left at 103 N Main St. About 15 minutes total — perfect for a lunch or dinner stop on your way to or from the caves.
+            Head north from Mammoth Cave on the Mammoth Cave Parkway to I-65 North. Take <strong>Exit 38 (Smiths Grove)</strong> — just 0.7 miles off the exit. Take a left off the ramp and you'll find us on your left at 103 N Main St. About 15 minutes total — perfect for a lunch or dinner stop on your way to or from the caves.
           </p>
           <div className="mt-4">
             <a

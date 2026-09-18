@@ -88,7 +88,7 @@ export default function CorvetteCarClubs() {
             <h3 className="font-heading text-xl text-obsidian-roast">From the Corvette Museum</h3>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Head north on I-65 from the National Corvette Museum in Bowling Green to <strong>Exit 38 (Smiths Grove)</strong> — about 15 minutes. Just 0.7 miles off the exit: turn right off the ramp and you'll find us on your left at 103 N Main St. Prefer the scenic route? Take US-31W north straight to our front door.
+            Head north on I-65 from the National Corvette Museum in Bowling Green to <strong>Exit 38 (Smiths Grove)</strong> — about 15 minutes. Just 0.7 miles off I-65 Exit 38 — coming up from Bowling Green, take a left off the exit and you'll find us on your left. Prefer the scenic route? Take US-31W north straight to our front door.
           </p>
           <div className="mt-4">
             <a
