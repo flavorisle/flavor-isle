@@ -15,7 +15,7 @@ import BottomTabBar from './components/BottomTabBar';
 import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
-import TastyThreadsPopup from './components/TastyThreadsPopup';
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Page imports — keep-alive tabs (Home, Menu, Merch, Account) are eagerly
@@ -249,7 +249,6 @@ function AppShell() {
               <MobileHeader />
               <ConsentBanner />
               <SmashieChat />
-              <TastyThreadsPopup />
               <MerchCartDrawer />
             </Router>
             <Toaster />
