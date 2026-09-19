@@ -32,6 +32,8 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   const [comboFlavor, setComboFlavor] = useState(null);
   const [comboSoda, setComboSoda] = useState(null);
   const [comboSideMods, setComboSideMods] = useState({});
+  const [comboShakeMods, setComboShakeMods] = useState({});
+  const [comboDrinkMods, setComboDrinkMods] = useState({});
 
   const { menuSetting } = useCart();
 
@@ -72,6 +74,27 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     setComboSideMods(init);
   }, [comboSide]);
 
+  // Initialize shake + drink "extra" modifier selections (every group not
+  // already handled by a dedicated picker: shake flavor, soda choice, and the
+  // drink's 20oz size which the combo fixes). SINGLE groups default to the
+  // first available option; MULTIPLE groups start empty.
+  useEffect(() => {
+    if (!comboData) { setComboShakeMods({}); setComboDrinkMods({}); return; }
+    const initExtras = (menuItem, excludeMatchers) => {
+      const init = {};
+      (menuItem?.modifiers || []).forEach(g => {
+        const lname = (g.name || '').toLowerCase();
+        if (excludeMatchers.some(m => lname.includes(m))) return;
+        init[g.name] = g.selection_type === 'MULTIPLE'
+          ? []
+          : (g.modifiers.find(m => !m.sold_out) || null);
+      });
+      return init;
+    };
+    setComboShakeMods(initExtras(comboData.shake, ['flavor']));
+    setComboDrinkMods(initExtras(comboData.drink, ['soda choice', 'size']));
+  }, [comboData]);
+
   const COMBO_DISCOUNT = 1.50;
 
   // Shake flavor options from the Vanilla Milkshake's FLAVOR CHOICE modifier
@@ -97,26 +120,36 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   })() : 0;
 
   const flavorExtra = comboFlavor?.price || 0;
-  // Side modifier extras (seasoning, size, etc.) — baked into the side's combo
-  // price and listed as selectedModifiers so the cart + Square sync stay in sync.
-  const sideModsExtra = Object.values(comboSideMods || {}).reduce((sum, sel) => {
+  // Shared helpers — the combo side, shake, and drink each carry their own
+  // modifier groups; these flatten the per-item selections into a price delta
+  // and a cart-ready list so the combo total and Square sync stay accurate.
+  const modsExtra = (mods) => Object.values(mods || {}).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
     return sum + (sel.price || 0);
   }, 0);
-  const sideModsToCart = [];
-  for (const [groupName, sel] of Object.entries(comboSideMods || {})) {
-    if (!sel) continue;
-    if (Array.isArray(sel)) {
-      sel.forEach(m => sideModsToCart.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
-    } else {
-      sideModsToCart.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+  const modsToCart = (mods) => {
+    const out = [];
+    for (const [groupName, sel] of Object.entries(mods || {})) {
+      if (!sel) continue;
+      if (Array.isArray(sel)) {
+        sel.forEach(m => out.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+      } else {
+        out.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+      }
     }
-  }
+    return out;
+  };
+  const sideModsExtra = modsExtra(comboSideMods);
+  const sideModsToCart = modsToCart(comboSideMods);
+  const shakeModsExtra = modsExtra(comboShakeMods);
+  const shakeModsToCart = modsToCart(comboShakeMods);
+  const drinkModsExtra = modsExtra(comboDrinkMods);
+  const drinkModsToCart = modsToCart(comboDrinkMods);
   const comboAddOn = comboData && comboSide
     ? (comboDrinkType === 'shake'
-        ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2)
-        : +(comboSide.price + sideModsExtra + drink20ozPrice - COMBO_DISCOUNT).toFixed(2))
+        ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra + shakeModsExtra - COMBO_DISCOUNT).toFixed(2)
+        : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2))
     : 0;
 
   const comboReady = !!(comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda));
@@ -205,9 +238,12 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               ...comboData.shake,
               id: `combo-${comboData.shake.id}`,
               name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
-              price: +(comboData.shake.price + (comboFlavor.price || 0) - COMBO_DISCOUNT).toFixed(2),
+              price: +(comboData.shake.price + (comboFlavor.price || 0) + shakeModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
-              selectedModifiers: [{ id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price }],
+              selectedModifiers: [
+                { id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price },
+                ...shakeModsToCart,
+              ],
             },
           ]
         : [
@@ -216,16 +252,85 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               ...comboData.drink,
               id: `combo-${comboData.drink.id}`,
               name: `${comboSoda.name} (20oz)`,
-              price: +(drink20ozPrice - COMBO_DISCOUNT).toFixed(2),
+              price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
               selectedModifiers: [
                 { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
                 ...(drink20ozMod ? [{ id: drink20ozMod.id, name: drink20ozMod.name, price: drink20ozMod.price }] : []),
+                ...drinkModsToCart,
               ],
             },
           ])
       : [];
     onConfirm(selectedMods, extraCost, label, allToppings, comboItems);
+  };
+
+  // Renders a combo item's "extra" modifier groups — every group not already
+  // handled by a dedicated picker. Reused for the side, shake, and drink so
+  // each combo component is customizable the same way.
+  const renderExtraGroups = (comboItem, excludeMatchers, mods, setMods) => {
+    if (!comboItem) return null;
+    const groups = (comboItem.modifiers || []).filter(g => {
+      const lname = (g.name || '').toLowerCase();
+      return !excludeMatchers.some(m => lname.includes(m));
+    });
+    if (groups.length === 0) return null;
+    return (
+      <div className="space-y-4">
+        {groups.map(group => (
+          <div key={group.name} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {group.modifiers.map(mod => {
+                const isMultiple = group.selection_type === 'MULTIPLE';
+                const sel = mods[group.name];
+                const isSelected = isMultiple
+                  ? (sel || []).some(m => m.id === mod.id)
+                  : sel?.id === mod.id;
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    disabled={mod.sold_out}
+                    onClick={() => setMods(prev => {
+                      if (isMultiple) {
+                        const cur = prev[group.name] || [];
+                        return { ...prev, [group.name]: cur.find(m => m.id === mod.id) ? cur.filter(m => m.id !== mod.id) : [...cur, mod] };
+                      }
+                      return { ...prev, [group.name]: prev[group.name]?.id === mod.id ? null : mod };
+                    })}
+                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                      mod.sold_out
+                        ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                        : isSelected
+                          ? 'border-midnight-cherry bg-red-50'
+                          : 'border-border hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'}`}>
+                        {isSelected && <Check size={12} className="text-white" />}
+                      </div>
+                      <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
+                    </div>
+                    {mod.sold_out ? (
+                      <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
+                    ) : mod.price > 0 && (
+                      <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return createPortal(
@@ -344,62 +449,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
           )}
 
           {/* Side modifiers — seasoning, size, etc. for the chosen side */}
-          {isBurger && comboData && isCombo && comboSide && (comboSide.modifiers || []).length > 0 && (
-            <div className="space-y-4">
-              {(comboSide.modifiers || []).map(group => (
-                <div key={group.name} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                      {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {group.modifiers.map(mod => {
-                      const isMultiple = group.selection_type === 'MULTIPLE';
-                      const sel = comboSideMods[group.name];
-                      const isSelected = isMultiple
-                        ? (sel || []).some(m => m.id === mod.id)
-                        : sel?.id === mod.id;
-                      return (
-                        <button
-                          key={mod.id}
-                          type="button"
-                          disabled={mod.sold_out}
-                          onClick={() => setComboSideMods(prev => {
-                            if (isMultiple) {
-                              const cur = prev[group.name] || [];
-                              return { ...prev, [group.name]: cur.find(m => m.id === mod.id) ? cur.filter(m => m.id !== mod.id) : [...cur, mod] };
-                            }
-                            return { ...prev, [group.name]: prev[group.name]?.id === mod.id ? null : mod };
-                          })}
-                          className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                            mod.sold_out
-                              ? 'border-border bg-muted opacity-50 cursor-not-allowed'
-                              : isSelected
-                                ? 'border-midnight-cherry bg-red-50'
-                                : 'border-border hover:border-gray-300 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'}`}>
-                              {isSelected && <Check size={12} className="text-white" />}
-                            </div>
-                            <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
-                          </div>
-                          {mod.sold_out ? (
-                            <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
-                          ) : mod.price > 0 && (
-                            <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {isBurger && comboData && isCombo && comboSide && renderExtraGroups(comboSide, [], comboSideMods, setComboSideMods)}
 
           {/* Drink type picker — shown when combo is selected */}
           {isBurger && comboData && isCombo && (
@@ -481,6 +531,12 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               </div>
             </div>
           )}
+
+          {/* Shake extra modifiers — whipped cream, toppings, etc. (flavor is picked above) */}
+          {isBurger && comboData && isCombo && comboDrinkType === 'shake' && renderExtraGroups(comboData.shake, ['flavor'], comboShakeMods, setComboShakeMods)}
+
+          {/* Drink extra modifiers — ice level, etc. (soda + 20oz size are picked above) */}
+          {isBurger && comboData && isCombo && comboDrinkType === 'soda' && renderExtraGroups(comboData.drink, ['soda choice', 'size'], comboDrinkMods, setComboDrinkMods)}
 
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
