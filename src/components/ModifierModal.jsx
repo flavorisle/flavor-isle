@@ -26,8 +26,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
 
   const [selections, setSelections] = useState(initSelections);
   const [isCombo, setIsCombo] = useState(false);
-  const [comboSides, setComboSides] = useState(null);
+  const [comboData, setComboData] = useState(null);
+  const [comboSide, setComboSide] = useState(null);
+  const [comboDrinkType, setComboDrinkType] = useState('shake');
   const [comboFlavor, setComboFlavor] = useState(null);
+  const [comboSoda, setComboSoda] = useState(null);
 
   const { menuSetting } = useCart();
 
@@ -44,11 +47,18 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   useEffect(() => {
     if (!isBurger) return;
     let cancelled = false;
+    const sideNames = ['French Fries', 'Tater Tots', 'Curly Fries', 'Cajun Waffle Fries', 'Onion Rings', 'Sweet Potato Fries'];
     base44.entities.MenuItem.list('-name', 200).then(items => {
       if (cancelled) return;
-      const fries = items.find(i => i.name === 'French Fries' && i.is_available && !i.is_hidden);
+      const sides = sideNames
+        .map(n => items.find(i => i.name === n && i.is_available && !i.is_hidden))
+        .filter(Boolean);
       const shake = items.find(i => i.name === 'Vanilla Milkshake' && i.is_available && !i.is_hidden);
-      if (fries && shake) setComboSides({ fries, shake });
+      const drink = items.find(i => i.name === 'Classic Drinks' && i.is_available && !i.is_hidden);
+      if (sides.length && shake && drink) {
+        setComboData({ sides, shake, drink });
+        setComboSide(sides[0]);
+      }
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [isBurger]);
@@ -57,14 +67,34 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
 
   // Shake flavor options from the Vanilla Milkshake's FLAVOR CHOICE modifier
   // list — reuses the same Square modifier system as the ShakeCustomizer.
-  const shakeFlavorOpts = comboSides ? (() => {
-    const groups = comboSides.shake.modifiers || [];
+  const shakeFlavorOpts = comboData ? (() => {
+    const groups = comboData.shake.modifiers || [];
     const flavorGroup = groups.find(g => (g.name || '').toLowerCase().includes('flavor'));
     return (flavorGroup?.modifiers || []).filter(m => !m.sold_out);
   })() : [];
 
+  // Soda choices from Classic Drinks' SODA CHOICE modifier list.
+  const sodaOpts = comboData ? (() => {
+    const groups = comboData.drink.modifiers || [];
+    const sodaGroup = groups.find(g => /soda choice/i.test(g.name || ''));
+    return (sodaGroup?.modifiers || []).filter(m => !m.sold_out);
+  })() : [];
+
+  // Combo drink is a 20oz Classic Drinks — base price + the 20oz size upcharge.
+  const drink20ozPrice = comboData ? (() => {
+    const sizeGroup = (comboData.drink.modifiers || []).find(g => /size/i.test(g.name || ''));
+    const oz20 = (sizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));
+    return +(comboData.drink.price + (oz20?.price || 0)).toFixed(2);
+  })() : 0;
+
   const flavorExtra = comboFlavor?.price || 0;
-  const comboAddOn = comboSides ? +(comboSides.fries.price + comboSides.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2) : 0;
+  const comboAddOn = comboData && comboSide
+    ? (comboDrinkType === 'shake'
+        ? +(comboSide.price + comboData.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2)
+        : +(comboSide.price + drink20ozPrice - COMBO_DISCOUNT).toFixed(2))
+    : 0;
+
+  const comboReady = !!(comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda));
 
   useEffect(() => {
     trackViewItem(foodItemToGa4(item), { value: item.price });
@@ -140,18 +170,35 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     const { label, allToppings } = DELUXE_ENABLED
       ? buildDeluxeLabelFull(selectedMods, labelPresets)
       : { label: null, allToppings: [] };
-    const comboItems = isCombo && comboSides && comboFlavor
-      ? [
-          { ...comboSides.fries, id: `combo-${comboSides.fries.id}`, quantity: 1, selectedModifiers: [] },
-          {
-            ...comboSides.shake,
-            id: `combo-${comboSides.shake.id}`,
-            name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
-            price: +(comboSides.shake.price + (comboFlavor.price || 0) - COMBO_DISCOUNT).toFixed(2),
-            quantity: 1,
-            selectedModifiers: [{ id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price }],
-          },
-        ]
+    const drinkSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));
+    const drink20ozMod = (drinkSizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));
+    const comboItems = isCombo && comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda)
+      ? (comboDrinkType === 'shake'
+        ? [
+            { ...comboSide, id: `combo-${comboSide.id}`, quantity: 1, selectedModifiers: [] },
+            {
+              ...comboData.shake,
+              id: `combo-${comboData.shake.id}`,
+              name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
+              price: +(comboData.shake.price + (comboFlavor.price || 0) - COMBO_DISCOUNT).toFixed(2),
+              quantity: 1,
+              selectedModifiers: [{ id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price }],
+            },
+          ]
+        : [
+            { ...comboSide, id: `combo-${comboSide.id}`, quantity: 1, selectedModifiers: [] },
+            {
+              ...comboData.drink,
+              id: `combo-${comboData.drink.id}`,
+              name: `${comboSoda.name} (20oz)`,
+              price: +(drink20ozPrice - COMBO_DISCOUNT).toFixed(2),
+              quantity: 1,
+              selectedModifiers: [
+                { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
+                ...(drink20ozMod ? [{ id: drink20ozMod.id, name: drink20ozMod.name, price: drink20ozMod.price }] : []),
+              ],
+            },
+          ])
       : [];
     onConfirm(selectedMods, extraCost, label, allToppings, comboItems);
   };
@@ -192,7 +239,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
           {/* Isle Combo toggle — burgers only */}
-          {isBurger && comboSides && (
+          {isBurger && comboData && (
             <div className="space-y-2">
               <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Make it a combo?</h4>
               <button
@@ -234,7 +281,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
                       <Sparkles size={14} /> Make it an Isle Combo
                     </span>
                     <span className={`block text-xs mt-0.5 ${isCombo ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      Crinkle Fries + Hand-Dipped Shake
+                      Pick a side + a 20oz drink or hand-dipped shake
                     </span>
                   </div>
                 </div>
@@ -246,8 +293,85 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             </div>
           )}
 
-          {/* Shake flavor picker — shown when combo is selected */}
-          {isBurger && comboSides && isCombo && shakeFlavorOpts.length > 0 && (
+          {/* Side picker — shown when combo is selected */}
+          {isBurger && comboData && isCombo && (
+            <div className="space-y-2">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Pick your side</h4>
+              <div className="flex flex-wrap gap-2">
+                {comboData.sides.map(s => {
+                  const selected = comboSide?.id === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setComboSide(s)}
+                      className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      }`}
+                    >
+                      {s.name}
+                      {selected && <Check size={13} className="ml-1 inline" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Drink type picker — shown when combo is selected */}
+          {isBurger && comboData && isCombo && (
+            <div className="space-y-2">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Pick your drink</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setComboDrinkType('soda'); setComboFlavor(null); }}
+                  className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-heading text-sm ${
+                    comboDrinkType === 'soda' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                  }`}
+                >
+                  Soft Drink (20oz)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setComboDrinkType('shake'); setComboSoda(null); }}
+                  className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-heading text-sm ${
+                    comboDrinkType === 'shake' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                  }`}
+                >
+                  Hand-Dipped Shake
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Soda choice list — shown when combo + soft drink selected */}
+          {isBurger && comboData && isCombo && comboDrinkType === 'soda' && sodaOpts.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Choose your soda</h4>
+              <div className="flex flex-wrap gap-2">
+                {sodaOpts.map(opt => {
+                  const selected = comboSoda?.id === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setComboSoda(opt)}
+                      className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      }`}
+                    >
+                      {opt.name}
+                      {selected && <Check size={13} className="ml-1 inline" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Shake flavor picker — shown when combo + shake selected */}
+          {isBurger && comboData && isCombo && comboDrinkType === 'shake' && shakeFlavorOpts.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Pick your shake flavor</h4>
               <div className="flex flex-wrap gap-2">
@@ -361,11 +485,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={isCombo && !comboFlavor}
-            className={`btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${isCombo && !comboFlavor ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={isCombo && !comboReady}
+            className={`btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${isCombo && !comboReady ? 'opacity-40 cursor-not-allowed' : ''}`}
           >
             <Plus size={16} />
-            {isCombo && !comboFlavor ? 'Pick a shake flavor' : `Add to Order — $${footerTotal.toFixed(2)}`}
+            {isCombo && !comboReady ? `Pick a ${comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}` : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>
