@@ -5,7 +5,7 @@ import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
 import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
-import { base44 } from '@/api/base44Client';
+import { getComboData } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -41,25 +41,19 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   const hhConfig = isHappyHour ? getHappyHourConfig(menuSetting) : null;
   const hhPct = hhConfig ? (hhConfig.discount_percent || 0) / 100 : 0;
 
-  // Combo toggle — only for burger items. Fetches the fries + shake so the
-  // customer can bundle them into an Isle Combo right from the item modal.
+  // Combo toggle — only for burger items. Uses a shared session cache so the
+  // menu is fetched once (not on every modal open) — this keeps the "Make it an
+  // Isle Combo" option from disappearing under API rate limits after the first
+  // combo is added, so customers can build multiple combos in one order.
   const isBurger = /burger/i.test(item.name);
   useEffect(() => {
     if (!isBurger) return;
     let cancelled = false;
-    const sideNames = ['French Fries', 'Tater Tots', 'Curly Fries', 'Cajun Waffle Fries', 'Onion Rings', 'Sweet Potato Fries'];
-    base44.entities.MenuItem.list('-name', 200).then(items => {
-      if (cancelled) return;
-      const sides = sideNames
-        .map(n => items.find(i => i.name === n && i.is_available && !i.is_hidden))
-        .filter(Boolean);
-      const shake = items.find(i => i.name === 'Vanilla Milkshake' && i.is_available && !i.is_hidden);
-      const drink = items.find(i => i.name === 'Classic Drinks' && i.is_available && !i.is_hidden);
-      if (sides.length && shake && drink) {
-        setComboData({ sides, shake, drink });
-        setComboSide(sides[0]);
-      }
-    }).catch(() => {});
+    getComboData().then(data => {
+      if (cancelled || !data) return;
+      setComboData(data);
+      setComboSide(data.sides[0]);
+    });
     return () => { cancelled = true; };
   }, [isBurger]);
 
