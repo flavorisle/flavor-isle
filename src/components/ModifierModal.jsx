@@ -31,6 +31,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   const [comboDrinkType, setComboDrinkType] = useState('shake');
   const [comboFlavor, setComboFlavor] = useState(null);
   const [comboSoda, setComboSoda] = useState(null);
+  const [comboSideMods, setComboSideMods] = useState({});
 
   const { menuSetting } = useCart();
 
@@ -57,6 +58,20 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     return () => { cancelled = true; };
   }, [isBurger]);
 
+  // Initialize side modifier selections whenever the chosen side changes.
+  // SINGLE groups default to the first available option (like Size in the main
+  // modal) so the side is always addable; MULTIPLE groups start empty.
+  useEffect(() => {
+    if (!comboSide) { setComboSideMods({}); return; }
+    const init = {};
+    (comboSide.modifiers || []).forEach(g => {
+      init[g.name] = g.selection_type === 'MULTIPLE'
+        ? []
+        : (g.modifiers.find(m => !m.sold_out) || null);
+    });
+    setComboSideMods(init);
+  }, [comboSide]);
+
   const COMBO_DISCOUNT = 1.50;
 
   // Shake flavor options from the Vanilla Milkshake's FLAVOR CHOICE modifier
@@ -82,10 +97,26 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   })() : 0;
 
   const flavorExtra = comboFlavor?.price || 0;
+  // Side modifier extras (seasoning, size, etc.) — baked into the side's combo
+  // price and listed as selectedModifiers so the cart + Square sync stay in sync.
+  const sideModsExtra = Object.values(comboSideMods || {}).reduce((sum, sel) => {
+    if (!sel) return sum;
+    if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
+    return sum + (sel.price || 0);
+  }, 0);
+  const sideModsToCart = [];
+  for (const [groupName, sel] of Object.entries(comboSideMods || {})) {
+    if (!sel) continue;
+    if (Array.isArray(sel)) {
+      sel.forEach(m => sideModsToCart.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+    } else {
+      sideModsToCart.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+    }
+  }
   const comboAddOn = comboData && comboSide
     ? (comboDrinkType === 'shake'
-        ? +(comboSide.price + comboData.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2)
-        : +(comboSide.price + drink20ozPrice - COMBO_DISCOUNT).toFixed(2))
+        ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra - COMBO_DISCOUNT).toFixed(2)
+        : +(comboSide.price + sideModsExtra + drink20ozPrice - COMBO_DISCOUNT).toFixed(2))
     : 0;
 
   const comboReady = !!(comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda));
@@ -169,7 +200,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     const comboItems = isCombo && comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda)
       ? (comboDrinkType === 'shake'
         ? [
-            { ...comboSide, id: `combo-${comboSide.id}`, quantity: 1, selectedModifiers: [] },
+            { ...comboSide, id: `combo-${comboSide.id}`, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
             {
               ...comboData.shake,
               id: `combo-${comboData.shake.id}`,
@@ -180,7 +211,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             },
           ]
         : [
-            { ...comboSide, id: `combo-${comboSide.id}`, quantity: 1, selectedModifiers: [] },
+            { ...comboSide, id: `combo-${comboSide.id}`, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
             {
               ...comboData.drink,
               id: `combo-${comboData.drink.id}`,
@@ -309,6 +340,64 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Side modifiers — seasoning, size, etc. for the chosen side */}
+          {isBurger && comboData && isCombo && comboSide && (comboSide.modifiers || []).length > 0 && (
+            <div className="space-y-4">
+              {(comboSide.modifiers || []).map(group => (
+                <div key={group.name} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {group.modifiers.map(mod => {
+                      const isMultiple = group.selection_type === 'MULTIPLE';
+                      const sel = comboSideMods[group.name];
+                      const isSelected = isMultiple
+                        ? (sel || []).some(m => m.id === mod.id)
+                        : sel?.id === mod.id;
+                      return (
+                        <button
+                          key={mod.id}
+                          type="button"
+                          disabled={mod.sold_out}
+                          onClick={() => setComboSideMods(prev => {
+                            if (isMultiple) {
+                              const cur = prev[group.name] || [];
+                              return { ...prev, [group.name]: cur.find(m => m.id === mod.id) ? cur.filter(m => m.id !== mod.id) : [...cur, mod] };
+                            }
+                            return { ...prev, [group.name]: prev[group.name]?.id === mod.id ? null : mod };
+                          })}
+                          className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                            mod.sold_out
+                              ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-midnight-cherry bg-red-50'
+                                : 'border-border hover:border-gray-300 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'}`}>
+                              {isSelected && <Check size={12} className="text-white" />}
+                            </div>
+                            <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
+                          </div>
+                          {mod.sold_out ? (
+                            <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
+                          ) : mod.price > 0 && (
+                            <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
