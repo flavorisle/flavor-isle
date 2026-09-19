@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import SavedCardsPanel from '@/components/account/SavedCardsPanel';
@@ -22,6 +22,23 @@ import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
+
+// Retry with exponential backoff on rate-limit errors. The account page fires
+// several parallel entity calls on mount (and sub-components fire more), so a
+// burst can trip the API rate limit; backing off lets the call succeed on a
+// later attempt instead of crashing the whole view.
+const withRateLimitRetry = async (fn, retries = 3) => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = `${err?.message || ''}`;
+      const isRateLimit = /rate limit/i.test(msg) || err?.code === 'rate_limit_exceeded';
+      if (!isRateLimit || attempt === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+    }
+  }
+};
 
 function OrderCard({ order, onReorder }) {
   const [expanded, setExpanded] = useState(ACTIVE_STATUSES.includes(order.status));
@@ -150,9 +167,9 @@ function LoggedInAccount({ user, logout }) {
     setStarLoading(true);
     try {
       const results = await Promise.all([
-        base44.entities.CustomerProfile.filter({ email: user.email }),
-        base44.entities.Order.filter({ customer_email: user.email }),
-        base44.entities.Favorite.filter({ user_id: user.id }),
+        withRateLimitRetry(() => base44.entities.CustomerProfile.filter({ email: user.email })),
+        withRateLimitRetry(() => base44.entities.Order.filter({ customer_email: user.email })),
+        withRateLimitRetry(() => base44.entities.Favorite.filter({ user_id: user.id })),
       ]);
       const [profiles, ords, favs] = results;
       if (profiles && profiles.length > 0) {
@@ -172,19 +189,33 @@ function LoggedInAccount({ user, logout }) {
           birthday: p.birthday || ''
         });
       } else {
-        const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
+        const newProfile = await withRateLimitRetry(() => base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 }));
         setProfile(newProfile);
         setForm({ ...EMPTY_FORM, name: user.full_name || '' });
       }
       setOrders(ords || []);
       setFavorites(favs || []);
       await refreshStarStatus();
+    } catch (err) {
+      // A rate limit or transient API error shouldn't crash the whole account
+      // page — surface empty state so the user still sees the page and can
+      // retry by re-visiting.
+      console.error('Account loadData failed:', err);
+      setOrders([]);
+      setFavorites([]);
     } finally {
       setLoading(false);
+      setStarLoading(false);
     }
   };
 
+  const loadedOnceRef = useRef(false);
   useEffect(() => {
+    // StrictMode double-invokes effects in dev, which fired this burst of
+    // calls twice and tripped the rate limit. Guard so loadData runs once
+    // per mount; a real account switch re-mounts the component (new ref).
+    if (loadedOnceRef.current) return;
+    loadedOnceRef.current = true;
     loadData();
   }, [user.email, user.id]);
 
