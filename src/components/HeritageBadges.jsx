@@ -3,7 +3,7 @@ import { Beef, IceCream2, MapPin } from 'lucide-react';
 
 const BADGES = [
   { icon: Beef, title: 'Hand-Smashed Kentucky Beef', desc: 'Fresh, never frozen' },
-  { icon: IceCream2, title: 'Real Ice Cream Shakes', desc: 'Hand-dipped, spun thick' },
+  { icon: IceCream2, title: 'Real Ice Cream Shakes', desc: 'Hand spun, thick & creamy' },
   { icon: MapPin, title: 'Smiths Grove Heritage', desc: 'Proudly serving Warren County and I-65 travelers' },
 ];
 

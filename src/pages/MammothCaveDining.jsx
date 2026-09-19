@@ -60,7 +60,7 @@ export default function MammothCaveDining() {
               </div>
               <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">Burger + Crinkle Fries + Shake</h2>
               <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Open any burger on our menu and tap <strong>“Make it an Isle Combo”</strong> to add Crinkle Fries and a hand-dipped shake — and save $1.50. The perfect fuel for little explorers (and hungry grown-ups too).
+                Open any burger on our menu and tap <strong>“Make it an Isle Combo”</strong> to add Crinkle Fries and a hand-spun shake — and save $1.50. The perfect fuel for little explorers (and hungry grown-ups too).
               </p>
               <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
                 Build Your Combo <ArrowRight size={16} />

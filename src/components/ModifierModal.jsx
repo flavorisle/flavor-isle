@@ -281,7 +281,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
                       <Sparkles size={14} /> Make it an Isle Combo
                     </span>
                     <span className={`block text-xs mt-0.5 ${isCombo ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      Pick a side + a 20oz drink or hand-dipped shake
+                      Pick a side + a 20oz drink or hand-spun shake
                     </span>
                   </div>
                 </div>
@@ -339,7 +339,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
                     comboDrinkType === 'shake' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
                   }`}
                 >
-                  Hand-Dipped Shake
+                  Hand-Spun Shake
                 </button>
               </div>
             </div>
