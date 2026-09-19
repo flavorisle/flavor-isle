@@ -74,50 +74,51 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     setComboSideMods(init);
   }, [comboSide]);
 
+  const COMBO_DISCOUNT = 1.50;
+
+  // Combo component modifier groups — each handled by a dedicated picker, so
+  // excluded from the generic "extra modifiers" UI. Matched by EXACT group name
+  // (case-insensitive) so a shake "Extra Flavors" group still shows up alongside
+  // the base flavor picker — a substring "flavor" match would wrongly hide it.
+  // The base flavor group is the one whose name has "flavor" but not "extra".
+  const shakeFlavorGroup = comboData
+    ? (comboData.shake.modifiers || []).find(g => {
+        const lname = (g.name || '').toLowerCase();
+        return lname.includes('flavor') && !lname.includes('extra');
+      })
+    : null;
+  const shakeFlavorOpts = (shakeFlavorGroup?.modifiers || []).filter(m => !m.sold_out);
+  const shakeExclude = shakeFlavorGroup ? [shakeFlavorGroup.name] : [];
+
+  const drinkSodaGroup = comboData ? (comboData.drink.modifiers || []).find(g => /soda choice/i.test(g.name || '')) : null;
+  const sodaOpts = (drinkSodaGroup?.modifiers || []).filter(m => !m.sold_out);
+
+  const drinkSizeGroup = comboData ? (comboData.drink.modifiers || []).find(g => /size/i.test(g.name || '')) : null;
+  const drink20ozPrice = comboData ? (() => {
+    const oz20 = (drinkSizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));
+    return +(comboData.drink.price + (oz20?.price || 0)).toFixed(2);
+  })() : 0;
+  const drinkExclude = [drinkSodaGroup?.name, drinkSizeGroup?.name].filter(Boolean);
+
   // Initialize shake + drink "extra" modifier selections (every group not
-  // already handled by a dedicated picker: shake flavor, soda choice, and the
-  // drink's 20oz size which the combo fixes). SINGLE groups default to the
-  // first available option; MULTIPLE groups start empty.
+  // already handled by a dedicated picker). SINGLE groups default to the first
+  // available option; MULTIPLE groups start empty.
   useEffect(() => {
     if (!comboData) { setComboShakeMods({}); setComboDrinkMods({}); return; }
-    const initExtras = (menuItem, excludeMatchers) => {
+    const initExtras = (menuItem, excludeNames) => {
       const init = {};
       (menuItem?.modifiers || []).forEach(g => {
         const lname = (g.name || '').toLowerCase();
-        if (excludeMatchers.some(m => lname.includes(m))) return;
+        if (excludeNames.some(n => lname === n.toLowerCase())) return;
         init[g.name] = g.selection_type === 'MULTIPLE'
           ? []
           : (g.modifiers.find(m => !m.sold_out) || null);
       });
       return init;
     };
-    setComboShakeMods(initExtras(comboData.shake, ['flavor']));
-    setComboDrinkMods(initExtras(comboData.drink, ['soda choice', 'size']));
+    setComboShakeMods(initExtras(comboData.shake, shakeExclude));
+    setComboDrinkMods(initExtras(comboData.drink, drinkExclude));
   }, [comboData]);
-
-  const COMBO_DISCOUNT = 1.50;
-
-  // Shake flavor options from the Vanilla Milkshake's FLAVOR CHOICE modifier
-  // list — reuses the same Square modifier system as the ShakeCustomizer.
-  const shakeFlavorOpts = comboData ? (() => {
-    const groups = comboData.shake.modifiers || [];
-    const flavorGroup = groups.find(g => (g.name || '').toLowerCase().includes('flavor'));
-    return (flavorGroup?.modifiers || []).filter(m => !m.sold_out);
-  })() : [];
-
-  // Soda choices from Classic Drinks' SODA CHOICE modifier list.
-  const sodaOpts = comboData ? (() => {
-    const groups = comboData.drink.modifiers || [];
-    const sodaGroup = groups.find(g => /soda choice/i.test(g.name || ''));
-    return (sodaGroup?.modifiers || []).filter(m => !m.sold_out);
-  })() : [];
-
-  // Combo drink is a 20oz Classic Drinks — base price + the 20oz size upcharge.
-  const drink20ozPrice = comboData ? (() => {
-    const sizeGroup = (comboData.drink.modifiers || []).find(g => /size/i.test(g.name || ''));
-    const oz20 = (sizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));
-    return +(comboData.drink.price + (oz20?.price || 0)).toFixed(2);
-  })() : 0;
 
   const flavorExtra = comboFlavor?.price || 0;
   // Shared helpers — the combo side, shake, and drink each carry their own
@@ -272,7 +273,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
     if (!comboItem) return null;
     const groups = (comboItem.modifiers || []).filter(g => {
       const lname = (g.name || '').toLowerCase();
-      return !excludeMatchers.some(m => lname.includes(m));
+      return !excludeMatchers.some(m => lname === m.toLowerCase());
     });
     if (groups.length === 0) return null;
     return (
@@ -532,11 +533,11 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
             </div>
           )}
 
-          {/* Shake extra modifiers — whipped cream, toppings, etc. (flavor is picked above) */}
-          {isBurger && comboData && isCombo && comboDrinkType === 'shake' && renderExtraGroups(comboData.shake, ['flavor'], comboShakeMods, setComboShakeMods)}
+          {/* Shake extra modifiers — extra flavors, whipped cream, toppings, etc. (base flavor is picked above) */}
+          {isBurger && comboData && isCombo && comboDrinkType === 'shake' && renderExtraGroups(comboData.shake, shakeExclude, comboShakeMods, setComboShakeMods)}
 
           {/* Drink extra modifiers — ice level, etc. (soda + 20oz size are picked above) */}
-          {isBurger && comboData && isCombo && comboDrinkType === 'soda' && renderExtraGroups(comboData.drink, ['soda choice', 'size'], comboDrinkMods, setComboDrinkMods)}
+          {isBurger && comboData && isCombo && comboDrinkType === 'soda' && renderExtraGroups(comboData.drink, drinkExclude, comboDrinkMods, setComboDrinkMods)}
 
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
