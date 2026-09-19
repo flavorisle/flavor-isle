@@ -3,6 +3,7 @@ import { Plus, Cookie, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
+import ModifierModal from './ModifierModal';
 
 // Inline (non-blocking) dessert upsell rail for the cart drawer. Mirrors the
 // post-order recommendation email's "MAIN + SIDE, no DESSERT" rule: when the
@@ -13,6 +14,7 @@ export default function CartDessertUpsell() {
   const { cartItems, addItem } = useCart();
   const [suggestions, setSuggestions] = useState([]);
   const [added, setAdded] = useState({});
+  const [modalItem, setModalItem] = useState(null);
 
   // Bucket the current cart into MAIN / SIDE / DESSERT counts.
   const buckets = useMemo(() => {
@@ -53,6 +55,12 @@ export default function CartDessertUpsell() {
   if (!shouldShow || suggestions.length === 0) return null;
 
   const handleAdd = (item) => {
+    // Desserts with modifier groups (toppings, size, etc.) open the customizer
+    // so the customer can pick them — matching the menu card behavior.
+    if (item.modifiers && item.modifiers.length > 0) {
+      setModalItem(item);
+      return;
+    }
     addItem({
       id: item.id,
       name: item.name,
@@ -64,7 +72,27 @@ export default function CartDessertUpsell() {
     setAdded(prev => ({ ...prev, [item.id]: true }));
   };
 
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
+    if (modalItem) {
+      addItem({
+        id: modalItem.id,
+        name: modalItem.name,
+        price: modalItem.price + extraCost,
+        image_url: modalItem.image_url,
+        category: modalItem.category,
+        catalog_object_id: modalItem.square_item_id || '',
+        selectedModifiers: selectedMods,
+        deluxeLabel: deluxeLabel || undefined,
+        deluxeToppings: deluxeToppings || [],
+      });
+      if (comboItems && comboItems.length > 0) comboItems.forEach(ci => addItem(ci));
+      setAdded(prev => ({ ...prev, [modalItem.id]: true }));
+    }
+    setModalItem(null);
+  };
+
   return (
+    <>
     <div className="rounded-2xl bg-midnight-cherry/5 border border-midnight-cherry/15 p-3 mt-1">
       <div className="flex items-center gap-2 mb-2">
         <Cookie size={15} className="text-midnight-cherry flex-shrink-0" />
@@ -87,11 +115,15 @@ export default function CartDessertUpsell() {
                   : 'bg-midnight-cherry text-white hover:opacity-90'
               }`}
             >
-              {added[item.id] ? <><Check size={12} /> Added</> : <><Plus size={12} /> Add</>}
+              {added[item.id] ? <><Check size={12} /> Added</> : <><Plus size={12} /> {item.modifiers && item.modifiers.length > 0 ? 'Customize' : 'Add'}</>}
             </button>
           </div>
         ))}
       </div>
     </div>
+    {modalItem && (
+      <ModifierModal item={modalItem} onClose={() => setModalItem(null)} onConfirm={handleModalConfirm} />
+    )}
+    </>
   );
 }
