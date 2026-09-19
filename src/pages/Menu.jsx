@@ -116,7 +116,8 @@ export default function Menu() {
           </div>
 
           {/* Order type switcher */}
-          <div className="grid grid-cols-3 gap-3 max-w-2xl">
+          <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-stretch">
+          <div className="grid grid-cols-3 gap-3 max-w-2xl flex-1 w-full">
             {Object.entries(ORDER_TYPES).map(([type, config]) => {
               const active = orderType === type;
               return (
@@ -147,6 +148,13 @@ export default function Menu() {
                 </button>
               );
             })}
+          </div>
+          <img
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/dcbd6b725_CRUBSIDE.png"
+            alt="Curbside pickup at Flavor Isle — we bring your order to your car"
+            loading="lazy"
+            className="w-full max-w-md lg:w-[380px] xl:w-[440px] rounded-2xl ring-2 ring-white/40 lg:self-center"
+          />
           </div>
         </div>
       </div>
