@@ -241,10 +241,10 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
               price: +(comboData.shake.price + (comboFlavor.price || 0) + shakeModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
-              selectedModifiers: [
-                { id: comboFlavor.id, name: resolveFlavorName(comboFlavor.id, comboFlavor.name), price: comboFlavor.price },
-                ...shakeModsToCart,
-              ],
+              // Flavor is in the item name and its price is baked into item.price,
+              // so it's not repeated in selectedModifiers — keeps kitchen tickets
+              // from printing the flavor twice (name + modifier line).
+              selectedModifiers: [...shakeModsToCart],
             },
           ]
         : [
@@ -255,11 +255,10 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               name: `${comboSoda.name} (20oz)`,
               price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
-              selectedModifiers: [
-                { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
-                ...(drink20ozMod ? [{ id: drink20ozMod.id, name: drink20ozMod.name, price: drink20ozMod.price }] : []),
-                ...drinkModsToCart,
-              ],
+              // Soda + 20oz size are in the item name and their prices are baked
+              // into item.price, so they're not repeated in selectedModifiers —
+              // keeps kitchen tickets from printing them twice.
+              selectedModifiers: [...drinkModsToCart],
             },
           ])
       : [];
