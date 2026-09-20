@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ShoppingBag, Bike, Utensils, Search } from 'lucide-react';
+import { ShoppingBag, Bike, Utensils, Search, Car } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -29,6 +29,7 @@ import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 // matches the hero, status bar, and checkout everywhere times are shown.
 const ORDER_TYPE_CONFIG = (waitMin) => ({
   pickup: { icon: ShoppingBag, label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
+  curbside: { icon: Car, label: 'Curbside', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
   delivery: { icon: Bike, label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min` },
   dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
 });
@@ -41,9 +42,18 @@ export default function Menu() {
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
-  const { orderType, setOrderType, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
+  const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
   const { level } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
+
+  // Order-type tiles — curbside is a pickup variant (orderType 'pickup' +
+  // pickupMethod 'curbside'), so its active/onClick differ from counter pickup.
+  const orderTiles = [
+    { key: 'pickup', label: ORDER_TYPES.pickup.label, time: ORDER_TYPES.pickup.time, img: ORDER_TYPE_IMAGES.pickup, onSelect: () => { setOrderType('pickup'); setPickupMethod('counter'); }, isActive: orderType === 'pickup' && pickupMethod !== 'curbside' },
+    { key: 'curbside', label: ORDER_TYPES.curbside.label, time: ORDER_TYPES.curbside.time, img: ORDER_TYPE_IMAGES.curbside, onSelect: () => { setOrderType('pickup'); setPickupMethod('curbside'); }, isActive: orderType === 'pickup' && pickupMethod === 'curbside' },
+    { key: 'delivery', label: ORDER_TYPES.delivery.label, time: ORDER_TYPES.delivery.time, img: ORDER_TYPE_IMAGES.delivery, onSelect: () => setOrderType('delivery'), isActive: orderType === 'delivery' },
+    { key: 'dine_in', label: ORDER_TYPES.dine_in.label, time: ORDER_TYPES.dine_in.time, img: ORDER_TYPE_IMAGES.dine_in, onSelect: () => setOrderType('dine_in'), isActive: orderType === 'dine_in' },
+  ];
 
   const reload = async () => {
     try {
@@ -117,37 +127,32 @@ export default function Menu() {
 
           {/* Order type switcher */}
           <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-stretch">
-          <div className="grid grid-cols-3 gap-3 max-w-2xl flex-1 w-full">
-            {Object.entries(ORDER_TYPES).map(([type, config]) => {
-              const active = orderType === type;
-              return (
-                <button
-                  key={type}
-                  onClick={() => setOrderType(type)}
-                  className={`group relative overflow-hidden rounded-2xl transition-all ${
-                    active ? 'ring-4 ring-smashie-yellow shadow-float' : 'ring-2 ring-white/40 hover:ring-white/70'
-                  }`}
-                >
-                  <img
-                    src={ORDER_TYPE_IMAGES[type]}
-                    alt={config.label}
-                    className={`w-full aspect-square object-cover transition-transform group-hover:scale-105 ${active ? '' : 'opacity-90 group-hover:opacity-100'}`}
-                  />
-                  {/* Solid label plate — the old translucent gradient let the
-                      artwork wash out the label text, making the buttons hard to read. */}
-                  <div
-                    className={`absolute inset-x-0 bottom-0 px-2 py-2.5 text-center ${active ? 'bg-smashie-yellow' : 'bg-obsidian-roast/95'}`}
-                  >
-                    <span className={`block font-heading text-base leading-none ${active ? 'text-[#003366]' : 'text-white'}`}>
-                      {config.label}
-                    </span>
-                    <span className={`text-xs font-body font-semibold ${active ? 'text-[#003366]/80' : 'text-white/90'}`}>
-                      {config.time}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-xl w-full">
+            {orderTiles.map(t => (
+              <button
+                key={t.key}
+                onClick={t.onSelect}
+                className={`group relative overflow-hidden rounded-2xl aspect-square transition-all ${
+                  t.isActive ? 'ring-4 ring-smashie-yellow shadow-float' : 'ring-2 ring-white/40 hover:ring-white/70'
+                }`}
+              >
+                <img
+                  src={t.img}
+                  alt={t.label}
+                  loading="lazy"
+                  className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${t.isActive ? '' : 'opacity-90 group-hover:opacity-100'}`}
+                />
+                {/* Item-card style: gradient overlay so the label/time overlap
+                    the artwork instead of sitting on a solid plate. */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 px-1.5 py-2 text-center">
+                  <span className={`block font-heading text-sm leading-none ${t.isActive ? 'text-smashie-yellow' : 'text-white'}`}>
+                    {t.label}
+                  </span>
+                  <span className="text-[11px] font-body font-semibold text-white/90">{t.time}</span>
+                </div>
+              </button>
+            ))}
           </div>
           <img
             src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/dcbd6b725_CRUBSIDE.png"
