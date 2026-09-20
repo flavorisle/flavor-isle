@@ -57,6 +57,7 @@ const Gallery = lazy(() => import('./pages/Gallery'));
 const SocialReviews = lazy(() => import('./pages/SocialReviews'));
 const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const CommunityNews = lazy(() => import('./pages/CommunityNews'));
+const Rewards = lazy(() => import('./pages/Rewards'));
 const Order = lazy(() => import('./pages/Order'));
 const MerchCheckout = lazy(() => import('./pages/MerchCheckout'));
 const MerchConfirmation = lazy(() => import('./pages/MerchConfirmation'));
@@ -207,7 +208,7 @@ const AuthenticatedApp = () => {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/order-status" element={<OrderStatus />} />
-      <Route path="/rewards" element={<Navigate to="/" replace />} />
+      <Route path="/rewards" element={<Rewards />} />
 
       {/* Login required to view account or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
