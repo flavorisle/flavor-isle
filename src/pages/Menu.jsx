@@ -154,12 +154,6 @@ export default function Menu() {
               </button>
             ))}
           </div>
-          <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/dcbd6b725_CRUBSIDE.png"
-            alt="Curbside pickup at Flavor Isle — we bring your order to your car"
-            loading="lazy"
-            className="w-full max-w-md lg:w-[380px] xl:w-[440px] rounded-2xl ring-2 ring-white/40 lg:self-center"
-          />
           </div>
         </div>
       </div>
