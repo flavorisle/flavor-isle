@@ -125,7 +125,7 @@ export default function Rewards() {
               <p className="font-heading text-sm text-obsidian-roast">Add a phone number to join Star Rewards</p>
               <p className="text-xs text-muted-foreground mt-0.5">Star Rewards is linked to your phone number, just like in-store. Add one in your profile to start earning.</p>
             </div>
-            <Link to="/account" className="btn-cherry chrome-hover px-4 py-2 text-sm font-heading whitespace-nowrap tap-44">Add Phone</Link>
+            <Link to="/account?tab=profile" className="btn-cherry chrome-hover px-4 py-2 text-sm font-heading whitespace-nowrap tap-44">Add Phone</Link>
           </div>
         )}
 

@@ -17,7 +17,7 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
@@ -136,11 +136,33 @@ function LoggedInAccount({ user, logout }) {
   const [favorites, setFavorites] = useState([]);
   const [starStatus, setStarStatus] = useState(null);
   const [starLoading, setStarLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
+  // Read the ?tab= URL param (set by the Rewards "Add Phone" flow) so the user
+  // lands directly on the relevant tab. Unknown/missing values fall back to
+  // 'orders' exactly as before.
+  const [searchParams] = useSearchParams();
+  const VALID_TABS = ['orders', 'track', 'rewards', 'payments', 'favorites', 'profile'];
+  const initialTab = (() => {
+    const t = searchParams.get('tab');
+    return t && VALID_TABS.includes(t) ? t : 'orders';
+  })();
+  // When arriving via /account?tab=profile (Rewards Add Phone), open the
+  // profile editor immediately so the user can type their phone number.
+  const fromProfileDeepLink = initialTab === 'profile';
+  const [editing, setEditing] = useState(fromProfileDeepLink);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState('orders');
+  const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
+  const phoneInputRef = useRef(null);
+
+  // Focus + scroll the Phone field into view once the profile tab renders
+  // after the Add Phone deep link (loading must clear first).
+  useEffect(() => {
+    if (fromProfileDeepLink && editing && !loading && phoneInputRef.current) {
+      phoneInputRef.current.focus();
+      phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [fromProfileDeepLink, editing, loading]);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -526,7 +548,7 @@ function LoggedInAccount({ user, logout }) {
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
                       {editing ? (
-                        <input type={type || 'text'} value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        <input ref={key === 'phone' ? phoneInputRef : undefined} type={type || 'text'} value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       ) : (
                         <p className="text-sm text-obsidian-roast">{(format ? format(profile?.[key]) : profile?.[key]) || <span className="text-muted-foreground italic">Not set</span>}</p>
                       )}
