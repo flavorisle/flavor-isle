@@ -11,7 +11,7 @@ export const HAPPY_HOUR_DEFAULT = {
   end_time: '18:00',
   discount_percent: 50,
   square_item_ids: ['MTOVX3FLW3QYAZRHAXMZMWYN'],
-  label: 'Happy Hour — 50% off drinks',
+  label: 'Happy Hour — Unbeatable value on drinks',
 };
 
 // Merge the stored setting with defaults so missing fields don't break logic.

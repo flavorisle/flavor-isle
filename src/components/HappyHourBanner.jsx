@@ -25,7 +25,6 @@ export default function HappyHourBanner({ variant = 'full' }) {
 
   const active = isHappyHourActive(setting);
   const window = formatHappyHourWindow(setting);
-  const pct = hh.discount_percent || 50;
 
   if (variant === 'compact') {
     return (
@@ -33,7 +32,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
         active ? 'bg-midnight-cherry text-white' : 'bg-midnight-cherry/10 text-midnight-cherry'
       }`}>
         <Tag size={14} className="flex-shrink-0" />
-        <span>Happy Hour · {pct}% off drinks · {window} daily · Online</span>
+        <span>Happy Hour · Unbeatable value on drinks · {window} daily · Online</span>
         {active && <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse">NOW</span>}
       </div>
     );
@@ -54,7 +53,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-heading text-lg sm:text-xl leading-none">
-              Happy Hour — {pct}% Off Drinks
+              Happy Hour — Unbeatable Value on Drinks
             </h3>
             {active && (
               <span className="text-xs font-heading bg-white/25 px-2.5 py-1 rounded-full animate-pulse">
@@ -63,7 +62,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
             )}
           </div>
           <p className={`text-sm mt-1 ${active ? 'text-white/85' : 'text-muted-foreground'}`}>
-            Half off Classic Drinks when you order online — Coke, Coke Zero, Dr Pepper, Sprite, Root Beer & Sweet Tea. {window} daily, online orders only.
+            Unbeatable value on Classic Drinks when you order online — Coke, Coke Zero, Dr Pepper, Sprite, Root Beer & Sweet Tea. {window} daily, online orders only.
           </p>
         </div>
       </div>
