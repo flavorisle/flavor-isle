@@ -78,7 +78,7 @@ export default function WhyOrderDirect() {
                 <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
                   Start Your First Order <ArrowRight size={16} />
                 </Link>
-                <Link to="/account" className="btn-mint inline-flex items-center px-6 py-3 text-sm font-heading">
+                <Link to="/rewards" className="btn-mint inline-flex items-center px-6 py-3 text-sm font-heading">
                   See How Rewards Work
                 </Link>
               </div>
