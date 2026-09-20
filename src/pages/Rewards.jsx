@@ -8,19 +8,29 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 
 // Loyalty status tiers — derived from lifetime stars. Each tier grants a
-// benefit multiplier (Nx) applied to stars earned on every order.
+// benefit multiplier (Nx) applied to stars earned on every order. Ordered
+// descending by min so deriveTier returns the highest reached tier first.
 const LOYALTY_TIERS = [
-  { min: 150, label: 'Big Burger Energy', multiplier: 5, color: 'from-amber-400 via-yellow-500 to-amber-600', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { min: 120, label: 'Mega Flex', multiplier: 4, color: 'from-patina-mint to-[#0a1f33]', text: 'text-patina-mint', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { min: 70, label: 'Big Flex', multiplier: 3, color: 'from-midnight-cherry to-red-700', text: 'text-midnight-cherry', bg: 'bg-red-50', border: 'border-red-200' },
-  { min: 40, label: 'Big Bite', multiplier: 2, color: 'from-smashie-yellow to-amber-500', text: 'text-amber-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+  { min: 150, label: 'Big Burger Energy', multiplier: 5, iconColor: '#f1c40f' },
+  { min: 120, label: 'Mega Flex', multiplier: 4, iconColor: '#2c3e50' },
+  { min: 70, label: 'Big Flex', multiplier: 3, iconColor: '#d9534f' },
+  { min: 40, label: 'Big Bite', multiplier: 2, iconColor: '#e6a23c' },
 ];
 
 function deriveTier(lifetime) {
   for (const t of LOYALTY_TIERS) {
     if (lifetime >= t.min) return t;
   }
-  return { min: 0, label: 'Starter', multiplier: 1, color: 'from-slate-300 to-slate-400', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };
+  return { min: 0, label: 'Starter', multiplier: 1, iconColor: '#b0c4de' };
+}
+
+// Subtitle for a reward tier card — "Free item · item reward" for item-scoped
+// rewards, "{pct}% off · order reward" for percentage order rewards.
+function rewardSubtitle(t) {
+  if (t.scope && t.scope.startsWith('ITEM')) return 'Free item · item reward';
+  if (t.discountType === 'FIXED_PERCENTAGE') return `${t.percentage || 0}% off · order reward`;
+  if (t.discountType === 'FIXED_AMOUNT') return `$${Math.round((t.fixedAmountCents || 0) / 100)} off · order reward`;
+  return 'order reward';
 }
 
 export default function Rewards() {
@@ -55,10 +65,12 @@ export default function Rewards() {
 
   // Progress toward the next unreached reward tier
   const sortedTiers = [...tiers].sort((a, b) => a.points - b.points);
-  const sortedRewardTiers = [...tiers].sort((a, b) => a.points - b.points);
   const nextTier = sortedTiers.find(t => t.points > balance);
   const nextTierProgress = nextTier ? Math.min(100, Math.round((balance / nextTier.points) * 100)) : 100;
   const starsToNext = nextTier ? Math.max(0, nextTier.points - balance) : 0;
+
+  // Ascending tier list for the ladder display (lowest tier first).
+  const ladderTiers = [...LOYALTY_TIERS].reverse();
 
   if (loading) {
     return (
@@ -72,6 +84,102 @@ export default function Rewards() {
       </div>
     );
   }
+
+  // ── Tier ladder card ──
+  // reached = lifetime meets the tier threshold; current = the highest reached
+  // tier (the one the user is currently on). Below-current tiers show UNLOCKED,
+  // the current tier shows CURRENT with a highlighted border, unreached tiers
+  // are greyed.
+  const renderTierCard = (t) => {
+    const reached = lifetime >= t.min;
+    const isCurrent = tier && t.min === tier.min && reached;
+    return (
+      <div
+        key={t.label}
+        className="flex items-center gap-4 rounded-2xl p-4 bg-white"
+        style={{ border: `2px solid ${isCurrent ? '#d9534f' : '#d1dbe5'}` }}
+      >
+        <div
+          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${reached ? '' : 'opacity-40 grayscale'}`}
+          style={{ backgroundColor: t.iconColor }}
+        >
+          <Award size={22} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-heading text-obsidian-roast">{t.label}</p>
+            {isCurrent ? (
+              <span className="text-xs font-heading text-white rounded-full px-2 py-0.5" style={{ backgroundColor: '#d9534f' }}>CURRENT</span>
+            ) : reached ? (
+              <span className="text-xs font-heading text-white rounded-full px-2 py-0.5" style={{ backgroundColor: '#b0c4de' }}>UNLOCKED</span>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{t.min}+ lifetime stars</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0 font-heading text-lg" style={{ color: '#e67e22' }}>
+          <Zap size={16} />
+          {t.multiplier}x
+        </div>
+      </div>
+    );
+  };
+
+  // ── Reward card ──
+  // redeemable = balance meets the reward's star cost; those show a READY badge.
+  const renderRewardCard = (t) => {
+    const redeemable = balance >= t.points;
+    return (
+      <div key={t.id} className="card-diner p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: redeemable ? '#F3DCCB' : '#EBEBEB' }}
+          >
+            <Gift size={18} style={{ color: redeemable ? '#D65B36' : '#9ca3af' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-heading text-obsidian-roast uppercase">{t.name}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">{rewardSubtitle(t)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {redeemable && (
+            <span className="text-xs font-heading text-white rounded-full px-3 py-1" style={{ backgroundColor: '#D65B36' }}>READY</span>
+          )}
+          <span className="flex items-center gap-1 text-sm font-heading px-3 py-1.5 rounded-lg text-obsidian-roast" style={{ backgroundColor: '#EBEBEB' }}>
+            <Star size={14} /> {Number(t.points).toLocaleString()}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const TierLadder = () => (
+    <div className="card-diner p-6 mb-8">
+      <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
+      <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
+      <div className="space-y-3">
+        {ladderTiers.map(renderTierCard)}
+      </div>
+    </div>
+  );
+
+  const RewardsList = () => (
+    <div>
+      <h3 className="font-heading text-xl text-obsidian-roast mb-1">Available Rewards</h3>
+      <p className="text-sm text-muted-foreground mb-4">Redeem these at the Flavor Isle register right from your Star Rewards balance.</p>
+      <div className="space-y-3">
+        {tiers.length === 0 ? (
+          <div className="card-diner p-8 text-center">
+            <Gift size={24} className="mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground italic">No reward tiers are configured in the Square loyalty program yet.</p>
+          </div>
+        ) : (
+          sortedTiers.map(renderRewardCard)
+        )}
+      </div>
+    </div>
+  );
 
   // ── Logged-out: program intro hero + tier ladder + reward catalog ──
   if (!isAuthenticated) {
@@ -109,61 +217,8 @@ export default function Rewards() {
             </div>
           </div>
 
-          {/* Star Tiers ladder */}
-          <div className="card-diner p-6 mb-8">
-            <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
-            <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
-            <div className="space-y-3">
-              {[...LOYALTY_TIERS].reverse().map((t) => (
-                <div key={t.label} className="flex items-center gap-4 rounded-2xl p-4 border-2 border-border bg-muted/40">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center flex-shrink-0 opacity-40 grayscale`}>
-                    <Award size={22} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-heading text-obsidian-roast">{t.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {Number(t.min).toLocaleString()} lifetime stars to unlock
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0 font-heading text-lg text-muted-foreground">
-                    <Zap size={16} />
-                    {t.multiplier}×
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Available Rewards catalog */}
-          <div>
-            <h3 className="font-heading text-xl text-obsidian-roast mb-1">Available Rewards</h3>
-            <p className="text-sm text-muted-foreground mb-4">Redeem these at the Flavor Isle register right from your Star Rewards balance.</p>
-            <div className="space-y-3">
-              {sortedRewardTiers.length === 0 ? (
-                <div className="card-diner p-8 text-center">
-                  <Gift size={24} className="mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground italic">Rewards list coming soon.</p>
-                </div>
-              ) : (
-                sortedRewardTiers.map((t) => (
-                  <div key={t.id} className="card-diner p-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-muted">
-                        <Gift size={18} className="text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-heading text-obsidian-roast">{t.name}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0 text-sm font-heading px-3 py-1.5 rounded-lg bg-patina-mint/15 text-patina-mint">
-                      <Star size={14} /> {Number(t.points).toLocaleString()}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <TierLadder />
+          <RewardsList />
 
           {/* CTA */}
           <div className="mt-10 text-center">
@@ -201,7 +256,7 @@ export default function Rewards() {
               The same rewards you earn in-store — synced to your online account{earnText ? `. ${earnText}.` : '.'}
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3 bg-white/10 rounded-2xl p-3">
-              <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${tier.color} flex items-center justify-center`}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: tier.iconColor }}>
                 <Award size={15} className="text-white" />
               </div>
               <span className="font-heading text-sm tracking-wide">{tier.label}</span>
@@ -272,34 +327,7 @@ export default function Rewards() {
         )}
 
         {/* Star Tiers ladder */}
-        {status?.hasAccount && (
-          <div className="card-diner p-6 mb-8">
-            <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
-            <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
-            <div className="space-y-3">
-              {[...LOYALTY_TIERS].reverse().map((t) => {
-                const reached = lifetime >= t.min;
-                return (
-                  <div key={t.label} className="flex items-center gap-4 rounded-2xl p-4 border-2 border-border bg-muted/40">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center flex-shrink-0 ${reached ? '' : 'opacity-40 grayscale'}`}>
-                      <Award size={22} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-heading text-obsidian-roast">{t.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {Number(t.min).toLocaleString()} lifetime stars to unlock
-                      </p>
-                    </div>
-                    <div className={`flex items-center gap-1.5 flex-shrink-0 font-heading text-lg ${reached ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
-                      <Zap size={16} className={reached ? 'fill-smashie-yellow text-smashie-yellow' : ''} />
-                      {t.multiplier}×
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {status?.hasAccount && <TierLadder />}
 
         {/* Progress to next reward */}
         {status?.hasAccount && nextTier && (
@@ -327,48 +355,7 @@ export default function Rewards() {
         )}
 
         {/* Available rewards */}
-        {status?.hasAccount && (
-          <div>
-            <h3 className="font-heading text-xl text-obsidian-roast mb-1">Available Rewards</h3>
-            <p className="text-sm text-muted-foreground mb-4">Redeem these at the Flavor Isle register right from your Star Rewards balance.</p>
-            <div className="space-y-3">
-              {tiers.length === 0 ? (
-                <div className="card-diner p-8 text-center">
-                  <Gift size={24} className="mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground italic">No reward tiers are configured in the Square loyalty program yet.</p>
-                </div>
-              ) : (
-                sortedTiers.map((t) => {
-                  const redeemable = balance >= t.points;
-                  return (
-                    <div
-                      key={t.id}
-                      className={`card-diner p-4 flex items-center justify-between gap-3 ${redeemable ? 'ring-2 ring-midnight-cherry/20' : ''}`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${redeemable ? 'bg-midnight-cherry/15' : 'bg-muted'}`}>
-                          <Gift size={18} className={redeemable ? 'text-midnight-cherry' : 'text-muted-foreground'} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-heading text-obsidian-roast">{t.name}</p>
-                          <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {redeemable && (
-                          <span className="text-xs font-heading text-white bg-midnight-cherry rounded-full px-3 py-1">Redeemable</span>
-                        )}
-                        <span className="flex items-center gap-1 text-sm font-heading px-3 py-1.5 rounded-lg bg-patina-mint/15 text-patina-mint">
-                          <Star size={14} /> {Number(t.points).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
+        {status?.hasAccount && <RewardsList />}
       </div>
 
       <Footer />
