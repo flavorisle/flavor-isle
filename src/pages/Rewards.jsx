@@ -181,6 +181,43 @@ export default function Rewards() {
     </div>
   );
 
+  // ── How It Works: 3-step explainer shown to logged-out visitors ──
+  const HowItWorks = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {[
+        { icon: Star, title: 'Earn Stars', text: 'Collect stars on every online order — automatically tracked by your phone number.' },
+        { icon: Zap, title: 'Climb Tiers', text: 'Stack lifetime stars to unlock bigger multipliers on every order.' },
+        { icon: Gift, title: 'Redeem Rewards', text: 'Cash in your stars for free food at the Flavor Isle register.' },
+      ].map((s, i) => (
+        <div key={s.title} className="card-diner p-5 text-center">
+          <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center mx-auto mb-3">
+            <s.icon size={22} className="text-midnight-cherry" />
+          </div>
+          <div className="text-xs font-heading text-smashie-yellow mb-1 tracking-widest">STEP {i + 1}</div>
+          <p className="font-heading text-obsidian-roast mb-1">{s.title}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{s.text}</p>
+        </div>
+      ))}
+    </div>
+  );
+
+  // ── Terms & Conditions — collapsible, shown on both views ──
+  const RewardsTerms = () => (
+    <div className="mt-10 mb-4">
+      <details className="card-diner p-5">
+        <summary className="font-heading text-sm text-obsidian-roast cursor-pointer list-none flex items-center justify-between">
+          Star Rewards Terms &amp; Conditions
+          <ChevronRight size={16} className="text-muted-foreground" />
+        </summary>
+        <div className="mt-4 text-xs text-muted-foreground leading-relaxed space-y-2">
+          <p>Star Rewards is Flavor Isle's loyalty program, linked to your phone number and managed through Square. Stars are earned on eligible online and in-store purchases and can be redeemed for rewards at the register.</p>
+          <p>Star balances, tier multipliers, reward tiers, and earning rules are set and controlled by Square. Flavor Isle reserves the right to modify, suspend, or discontinue the Star Rewards program — or any individual reward, tier, or benefit — at any time without notice.</p>
+          <p>Stars have no cash value, are non-transferable, and may expire per the program terms. Participation is subject to the full Square Loyalty program terms.</p>
+        </div>
+      </details>
+    </div>
+  );
+
   // ── Logged-out: program intro hero + tier ladder + reward catalog ──
   if (!isAuthenticated) {
     return (
@@ -217,6 +254,7 @@ export default function Rewards() {
             </div>
           </div>
 
+          <HowItWorks />
           <TierLadder />
           <RewardsList />
 
@@ -226,6 +264,8 @@ export default function Rewards() {
               Start Earning Stars <ChevronRight size={16} />
             </Link>
           </div>
+
+          <RewardsTerms />
         </div>
 
         <Footer />
@@ -356,6 +396,8 @@ export default function Rewards() {
 
         {/* Available rewards */}
         {status?.hasAccount && <RewardsList />}
+
+        <RewardsTerms />
       </div>
 
       <Footer />
