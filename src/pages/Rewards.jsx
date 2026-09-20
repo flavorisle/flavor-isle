@@ -210,8 +210,8 @@ export default function Rewards() {
           <ChevronRight size={16} className="text-muted-foreground" />
         </summary>
         <div className="mt-4 text-xs text-muted-foreground leading-relaxed space-y-2">
-          <p>Star Rewards is Flavor Isle's loyalty program, linked to your phone number and managed through Square. Stars are earned on eligible online and in-store purchases and can be redeemed for rewards at the register.</p>
-          <p>Star balances, tier multipliers, reward tiers, and earning rules are set and controlled by Square. Flavor Isle reserves the right to modify, suspend, or discontinue the Star Rewards program — or any individual reward, tier, or benefit — at any time without notice.</p>
+          <p>Star Rewards is Flavor Isle's loyalty program, run by Flavor Isle and managed through Square. Stars are earned on eligible online and in-store purchases and can be redeemed for rewards at the register.</p>
+          <p>Flavor Isle sets the reward tiers, earning rules, and program terms, and reserves the right to modify, suspend, or discontinue the Star Rewards program — or any individual reward, tier, or benefit — at any time without notice.</p>
           <p>Stars have no cash value, are non-transferable, and may expire per the program terms. Participation is subject to the full Square Loyalty program terms.</p>
         </div>
       </details>
