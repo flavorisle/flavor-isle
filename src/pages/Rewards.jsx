@@ -24,7 +24,7 @@ function deriveTier(lifetime) {
 }
 
 export default function Rewards() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +32,10 @@ export default function Rewards() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await base44.functions.invoke('squareLoyalty', { action: 'status' });
+        // Logged-out visitors fetch the public program definition (no balance,
+        // no personal data); signed-in users fetch their live loyalty status.
+        const action = isAuthenticated ? 'status' : 'program';
+        const res = await base44.functions.invoke('squareLoyalty', { action });
         if (!cancelled) setStatus(res.data);
       } catch (e) {
         if (!cancelled) setStatus(null);
@@ -41,7 +44,7 @@ export default function Rewards() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [isAuthenticated]);
 
   const programName = status?.programName || 'Flavor Isle Star Rewards';
   const balance = status?.balance || 0;
@@ -64,6 +67,124 @@ export default function Rewards() {
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
         </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ── Logged-out view: program intro + Star Tiers ladder + rewards catalog ──
+  if (!isAuthenticated) {
+    const programName = status?.programName || 'Flavor Isle Star Rewards';
+    const earnText = status?.earnText;
+    const rewardTiers = status?.rewardTiers || [];
+    const sortedRewardTiers = [...rewardTiers].sort((a, b) => a.points - b.points);
+
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+        <Navbar />
+        <CartDrawer />
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          {/* Intro hero */}
+          <div className="card-diner overflow-hidden mb-8">
+            <div className="relative bg-gradient-to-br from-patina-mint to-[#0a1f33] text-white p-8 sm:p-10">
+              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5" />
+              <div className="absolute -right-4 top-16 w-24 h-24 rounded-full bg-midnight-cherry/30" />
+              <div className="absolute right-10 -bottom-8 w-20 h-20 rounded-full bg-smashie-yellow/10" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-1">
+                  <Star size={14} className="text-smashie-yellow" fill="currentColor" />
+                  <span className="text-xs font-heading tracking-widest uppercase text-white/70">{programName}</span>
+                </div>
+                <h1 className="font-heading text-4xl sm:text-5xl leading-none mt-4">Earn stars on every online order</h1>
+                <p className="text-sm text-white/70 mt-3 max-w-md leading-relaxed">
+                  Join Star Rewards to stack up stars on every order, climb the tiers for bigger multipliers, and cash them in for free food at the register — just like in-store.
+                </p>
+                {earnText && (
+                  <div className="mt-4 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+                    <Sparkles size={14} className="text-smashie-yellow" />
+                    <span className="text-sm">{earnText}</span>
+                  </div>
+                )}
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link to="/register" className="btn-cherry chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">
+                    Sign Up <ChevronRight size={16} />
+                  </Link>
+                  <Link to="/login" className="px-6 py-3 text-sm font-heading rounded-full border-2 border-white/30 text-white hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Star Tiers ladder */}
+          <div className="card-diner p-6 mb-8">
+            <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
+            <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
+            <div className="space-y-3">
+              {[...LOYALTY_TIERS].reverse().map((t) => (
+                <div key={t.label} className="flex items-center gap-4 rounded-2xl p-4 border-2 border-border bg-muted/40">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center flex-shrink-0 opacity-40 grayscale`}>
+                    <Award size={22} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-heading text-obsidian-roast">{t.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {Number(t.min).toLocaleString()} lifetime stars to unlock
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0 font-heading text-lg text-muted-foreground">
+                    <Zap size={16} />
+                    {t.multiplier}×
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Available Rewards catalog */}
+          <div>
+            <h3 className="font-heading text-xl text-obsidian-roast mb-1">Available Rewards</h3>
+            <p className="text-sm text-muted-foreground mb-4">Redeem these at the Flavor Isle register right from your Star Rewards balance.</p>
+            <div className="space-y-3">
+              {sortedRewardTiers.length === 0 ? (
+                <div className="card-diner p-8 text-center">
+                  <Gift size={24} className="mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground italic">Rewards list coming soon.</p>
+                </div>
+              ) : (
+                sortedRewardTiers.map((t) => (
+                  <div key={t.id} className="card-diner p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-muted">
+                        <Gift size={18} className="text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-heading text-obsidian-roast">{t.name}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5 truncate">{t.description} · {t.scope?.startsWith('ITEM') ? 'item' : 'order'} reward</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">{t.points} to go</span>
+                      <span className="flex items-center gap-1.5 text-sm font-heading px-3 py-1.5 rounded-lg bg-patina-mint/15 text-patina-mint">
+                        <Star size={14} /> {Number(t.points).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-10 text-center">
+            <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center gap-2">
+              Start Earning Stars <ChevronRight size={16} />
+            </Link>
+          </div>
+        </div>
+
         <Footer />
       </div>
     );

@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildLoyaltyStatus, accrueForOrder } from '../../shared/squareLoyalty.ts';
+import { buildLoyaltyStatus, accrueForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier } from '../../shared/squareLoyalty.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -21,6 +21,36 @@ Deno.serve(async (req) => {
       } catch (accrueErr) {
         console.error('accrueForOrder failed:', accrueErr.message);
         return Response.json({ error: accrueErr.message }, { status: 500 });
+      }
+    }
+
+    // Public program definition — no auth, no customer lookup. Returns the
+    // loyalty program name, status, earn rules, and reward catalog so the
+    // public /rewards page can show benefits to logged-out visitors.
+    if (action === 'program') {
+      try {
+        const program = await getLoyaltyProgram();
+        const rewardTiers = (program?.reward_tiers || []).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          points: t.points,
+          description: describeRewardTier(t),
+          scope: t.definition?.scope || 'ORDER',
+        }));
+        return Response.json({
+          programName: program?.name || 'Flavor Isle Star Rewards',
+          programStatus: program?.status || 'UNKNOWN',
+          earnText: earnTextForProgram(program),
+          rewardTiers,
+        });
+      } catch (programErr) {
+        console.error('squareLoyalty program action failed:', (programErr as Error).message);
+        return Response.json({
+          programName: 'Flavor Isle Star Rewards',
+          programStatus: 'ACTIVE',
+          earnText: null,
+          rewardTiers: [],
+        });
       }
     }
 
