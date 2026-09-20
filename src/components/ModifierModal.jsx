@@ -418,7 +418,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-semibold">+${comboAddOn.toFixed(2)}</span>
-                  <span className={`block text-xs ${isCombo ? 'text-white/80' : 'text-midnight-cherry'}`}>save ${COMBO_DISCOUNT.toFixed(2)}</span>
+                  <span className={`block text-xs ${isCombo ? 'text-white/80' : 'text-midnight-cherry'}`}>Unbeatable value</span>
                 </div>
               </button>
             </div>
