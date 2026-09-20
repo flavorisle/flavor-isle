@@ -194,12 +194,6 @@ Deno.serve(async (req) => {
     }
 
     const lineItems = items.map(item => {
-      // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
-      // no Tomato") instead of a raw topping list. Modifiers are folded into
-      // the line item name so the POS/kitchen ticket prints correctly.
-      const mods = formatItemModifiers(item).join(', ');
-      const name = mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item');
-
       // Resolve the ITEM VARIATION id from the catalog so Square reports the
       // item under its proper category. For multi-variation items (e.g. drinks
       // with sizes), match the selected Size modifier's id to the variation
@@ -229,9 +223,18 @@ Deno.serve(async (req) => {
       // quantity, so we set the per-unit price and let Square scale it.
       const appliedModifiers: any[] = [];
       let catalogModPerUnit = 0;
+      // Names of modifiers already shown on the POS ticket as a variation
+      // (size) line or a catalog modifier sub-line. These are excluded from
+      // the line item name's parenthetical so the kitchen ticket never prints
+      // a modifier twice (once in the name, once as a sub-line). The Deluxe
+      // preset label and true ad-hoc modifiers stay in the name.
+      const alreadyOnTicket = new Set<string>();
       for (const sm of (item.selectedModifiers || [])) {
         if (!sm?.id) continue;
-        if (variationIds.has(sm.id)) continue; // Size selection
+        if (variationIds.has(sm.id)) {
+          if (sm.name) alreadyOnTicket.add(sm.name); // Size selection
+          continue;
+        }
         const modListId = modifierOptionToList[sm.id];
         if (modListId && itemModListIds.has(modListId)) {
           const mod: any = { catalog_object_id: sm.id };
@@ -240,10 +243,18 @@ Deno.serve(async (req) => {
           }
           appliedModifiers.push(mod);
           catalogModPerUnit += (sm.price || 0);
+          if (sm.name) alreadyOnTicket.add(sm.name);
         }
         // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
         // and their prices stay in base_price_money.
       }
+
+      // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
+      // no Tomato") instead of a raw topping list. Only modifiers NOT already
+      // shown as a POS sub-line (ad-hoc extras + the Deluxe label) are folded
+      // into the name, so nothing prints twice.
+      const displayMods = formatItemModifiers(item).filter((m: string) => !alreadyOnTicket.has(m));
+      const name = displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item');
 
       // base_price_money = item price minus catalog modifier upcharges (those
       // are added via the modifiers array). Ad-hoc modifier prices and size
