@@ -123,7 +123,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'SMS Consent',
-        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Providing your number is optional but required to receive these messages. Reply STOP at any time to opt out; reply HELP for help.',
+        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Providing your number is optional but required to receive these messages. Reply STOP at any time to opt out; reply HELP for help. We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. Message frequency: order-related texts are sent only around orders you place (typically 1-4 messages per order); customers who opt in for offers receive occasional promotional texts, no more than a few per month.',
       },
       {
         heading: 'Receiving Phone Calls',
