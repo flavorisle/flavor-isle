@@ -133,11 +133,23 @@ const SECTIONS = [
     body: [
       {
         heading: 'Star Rewards',
-        text: 'Our Star Rewards loyalty program is linked to your phone number and synced with our in-store Square loyalty program. Points are earned on qualifying purchases and may be redeemed for available rewards. Points have no cash value and may expire or change per program rules.',
+        text: 'Star Rewards is Flavor Isle\u2019s loyalty program, operated and managed by Flavor Isle through our Square point-of-sale system. The program allows customers to earn Stars on qualifying purchases and redeem them for available rewards. By participating in Star Rewards, you agree to the terms outlined in this section.',
       },
       {
-        heading: 'Account Responsibility',
-        text: 'You are responsible for keeping your account and phone number accurate so your rewards are tracked correctly. We are not liable for rewards missed due to incorrect contact information.',
+        heading: 'Earning Stars',
+        text: 'Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.',
+      },
+      {
+        heading: 'Redeeming Stars',
+        text: 'Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice. Rewards cannot be transferred, combined across accounts, or exchanged for cash.',
+      },
+      {
+        heading: 'Account & Phone Number Responsibility',
+        text: 'Your Star Rewards account is linked directly to your phone number and synced with our in-store Square loyalty system. You are responsible for keeping your phone number and account information accurate so Stars and rewards are tracked correctly. Flavor Isle is not liable for missed Stars, untracked purchases, or unavailable rewards caused by incorrect, outdated, or unverified contact information.',
+      },
+      {
+        heading: 'Program Changes & Limitations',
+        text: 'Flavor Isle may modify, suspend, or discontinue the Star Rewards program — including earning rules, reward tiers, expiration policies, and promotional bonuses — at any time without notice. Continued participation after changes means you accept the updated terms. Participation in Star Rewards does not guarantee the availability of any specific reward, earning rate, or benefit. Flavor Isle may limit reward quantities, restrict eligibility, or adjust program mechanics as needed.',
       },
     ],
   },

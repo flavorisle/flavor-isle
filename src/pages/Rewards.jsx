@@ -209,10 +209,28 @@ export default function Rewards() {
           Star Rewards Terms &amp; Conditions
           <ChevronRight size={16} className="text-muted-foreground" />
         </summary>
-        <div className="mt-4 text-xs text-muted-foreground leading-relaxed space-y-2">
-          <p>Star Rewards is Flavor Isle's loyalty program, run by Flavor Isle and managed through Square. Stars are earned on eligible online and in-store purchases and can be redeemed for rewards at the register.</p>
-          <p>Flavor Isle sets the reward tiers, earning rules, and program terms, and reserves the right to modify, suspend, or discontinue the Star Rewards program — or any individual reward, tier, or benefit — at any time without notice.</p>
-          <p>Stars have no cash value, are non-transferable, and may expire per the program terms. Participation is subject to the full Square Loyalty program terms.</p>
+        <div className="mt-4 text-xs text-muted-foreground leading-relaxed space-y-4">
+          <p>Star Rewards is Flavor Isle's loyalty program, operated and managed by Flavor Isle through our Square point-of-sale system. The program allows customers to earn Stars on qualifying purchases and redeem them for available rewards. By participating in Star Rewards, you agree to the terms outlined in this section.</p>
+          <div>
+            <p className="font-heading text-obsidian-roast mb-1">Earning Stars</p>
+            <p>Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice.</p>
+            <p className="mt-1">Stars have no cash value, are non-transferable, and may expire or change according to program rules.</p>
+          </div>
+          <div>
+            <p className="font-heading text-obsidian-roast mb-1">Redeeming Stars</p>
+            <p>Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice.</p>
+            <p className="mt-1">Rewards cannot be transferred, combined across accounts, or exchanged for cash.</p>
+          </div>
+          <div>
+            <p className="font-heading text-obsidian-roast mb-1">Account &amp; Phone Number Responsibility</p>
+            <p>Your Star Rewards account is linked directly to your phone number and synced with our in-store Square loyalty system. You are responsible for keeping your phone number and account information accurate so Stars and rewards are tracked correctly.</p>
+            <p className="mt-1">Flavor Isle is not liable for missed Stars, untracked purchases, or unavailable rewards caused by incorrect, outdated, or unverified contact information.</p>
+          </div>
+          <div>
+            <p className="font-heading text-obsidian-roast mb-1">Program Changes &amp; Limitations</p>
+            <p>Flavor Isle may modify, suspend, or discontinue the Star Rewards program — including earning rules, reward tiers, expiration policies, and promotional bonuses — at any time without notice. Continued participation after changes means you accept the updated terms.</p>
+            <p className="mt-1">Participation in Star Rewards does not guarantee the availability of any specific reward, earning rate, or benefit. Flavor Isle may limit reward quantities, restrict eligibility, or adjust program mechanics as needed.</p>
+          </div>
         </div>
       </details>
     </div>
