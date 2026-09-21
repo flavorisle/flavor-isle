@@ -20,7 +20,6 @@ import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
 import HappyHourBanner from '@/components/HappyHourBanner';
-import WhyOrderDirect from '@/components/WhyOrderDirect';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
@@ -78,11 +77,9 @@ export default function Home() {
       </div>
       <AdBannerStrip placement="home" />
 
-      {/* ── WHY FLAVOR ISLE ── */}
+      {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
       <WhyFlavorIsle />
 
-      {/* ── WHY ORDER DIRECT (incl. Star Rewards) ── */}
-      <WhyOrderDirect />
       <HeritageBadges />
 
       {/* ── FEATURED MENU ITEMS ── */}

@@ -418,24 +418,6 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
 
   await logSquareSyncAttempt(base44, order, squarePushed ? 'success' : 'skipped', squareOrderId, squarePushed ? null : (skipSquarePush ? 'Already pushed — emails continue' : squareError));
 
-  // Kitchen print — only for new pushes (tied to the Square push)
-  if (squarePushed) {
-    try {
-      await base44.functions.invoke('printKitchenOrder', {
-        order_number: order.order_number,
-        items: order.items || [],
-        special_instructions: order.special_instructions || '',
-        order_type: order.order_type,
-        customer_name: order.customer_name,
-        customer_phone: order.customer_phone,
-        table_number: order.table_number,
-        delivery_address: order.delivery_address,
-      });
-    } catch (printerErr) {
-      console.warn('Kitchen printer alert failed:', printerErr.message);
-    }
-  }
-
   // Staff alert email — INDEPENDENT dedupe via staff_alert_sent_at.
   // Fires exactly once regardless of whether this call did the Square push.
   await sendStaffAlertWithDedupe(base44, order);
