@@ -136,6 +136,10 @@ const SECTIONS = [
         text: 'Star Rewards is Flavor Isle\u2019s loyalty program, operated and managed by Flavor Isle through our Square point-of-sale system. The program allows customers to earn Stars on qualifying purchases and redeem them for available rewards. By participating in Star Rewards, you agree to the terms outlined in this section.',
       },
       {
+        heading: 'Eligibility',
+        text: 'To participate in Star Rewards, you must provide a valid phone number at checkout or link your phone number to your online account. Only one Star Rewards account may be associated with a single phone number. Accounts cannot be shared, transferred, or merged. Flavor Isle reserves the right to deny enrollment, suspend participation, or remove accounts that violate program rules, provide false information, or attempt to misuse the program. Star Rewards is intended for individual customer use. Commercial, automated, or bulk participation is not permitted.',
+      },
+      {
         heading: 'Earning Stars',
         text: 'Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.',
       },
@@ -146,6 +150,10 @@ const SECTIONS = [
       {
         heading: 'Account & Phone Number Responsibility',
         text: 'Your Star Rewards account is linked directly to your phone number and synced with our in-store Square loyalty system. You are responsible for keeping your phone number and account information accurate so Stars and rewards are tracked correctly. Flavor Isle is not liable for missed Stars, untracked purchases, or unavailable rewards caused by incorrect, outdated, or unverified contact information.',
+      },
+      {
+        heading: 'Fraud & Misuse',
+        text: 'Flavor Isle may suspend or terminate your participation in Star Rewards if we detect or suspect fraudulent activity, misuse, manipulation of earning or redemption mechanics, creation of duplicate accounts, or any attempt to obtain Stars or rewards dishonestly. Examples of misuse include, but are not limited to: using multiple phone numbers to accumulate Stars, attempting to redeem rewards not legitimately earned, providing false or misleading account information, abusing promotions, loopholes, or system errors, or harassing staff or attempting to force unauthorized reward redemption. Flavor Isle reserves the right to revoke Stars, cancel rewards, or close accounts involved in fraudulent or abusive behavior.',
       },
       {
         heading: 'Program Changes & Limitations',
