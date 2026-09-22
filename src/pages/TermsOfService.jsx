@@ -39,8 +39,8 @@ const SECTIONS = [
     title: 'SMS, Phone & Communication Consent',
     body: [
       {
-        heading: 'SMS Consent',
-        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Message and data rates may apply. Reply STOP to opt out or HELP for help. Providing your number is optional but required to receive these messages. Message frequency: typically 1-4 texts per order you place, plus occasional promotional texts (no more than a few per month) if you opted in.',
+        heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
+        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing. See our Privacy Policy at https://taste-isle-express.base44.app/privacy-policy.',
       },
       {
         heading: 'Receiving Phone Calls From Us',

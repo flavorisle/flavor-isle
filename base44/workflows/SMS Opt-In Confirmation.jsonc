@@ -1,6 +1,6 @@
 {
   "name": "SMS Opt-In Confirmation",
-  "description": "Texts a welcome/confirmation message the moment a customer opts in to SMS updates (website or checkout). Keyword JOIN opt-ins are excluded \u2014 the Twilio webhook already auto-replies to those.",
+  "description": "Texts a category-aware welcome/confirmation message the moment a customer opts in to SMS via a website surface (checkout post-order, footer, sms_signup). Keyword (ORDERS/OFFERS) opt-ins and STOP records are excluded \u2014 the Twilio webhook already auto-replies to keywords, and STOP records have no consent.",
   "trigger": {
     "config": {
       "trigger_type": "entity",
@@ -9,7 +9,7 @@
         "create"
       ]
     },
-    "condition": "${ .trigger.data.opted_in == true and (.trigger.data.source // \"\") != \"keyword\" }"
+    "condition": "${ .trigger.data.opted_in == true and (.trigger.data.consent_category // \"none\") != \"none\" and ((.trigger.data.consent_source_page // \"\") | startswith(\"keyword\") | not) }"
   },
   "definition": {
     "document": {

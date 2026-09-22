@@ -2,6 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Users, Search, CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
+// Badge for a subscriber's consent category (split transactional vs marketing).
+function ConsentBadge({ sub }) {
+  const stopped = sub.status === 'unsubscribed';
+  if (stopped) {
+    return <span className="text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-100 text-red-700">Stopped</span>;
+  }
+  const tx = !!sub.transactional_consent;
+  const mk = !!sub.marketing_consent && !!sub.proven_marketing_consent;
+  if (tx && mk) return <span className="text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full bg-patina-mint/15 text-patina-mint">Both</span>;
+  if (mk) return <span className="text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full bg-smashie-yellow/20 text-obsidian-roast">Offers</span>;
+  if (tx) return <span className="text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full bg-midnight-cherry/10 text-midnight-cherry">Orders</span>;
+  return <span className="text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full bg-muted text-muted-foreground">None</span>;
+}
+
 export default function SmsSubscribersList() {
   const [subs, setSubs] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,7 +47,11 @@ export default function SmsSubscribersList() {
   }, [subs, query]);
 
   const activeCount = useMemo(
-    () => (subs || []).filter((s) => s.status === 'active' && s.opted_in !== false).length,
+    () => (subs || []).filter((s) => s.status === 'active' && (s.transactional_consent || s.marketing_consent)).length,
+    [subs]
+  );
+  const marketingCount = useMemo(
+    () => (subs || []).filter((s) => s.status === 'active' && s.marketing_consent && s.proven_marketing_consent).length,
     [subs]
   );
 
@@ -49,7 +67,7 @@ export default function SmsSubscribersList() {
             <div>
               <h3 className="font-heading text-lg text-obsidian-roast">SMS Subscribers</h3>
               <p className="text-xs text-muted-foreground">
-                {subs == null ? 'Loading…' : `${activeCount} active · ${subs.length} total`}
+                {subs == null ? 'Loading…' : `${activeCount} with consent · ${marketingCount} proven marketing · ${subs.length} total`}
               </p>
             </div>
           </div>
@@ -95,7 +113,7 @@ export default function SmsSubscribersList() {
         {filtered.length > 0 && (
           <ul className="divide-y divide-border">
             {filtered.map((s) => {
-              const isActive = s.status === 'active' && s.opted_in !== false;
+              const isActive = s.status === 'active' && (s.transactional_consent || s.marketing_consent);
               return (
                 <li key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-patina-mint/15' : 'bg-muted'}`}>
@@ -111,12 +129,10 @@ export default function SmsSubscribersList() {
                       {s.phone}{s.email ? ` · ${s.email}` : ''}
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <span className={`text-[11px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full ${isActive ? 'bg-patina-mint/15 text-patina-mint' : 'bg-muted text-muted-foreground'}`}>
-                      {isActive ? 'Subscribed' : 'Unsubscribed'}
-                    </span>
-                    {s.source && (
-                      <p className="text-[10px] text-muted-foreground mt-1 capitalize">{s.source}</p>
+                  <div className="text-right flex-shrink-0 space-y-1">
+                    <ConsentBadge sub={s} />
+                    {s.consent_source_page && (
+                      <p className="text-[10px] text-muted-foreground">{s.consent_source_page}</p>
                     )}
                   </div>
                 </li>
