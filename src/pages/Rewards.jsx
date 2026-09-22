@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Zap, TrendingUp, Gift, Phone, ArrowLeft, Sparkles, Award, ChevronRight } from 'lucide-react';
+import { Star, Zap, TrendingUp, Gift, Phone, ArrowLeft, Sparkles, Award, ChevronRight, HelpCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
@@ -201,6 +201,54 @@ export default function Rewards() {
     </div>
   );
 
+  // ── FAQ — common questions about how Star Rewards works ──
+  const FAQS = [
+    {
+      q: 'How do I earn stars?',
+      a: 'Just provide your phone number at checkout (in-store or online). Stars are added automatically to your Star Rewards balance on every eligible purchase — no app or punch card needed.',
+    },
+    {
+      q: 'Do my stars expire?',
+      a: 'Stars and lifetime stars follow the program rules set by Flavor Isle. We may change expiration policies at any time, so check the terms below for the latest details.',
+    },
+    {
+      q: 'What are the star tiers?',
+      a: 'As you stack lifetime stars you climb tiers — Starter, Big Bite, Big Flex, Mega Flex, and Big Burger Energy. Each tier unlocks a bigger multiplier on the stars you earn on every order.',
+    },
+    {
+      q: 'How do I redeem a reward?',
+      a: 'When your balance reaches a reward\u2019s star cost, that reward shows a READY badge. Redeem it right at the Flavor Isle register, or during online checkout when eligible.',
+    },
+    {
+      q: 'Can I share or transfer my stars?',
+      a: 'No. Star Rewards accounts are linked to a single phone number and can\u2019t be shared, transferred, or merged. Rewards can\u2019t be exchanged for cash.',
+    },
+    {
+      q: 'What if I lose my phone number or change it?',
+      a: 'You\u2019re responsible for keeping your phone number accurate so stars track correctly. Update it in your account profile, or contact us and we\u2019ll help reconnect your rewards.',
+    },
+  ];
+
+  const RewardsFAQ = () => (
+    <div className="mt-10 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <HelpCircle size={20} className="text-midnight-cherry" />
+        <h3 className="font-heading text-xl text-obsidian-roast">Star Rewards FAQ</h3>
+      </div>
+      <div className="space-y-3">
+        {FAQS.map((f, i) => (
+          <details key={i} className="card-diner p-4 group">
+            <summary className="font-heading text-sm text-obsidian-roast cursor-pointer list-none flex items-center justify-between gap-3">
+              <span>{f.q}</span>
+              <ChevronRight size={16} className="text-muted-foreground transition-transform group-open:rotate-90 flex-shrink-0" />
+            </summary>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+
   // ── Terms & Conditions — collapsible, shown on both views ──
   const RewardsTerms = () => (
     <div className="mt-10 mb-4">
@@ -294,6 +342,8 @@ export default function Rewards() {
           <HowItWorks />
           <TierLadder />
           <RewardsList />
+
+          <RewardsFAQ />
 
           {/* CTA */}
           <div className="mt-10 text-center">
@@ -433,6 +483,8 @@ export default function Rewards() {
 
         {/* Available rewards */}
         {status?.hasAccount && <RewardsList />}
+
+        <RewardsFAQ />
 
         <RewardsTerms />
       </div>
