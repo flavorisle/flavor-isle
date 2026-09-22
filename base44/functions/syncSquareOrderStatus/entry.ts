@@ -5,6 +5,7 @@ import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
+import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -221,6 +222,16 @@ Deno.serve(async (req) => {
       if (!customerEmail || isPlaceholderEmail) continue;
 
       const milestones = missedMilestones(prevStatus, newStatus);
+      // Transactional SMS requires explicit active transactional consent for
+      // this order's phone AND the global admin toggle. STOP suppresses all.
+      let canTxSms = false;
+      if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+        try {
+          canTxSms = (await checkSmsConsent(base44, order.customer_phone, 'transactional')).ok;
+        } catch (e) {
+          canTxSms = false;
+        }
+      }
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
           await sendOrderPreparingEmail(order, base44);
@@ -235,8 +246,9 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error('live wait for push failed:', e.message);
           }
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
@@ -249,8 +261,9 @@ Deno.serve(async (req) => {
         if (milestone === 'ready') {
           await sendOrderReadyEmail(order, base44);
           notified++;
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '✅ Order ready!',
@@ -265,8 +278,9 @@ Deno.serve(async (req) => {
         if (milestone === 'completed') {
           await sendOrderCompletedEmail(order, base44);
           notified++;
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',

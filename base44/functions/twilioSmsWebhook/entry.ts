@@ -1,6 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import {
+  upsertSmsConsent,
+  stopSubscriber,
+  checkSmsConsent,
+  DISCLOSURE_TEXT,
+  SMS_CONSENT_VERSION,
+} from '../../shared/smsConsent.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -24,13 +31,17 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    // ── Keyword opt-in / opt-out / help handling ──
+    // ── Keyword handling ──
     // Carriers recognize these standard keywords. We intercept them before
-    // routing to Smashie so consent is managed for the SMSSubscriber list.
+    // routing to Smashie so consent is managed per-category for the
+    // SMSSubscriber list. JOIN no longer auto-enrolls (that was the bundled
+    // consent 30913 cause) — it asks the user to choose ORDERS or OFFERS.
     const upper = body.trim().toUpperCase().replace(/[^A-Z]/g, '');
-    const OPT_IN = ['JOIN', 'SUBSCRIBE', 'START', 'YES', 'OPTIN', 'OPTIN'];
     const OPT_OUT = ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT', 'STOPALL', 'UNSUB'];
     const HELP = ['HELP', 'INFO'];
+    const JOIN = ['JOIN', 'SUBSCRIBE', 'START', 'YES', 'OPTIN'];
+    const ORDERS = ['ORDERS', 'ORDER', 'TXN', 'TRANSACTIONAL'];
+    const OFFERS = ['OFFERS', 'OFFER', 'PROMO', 'PROMOTIONS', 'MARKETING', 'DEALS'];
 
     const xmlReply = (msg: string) =>
       new Response(
@@ -38,31 +49,56 @@ Deno.serve(async (req) => {
         { headers: { 'Content-Type': 'text/xml' } }
       );
 
+    // STOP — global opt-out. Suppresses ALL outbound SMS (transactional + marketing).
     if (OPT_OUT.includes(upper)) {
-      const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: from });
-      if (subs[0]) {
-        await base44.asServiceRole.entities.SMSSubscriber.update(subs[0].id, { status: 'unsubscribed', opted_in: false });
-      }
-      return xmlReply('Flavor Isle: You\'re unsubscribed and won\'t receive more texts. Reply JOIN to opt back in. Msg&data rates may apply.');
+      await stopSubscriber(base44, from);
+      return xmlReply('Flavor Isle: You\'re unsubscribed and won\'t receive more texts. Reply ORDERS for order updates only or OFFERS for order updates + offers to opt back in. Msg&data rates may apply.');
     }
 
     if (HELP.includes(upper)) {
-      return xmlReply('Flavor Isle: Get order updates, payment links & occasional offers. Msg&data rates may apply. Text STOP to opt out, JOIN to opt in. Questions? Call (270) 563-4618.');
+      return xmlReply('Flavor Isle: Text ORDERS for order updates only, OFFERS for order updates + recurring promotional offers, or STOP to cancel all. Msg&data rates may apply. Terms: https://taste-isle-express.base44.app/terms-of-service');
     }
 
-    if (OPT_IN.includes(upper)) {
-      const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: from });
-      if (subs[0]) {
-        await base44.asServiceRole.entities.SMSSubscriber.update(subs[0].id, { status: 'active', opted_in: true });
-      } else {
-        await base44.asServiceRole.entities.SMSSubscriber.create({
-          phone: from,
-          opted_in: true,
-          source: 'keyword',
-          status: 'active',
-        });
-      }
-      return xmlReply('Flavor Isle: You\'re subscribed! Get order updates, payment links & occasional offers. Msg&data rates may apply. Text STOP anytime to opt out.');
+    // JOIN — ask the user to pick a category. Do NOT auto-enroll.
+    if (JOIN.includes(upper)) {
+      return xmlReply('Flavor Isle: Reply ORDERS for order updates only, or OFFERS for order updates + recurring promotional offers. Msg&data rates may apply. STOP to cancel, HELP for help.');
+    }
+
+    // ORDERS — transactional only.
+    if (ORDERS.includes(upper)) {
+      await upsertSmsConsent(base44, {
+        phone: from,
+        transactionalConsent: true,
+        marketingConsent: false,
+        sourcePage: 'keyword_orders',
+        disclosureVersion: SMS_CONSENT_VERSION,
+        disclosureText: DISCLOSURE_TEXT.transactional,
+      });
+      return xmlReply('Flavor Isle: You\'re signed up for ORDER updates (confirmed, preparing, ready) & pay-by-text links. Optional, not a condition of purchase. Msg&data rates may apply. Reply STOP to cancel, HELP for help.');
+    }
+
+    // OFFERS — transactional + explicit marketing.
+    if (OFFERS.includes(upper)) {
+      await upsertSmsConsent(base44, {
+        phone: from,
+        transactionalConsent: true,
+        marketingConsent: true,
+        sourcePage: 'keyword_offers',
+        disclosureVersion: SMS_CONSENT_VERSION,
+        disclosureText: `${DISCLOSURE_TEXT.transactional} ${DISCLOSURE_TEXT.marketing}`,
+      });
+      return xmlReply('Flavor Isle: You\'re signed up for ORDER updates + recurring promotional offers. Consent is not a condition of purchase. Msg&data rates may apply. Reply STOP to cancel, HELP for help.');
+    }
+
+    // ── Conversational path (customer care via Smashie) ──
+    // Global STOP suppresses ALL outbound SMS, including this reply. A phone
+    // with no record can still get a conversational reply (they haven't opted out).
+    const consent = await checkSmsConsent(base44, from, 'transactional');
+    if (consent.subscriber && consent.subscriber.status === 'unsubscribed') {
+      console.log(`Suppressing conversational reply to ${from}: globally stopped`);
+      return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
     // Look up existing SMS conversation for this phone number
@@ -71,10 +107,8 @@ Deno.serve(async (req) => {
     let conversation;
 
     if (smsRecord) {
-      // Load existing conversation
       conversation = await base44.asServiceRole.agents.getConversation(smsRecord.conversation_id);
     } else {
-      // Create a new Smashie conversation
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
         metadata: {
@@ -84,7 +118,6 @@ Deno.serve(async (req) => {
           phone: from,
         },
       });
-      // Save the conversation reference
       smsRecord = await base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,
         conversation_id: conversation.id,
@@ -106,25 +139,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Send message to Smashie
     const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
       content: body,
     });
 
-    // Get latest assistant reply
     const messages = updatedConversation.messages || [];
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
     const replyText = lastReply?.content || settings.greeting;
 
-    // Update conversation record
     await base44.asServiceRole.entities.SmsConversation.update(smsRecord.id, {
       last_message_at: new Date().toISOString(),
       message_count: (smsRecord.message_count || 0) + 1,
     });
 
-    // Send SMS reply
     const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
     await twilioClient.messages.create({
       body: replyText,
