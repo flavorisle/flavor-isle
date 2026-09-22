@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
 import CartDessertUpsell from './CartDessertUpsell';
+import CartFallingLeaves from './CartFallingLeaves';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
@@ -129,7 +130,8 @@ export default function CartDrawer() {
         )}
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 relative">
+          <CartFallingLeaves />
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img
