@@ -1,11 +1,12 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -82,6 +83,26 @@ Deno.serve(async (req) => {
       });
     } catch (dbError) {
       console.error('DB save error (non-fatal):', dbError.message);
+    }
+
+    // Persist explicit transactional SMS consent for this order's phone. Only
+    // fires when the customer checked the optional, unchecked box at checkout.
+    // Never grants marketing; never infers consent from the phone alone.
+    if (smsTransactionalConsent && customer?.phone) {
+      try {
+        await upsertSmsConsent(base44, {
+          phone: customer.phone,
+          name: customer.name,
+          email: customer.email,
+          transactionalConsent: true,
+          marketingConsent: false,
+          sourcePage: 'checkout',
+          disclosureVersion: smsConsentVersion || SMS_CONSENT_VERSION,
+          disclosureText: smsConsentDisclosure,
+        });
+      } catch (smsError) {
+        console.error('SMS consent upsert (non-fatal):', smsError.message);
+      }
     }
 
     return Response.json({

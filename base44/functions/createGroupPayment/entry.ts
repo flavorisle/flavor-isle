@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 
 // Group / split payment:
 // Creates ONE order record for the whole group (so the kitchen sees a single
@@ -17,6 +18,7 @@ Deno.serve(async (req) => {
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
       happyHourDiscount,
+      smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion,
     } = body;
 
     if (!items || items.length === 0) {
@@ -78,6 +80,25 @@ Deno.serve(async (req) => {
       });
     } catch (dbError) {
       console.error('DB save error (non-fatal):', dbError.message);
+    }
+
+    // Persist explicit transactional SMS consent for this order's phone. Only
+    // fires when the customer checked the optional, unchecked box at checkout.
+    if (smsTransactionalConsent && customer?.phone) {
+      try {
+        await upsertSmsConsent(base44, {
+          phone: customer.phone,
+          name: customer.name,
+          email: customer.email,
+          transactionalConsent: true,
+          marketingConsent: false,
+          sourcePage: 'checkout',
+          disclosureVersion: smsConsentVersion || SMS_CONSENT_VERSION,
+          disclosureText: smsConsentDisclosure,
+        });
+      } catch (smsError) {
+        console.error('SMS consent upsert (non-fatal):', smsError.message);
+      }
     }
 
     // One PaymentIntent per person; amounts already computed by the client to

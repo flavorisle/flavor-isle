@@ -149,25 +149,44 @@ export async function stopSubscriber(base44: any, phone: string) {
 }
 
 // Check whether a phone may receive a given category. STOP suppresses all.
-// category: 'transactional' | 'marketing'
+// category: 'transactional' | 'marketing'. Returns the subscriber record when
+// ok so callers can update send timestamps.
 export async function checkSmsConsent(base44: any, phone: string, category: 'transactional' | 'marketing') {
   const normalized = normalizePhone(phone);
-  if (!normalized) return { ok: false, reason: 'invalid phone' };
+  if (!normalized) return { ok: false, reason: 'invalid phone', subscriber: null };
   const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: normalized });
   const sub = subs[0];
-  if (!sub) return { ok: false, reason: 'no consent record' };
-  if (sub.status === 'unsubscribed') return { ok: false, reason: 'stopped' };
+  if (!sub) return { ok: false, reason: 'no consent record', subscriber: null };
+  if (sub.status === 'unsubscribed') return { ok: false, reason: 'stopped', subscriber: sub };
   if (category === 'transactional') {
     return sub.transactional_consent === true
-      ? { ok: true, reason: 'ok' }
-      : { ok: false, reason: 'no transactional consent' };
+      ? { ok: true, reason: 'ok', subscriber: sub }
+      : { ok: false, reason: 'no transactional consent', subscriber: sub };
   }
   if (category === 'marketing') {
     return (sub.marketing_consent === true && sub.proven_marketing_consent === true)
-      ? { ok: true, reason: 'ok' }
-      : { ok: false, reason: 'no proven marketing consent' };
+      ? { ok: true, reason: 'ok', subscriber: sub }
+      : { ok: false, reason: 'no proven marketing consent', subscriber: sub };
   }
-  return { ok: false, reason: 'unknown category' };
+  return { ok: false, reason: 'unknown category', subscriber: sub };
+}
+
+// Record the last send timestamp for audit/frequency caps. Best-effort.
+export async function markSmsSent(base44: any, phone: string, category: 'transactional' | 'marketing') {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return;
+  const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: normalized });
+  const sub = subs[0];
+  if (!sub) return;
+  const now = new Date().toISOString();
+  const patch = category === 'marketing'
+    ? { last_marketing_sent_at: now }
+    : { last_transactional_sent_at: now };
+  try {
+    await base44.asServiceRole.entities.SMSSubscriber.update(sub.id, patch);
+  } catch {
+    // non-fatal
+  }
 }
 
 // Public status read for the consent UI (already-subscribed state). Returns

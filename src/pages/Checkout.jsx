@@ -24,6 +24,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -419,6 +420,9 @@ export default function Checkout() {
           splits,
           groupName: people.map(p => p.name).join(', '),
           happyHourDiscount,
+          smsTransactionalConsent: smsConsent,
+          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+          smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
         const { intents, publishableKey, orderNumber: on } = res.data;
@@ -439,6 +443,9 @@ export default function Checkout() {
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
           stripeCustomerId: stripeCustomerId || undefined,
+          smsTransactionalConsent: smsConsent,
+          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+          smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
         const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
@@ -720,7 +727,10 @@ export default function Checkout() {
                     <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
                   )}
 
-                  {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
+                  {/* SMS opt-in for order status updates — transactional only, optional,
+                      unchecked, and persisted through order creation (createPaymentIntent /
+                      createGroupPayment upsert an SMSSubscriber record). Marketing consent is
+                      never offered or inferred here. */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -729,9 +739,9 @@ export default function Checkout() {
                       className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
                     />
                     <span className="text-xs text-muted-foreground leading-relaxed">
-                      Text me order status updates from Flavor Isle (confirmed, preparing, ready). Reply STOP to cancel, HELP for help. Msg &amp; data rates may apply. See our{' '}
-                      <Link to="/privacy-policy" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</Link>{' '}and{' '}
-                      <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
+                      Text me order status updates from Flavor Isle (confirmed, preparing, ready) about this order. Optional — not required to place an order. Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help. See our{' '}
+                      <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</a>{' '}and{' '}
+                      <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline hover:no-underline">Terms of Service</a>.
                     </span>
                   </label>
 
