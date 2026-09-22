@@ -8,7 +8,7 @@ import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 export default function Footer() {
   const businessHours = useBusinessHours();
   return (
-    <footer className="bg-obsidian-roast text-white">
+    <footer className="bg-obsidian-roast text-white fall26-footer-accent">
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Brand */}

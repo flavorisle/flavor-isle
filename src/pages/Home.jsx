@@ -25,6 +25,7 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
+import { FallDivider } from '@/components/RetroFallTheme';
 
 
 const SPECIALS_TICKER = [
@@ -82,8 +83,10 @@ export default function Home() {
 
       <HeritageBadges />
 
+      <FallDivider />
+
       {/* ── FEATURED MENU ITEMS ── */}
-      <section className="py-16 bg-obsidian-roast">
+      <section className="py-16 bg-obsidian-roast fall26-section-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-10">
             <div>
@@ -137,20 +140,30 @@ export default function Home() {
         </div>
       </section>
 
+      <FallDivider />
+
       {/* ── SHAKE ISLE PROMO ── */}
       <MilkshakePromoBanner variant="feature" />
+
+      <FallDivider />
 
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
 
+      <FallDivider />
+
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
+
+      <FallDivider />
 
       {/* ── REVIEWS ── */}
       <ReviewSection />
 
+      <FallDivider />
+
       {/* ── LOCATION ── */}
-      <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
+      <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
