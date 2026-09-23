@@ -187,8 +187,8 @@ export default function Reviews() {
                 <Star size={20} className="text-amber-600 fill-amber-500" />
               </div>
               <div className="text-left">
-                <p className="font-heading text-lg text-obsidian-roast leading-none">Review us</p>
-                <p className="text-xs text-muted-foreground">on Google</p>
+                <p className="font-heading text-lg text-obsidian-roast leading-none">4.7</p>
+                <p className="text-xs text-muted-foreground">445 reviews · Google</p>
               </div>
             </a>
           </div>
