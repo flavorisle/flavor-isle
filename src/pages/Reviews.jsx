@@ -72,6 +72,10 @@ export default function Reviews() {
       <Seo
         title="Flavor Isle Reviews — What People Are Saying | Smiths Grove, KY"
         description="Real customer reviews, influencer food videos, and social media reactions for Flavor Isle in Smiths Grove, KY. See what food lovers are saying about our hand-patted burgers and thick milkshakes."
+        ogTitle="What People Are Saying | Flavor Isle - Smiths Grove, KY"
+        ogDescription="Real reviews from Google, Facebook, Yelp and Tripadvisor, plus viral food videos. See why travelers on I-65 call Flavor Isle the best burger stop in Kentucky."
+        ogImage="https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/dfe735e71_reviews-og.png"
+        ogImageAlt="Flavor Isle reviews card with logo, star ratings, and a customer quote"
       />
       <Navbar />
 
