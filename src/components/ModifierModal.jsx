@@ -8,9 +8,11 @@ import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 import { getComboData } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import ShareItemButton from './ShareItemButton';
 
 export default function ModifierModal({ item, onClose, onConfirm }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
+  const soldOut = item.is_available === false;
 
   // Initialize selections: SINGLE → null, MULTIPLE → []
   const initSelections = () => {
@@ -362,9 +364,12 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
               </div>
             )}
           </div>
-          <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ShareItemButton itemId={item.id} variant="pill" ariaLabel={`Share ${item.name}`} />
+            <button onClick={onClose} className="tap-44 flex items-center justify-center hover:bg-muted rounded-full transition-colors flex-shrink-0">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Modifier Groups */}
@@ -625,11 +630,21 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={isCombo && !comboReady}
-            className={`btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${isCombo && !comboReady ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={soldOut || (isCombo && !comboReady)}
+            className={`w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${
+              soldOut
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : isCombo && !comboReady
+                  ? 'btn-cherry opacity-40 cursor-not-allowed'
+                  : 'btn-cherry chrome-hover'
+            }`}
           >
             <Plus size={16} />
-            {isCombo && !comboReady ? `Pick a ${comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}` : `Add to Order — $${footerTotal.toFixed(2)}`}
+            {soldOut
+              ? 'Sold Out'
+              : isCombo && !comboReady
+                ? `Pick a ${comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}`
+                : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>

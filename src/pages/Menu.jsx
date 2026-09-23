@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ShoppingBag, Bike, Utensils, Search, Car } from 'lucide-react';
+import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -45,6 +46,28 @@ export default function Menu() {
   const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
   const { level } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Share-link focus: /menu?item=<id> opens that item's customization view.
+  // Keyed by the stable item id so the link survives name/category changes.
+  const focusItemId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('item') || null;
+  }, [location.search]);
+
+  const focusedItem = focusItemId ? items.find((i) => i.id === focusItemId) : null;
+  const focusMissing = !!focusItemId && !loading && !focusedItem;
+
+  // Scroll the focused card into view once the items have loaded.
+  useEffect(() => {
+    if (!focusItemId || loading || items.length === 0) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`menu-item-${focusItemId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [focusItemId, loading, items.length]);
 
   // Order-type tiles — curbside is a pickup variant (orderType 'pickup' +
   // pickupMethod 'curbside'), so its active/onClick differ from counter pickup.
@@ -191,6 +214,27 @@ export default function Menu() {
         </div>
       </div>
 
+      {/* Share-link unavailable state — the item id is hidden, deleted, or invalid */}
+      {focusMissing && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-4">
+          <div className="card-diner p-6 text-center">
+            <div className="w-12 h-12 bg-midnight-cherry/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertCircle size={22} className="text-midnight-cherry" />
+            </div>
+            <h3 className="font-heading text-xl text-obsidian-roast mb-1">This item isn't available</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              The link you opened may be for an item that's sold out, no longer on the menu, or hidden. Browse the full menu below.
+            </p>
+            <button
+              onClick={() => navigate('/menu')}
+              className="btn-cherry chrome-hover px-6 py-2.5 text-sm font-heading inline-flex items-center gap-2"
+            >
+              <ArrowLeft size={15} /> Back to full menu
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Menu content — one horizontal row per category */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         {!search && !loading && items.length > 0 && (
@@ -232,8 +276,8 @@ export default function Menu() {
                 </div>
                 <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
                   {rowItems.map((item) =>
-              <div key={item.id} className="snap-start flex-shrink-0 w-72">
-                      <MenuItemCard item={item} />
+              <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0 w-72">
+                      <MenuItemCard item={item} autoOpen={item.id === focusItemId} />
                     </div>
               )}
                 </div>

@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
+import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const PLACEHOLDER_EMOJI = {
@@ -13,7 +14,7 @@ const PLACEHOLDER_EMOJI = {
   Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
 };
 
-export default function MenuItemCard({ item, onFavoriteChange }) {
+export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
@@ -22,6 +23,12 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
   const [showModal, setShowModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
+
+  // Share-link focus: when this card is the target of a /menu?item=<id> link,
+  // open the customization/detail modal automatically (without adding to cart).
+  useEffect(() => {
+    setShowModal(!!autoOpen);
+  }, [autoOpen]);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
@@ -97,14 +104,26 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
   // ── Reusable pieces ──
 
+  // Favorite sits just left of the share button so both fit in the top-right.
   const favoriteBtn = user && (
     <button
       onClick={toggleFavorite}
       disabled={savingFavorite}
-      className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
+      className="absolute top-3 right-12 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
     >
       <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
     </button>
+  );
+
+  // Share action — native share sheet when available, copy-link fallback.
+  // Stops propagation so it never triggers the card's add/customize action.
+  const shareBtn = (
+    <ShareItemButton
+      itemId={item.id}
+      variant="icon"
+      ariaLabel={`Share ${item.name}`}
+      className="absolute top-3 right-3 z-20"
+    />
   );
 
   const badges = (
@@ -228,6 +247,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
         {modal}
         <div className="group relative card-diner">
           {favoriteBtn}
+          {shareBtn}
           {renderContent(false)}
         </div>
       </>
@@ -248,6 +268,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
           {favoriteBtn}
+          {shareBtn}
           {badges}
           <div className="relative">
             {renderContent(true, { showRatings: false })}
@@ -272,6 +293,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           {position === 'left' && imageBlock}
           <div className="relative flex-1 min-w-0">
             {favoriteBtn}
+            {shareBtn}
             {renderContent(false)}
           </div>
           {position === 'right' && imageBlock}
@@ -286,6 +308,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       {modal}
       <div className="group relative card-diner overflow-hidden">
         {favoriteBtn}
+        {shareBtn}
         <div className="relative h-48 overflow-hidden bg-gray-100">
           {photo}
           {badges}
