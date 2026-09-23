@@ -39,8 +39,8 @@ function ModifierModal({ item, onClose, onConfirm }) {
     const selectedMods = [];
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
-      if (Array.isArray(sel)) sel.forEach(m => selectedMods.push({ group: groupName, name: m.name, price: m.price }));
-      else selectedMods.push({ group: groupName, name: sel.name, price: sel.price });
+      if (Array.isArray(sel)) sel.forEach(m => selectedMods.push({ id: m.id, group: groupName, name: m.name, price: m.price }));
+        else selectedMods.push({ id: sel.id, group: groupName, name: sel.name, price: sel.price });
     }
     onConfirm(selectedMods, extraCost);
   };
@@ -138,7 +138,7 @@ export default function ComboBuilderSection() {
 
   const originalTotal = (picks.main?.price || 0) + (picks.side?.price || 0) + (picks.drink?.price || 0);
   const discount = selectedCombo ? (selectedCombo.discount_percent || 12) / 100 : 0.12;
-  const comboPrice = originalTotal * (1 - discount);
+  const comboPrice = Math.round(originalTotal * (1 - discount) * 100) / 100;
   const allPicked = picks.main && picks.side && picks.drink;
 
   const handleSelectItem = (item, slot) => {
@@ -168,6 +168,12 @@ export default function ComboBuilderSection() {
       price: comboPrice,
       quantity: 1,
       selectedModifiers: [picks.main, picks.side, picks.drink].flatMap(p => p.selectedModifiers || []),
+      comboConfigId: selectedCombo.id,
+      comboComponents: [picks.main, picks.side, picks.drink].map(p => ({
+        name: p.name,
+        square_item_id: p.square_item_id || '',
+        selectedModifiers: p.selectedModifiers || [],
+      })),
     });
     setAdded(true);
     setIsCartOpen(true);

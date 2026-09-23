@@ -389,6 +389,8 @@ export default function Checkout() {
       isBuildShake: !!i.isBuildShake,
       deluxeLabel: i.deluxeLabel || '',
       deluxeToppings: i.deluxeToppings || [],
+      comboConfigId: i.comboConfigId || '',
+      comboComponents: i.comboComponents || [],
     }));
 
     setLoading(true);
@@ -545,6 +547,8 @@ export default function Checkout() {
       isBuildShake: !!i.isBuildShake,
       deluxeLabel: i.deluxeLabel || '',
       deluxeToppings: i.deluxeToppings || [],
+      comboConfigId: i.comboConfigId || '',
+      comboComponents: i.comboComponents || [],
     }));
     const customer = {
       name: walletCustomer.name || fullName,
