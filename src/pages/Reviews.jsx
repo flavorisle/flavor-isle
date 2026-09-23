@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import LazyEmbed from '@/components/LazyEmbed';
+import ReviewsCarousel from '@/components/ReviewsCarousel';
 
 const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
 
@@ -213,7 +214,7 @@ export default function Reviews() {
 
       {/* Wall of Love */}
       <section className="bg-patina-mint/5 px-4 sm:px-6 py-14">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h2 className="font-heading text-3xl text-obsidian-roast mb-2">Wall of Love</h2>
             <p className="text-muted-foreground">What our neighbors are saying about Flavor Isle.</p>
@@ -225,12 +226,10 @@ export default function Reviews() {
                 style={{ borderTopColor: 'var(--midnight-cherry)' }}
               />
             </div>
+          ) : allReviews.length > 0 ? (
+            <ReviewsCarousel reviews={allReviews} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {allReviews.map((r, i) => (
-                <ReviewCard key={i} {...r} />
-              ))}
-            </div>
+            <p className="text-center text-muted-foreground py-8">Reviews coming soon.</p>
           )}
         </div>
       </section>
@@ -266,31 +265,6 @@ export default function Reviews() {
       </section>
 
       <Footer />
-    </div>
-  );
-}
-
-function ReviewCard({ text, name, source, rating }) {
-  return (
-    <div className="card-diner p-5">
-      <div className="flex items-center gap-2 mb-3">
-        {rating > 0 && (
-          <div className="flex">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                size={14}
-                className={i < rating ? 'text-amber-500 fill-amber-500' : 'text-gray-300'}
-              />
-            ))}
-          </div>
-        )}
-        {source && (
-          <span className="text-xs font-heading uppercase tracking-wider text-patina-mint">{source}</span>
-        )}
-      </div>
-      <p className="text-sm text-obsidian-roast leading-relaxed mb-3">&ldquo;{text}&rdquo;</p>
-      <p className="text-xs text-muted-foreground font-semibold">— {name}</p>
     </div>
   );
 }
