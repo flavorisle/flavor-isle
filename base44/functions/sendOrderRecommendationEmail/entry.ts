@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
-import { prioritySort } from '../../shared/dessertPriority.ts';
+import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
@@ -178,11 +178,14 @@ export default async function (req: Request) {
     const hasSide = buckets.SIDE.length > 0;
     const hasDessert = buckets.DESSERT.length > 0;
 
-    // Available items with photos, sorted fan-favorite first
+    // Available items with photos, malts/sundaes excluded, sorted
+    // fan-favorite first. Rotation + avoid-recent happen at the selection site.
     const available = (bucket) =>
-      allItems
-        .filter((m) => bucketItem(m) === bucket && m.is_available !== false && m.is_hidden !== true && m.image_url)
-        .sort(prioritySort);
+      excludeMaltSundae(
+        allItems
+          .filter((m) => bucketItem(m) === bucket && m.is_available !== false && m.is_hidden !== true && m.image_url)
+          .sort(fanFavoriteSort)
+      );
 
     let recommendations = [];
     let emailType = '';
@@ -193,14 +196,40 @@ export default async function (req: Request) {
     const orderedMainCats = buckets.MAIN.map((b) => b.menuItem?.category || '').filter(Boolean);
     const orderedNamesLower = new Set((order.items || []).map((i) => (i.name || '').toLowerCase()));
 
+    // Load the customer's past suggestions so we avoid repeating the same items
+    // where fresh alternatives exist (the 7-day send suppression above is
+    // preserved separately and unaffected by this selection preference).
+    const recentRecs = await base44.asServiceRole.entities.RecommendationEmail.filter({ customer_email: order.customer_email });
+    const recentlySuggested = new Set();
+    for (const r of (recentRecs || [])) {
+      for (const id of (r.suggested_item_ids || [])) recentlySuggested.add(id);
+    }
+
+    // Pick up to n items from a sorted pool: rotate by Chicago day for variety,
+    // then prefer items the customer hasn't been suggested recently. If every
+    // remaining item was suggested recently, fall back to the rotated pool
+    // (avoid-recent only applies where alternatives exist). Returns [] when the
+    // pool is empty — callers skip the email rather than suggest a banned item.
+    const pick = (pool, n) => {
+      if (!pool || pool.length === 0) return [];
+      const rotated = dailyRotate(pool);
+      const fresh = rotated.filter((p) => !recentlySuggested.has(p.id));
+      const chosen = fresh.length > 0 ? fresh : rotated;
+      return chosen.slice(0, n);
+    };
+
     if (hasMain && hasSide && !hasDessert) {
       // (a) MAIN + SIDE, no DESSERT → 1-2 fan-favorite desserts
       emailType = 'dessert';
-      recommendations = available('DESSERT').slice(0, 2);
+      const dessertPool = available('DESSERT');
+      if (dessertPool.length === 0) {
+        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert available' });
+      }
+      recommendations = pick(dessertPool, 2);
       const mainName = orderedMainNames[0] || 'your meal';
       const dessertName = recommendations[0]?.name || 'something sweet';
       subject = 'Save room for this 🍦';
-      bodyLine = `Your ${mainName} deserved a sidekick. Next time, ${dessertName} is calling — hand-spun, thick enough to make your straw work for it.`;
+      bodyLine = `Your ${mainName} deserved a sidekick. Next time, ${dessertName} is calling — sweet, fresh, and worth saving room for.`;
     } else if (hasMain && hasSide && hasDessert) {
       // (b) Complete meal → ONE similar main they haven't ordered
       emailType = 'similar_main';
@@ -210,7 +239,7 @@ export default async function (req: Request) {
         const sameCat = mains.filter((m) => (m.category || '') === mainCat);
         if (sameCat.length > 0) mains = sameCat;
       }
-      recommendations = mains.slice(0, 1);
+      recommendations = pick(mains, 1);
       const orderedMain = orderedMainNames[0] || 'your burger';
       const suggested = recommendations[0]?.name || 'something new';
       subject = `Next time, try the ${suggested} 🍔`;
@@ -219,20 +248,28 @@ export default async function (req: Request) {
     } else if (hasMain && !hasSide && !hasDessert) {
       // (c) MAIN only → fan-favorite side + dessert pairing
       emailType = 'pairing';
-      recommendations = [available('SIDE')[0], available('DESSERT')[0]].filter(Boolean);
+      const dessertPool = available('DESSERT');
+      if (dessertPool.length === 0) {
+        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert for pairing' });
+      }
+      recommendations = [pick(available('SIDE'), 1)[0], pick(dessertPool, 1)[0]].filter(Boolean);
       const mainName = orderedMainNames[0] || 'your burger';
       subject = 'Complete the combo 🍟';
       bodyLine = `${mainName} is a great start — but the regulars know it's the side + sweet pairing that makes a meal. Next time, round it out.`;
     } else if (!hasMain && hasDessert && !hasSide) {
       // (d) DESSERT only → fan-favorite main
       emailType = 'pairing';
-      recommendations = available('MAIN').slice(0, 1);
+      recommendations = pick(available('MAIN'), 1);
       subject = 'Something savory next time? 🍔';
       bodyLine = `Sweet tooth satisfied — but next time, lead with the savory. The ${recommendations[0]?.name || 'hand-patted burgers'} are what the regulars come back for.`;
     } else {
       // Fallback → fan-favorite desserts
       emailType = 'dessert';
-      recommendations = available('DESSERT').slice(0, 2);
+      const dessertPool = available('DESSERT');
+      if (dessertPool.length === 0) {
+        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert available' });
+      }
+      recommendations = pick(dessertPool, 2);
       if (recommendations.length === 0) {
         return Response.json({ skipped: true, reason: 'no recommendations available' });
       }

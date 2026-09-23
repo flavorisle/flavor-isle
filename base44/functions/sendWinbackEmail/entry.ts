@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
-import { prioritySort } from '../../shared/dessertPriority.ts';
+import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const WINBACK_POINTS = 150;
@@ -21,27 +21,28 @@ async function winbackPhotosHtml(base44) {
     // customers back with. Excludes basic malts and sundaes (the everyday
     // items every customer already knows about).
     const PREMIUM_DESSERT = /banana split|hot fudge cake|caramel apple bliss|banana pudding bliss|strawberry shortcake|pineapple delight|banana split bliss/;
-    const premiumDesserts = withPhotos.filter(m => {
+    const premiumDesserts = excludeMaltSundae(withPhotos.filter(m => {
       const name = (m.name || '').toLowerCase();
       return PREMIUM_DESSERT.test(name);
-    });
+    }));
 
-    // Fallback: if no premium desserts have photos, use fan favorites.
+    // Fallback: if no premium desserts have photos, use fan favorites
+    // (malts/sundaes excluded). Sort by fan-favorite rank, rotate by Chicago
+    // day. No malt/sundae fallback at any level.
     const heroPool = premiumDesserts.length > 0
       ? premiumDesserts
-      : withPhotos.filter(m => m.is_fan_favorite);
-    // Priority: non-malt/non-sundae first (fan-favorite rank breaks ties),
-    // malts/sundaes as lower-priority fallback.
-    heroPool.sort(prioritySort);
-    const hero = heroPool[0] || withPhotos[0];
+      : excludeMaltSundae(withPhotos.filter(m => m.is_fan_favorite));
+    heroPool.sort(fanFavoriteSort);
+    const hero = dailyRotate(heroPool)[0] || null;
 
-    // Grid: 2 more premium desserts (not the hero)
+    // Grid: 2 more premium desserts (not the hero), falling back to fan
+    // favorites (malts/sundaes excluded) when fewer than 2 premium desserts.
     const gridPool = premiumDesserts.filter(m => m.id !== hero?.id);
     const pool = gridPool.length >= 2
       ? gridPool
-      : withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
-    pool.sort(prioritySort);
-    const gridPicks = pool.slice(0, 2);
+      : excludeMaltSundae(withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id));
+    pool.sort(fanFavoriteSort);
+    const gridPicks = dailyRotate(pool).slice(0, 2);
 
     let heroHtml = '';
     if (hero) {

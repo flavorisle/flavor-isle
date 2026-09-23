@@ -3,6 +3,7 @@ import { Plus, Cookie, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
+import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '@/lib/dessertPromo';
 import ModifierModal from './ModifierModal';
 
 // Inline (non-blocking) dessert upsell rail for the cart drawer. Mirrors the
@@ -35,21 +36,16 @@ export default function CartDessertUpsell() {
       try {
         const items = await base44.entities.MenuItem.list('-updated_date', 500);
         if (cancelled) return;
-        const desserts = items
-          .filter(m => bucketItem(m) === 'DESSERT' && m.is_available !== false && m.is_hidden !== true && m.image_url)
-          .sort((a, b) => {
-            // Priority: non-malt/non-sundae desserts before malts/sundaes;
-            // fan-favorite ranking is the tie-breaker within each tier.
-            // Malts/sundaes are valid lower-priority fallbacks.
-            const aLow = /\bmalt\b/i.test(a.name || '') || /\bsundae\b/i.test(a.name || '') ? 1 : 0;
-            const bLow = /\bmalt\b/i.test(b.name || '') || /\bsundae\b/i.test(b.name || '') ? 1 : 0;
-            if (aLow !== bLow) return aLow - bLow;
-            const fa = b.is_fan_favorite ? 1 : 0;
-            const fb = a.is_fan_favorite ? 1 : 0;
-            if (fa !== fb) return fa - fb;
-            return (a.fan_favorite_rank || 999) - (b.fan_favorite_rank || 999);
-          })
-          .slice(0, 3);
+        // Exclude malts/sundaes entirely; sort by fan-favorite rank; rotate by
+        // Chicago calendar date (stable within a day, varies across days).
+        // Malts/sundaes are never reinserted, even if the pool is short.
+        const desserts = dailyRotate(
+          excludeMaltSundae(
+            items
+              .filter(m => bucketItem(m) === 'DESSERT' && m.is_available !== false && m.is_hidden !== true && m.image_url)
+              .sort(fanFavoriteSort)
+          )
+        ).slice(0, 3);
         if (!cancelled) setSuggestions(desserts);
       } catch {
         // menu fetch failed — rail stays hidden

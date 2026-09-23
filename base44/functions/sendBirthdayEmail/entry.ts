@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
-import { prioritySort } from '../../shared/dessertPriority.ts';
+import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const BIRTHDAY_POINTS = 150;
@@ -18,22 +18,21 @@ async function birthdayPhotosHtml(base44) {
     );
 
     // Hero: a shake or dessert (the birthday treat)
-    const treats = withPhotos.filter(m => {
+    const treats = excludeMaltSundae(withPhotos.filter(m => {
       const cat = (m.category || '').toLowerCase();
       const name = (m.name || '').toLowerCase();
       return cat === 'shakes' || /shake|malt|sundae|cone|cup|bliss|ice ?cream|float/.test(name);
-    });
-    // Priority: non-malt/non-sundae treats first (fan-favorite rank breaks
-    // ties), malts/sundaes as lower-priority fallback.
-    treats.sort(prioritySort);
-    const hero = treats[0] || withPhotos[0];
+    }));
+    // Exclude malts/sundaes; sort by fan-favorite rank; rotate by Chicago day
+    // so the birthday treat varies across days. No malt/sundae fallback.
+    treats.sort(fanFavoriteSort);
+    const hero = dailyRotate(treats)[0] || null;
 
     // Grid: 2 fan favorites (any category)
-    const fanFaves = withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
-    // Priority: non-malt/non-sundae fan favorites first (fan-favorite rank
-    // breaks ties), malts/sundaes as lower-priority fallback.
-    fanFaves.sort(prioritySort);
-    const gridPicks = fanFaves.slice(0, 2);
+    const fanFaves = excludeMaltSundae(withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id));
+    // Exclude malts/sundaes; sort by fan-favorite rank; rotate by Chicago day.
+    fanFaves.sort(fanFavoriteSort);
+    const gridPicks = dailyRotate(fanFaves).slice(0, 2);
 
     let heroHtml = '';
     if (hero) {
