@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Home, UtensilsCrossed, Shirt, Sparkles, Users, Info, User, LogOut, Phone,
+  Home, UtensilsCrossed, Shirt, Sparkles, Users, Info, User, LogOut,
 } from 'lucide-react';
 import NavSuperLink from '@/components/NavSuperLink';
 
@@ -90,16 +90,6 @@ export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user,
               />
             ))}
           </div>
-
-          <a
-            href="tel:+12705634618"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body font-semibold text-obsidian-roast hover:bg-muted transition-colors"
-          >
-            <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-midnight-cherry">
-              <Phone size={16} />
-            </span>
-            (270) 563-4618
-          </a>
 
           <Link
             to="/menu"
