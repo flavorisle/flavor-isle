@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Clock, Mail, CheckCircle, Navigation } from 'lucide-react';
+import { MapPin, Phone, Clock, Mail, CheckCircle, Navigation, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -18,20 +18,27 @@ export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
     setLoading(true);
+    setError('');
     try {
-      await base44.functions.invoke('sendContactMessage', {
+      const res = await base44.functions.invoke('sendContactMessage', {
         name: form.name,
         email: form.email,
         message: form.message,
       });
-      setSent(true);
-    } catch {
-      setSent(true); // Show success regardless to avoid exposing errors
+      if (res?.data?.ok || res?.ok) {
+        setSent(true);
+      } else {
+        setError(res?.data?.error || res?.error || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      // Genuine retryable error — form text is preserved so the customer can retry.
+      setError(err?.data?.error || err?.message || "We couldn't send your message. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -137,12 +144,18 @@ export default function Contact() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={32} className="text-green-600" />
               </div>
-              <h3 className="font-heading text-xl text-obsidian-roast mb-2">Message Sent!</h3>
-              <p className="text-muted-foreground text-sm">We'll get back to you as soon as we can. Thanks for reaching out!</p>
+              <h3 className="font-heading text-xl text-obsidian-roast mb-2">Message Received</h3>
+              <p className="text-muted-foreground text-sm">Thanks for reaching out — we've recorded your message and will reply as soon as we can.</p>
             </div>
           ) : (
             <>
               <h2 className="font-heading text-xl text-obsidian-roast mb-6">Send a Message</h2>
+              {error && (
+                <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name</label>

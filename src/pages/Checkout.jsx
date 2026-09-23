@@ -25,6 +25,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
+import { useToast } from '@/components/ui/use-toast';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -143,6 +144,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 export default function Checkout() {
   const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, addItem } = useCart();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
   // Kitchen prep estimate scales with the live busyness level so checkout
@@ -425,7 +427,10 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey, orderNumber: on } = res.data;
+        const { intents, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        if (smsConsentStored === false) {
+          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
+        }
         setSplitIntents(intents);
         setSplitPublishable(publishableKey);
         setOrderNumber(on);
@@ -448,7 +453,10 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
+        const { clientSecret: cs, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        if (smsConsentStored === false) {
+          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
+        }
         setClientSecret(cs);
         setOrderNumber(on);
         setStripePromise(loadStripe(publishableKey));
