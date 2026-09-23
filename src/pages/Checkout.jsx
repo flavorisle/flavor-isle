@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 import { base44 } from '@/api/base44Client';
@@ -166,6 +166,7 @@ export default function Checkout() {
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
   const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
   const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
@@ -195,7 +196,8 @@ export default function Checkout() {
     let cancelled = false;
     (async () => {
       const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
-      if (!isAuthed || cancelled) return;
+      if (!isAuthed) { if (!cancelled) setIsGuest(true); return; }
+      if (cancelled) return;
       const me = await base44.auth.me().catch(() => null);
       if (!me || cancelled) return;
       const profiles = await base44.entities.CustomerProfile.filter({ email: me.email }).catch(() => []);
@@ -638,6 +640,24 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
+                {/* Non-blocking sign-in nudge for guests — encourages account
+                    creation without blocking checkout. */}
+                {isGuest && (
+                  <div className="card-diner p-4 flex items-center gap-3" style={{ backgroundColor: 'rgba(0,51,102,0.05)', borderColor: 'rgba(0,51,102,0.2)' }}>
+                    <div className="w-9 h-9 rounded-full bg-patina-mint/10 flex items-center justify-center flex-shrink-0">
+                      <UserCircle size={18} className="text-patina-mint" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading text-sm text-obsidian-roast">Sign in for faster checkout</p>
+                      <p className="text-xs text-muted-foreground">Save your details, track orders, and earn Star Rewards.</p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Link to="/login?returnTo=%2Fcheckout" className="btn-mint px-3 py-2 text-xs font-heading whitespace-nowrap">Sign In</Link>
+                      <Link to="/register?returnTo=%2Fcheckout" className="px-3 py-2 text-xs font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-patina-mint/40 transition-colors whitespace-nowrap">Create Account</Link>
+                    </div>
+                  </div>
+                )}
+
                 {/* Express checkout — one-tap Apple Pay / Google Pay first.
                     Hidden entirely when the device has no wallet (walletReady === false). */}
                 {expressStripePromise && expressAvailable && walletReady !== false && (
