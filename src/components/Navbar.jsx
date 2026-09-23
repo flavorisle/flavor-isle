@@ -35,7 +35,6 @@ export default function Navbar() {
       {/* Sticky header: site notice + live status bar + main nav stay pinned together */}
       <div className="sticky top-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <SiteNoticeBanner />
-        <LiveStatusBar />
         <nav className={`relative transition-all duration-300 fall26-nav-accent ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
@@ -105,6 +104,7 @@ export default function Navbar() {
         />
         }
         </nav>
+        <LiveStatusBar />
       </div>
     </>);
 
