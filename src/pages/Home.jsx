@@ -82,6 +82,8 @@ export default function Home() {
       {/* ── HERO ── */}
       <HeroSection />
 
+      <ExpressPickupStrip />
+
       {/* ── FAN FAVORITES (dynamic top-10 best-sellers rail) ── */}
       {menuItems.some((i) => i.is_fan_favorite) && (
         <section className="py-10 px-4 sm:px-6">
@@ -90,8 +92,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      <ExpressPickupStrip />
 
       {/* ── PROMO BANNERS ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
