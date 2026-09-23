@@ -32,6 +32,9 @@ export default async function (req: Request) {
       if (!o.created_date) return false;
       if (o.status === 'cancelled') return false;
       if (o.payment_status === 'failed' || o.payment_status === 'refunded') return false;
+      // Permanently skipped by sendOrderRecommendationEmail (no eligible
+      // non-malt/sundae dessert / no photos) — don't re-enqueue.
+      if (o.rec_email_skipped_at) return false;
       const created = new Date(o.created_date);
       return created <= lowerBound && created >= upperBound;
     });

@@ -3,6 +3,8 @@ import { sendSmashieSms, smashieSmsTemplates } from './sendSmashieSms.ts';
 import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
 import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
 import { sendPushToEmail } from './sendPush.ts';
+import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
+import { getSmashieSettings } from './smashieSettings.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -422,9 +424,32 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   // Fires exactly once regardless of whether this call did the Square push.
   await sendStaffAlertWithDedupe(base44, order);
 
-  // SMS — only for new pushes (tied to the Square push)
+  // SMS — only for new pushes (tied to the Square push). Gated by BOTH the
+  // SmashieSettings sms_status_updates_enabled toggle AND explicit
+  // transactional consent (checkSmsConsent), fail-closed: no proof, STOP'd,
+  // invalid number, or toggle disabled → no SMS. A suppressed or failed SMS
+  // never blocks the checkout order flow (errors are caught + logged).
   if (squarePushed && order.customer_phone) {
-    await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
+    try {
+      const settings = await getSmashieSettings(base44);
+      if (settings.sms_status_updates_enabled !== true) {
+        console.log(`Order ${order.order_number} confirmed SMS skipped — status updates disabled in SmashieSettings`);
+      } else {
+        const consent = await checkSmsConsent(base44, order.customer_phone, 'transactional');
+        if (!consent.ok) {
+          console.log(`Order ${order.order_number} confirmed SMS skipped — no transactional consent (${consent.reason})`);
+        } else {
+          const sent = await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
+          if (sent) {
+            await markSmsSent(base44, order.customer_phone, 'transactional');
+          } else {
+            console.warn(`Order ${order.order_number} confirmed SMS send failed — not marking sent`);
+          }
+        }
+      }
+    } catch (smsErr) {
+      console.error(`Order ${order.order_number} confirmed SMS path error (non-blocking):`, smsErr.message);
+    }
   }
 
   // Push notification — only for new pushes (tied to the Square push)

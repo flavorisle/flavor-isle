@@ -132,7 +132,12 @@
     "rec_email_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Atomic claim timestamp used by sendOrderRecommendationEmail to prevent duplicate recommendation emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry."
+      "description": "Atomic claim timestamp used by sendOrderRecommendationEmail to prevent duplicate recommendation emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry. Also cleared (and rec_email_skipped_at set instead) when the order is permanently ineligible for a recommendation, so a skip never leaves a sent timestamp that falsely claims delivery."
+    },
+    "rec_email_skipped_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Terminal skip marker set by sendOrderRecommendationEmail when a paid order is permanently ineligible for a recommendation email (no eligible non-malt/sundae dessert, no recommendations, or no items with photos) \u2014 set INSTEAD of rec_email_sent_at so a skip does not falsely claim delivery. The processPendingRecommendationEmails processor skips orders with this set, so permanently ineligible orders are not re-enqueued. Distinct from queued (no marker, no RecommendationEmail record), accepted/delivered (RecommendationEmail record with sent_at + rec_email_sent_at set), and the 7-day customer cooldown (no order marker, just a RecommendationEmail record)."
     },
     "review_email_sent_at": {
       "type": "string",

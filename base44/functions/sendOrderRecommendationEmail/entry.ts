@@ -100,6 +100,24 @@ function heroCardHtml(item, orderId) {
   </a>`;
 }
 
+// Mark a recommendation email as permanently skipped for this order and
+// release the atomic rec_email_sent_at claim, so a skip never leaves a
+// "sent" timestamp that falsely claims delivery. The pending-email
+// processor skips orders with rec_email_skipped_at set, so permanently
+// ineligible orders aren't re-enqueued. (Pre-claim skips don't need this —
+// no claim was acquired.)
+async function markRecSkippedAndRelease(base44, order, reason) {
+  try {
+    await base44.asServiceRole.entities.Order.updateMany(
+      { id: order.id, rec_email_sent_at: { $ne: null } },
+      { $set: { rec_email_skipped_at: new Date().toISOString() }, $unset: { rec_email_sent_at: "" } }
+    );
+  } catch (e) {
+    console.warn(`Failed to mark recommendation skip for order ${order.id}:`, e.message);
+  }
+  return Response.json({ skipped: true, reason });
+}
+
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
@@ -223,7 +241,7 @@ export default async function (req: Request) {
       emailType = 'dessert';
       const dessertPool = available('DESSERT');
       if (dessertPool.length === 0) {
-        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert available' });
+        return markRecSkippedAndRelease(base44, order, 'no non-malt/sundae dessert available');
       }
       recommendations = pick(dessertPool, 2);
       const mainName = orderedMainNames[0] || 'your meal';
@@ -250,7 +268,7 @@ export default async function (req: Request) {
       emailType = 'pairing';
       const dessertPool = available('DESSERT');
       if (dessertPool.length === 0) {
-        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert for pairing' });
+        return markRecSkippedAndRelease(base44, order, 'no non-malt/sundae dessert for pairing');
       }
       recommendations = [pick(available('SIDE'), 1)[0], pick(dessertPool, 1)[0]].filter(Boolean);
       const mainName = orderedMainNames[0] || 'your burger';
@@ -267,11 +285,11 @@ export default async function (req: Request) {
       emailType = 'dessert';
       const dessertPool = available('DESSERT');
       if (dessertPool.length === 0) {
-        return Response.json({ skipped: true, reason: 'no non-malt/sundae dessert available' });
+        return markRecSkippedAndRelease(base44, order, 'no non-malt/sundae dessert available');
       }
       recommendations = pick(dessertPool, 2);
       if (recommendations.length === 0) {
-        return Response.json({ skipped: true, reason: 'no recommendations available' });
+        return markRecSkippedAndRelease(base44, order, 'no recommendations available');
       }
       subject = 'Save room for this 🍦';
       bodyLine = `Next time you're craving Flavor Isle, save room for something sweet — the regulars swear by it.`;
@@ -280,7 +298,7 @@ export default async function (req: Request) {
     // Photos are mandatory — drop any without one
     recommendations = recommendations.filter((r) => r && r.image_url);
     if (recommendations.length === 0) {
-      return Response.json({ skipped: true, reason: 'no recommended items with photos' });
+      return markRecSkippedAndRelease(base44, order, 'no recommended items with photos');
     }
 
     // Tag buckets for copy generation
