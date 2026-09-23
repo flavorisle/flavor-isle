@@ -99,6 +99,9 @@ export default function Home() {
       </div>
       <AdBannerStrip placement="home" />
 
+      {/* ── REVIEWS (What people are saying) ── */}
+      <ReviewSection />
+
       {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
       <WhyFlavorIsle />
 
@@ -118,11 +121,6 @@ export default function Home() {
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
-
-      <FallDivider />
-
-      {/* ── REVIEWS ── */}
-      <ReviewSection />
 
       <FallDivider />
 
