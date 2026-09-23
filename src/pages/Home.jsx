@@ -89,6 +89,9 @@ export default function Home() {
         <section className="py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
             <FanFavoritesSection items={menuItems} />
+            <div className="mt-6">
+              <MilkshakePromoBanner variant="strip" />
+            </div>
           </div>
         </section>
       )}
@@ -106,11 +109,6 @@ export default function Home() {
       <WhyFlavorIsle />
 
       <HeritageBadges />
-
-      <FallDivider />
-
-      {/* ── SHAKE ISLE PROMO ── */}
-      <MilkshakePromoBanner variant="feature" />
 
       <FallDivider />
 
