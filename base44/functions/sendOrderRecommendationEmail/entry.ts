@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { prioritySort } from '../../shared/dessertPriority.ts';
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
@@ -181,12 +182,7 @@ export default async function (req: Request) {
     const available = (bucket) =>
       allItems
         .filter((m) => bucketItem(m) === bucket && m.is_available !== false && m.is_hidden !== true && m.image_url)
-        .sort((a, b) => {
-          const fa = b.is_fan_favorite ? 1 : 0;
-          const fb = a.is_fan_favorite ? 1 : 0;
-          if (fa !== fb) return fa - fb;
-          return (a.fan_favorite_rank || 999) - (b.fan_favorite_rank || 999);
-        });
+        .sort(prioritySort);
 
     let recommendations = [];
     let emailType = '';

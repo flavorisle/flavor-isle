@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
+import { prioritySort } from '../../shared/dessertPriority.ts';
 
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const BIRTHDAY_POINTS = 150;
@@ -22,17 +23,17 @@ async function birthdayPhotosHtml(base44) {
       const name = (m.name || '').toLowerCase();
       return cat === 'shakes' || /shake|malt|sundae|cone|cup|bliss|ice ?cream|float/.test(name);
     });
-    const hero = treats[Math.floor(Math.random() * treats.length)] || withPhotos[0];
+    // Priority: non-malt/non-sundae treats first (fan-favorite rank breaks
+    // ties), malts/sundaes as lower-priority fallback.
+    treats.sort(prioritySort);
+    const hero = treats[0] || withPhotos[0];
 
     // Grid: 2 fan favorites (any category)
     const fanFaves = withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
-    // Shuffle and take 2
-    const pool = [...fanFaves];
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    const gridPicks = pool.slice(0, 2);
+    // Priority: non-malt/non-sundae fan favorites first (fan-favorite rank
+    // breaks ties), malts/sundaes as lower-priority fallback.
+    fanFaves.sort(prioritySort);
+    const gridPicks = fanFaves.slice(0, 2);
 
     let heroHtml = '';
     if (hero) {

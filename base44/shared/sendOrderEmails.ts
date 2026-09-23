@@ -1,6 +1,7 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
 import { fetchStoreProducts } from './printful.ts';
+import { prioritySort } from './dessertPriority.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -92,7 +93,10 @@ export async function foodHeroHtml(base44?: any) {
       (m.is_fan_favorite || m.is_featured)
     );
     if (withPhotos.length === 0) return '';
-    const pick = withPhotos[Math.floor(Math.random() * withPhotos.length)];
+    // Priority: non-malt/non-sundae first (fan-favorite rank breaks ties),
+    // malts/sundaes as lower-priority fallback.
+    withPhotos.sort(prioritySort);
+    const pick = withPhotos[0];
     const price = typeof pick.price === 'number' ? `$${pick.price.toFixed(2)}` : '';
     const link = trackedLink('/menu', 'food_hero');
     return `

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
+import { prioritySort } from '../../shared/dessertPriority.ts';
 
 const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
 const WINBACK_POINTS = 150;
@@ -22,9 +23,6 @@ async function winbackPhotosHtml(base44) {
     const PREMIUM_DESSERT = /banana split|hot fudge cake|caramel apple bliss|banana pudding bliss|strawberry shortcake|pineapple delight|banana split bliss/;
     const premiumDesserts = withPhotos.filter(m => {
       const name = (m.name || '').toLowerCase();
-      // Exclude the plain "Malt" and plain "Sundae" — only match the
-      // premium dessert names above.
-      if (name === 'malt' || name === 'sundae') return false;
       return PREMIUM_DESSERT.test(name);
     });
 
@@ -32,17 +30,17 @@ async function winbackPhotosHtml(base44) {
     const heroPool = premiumDesserts.length > 0
       ? premiumDesserts
       : withPhotos.filter(m => m.is_fan_favorite);
-    const hero = heroPool[Math.floor(Math.random() * heroPool.length)] || withPhotos[0];
+    // Priority: non-malt/non-sundae first (fan-favorite rank breaks ties),
+    // malts/sundaes as lower-priority fallback.
+    heroPool.sort(prioritySort);
+    const hero = heroPool[0] || withPhotos[0];
 
     // Grid: 2 more premium desserts (not the hero)
     const gridPool = premiumDesserts.filter(m => m.id !== hero?.id);
     const pool = gridPool.length >= 2
       ? gridPool
       : withPhotos.filter(m => m.is_fan_favorite && m.id !== hero?.id);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
+    pool.sort(prioritySort);
     const gridPicks = pool.slice(0, 2);
 
     let heroHtml = '';

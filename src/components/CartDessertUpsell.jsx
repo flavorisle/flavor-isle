@@ -38,6 +38,12 @@ export default function CartDessertUpsell() {
         const desserts = items
           .filter(m => bucketItem(m) === 'DESSERT' && m.is_available !== false && m.is_hidden !== true && m.image_url)
           .sort((a, b) => {
+            // Priority: non-malt/non-sundae desserts before malts/sundaes;
+            // fan-favorite ranking is the tie-breaker within each tier.
+            // Malts/sundaes are valid lower-priority fallbacks.
+            const aLow = /\bmalt\b/i.test(a.name || '') || /\bsundae\b/i.test(a.name || '') ? 1 : 0;
+            const bLow = /\bmalt\b/i.test(b.name || '') || /\bsundae\b/i.test(b.name || '') ? 1 : 0;
+            if (aLow !== bLow) return aLow - bLow;
             const fa = b.is_fan_favorite ? 1 : 0;
             const fb = a.is_fan_favorite ? 1 : 0;
             if (fa !== fb) return fa - fb;
