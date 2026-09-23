@@ -3,7 +3,7 @@
 // same Navbar/Footer) and the BusynessGuide page's centered, generous layout.
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MessageCircle, Facebook, ExternalLink } from 'lucide-react';
+import { Star, MessageCircle, Facebook, ExternalLink, Instagram } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -254,6 +254,12 @@ export default function Reviews() {
               className="btn-yellow px-6 py-3 text-sm font-heading flex items-center gap-2"
             >
               <MessageCircle size={16} /> Share Feedback
+            </Link>
+            <Link
+              to="/social-reviews"
+              className="bg-white/10 text-white px-6 py-3 text-sm font-heading flex items-center gap-2 rounded-full hover:bg-white/20 transition-colors"
+            >
+              <Instagram size={16} /> Post & Earn Points
             </Link>
           </div>
         </div>

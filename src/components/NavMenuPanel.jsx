@@ -37,7 +37,7 @@ const GROUPS = [
     links: [
       { label: 'Gallery', to: '/gallery' },
       { label: 'Community News', to: '/community-news' },
-      { label: 'Social Reviews', to: '/social-reviews' },
+      { label: 'Reviews', to: '/reviews' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },
