@@ -17,6 +17,7 @@ const GROUPS = [
       { label: 'Full Menu', to: '/menu' },
       { label: 'Milkshakes', to: '/milkshakes' },
       { label: 'Combos', to: '/combos' },
+      { label: 'Rewards', to: '/rewards' },
       { label: 'Order Status', to: '/order-status' },
     ],
   },
