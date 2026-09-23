@@ -7,7 +7,6 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
-import FanFavoritesSection from '@/components/FanFavoritesSection';
 import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
@@ -239,7 +238,6 @@ export default function Menu() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         {!search && !loading && items.length > 0 && (
           <>
-            <FanFavoritesSection items={items} />
             <CravingsBox items={items} />
           </>
         )}
