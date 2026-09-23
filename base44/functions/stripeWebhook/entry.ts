@@ -2,6 +2,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { updateGroupShareStatus, settleGroupOrderIfComplete } from '../../shared/groupPaymentSettlement.ts';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -99,6 +100,45 @@ Deno.serve(async (req) => {
       }
     } catch (err) {
       console.error('payment_intent.succeeded handler error:', err.message);
+    }
+
+    // Group/split settlement: match by intent id against GroupPaymentShare.
+    // (Group orders carry stripe_session_id 'GROUP', so the single-order match
+    // above never fires for them.) Idempotent — update the share status (with
+    // amount verification), then settle the parent order only when ALL shares
+    // succeeded at the correct amounts. No-op for single-order intents.
+    try {
+      const shareUpdate = await updateGroupShareStatus(base44, pi.id, 'succeeded', pi.amount_received ?? pi.amount ?? null);
+      if (shareUpdate.found) {
+        await settleGroupOrderIfComplete(base44, shareUpdate.share.order_id);
+      }
+    } catch (groupErr) {
+      console.error('Group payment_intent.succeeded handler error:', groupErr.message);
+    }
+  }
+
+  // Group/split: failed or canceled intent → mark the share so the parent
+  // order never settles on a partial/failed group. No-op for single orders.
+  if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
+    const pi = event.data.object;
+    try {
+      await updateGroupShareStatus(base44, pi.id, event.type === 'payment_intent.payment_failed' ? 'failed' : 'canceled', null);
+    } catch (groupErr) {
+      console.error('Group payment intent failure handler error:', groupErr.message);
+    }
+  }
+
+  // Group/split: refund → record on the share (informational; does not
+  // auto-unsettle the already-fulfilled order). No-op for single orders.
+  if (event.type === 'charge.refunded') {
+    const charge = event.data.object;
+    const intentId = charge?.payment_intent;
+    if (intentId) {
+      try {
+        await updateGroupShareStatus(base44, String(intentId), 'refunded', null);
+      } catch (groupErr) {
+        console.error('Group charge.refunded handler error:', groupErr.message);
+      }
     }
   }
 

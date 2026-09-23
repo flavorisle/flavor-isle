@@ -2,6 +2,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
+import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,10 +14,34 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No items provided' }, { status: 400 });
     }
 
+    // ── Reward validation: verify the claimed reward tier, exact discount,
+    // eligibility, and account balance against Square Loyalty (keyed by the
+    // customer's phone) BEFORE creating a payable intent. Rejects mismatches;
+    // returns the authoritative exact discount so the charge uses it, not the
+    // client value. A guest with no reward (redemptionId empty) skips this and
+    // checks out normally. Square loyalty is the only rewards authority — the
+    // app Loyalty table is never read or written here. The October promo stays
+    // on HOLD (no promo is turned on; this only reads the live program).
+    let authoritativeDiscount = Number(discount) || 0;
+    if (redemptionId) {
+      const reward = await validateRewardDiscount({
+        phone: customer?.phone,
+        email: customer?.email,
+        rewardTierId: redemptionId,
+        claimedDiscount: Number(discount) || 0,
+        subtotal: Number(subtotal) || 0,
+      });
+      if (!reward.ok) {
+        return Response.json({ error: reward.error || 'Reward could not be verified.' }, { status: 400 });
+      }
+      authoritativeDiscount = reward.exactDiscount || 0;
+    }
+
     // ── Trusted pricing: recompute from authoritative MenuItem/MenuSetting ──
     // Rejects a mismatched client total before any Stripe intent is created so
-    // a manipulated cart can never be charged. See verifyOrderPricing for the
-    // authority map and pending blockers (ad-hoc modifiers, reward amount).
+    // a manipulated cart can never be charged. The reward discount is now the
+    // authoritative exact value from validateRewardDiscount. See verifyOrderPricing
+    // for the full authority map.
     const pricing = await verifyOrderPricing(base44, {
       items,
       orderType,
@@ -26,7 +51,7 @@ Deno.serve(async (req) => {
       clientTax: tax,
       clientTotal: total,
       clientTip: tip,
-      clientDiscount: discount,
+      clientDiscount: authoritativeDiscount,
       clientHappyHourDiscount: happyHourDiscount,
     });
     if (!pricing.ok) {

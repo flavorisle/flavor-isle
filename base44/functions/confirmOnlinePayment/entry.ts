@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import Stripe from 'npm:stripe@14.25.0';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.ts';
 
 // Client-side payment confirmation fallback.
 //
@@ -32,6 +34,27 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'order not found' });
     }
     const order = orders[0];
+
+    // Group/split orders: never settle on the client's word. Verify every
+    // share succeeded at the correct amount via Stripe, then settle the parent
+    // order only when all shares are confirmed. Legacy group orders (no shares)
+    // are NOT retroactively marked paid without payment evidence. The webhook's
+    // per-share handler settles independently; both paths rely on
+    // pushOrderToSquareAndKitchen's per-action dedupe so a race never
+    // double-pushes or double-notifies.
+    if (order.stripe_session_id === 'GROUP') {
+      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+      const result = await verifyAndSettleGroupOrder(base44, stripe, order.id);
+      if (!result.ok) {
+        return Response.json({
+          ok: false,
+          partial: !!result.partial,
+          reason: result.reason || (result.partial ? 'Not all split payments have succeeded yet — please wait for each person to pay, then try again.' : 'We could not verify all split payments. Please try again or contact us.'),
+          shares: result.shares,
+        }, { status: 400 });
+      }
+      return Response.json({ ok: true, order_number: order.order_number, group: true });
+    }
 
     // Mark paid + confirmed if the webhook hasn't already.
     if (order.payment_status !== 'paid' || order.status === 'pending') {

@@ -60,8 +60,9 @@ Deno.serve(async (req) => {
     // ── Persist the shared Order BEFORE creating any payable intent ──
     // A failed Order.create now returns an error (no intents created) so there
     // is never a payable flow without a recoverable persisted Order.
+    let groupOrderId = '';
     try {
-      await base44.asServiceRole.entities.Order.create({
+      const groupOrder = await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
         ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
@@ -97,6 +98,7 @@ Deno.serve(async (req) => {
         scheduled_for: scheduledFor || '',
         estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
+      groupOrderId = groupOrder.id;
     } catch (dbError) {
       console.error('Group Order.create failed — no intents created:', dbError.message);
       return Response.json({ error: 'Could not save your group order. No charge was made — please try again.' }, { status: 500 });
@@ -128,8 +130,12 @@ Deno.serve(async (req) => {
 
     // ── Create one PaymentIntent per person ──
     // If any intent creation fails, cancel every already-created intent so no
-    // partial payable set is left dangling, then return an error.
+    // partial payable set is left dangling, then return an error. Each created
+    // intent is also recorded as a GroupPaymentShare (admin-only) so the Stripe
+    // webhook and the browser fallback can settle the parent order ONLY when
+    // ALL shares succeed at the correct amounts — independently of the client.
     const intents: any[] = [];
+    const shareRecords: any[] = [];
     for (const split of splits) {
       const amountCents = Math.round((Number(split.total) || 0) * 100);
       if (amountCents <= 0) continue;
@@ -153,6 +159,14 @@ Deno.serve(async (req) => {
           amount: split.total,
           intentId: pi.id,
         });
+        shareRecords.push({
+          order_id: groupOrderId,
+          order_number: orderNumber,
+          intent_id: pi.id,
+          person_name: split.person_name || 'Guest',
+          expected_amount: Number(split.total) || 0,
+          status: 'pending',
+        });
       } catch (intentErr) {
         // Compensate: cancel all already-created (unconfirmed) intents.
         console.error(`Group intent creation failed for order ${orderNumber}; canceling ${intents.length} created intents:`, intentErr.message);
@@ -163,8 +177,27 @@ Deno.serve(async (req) => {
             console.error(`RECONCILIATION: failed to cancel group intent ${created.intentId}:`, cancelErr.message);
           }
         }
+        // Record the canceled shares so admin can see the failed setup.
+        try {
+          await base44.asServiceRole.entities.GroupPaymentShare.bulkCreate(
+            shareRecords.map((r) => ({ ...r, status: 'canceled', settled_at: new Date().toISOString() })),
+          );
+        } catch (shareErr) {
+          console.error('Failed to record canceled group shares:', shareErr.message);
+        }
         return Response.json({ error: 'Could not start one of the split payments. No charge was made — please try again.' }, { status: 500 });
       }
+    }
+
+    // ── Persist the group payment shares (admin-only settlement ledger) ──
+    // The webhook matches group intents by intent_id against these records and
+    // settles the parent order only when every share is succeeded at the
+    // expected amount. Non-fatal if this fails — the browser fallback can still
+    // reconcile via Stripe intent retrieval, but admin visibility is degraded.
+    try {
+      await base44.asServiceRole.entities.GroupPaymentShare.bulkCreate(shareRecords);
+    } catch (shareErr) {
+      console.error('Failed to persist group payment shares:', shareErr.message);
     }
 
     return Response.json({

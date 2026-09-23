@@ -14,19 +14,22 @@
 //  - Reward discount:        client value, capped at adjusted subtotal (trusted — see BLOCKER note)
 //  - Tip:                    client value, clamped ≥ 0 (customer choice, not validated)
 //
-// PENDING BLOCKERS (not fully authoritative from existing data):
-//  - Ad-hoc modifier prices (Deluxe toppings, shake flavors) come from client
-//    configs (shakeConfig/deluxeConfig), not MenuItem records, so their per-unit
-//    price cannot be server-validated here. They are trusted but bounded by the
-//    subtotal check.
-//  - Reward discount amount requires a Square loyalty reward-tier lookup to
-//    validate the exact discount value. It is capped at the adjusted subtotal
-//    but not exactly validated. Full validation needs a server-side reward-tier
-//    authority (separately approved scope).
-//  - Items without a square_item_id (e.g. souvenir mug) have no MenuItem record
-//    to validate against; their price is trusted.
+// AUTHORITY (updated 2026-09-23):
+//  - Catalog modifier prices (Deluxe toppings, shake flavors, sizes, mix-ins):
+//    authoritative via MenuItem.modifiers matched by id. Unknown-id / no-id
+//    modifiers are REJECTED (permitted-selections enforcement — closes the
+//    ad-hoc modifier trust gap).
+//  - Noncatalog items (no square_item_id): validated against NONCATALOG_PRICES
+//    when an approved price is recorded (souvenir mug); otherwise trusted with a
+//    warning (BLOCKER: Build-Your-Combo can't be recomputed from the single line
+//    item — needs Wesley's decision on sending component-level data).
+//  - Reward discount: validated exactly against the Square Loyalty reward tier
+//    + account balance by validateRewardDiscount (called by createPaymentIntent
+//    before this runs); the authoritative exact discount is passed in as
+//    clientDiscount, so the total check below confirms it.
 
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
+import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 
 const TAX_RATE = 0.06;
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
@@ -108,25 +111,41 @@ export async function verifyOrderPricing(base44: any, opts: {
 
     let lineUnitPrice: number;
     if (menuItem) {
-      // Authoritative base + authoritative catalog modifier prices.
+      // Authoritative base + authoritative catalog modifier prices. A catalog
+      // item's modifiers MUST reference a real catalog option id — Deluxe
+      // toppings, shake flavors, sizes, and mix-ins all come from the item's
+      // Square modifier lists. Reject unknown-id / no-id modifiers instead of
+      // trusting the client-supplied price (closes the ad-hoc modifier trust
+      // gap and enforces permitted selections).
       lineUnitPrice = Number(menuItem.price) || 0;
       const modPriceMap = buildModifierPriceMap(menuItem);
       for (const sm of (item.selectedModifiers || [])) {
         if (!sm) continue;
         if (sm.id && sm.id in modPriceMap) {
-          lineUnitPrice += modPriceMap[sm.id]; // authoritative
+          lineUnitPrice += modPriceMap[sm.id]; // authoritative catalog price
         } else {
-          // Ad-hoc modifier (Deluxe topping, shake flavor, etc.) — trusted.
-          lineUnitPrice += Math.max(0, Number(sm.price) || 0);
+          return { ok: false, error: `Modifier "${sm.name || sm.id || 'unknown'}" is not a permitted selection for ${item.name || 'this item'}. Please refresh the menu and try again.` };
         }
       }
     } else if (sqId) {
       // square_item_id present but not in our catalog — reject (unknown item).
       return { ok: false, error: `Menu item not found for square_item_id ${sqId}` };
     } else {
-      // No square_item_id (custom item, e.g. souvenir mug) — trust client price.
-      lineUnitPrice = Math.max(0, Number(item.price) || 0);
-      warnings.push(`Unvalidated item (no square_item_id): ${item.name || 'unknown'}`);
+      // Noncatalog item (no square_item_id). Validate against the canonical
+      // noncatalog price config when an approved price is recorded (e.g.
+      // souvenir mug); otherwise trust with a warning (e.g. Build-Your-Combo,
+      // whose component-level price can't be recomputed from the single line
+      // item — BLOCKER, needs Wesley's decision on component-level data).
+      const canonical = NONCATALOG_PRICES[(item.name || '').toLowerCase().trim()];
+      if (canonical != null) {
+        if (Math.abs((Number(item.price) || 0) - canonical) > 0.01) {
+          return { ok: false, error: `Price mismatch for ${item.name || 'this item'}: expected $${canonical.toFixed(2)}. Please refresh and try again.` };
+        }
+        lineUnitPrice = canonical;
+      } else {
+        lineUnitPrice = Math.max(0, Number(item.price) || 0);
+        warnings.push(`Unvalidated noncatalog item (no square_item_id, no canonical price): ${item.name || item.id || 'unknown'}`);
+      }
     }
 
     const lineTotal = lineUnitPrice * qty;
