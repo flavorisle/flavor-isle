@@ -167,15 +167,25 @@ export default function SmashieHunt() {
       src={renderSpot.image}
       alt={renderSpot.alt}
       onClick={handleFoundClick}
-      className="fixed sm:absolute z-[35] w-11 h-14 sm:w-14 sm:h-[4.5rem] object-contain cursor-pointer select-none"
-      style={{
-        position: 'absolute',
-        top: `${Math.round((renderSpot.topPct / 100) * docHeight)}px`,
-        left: `${renderSpot.leftPct}vw`,
-        transform: 'rotate(-3deg)',
-        opacity: 0.92,
-        transition: 'top 0.8s ease-out',
-      }}
+      className="z-[35] w-14 h-16 object-contain cursor-pointer select-none"
+      style={
+        preview
+          ? {
+              position: 'fixed',
+              top: '46vh',
+              left: '62vw',
+              transform: 'rotate(-3deg)',
+              opacity: 0.95,
+            }
+          : {
+              position: 'absolute',
+              top: `${Math.round((renderSpot.topPct / 100) * docHeight)}px`,
+              left: `${renderSpot.leftPct}vw`,
+              transform: 'rotate(-3deg)',
+              opacity: 0.92,
+              transition: 'top 0.8s ease-out',
+            }
+      }
       aria-label="Found Smashie! Click to claim your prize"
     />,
     document.body
