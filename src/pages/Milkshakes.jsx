@@ -58,7 +58,7 @@ export default function Milkshakes() {
 
   // Total shake count includes the 5 premium Bliss shakes (shown in their own
   // section) and the malt, so the hero reflects every shake we offer.
-  const PREMIUM_COUNT = 5;
+  const PREMIUM_COUNT = 6;
   const totalFlavors = regularShakes.length + maltShakes.length + PREMIUM_COUNT;
   const heroBreakdown = [
     regularShakes.length > 0 && `${regularShakes.length} originals`,

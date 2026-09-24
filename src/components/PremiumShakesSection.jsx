@@ -12,12 +12,14 @@ const PREMIUM_SHAKE_IDS = [
   '6a3e3805ff57925d93d080ba', // Southern Peach Crumble Bliss
   '6a3e37fee8d7ba1372e2072f', // Banana Split Bliss
   '6a7b92470796edccdb26af34', // Caramel Apple Bliss
+  '6ab2d3f6dfddfc7740e92cde', // Strawberry Crunch Bliss
 ];
 
 // Special availability badges keyed by MenuItem id.
 const AVAILABILITY_BADGES = {
   '6a3e3807f128347090f2090d': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
   '6a7b92470796edccdb26af34': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
+  '6ab2d3f6dfddfc7740e92cde': { label: 'New', className: 'bg-patina-mint text-white' },
 };
 
 // Short display names (strip the "Milkshake" suffix for the card title).
@@ -27,6 +29,7 @@ const SHORT_NAMES = {
   '6a3e3805ff57925d93d080ba': 'Peach Crumble Bliss',
   '6a3e37fee8d7ba1372e2072f': 'Banana Split Bliss',
   '6a7b92470796edccdb26af34': 'Caramel Apple Bliss',
+  '6ab2d3f6dfddfc7740e92cde': 'Strawberry Crunch Bliss',
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {
