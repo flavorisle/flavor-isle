@@ -38,6 +38,7 @@ const GROUPS = [
       { label: 'Gallery', to: '/gallery' },
       { label: 'Community News', to: '/community-news' },
       { label: 'Reviews', to: '/reviews' },
+      { label: 'Local Attractions', to: '/local-attractions' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },
@@ -49,6 +50,7 @@ const GROUPS = [
       { label: 'Contact & Location', to: '/contact' },
       { label: 'What to Expect', to: '/what-to-expect' },
       { label: 'Get the App', to: '/download' },
+      { label: 'Newsletter', to: '/newsletter' },
     ],
   },
 ];

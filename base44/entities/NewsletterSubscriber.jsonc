@@ -1,0 +1,48 @@
+{
+  "name": "NewsletterSubscriber",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Subscriber email address"
+    },
+    "name": {
+      "type": "string",
+      "description": "Optional subscriber display name"
+    },
+    "source": {
+      "type": "string",
+      "default": "newsletter_page",
+      "description": "Where the subscription was captured"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "unsubscribed"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "rls": {
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
