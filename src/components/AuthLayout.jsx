@@ -6,7 +6,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ac4dd83a4_NewFlavorIsleBuilding-Recovered25.png"
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/20ada4255_NewFlavorIsleBuilding.png"
             alt="Flavor Isle — Smiths Grove, KY, Est. 1964"
             className="w-full max-w-[260px] rounded-2xl shadow-sm"
           />
