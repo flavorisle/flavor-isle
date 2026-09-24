@@ -244,7 +244,7 @@ export default function PrivacyPolicy() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@flavorisle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@order.flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>
