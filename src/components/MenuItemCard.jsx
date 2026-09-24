@@ -94,15 +94,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     }
   };
 
-  // Photo click opens the item's shareable product page (/menu?item=<id>),
-  // which scrolls to the card and auto-opens its detail/customization view.
-  // Fires the same GA4 select-item event used by the add/combo actions so
-  // photo clicks show up as item interactions. Sold-out items still open the
-  // page (viewing stays allowed; ordering remains blocked by the add button).
+  // Photo click opens the item's full product detail page — a real page with
+  // the hero image, description, reviews, and add-to-cart — rather than the
+  // quick customize modal. Fires the same GA4 select-item event used by the
+  // add/combo actions. Sold-out items still open the page (viewing allowed).
   const handlePhotoClick = (e) => {
     e?.stopPropagation();
     trackSelectItem(foodItemToGa4(item));
-    navigate(`/menu?item=${item.id}`);
+    navigate(`/product/${item.id}`);
   };
 
   const handleAdd = (e) => {

@@ -59,6 +59,7 @@ const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const CommunityNews = lazy(() => import('./pages/CommunityNews'));
 const Rewards = lazy(() => import('./pages/Rewards'));
 const Order = lazy(() => import('./pages/Order'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const MerchCheckout = lazy(() => import('./pages/MerchCheckout'));
 const MerchConfirmation = lazy(() => import('./pages/MerchConfirmation'));
 const AdminMerchCategories = lazy(() => import('./pages/AdminMerchCategories'));
@@ -207,6 +208,7 @@ const AuthenticatedApp = () => {
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
       <Route path="/order" element={<Order />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/merch" element={<Merch />} />
