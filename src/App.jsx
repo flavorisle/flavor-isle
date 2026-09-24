@@ -15,6 +15,8 @@ import BottomTabBar from './components/BottomTabBar';
 import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
+import SmashieHunt from './components/findSmashie/SmashieHunt';
+import FindSmashieBanner from './components/findSmashie/FindSmashieBanner';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
