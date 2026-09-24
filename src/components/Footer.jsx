@@ -91,6 +91,13 @@ export default function Footer() {
       {/* SMS opt-in + A2P disclosure */}
       <FooterSmsOptIn />
 
+      {/* Traveler tips link — shown on every page */}
+      <div className="border-t border-white/10 px-4 sm:px-6 py-3 text-center">
+        <Link to="/about#traveler-tips" className="text-sm text-gray-300 hover:text-white transition-colors">
+          Just passing through? See traveler tips.
+        </Link>
+      </div>
+
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">

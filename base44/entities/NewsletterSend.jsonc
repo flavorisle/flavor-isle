@@ -1,0 +1,66 @@
+{
+  "name": "NewsletterSend",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "broadcast_id": {
+      "type": "string",
+      "description": "Deterministic content hash of subject+body. The same newsletter content always maps to the same broadcast_id, giving per-recipient idempotency: a subscriber never receives the same newsletter twice, even across retries or repeated Send clicks."
+    },
+    "subscriber_id": {
+      "type": "string",
+      "description": "EmailSubscriber id this send was delivered to."
+    },
+    "email": {
+      "type": "string",
+      "description": "Recipient email snapshot for admin delivery logs."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "failed",
+        "skipped"
+      ],
+      "default": "sent",
+      "description": "sent = delivered to Resend; failed = Resend rejected; skipped = already had a send for this broadcast (idempotency)."
+    },
+    "error": {
+      "type": "string",
+      "description": "Resend error detail when status=failed."
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "broadcast_id",
+    "email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
