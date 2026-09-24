@@ -1,0 +1,74 @@
+{
+  "name": "GroupPaymentShare",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Parent Order id this per-person split share belongs to."
+    },
+    "order_number": {
+      "type": "string",
+      "description": "Parent order number, for admin display."
+    },
+    "intent_id": {
+      "type": "string",
+      "description": "Stripe PaymentIntent id for this person's share. The Stripe webhook matches group orders by this id (group orders use stripe_session_id 'GROUP' on the parent, so they can't be matched the way single orders are)."
+    },
+    "person_name": {
+      "type": "string",
+      "description": "Name of the person paying this share."
+    },
+    "expected_amount": {
+      "type": "number",
+      "description": "Expected share amount in USD. The webhook verifies the received amount matches before marking the share succeeded, so an underpayment never settles the parent order."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "succeeded",
+        "failed",
+        "canceled",
+        "refunded"
+      ],
+      "default": "pending",
+      "description": "Settlement state of this share. pending = intent created, not yet paid; succeeded = paid at the correct amount; failed = payment failed or underpaid; canceled = intent canceled (setup failure or customer abandoned); refunded = charge later refunded. The parent Order is settled only when ALL shares are succeeded."
+    },
+    "settled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this share last transitioned out of pending."
+    }
+  },
+  "required": [
+    "order_id",
+    "intent_id",
+    "expected_amount"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

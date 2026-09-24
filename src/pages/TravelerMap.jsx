@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Share2, X, Loader2, LogIn, Sparkles, Search, Camera, Plus, UtensilsCrossed, MapPinned, Compass } from 'lucide-react';
@@ -33,6 +33,24 @@ function MapClickHandler({ onMapClick, disabled }) {
       onMapClick(e.latlng);
     },
   });
+  return null;
+}
+
+// Recalculate the map's tile layout after mount. The route is wrapped in a
+// framer-motion opacity/transform animation (App.jsx), which makes Leaflet
+// compute tile positions against a mid-animation container and render grey.
+// invalidateSize() once the animation settles fixes the blank map.
+function InvalidateSizeOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 250);
+    const onResize = () => map.invalidateSize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [map]);
   return null;
 }
 
@@ -334,6 +352,7 @@ export default function TravelerMap() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <MapClickHandler onMapClick={handleMapClick} disabled={false} />
+            <InvalidateSizeOnMount />
 
             {pins.map((pin) => (
               <Marker key={pin.id} position={[pin.lat, pin.lng]} icon={pinIcon}>

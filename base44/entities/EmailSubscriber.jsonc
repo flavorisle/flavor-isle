@@ -1,0 +1,64 @@
+{
+  "name": "EmailSubscriber",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Subscriber email address (lowercased, trimmed). Enforced unique by the subscribe backend."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "unsubscribed"
+      ],
+      "default": "pending",
+      "description": "pending = awaiting double opt-in confirmation; active = confirmed and receiving newsletters; unsubscribed = opted out via one-click link."
+    },
+    "confirm_token": {
+      "type": "string",
+      "description": "Single-use double opt-in confirmation token. Cleared once the subscription is confirmed."
+    },
+    "source": {
+      "type": "string",
+      "default": "footer",
+      "description": "Where the subscription was captured (footer, newsletter_page, etc.)"
+    },
+    "subscribed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the subscriber confirmed (status became active)."
+    },
+    "unsubscribed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the subscriber opted out via the one-click unsubscribe link."
+    },
+    "unsubscribe_token": {
+      "type": "string",
+      "description": "Persistent token used in one-click unsubscribe links in every newsletter email."
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "rls": {
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "name": "BuilderReport",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "report_key": {
+      "type": "string",
+      "description": "Grouping key identifying which approval batch this record belongs to, e.g. approved_descriptions_2026-09-19"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Name of the MenuItem this draft applies to"
+    },
+    "item_id": {
+      "type": "string",
+      "description": "MenuItem id this draft applies to, so approval can be applied directly"
+    },
+    "before_text": {
+      "type": "string",
+      "description": "Current description text, or (none) when the item has no description"
+    },
+    "after_text": {
+      "type": "string",
+      "description": "Drafted replacement description, pending Wesley's emailed approval"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "applied",
+        "rejected"
+      ],
+      "default": "draft",
+      "description": "Approval state of this draft. draft = awaiting Wesley's review; approved = Wesley approved by email; applied = written to the MenuItem; rejected = Wesley declined."
+    }
+  },
+  "required": [
+    "report_key",
+    "item_name",
+    "before_text",
+    "after_text"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

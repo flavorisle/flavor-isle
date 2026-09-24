@@ -1,0 +1,68 @@
+{
+  "name": "ContactMessage",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Submitter display name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Submitter reply-to email"
+    },
+    "message": {
+      "type": "string",
+      "description": "Full message body"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "failed"
+      ],
+      "default": "pending",
+      "description": "Delivery state of the inbox email. pending = record created, email not yet attempted; sent = SendEmail accepted; failed = SendEmail rejected (retryable)."
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the inbox email was accepted by SendEmail"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Last SendEmail error detail when status=failed, for admin retry/diagnostics"
+    },
+    "client_ip": {
+      "type": "string",
+      "description": "Best-effort client IP from request headers, used for per-IP rate limiting"
+    },
+    "content_hash": {
+      "type": "string",
+      "description": "SHA-256 of email+message, used to dedupe rapid re-submits so an accepted message isn't emailed twice"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "message"
+  ],
+  "rls": {
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
