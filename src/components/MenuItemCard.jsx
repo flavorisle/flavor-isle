@@ -8,6 +8,7 @@ import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -22,6 +23,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [openAsCombo, setOpenAsCombo] = useState(false);
+  const [comboAddOn, setComboAddOn] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
 
@@ -35,6 +37,21 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const isBurger = /burger/i.test(item.name);
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
+
+  // Starting combo add-on for burgers — first side + vanilla shake (the
+  // modal's default drink) minus the combo discount. Uses the shared session
+  // cache so this never bursts the API rate limit across many burger cards.
+  useEffect(() => {
+    if (!isBurger || soldOut) return;
+    let cancelled = false;
+    getComboData().then((data) => {
+      if (cancelled || !data) return;
+      const side = data.sides[0];
+      if (!side) return;
+      setComboAddOn(+(side.price + data.shake.price - COMBO_DISCOUNT).toFixed(2));
+    });
+    return () => { cancelled = true; };
+  }, [isBurger, soldOut]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -247,6 +264,11 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           >
             <Sparkles size={15} />
             Make it a Combo
+            {comboAddOn !== null && (
+              <span className={`ml-1 text-xs font-body ${light ? 'text-obsidian-roast/70' : 'text-midnight-cherry/70'}`}>
+                +${comboAddOn.toFixed(2)}
+              </span>
+            )}
           </button>
         )}
         <button
@@ -256,6 +278,11 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         >
           <Plus size={16} />
           {addLabel}
+          {!soldOut && orderingEnabled && !added && (
+            <span className="ml-1 opacity-70 font-body">
+              · ${(isHappyHour && happyHourPrice !== null ? happyHourPrice : item.price).toFixed(2)}
+            </span>
+          )}
         </button>
       </div>
     );

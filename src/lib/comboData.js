@@ -1,5 +1,11 @@
 import { base44 } from '@/api/base44Client';
 
+// Flat discount applied when a burger is built as an Isle Combo (side +
+// shake/drink bundled). Shared by the modifier modal and the menu card's
+// "Make it a Combo" button so the add-on price shown on the card matches
+// what the modal actually charges.
+export const COMBO_DISCOUNT = 1.50;
+
 // Side options offered in the Isle Combo. Order matters — it controls the
 // button order shown in the modifier modal.
 const SIDE_NAMES = [

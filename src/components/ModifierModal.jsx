@@ -5,7 +5,7 @@ import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
 import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
-import { getComboData } from '@/lib/comboData';
+import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
@@ -75,8 +75,6 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     });
     setComboSideMods(init);
   }, [comboSide]);
-
-  const COMBO_DISCOUNT = 1.50;
 
   // Combo component modifier groups — each handled by a dedicated picker, so
   // excluded from the generic "extra modifiers" UI. Matched by EXACT group name
