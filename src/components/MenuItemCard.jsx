@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Zap, Heart, Star, Clock, Sparkles } from 'lucide-react';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
@@ -20,6 +21,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [openAsCombo, setOpenAsCombo] = useState(false);
@@ -90,6 +92,17 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     } finally {
       setSavingFavorite(false);
     }
+  };
+
+  // Photo click opens the item's shareable product page (/menu?item=<id>),
+  // which scrolls to the card and auto-opens its detail/customization view.
+  // Fires the same GA4 select-item event used by the add/combo actions so
+  // photo clicks show up as item interactions. Sold-out items still open the
+  // page (viewing stays allowed; ordering remains blocked by the add button).
+  const handlePhotoClick = (e) => {
+    e?.stopPropagation();
+    trackSelectItem(foodItemToGa4(item));
+    navigate(`/menu?item=${item.id}`);
   };
 
   const handleAdd = (e) => {
@@ -324,11 +337,20 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
               <div className="w-full h-full bg-gradient-to-br from-obsidian-roast to-midnight-cherry" />
             )}
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10 pointer-events-none" />
+          {/* Clickable photo layer — sits above the image/gradient but below
+              badges (z-10) and the content block so only the photo area opens
+              the product page, not the title or action buttons. */}
+          <button
+            type="button"
+            onClick={handlePhotoClick}
+            aria-label={`View ${item.name}`}
+            className="absolute inset-0 z-0 cursor-pointer"
+          />
           {favoriteBtn}
           {shareBtn}
           {badges}
-          <div className="relative">
+          <div className="relative z-10">
             {renderContent(true, { showRatings: false })}
           </div>
         </div>
@@ -338,7 +360,13 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   if (position === 'left' || position === 'right') {
     const imageBlock = (
-      <div className="relative w-full h-40 sm:w-40 sm:h-auto overflow-hidden bg-gray-100 flex-shrink-0">
+      <div
+        onClick={handlePhotoClick}
+        role="button"
+        tabIndex={0}
+        aria-label={`View ${item.name}`}
+        className="relative w-full h-40 sm:w-40 sm:h-auto overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer"
+      >
         {photo}
         {badges}
         {hoverAdd}
@@ -367,7 +395,13 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
       <div className="group relative card-diner overflow-hidden">
         {favoriteBtn}
         {shareBtn}
-        <div className="relative h-48 overflow-hidden bg-gray-100">
+        <div
+          onClick={handlePhotoClick}
+          role="button"
+          tabIndex={0}
+          aria-label={`View ${item.name}`}
+          className="relative h-48 overflow-hidden bg-gray-100 cursor-pointer"
+        >
           {photo}
           {badges}
           {hoverAdd}
