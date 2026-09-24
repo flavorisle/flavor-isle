@@ -72,6 +72,10 @@ export default function SmashieHunt() {
     };
   }, [location.pathname]);
 
+  // Preview override: ?hunt-preview forces the sprite visible on the current
+  // page so the game can be reviewed outside the October/hours window.
+  const preview = new URLSearchParams(window.location.search).has('hunt-preview');
+
   const now = new Date();
   const dateStr = todayStr(now);
   const nowMinutes = (() => {
@@ -94,12 +98,26 @@ export default function SmashieHunt() {
     [dateStr, phase]
   );
 
+  // In preview mode, force a pumpkin sprite onto whatever page you're on.
+  const previewSpot = useMemo(
+    () => preview
+      ? {
+          phase: 'pumpkin',
+          page: { path: location.pathname, name: 'Preview' },
+          topPct: 46,
+          leftPct: 62,
+          image: '/find-smashie/smashie-pumpkin.png',
+          alt: 'Smashie in his pumpkin costume (preview)',
+        }
+      : null,
+    [preview, location.pathname]
+  );
+
   const spriteVisible =
     !state.loading &&
-    active &&
-    !foundToday &&
-    spot &&
-    spot.page.path === location.pathname &&
+    (preview || (active && !foundToday)) &&
+    (preview ? previewSpot : spot) &&
+    (preview ? true : spot.page.path === location.pathname) &&
     docHeight > 400;
 
   async function handleFoundClick() {
@@ -143,16 +161,17 @@ export default function SmashieHunt() {
     }
   }
 
-  const sprite = spriteVisible ? createPortal(
+  const renderSpot = preview ? previewSpot : spot;
+  const sprite = spriteVisible && renderSpot ? createPortal(
     <img
-      src={spot.image}
-      alt={spot.alt}
+      src={renderSpot.image}
+      alt={renderSpot.alt}
       onClick={handleFoundClick}
       className="fixed sm:absolute z-[35] w-11 h-14 sm:w-14 sm:h-[4.5rem] object-contain cursor-pointer select-none"
       style={{
         position: 'absolute',
-        top: `${Math.round((spot.topPct / 100) * docHeight)}px`,
-        left: `${spot.leftPct}vw`,
+        top: `${Math.round((renderSpot.topPct / 100) * docHeight)}px`,
+        left: `${renderSpot.leftPct}vw`,
         transform: 'rotate(-3deg)',
         opacity: 0.92,
         transition: 'top 0.8s ease-out',
