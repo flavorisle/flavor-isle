@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
+import { Plus, Zap, Heart, Star, Clock, Sparkles } from 'lucide-react';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
@@ -21,6 +21,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [openAsCombo, setOpenAsCombo] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
 
@@ -31,6 +32,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   }, [autoOpen]);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
+  const isBurger = /burger/i.test(item.name);
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
 
@@ -100,6 +102,17 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     setShowModal(false);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
+  };
+
+  // "Make it a Combo" — burgers only. Opens the modifier modal with the Isle
+  // Combo toggle pre-selected so the customer lands straight in the side +
+  // drink picker instead of having to toggle it on inside the modal.
+  const handleMakeCombo = (e) => {
+    e?.stopPropagation();
+    if (!orderingEnabled) return;
+    trackSelectItem(foodItemToGa4(item));
+    setOpenAsCombo(true);
+    setShowModal(true);
   };
 
   // ── Reusable pieces ──
@@ -223,6 +236,19 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
             {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
           </p>
         )}
+        {isBurger && !soldOut && orderingEnabled && (
+          <button
+            onClick={handleMakeCombo}
+            className={`w-full mb-2 py-2.5 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border transition-all ${
+              light
+                ? 'bg-smashie-yellow text-obsidian-roast border-smashie-yellow hover:bg-smashie-yellow/90'
+                : 'bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30'
+            }`}
+          >
+            <Sparkles size={15} />
+            Make it a Combo
+          </button>
+        )}
         <button
           onClick={handleAdd}
           disabled={soldOut || !orderingEnabled}
@@ -236,7 +262,12 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   };
 
   const modal = showModal && (
-    <ModifierModal item={item} onClose={() => setShowModal(false)} onConfirm={handleModalConfirm} />
+    <ModifierModal
+      item={item}
+      autoCombo={openAsCombo}
+      onClose={() => { setShowModal(false); setOpenAsCombo(false); }}
+      onConfirm={handleModalConfirm}
+    />
   );
 
   // ── Layouts ──

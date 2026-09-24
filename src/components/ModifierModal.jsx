@@ -10,7 +10,7 @@ import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDel
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 
-export default function ModifierModal({ item, onClose, onConfirm }) {
+export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
 
@@ -27,7 +27,7 @@ export default function ModifierModal({ item, onClose, onConfirm }) {
   };
 
   const [selections, setSelections] = useState(initSelections);
-  const [isCombo, setIsCombo] = useState(false);
+  const [isCombo, setIsCombo] = useState(!!autoCombo);
   const [comboData, setComboData] = useState(null);
   const [comboSide, setComboSide] = useState(null);
   const [comboDrinkType, setComboDrinkType] = useState('shake');
