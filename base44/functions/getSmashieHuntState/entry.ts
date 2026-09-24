@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
-      active: true, start_date: '2026-10-01', end_date: '2026-10-31',
+      active: true, start_date: '2026-09-23', end_date: '2026-10-31', preview_mode: true,
     };
     const { dateStr, minutes } = storeNow();
 
@@ -55,7 +55,10 @@ Deno.serve(async (req) => {
       active: !!settings.active,
       start_date: settings.start_date || '2026-10-01',
       end_date: settings.end_date || '2026-10-31',
-      in_hours: hours ? (minutes >= toMin(hours.open) && minutes < toMin(hours.close)) : null,
+      preview_mode: !!settings.preview_mode,
+      in_hours: settings.preview_mode
+        ? true
+        : hours ? (minutes >= toMin(hours.open) && minutes < toMin(hours.close)) : null,
       hours,
       today_winner: todayWinner,
     });

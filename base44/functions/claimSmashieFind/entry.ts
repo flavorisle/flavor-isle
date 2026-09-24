@@ -44,10 +44,11 @@ Deno.serve(async (req) => {
     const { dateStr, month, minutes } = storeNow();
 
     const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
-      active: true, start_date: '2026-10-01', end_date: '2026-10-31', win_limit_per_customer: 1,
+      active: true, start_date: '2026-09-23', end_date: '2026-10-31',
+      win_limit_per_customer: 1, preview_mode: true,
     };
     if (!settings.active) return Response.json({ off: true });
-    if (dateStr < (settings.start_date || '2026-10-01') || dateStr > (settings.end_date || '2026-10-31')) {
+    if (dateStr < (settings.start_date || '2026-09-23') || dateStr > (settings.end_date || '2026-10-31')) {
       return Response.json({ off: true });
     }
 
@@ -59,9 +60,11 @@ Deno.serve(async (req) => {
       const bh = ms?.business_hours?.[dayIdx];
       if (bh && !bh.closed) hours = bh;
     } catch (e) { /* defaults below */ }
-    const open = toMin(hours?.open || '10:30');
-    const close = toMin(hours?.close || '20:00');
-    if (minutes < open || minutes >= close) return Response.json({ off: true });
+    if (!settings.preview_mode) {
+      const open = toMin(hours?.open || '10:30');
+      const close = toMin(hours?.close || '20:00');
+      if (minutes < open || minutes >= close) return Response.json({ off: true });
+    }
 
     const phase = minutes < VAMPIRE_SWITCH ? 'pumpkin' : 'vampire';
     const validChoice = ['points', 'milkshake'].includes(prize_choice) ? prize_choice : null;

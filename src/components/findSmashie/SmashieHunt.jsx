@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import {
   getHuntSpot, getHuntPhase, minutesOfDay, todayStr,
-  inDateRange, INSTAGRAM_URL, INSTAGRAM_HANDLE,
+  inDateRange, VAMPIRE_SWITCH_TIME, INSTAGRAM_URL, INSTAGRAM_HANDLE,
 } from '@/lib/findSmashie';
 
 const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
@@ -23,9 +23,17 @@ async function fetchHuntState() {
   try {
     return await base44.functions.invoke('getSmashieHuntState', {});
   } catch (e) {
-    // Preview/branch fallback: if the backend function isn't
-    // deployed yet, assume the game runs during October.
-    return { active: inDateRange(todayStr(), null, null), today_winner: null, hours: null };
+    // Branch-preview fallback: if the backend function isn't
+    // deployed on this branch, assume the game is ON in preview
+    // mode (hours ignored) so the game can be tested anytime.
+    return {
+      active: true,
+      start_date: '2026-09-23',
+      end_date: '2026-10-31',
+      preview_mode: true,
+      today_winner: null,
+      hours: null,
+    };
   }
 }
 
@@ -72,10 +80,6 @@ export default function SmashieHunt() {
     };
   }, [location.pathname]);
 
-  // Preview override: ?hunt-preview forces the sprite visible on the current
-  // page so the game can be reviewed outside the October/hours window.
-  const preview = new URLSearchParams(window.location.search).has('hunt-preview');
-
   const now = new Date();
   const dateStr = todayStr(now);
   const nowMinutes = (() => {
@@ -86,10 +90,19 @@ export default function SmashieHunt() {
     return get('hour') * 60 + get('minute');
   })();
 
+  // Preview override: ?hunt-preview forces the sprite visible on the current
+  // page so the game can be reviewed outside the October/hours window.
+  const preview = new URLSearchParams(window.location.search).has('hunt-preview');
+
   const hours = state?.hours;
   const openM = hours ? minutesOfDay(hours.open) : 630;   // default 10:30 AM
   const closeM = hours ? minutesOfDay(hours.close) : 1200; // default 8:00 PM
-  const phase = getHuntPhase({ nowMinutes, openMinutes: openM, closeMinutes: closeM });
+  // Preview mode (admin setting): Smashie ignores open/close hours
+  // so the game can be tested anytime. Turn OFF before the live
+  // October launch. ?hunt-preview still overrides everything.
+  const phase = (state?.preview_mode && !preview)
+    ? (nowMinutes < minutesOfDay(VAMPIRE_SWITCH_TIME) ? 'pumpkin' : 'vampire')
+    : getHuntPhase({ nowMinutes, openMinutes: openM, closeMinutes: closeM });
 
   const active = !!state?.active && inDateRange(dateStr, state?.start_date, state?.end_date);
   const foundToday = !!state?.today_winner;
@@ -120,6 +133,8 @@ export default function SmashieHunt() {
     (preview ? true : spot.page.path === location.pathname) &&
     docHeight > 400;
 
+  const activeSpot = preview ? previewSpot : spot;
+
   async function handleFoundClick() {
     if (isLoadingAuth) return;
     if (!isAuthenticated) {
@@ -128,7 +143,7 @@ export default function SmashieHunt() {
     }
     setClaiming(true);
     try {
-      const res = await base44.functions.invoke('claimSmashieFind', { phase: spot.phase });
+      const res = await base44.functions.invoke('claimSmashieFind', { phase: activeSpot?.phase });
       if (res?.you_won) {
         setModal('won');
         window.dispatchEvent(new Event(HUNT_REFRESH_EVENT));
@@ -152,7 +167,7 @@ export default function SmashieHunt() {
     setPrizeChoice(choice);
     setClaiming(true);
     try {
-      await base44.functions.invoke('claimSmashieFind', { phase: spot?.phase, prize_choice: choice });
+      await base44.functions.invoke('claimSmashieFind', { phase: activeSpot?.phase, prize_choice: choice });
     } catch (e) {
       // Preview fallback: choice still recorded in modal state.
     } finally {

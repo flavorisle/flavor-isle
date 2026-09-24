@@ -28,10 +28,10 @@ Every day October 1–31, Smashie hides somewhere on the site:
 
 1. Open this branch's preview deployment (Base44 branch build) or run locally.
 2. The site-wide banner appears at the top of every page while the game is on.
-3. Turn the game ON in **Admin → Communications → Settings → Find Smashie**
-   (FindSmashieSettings.active). It defaults to the Oct 1–31 date range and
-   business hours come from MenuSetting.business_hours, so outside those
-   hours Smashie is asleep.
+3. The game is ON by default on this branch, starting 2026-09-23, with
+   **preview mode** enabled — Smashie ignores open/close hours so you can
+   hunt him any time of day. The admin panel (Admin → Communications →
+   Settings → Find Smashie) shows the toggle, dates, and today's spots.
 4. To spot him, check the admin panel's "Today's hiding spots" preview, then
    visit that page. He's small and unboxed — that's the point.
 5. Click him: guests get a sign-in prompt; signed-in users get the win/claim
@@ -58,6 +58,9 @@ Every day October 1–31, Smashie hides somewhere on the site:
 
 ## Open decisions (Wesley)
 
+- **BEFORE MERGING TO MAIN**: set start_date to 2026-10-01 and turn
+  preview_mode OFF (admin panel or defaults here), so Smashie only hides
+  during real open hours in October.
 - **Win limit**: implemented as admin-editable `win_limit_per_customer`
   (default 1/month, 0 = unlimited). Confirm before go-live.
 - **Prize fulfillment**: winner's choice is recorded on the winner record and
@@ -66,3 +69,6 @@ Every day October 1–31, Smashie hides somewhere on the site:
   checkout) wires up on approval — the UI and data model are ready for it.
 - The daily winner post to Instagram is a manual/admin action for now
   (compose from the winners log); automation can be added later if wanted.
+- **Pre-launch promo**: once the start date is set to Oct 1, the site banner
+  automatically switches to "Find Smashie starts October 1!" with the
+  Instagram CTA until the day the game begins.

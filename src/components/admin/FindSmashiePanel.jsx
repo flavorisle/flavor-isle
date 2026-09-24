@@ -19,7 +19,8 @@ export default function FindSmashiePanel() {
       const list = await base44.entities.FindSmashieSettings.list();
       const s = list[0] || null;
       if (!cancelled) setSettings(s || {
-        active: false, start_date: '2026-10-01', end_date: '2026-10-31', win_limit_per_customer: 1,
+        active: true, start_date: todayStr(), end_date: '2026-10-31',
+        win_limit_per_customer: 1, preview_mode: true,
       });
       try {
         const w = await base44.entities.FindSmashieWinner.list('-game_date', 31);
@@ -40,6 +41,7 @@ export default function FindSmashiePanel() {
       if (settings.id) {
         await base44.entities.FindSmashieSettings.update(settings.id, {
           active: settings.active,
+          preview_mode: !!settings.preview_mode,
           start_date: settings.start_date,
           end_date: settings.end_date,
           win_limit_per_customer: Number(settings.win_limit_per_customer),
@@ -47,6 +49,7 @@ export default function FindSmashiePanel() {
       } else {
         const created = await base44.entities.FindSmashieSettings.create({
           active: settings.active,
+          preview_mode: !!settings.preview_mode,
           start_date: settings.start_date,
           end_date: settings.end_date,
           win_limit_per_customer: Number(settings.win_limit_per_customer),
@@ -88,6 +91,18 @@ export default function FindSmashiePanel() {
               value={settings.win_limit_per_customer ?? 1}
               onChange={(e) => setSettings({ ...settings, win_limit_per_customer: e.target.value })}
             />
+          </label>
+          <label className="text-sm space-y-1">
+            <span className="font-semibold">Preview mode (ignore open/close hours)</span>
+            <select
+              className="w-full rounded-md border bg-background p-2"
+              value={settings.preview_mode ? 'on' : 'off'}
+              onChange={(e) => setSettings({ ...settings, preview_mode: e.target.value === 'on' })}
+            >
+              <option value="on">On — for testing only</option>
+              <option value="off">Off — hide only during open hours</option>
+            </select>
+            <span className="text-xs text-muted-foreground">Turn OFF before the live October launch.</span>
           </label>
           <label className="text-sm space-y-1">
             <span className="font-semibold">Start date</span>

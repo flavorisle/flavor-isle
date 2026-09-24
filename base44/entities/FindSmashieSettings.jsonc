@@ -4,12 +4,12 @@
   "properties": {
     "active": {
       "type": "boolean",
-      "default": false,
+      "default": true,
       "description": "Master toggle for the Find Smashie Halloween Hide & Seek game. When false, Smashie stays home and nothing renders on the site."
     },
     "start_date": {
       "type": "string",
-      "default": "2026-10-01",
+      "default": "2026-09-23",
       "description": "First hunt day, YYYY-MM-DD store local time."
     },
     "end_date": {
@@ -21,6 +21,11 @@
       "type": "number",
       "default": 1,
       "description": "How many times one customer can win per month (0 = unlimited). Keeps 31 different people winning."
+    },
+    "preview_mode": {
+      "type": "boolean",
+      "default": true,
+      "description": "Preview mode: Smashie ignores open/close hours so the game can be tested anytime. TURN OFF before the live October launch so he only hides during business hours."
     },
     "announcement_note": {
       "type": "string",
