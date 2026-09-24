@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
@@ -134,6 +135,12 @@ export default function Menu() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        ogTitle="Flavor Isle Menu — Burgers, Shakes & Diner Favorites | Smiths Grove, KY"
+        ogDescription="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8bd9c4f84_card-menu.png"
+        ogImageAlt="Flavor Isle menu preview card with hand-patted burger and milkshake"
+      />
       <Navbar />
       <CartDrawer />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />

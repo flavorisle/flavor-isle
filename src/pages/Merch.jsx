@@ -4,6 +4,7 @@ import { ShoppingBag, AlertCircle, Shirt, Clock, Truck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 import ProductCard from '@/components/merch/ProductCard';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
@@ -136,6 +137,12 @@ export default function Merch() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        ogTitle="Tasty Threads — Flavor Isle Merch"
+        ogDescription="Flavor Isle tees and merch. Show your love for the Isle's hand-patted burgers and thick shakes."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e599b55ba_card-merch.png"
+        ogImageAlt="Flavor Isle Tasty Threads merch share card"
+      />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
 

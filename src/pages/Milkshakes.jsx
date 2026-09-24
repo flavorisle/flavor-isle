@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, ShoppingBag, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
@@ -67,6 +68,12 @@ export default function Milkshakes() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        ogTitle="Real-Fruit Milkshakes — Flavor Isle | Smiths Grove, KY"
+        ogDescription="Thick, hand-spun milkshakes with real fruit — 16 flavors from chocolate and peanut butter to real-fruit strawberry and cherry. Order online or swing by Exit 38."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e26ad9c1c_card-milkshakes.png"
+        ogImageAlt="Flavor Isle milkshake share card with real-fruit shake"
+      />
       <Navbar />
       <CartDrawer />
 

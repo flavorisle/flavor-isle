@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import Seo from '@/components/Seo';
 
 // Loyalty status tiers — derived from lifetime stars. Each tier grants a
 // benefit multiplier (Nx) applied to stars earned on every order. Ordered
@@ -75,6 +76,12 @@ export default function Rewards() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+        <Seo
+          ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
+          ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
+          ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"
+          ogImageAlt="Flavor Isle Star Rewards share card"
+        />
         <Navbar />
         <CartDrawer />
         <div className="flex items-center justify-center py-32">
@@ -307,6 +314,12 @@ export default function Rewards() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+        <Seo
+          ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
+          ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
+          ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"
+          ogImageAlt="Flavor Isle Star Rewards share card"
+        />
         <Navbar />
         <CartDrawer />
 
@@ -363,6 +376,12 @@ export default function Rewards() {
   // ── Signed-in view ──
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
+        ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"
+        ogImageAlt="Flavor Isle Star Rewards share card"
+      />
       <Navbar />
       <CartDrawer />
 
