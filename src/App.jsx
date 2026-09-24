@@ -54,6 +54,7 @@ const SMSSignup = lazy(() => import('./pages/SMSSignup'));
 const BusynessGuide = lazy(() => import('./pages/BusynessGuide'));
 const Connect = lazy(() => import('./pages/Connect'));
 const Gallery = lazy(() => import('./pages/Gallery'));
+const FindSmashie = lazy(() => import('./pages/FindSmashie'));
 const SocialReviews = lazy(() => import('./pages/SocialReviews'));
 const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const CommunityNews = lazy(() => import('./pages/CommunityNews'));
@@ -142,6 +143,8 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      <FindSmashieBanner />
+
       {/* Keep-alive bottom-tab routes: stay mounted, toggled with `hidden` so
           view state + scroll survive tab switches instead of remounting. */}
       <div className={location.pathname === '/' ? '' : 'hidden'} aria-hidden={location.pathname !== '/'}>
@@ -177,6 +180,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/find-smashie" element={<FindSmashie />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
@@ -252,6 +256,7 @@ function AppShell() {
               <BottomTabBar />
               <MobileHeader />
               <ConsentBanner />
+              <SmashieHunt />
               <SmashieChat />
               <MerchCartDrawer />
             </Router>

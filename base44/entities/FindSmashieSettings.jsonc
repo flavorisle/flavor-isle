@@ -1,0 +1,51 @@
+{
+  "name": "FindSmashieSettings",
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "default": false,
+      "description": "Master toggle for the Find Smashie Halloween Hide & Seek game. When false, Smashie stays home and nothing renders on the site."
+    },
+    "start_date": {
+      "type": "string",
+      "default": "2026-10-01",
+      "description": "First hunt day, YYYY-MM-DD store local time."
+    },
+    "end_date": {
+      "type": "string",
+      "default": "2026-10-31",
+      "description": "Last hunt day, YYYY-MM-DD store local time."
+    },
+    "win_limit_per_customer": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times one customer can win per month (0 = unlimited). Keeps 31 different people winning."
+    },
+    "announcement_note": {
+      "type": "string",
+      "default": "",
+      "maxLength": 300,
+      "description": "Optional extra text appended to the site-wide game banner."
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
