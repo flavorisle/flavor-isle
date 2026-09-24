@@ -247,7 +247,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           )}
         </div>
         {item.description && (
-          <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/80' : 'text-muted-foreground'}`}>{item.description}</p>
+          <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/90' : 'text-muted-foreground'}`}>{item.description}</p>
         )}
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
@@ -257,11 +257,11 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           </div>
         )}
         {item.calories && (
-          <p className={`text-xs mb-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>{item.calories} cal</p>
+          <p className={`text-xs mb-3 ${light ? 'text-white/85' : 'text-muted-foreground'}`}>{item.calories} cal</p>
         )}
         {showRatings && <ItemRatings item={item} />}
         {hasModifiers && (
-          <p className={`text-xs mb-2 mt-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>
+          <p className={`text-xs mb-2 mt-3 ${light ? 'text-white/85' : 'text-muted-foreground'}`}>
             {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
           </p>
         )}
@@ -291,7 +291,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           <Plus size={16} />
           {addLabel}
           {!soldOut && orderingEnabled && !added && (
-            <span className="ml-1 opacity-70 font-body">
+            <span className="ml-1 opacity-90 font-body">
               · ${(isHappyHour && happyHourPrice !== null ? happyHourPrice : item.price).toFixed(2)}
             </span>
           )}

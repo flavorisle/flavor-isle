@@ -175,10 +175,10 @@ export default function Menu() {
                     the artwork instead of sitting on a solid plate. */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 px-1.5 py-2 text-center">
-                  <span className={`block font-heading text-sm leading-none ${t.isActive ? 'text-smashie-yellow' : 'text-white'}`}>
+                  <span className={`block font-heading text-base leading-none ${t.isActive ? 'text-smashie-yellow' : 'text-white'}`}>
                     {t.label}
                   </span>
-                  <span className="text-[11px] font-body font-semibold text-white/90">{t.time}</span>
+                  <span className="text-xs font-body font-semibold text-white">{t.time}</span>
                 </div>
               </button>
             ))}
