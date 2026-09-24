@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, IceCream2, Snowflake, UtensilsCrossed, Navigation, ArrowRight, Clock, Phone, MapPin, Car } from 'lucide-react';
+import { Flame, IceCream2, Snowflake, UtensilsCrossed, Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain, Compass, Trees, Landmark, Camera } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
-import NearbyAreas from '@/components/NearbyAreas';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 
@@ -17,6 +16,67 @@ const FAVORITES = [
   { icon: UtensilsCrossed, title: 'Hand-Cut Fries', desc: 'Crispy crinkle fries, tots & loaded sides.' },
   { icon: IceCream2, title: 'Thick Milkshakes', desc: 'Hand-spun in custom flavors — banana pudding, caramel, more.' },
   { icon: Snowflake, title: 'Soft-Serve', desc: 'Classic cones, sundaes & treats.' },
+];
+
+// Nearby landmarks and activities around Smiths Grove, KY — merged from the
+// former Local Attractions page so the I-65 Exit 38 guide is one complete stop.
+const ATTRACTIONS = [
+  {
+    icon: Mountain,
+    name: 'Mammoth Cave National Park',
+    distance: '~30 min south on I-65',
+    blurb: "The world's longest known cave system. Ranger-led tours, hiking trails, and a visitor center — a must-do day trip from the Isle.",
+    map: 'https://www.google.com/maps/search/?api=1&query=Mammoth+Cave+National+Park',
+  },
+  {
+    icon: Car,
+    name: 'National Corvette Museum',
+    distance: '~15 min south in Bowling Green',
+    blurb: "Showcases of America's sports car, including the famous sinkhole exhibit. A quick, air-conditioned stop for car lovers.",
+    map: 'https://www.google.com/maps/search/?api=1&query=National+Corvette+Museum+Bowling+Green+KY',
+  },
+  {
+    icon: Compass,
+    name: 'Corvette Assembly Plant',
+    distance: '~15 min south in Bowling Green',
+    blurb: 'The only place Corvettes are built. Tours run seasonally — check ahead for availability and reserve early.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Bowling+Green+Assembly+Plant+KY',
+  },
+  {
+    icon: Trees,
+    name: 'Lost River Cave',
+    distance: '~15 min south in Bowling Green',
+    blurb: 'A guided underground boat tour through a natural cave, plus valley trails and a butterfly habitat. Great for families.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Lost+River+Cave+Bowling+Green+KY',
+  },
+  {
+    icon: Landmark,
+    name: 'Historic Railpark & Train Museum',
+    distance: '~15 min south in Bowling Green',
+    blurb: 'Restored 1925 L&N depot with railcars you can walk through and exhibits on Kentucky railroad history.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Historic+Railpark+Train+Museum+Bowling+Green+KY',
+  },
+  {
+    icon: Camera,
+    name: 'Riverview at Hobson Grove',
+    distance: '~15 min south in Bowling Green',
+    blurb: 'A restored 1860s Italianate mansion overlooking the Barren River. Guided tours tell the story of the Civil War era.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Riverview+at+Hobson+Grove+Bowling+Green+KY',
+  },
+  {
+    icon: Compass,
+    name: 'Beech Bend Park',
+    distance: '~15 min south in Bowling Green',
+    blurb: 'A classic amusement park with roller coasters, a water park, and a drag strip — seasonal hours, check before you go.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Beech+Bend+Park+Bowling+Green+KY',
+  },
+  {
+    icon: Landmark,
+    name: 'Smiths Grove Historic District',
+    distance: 'Walkable from Flavor Isle',
+    blurb: 'A quiet Main Street of antique shops, historic homes, and small-town charm — right outside our door at 103 N Main St.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Smiths+Grove+KY+downtown',
+  },
 ];
 
 export default function I65Exit38() {
@@ -119,8 +179,42 @@ export default function I65Exit38() {
         </div>
       </section>
 
-      {/* Nearby areas + I-65 wayfinding */}
-      <NearbyAreas hideCta />
+      {/* Nearby attractions — make a day of it */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
+            <Compass size={16} /> MAKE A DAY OF IT
+          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Nearby Attractions</h2>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Grab a hand-patted burger and a thick shake, then explore what's around — all within about 30 minutes of our counter.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {ATTRACTIONS.map((a) => (
+            <div key={a.name} className="card-diner p-6 flex gap-4">
+              <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
+                <a.icon size={22} className="text-midnight-cherry" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-heading text-xl text-obsidian-roast leading-tight">{a.name}</h3>
+                <p className="flex items-center gap-1.5 text-xs text-patina-mint font-heading tracking-wide uppercase mt-1">
+                  <Clock size={12} /> {a.distance}
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed mt-2">{a.blurb}</p>
+                <a
+                  href={a.map}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-heading text-midnight-cherry hover:text-patina-mint transition-colors mt-3"
+                >
+                  <Navigation size={14} /> Get directions <ArrowRight size={14} />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Fan favorites */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">

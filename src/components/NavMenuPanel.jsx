@@ -38,7 +38,7 @@ const GROUPS = [
       { label: 'Gallery', to: '/gallery' },
       { label: 'Community News', to: '/community-news' },
       { label: 'Reviews', to: '/reviews' },
-      { label: 'Local Attractions', to: '/local-attractions' },
+      { label: 'I-65 Exit 38 Guide', to: '/i65-exit-38' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },

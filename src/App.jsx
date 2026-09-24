@@ -73,7 +73,6 @@ const Flyer = lazy(() => import('./pages/Flyer'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
-const LocalAttractions = lazy(() => import('./pages/LocalAttractions'));
 const Newsletter = lazy(() => import('./pages/Newsletter'));
 const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
 const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
@@ -200,7 +199,7 @@ const AuthenticatedApp = () => {
       <Route path="/i65-exit-38" element={<I65Exit38 />} />
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
-      <Route path="/local-attractions" element={<LocalAttractions />} />
+      <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<Newsletter />} />
       <Route path="/confirm-subscription" element={<ConfirmSubscription />} />
       <Route path="/unsubscribe" element={<UnsubscribeEmail />} />
