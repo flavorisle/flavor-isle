@@ -4,6 +4,7 @@ import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
+import FooterEmailSignup from '@/components/FooterEmailSignup';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
@@ -87,6 +88,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Email newsletter signup */}
+      <FooterEmailSignup />
 
       {/* SMS opt-in + A2P disclosure */}
       <FooterSmsOptIn />

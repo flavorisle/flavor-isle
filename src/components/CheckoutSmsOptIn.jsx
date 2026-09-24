@@ -71,14 +71,7 @@ export default function CheckoutSmsOptIn() {
     );
   }
 
-  if (bothAlready) {
-    return (
-      <div className="card-diner p-5 flex items-center gap-3 bg-green-50">
-        <CheckCircle2 size={20} className="text-green-600 flex-shrink-0" />
-        <p className="text-sm text-obsidian-roast">You're already signed up for order updates and offers by text. Reply STOP anytime to cancel.</p>
-      </div>
-    );
-  }
+  if (bothAlready) return null;
 
   if (done) {
     return (

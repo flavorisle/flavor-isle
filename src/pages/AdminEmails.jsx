@@ -7,6 +7,7 @@ import RecommendationEmailTester from '@/components/admin/RecommendationEmailTes
 import RecommendationEmailLog from '@/components/admin/RecommendationEmailLog';
 import RecommendationEmailCandidates from '@/components/admin/RecommendationEmailCandidates';
 import PromoEmailComposer from '@/components/admin/PromoEmailComposer';
+import NewsletterComposer from '@/components/admin/NewsletterComposer';
 
 export default function AdminEmails() {
   return (
@@ -29,6 +30,7 @@ export default function AdminEmails() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+        <NewsletterComposer />
         <PromoEmailComposer />
         <RecommendationEmailTester />
         <RecommendationEmailCandidates />

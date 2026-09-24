@@ -75,6 +75,8 @@ const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
 const LocalAttractions = lazy(() => import('./pages/LocalAttractions'));
 const Newsletter = lazy(() => import('./pages/Newsletter'));
+const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
+const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 import RestaurantSchema from './components/RestaurantSchema';
@@ -200,6 +202,8 @@ const AuthenticatedApp = () => {
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
       <Route path="/local-attractions" element={<LocalAttractions />} />
       <Route path="/newsletter" element={<Newsletter />} />
+      <Route path="/confirm-subscription" element={<ConfirmSubscription />} />
+      <Route path="/unsubscribe" element={<UnsubscribeEmail />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
