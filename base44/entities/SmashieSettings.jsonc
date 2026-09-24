@@ -30,6 +30,11 @@
       "type": "string",
       "default": "",
       "description": "Admin notes about Smashie's persona, tone, or things to emphasize"
+    },
+    "facebook_access_token": {
+      "type": "string",
+      "default": "",
+      "description": "Meta Conversions API access token. Stored here instead of as a platform secret because the token exceeds Cloudflare's 5.1 kB environment-variable limit, which blocks all function deployments. Read at runtime by facebookConversions.ts."
     }
   },
   "required": [],

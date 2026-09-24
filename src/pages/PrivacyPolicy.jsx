@@ -39,7 +39,7 @@ const SECTIONS = [
       },
       {
         heading: 'Loyalty & Rewards',
-        text: 'If you join our loyalty program, we track points earned and redeemed so your rewards stay available across visits. Your phone number is used to link your online rewards to your in-store Star Rewards account.',
+        text: 'Your Star Rewards loyalty account is managed through Square, our point-of-sale system. When you join, Square stores your loyalty membership, points, and reward history; we use your phone number to look up your account so your rewards stay available in-store and online. Flavor Isle does not keep a separate copy of your loyalty points or balances.',
       },
       {
         heading: 'Marketing & Promotions',
@@ -122,8 +122,8 @@ const SECTIONS = [
     title: 'SMS, Phone & Marketing Consent',
     body: [
       {
-        heading: 'SMS Consent',
-        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Providing your number is optional but required to receive these messages. Reply STOP at any time to opt out; reply HELP for help.',
+        heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
+        text: 'Providing your phone number does not by itself consent to text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately and independently by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and consent is never bundled — checking the order-updates box does not sign you up for offers, and vice versa. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. Full terms: https://taste-isle-express.base44.app/terms-of-service.',
       },
       {
         heading: 'Receiving Phone Calls',
@@ -244,7 +244,7 @@ export default function PrivacyPolicy() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@flavorisle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@order.flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>

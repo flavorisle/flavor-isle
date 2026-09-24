@@ -9,6 +9,22 @@ const THEMES = {
   yellow: { bg: 'bg-smashie-yellow', text: 'text-obsidian-roast', sub: 'text-obsidian-roast/70', btn: 'bg-obsidian-roast text-white' },
 };
 
+// Today's date in store-local time (America/Chicago) as YYYY-MM-DD, so scheduled
+// banners respect the same timezone the admin set start_date/end_date in.
+function todayStoreLocal() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+}
+
+// A banner only displays when is_active is true AND the current store-local
+// date falls within its [start_date, end_date) window. start_date is inclusive;
+// end_date is exclusive. Either field is optional.
+function isWithinDateWindow(banner) {
+  const today = todayStoreLocal();
+  if (banner.start_date && today < banner.start_date) return false;
+  if (banner.end_date && today >= banner.end_date) return false;
+  return true;
+}
+
 // Renders the active promo banners for a given placement: 'home' | 'menu' | 'cart'
 export default function AdBannerStrip({ placement, compact = false }) {
   const [banners, setBanners] = useState([]);
@@ -16,7 +32,7 @@ export default function AdBannerStrip({ placement, compact = false }) {
   useEffect(() => {
     base44.entities.AdBanner
       .filter({ placement, is_active: true }, 'sort_order')
-      .then(setBanners)
+      .then(fetched => setBanners(fetched.filter(isWithinDateWindow)))
       .catch(() => setBanners([]));
   }, [placement]);
 

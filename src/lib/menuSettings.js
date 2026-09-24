@@ -23,6 +23,15 @@ const DEFAULT_SETTING = {
   delivery_fee: 0,
   business_hours: null,
   closure: null,
+  site_notice: null,
+  happy_hour: {
+    active: true,
+    start_time: '14:00',
+    end_time: '18:00',
+    discount_percent: 50,
+    square_item_ids: ['MTOVX3FLW3QYAZRHAXMZMWYN'],
+    label: 'Happy Hour — 50% off drinks',
+  },
 };
 
 export async function getMenuSetting() {
@@ -101,11 +110,36 @@ export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutof
   return { ...setting, ...updates };
 }
 
+export async function setDeliveryTiers(tiers) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { delivery_tiers: tiers });
+    bustMenuSettingCache();
+    return setting.id;
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], delivery_tiers: tiers });
+  bustMenuSettingCache();
+  return created.id;
+}
+
 export async function setBusinessHours(hours) {
   const setting = await getMenuSetting();
   await base44.entities.MenuSetting.update(setting.id, { business_hours: hours });
   bustMenuSettingCache();
   return { ...setting, business_hours: hours };
+}
+
+export async function setDeliveryEnabled(enabled) {
+  const setting = await getMenuSetting();
+  const updates = { delivery_enabled: enabled };
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, updates);
+    bustMenuSettingCache();
+    return { ...setting, ...updates };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], delivery_enabled: enabled });
+  bustMenuSettingCache();
+  return created;
 }
 
 export async function setOrderingEnabled(enabled, closedMessage) {
@@ -158,6 +192,30 @@ export async function setClosure(closure) {
     return { ...setting, closure };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], closure });
+  bustMenuSettingCache();
+  return created;
+}
+
+export async function setHappyHour(happyHour) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { happy_hour: happyHour });
+    bustMenuSettingCache();
+    return { ...setting, happy_hour: happyHour };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], happy_hour: happyHour });
+  bustMenuSettingCache();
+  return created;
+}
+
+export async function setSiteNotice(siteNotice) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { site_notice: siteNotice });
+    bustMenuSettingCache();
+    return { ...setting, site_notice: siteNotice };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], site_notice: siteNotice });
   bustMenuSettingCache();
   return created;
 }

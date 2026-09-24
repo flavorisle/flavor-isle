@@ -1,15 +1,20 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3 } from 'lucide-react';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
   { label: 'Print Menu', to: '/admin/print-menu', Icon: Printer },
   { label: 'Orders', to: '/admin/orders', Icon: Receipt },
+  { label: 'Store Settings', to: '/admin/store-settings', Icon: Store },
   { label: 'Reviews', to: '/admin/reviews', Icon: MessageSquareQuote },
   { label: 'Merch Categories', to: '/admin/merch-categories', Icon: Tag },
   { label: 'Comms', to: '/admin/communications', Icon: MessagesSquare },
+  { label: 'Emails', to: '/admin/emails', Icon: Mail },
+  { label: 'Square Logs', to: '/admin/square-logs', Icon: Activity },
+  { label: 'Kitchen', to: '/admin/kitchen', Icon: Flame },
+  { label: 'Analytics', to: '/admin-analytics', Icon: BarChart3 },
 ];
 
 export default function AdminNav() {

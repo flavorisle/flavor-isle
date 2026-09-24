@@ -8,7 +8,7 @@ const TZ = 'America/Chicago';
 // spec a timezone-less ISO string is parsed as LOCAL time, which shifts the
 // instant by the viewer's UTC offset and makes the displayed time wrong by
 // several hours. Force UTC parsing so the instant is correct everywhere.
-function toUtcDate(iso) {
+export function toUtcDate(iso) {
   if (!iso) return null;
   const s = String(iso);
   const hasTz = /[zZ]$/.test(s) || /[+-]\d\d:?\d\d$/.test(s);

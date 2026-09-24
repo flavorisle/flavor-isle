@@ -17,6 +17,14 @@
         "dine_in"
       ]
     },
+    "pickup_method": {
+      "type": "string",
+      "enum": [
+        "counter",
+        "curbside"
+      ],
+      "description": "For pickup orders: 'counter' = walk in and pick up at the counter, 'curbside' = we bring it to the car. Chosen by the customer in the cart."
+    },
     "order_source": {
       "type": "string",
       "enum": [
@@ -62,6 +70,11 @@
       "type": "number",
       "default": 0
     },
+    "happy_hour_discount": {
+      "type": "number",
+      "default": 0,
+      "description": "Happy Hour drink discount amount auto-applied when the order was placed during the active happy hour window. Separate from the loyalty reward `discount` field so reporting can track each independently. Carried to Square as its own order-level discount line."
+    },
     "redemption_id": {
       "type": "string"
     },
@@ -101,6 +114,36 @@
     "square_order_id": {
       "type": "string"
     },
+    "square_sync_claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by createSquareOrder to prevent duplicate Square order creation when the Stripe webhook fires both checkout.session.completed and payment_intent.succeeded ~1s apart. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on failure or when the real square_order_id is persisted. Stale claims (>5 min old) are cleared by autoSyncUnpushedOrders so crashed syncs can be retried."
+    },
+    "confirmation_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate customer confirmation emails ('Order locked in'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the email fires exactly once even if the Square push was handled by a concurrent call."
+    },
+    "staff_alert_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate staff alert emails ('New online order'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the alert fires exactly once even if the Square push was handled by a concurrent call."
+    },
+    "rec_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by sendOrderRecommendationEmail to prevent duplicate recommendation emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry. Also cleared (and rec_email_skipped_at set instead) when the order is permanently ineligible for a recommendation, so a skip never leaves a sent timestamp that falsely claims delivery."
+    },
+    "rec_email_skipped_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Terminal skip marker set by sendOrderRecommendationEmail when a paid order is permanently ineligible for a recommendation email (no eligible non-malt/sundae dessert, no recommendations, or no items with photos) \u2014 set INSTEAD of rec_email_sent_at so a skip does not falsely claim delivery. The processPendingRecommendationEmails processor skips orders with this set, so permanently ineligible orders are not re-enqueued. Distinct from queued (no marker, no RecommendationEmail record), accepted/delivered (RecommendationEmail record with sent_at + rec_email_sent_at set), and the 7-day customer cooldown (no order marker, just a RecommendationEmail record)."
+    },
+    "review_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Atomic claim timestamp used by sendReviewRequestEmail to prevent duplicate review-request emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry."
+    },
     "payment_url": {
       "type": "string",
       "description": "Square-hosted checkout link generated for orders that are paid after the fact (phone orders taken by Smashie). Stored so staff can re-send or look up the link later."
@@ -119,6 +162,32 @@
       "type": "boolean",
       "default": false,
       "description": "Whether Square Star Rewards points have been successfully accrued for this order. Set true by the Stripe webhook after a successful accrual, and by the Square order-status sync's self-healing retry (which first checks the Square loyalty ledger for an existing ACCUMULATE_POINTS event so already-credited orders are never re-accrued)."
+    },
+    "arrival_details": {
+      "type": "object",
+      "description": "Curbside arrival info logged when the customer taps 'I'm Here' on the order status page: vehicle, parking zone, special notes (extra ketchup, napkins, etc.), and arrival timestamp.",
+      "properties": {
+        "arrived_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "zone": {
+          "type": "string"
+        },
+        "car_color": {
+          "type": "string"
+        },
+        "car_make": {
+          "type": "string"
+        },
+        "car_model": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Customer's special requests at arrival, e.g. extra ketchup packets or napkins."
+        }
+      }
     }
   },
   "required": [

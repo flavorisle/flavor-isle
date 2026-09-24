@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Home, UtensilsCrossed, Shirt, Sparkles, Users, Info, User, LogOut, Phone,
+  Home, UtensilsCrossed, Shirt, Sparkles, Users, Info, User, LogOut,
 } from 'lucide-react';
 import NavSuperLink from '@/components/NavSuperLink';
 
@@ -17,6 +17,7 @@ const GROUPS = [
       { label: 'Full Menu', to: '/menu' },
       { label: 'Milkshakes', to: '/milkshakes' },
       { label: 'Combos', to: '/combos' },
+      { label: 'Rewards', to: '/rewards' },
       { label: 'Order Status', to: '/order-status' },
     ],
   },
@@ -36,7 +37,8 @@ const GROUPS = [
     links: [
       { label: 'Gallery', to: '/gallery' },
       { label: 'Community News', to: '/community-news' },
-      { label: 'Social Reviews', to: '/social-reviews' },
+      { label: 'Reviews', to: '/reviews' },
+      { label: 'I-65 Exit 38 Guide', to: '/i65-exit-38' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },
@@ -48,6 +50,7 @@ const GROUPS = [
       { label: 'Contact & Location', to: '/contact' },
       { label: 'What to Expect', to: '/what-to-expect' },
       { label: 'Get the App', to: '/download' },
+      { label: 'Newsletter', to: '/newsletter' },
     ],
   },
 ];
@@ -89,16 +92,6 @@ export default function NavMenuPanel({ pathname, onClose, isAuthenticated, user,
               />
             ))}
           </div>
-
-          <a
-            href="tel:+12705634618"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-body font-semibold text-obsidian-roast hover:bg-muted transition-colors"
-          >
-            <span className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-midnight-cherry">
-              <Phone size={16} />
-            </span>
-            (270) 563-4618
-          </a>
 
           <Link
             to="/menu"

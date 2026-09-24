@@ -159,7 +159,7 @@ export default function AdminCategoriesManager({ items = [] }) {
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="e.g. Signature Smash Burgers"
+            placeholder="e.g. Signature Hand-Patted Burgers"
             value={customName}
             onChange={e => setCustomName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addCustom(); }}

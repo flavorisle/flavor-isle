@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 import { base44 } from '@/api/base44Client';
@@ -13,6 +13,7 @@ import WalletPayButton from '@/components/checkout/WalletPayButton';
 import ExpressCheckout from '@/components/checkout/ExpressCheckout';
 import SavedCardSelector from '@/components/checkout/SavedCardSelector';
 import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
+import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
@@ -22,8 +23,13 @@ import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
+import { useToast } from '@/components/ui/use-toast';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
+const orderTypeLabel = (orderType, pickupMethod) =>
+  orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 // Brand-neutral card field styling — matches the app's diner aesthetic with
 // no Stripe logos or branding.
@@ -136,8 +142,9 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, addItem } = useCart();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
   // Kitchen prep estimate scales with the live busyness level so checkout
@@ -159,10 +166,14 @@ export default function Checkout() {
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
+  const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
+  const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mugAdded, setMugAdded] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
@@ -171,13 +182,22 @@ export default function Checkout() {
   // immediately without hunting for the input — especially on desktop.
   useEffect(() => { nameRef.current?.focus(); }, []);
 
+  // GA4 ecommerce: fire begin_checkout once when the customer lands on checkout.
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      trackBeginCheckout(cartItems.map(foodItemToGa4), totalWithTip, { coupon: appliedReward?.description });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Prefill contact details for signed-in customers from their account +
   // saved customer profile. Only fills fields the guest hasn't typed into.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
-      if (!isAuthed || cancelled) return;
+      if (!isAuthed) { if (!cancelled) setIsGuest(true); return; }
+      if (cancelled) return;
       const me = await base44.auth.me().catch(() => null);
       if (!me || cancelled) return;
       const profiles = await base44.entities.CustomerProfile.filter({ email: me.email }).catch(() => []);
@@ -257,6 +277,30 @@ export default function Checkout() {
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
 
+  // Distance-based delivery pricing — quote the fee from the typed address
+  // (debounced). Clears the quote when not delivering or the address is empty.
+  const [quoting, setQuoting] = useState(false);
+  useEffect(() => {
+    if (orderType !== 'delivery' || !form.address.trim()) {
+      setDeliveryQuote(null);
+      setQuoting(false);
+      return;
+    }
+    setQuoting(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await base44.functions.invoke('getDeliveryQuote', { address: form.address.trim() });
+        // Keep not_found so checkout can block instead of silently charging $0.
+        setDeliveryQuote(res.data?.ok ? res.data : (res.data?.not_found ? { not_found: true } : null));
+      } catch {
+        setDeliveryQuote(null);
+      } finally {
+        setQuoting(false);
+      }
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [orderType, form.address, setDeliveryQuote]);
+
   const tipAmount = tipPreset === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : tipPreset === '0' ? 0
@@ -310,6 +354,19 @@ export default function Checkout() {
     if (!form.email.trim()) errors.email = 'Your email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
+    else if (orderType === 'delivery' && deliveryQuote?.out_of_range) {
+      errors.address = `Sorry, this address is outside our ${deliveryQuote.max_miles}-mile delivery range.`;
+    }
+    else if (orderType === 'delivery' && (quoting || !deliveryQuote?.ok)) {
+      // Never charge without a verified distance — block until the quote resolves.
+      errors.address = quoting
+        ? 'Still checking your delivery distance — one moment, then tap again.'
+        : "We couldn't locate this address. Please double-check the street, city, and ZIP.";
+    }
+    if (isCurbside) {
+      if (!vehicle.color.trim()) errors.carColor = 'Car color is required.';
+      if (!vehicle.make.trim()) errors.carMake = 'Car make is required.';
+    }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
 
     setFieldErrors(errors);
@@ -330,9 +387,12 @@ export default function Checkout() {
       selectedModifiers: i.selectedModifiers || [],
       person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
+      square_item_id: i.square_item_id || '',
       isBuildShake: !!i.isBuildShake,
       deluxeLabel: i.deluxeLabel || '',
       deluxeToppings: i.deluxeToppings || [],
+      comboConfigId: i.comboConfigId || '',
+      comboComponents: i.comboComponents || [],
     }));
 
     setLoading(true);
@@ -347,7 +407,7 @@ export default function Checkout() {
         const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
         const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
         const splits = withItems.map((p, idx) => {
-          const pSub = p.subtotal;
+          const pSub = +(p.subtotal - (p.happyHourDiscount || 0)).toFixed(2);
           const pTax = +(pSub * 0.06).toFixed(2);
           const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
           const pTotal = +(pSub + pTax + feeTip).toFixed(2);
@@ -357,15 +417,24 @@ export default function Checkout() {
         const res = await base44.functions.invoke('createGroupPayment', {
           items: mappedItems,
           orderType,
+          pickupMethod,
+          vehicle: isCurbside ? vehicle : null,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip,
+          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           scheduledFor, estimatedTime,
           splits,
           groupName: people.map(p => p.name).join(', '),
+          happyHourDiscount,
+          smsTransactionalConsent: smsConsent,
+          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+          smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey, orderNumber: on } = res.data;
+        const { intents, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        if (smsConsentStored === false) {
+          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
+        }
         setSplitIntents(intents);
         setSplitPublishable(publishableKey);
         setOrderNumber(on);
@@ -374,16 +443,24 @@ export default function Checkout() {
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
           orderType,
+          pickupMethod,
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
           scheduledFor,
           estimatedTime,
+          vehicle: isCurbside ? vehicle : null,
           stripeCustomerId: stripeCustomerId || undefined,
+          smsTransactionalConsent: smsConsent,
+          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+          smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { clientSecret: cs, publishableKey, orderNumber: on } = res.data;
+        const { clientSecret: cs, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        if (smsConsentStored === false) {
+          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
+        }
         setClientSecret(cs);
         setOrderNumber(on);
         setStripePromise(loadStripe(publishableKey));
@@ -396,7 +473,26 @@ export default function Checkout() {
     }
   };
 
-  const handleSuccess = (on) => {
+  const handleSuccess = async (on) => {
+    trackPurchase(cartItems.map(foodItemToGa4), {
+      transaction_id: on,
+      value: totalWithTip,
+      tax,
+      shipping: deliveryFee,
+      coupon: appliedReward?.description,
+    });
+    // Client-side fulfillment fallback: await before navigating so the order
+    // reliably reaches Square POS + the kitchen even when the Stripe webhook
+    // is delayed or dropped — and the ONLY path for group/split orders (which
+    // use stripe_session_id 'GROUP' so the webhook can't match them). The
+    // paying spinner in each payment component stays on during this await, so
+    // the customer sees natural "processing" feedback. Idempotent, so it's
+    // safe when the webhook also fires.
+    try {
+      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(on) });
+    } catch (err) {
+      console.error('confirmOnlinePayment fallback failed:', err);
+    }
     clearCart();
     navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
@@ -449,9 +545,12 @@ export default function Checkout() {
       selectedModifiers: i.selectedModifiers || [],
       person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
+      square_item_id: i.square_item_id || '',
       isBuildShake: !!i.isBuildShake,
       deluxeLabel: i.deluxeLabel || '',
       deluxeToppings: i.deluxeToppings || [],
+      comboConfigId: i.comboConfigId || '',
+      comboComponents: i.comboComponents || [],
     }));
     const customer = {
       name: walletCustomer.name || fullName,
@@ -463,18 +562,20 @@ export default function Checkout() {
     const res = await base44.functions.invoke('createPaymentIntent', {
       items: mappedItems,
       orderType,
+      pickupMethod,
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
       scheduledFor, estimatedTime,
+      vehicle: isCurbside ? vehicle : null,
     });
     return res.data;
   };
 
   const expressAvailable = !cutoffStatus[orderType]
     && !(groupMode && payMode === 'separate')
-    && (orderType !== 'delivery' || form.address.trim() !== '');
+    && (orderType !== 'delivery' || (form.address.trim() !== '' && deliveryQuote?.ok && !deliveryQuote.out_of_range));
 
   if (!orderingEnabled || storeClosed) {
     return (
@@ -539,6 +640,24 @@ export default function Checkout() {
 
             {step === 'details' && (
               <>
+                {/* Non-blocking sign-in nudge for guests — encourages account
+                    creation without blocking checkout. */}
+                {isGuest && (
+                  <div className="card-diner p-4 flex items-center gap-3" style={{ backgroundColor: 'rgba(0,51,102,0.05)', borderColor: 'rgba(0,51,102,0.2)' }}>
+                    <div className="w-9 h-9 rounded-full bg-patina-mint/10 flex items-center justify-center flex-shrink-0">
+                      <UserCircle size={18} className="text-patina-mint" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading text-sm text-obsidian-roast">Sign in for faster checkout</p>
+                      <p className="text-xs text-muted-foreground">Save your details, track orders, and earn Star Rewards.</p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Link to="/login?returnTo=%2Fcheckout" className="btn-mint px-3 py-2 text-xs font-heading whitespace-nowrap">Sign In</Link>
+                      <Link to="/register?returnTo=%2Fcheckout" className="px-3 py-2 text-xs font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-patina-mint/40 transition-colors whitespace-nowrap">Create Account</Link>
+                    </div>
+                  </div>
+                )}
+
                 {/* Express checkout — one-tap Apple Pay / Google Pay first.
                     Hidden entirely when the device has no wallet (walletReady === false). */}
                 {expressStripePromise && expressAvailable && walletReady !== false && (
@@ -613,10 +732,37 @@ export default function Checkout() {
                         saved={savedAddress}
                       />
                       {fieldErrors.address && <p className="text-xs text-destructive mt-1">{fieldErrors.address}</p>}
+                      {/* Live distance-based delivery quote */}
+                      {quoting && (
+                        <p className="text-xs text-muted-foreground mt-1.5">Checking delivery distance…</p>
+                      )}
+                      {!quoting && deliveryQuote?.not_found && form.address.trim() && (
+                        <p className="text-xs text-destructive mt-1.5">
+                          We couldn't locate this address — please double-check the street, city, and ZIP.
+                        </p>
+                      )}
+                      {!quoting && deliveryQuote?.out_of_range && (
+                        <p className="text-xs text-destructive mt-1.5">
+                          This address is ~{deliveryQuote.distance_miles} mi away — outside our {deliveryQuote.max_miles}-mile delivery range.
+                        </p>
+                      )}
+                      {!quoting && deliveryQuote && !deliveryQuote.out_of_range && (
+                        <p className="text-xs text-patina-mint mt-1.5">
+                          ~{deliveryQuote.distance_miles} mi from the store — ${Number(deliveryQuote.fee || 0).toFixed(2)} delivery fee
+                        </p>
+                      )}
                     </div>
                   )}
 
-                  {/* SMS opt-in for order status updates (A2P 10DLC compliant consent) */}
+                  {/* Curbside — vehicle details so the crew knows what car to bring the order to */}
+                  {isCurbside && (
+                    <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
+                  )}
+
+                  {/* SMS opt-in for order status updates — transactional only, optional,
+                      unchecked, and persisted through order creation (createPaymentIntent /
+                      createGroupPayment upsert an SMSSubscriber record). Marketing consent is
+                      never offered or inferred here. */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -625,9 +771,9 @@ export default function Checkout() {
                       className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
                     />
                     <span className="text-xs text-muted-foreground leading-relaxed">
-                      Text me order status updates from Flavor Isle (confirmed, preparing, ready). Reply STOP to cancel, HELP for help. Msg &amp; data rates may apply. See our{' '}
-                      <Link to="/privacy-policy" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</Link>{' '}and{' '}
-                      <Link to="/terms-of-service" className="text-midnight-cherry underline hover:no-underline">Terms of Service</Link>.
+                      Text me order status updates from Flavor Isle (confirmed, preparing, ready) about this order. Optional — not required to place an order. Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help. See our{' '}
+                      <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline hover:no-underline">Privacy Policy</a>{' '}and{' '}
+                      <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline hover:no-underline">Terms of Service</a>.
                     </span>
                   </label>
 
@@ -707,6 +853,25 @@ export default function Checkout() {
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
+                {subtotal > 25 && !mugAdded && !cartItems.some(i => i.id === 'souvenir-mug') && (
+                  <div className="mb-4 rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
+                        <Coffee size={22} className="text-midnight-cherry" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-heading text-sm text-obsidian-roast">Add a Flavor Isle souvenir mug</p>
+                        <p className="text-xs text-muted-foreground">Take a piece of the Isle home — $6.00</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { addItem({ id: 'souvenir-mug', name: 'Flavor Isle Souvenir Mug', price: 6.00, quantity: 1, selectedModifiers: [] }); setMugAdded(true); }}
+                      className="btn-cherry px-4 py-2.5 text-xs font-heading whitespace-nowrap flex-shrink-0"
+                    >
+                      Add — $6.00
+                    </button>
+                  </div>
+                )}
                 {savedCards.length > 0 && (
                   <SavedCardSelector
                     cards={savedCards}
@@ -745,10 +910,10 @@ export default function Checkout() {
                   <div className="flex items-center gap-2 text-midnight-cherry font-heading text-sm min-w-0">
                     <img
                       src={ORDER_TYPE_IMAGES[orderType]}
-                      alt={ORDER_TYPE_LABELS[orderType]}
+                      alt={orderTypeLabel(orderType, pickupMethod)}
                       className="w-7 h-7 object-contain flex-shrink-0"
                     />
-                    <span className="truncate">{ORDER_TYPE_LABELS[orderType]}</span>
+                    <span className="truncate">{orderTypeLabel(orderType, pickupMethod)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-patina-mint font-heading text-sm whitespace-nowrap">
                     <Clock size={15} />
@@ -876,6 +1041,11 @@ export default function Checkout() {
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Tip</span><span>${tipAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {happyHourDiscount > 0 && (
+                  <div className="flex justify-between text-midnight-cherry font-semibold">
+                    <span>Happy Hour — Unbeatable Value (online)</span><span>−${happyHourDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {rewardDiscount > 0 && (

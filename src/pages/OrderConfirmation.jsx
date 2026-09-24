@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Clock, MapPin, ShoppingBag, ArrowRight } from 'lucide-react';
+import { CheckCircle, Clock, MapPin, ShoppingBag, ArrowRight, ChefHat, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignUpNudge from '@/components/SignUpNudge';
 import PushNotificationPrompt from '@/components/PushNotificationPrompt';
 import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
 import PostOrderFeedback from '@/components/PostOrderFeedback';
+import CheckoutSmsOptIn from '@/components/CheckoutSmsOptIn';
 import MerchPromoCard from '@/components/merch/MerchPromoCard';
 import useLiveStatus from '@/hooks/useLiveStatus';
 
@@ -20,6 +22,32 @@ export default function OrderConfirmation() {
   const [confetti, setConfetti] = useState(false);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
+
+  // Kitchen sync status: 'sent' = order reached Square POS, 'sending' = push
+  // still in flight, 'unknown' = can't confirm. The checkout flow awaits the
+  // push before navigating here, so most orders are already 'sent' on arrival —
+  // but poll a few times in case the Stripe webhook path is still processing.
+  const [kitchenStatus, setKitchenStatus] = useState('sending');
+
+  useEffect(() => {
+    if (!orderNumber) { setKitchenStatus('unknown'); return; }
+    let cancelled = false;
+    let attempts = 0;
+    const check = async () => {
+      while (!cancelled && attempts < 6) {
+        attempts++;
+        try {
+          const orders = await base44.entities.Order.filter({ order_number: String(orderNumber) });
+          const order = orders?.[0];
+          if (order?.square_order_id) { if (!cancelled) setKitchenStatus('sent'); return; }
+        } catch {}
+        if (attempts < 6) await new Promise(r => setTimeout(r, 3000));
+      }
+      if (!cancelled) setKitchenStatus('unknown');
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [orderNumber]);
 
   useEffect(() => {
     setConfetti(true);
@@ -46,10 +74,23 @@ export default function OrderConfirmation() {
             <CheckCircle size={40} className="text-green-600" />
           </div>
 
-          <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
-            <div className="w-2 h-2 bg-patina-mint rounded-full animate-pulse" />
-            Order Received!
-          </div>
+          {/* Kitchen sync status badge */}
+          {kitchenStatus === 'sent' ? (
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-heading mb-4">
+              <ChefHat size={16} />
+              Sent to Kitchen!
+            </div>
+          ) : kitchenStatus === 'sending' ? (
+            <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
+              <Loader2 size={16} className="animate-spin" />
+              Sending to Kitchen…
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-heading mb-4">
+              <CheckCircle size={16} />
+              Order Received!
+            </div>
+          )}
 
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">You're All Set!</h1>
           <p className="text-muted-foreground text-lg mb-8">
@@ -67,12 +108,18 @@ export default function OrderConfirmation() {
           {/* What's next */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             {[
-              { icon: CheckCircle, label: 'Order Confirmed', desc: 'Sent to our kitchen via Square', color: 'text-green-500' },
+              {
+                icon: kitchenStatus === 'sent' ? ChefHat : kitchenStatus === 'sending' ? Loader2 : CheckCircle,
+                label: kitchenStatus === 'sent' ? 'Sent to Kitchen' : kitchenStatus === 'sending' ? 'Sending to Kitchen' : 'Order Confirmed',
+                desc: kitchenStatus === 'sent' ? 'Reached Square POS — the crew is on it' : kitchenStatus === 'sending' ? 'Transmitting to Square POS…' : 'Sent to our kitchen via Square',
+                color: kitchenStatus === 'sent' ? 'text-green-600' : 'text-patina-mint',
+                spin: kitchenStatus === 'sending',
+              },
               { icon: Clock, label: 'Being Prepared', desc: readyForLabel ? `Ready by ${readyForLabel}` : prepEstimate, color: 'text-patina-mint' },
               { icon: ShoppingBag, label: 'Enjoy!', desc: 'Hot, fresh, and made with love', color: 'text-midnight-cherry' },
             ].map(step => (
-              <div key={step.label} className="bg-muted rounded-2xl p-4">
-                <step.icon size={22} className={`${step.color} mx-auto mb-2`} />
+              <div key={step.label} className={`bg-muted rounded-2xl p-4 ${kitchenStatus === 'sent' && step.label === 'Sent to Kitchen' ? 'ring-2 ring-green-300' : ''}`}>
+                <step.icon size={22} className={`${step.color} mx-auto mb-2 ${step.spin ? 'animate-spin' : ''}`} />
                 <p className="font-heading text-sm text-obsidian-roast">{step.label}</p>
                 <p className="text-xs text-muted-foreground mt-1">{step.desc}</p>
               </div>
@@ -123,6 +170,11 @@ export default function OrderConfirmation() {
         {/* Quick feedback — capture the moment while the experience is fresh */}
         <div className="mt-6">
           <PostOrderFeedback orderId={orderNumber || sessionId} />
+        </div>
+
+        {/* SMS opt-in capture — order updates + deals by text */}
+        <div className="mt-6">
+          <CheckoutSmsOptIn />
         </div>
 
         {/* Tasty Threads merch promo — cross-sell while the order is prepped */}

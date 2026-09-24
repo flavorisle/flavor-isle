@@ -1,23 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Zap, Heart, Star } from 'lucide-react';
+import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
+import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
+import ShareItemButton from './ShareItemButton';
+import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
   Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
 };
 
-export default function MenuItemCard({ item, onFavoriteChange }) {
-  const { addItem, orderingEnabled, orderingClosedMessage } = useCart();
+export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
+  const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
+  const isHappyHour = isHappyHourItem(item, menuSetting);
+  const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
+
+  // Share-link focus: when this card is the target of a /menu?item=<id> link,
+  // open the customization/detail modal automatically (without adding to cart).
+  useEffect(() => {
+    setShowModal(!!autoOpen);
+  }, [autoOpen]);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
@@ -66,6 +77,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     e?.stopPropagation();
     if (!orderingEnabled) return;
     if (hasModifiers) {
+      trackSelectItem(foodItemToGa4(item));
       setShowModal(true);
     } else {
       addItem(item);
@@ -74,7 +86,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
     addItem({
       ...item,
       price: item.price + extraCost,
@@ -82,6 +94,9 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
     });
+    if (comboItems && comboItems.length > 0) {
+      comboItems.forEach(ci => addItem(ci));
+    }
     setShowModal(false);
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
@@ -89,14 +104,26 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
 
   // ── Reusable pieces ──
 
+  // Favorite sits just left of the share button so both fit in the top-right.
   const favoriteBtn = user && (
     <button
       onClick={toggleFavorite}
       disabled={savingFavorite}
-      className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
+      className="absolute top-3 right-12 z-20 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
     >
       <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
     </button>
+  );
+
+  // Share action — native share sheet when available, copy-link fallback.
+  // Stops propagation so it never triggers the card's add/customize action.
+  const shareBtn = (
+    <ShareItemButton
+      itemId={item.id}
+      variant="icon"
+      ariaLabel={`Share ${item.name}`}
+      className="absolute top-3 right-3 z-20"
+    />
   );
 
   const badges = (
@@ -114,6 +141,14 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       {soldOut && (
         <div className="absolute top-3 left-3 bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider z-10">
           Sold Out
+        </div>
+      )}
+      {isHappyHour && !soldOut && (
+        <div
+          className="absolute left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10"
+          style={{ top: (item.is_fan_favorite || item.is_featured) ? '2.75rem' : '0.75rem' }}
+        >
+          <Clock size={10} /> Happy Hour · Online
         </div>
       )}
     </>
@@ -160,7 +195,14 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
-          <span className={`font-heading text-lg flex-shrink-0 ${light ? 'text-white' : 'text-midnight-cherry'}`}>${item.price.toFixed(2)}</span>
+          {isHappyHour && happyHourPrice !== null ? (
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className={`text-xs line-through ${light ? 'text-white/55' : 'text-muted-foreground'}`}>${item.price.toFixed(2)}</span>
+              <span className={`font-heading text-lg leading-none ${light ? 'text-white' : 'text-midnight-cherry'}`}>${happyHourPrice.toFixed(2)}</span>
+            </div>
+          ) : (
+            <span className={`font-heading text-lg flex-shrink-0 ${light ? 'text-white' : 'text-midnight-cherry'}`}>${item.price.toFixed(2)}</span>
+          )}
         </div>
         {item.description && (
           <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/80' : 'text-muted-foreground'}`}>{item.description}</p>
@@ -205,6 +247,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
         {modal}
         <div className="group relative card-diner">
           {favoriteBtn}
+          {shareBtn}
           {renderContent(false)}
         </div>
       </>
@@ -225,6 +268,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
           {favoriteBtn}
+          {shareBtn}
           {badges}
           <div className="relative">
             {renderContent(true, { showRatings: false })}
@@ -249,6 +293,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
           {position === 'left' && imageBlock}
           <div className="relative flex-1 min-w-0">
             {favoriteBtn}
+            {shareBtn}
             {renderContent(false)}
           </div>
           {position === 'right' && imageBlock}
@@ -263,6 +308,7 @@ export default function MenuItemCard({ item, onFavoriteChange }) {
       {modal}
       <div className="group relative card-diner overflow-hidden">
         {favoriteBtn}
+        {shareBtn}
         <div className="relative h-48 overflow-hidden bg-gray-100">
           {photo}
           {badges}

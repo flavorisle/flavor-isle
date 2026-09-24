@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Bot, Save, Loader2, Check } from 'lucide-react';
+import { Bot, Save, Loader2, Check, Facebook } from 'lucide-react';
 
 // Edits the single SmashieSettings record. These values are read at runtime by
 // the Twilio webhooks (greeting + toggles) and the order-status sync (SMS
@@ -44,6 +44,7 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
           personality_notes: settings.personality_notes,
+          facebook_access_token: settings.facebook_access_token,
         });
       } else {
         const created = await base44.entities.SmashieSettings.create({
@@ -52,6 +53,7 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
           personality_notes: settings.personality_notes,
+          facebook_access_token: settings.facebook_access_token,
         });
         setSettings(created);
       }
@@ -120,6 +122,24 @@ export default function SmashieSettingsPanel() {
           rows={4}
           placeholder="e.g. Keep it casual and energetic. Emphasize fresh never-frozen burgers and hand-spun shakes…"
           className="w-full px-4 py-3 bg-white rounded-xl text-sm border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 resize-none"
+        />
+      </div>
+
+      {/* Facebook Conversions API token */}
+      <div className="card-diner p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Facebook size={18} className="text-midnight-cherry" />
+          <h3 className="font-heading text-obsidian-roast">Meta Conversions API Token</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          The Facebook/Meta access token for server-side event tracking. Stored here instead of as a platform secret because it exceeds Cloudflare's environment-variable size limit.
+        </p>
+        <textarea
+          value={settings.facebook_access_token || ''}
+          onChange={e => update('facebook_access_token', e.target.value)}
+          rows={3}
+          placeholder="EAAG…"
+          className="w-full px-4 py-3 bg-white rounded-xl text-xs font-mono border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 resize-none"
         />
       </div>
 

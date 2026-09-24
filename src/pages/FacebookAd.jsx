@@ -4,7 +4,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { Check, Copy, MapPin, Phone, ThumbsUp, Share, MessageCircle } from 'lucide-react';
 
-const ORDER_URL = 'https://crave.flavor-isle.com';
+const ORDER_URL = 'https://flavor-isle.com';
 const ADDRESS = '103 N Main St, Smiths Grove, KY 42171';
 const PHONE = '(270) 563-4618';
 const HOURS = 'Mon–Sat 11am–9pm · Sun 12pm–7pm';
@@ -75,7 +75,7 @@ export default function FacebookAd() {
                 <img
                   src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png"
                   alt="Flavor Isle"
-                  className="w-12 h-12 rounded-full object-contain bg-vanilla-malt flex-shrink-0"
+                  className="w-12 h-12 rounded-xl object-contain bg-vanilla-malt flex-shrink-0"
                 />
                 <div className="min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast leading-tight">Flavor Isle</p>

@@ -2,45 +2,59 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import {
+  SMS_CONSENT_VERSION,
+  SMS_POLICY_URL,
+  SMS_TERMS_URL,
+  toE164,
+  TRANSACTIONAL_DISCLOSURE_TEXT,
+  MARKETING_DISCLOSURE_TEXT,
+} from '@/lib/smsConsent';
+import useSmsConsentStatus from '@/hooks/useSmsConsentStatus';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
-// Normalize a US phone number to E.164. Accepts 10-digit, 11-digit (leading 1),
-// or already-international numbers.
-function toE164(raw) {
-  const digits = (raw || '').replace(/\D/g, '');
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-  if (digits.length > 11 && raw.trim().startsWith('+')) return raw.trim();
-  return null;
-}
-
 export default function SMSSignup() {
+  const { status, phone: cachedPhone, loading } = useSmsConsentStatus(true);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [consent, setConsent] = useState(false);
+  const [txConsent, setTxConsent] = useState(false);
+  const [mkConsent, setMkConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+
+  React.useEffect(() => { if (cachedPhone) setPhone(cachedPhone); }, [cachedPhone]);
+
+  const alreadyTx = status?.status === 'active' && !!status?.transactional_consent;
+  const alreadyMk = status?.status === 'active' && !!status?.marketing_consent && !!status?.proven_marketing_consent;
+  const bothAlready = alreadyTx && alreadyMk;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const normalized = toE164(phone);
     if (!normalized) { setError('Please enter a valid 10-digit mobile number.'); return; }
-    if (!consent) { setError('Please agree to receive order status updates and payment links by text.'); return; }
+    const finalTx = alreadyTx || txConsent;
+    const finalMk = alreadyMk || mkConsent;
+    if (!finalTx && !finalMk) { setError('Please check at least one box to opt in.'); return; }
     setSubmitting(true);
     try {
-      await base44.entities.SMSSubscriber.create({
+      const res = await base44.functions.invoke('upsertSmsConsent', {
         phone: normalized,
         name: name.trim() || undefined,
-        opted_in: true,
-        source: 'website',
-        status: 'active',
+        transactionalConsent: finalTx,
+        marketingConsent: finalMk,
+        sourcePage: 'sms_signup',
+        disclosureVersion: SMS_CONSENT_VERSION,
+        disclosureText: finalMk && finalTx
+          ? `${TRANSACTIONAL_DISCLOSURE_TEXT} ${MARKETING_DISCLOSURE_TEXT}`
+          : finalMk ? MARKETING_DISCLOSURE_TEXT : TRANSACTIONAL_DISCLOSURE_TEXT,
       });
+      if (!res.data?.ok) throw new Error(res.data?.error || 'Failed');
       setDone(true);
     } catch (err) {
-      setError(err?.response?.data?.error || 'Something went wrong. Please try again.');
+      setError(err?.message || 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -55,18 +69,32 @@ export default function SMSSignup() {
             <MessageSquare size={28} />
           </div>
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>
-          <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Order Updates, Straight to Your Phone</h1>
+          <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Texts From Flavor Isle</h1>
           <p className="text-muted-foreground mt-3 text-base">
-            We'll text you the moment your order is confirmed, cooking, and ready for pickup — plus a secure pay-by-text link so you can settle up without picking up the phone. You'll also get occasional offers and specials from Flavor Isle. Text STOP anytime to opt out.
+            Pick what you want — order status updates, recurring offers, or both. Each is optional and never required to order. Text STOP anytime to opt out.
           </p>
         </div>
 
-        {done ? (
+        {loading ? (
+          <div className="card-diner p-8 text-center">
+            <Loader2 size={24} className="animate-spin mx-auto text-midnight-cherry" />
+            <p className="text-sm text-muted-foreground mt-3">Checking your text preferences…</p>
+          </div>
+        ) : bothAlready ? (
           <div className="card-diner p-8 text-center">
             <CheckCircle2 size={48} className="text-midnight-cherry mx-auto mb-4" />
             <h2 className="font-heading text-2xl text-obsidian-roast mb-2">You're all set!</h2>
             <p className="text-muted-foreground text-sm mb-6">
-              Next time you order, we'll send status updates and a quick pay-by-text link right here — plus occasional offers and specials. You can text STOP anytime to opt out.
+              You're already signed up for order updates and recurring offers. Reply STOP anytime to opt out, HELP for help.
+            </p>
+            <Link to="/" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-block">Back to Home</Link>
+          </div>
+        ) : done ? (
+          <div className="card-diner p-8 text-center">
+            <CheckCircle2 size={48} className="text-midnight-cherry mx-auto mb-4" />
+            <h2 className="font-heading text-2xl text-obsidian-roast mb-2">You're signed up!</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              We'll send the texts you asked for. Reply STOP anytime to opt out, HELP for help.
             </p>
             <Link to="/" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-block">Back to Home</Link>
           </div>
@@ -82,13 +110,28 @@ export default function SMSSignup() {
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(270) 555-0000"
                 className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
             </div>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30" />
-              <span className="text-sm text-muted-foreground leading-relaxed">
-                I agree to receive order status notifications, payment links, and occasional promotional offers from Flavor Isle at the number provided. Msg & data rates may apply. Text STOP to opt out, HELP for help.
-              </span>
-            </label>
+
+            {!alreadyTx && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={txConsent} onChange={e => setTxConsent(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30" />
+                <span className="text-sm text-muted-foreground leading-relaxed">
+                  Send me order status notifications (confirmed, preparing, ready) and payment links from Flavor Isle. Optional and not a condition of purchase. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                </span>
+              </label>
+            )}
+
+            {!alreadyMk && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={mkConsent} onChange={e => setMkConsent(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30" />
+                <span className="text-sm text-muted-foreground leading-relaxed">
+                  Yes, send me recurring promotional offers and specials from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (a few per month). Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. See our{' '}
+                  <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline">Terms of Service</a> and{' '}
+                  <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline">Privacy Policy</a>.
+                </span>
+              </label>
+            )}
 
             {error && (
               <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm">
@@ -99,10 +142,10 @@ export default function SMSSignup() {
 
             <button type="submit" disabled={submitting}
               className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-              {submitting ? <><Loader2 size={16} className="animate-spin" /> Signing you up…</> : 'Sign Me Up for Updates'}
+              {submitting ? <><Loader2 size={16} className="animate-spin" /> Signing you up…</> : 'Sign Me Up'}
             </button>
             <p className="text-xs text-muted-foreground text-center">
-              By signing up you agree to our <Link to="/terms-of-service" className="text-midnight-cherry underline">Terms of Service</Link> and <Link to="/privacy-policy" className="text-midnight-cherry underline">Privacy Policy</Link>.
+              By signing up you agree to our <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline">Terms of Service</a> and <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-midnight-cherry underline">Privacy Policy</a>.
             </p>
           </form>
         )}

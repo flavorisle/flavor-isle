@@ -1,54 +1,50 @@
-import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, Users, UserCircle, UserCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Minus, Trash2, ArrowRight, Users } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
+import CartDessertUpsell from './CartDessertUpsell';
+import CartFallingLeaves from './CartFallingLeaves';
+import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
-const ORDER_TYPE_LABELS = {
-  pickup: 'Pickup',
-  delivery: 'Delivery',
-  dine_in: 'Dine-In',
-};
+// Curbside is a pickup method — it maps to orderType 'pickup' with
+// pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
+const ORDER_OPTIONS = [
+  { key: 'pickup', label: 'Pickup', orderType: 'pickup', method: 'counter' },
+  { key: 'curbside', label: 'Curbside', orderType: 'pickup', method: 'curbside' },
+  { key: 'delivery', label: 'Delivery', orderType: 'delivery' },
+  { key: 'dine_in', label: 'Dine-In', orderType: 'dine_in' },
+];
 
 export default function CartDrawer() {
   const {
     cartItems, isCartOpen, setIsCartOpen,
     updateQuantity, removeItem, reassignItem,
     orderType, setOrderType,
+    pickupMethod, setPickupMethod,
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
+    happyHourDiscount,
     groupMode, people, activePerson, startGroupOrder,
   } = useCart();
-  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [assignFor, setAssignFor] = useState(null);
-  const [showGuestPrompt, setShowGuestPrompt] = useState(false);
+
+  useEffect(() => {
+    if (isCartOpen && cartItems.length > 0) {
+      trackViewCart(cartItems.map(foodItemToGa4), cartItems.reduce((s, i) => s + i.price * i.quantity, 0));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCartOpen]);
 
   if (!isCartOpen) return null;
 
   const handleCheckout = () => {
-    // Signed-in customers go straight to checkout. Guests see a quick prompt
-    // to log in (for saved details + rewards) or continue as a guest.
-    if (isAuthenticated) {
-      setIsCartOpen(false);
-      navigate('/checkout');
-    } else {
-      setShowGuestPrompt(true);
-    }
-  };
-
-  const goToLogin = () => {
+    // Go straight to checkout — the checkout page supports both signed-in
+    // customers (prefilled details + rewards) and guests (manual entry).
     setIsCartOpen(false);
-    setShowGuestPrompt(false);
-    navigate('/login?returnTo=%2Fcheckout');
-  };
-
-  const continueAsGuest = () => {
-    setIsCartOpen(false);
-    setShowGuestPrompt(false);
     navigate('/checkout');
   };
 
@@ -83,23 +79,27 @@ export default function CartDrawer() {
         {/* Order Type Selector */}
         <div className="p-4 bg-white border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Order Type</p>
-          <div className="flex gap-2">
-            {['pickup', 'delivery', 'dine_in'].map(type => (
-              <button
-                key={type}
-                onClick={() => setOrderType(type)}
-                disabled={cutoffStatus[type]}
-                className={`flex-1 py-2 text-xs font-heading rounded-xl transition-all ${
-                  cutoffStatus[type]
-                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    : orderType === type
-                    ? 'bg-midnight-cherry text-white shadow-float'
-                    : 'bg-muted text-muted-foreground hover:bg-gray-200'
-                }`}
-              >
-                {ORDER_TYPE_LABELS[type]}
-              </button>
-            ))}
+          <div className="grid grid-cols-4 gap-2">
+            {ORDER_OPTIONS.map(opt => {
+              const disabled = cutoffStatus[opt.orderType];
+              const active = orderType === opt.orderType && (!opt.method || pickupMethod === opt.method);
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => { setOrderType(opt.orderType); if (opt.method) setPickupMethod(opt.method); }}
+                  disabled={disabled}
+                  className={`py-2 text-xs font-heading rounded-xl transition-all ${
+                    disabled
+                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      : active
+                      ? 'bg-midnight-cherry text-white shadow-float'
+                      : 'bg-muted text-muted-foreground hover:bg-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -111,7 +111,8 @@ export default function CartDrawer() {
         )}
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 relative">
+          <CartFallingLeaves />
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img
@@ -134,7 +135,8 @@ export default function CartDrawer() {
               </button>
             </div>
           ) : (
-            cartItems.map(item => (
+            <>
+            {cartItems.map(item => (
               <div key={item.id} className="card-diner p-3 flex gap-3">
                 {item.image_url && (
                   <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
@@ -191,7 +193,9 @@ export default function CartDrawer() {
                   </div>
                 </div>
               </div>
-            ))
+            ))}
+            <CartDessertUpsell />
+            </>
           )}
         </div>
 
@@ -203,6 +207,12 @@ export default function CartDrawer() {
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
+              {happyHourDiscount > 0 && (
+                <div className="flex justify-between text-midnight-cherry font-semibold">
+                  <span>Happy Hour — Unbeatable value (online)</span>
+                  <span>−${happyHourDiscount.toFixed(2)}</span>
+                </div>
+              )}
               {deliveryFee > 0 && (
                 <div className="flex justify-between text-muted-foreground">
                   <span>Delivery Fee</span>
@@ -234,40 +244,6 @@ export default function CartDrawer() {
         )}
       </div>
 
-      {/* Guest checkout prompt — log in for saved details + rewards, or continue as guest */}
-      {showGuestPrompt && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowGuestPrompt(false)}>
-          <div className="bg-white rounded-3xl shadow-float-lg max-w-sm w-full p-6 animate-float-up" onClick={e => e.stopPropagation()}>
-            <div className="text-center mb-5">
-              <div className="w-14 h-14 rounded-full bg-midnight-cherry/10 flex items-center justify-center mx-auto mb-3">
-                <UserCircle size={28} className="text-midnight-cherry" />
-              </div>
-              <h3 className="font-heading text-xl text-obsidian-roast mb-1">Checking out?</h3>
-              <p className="text-sm text-muted-foreground">Log in to save your details, track orders, and earn Star Rewards — or continue as a guest.</p>
-            </div>
-            <div className="space-y-2.5">
-              <button
-                onClick={goToLogin}
-                className="btn-cherry chrome-hover w-full py-3.5 text-sm font-heading flex items-center justify-center gap-2"
-              >
-                <UserCheck size={16} /> Log In to My Account
-              </button>
-              <button
-                onClick={continueAsGuest}
-                className="w-full py-3.5 text-sm font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-midnight-cherry/40 transition-colors"
-              >
-                Continue as Guest
-              </button>
-            </div>
-            <button
-              onClick={() => setShowGuestPrompt(false)}
-              className="mt-4 w-full text-xs text-muted-foreground hover:text-obsidian-roast transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

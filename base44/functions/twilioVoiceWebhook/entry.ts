@@ -4,7 +4,7 @@ import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getStoreStatus } from '../../shared/storeClosure.ts';
+import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 
 // Helper: strip markdown for TTS
@@ -114,7 +114,7 @@ export default async function(req) {
     // instead of waiting here for generation plus a second file upload.
     const speak = async (twiml, text) => {
       const cleanText = forTTS(text);
-      const audioUrl = new URL('https://crave.flavor-isle.com/functions/smashieTts');
+      const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
       twiml.play({}, audioUrl.toString());
     };
@@ -187,7 +187,7 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      const storeStatus = await getStoreStatus(base44);
+      const storeStatus = await getPhysicalStoreStatus(base44);
       const closedToday = !storeStatus.open;
       const busynessLevel = await getBusynessLevel(base44);
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
@@ -197,8 +197,11 @@ export default async function(req) {
           : busynessLevel === 'A Little Busy'
             ? "We're a little busy right now but we got you — about a 30 minute wait!"
             : "We're running smooth right now, no wait at all!";
+      const headsUp = storeStatus.message.startsWith('we open at')
+        ? `Just a heads up — ${storeStatus.message}.`
+        : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! Just a heads up — we're ${storeStatus.message}. We'll be back to normal soon! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?`
+        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} We'll be back to normal soon! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?`
         : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;
       const convo = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
@@ -300,7 +303,7 @@ export default async function(req) {
         ? `[CALLER INFO: Name: ${callerRecord.customer_name}. No email on file in Square. When confirming a phone order, ask the caller for their email so the payment link can be emailed, and pass it to logPhoneOrder as customer_email.]`
         : `[CALLER INFO: Caller not found in Square. When confirming a phone order, ask for the caller's name and email, and pass both to logPhoneOrder.]`;
     const liveBusyness = await getBusynessLevel(base44);
-    const storeStatus = await getStoreStatus(base44);
+    const storeStatus = await getPhysicalStoreStatus(base44);
     const closedToday = !storeStatus.open;
     const statusContext = closedToday
       ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said. When CLOSED: you may ONLY share Flavor Isle history, tell the caller we're closed right now and back to normal soon, or take and save a message for management. Do NOT tell the caller the store is open. Do NOT mention closing time or today's hours. Do NOT say "we're open until 8" or anything similar. Do not discuss the menu, recommend food, take or build an order, provide directions, or offer a counter transfer. Do not mention busyness or wait times — we are closed.]\n${callerInfo}`

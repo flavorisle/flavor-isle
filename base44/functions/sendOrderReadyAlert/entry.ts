@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
+import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 
 // Send an SMS via the Twilio REST API directly. The Twilio npm SDK throws
 // "Unsupported cache mode: default" under Deno, so we call the REST endpoint
@@ -65,6 +66,19 @@ Deno.serve(async (req) => {
       message = `✅ Your Flavor Isle order #${order.order_number} is ready for pickup!`;
     }
 
+    // Transactional SMS requires explicit active transactional consent for this
+    // order's phone. STOP suppresses all. Never inferred from the order phone.
+    const consent = await checkSmsConsent(base44, customer_phone, 'transactional');
+    if (!consent.ok) {
+      console.log(`Order ready alert skipped for #${order.order_number}: ${consent.reason}`);
+      return Response.json({
+        success: false,
+        skipped: true,
+        reason: consent.reason,
+        message: 'Customer has not opted in to order status texts, or has texted STOP. No message sent.',
+      }, { status: 200 });
+    }
+
     await sendTwilioSms(
       Deno.env.get('TWILIO_ACCOUNT_SID'),
       Deno.env.get('TWILIO_AUTH_TOKEN'),
@@ -72,6 +86,7 @@ Deno.serve(async (req) => {
       customer_phone,
       message,
     );
+    await markSmsSent(base44, customer_phone, 'transactional');
 
     console.log(`Order ready alert sent for order #${order.order_number}`);
     return Response.json({ success: true, message: 'Alert sent' });

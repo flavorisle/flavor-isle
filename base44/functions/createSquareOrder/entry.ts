@@ -6,7 +6,52 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, customer, instructions, total, tax, deliveryFee, tip, discount } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, pickupMethod, vehicle } = body;
+
+    // Atomic claim: try to set square_sync_claimed_at only if it's currently
+    // null/empty. If another concurrent call already claimed or pushed the
+    // order, updated === 0 and we skip — preventing duplicate Square orders
+    // when the Stripe webhook fires both checkout.session.completed and
+    // payment_intent.succeeded ~1s apart. This is a database-level atomic
+    // operation (conditional updateMany), so the race window is eliminated.
+    if (orderId) {
+      try {
+        const claim = await base44.asServiceRole.entities.Order.updateMany(
+          { id: orderId, square_sync_claimed_at: null },
+          { $set: { square_sync_claimed_at: new Date().toISOString() } }
+        );
+        if (!claim || claim.updated === 0) {
+          const existing = await base44.asServiceRole.entities.Order.get(orderId);
+          if (existing?.square_order_id) {
+            console.log(`Order ${orderNumber} already pushed (${existing.square_order_id}) — skipping duplicate create`);
+            return Response.json({ order_id: existing.square_order_id, already_synced: true });
+          }
+          console.log(`Order ${orderNumber} is being claimed by another call — skipping`);
+          return Response.json({ order_id: null, already_synced: true });
+        }
+      } catch (claimErr) {
+        console.warn('Atomic claim failed, falling back to pre-check:', claimErr.message);
+        try {
+          const existing = await base44.asServiceRole.entities.Order.get(orderId);
+          if (existing?.square_order_id) {
+            return Response.json({ order_id: existing.square_order_id, already_synced: true });
+          }
+          // Another call has a sync claim but hasn't set square_order_id yet
+          // (still in the Square API call). Return already_synced to avoid a
+          // duplicate — autoSyncUnpushedOrders will retry if no call succeeds.
+          if (existing?.square_sync_claimed_at) {
+            console.log(`Order ${orderNumber} has a sync claim from another call — skipping to avoid duplicate`);
+            return Response.json({ order_id: null, already_synced: true });
+          }
+          // No claim and no square_order_id — the atomic claim threw for a
+          // transient reason and no other call is in flight. Safe to proceed.
+          console.log(`Order ${orderNumber} — atomic claim threw but no existing claim, proceeding`);
+        } catch (e) {
+          // Can't read the order — be conservative, let autoSync retry.
+          return Response.json({ order_id: null, already_synced: true });
+        }
+      }
+    }
 
     const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[orderType] || 'Pickup';
     const displayName = orderNumber
@@ -85,26 +130,153 @@ Deno.serve(async (req) => {
       console.error('Square customer lookup/create failed:', err.message);
     }
 
-    const idempotencyKey = crypto.randomUUID();
+    // Deterministic idempotency key derived from the app order id so Square
+    // rejects a duplicate create even if two triggers race past the pre-check
+    // above. Square returns the SAME order for a repeated key.
+    const idempotencyKey = orderId ? `flavor-isle-order-${orderId}` : crypto.randomUUID();
+
+    // Batch-retrieve catalog objects so each line item can reference its ITEM
+    // VARIATION (not the top-level item) via catalog_object_id, and modifier
+    // options via the modifiers array. The Orders API requires the variation
+    // id — square_item_id stores the ITEM id, so we resolve the default
+    // variation here. Items without a Square catalog match fall back to ad-hoc
+    // line items (name + price only) so they still push.
+    const squareItemIds = [...new Set(
+      items.map(i => i.square_item_id || i.catalog_object_id).filter(Boolean)
+    )];
+    const catalogMap: Record<string, { variations: any[]; modifierListIds: string[] }> = {};
+    const allModifierListIds = new Set<string>();
+    if (squareItemIds.length > 0) {
+      try {
+        const catRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+          method: 'POST',
+          headers: sqHeaders,
+          body: JSON.stringify({ object_ids: squareItemIds }),
+        });
+        const catData = await catRes.json();
+        for (const obj of (catData.objects || [])) {
+          if (obj.type === 'ITEM' && obj.item_data) {
+            const variations = obj.item_data.variations || [];
+            const modifierListIds = (obj.item_data.modifier_list_info || [])
+              .filter((mli: any) => mli.enabled && !mli.hidden_from_customer)
+              .map((mli: any) => mli.modifier_list_id);
+            catalogMap[obj.id] = { variations, modifierListIds };
+            modifierListIds.forEach((id: string) => allModifierListIds.add(id));
+          }
+        }
+      } catch (catErr) {
+        console.warn('Catalog batch-retrieve failed, using ad-hoc line items:', catErr.message);
+      }
+    }
+
+    // Batch-retrieve modifier lists so we can reference modifier options by
+    // their catalog IDs (line item modifiers) instead of ad-hoc text. This
+    // makes modifier-level sales and pricing report correctly in Square.
+    const modifierOptionToList: Record<string, string> = {};
+    if (allModifierListIds.size > 0) {
+      try {
+        const modRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+          method: 'POST',
+          headers: sqHeaders,
+          body: JSON.stringify({ object_ids: [...allModifierListIds] }),
+        });
+        const modData = await modRes.json();
+        for (const obj of (modData.objects || [])) {
+          if (obj.type === 'MODIFIER_LIST' && obj.modifier_list_data) {
+            for (const mod of (obj.modifier_list_data.modifiers || [])) {
+              modifierOptionToList[mod.id] = obj.id;
+            }
+          }
+        }
+      } catch (modErr) {
+        console.warn('Modifier list batch-retrieve failed:', modErr.message);
+      }
+    }
 
     const lineItems = items.map(item => {
-      // Milkshakes are built from a single Square "Milkshake" item, but that
-      // item has NO modifier lists attached in the catalog — so we can't
-      // reference the catalog object (an ITEM id, not a variation id) or the
-      // modifier option ids. Emit as an ad-hoc named line with the selected
-      // modifiers folded into the name so the POS ticket prints correctly.
-      // item.price already includes all modifier upcharges from the cart.
+      // Resolve the ITEM VARIATION id from the catalog so Square reports the
+      // item under its proper category. For multi-variation items (e.g. drinks
+      // with sizes), match the selected Size modifier's id to the variation
+      // id; otherwise use the first variation. Falls back to ad-hoc if the
+      // item isn't in the catalog.
+      let catalogObjectId: string | null = null;
+      const squareItemId = item.square_item_id || item.catalog_object_id;
+      const catEntry = squareItemId ? catalogMap[squareItemId] : null;
+      const variations = catEntry?.variations || [];
+      const variationIds = new Set(variations.map((v: any) => v.id));
+      const itemModListIds = new Set(catEntry?.modifierListIds || []);
+
+      if (variations.length > 0) {
+        const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
+        const matched = variations.find((v: any) => modIds.includes(v.id));
+        catalogObjectId = (matched || variations[0]).id;
+      }
+
+      // Separate selected modifiers into catalog-referenced (added as Square
+      // line item modifiers with catalog_object_id) and ad-hoc (kept in the
+      // name only). Size selections (id = variation id) are skipped — they're
+      // already handled by catalog_object_id. Only modifiers from the item's
+      // own attached modifier lists are catalog-referenced; everything else
+      // (e.g. milkshake flavors on an item with no modifier lists) stays
+      // ad-hoc so Square doesn't reject the order.
+      // Square computes each modifier's total as base_price_money × line item
+      // quantity, so we set the per-unit price and let Square scale it.
+      const appliedModifiers: any[] = [];
+      let catalogModPerUnit = 0;
+      // Names of modifiers already shown on the POS ticket as a variation
+      // (size) line or a catalog modifier sub-line. These are excluded from
+      // the line item name's parenthetical so the kitchen ticket never prints
+      // a modifier twice (once in the name, once as a sub-line). The Deluxe
+      // preset label and true ad-hoc modifiers stay in the name.
+      const alreadyOnTicket = new Set<string>();
+      for (const sm of (item.selectedModifiers || [])) {
+        if (!sm?.id) continue;
+        if (variationIds.has(sm.id)) {
+          if (sm.name) alreadyOnTicket.add(sm.name); // Size selection
+          continue;
+        }
+        const modListId = modifierOptionToList[sm.id];
+        if (modListId && itemModListIds.has(modListId)) {
+          const mod: any = { catalog_object_id: sm.id };
+          if (typeof sm.price === 'number' && sm.price !== 0) {
+            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
+          }
+          appliedModifiers.push(mod);
+          catalogModPerUnit += (sm.price || 0);
+          if (sm.name) alreadyOnTicket.add(sm.name);
+        }
+        // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
+        // and their prices stay in base_price_money.
+      }
+
       // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
-      // no Tomato") instead of a raw topping list.
-      const mods = formatItemModifiers(item).join(', ');
-      return {
-        name: mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item'),
+      // no Tomato") instead of a raw topping list. Only modifiers NOT already
+      // shown as a POS sub-line (ad-hoc extras + the Deluxe label) are folded
+      // into the name, so nothing prints twice.
+      const displayMods = formatItemModifiers(item).filter((m: string) => !alreadyOnTicket.has(m));
+      const name = displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item');
+
+      // base_price_money = item price minus catalog modifier upcharges (those
+      // are added via the modifiers array). Ad-hoc modifier prices and size
+      // upcharges stay in the base price so the line item total matches what
+      // the customer paid: (base + ad-hoc + size) × qty + catalog_mods × qty.
+      const basePrice = (item.price || 0) - catalogModPerUnit;
+
+      const lineItem: any = {
+        name,
         quantity: String(item.quantity || 1),
         base_price_money: {
-          amount: Math.round((item.price || 0) * 100),
+          amount: Math.round(basePrice * 100),
           currency: 'USD',
         },
       };
+      if (catalogObjectId) {
+        lineItem.catalog_object_id = catalogObjectId;
+      }
+      if (appliedModifiers.length > 0) {
+        lineItem.modifiers = appliedModifiers;
+      }
+      return lineItem;
     });
 
     // Send tax as a real order-level tax (not a service charge) so Square
@@ -122,9 +294,20 @@ Deno.serve(async (req) => {
         scope: 'ORDER',
       });
     }
+    // Happy Hour drink discount as a separate order-level fixed discount so
+    // reporting can track it independently from loyalty rewards.
+    if (happyHourDiscount > 0) {
+      orderDiscounts.push({
+        uid: 'happy-hour',
+        name: 'Happy Hour 50% Off Drinks',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(happyHourDiscount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
     // Square applies the ADDITIVE tax to the post-discount amount, so base the
     // percentage on the discounted subtotal to keep the applied tax equal to ours.
-    const taxBase = itemsSubtotal - (discount || 0);
+    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0);
     const orderTaxes = [];
     if (tax > 0 && taxBase > 0) {
       const pct = ((tax / taxBase) * 100).toFixed(2);
@@ -149,10 +332,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Format note based on order type for kitchen printing
+    // Format note based on order type for kitchen/counter printing
     let pickupNote = '';
     if (orderType === 'pickup') {
-      pickupNote = `PICKUP\n${customer.name}\n${customer.phone || ''}`;
+      const curbside = pickupMethod === 'curbside' && vehicle;
+      const carDesc = curbside ? [vehicle.car_color, vehicle.car_make, vehicle.car_model].filter(Boolean).join(' ') : '';
+      pickupNote = `${curbside ? 'CURBSIDE' : 'PICKUP'}\n${customer.name}\n${customer.phone || ''}${curbside && carDesc ? `\nCar: ${carDesc}` : ''}`;
     } else if (orderType === 'delivery') {
       pickupNote = `DELIVERY\n${customer.name}\n${customer.address || ''}\n${customer.phone || ''}`;
     } else if (orderType === 'dine_in') {
@@ -177,6 +362,18 @@ Deno.serve(async (req) => {
             },
             pickup_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
             note: pickupNote + (instructions ? '\n\nNOTES: ' + instructions : ''),
+            // Curbside pickup — add car details so staff know what to look for.
+            // Square doesn't have a DINE_IN fulfillment type and DELIVERY
+            // requires a formal Square partnership (would hide the order from
+            // POS), so all order types use PICKUP with the type in the note.
+            ...(pickupMethod === 'curbside' && vehicle ? {
+              curbside_pickup_details: {
+                buyer_curbside_info: {
+                  car_description: [vehicle.car_color, vehicle.car_make, vehicle.car_model]
+                    .filter(Boolean).join(' ') || 'Not specified',
+                },
+              },
+            } : {}),
           },
         }],
         line_items: lineItems,
@@ -187,6 +384,7 @@ Deno.serve(async (req) => {
           customer_email: customer.email,
           order_source: 'flavor-isle-website',
           order_type: orderType,
+          ...(orderId ? { app_order_id: orderId } : {}),
         },
       },
     };
@@ -205,10 +403,33 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       console.error('Square error:', JSON.stringify(data));
+      // Release the claim so the order can be retried by autoSyncUnpushedOrders
+      if (orderId) {
+        try {
+          await base44.asServiceRole.entities.Order.updateMany(
+            { id: orderId, square_sync_claimed_at: { $ne: null } },
+            { $unset: { square_sync_claimed_at: "" } }
+          );
+        } catch (e) {
+          console.warn('Failed to release Square sync claim:', e.message);
+        }
+      }
       return Response.json({ error: 'Square order creation failed', details: data }, { status: 500 });
     }
 
     console.log('Square order created:', data.order?.id);
+
+    // Persist square_order_id on the app order immediately so concurrent
+    // triggers see it and skip. This narrows the race window to just the
+    // Square API call duration.
+    if (orderId && data.order?.id) {
+      try {
+        await base44.asServiceRole.entities.Order.update(orderId, { square_order_id: data.order.id });
+        console.log(`App order ${orderNumber} updated with square_order_id ${data.order.id}`);
+      } catch (updateErr) {
+        console.error('Failed to update app order with square_order_id:', updateErr.message);
+      }
+    }
 
     // Record the payment (already collected via Stripe) as an EXTERNAL payment.
     // Square POS only surfaces PAID orders as active tickets, so without this
@@ -223,7 +444,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          idempotency_key: crypto.randomUUID(),
+          idempotency_key: orderId ? `flavor-isle-payment-${orderId}` : crypto.randomUUID(),
           source_id: 'EXTERNAL',
           external_details: { type: 'CARD', source: 'Card' },
           order_id: data.order.id,
@@ -241,7 +462,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ order_id: data.order?.id, order: data.order });
+    return Response.json({ order_id: data.order?.id, order: data.order, already_synced: false });
   } catch (error) {
     console.error('Square order error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

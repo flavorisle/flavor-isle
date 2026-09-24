@@ -4,19 +4,21 @@ import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
+import FooterEmailSignup from '@/components/FooterEmailSignup';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
   return (
-    <footer className="bg-obsidian-roast text-white">
+    <footer className="bg-obsidian-roast text-white fall26-footer-accent">
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Brand */}
         <div className="md:col-span-1">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0e35f400b_wordlogo.png"
-            alt="Flavor Isle — Burgers & Shakes, Smiths Grove, KY"
-            className="w-full max-w-[200px] object-contain mb-4"
+            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+            alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
+            loading="lazy"
+            className="w-full max-w-[260px] object-contain mb-4"
           />
           <p className="text-gray-300 text-sm leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
@@ -54,9 +56,15 @@ export default function Footer() {
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
+            <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Stop</Link>
+            <Link to="/mammoth-cave-dining" className="hover:text-white transition-colors">Mammoth Cave Dining</Link>
+            <Link to="/corvette-car-clubs" className="hover:text-white transition-colors">Corvette Car Clubs</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
             <Link to="/what-to-expect" className="hover:text-white transition-colors">What to Expect</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
+            <Link to="/reviews" className="hover:text-white transition-colors">What People Are Saying</Link>
+            <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Guide</Link>
+            <Link to="/newsletter" className="hover:text-white transition-colors">Newsletter</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
           </div>
         </div>
@@ -81,8 +89,18 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Email newsletter signup */}
+      <FooterEmailSignup />
+
       {/* SMS opt-in + A2P disclosure */}
       <FooterSmsOptIn />
+
+      {/* Traveler tips link — shown on every page */}
+      <div className="border-t border-white/10 px-4 sm:px-6 py-3 text-center">
+        <Link to="/about#traveler-tips" className="text-sm text-gray-300 hover:text-white transition-colors">
+          Just passing through? See traveler tips.
+        </Link>
+      </div>
 
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">
@@ -91,6 +109,7 @@ export default function Footer() {
           <div className="flex items-center gap-4">
             <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+            <span className="text-white/70">Designed by Wesley Booker</span>
           </div>
         </div>
       </div>

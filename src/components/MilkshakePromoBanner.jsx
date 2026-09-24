@@ -67,7 +67,7 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
   }
 
   return (
-    <section className="py-16 px-4 sm:px-6">
+    <section className="py-16 px-4 sm:px-6 fall26-section">
       <div className="max-w-6xl mx-auto">
         <Link
           to="/milkshakes"

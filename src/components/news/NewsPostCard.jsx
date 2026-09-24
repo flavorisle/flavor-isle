@@ -3,12 +3,13 @@ import { CalendarDays, Store, Handshake } from 'lucide-react';
 
 const CATEGORY_META = {
   community_event: { label: 'Community Event', Icon: CalendarDays, bg: 'bg-smashie-yellow', text: 'text-obsidian-roast' },
-  diner_update: { label: 'Diner Update', Icon: Store, bg: 'bg-midnight-cherry', text: 'text-white' },
+  isle_update: { label: 'Isle Update', Icon: Store, bg: 'bg-midnight-cherry', text: 'text-white' },
+  diner_update: { label: 'Isle Update', Icon: Store, bg: 'bg-midnight-cherry', text: 'text-white' },
   local_partnership: { label: 'Local Partnership', Icon: Handshake, bg: 'bg-patina-mint', text: 'text-white' },
 };
 
 export default function NewsPostCard({ post }) {
-  const meta = CATEGORY_META[post.category] || CATEGORY_META.diner_update;
+  const meta = CATEGORY_META[post.category] || CATEGORY_META.isle_update;
   const { Icon } = meta;
   const date = new Date(post.created_date).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',

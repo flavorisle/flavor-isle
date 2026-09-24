@@ -52,8 +52,8 @@ export default function SmsBroadcastPanel() {
         <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-full px-3 py-2 w-fit">
           <Users size={13} className="text-patina-mint" />
           {subscriberCount == null
-            ? 'Loading subscriber count…'
-            : `${subscriberCount} active SMS subscriber${subscriberCount === 1 ? '' : 's'}`}
+            ? 'Loading eligible recipients…'
+            : `${subscriberCount} proven marketing opt-in${subscriberCount === 1 ? '' : 's'}`}
         </div>
 
         <label className="block mt-5 mb-1.5 text-xs font-heading uppercase tracking-widest text-muted-foreground">
@@ -81,7 +81,7 @@ export default function SmsBroadcastPanel() {
             className="flex-1 rounded-xl border border-border bg-white px-3 py-2.5 text-sm text-obsidian-roast focus:outline-none focus:border-midnight-cherry"
           />
         </div>
-        <p className="text-[11px] text-muted-foreground mt-1">Leave blank to send to every active subscriber.</p>
+        <p className="text-[11px] text-muted-foreground mt-1">Leave blank to send to every proven marketing opt-in. Transactional-only and legacy subscribers are never included.</p>
 
         {error && (
           <div className="mt-4 flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-xl p-3">
@@ -126,18 +126,20 @@ export default function SmsBroadcastPanel() {
       </div>
 
       <p className="text-[11px] text-muted-foreground px-1">
-        Note: US carriers require A2P 10DLC registration for marketing blasts. If texts aren't reaching customers, that campaign may still be pending in Twilio.
+        Only subscribers with explicit, proven marketing consent receive broadcasts. US carriers require A2P 10DLC registration for marketing blasts — if texts aren't reaching customers, that campaign may still be pending in Twilio.
       </p>
     </div>
   );
 }
 
-// Small hook to show the active subscriber count above the composer.
+// Small hook to show the proven-marketing subscriber count above the composer.
+// Only proven marketing opt-ins (marketing_consent + proven_marketing_consent +
+// active) are eligible to receive a broadcast — matching sendSmsBroadcast's gate.
 function useSubscriberCount() {
   const [count, setCount] = useState(null);
   React.useEffect(() => {
     base44.entities.SMSSubscriber
-      .filter({ status: 'active', opted_in: true })
+      .filter({ status: 'active', marketing_consent: true, proven_marketing_consent: true })
       .then((subs) => setCount(subs.length))
       .catch(() => setCount(0));
   }, []);

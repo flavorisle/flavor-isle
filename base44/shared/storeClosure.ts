@@ -92,6 +92,50 @@ export async function getStoreStatus(base44) {
   }
 }
 
+// Physical store-open check: admin closure + per-day business hours, using
+// the ACTUAL configured open time (not the 8 AM online-ordering unlock).
+// Returns { open: boolean, message: string }. Used by the voice webhook so
+// Smashie's phone greeting reflects when the doors are physically open, not
+// when online ordering unlocks. Defaults to open on error.
+export async function getPhysicalStoreStatus(base44) {
+  try {
+    const list = await base44.asServiceRole.entities.MenuSetting.list();
+    const s = (list || [])[0] || {};
+
+    // Admin-configured temporary closure (maintenance, weather, etc.)
+    const c = s.closure;
+    if (c && c.active) {
+      const today = todayChicago().dateKey;
+      const start = c.start_date || today;
+      const end = c.end_date || start;
+      if (today >= start && today <= end) {
+        return { open: false, message: c.message || 'closed today' };
+      }
+    }
+
+    // Business hours check (store-local time) — physical doors open at the
+    // configured open time, not the 8 AM online-ordering unlock.
+    const now = todayChicago();
+    const dayKey = DAY_KEYS[(now.weekday + 6) % 7];
+    const dayHours = (s.business_hours || {})[dayKey] || {};
+    if (dayHours.closed) return { open: false, message: 'closed today' };
+
+    const openMins = toMins(dayHours.open);
+    const closeMins = toMins(dayHours.close) ?? toMins('20:00');
+    const nowMins = now.hour * 60 + now.minute;
+
+    if (openMins != null && (nowMins < openMins || nowMins >= closeMins)) {
+      const nextOpen = nextOpeningTime(s.business_hours, now);
+      return { open: false, message: `we open at ${nextOpen}` };
+    }
+
+    return { open: true, message: '' };
+  } catch (e) {
+    console.error('getPhysicalStoreStatus failed:', e.message);
+    return { open: true, message: '' };
+  }
+}
+
 // Evaluate the admin-configured temporary closure (MenuSetting.closure)
 // against today's store-local date. Shared by the voice webhook so Smashie's
 // greeting and status context reflect the same closure the website shows.

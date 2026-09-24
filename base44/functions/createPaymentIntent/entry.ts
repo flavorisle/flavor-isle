@@ -1,21 +1,68 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
+import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
+import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, stripeCustomerId } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // ── Reward validation: verify the claimed reward tier, exact discount,
+    // eligibility, and account balance against Square Loyalty (keyed by the
+    // customer's phone) BEFORE creating a payable intent. Rejects mismatches;
+    // returns the authoritative exact discount so the charge uses it, not the
+    // client value. A guest with no reward (redemptionId empty) skips this and
+    // checks out normally. Square loyalty is the only rewards authority — the
+    // app Loyalty table is never read or written here. The October promo stays
+    // on HOLD (no promo is turned on; this only reads the live program).
+    let authoritativeDiscount = Number(discount) || 0;
+    if (redemptionId) {
+      const reward = await validateRewardDiscount({
+        phone: customer?.phone,
+        email: customer?.email,
+        rewardTierId: redemptionId,
+        claimedDiscount: Number(discount) || 0,
+        subtotal: Number(subtotal) || 0,
+      });
+      if (!reward.ok) {
+        return Response.json({ error: reward.error || 'Reward could not be verified.' }, { status: 400 });
+      }
+      authoritativeDiscount = reward.exactDiscount || 0;
+    }
+
+    // ── Trusted pricing: recompute from authoritative MenuItem/MenuSetting ──
+    // Rejects a mismatched client total before any Stripe intent is created so
+    // a manipulated cart can never be charged. The reward discount is now the
+    // authoritative exact value from validateRewardDiscount. See verifyOrderPricing
+    // for the full authority map.
+    const pricing = await verifyOrderPricing(base44, {
+      items,
+      orderType,
+      deliveryAddress: customer?.address || '',
+      clientSubtotal: subtotal,
+      clientDeliveryFee: deliveryFee,
+      clientTax: tax,
+      clientTotal: total,
+      clientTip: tip,
+      clientDiscount: authoritativeDiscount,
+      clientHappyHourDiscount: happyHourDiscount,
+    });
+    if (!pricing.ok) {
+      return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
 
     const orderNumber = Date.now().toString().slice(-6);
-    const amountCents = Math.round(total * 100);
+    const amountCents = Math.round(pricing.total * 100);
 
     // When a signed-in customer has saved cards (or wants to save this card),
     // attach the Stripe Customer so saved payment methods can be charged and
@@ -36,29 +83,40 @@ Deno.serve(async (req) => {
         special_instructions: instructions || '',
       },
     };
-    // Attach the Stripe Customer when present so saved payment methods can be
-    // charged. We intentionally do NOT set setup_future_usage here — new cards
-    // are only saved when the customer explicitly opts in after payment.
     if (stripeCustomerId) {
       piParams.customer = stripeCustomerId;
     }
     const paymentIntent = await stripe.paymentIntents.create(piParams);
 
-    // Save order entity as pending
+    // ── Persist the Order BEFORE returning a payable intent ──
+    // If the DB save fails, cancel the just-created (unconfirmed) intent so no
+    // payable flow exists without a recoverable persisted Order, then return an
+    // error. This closes the orphan-paid-order gap from the audit.
+    let orderSaved = false;
+    let orderSaveError: string | null = null;
     try {
       await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
+        ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
+        ...(vehicle && (vehicle.color || vehicle.make || vehicle.model) ? {
+          arrival_details: {
+            car_color: vehicle.color || '',
+            car_make: vehicle.make || '',
+            car_model: vehicle.model || '',
+          },
+        } : {}),
         status: 'pending',
         payment_status: 'pending',
-        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [] })),
-        subtotal,
-        tax,
-        delivery_fee: deliveryFee || 0,
-        tip: tip || 0,
-        discount: discount || 0,
+        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [] })),
+        subtotal: pricing.subtotal,
+        tax: pricing.tax,
+        delivery_fee: pricing.deliveryFee,
+        tip: pricing.tip,
+        discount: pricing.discount,
+        happy_hour_discount: pricing.happyHourDiscount,
         redemption_id: redemptionId || '',
-        total,
+        total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone || '',
@@ -69,14 +127,55 @@ Deno.serve(async (req) => {
         scheduled_for: scheduledFor || '',
         estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
+      orderSaved = true;
     } catch (dbError) {
-      console.error('DB save error (non-fatal):', dbError.message);
+      orderSaveError = dbError.message;
+      console.error('Order.create failed — canceling unconfirmed intent:', dbError.message);
+    }
+
+    if (!orderSaved) {
+      // Compensate: cancel the unconfirmed intent so it can never be charged.
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelErr) {
+        console.error('Failed to cancel orphan intent (logging reconciliation exception):', cancelErr.message);
+      }
+      // Log the reconciliation exception for admin follow-up.
+      console.error(`RECONCILIATION: orphan intent ${paymentIntent.id} canceled for order ${orderNumber}; DB error: ${orderSaveError}`);
+      return Response.json({ error: 'Could not save your order. No charge was made — please try again.' }, { status: 500 });
+    }
+
+    // ── SMS consent: inspect the result, never claim enrollment on failure ──
+    // Only fires when the customer checked the optional, unchecked transactional
+    // box. Never grants marketing; never infers consent from the phone alone.
+    let smsConsentStored = true;
+    if (smsTransactionalConsent && customer?.phone) {
+      try {
+        const result = await upsertSmsConsent(base44, {
+          phone: customer.phone,
+          name: customer.name,
+          email: customer.email,
+          transactionalConsent: true,
+          marketingConsent: false,
+          sourcePage: 'checkout',
+          disclosureVersion: smsConsentVersion || SMS_CONSENT_VERSION,
+          disclosureText: smsConsentDisclosure,
+        });
+        if (!result?.ok) {
+          smsConsentStored = false;
+          console.error(`SMS consent upsert failed for order ${orderNumber} (${customer.phone}): ${result?.error || 'unknown'}`);
+        }
+      } catch (smsError) {
+        smsConsentStored = false;
+        console.error(`SMS consent upsert threw for order ${orderNumber} (${customer.phone}):`, smsError.message);
+      }
     }
 
     return Response.json({
       clientSecret: paymentIntent.client_secret,
       publishableKey,
       orderNumber,
+      smsConsentStored,
     });
   } catch (error) {
     console.error('createPaymentIntent error:', error.message);

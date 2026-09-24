@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import SavedCardsPanel from '@/components/account/SavedCardsPanel';
 import { base44 } from '@/api/base44Client';
@@ -17,9 +17,28 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
+
+// Retry with exponential backoff on rate-limit errors. The account page fires
+// several parallel entity calls on mount (and sub-components fire more), so a
+// burst can trip the API rate limit; backing off lets the call succeed on a
+// later attempt instead of crashing the whole view.
+const withRateLimitRetry = async (fn, retries = 3) => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = `${err?.message || ''}`;
+      const isRateLimit = /rate limit/i.test(msg) || err?.code === 'rate_limit_exceeded';
+      if (!isRateLimit || attempt === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+    }
+  }
+};
 
 function OrderCard({ order, onReorder }) {
   const [expanded, setExpanded] = useState(ACTIVE_STATUSES.includes(order.status));
@@ -42,13 +61,13 @@ function OrderCard({ order, onReorder }) {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <p className="font-heading text-sm text-obsidian-roast">Order #{order.order_number || order.id?.slice(-6).toUpperCase()}</p>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+              <span className={`text-sm px-2 py-0.5 rounded-full font-semibold ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
               </span>
-              {order.order_source === 'in_store' && <span className="text-xs px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
-              {isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
+              {order.order_source === 'in_store' && <span className="text-sm px-2 py-0.5 rounded-full bg-patina-mint/10 text-patina-mint font-semibold">In-Store</span>}
+              {isActive && <span className="text-sm px-2 py-0.5 rounded-full bg-midnight-cherry/10 text-midnight-cherry font-semibold">Live</span>}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {formatChicagoDate(order.created_date, { month: 'short', day: 'numeric', year: 'numeric' })}
               {' · '}{order.order_source === 'in_store' ? 'In-Store' : order.order_type?.replace('_', ' ')}
               {' · '}{(order.items || []).length} item{order.items?.length !== 1 ? 's' : ''}
@@ -62,13 +81,13 @@ function OrderCard({ order, onReorder }) {
         <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => onReorder(order)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-patina-mint hover:text-teal-700 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold text-patina-mint hover:text-teal-700 transition-colors tap-44"
           >
             <RotateCcw size={13} /> Reorder
           </button>
           <button
             onClick={() => setExpanded(e => !e)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-obsidian-roast transition-colors ml-auto"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-obsidian-roast transition-colors ml-auto tap-44"
           >
             {expanded ? <><ChevronUp size={14} /> Hide details</> : <><ChevronDown size={14} /> Track order</>}
           </button>
@@ -105,7 +124,8 @@ const EMPTY_FORM = {
   car_model: '', 
   car_color: '',
   no_contact_delivery: false,
-  preferred_communication: 'email'
+  preferred_communication: 'email',
+  birthday: ''
 };
 
 // ── Logged-in account view ──
@@ -116,11 +136,33 @@ function LoggedInAccount({ user, logout }) {
   const [favorites, setFavorites] = useState([]);
   const [starStatus, setStarStatus] = useState(null);
   const [starLoading, setStarLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
+  // Read the ?tab= URL param (set by the Rewards "Add Phone" flow) so the user
+  // lands directly on the relevant tab. Unknown/missing values fall back to
+  // 'orders' exactly as before.
+  const [searchParams] = useSearchParams();
+  const VALID_TABS = ['orders', 'track', 'rewards', 'payments', 'favorites', 'profile'];
+  const initialTab = (() => {
+    const t = searchParams.get('tab');
+    return t && VALID_TABS.includes(t) ? t : 'orders';
+  })();
+  // When arriving via /account?tab=profile (Rewards Add Phone), open the
+  // profile editor immediately so the user can type their phone number.
+  const fromProfileDeepLink = initialTab === 'profile';
+  const [editing, setEditing] = useState(fromProfileDeepLink);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState('orders');
+  const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
+  const phoneInputRef = useRef(null);
+
+  // Focus + scroll the Phone field into view once the profile tab renders
+  // after the Add Phone deep link (loading must clear first).
+  useEffect(() => {
+    if (fromProfileDeepLink && editing && !loading && phoneInputRef.current) {
+      phoneInputRef.current.focus();
+      phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [fromProfileDeepLink, editing, loading]);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -147,9 +189,9 @@ function LoggedInAccount({ user, logout }) {
     setStarLoading(true);
     try {
       const results = await Promise.all([
-        base44.entities.CustomerProfile.filter({ email: user.email }),
-        base44.entities.Order.filter({ customer_email: user.email }),
-        base44.entities.Favorite.filter({ user_id: user.id }),
+        withRateLimitRetry(() => base44.entities.CustomerProfile.filter({ email: user.email })),
+        withRateLimitRetry(() => base44.entities.Order.filter({ customer_email: user.email })),
+        withRateLimitRetry(() => base44.entities.Favorite.filter({ user_id: user.id })),
       ]);
       const [profiles, ords, favs] = results;
       if (profiles && profiles.length > 0) {
@@ -165,22 +207,37 @@ function LoggedInAccount({ user, logout }) {
           car_model: p.car_model || '',
           car_color: p.car_color || '',
           no_contact_delivery: p.no_contact_delivery || false,
-          preferred_communication: p.preferred_communication || 'email'
+          preferred_communication: p.preferred_communication || 'email',
+          birthday: p.birthday || ''
         });
       } else {
-        const newProfile = await base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 });
+        const newProfile = await withRateLimitRetry(() => base44.entities.CustomerProfile.create({ name: user.full_name || '', email: user.email, total_orders: 0, total_spent: 0 }));
         setProfile(newProfile);
         setForm({ ...EMPTY_FORM, name: user.full_name || '' });
       }
       setOrders(ords || []);
       setFavorites(favs || []);
       await refreshStarStatus();
+    } catch (err) {
+      // A rate limit or transient API error shouldn't crash the whole account
+      // page — surface empty state so the user still sees the page and can
+      // retry by re-visiting.
+      console.error('Account loadData failed:', err);
+      setOrders([]);
+      setFavorites([]);
     } finally {
       setLoading(false);
+      setStarLoading(false);
     }
   };
 
+  const loadedOnceRef = useRef(false);
   useEffect(() => {
+    // StrictMode double-invokes effects in dev, which fired this burst of
+    // calls twice and tripped the rate limit. Guard so loadData runs once
+    // per mount; a real account switch re-mounts the component (new ref).
+    if (loadedOnceRef.current) return;
+    loadedOnceRef.current = true;
     loadData();
   }, [user.email, user.id]);
 
@@ -245,6 +302,7 @@ function LoggedInAccount({ user, logout }) {
   const personalFields = [
     { label: 'Full Name', key: 'name', icon: User, placeholder: 'Jane Smith' },
     { label: 'Phone', key: 'phone', icon: Phone, placeholder: '(270) 555-0000', type: 'tel' },
+    { label: 'Birthday', key: 'birthday', icon: Cake, type: 'date', format: (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : null },
     { label: 'Billing Address', key: 'address', icon: MapPin, placeholder: '123 Main St, City, KY' },
   ];
 
@@ -432,12 +490,12 @@ function LoggedInAccount({ user, logout }) {
             {/* Top action bar */}
             <div className="flex items-center justify-between">
               {!editing ? (
-                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors">
+                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-sm text-patina-mint hover:text-teal-700 font-semibold transition-colors tap-44">
                   <Edit2 size={14} /> Edit Profile
                 </button>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
+                  <button onClick={() => setEditing(false)} className="p-1.5 hover:bg-muted rounded-full transition-colors tap-44"><X size={16} /></button>
                   <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 text-sm btn-cherry px-4 py-1.5 font-heading disabled:opacity-60">
                     <Save size={14} /> {saving ? 'Saving…' : 'Save Changes'}
                   </button>
@@ -484,15 +542,15 @@ function LoggedInAccount({ user, logout }) {
                     <p className="text-sm text-obsidian-roast">{user.email}</p>
                   </div>
                 </div>
-                {personalFields.map(({ label, key, icon: Icon, placeholder, type }) => (
+                {personalFields.map(({ label, key, icon: Icon, placeholder, type, format }) => (
                   <div key={key} className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1"><Icon size={15} className="text-midnight-cherry" /></div>
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
                       {editing ? (
-                        <input type={type || 'text'} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                        <input ref={key === 'phone' ? phoneInputRef : undefined} type={type || 'text'} value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
                       ) : (
-                        <p className="text-sm text-obsidian-roast">{profile?.[key] || <span className="text-muted-foreground italic">Not set</span>}</p>
+                        <p className="text-sm text-obsidian-roast">{(format ? format(profile?.[key]) : profile?.[key]) || <span className="text-muted-foreground italic">Not set</span>}</p>
                       )}
                     </div>
                   </div>
@@ -770,9 +828,11 @@ function GuestAuth({ onSuccess }) {
 
 export default function Account() {
   const { user, isLoadingAuth, logout } = useAuth();
+  const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
 
@@ -783,22 +843,7 @@ export default function Account() {
       ) : user ? (
         <LoggedInAccount user={user} logout={logout} />
       ) : (
-        <div>
-          {/* Order tracking — available to everyone, no sign-in needed */}
-          <div className="bg-patina-mint/5 border-b border-border">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-              <div className="text-center mb-8">
-                <p className="text-midnight-cherry text-sm font-heading uppercase tracking-widest mb-2">Track Your Order</p>
-                <h2 className="font-heading text-4xl text-obsidian-roast mb-3">Where's My Food?</h2>
-                <p className="text-muted-foreground font-body max-w-lg mx-auto">
-                  Drop in your order number and we'll tell you if it's still sizzling or ready to roll.
-                </p>
-              </div>
-              <OrderLookup />
-            </div>
-          </div>
-          <GuestAuth />
-        </div>
+        <GuestAuth />
       )}
 
       <Footer />

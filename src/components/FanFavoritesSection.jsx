@@ -1,5 +1,6 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Star, ArrowRight } from 'lucide-react';
 import MenuItemCard from './MenuItemCard';
 
 // Horizontal rail of the top 10 best-sellers (online + in-store).
@@ -14,14 +15,17 @@ export default function FanFavoritesSection({ items }) {
   if (favorites.length === 0) return null;
 
   return (
-    <div className="mb-12">
+    <div className="mb-2">
       <div className="flex items-center gap-4 mb-5">
         <h2 className="font-heading text-2xl text-obsidian-roast flex items-center gap-2 whitespace-nowrap">
           <Star size={22} className="text-smashie-yellow fill-smashie-yellow" />
           Fan Favorites
         </h2>
         <div className="flex-1 h-px bg-border" />
-        <span className="text-sm text-muted-foreground">Top 10 best-sellers</span>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Top 10 best-sellers</span>
+        <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap">
+          View Menu <ArrowRight size={13} />
+        </Link>
       </div>
       <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
         {favorites.map((item) => (

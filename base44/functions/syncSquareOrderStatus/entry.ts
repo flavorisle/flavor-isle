@@ -5,6 +5,7 @@ import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
+import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -143,6 +144,7 @@ Deno.serve(async (req) => {
     let updated = 0;
     let notified = 0;
     const pendingUpdates = [];
+    const completedThisRun = [];
     // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
     // lookup, and bursting through dozens at once trips Square's rate limit.
     // Spreads the backfill across scheduled runs instead.
@@ -199,6 +201,13 @@ Deno.serve(async (req) => {
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
+      // Track orders transitioning to completed so we can sync customer
+      // profile stats after the bulkUpdate (bulkUpdate skips entity triggers,
+      // so the "Sync Customer Profile Stats" workflow never fires from here).
+      if (newStatus === 'completed') {
+        completedThisRun.push(order.id);
+      }
+
       // Send email/push/SMS for the new status AND any intermediate milestones
       // the polling interval skipped (e.g. confirmed → completed should also
       // fire preparing + ready notifications so the customer is never left
@@ -213,6 +222,16 @@ Deno.serve(async (req) => {
       if (!customerEmail || isPlaceholderEmail) continue;
 
       const milestones = missedMilestones(prevStatus, newStatus);
+      // Transactional SMS requires explicit active transactional consent for
+      // this order's phone AND the global admin toggle. STOP suppresses all.
+      let canTxSms = false;
+      if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+        try {
+          canTxSms = (await checkSmsConsent(base44, order.customer_phone, 'transactional')).ok;
+        } catch (e) {
+          canTxSms = false;
+        }
+      }
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
           await sendOrderPreparingEmail(order, base44);
@@ -227,43 +246,46 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error('live wait for push failed:', e.message);
           }
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
             body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
 
         if (milestone === 'ready') {
-          await sendOrderReadyEmail(order);
+          await sendOrderReadyEmail(order, base44);
           notified++;
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: '✅ Order ready!',
             body: order.order_type === 'delivery'
               ? `Order #${orderNum} is ready and on its way!`
               : `Order #${orderNum} is ready for pickup. See you soon!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
 
         if (milestone === 'completed') {
-          await sendOrderCompletedEmail(order);
+          await sendOrderCompletedEmail(order, base44);
           notified++;
-          if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
+          if (canTxSms) {
             await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
+            await markSmsSent(base44, order.customer_phone, 'transactional');
           }
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
-            url: '/account',
+            url: '/order-status',
             tag: `order-${order.id}`,
           });
         }
@@ -274,7 +296,20 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
     }
 
-    return Response.json({ checked: squareOrders.length, updated, notified });
+    // Sync customer profile stats for orders that just completed. The entity
+    // trigger workflow doesn't fire on bulkUpdate (bulk methods skip side
+    // effects), so we invoke the sync directly here.
+    for (const completedOrderId of completedThisRun) {
+      try {
+        await base44.functions.invoke('syncCustomerProfileStats', {
+          order_id: completedOrderId,
+        });
+      } catch (syncErr) {
+        console.error(`Profile sync failed for order ${completedOrderId}:`, syncErr.message);
+      }
+    }
+
+    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length });
   } catch (error) {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

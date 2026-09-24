@@ -2,6 +2,10 @@
   "name": "SocialReview",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "customer_email": {
       "type": "string",
       "description": "Loyalty member's email that claimed the Instagram review reward"

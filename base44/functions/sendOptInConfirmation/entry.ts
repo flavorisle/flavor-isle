@@ -1,8 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
-// Sends the welcome/confirmation text the moment someone opts in to SMS updates.
+// Sends a category-aware welcome/confirmation text the moment someone opts in
+// to SMS via a website surface (checkout post-order, footer, sms_signup).
 // Invoked by the "SMS Opt-In Confirmation" workflow on new SMSSubscriber records.
+//
+// Keyword (ORDERS/OFFERS) opt-ins are excluded — the Twilio webhook already
+// sends an instant, category-specific auto-reply, so double-texting would
+// violate the quiet hours / frequency expectations.
+// STOP records (consent_category "none") are never texted.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -16,17 +22,21 @@ export default async function(req) {
       return Response.json({ error: 'Subscriber not found' }, { status: 404 });
     }
 
-    // Keyword (JOIN) opt-ins already get an instant auto-reply from the
-    // Twilio webhook — don't double-text them.
-    if (sub.source === 'keyword') {
+    // Keyword opt-ins already got an instant auto-reply from the Twilio webhook.
+    const src = (sub.consent_source_page || sub.source || '').toLowerCase();
+    if (src.startsWith('keyword')) {
       return Response.json({ sent: false, skipped: 'keyword opt-in already confirmed' });
     }
-    if (!sub.opted_in || sub.status !== 'active') {
-      return Response.json({ sent: false, skipped: 'not opted in' });
+    // Only text when a consent was actually granted (not a STOP / no-consent record).
+    if (!sub.opted_in || sub.status !== 'active' || (sub.consent_category || 'none') === 'none') {
+      return Response.json({ sent: false, skipped: 'no active consent' });
     }
 
     const firstName = (sub.name || '').trim().split(' ')[0];
-    const body = `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up, fam! 🍔 You'll get order status texts, pay-by-text links & occasional offers. Msg&data rates may apply. Reply STOP to opt out, HELP for help.`;
+    const hasMarketing = !!sub.marketing_consent && !!sub.proven_marketing_consent;
+    const body = hasMarketing
+      ? `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up for order updates AND recurring offers. 🍔 Msg&data rates may apply. Reply STOP to opt out, HELP for help. Terms: https://taste-isle-express.base44.app/terms-of-service`
+      : `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up for order status updates (confirmed, preparing, ready) & pay-by-text links. 🍔 Msg&data rates may apply. Reply STOP to opt out, HELP for help. Terms: https://taste-isle-express.base44.app/terms-of-service`;
 
     const sent = await sendSmashieSms(sub.phone, body);
     return Response.json({ sent });

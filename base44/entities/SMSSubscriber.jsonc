@@ -20,12 +20,12 @@
     "opted_in": {
       "type": "boolean",
       "default": true,
-      "description": "Whether the subscriber has consented to receive marketing texts"
+      "description": "Legacy compatibility flag. NOT used as the marketing gate \u2014 senders use transactional_consent / marketing_consent / proven_marketing_consent instead. Kept so older admin views still render."
     },
     "source": {
       "type": "string",
       "default": "website",
-      "description": "Where the subscriber signed up (website, in-store, etc.)"
+      "description": "Coarse capture source (website, checkout, keyword, etc.). Kept for backward compat; consent_source_page is the precise, versioned capture record."
     },
     "status": {
       "type": "string",
@@ -33,7 +33,67 @@
         "active",
         "unsubscribed"
       ],
-      "default": "active"
+      "default": "active",
+      "description": "Global STOP state. 'unsubscribed' suppresses ALL outbound SMS (transactional and marketing) until an explicit ORDERS/OFFERS re-opt-in sets it back to 'active'."
+    },
+    "transactional_consent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit, separate opt-in for order/transactional texts (confirmed, preparing, ready, pay-by-text). Required by syncSquareOrderStatus and sendOrderReadyAlert before any order SMS is sent. Never inferred from order phone, account phone, Star Rewards, preferred_communication, or legacy opted_in."
+    },
+    "marketing_consent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit, separate opt-in for recurring promotional/marketing texts. Required (together with proven_marketing_consent) by sendSmsBroadcast. Never inferred from any other consent or data."
+    },
+    "proven_marketing_consent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True ONLY when marketing_consent was captured via the dedicated split marketing checkbox, the OFFERS keyword, or a future verified re-opt-in. Legacy bundled-flow records are migrated to false and excluded from broadcasts until re-confirmed."
+    },
+    "consent_category": {
+      "type": "string",
+      "enum": [
+        "none",
+        "transactional",
+        "marketing",
+        "both"
+      ],
+      "default": "none",
+      "description": "Derived summary of which categories the subscriber currently opted into."
+    },
+    "consent_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the most recent explicit consent was captured."
+    },
+    "consent_source_page": {
+      "type": "string",
+      "description": "Precise capture surface, e.g. checkout, checkout_post_order, footer, sms_signup, keyword_orders, keyword_offers."
+    },
+    "consent_disclosure_version": {
+      "type": "string",
+      "description": "Version tag of the exact disclosure shown at capture, e.g. a2p-v2-2026-09-22."
+    },
+    "consent_disclosure_text": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Snapshot of the exact disclosure text the customer agreed to, retained as consent evidence."
+    },
+    "opt_out_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the subscriber last texted STOP (global opt-out). Retained as opt-out evidence."
+    },
+    "last_marketing_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last marketing message was sent to this subscriber, for frequency caps and audit."
+    },
+    "last_transactional_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last transactional order message was sent to this subscriber, for audit."
     }
   },
   "required": [

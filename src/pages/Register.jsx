@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Phone, Calendar, Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
@@ -12,6 +12,8 @@ import { toast } from "@/components/ui/use-toast";
 
 export default function Register() {
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [birthday, setBirthday] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,6 +26,10 @@ export default function Register() {
     setError("");
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Phone number is required");
       return;
     }
     setLoading(true);
@@ -51,6 +57,27 @@ export default function Register() {
         await base44.functions.invoke("linkSquareCustomer", { email });
       } catch (err) {
         console.error("Square customer link failed:", err);
+      }
+      // Save the phone + birthday collected at sign-up to the customer profile
+      // so Star Rewards (keyed by phone) and the birthday automation work
+      // without a separate profile setup step.
+      try {
+        const existing = await base44.entities.CustomerProfile.filter({ email });
+        if (existing?.length) {
+          await base44.entities.CustomerProfile.update(existing[0].id, {
+            phone,
+            ...(birthday ? { birthday } : {}),
+          });
+        } else {
+          await base44.entities.CustomerProfile.create({
+            name: email.split("@")[0],
+            email,
+            phone,
+            ...(birthday ? { birthday } : {}),
+          });
+        }
+      } catch (err) {
+        console.error("Customer profile save failed:", err);
       }
       window.location.href = "/";
     } catch (err) {
@@ -184,6 +211,36 @@ export default function Register() {
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10 h-12"
               required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone <span className="text-destructive">*</span></Label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="(270) 555-0000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="birthday">Date of Birth <span className="text-muted-foreground font-normal">(optional)</span></Label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="birthday"
+              type="date"
+              autoComplete="bday"
+              value={birthday}
+              onChange={(e) => setBirthday(e.target.value)}
+              className="pl-10 h-12"
             />
           </div>
         </div>

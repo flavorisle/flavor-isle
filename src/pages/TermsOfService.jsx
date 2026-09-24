@@ -39,8 +39,8 @@ const SECTIONS = [
     title: 'SMS, Phone & Communication Consent',
     body: [
       {
-        heading: 'SMS Consent',
-        text: 'By providing your phone number at checkout, in your account, or to our staff, you consent to receive SMS messages from Flavor Isle — including order confirmations, status updates (preparing, ready, completed), and replies from our assistant. Message and data rates may apply. Reply STOP to opt out or HELP for help. Providing your number is optional but required to receive these messages.',
+        heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
+        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. See our Privacy Policy at https://taste-isle-express.base44.app/privacy-policy.',
       },
       {
         heading: 'Receiving Phone Calls From Us',
@@ -133,11 +133,40 @@ const SECTIONS = [
     body: [
       {
         heading: 'Star Rewards',
-        text: 'Our Star Rewards loyalty program is linked to your phone number and synced with our in-store Square loyalty program. Points are earned on qualifying purchases and may be redeemed for available rewards. Points have no cash value and may expire or change per program rules.',
+        text: 'Star Rewards is Flavor Isle\u2019s loyalty program, operated and managed by Flavor Isle through our Square point-of-sale system. The program allows customers to earn Stars on qualifying purchases and redeem them for available rewards. By participating in Star Rewards, you agree to the terms outlined in this section.',
       },
       {
-        heading: 'Account Responsibility',
-        text: 'You are responsible for keeping your account and phone number accurate so your rewards are tracked correctly. We are not liable for rewards missed due to incorrect contact information.',
+        heading: 'Eligibility',
+        text: 'To participate in Star Rewards, you must provide a valid phone number at checkout or link your phone number to your online account. Only one Star Rewards account may be associated with a single phone number. Accounts cannot be shared, transferred, or merged. Flavor Isle reserves the right to deny enrollment, suspend participation, or remove accounts that violate program rules, provide false information, or attempt to misuse the program. Star Rewards is intended for individual customer use. Commercial, automated, or bulk participation is not permitted.',
+      },
+      {
+        heading: 'Earning Stars',
+        text: 'Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.',
+      },
+      {
+        heading: 'Redeeming Stars',
+        text: 'Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice. Rewards cannot be transferred, combined across accounts, or exchanged for cash.',
+      },
+      {
+        heading: 'Account & Phone Number Responsibility',
+        text: 'Your Star Rewards account is linked directly to your phone number and synced with our in-store Square loyalty system. You are responsible for keeping your phone number and account information accurate so Stars and rewards are tracked correctly. Flavor Isle is not liable for missed Stars, untracked purchases, or unavailable rewards caused by incorrect, outdated, or unverified contact information.',
+      },
+      {
+        heading: 'Fraud & Misuse',
+        text: 'Flavor Isle may suspend or terminate your participation in Star Rewards if we detect or suspect fraudulent activity, misuse, manipulation of earning or redemption mechanics, creation of duplicate accounts, or any attempt to obtain Stars or rewards dishonestly. Examples of misuse include, but are not limited to: using multiple phone numbers to accumulate Stars, attempting to redeem rewards not legitimately earned, providing false or misleading account information, abusing promotions, loopholes, or system errors, or harassing staff or attempting to force unauthorized reward redemption. Flavor Isle reserves the right to revoke Stars, cancel rewards, or close accounts involved in fraudulent or abusive behavior.',
+      },
+      {
+        heading: 'Program Changes & Limitations',
+        text: 'Flavor Isle may modify, suspend, or discontinue the Star Rewards program — including earning rules, reward tiers, expiration policies, and promotional bonuses — at any time without notice. Continued participation after changes means you accept the updated terms. Participation in Star Rewards does not guarantee the availability of any specific reward, earning rate, or benefit. Flavor Isle may limit reward quantities, restrict eligibility, or adjust program mechanics as needed.',
+      },
+    ],
+  },
+  {
+    title: 'Star Rewards',
+    body: [
+      {
+        heading: 'Points & Phone Number Ownership',
+        text: 'Flavor Isle Star Rewards is our free rewards program. Points accrue only to the rewards account matching the phone number provided at checkout. Entering a phone number on another customer\u2019s purchase does not transfer that purchase\u2019s points to the person entering the number; points belong to the account that earned them. If we reasonably suspect that someone has claimed points on another customer\u2019s purchase, we may suspend or terminate the rewards account used and void its points. Automatic card recognition at the register is a convenience feature and is not the same as signing in to your account on this website. Rewards questions or disputes: hello@order.flavor-isle.com.',
       },
     ],
   },
@@ -222,7 +251,7 @@ export default function TermsOfService() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@flavorisle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@order.flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, X,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
@@ -10,6 +10,7 @@ import AdminNav from '@/components/admin/AdminNav';
 import OccupancyTracker from '@/components/OccupancyTracker';
 import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 import MerchOrdersList from '@/components/admin/MerchOrdersList';
+import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -75,13 +76,14 @@ function StatCard({ label, value, Icon, tone }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onCancel }) {
+function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
   const [expanded, setExpanded] = useState(false);
   const source = getSource(order);
   const badge = SOURCE_BADGE[source];
   const items = order.items || [];
   const canAdvance = !!NEXT_STATUS[order.status];
   const isActive = ACTIVE_STATUSES.includes(order.status);
+  const isOnline = source === 'online';
 
   return (
     <div className="card-diner overflow-hidden">
@@ -163,6 +165,15 @@ function OrderCard({ order, onAdvance, onCancel }) {
             </div>
           )}
 
+          {isOnline && (
+            <button
+              onClick={() => onPrintBagTicket(order)}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-heading rounded-full border-2 border-patina-mint text-patina-mint hover:bg-patina-mint hover:text-white transition-colors"
+            >
+              <Printer size={16} /> Print Bag Ticket
+            </button>
+          )}
+
           {isActive && (
             <div className="mt-4 flex gap-3">
               {canAdvance && (
@@ -197,6 +208,7 @@ export default function AdminOrders() {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [bagTicketOrder, setBagTicketOrder] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -419,7 +431,7 @@ export default function AdminOrders() {
           ) : (
             <div className="space-y-3">
               {filtered.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} />
+                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} onPrintBagTicket={setBagTicketOrder} />
               ))}
             </div>
           )}
@@ -429,6 +441,8 @@ export default function AdminOrders() {
           <MerchOrdersList />
         </div>
       )}
+
+      <BagTicketPrintModal order={bagTicketOrder} onClose={() => setBagTicketOrder(null)} />
     </div>
   );
 }

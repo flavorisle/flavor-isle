@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { getCutoffStatus } from '@/lib/orderCutoff';
+import { getHappyHourDiscount } from '@/lib/happyHour';
+import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const CartContext = createContext(null);
 
@@ -21,6 +23,7 @@ const readSession = (key, fallback) => {
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => readSession('cartItems', []));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
+  const [pickupMethod, setPickupMethod] = useState(() => readSession('pickupMethod', 'counter')); // counter | curbside (pickup only)
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderingEnabled, setOrderingEnabledState] = useState(true);
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');
@@ -37,13 +40,18 @@ export function CartProvider({ children }) {
   // customer picks a reward) and checkout (where it reduces the total).
   const [appliedReward, setAppliedReward] = useState(null);
 
+  // Distance-based delivery quote — set by checkout once the customer's
+  // address is quoted ({ fee, distance_miles, out_of_range }). When present,
+  // it overrides the flat delivery_fee for delivery orders.
+  const [deliveryQuote, setDeliveryQuote] = useState(null);
+
   // Persist the cart for the current browser session so a refresh or a trip
   // through login doesn't lose the order.
   useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, groupMode, people, activePersonId }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, pickupMethod, groupMode, people, activePersonId }));
     } catch { /* storage unavailable */ }
-  }, [cartItems, orderType, groupMode, people, activePersonId]);
+  }, [cartItems, orderType, pickupMethod, groupMode, people, activePersonId]);
 
   // Cross-device cart sync for signed-in customers. On mount we load the cart
   // saved to their CustomerProfile; on every change we debounce-save it back so
@@ -142,6 +150,7 @@ export function CartProvider({ children }) {
   const activePerson = people.find(p => p.id === activePersonId) || null;
 
   const addItem = useCallback((item) => {
+    trackAddToCart(foodItemToGa4(item));
     setCartItems(prev => {
       // Tag with the active person when in group mode (unless item already has one).
       const tagged = groupMode && !item.person_id
@@ -215,30 +224,42 @@ export function CartProvider({ children }) {
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const deliveryFee = orderType === 'delivery' ? Number(menuSetting?.delivery_fee ?? 0) : 0;
-  const tax = subtotal * 0.06;
-  const total = subtotal + deliveryFee + tax;
+  const happyHourDiscount = getHappyHourDiscount(cartItems, menuSetting);
+  const adjustedSubtotal = subtotal - happyHourDiscount;
+  const deliveryFee = orderType === 'delivery'
+    ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
+    : 0;
+  const tax = adjustedSubtotal * 0.06;
+  const total = adjustedSubtotal + deliveryFee + tax;
 
   // Per-person subtotal (group mode breakdown)
-  const personSubtotals = people.map(p => ({
-    ...p,
-    subtotal: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.price * i.quantity, 0),
-    itemCount: cartItems.filter(i => i.person_id === p.id).reduce((s, i) => s + i.quantity, 0),
-  })).filter(p => p.itemCount > 0 || people.length > 0);
+  const personSubtotals = people.map(p => {
+    const personItems = cartItems.filter(i => i.person_id === p.id);
+    return {
+      ...p,
+      subtotal: personItems.reduce((s, i) => s + i.price * i.quantity, 0),
+      happyHourDiscount: getHappyHourDiscount(personItems, menuSetting),
+      itemCount: personItems.reduce((s, i) => s + i.quantity, 0),
+    };
+  }).filter(p => p.itemCount > 0 || people.length > 0);
   const unassignedSubtotal = cartItems.filter(i => !i.person_id).reduce((s, i) => s + i.price * i.quantity, 0);
 
   return (
     <CartContext.Provider value={{
       cartItems, addItem, removeItem, updateQuantity, clearCart, reassignItem,
       orderType, setOrderType,
+      pickupMethod, setPickupMethod,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
       orderingEnabled, orderingClosedMessage,
       cutoffStatus,
+      menuSetting,
+      happyHourDiscount,
       groupMode, people, activePersonId, activePerson,
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,
       appliedReward, setAppliedReward,
+      deliveryQuote, setDeliveryQuote,
     }}>
       {children}
     </CartContext.Provider>

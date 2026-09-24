@@ -1,0 +1,44 @@
+{
+  "name": "Auto-Sync Orders to Square",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Safety net: every 5 minutes, finds paid online orders that never reached Square POS (Stripe webhook didn't fire or client fallback failed) and pushes them automatically \u2014 so the kitchen always sees the order without manual intervention.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "auto_sync_orders_to_square",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync_orders": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "autoSyncUnpushedOrders"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Push un-synced paid orders to Square",
+            "description": "Finds recent paid orders missing a Square order id and pushes them"
+          }
+        }
+      }
+    ]
+  }
+}

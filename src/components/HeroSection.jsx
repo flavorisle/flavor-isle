@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import PopularTimesCard from '@/components/PopularTimesCard';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import { FallStyles, FallSunburst, FallHeroLeaves, FallEyebrow } from '@/components/RetroFallTheme';
 
 const STATS = [
   { num: '3.4M', label: 'BURGERS SERVED' },
@@ -33,6 +34,7 @@ export default function HeroSection() {
 
   return (
     <section className="overflow-hidden">
+      <FallStyles />
       {/* Hero block with storefront photo */}
       <div
         className="relative bg-cover bg-center"
@@ -41,7 +43,10 @@ export default function HeroSection() {
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/70" />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white">
+        {/* Retro fall sunburst + corner leaves — behind text, above photo */}
+        <FallSunburst />
+        <FallHeroLeaves />
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16 text-center text-white" style={{ zIndex: 2 }}>
           {/* Est. 1964 seal */}
           <div className="flex justify-center mb-6">
             <div className="inline-flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-white/80 bg-white/10 backdrop-blur-sm">
@@ -50,11 +55,13 @@ export default function HeroSection() {
               <span className="font-heading text-[9px] tracking-[0.15em] text-white/80 leading-none">SMITHS GROVE</span>
             </div>
           </div>
+          {/* Seasonal eyebrow (approved copy) */}
+          <FallEyebrow />
           <h1 className="font-heading uppercase leading-[1.05] text-5xl sm:text-6xl md:text-7xl mb-5 drop-shadow-lg">
             Real Food.<br />Real Good.
           </h1>
           <p className="text-lg sm:text-xl mb-10 max-w-xl mx-auto font-body drop-shadow">
-            Smiths Grove's favorite burger restaurant, just off I-65 near Bowling Green. Fresh, never-frozen hand-patted smash burgers, thick milkshakes, and hot sides — made fresh every day. Order online for pickup or delivery, or dine in with us.
+            Smiths Grove's favorite burger restaurant, just off I-65 near Bowling Green. Fresh, never-frozen hand-patted burgers, thick milkshakes, and hot sides — made fresh every day. Order online for pickup or delivery, or dine in with us.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {[

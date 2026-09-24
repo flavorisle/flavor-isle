@@ -40,16 +40,6 @@ Deno.serve(async (req) => {
       payment_status: 'paid',
     });
 
-    // Send to kitchen
-    await base44.functions.invoke('printKitchenOrder', {
-      order_number: orderNumber,
-      items,
-      special_instructions,
-      order_type: 'dine_in',
-      customer_name: customer_name || 'Walk-In',
-      table_number: table_number || '',
-    });
-
     console.log(`Walk-in order ${orderNumber} created`);
     return Response.json({ success: true, order_id: order.id, order_number: orderNumber });
   } catch (error) {

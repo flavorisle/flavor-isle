@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // Public click-tracker for links inside customer emails. Email clients hit
 // this URL (a GET), we log the click, then 302-redirect to the real destination.
 // This lets us count how often each email CTA is actually clicked.
-export default async function (req: Request) {
+Deno.serve(async (req: Request) => {
   try {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
@@ -38,11 +38,14 @@ export default async function (req: Request) {
       console.error('EmailClick log failed:', logErr.message);
     }
 
-    const origin = url.origin;
-    return Response.redirect(new URL(safeTarget, origin).toString(), 302);
+    // Always redirect to the custom domain — the function is called via the
+    // base44.app URL (custom domain can't serve /functions), but the visitor
+    // should land on flavor-isle.com.
+    const REDIRECT_BASE = 'https://flavor-isle.com';
+    return Response.redirect(new URL(safeTarget, REDIRECT_BASE).toString(), 302);
   } catch (error) {
     console.error('trackEmailClick error:', error.message);
     // Never dead-end a click — fall back to the homepage.
-    return Response.redirect('/', 302);
+    return Response.redirect('https://flavor-isle.com/', 302);
   }
-}
+});

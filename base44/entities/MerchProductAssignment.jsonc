@@ -2,6 +2,10 @@
   "name": "MerchProductAssignment",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "product_id": {
       "type": "number",
       "description": "Printful sync product id this assignment maps to a category."

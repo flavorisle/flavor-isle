@@ -32,6 +32,7 @@ export default function MerchPromoCard() {
       <img
         src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
         alt="Tasty Threads — Flavor Isle Apparel"
+        loading="lazy"
         className="w-40 h-auto bg-white rounded-xl p-2 mb-3"
       />
       <p className="text-red-200 text-sm mb-4">
@@ -54,7 +55,7 @@ export default function MerchPromoCard() {
                   className="w-28 flex-shrink-0 snap-start group"
                 >
                   <div className="w-28 h-28 rounded-xl overflow-hidden bg-white/10 border border-white/20 group-hover:scale-105 transition-transform">
-                    <img src={p.thumbnail_url} alt={p.name} className="w-full h-full object-cover" />
+                    <img src={p.thumbnail_url} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <p className="text-white text-[11px] font-heading mt-1.5 leading-tight line-clamp-2">{p.name}</p>
                   {p.fromPrice ? (

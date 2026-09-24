@@ -1,13 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import HeroSection from '@/components/HeroSection';
+import FanFavoritesSection from '@/components/FanFavoritesSection';
+import { base44 } from '@/api/base44Client';
 
 
 import SocialProofStrip from '@/components/SocialProofStrip';
@@ -18,10 +21,13 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
-import WhyOrderDirect from '@/components/WhyOrderDirect';
-import NearbyAreas from '@/components/NearbyAreas';
+import HappyHourBanner from '@/components/HappyHourBanner';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
+import ExpressPickupStrip from '@/components/ExpressPickupStrip';
+import HeritageBadges from '@/components/HeritageBadges';
+import StickyOrderBar from '@/components/StickyOrderBar';
+import { FallDivider } from '@/components/RetroFallTheme';
 
 
 const SPECIALS_TICKER = [
@@ -49,6 +55,16 @@ export default function Home() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
+  const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
+  const [menuItems, setMenuItems] = useState([]);
+
+  // Load visible menu items so the Fan Favorites rail can show the real
+  // top-10 best-sellers stamped by the refreshFanFavorites backend function.
+  useEffect(() => {
+    base44.entities.MenuItem.list()
+      .then((data) => setMenuItems((data || []).filter((i) => !i.is_hidden)))
+      .catch(() => {});
+  }, []);
 
   const handleOrder = (type) => {
     setOrderType(type);
@@ -57,6 +73,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
 
@@ -65,91 +82,48 @@ export default function Home() {
       {/* ── HERO ── */}
       <HeroSection />
 
+      <ExpressPickupStrip />
+
+      {/* ── FAN FAVORITES (dynamic top-10 best-sellers rail) ── */}
+      {menuItems.some((i) => i.is_fan_favorite) && (
+        <section className="py-10 px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto">
+            <FanFavoritesSection items={menuItems} />
+            <div className="mt-6">
+              <MilkshakePromoBanner variant="strip" />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── PROMO BANNERS ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <HappyHourBanner />
+      </div>
       <AdBannerStrip placement="home" />
 
-      {/* ── WHY FLAVOR ISLE ── */}
+      {/* ── REVIEWS (What people are saying) ── */}
+      <ReviewSection />
+
+      {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
       <WhyFlavorIsle />
 
-      {/* ── WHY ORDER DIRECT (incl. Star Rewards) ── */}
-      <WhyOrderDirect />
+      <HeritageBadges />
 
-      {/* ── FEATURED MENU ITEMS ── */}
-      <section className="py-16 bg-obsidian-roast">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">FAN FAVORITES</p>
-              <h2 className="font-heading text-4xl text-white">The Classics</h2>
-            </div>
-            <Link to="/menu" className="btn-cherry chrome-hover px-5 py-2.5 text-sm flex items-center gap-2">
-              Full Menu <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-            {
-              name: 'Double Cheeseburger',
-              desc: 'Two fresh, hand-patted beef patties stacked with double American cheese, lettuce, tomato, and our special sauce.',
-              price: '$9.50',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
-              tag: 'Best Seller'
-            },
-            {
-              name: 'Onion Rings',
-              desc: 'Golden, crispy battered onion rings — the side everyone raves about.',
-              price: '$3.25',
-              img: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9fc6558ed_IMG_0370.png',
-              tag: 'Must Try'
-            },
-            {
-              name: 'Hot Fudge Cake',
-              desc: 'Rich chocolate cake smothered in hot fudge, topped with whipped cream and chopped peanuts.',
-              price: '$6.99',
-              img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/149a9d514dd6dcf81944320b6813bb86990ac036/original.jpeg',
-              tag: 'Fan Fave'
-            }].
-            map((item) =>
-            <div key={item.name} className="group rounded-3xl overflow-hidden bg-white/5 border border-white/10 hover:border-midnight-cherry/50 transition-all">
-                <div className="relative h-52 overflow-hidden">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 right-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">{item.tag}</div>
-                </div>
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-heading text-white text-base">{item.name}</h3>
-                    <span className="text-midnight-cherry font-heading text-lg">{item.price}</span>
-                  </div>
-                  <p className="text-gray-300 text-sm leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SHAKE ISLE PROMO ── */}
-      <MilkshakePromoBanner variant="feature" />
+      <FallDivider />
 
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
 
+      <FallDivider />
+
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
 
-      {/* ── REVIEWS ── */}
-      <ReviewSection />
-
-      {/* ── GOOGLE REVIEWS ── */}
-      <section className="pb-12 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <GoogleReviewsCard />
-        </div>
-      </section>
+      <FallDivider />
 
       {/* ── LOCATION ── */}
-      <section className="py-20 bg-patina-mint/10 px-4 sm:px-6">
+      <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
@@ -185,6 +159,7 @@ export default function Home() {
               <img
                 src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
                 alt="Flavor Isle storefront in Smiths Grove, KY"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -204,8 +179,33 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── NEARBY AREAS / I-65 WAYFINDING ── */}
-      <NearbyAreas hideCta />
+      {/* ── I-65 EXIT 38 WAYFINDING ── */}
+      <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
+        <div className="max-w-4xl mx-auto">
+          <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
+            <div className="sm:col-span-2 relative min-h-[180px]">
+              <img
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+                alt="Flavor Isle roadside stand off I-65 Exit 38"
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="sm:col-span-3 p-6 sm:p-8 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
+                <Car size={14} /> I-65 Exit 38 · Smiths Grove, KY
+              </div>
+              <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">You're Closer Than You Think</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.
+              </p>
+              <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
+                Plan Your Stop <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── FAQ + LOCATION ── */}
       <section className="py-12 px-4 sm:px-6">
@@ -249,6 +249,7 @@ export default function Home() {
       {/* ── DOWNLOAD APP BANNER ── */}
       <DownloadAppBanner />
 
+      <StickyOrderBar />
       <Footer />
     </div>);
 

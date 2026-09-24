@@ -16,7 +16,7 @@ export default async function(req) {
 
     const twiml = await upstream.text();
     const internalCallback = `https://base44-dispatcher-production.base44.workers.dev/api/apps/${appId}/functions/twilioVoiceWebhook`;
-    const publicCallback = 'https://crave.flavor-isle.com/functions/twilioVoiceRouter';
+    const publicCallback = 'https://flavor-isle.com/functions/twilioVoiceRouter';
     const routedTwiml = twiml.replaceAll(internalCallback, publicCallback);
 
     return new Response(routedTwiml, {

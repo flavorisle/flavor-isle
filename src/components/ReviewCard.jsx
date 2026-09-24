@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Star, Share2, Check } from 'lucide-react';
 
-const SHARE_URL = 'https://crave.flavor-isle.com';
+const SHARE_URL = 'https://flavor-isle.com';
 
 export default function ReviewCard({ review }) {
   const [shared, setShared] = useState(false);

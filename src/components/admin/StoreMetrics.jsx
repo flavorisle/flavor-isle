@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TrendingUp, ShoppingBag, DollarSign, Calendar, Loader2, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { toUtcDate } from '@/lib/chicagoTime';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
@@ -94,7 +95,7 @@ export default function StoreMetrics() {
     const dailyMap = {};
 
     for (const o of orders) {
-      const created = new Date(o.created_date);
+      const created = toUtcDate(o.created_date);
       const dKey = chicagoDateKey(created);
       const total = Number(o.total) || 0;
       const tip = Number(o.tip) || 0;
@@ -206,7 +207,7 @@ export default function StoreMetrics() {
               <c.Icon size={18} className="text-white" />
             </div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{c.label}</p>
-            <p className="font-heading text-2xl text-obsidian-roast mt-1">{c.value}</p>
+            <p className="font-heading text-2xl text-obsidian-roast mt-1 leading-none py-1.5">{c.value}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{c.sub}</p>
           </div>
         ))}

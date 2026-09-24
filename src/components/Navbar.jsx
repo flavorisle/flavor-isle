@@ -8,6 +8,7 @@ import LiveStatusBar from '@/components/LiveStatusBar';
 import { useAuth } from '@/lib/AuthContext';
 import useHighContrast from '@/hooks/useHighContrast';
 import NavMenuPanel from '@/components/NavMenuPanel';
+import SiteNoticeBanner from '@/components/SiteNoticeBanner';
 
 export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
@@ -42,14 +43,14 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Sticky header: live status bar + main nav stay pinned together */}
-      <div className="sticky top-0 z-50">
-        <LiveStatusBar />
-        <nav className={`relative transition-all duration-300 ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
+      {/* Sticky header: site notice + live status bar + main nav stay pinned together */}
+      <div className="sticky top-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <SiteNoticeBanner />
+        <nav className={`relative transition-all duration-300 fall26-nav-accent ${scrolled ? 'bg-white shadow-float py-3' : 'bg-vanilla-malt py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 min-w-0">
-            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-full" />
+            <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" alt="Flavor Isle logo" className="w-12 h-12 object-contain flex-shrink-0 rounded-xl" />
             <div className="min-w-0 whitespace-nowrap">
               <div className="font-heading text-xl text-obsidian-roast leading-none">FLAVOR ISLE</div>
               <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
@@ -114,6 +115,7 @@ export default function Navbar() {
         />
         }
         </nav>
+        <LiveStatusBar />
       </div>
     </>);
 

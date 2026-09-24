@@ -1,0 +1,44 @@
+{
+  "description": "Every 30 minutes, emails customers whose saved cart has sat untouched for over an hour.",
+  "name": "Cart Abandonment Reminders",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/30 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "cart_abandonment_reminders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_reminders": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendCartAbandonmentReminders"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send cart reminders",
+            "description": "Email customers with carts idle over 1 hour"
+          }
+        }
+      }
+    ]
+  }
+}

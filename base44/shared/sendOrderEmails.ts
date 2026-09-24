@@ -1,31 +1,118 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
+import { fetchStoreProducts } from './printful.ts';
+import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from './dessertPriority.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
 // Public app URL used for in-email call-to-action links (reviews, merch) —
 // always the branded custom domain, never the base44.app address.
-const APP_URL = 'https://crave.flavor-isle.com';
+const APP_URL = 'https://flavor-isle.com';
+
+// Backend function endpoints are NOT reachable through the custom domain
+// (they return "unauthorized" there). Email clients must hit the base44.app
+// function URL; the function then 302-redirects to the custom domain.
+const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
 
 // Build a click-tracked link. Routes the email CTA through the trackEmailClick
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
 // the link in the EmailClick stats; `orderId` ties order-specific links (review
 // requests) back to the order they came from.
-function trackedLink(path: string, linkId: string, orderId?: string) {
+export function trackedLink(path: string, linkId: string, orderId?: string) {
   const to = encodeURIComponent(path);
-  let url = `${APP_URL}/functions/trackEmailClick?link=${linkId}&to=${to}`;
+  let url = `${FUNCTION_BASE}/functions/trackEmailClick?link=${linkId}&to=${to}`;
   if (orderId) url += `&order_id=${encodeURIComponent(orderId)}`;
   return url;
 }
 
 // Tasty Threads merch promo block — appended to order emails to drive merch sales.
-export function merchPromoHtml() {
+// Pulls two random products live from Printful so each email shows fresh gear
+// with real product photos. Falls back to a generic text CTA if the catalog
+// can't be reached so the email still sends.
+export async function merchPromoHtml() {
+  let productCards = '';
+  try {
+    const all = await fetchStoreProducts();
+    if (Array.isArray(all) && all.length > 0) {
+      // Fisher–Yates shuffle, then take 2.
+      const pool = [...all];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const picks = pool.slice(0, 2);
+      productCards = `<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:0 0 14px;"><tr>${
+        picks.map(p => {
+          const img = p.thumbnail_url || (p.images && p.images[0]) || '';
+          const price = p.fromPrice ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:14px;font-weight:bold;margin-top:6px;">from $${Number(p.fromPrice).toFixed(2)}</div>` : '';
+          const imgHtml = img
+            ? `<img src="${img}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:10px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />`
+            : `<div style="width:100%;aspect-ratio:1/1;border-radius:10px;background:#f5edd6;"></div>`;
+          return `<td style="width:50%;vertical-align:top;">
+            <a href="${trackedLink(`/merch?product=${p.id}`, 'merch_promo_product')}" style="text-decoration:none;color:#141414;display:block;">
+              ${imgHtml}
+              <div style="font-family:'Oswald',Arial,sans-serif;font-size:14px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Tasty Threads'}</div>
+              ${price}
+            </a>
+          </td>`;
+        }).join('')
+      }</tr></table>`;
+    }
+  } catch (err) {
+    console.error('merchPromoHtml product fetch failed:', err.message);
+  }
+
+  const headline = productCards
+    ? '🛍️ TASTY THREADS — FRESH PICKS FOR YOU'
+    : '🛍️ TASTY THREADS — NOW SHIPPING';
+  const subline = productCards
+    ? 'Two fresh picks, printed to order and shipped straight to your door. Tap a shirt to shop.'
+    : 'Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.';
+
   return `
   <div style="margin:24px 0 8px;border:2px dashed #C0392B;border-radius:14px;padding:20px;background:#FFF8E7;">
-    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">🛍️ TASTY THREADS — NOW SHIPPING</p>
-    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">Rock the Flavor Isle look. Tees, hoodies & more — printed fresh and shipped straight to your door.</p>
+    <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:18px;margin:0 0 6px;letter-spacing:2px;">${headline}</p>
+    <p style="color:#141414;font-size:14px;margin:0 0 14px;line-height:1.5;">${subline}</p>
+    <img src="https://files.cdn.printful.com/files/196/1969f01ea3bcd65b3ee5d20ee0897ca5_preview.png" alt="Tasty Threads tee" width="500" style="width:100%;max-width:500px;border-radius:10px;display:block;margin:0 0 14px;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
+    ${productCards}
     <a href="${trackedLink('/merch', 'merch_promo')}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;">SHOP THE COLLECTION →</a>
   </div>`;
+}
+
+// Food hero photo — pulls a random fan-favorite menu item with a real photo
+// and renders it as a hero image block with a "try this next time" CTA.
+// Uses only real Flavor Isle menu photography (MenuItem.image_url).
+export async function foodHeroHtml(base44?: any) {
+  if (!base44) return '';
+  try {
+    const items = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 100);
+    const withPhotos = (items || []).filter(m =>
+      m.is_available !== false &&
+      m.is_hidden !== true &&
+      m.image_url &&
+      (m.is_fan_favorite || m.is_featured)
+    );
+    const allowed = excludeMaltSundae(withPhotos);
+    if (allowed.length === 0) return '';
+    // Exclude malts/sundaes; sort by fan-favorite rank; rotate by Chicago day
+    // so the "try this next time" hero varies across days.
+    allowed.sort(fanFavoriteSort);
+    const pick = dailyRotate(allowed)[0];
+    const price = typeof pick.price === 'number' ? `$${pick.price.toFixed(2)}` : '';
+    const link = trackedLink('/menu', 'food_hero');
+    return `
+    <a href="${link}" style="text-decoration:none;color:#141414;display:block;margin:20px 0 8px;">
+      <img src="${pick.image_url}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
+      <div style="padding:12px 4px 0;">
+        <div style="font-family:'Oswald',Arial,sans-serif;font-size:20px;color:#C0392B;letter-spacing:1px;">${pick.name || 'Flavor Isle Favorite'}</div>
+        ${price ? `<div style="font-family:'Oswald',Arial,sans-serif;font-size:16px;color:#141414;margin-top:2px;">${price}</div>` : ''}
+        <p style="font-size:14px;color:#666;margin:6px 0 0;">Loved by the regulars — try it next time you order.</p>
+      </div>
+    </a>`;
+  } catch (err) {
+    console.error('foodHeroHtml failed:', err.message);
+    return '';
+  }
 }
 
 // Review CTA block — appended to the thank-you email to collect ratings.
@@ -130,12 +217,13 @@ export function brandedEmailHtml(bodyHtml) {
   <div style="background:#F5EDD6;padding:24px 12px;font-family:'Open Sans',Arial,sans-serif;">
     <div style="max-width:600px;margin:0 auto;background:#FFFDF8;border-radius:16px;overflow:hidden;">
       <div style="background:#C0392B;padding:28px 24px;text-align:center;">
-        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:50%;display:block;margin:0 auto 12px;" />
+        <img src="${LOGO_URL}" alt="Flavor Isle" width="84" height="84" style="border-radius:12px;display:block;margin:0 auto 12px;object-fit:contain;" />
         <h1 style="color:#ffffff;font-family:'Oswald',Arial,sans-serif;margin:0;font-size:26px;letter-spacing:3px;">FLAVOR ISLE</h1>
         <p style="color:rgba(255,255,255,0.85);margin:4px 0 0;font-size:12px;letter-spacing:2px;">SMITHS GROVE, KY</p>
       </div>
       <div style="padding:28px 24px;color:#141414;font-size:16px;line-height:1.6;">${bodyHtml}</div>
       <div style="background:#1A3A5C;padding:18px 24px;text-align:center;">
+        <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png" alt="Smashie" width="64" height="64" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
         <p style="color:#ffffff;margin:0;font-size:14px;">Questions? Call <a href="tel:+12705634618" style="color:#F5EDD6;">(270) 563-4618</a></p>
         <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:12px;">103 N Main St, Smiths Grove, KY 42171</p>
       </div>
@@ -173,7 +261,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
 
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
-export async function sendOrderReadyEmail(order) {
+export async function sendOrderReadyEmail(order, base44?) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
@@ -207,22 +295,28 @@ export async function sendOrderReadyEmail(order) {
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
-    ${merchPromoHtml()}`;
+    ${await foodHeroHtml(base44)}
+    ${await merchPromoHtml()}`;
 
   try {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
-    const { error } = await resend.emails.send({
-      from: 'Flavor Isle <smashie@order.flavor-isle.com>',
-      to: order.customer_email,
-      subject: `✅ Order #${orderNum} is ready!`,
-      html: brandedEmailHtml(body),
-    });
-    if (error) {
-      console.error('sendOrderReadyEmail error:', error);
-      return false;
+    let sent = false;
+    for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
+      const { error } = await resend.emails.send({
+        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        to: order.customer_email,
+        subject: `✅ Order #${orderNum} is ready!`,
+        html: brandedEmailHtml(body),
+      });
+      if (error) {
+        console.error(`sendOrderReadyEmail error (attempt ${attempt}):`, error);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+      } else {
+        console.log(`Order ready email sent to ${order.customer_email} for order ${orderNum} (attempt ${attempt})`);
+        sent = true;
+      }
     }
-    console.log(`Order ready email sent to ${order.customer_email} for order ${orderNum}`);
-    return true;
+    return sent;
   } catch (err) {
     console.error('sendOrderReadyEmail exception:', err.message);
     return false;
@@ -234,18 +328,23 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
   if (!to) return false;
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
-    const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@order.flavor-isle.com>`,
-      to,
-      subject,
-      html: brandedEmailHtml(bodyHtml),
-    });
-    if (error) {
-      console.error(`sendBrandedHtml error:`, error);
-      return false;
+    let sent = false;
+    for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
+      const { error } = await resend.emails.send({
+        from: `${fromName} <smashie@order.flavor-isle.com>`,
+        to,
+        subject,
+        html: brandedEmailHtml(bodyHtml),
+      });
+      if (error) {
+        console.error(`sendBrandedHtml error (attempt ${attempt}):`, error);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+      } else {
+        console.log(`Branded email sent to ${to}: ${subject} (attempt ${attempt})`);
+        sent = true;
+      }
     }
-    console.log(`Branded email sent to ${to}: ${subject}`);
-    return true;
+    return sent;
   } catch (err) {
     console.error('sendBrandedHtml exception:', err.message);
     return false;
@@ -281,14 +380,15 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} just hit the kitchen — the crew's cooking it up fresh right now. 🔥</p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${waitLine}</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+    ${await foodHeroHtml(base44)}
     ${whatToExpectHtml()}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `🍔 Order #${orderNum} is on the grill`, body);
 }
 
 // Thank-you email — sent when the order is completed. Asks for a review and
 // promotes the merch line.
-export async function sendOrderCompletedEmail(order: any) {
+export async function sendOrderCompletedEmail(order: any, base44?: any) {
   if (!order.customer_email) return false;
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
@@ -298,7 +398,8 @@ export async function sendOrderCompletedEmail(order: any) {
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">Order #${orderNum} is all wrapped. Hope you ate good — that's what we're here for. 🍔</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">We'd love to see you back soon, fam.</p>
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team</p>
+    ${await foodHeroHtml(base44)}
     ${reviewCtaHtml(order.id)}
-    ${merchPromoHtml()}`;
+    ${await merchPromoHtml()}`;
   return sendBrandedHtml(order.customer_email, `Thanks for rolling with us! 🙌`, body);
 }

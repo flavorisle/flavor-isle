@@ -45,7 +45,7 @@ export default function AppPhoneMockup() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 rounded-b-2xl z-20" style={{ backgroundColor: '#003366' }} />
 
         {/* Status bar */}
-        <div className="flex items-center justify-between px-6 pt-2 pb-1 text-[11px] font-heading" style={{ color: '#003366' }}>
+        <div className="flex items-center justify-between px-6 pt-2 pb-1 text-[14px] font-heading" style={{ color: '#003366' }}>
           <span>9:41</span>
           <div className="flex items-center gap-1">
             <Wifi size={12} />
@@ -55,10 +55,10 @@ export default function AppPhoneMockup() {
 
         {/* App header */}
         <div className="flex items-center justify-between px-4 py-2">
-          <img src={LOGO} alt="Flavor Isle" className="w-8 h-8 rounded-full object-contain" />
+          <img src={LOGO} alt="Flavor Isle" className="w-8 h-8 rounded-lg object-contain" />
           <div className="text-center leading-none">
             <div className="font-heading text-sm" style={{ color: '#003366' }}>FLAVOR ISLE</div>
-            <div className="text-[8px] tracking-widest" style={{ color: '#7a8fa6' }}>SMITHS GROVE, KY</div>
+            <div className="text-[14px] tracking-widest" style={{ color: '#7a8fa6' }}>SMITHS GROVE, KY</div>
           </div>
           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#003366' }}>
             <User size={15} className="text-white" />
@@ -71,19 +71,19 @@ export default function AppPhoneMockup() {
           <div className="rounded-2xl overflow-hidden relative h-36 mb-3">
             <img src={HERO_BURGER} alt="Flavor Isle double cheeseburger" className="w-full h-full object-cover" style={{ objectPosition: 'center 78%' }} />
             <div className="absolute inset-0 flex flex-col items-center justify-end pb-2" style={{ background: 'linear-gradient(to top, rgba(0,51,102,0.78) 0%, rgba(0,51,102,0) 55%)' }}>
-              <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-full object-contain mb-0.5 bg-white/90 p-0.5" />
+              <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-lg object-contain mb-0.5 bg-white/90 p-0.5" />
               <div className="font-heading text-white text-base leading-none">FLAVOR ISLE</div>
-              <div className="text-white/80 text-[8px] tracking-widest">SMITHS GROVE, KY</div>
+              <div className="text-white/80 text-[14px] tracking-widest">SMITHS GROVE, KY</div>
             </div>
           </div>
 
           {/* Craving pills */}
-          <p className="font-heading text-[11px] mb-2" style={{ color: '#003366' }}>WHAT ARE YOU CRAVING?</p>
+          <p className="font-heading text-[14px] mb-2" style={{ color: '#003366' }}>WHAT ARE YOU CRAVING?</p>
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-4">
             {CRAVINGS.map((c, i) => (
               <span
                 key={c}
-                className="text-[10px] font-heading px-3 py-1.5 rounded-full whitespace-nowrap"
+                className="text-[14px] font-heading px-3 py-1.5 rounded-full whitespace-nowrap"
                 style={
                   i === 0
                     ? { backgroundColor: '#C85125', color: 'white' }
@@ -106,14 +106,14 @@ export default function AppPhoneMockup() {
                 <div className="p-2">
                   <div className="flex items-center gap-1 mb-0.5">
                     <Star size={9} className="fill-current" style={{ color: '#F5A623' }} />
-                    <span className="text-[9px] font-semibold" style={{ color: '#003366' }}>{item.rating}</span>
+                    <span className="text-[14px] font-semibold" style={{ color: '#003366' }}>{item.rating}</span>
                   </div>
-                  <div className="font-heading text-[11px] leading-tight" style={{ color: '#003366' }}>{item.name}</div>
-                  <div className="text-[8px] leading-tight mb-1.5" style={{ color: '#4A4A4A' }}>{item.desc}</div>
+                  <div className="font-heading text-[14px] leading-tight" style={{ color: '#003366' }}>{item.name}</div>
+                  <div className="text-[14px] leading-tight mb-1.5" style={{ color: '#4A4A4A' }}>{item.desc}</div>
                   <div className="flex items-center justify-between">
-                    <span className="font-heading text-[11px]" style={{ color: '#003366' }}>${item.price.toFixed(2)}</span>
+                    <span className="font-heading text-[14px]" style={{ color: '#003366' }}>${item.price.toFixed(2)}</span>
                     <span
-                      className="text-[9px] font-heading text-white px-2 py-1 rounded-full"
+                      className="text-[14px] font-heading text-white px-2 py-1 rounded-full"
                       style={{ backgroundColor: '#C85125' }}
                     >
                       ADD +
@@ -129,24 +129,24 @@ export default function AppPhoneMockup() {
         <div className="flex items-center justify-around py-2 border-t" style={{ backgroundColor: 'white', borderColor: '#e3dcc7' }}>
           <div className="flex flex-col items-center gap-0.5">
             <Home size={16} style={{ color: '#003366' }} />
-            <span className="text-[7px] font-heading" style={{ color: '#003366' }}>HOME</span>
+            <span className="text-[14px] font-heading" style={{ color: '#003366' }}>HOME</span>
           </div>
           <div className="flex flex-col items-center gap-0.5">
             <Search size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[7px] font-heading" style={{ color: '#7a8fa6' }}>SEARCH</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>SEARCH</span>
           </div>
           <div className="flex flex-col items-center gap-0.5">
             <Receipt size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[7px] font-heading" style={{ color: '#7a8fa6' }}>ORDERS</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>ORDERS</span>
           </div>
           <div className="flex flex-col items-center gap-0.5">
             <User size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[7px] font-heading" style={{ color: '#7a8fa6' }}>PROFILE</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>PROFILE</span>
           </div>
           <div className="flex flex-col items-center gap-0.5 relative">
             <ShoppingBag size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[7px] font-heading" style={{ color: '#7a8fa6' }}>CART</span>
-            <span className="absolute -top-1 right-1 w-3 h-3 rounded-full text-[7px] text-white flex items-center justify-center" style={{ backgroundColor: '#C23126' }}>2</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>CART</span>
+            <span className="absolute -top-1 right-1 w-3 h-3 rounded-full text-[14px] text-white flex items-center justify-center" style={{ backgroundColor: '#C23126' }}>2</span>
           </div>
         </div>
       </div>

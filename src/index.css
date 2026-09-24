@@ -208,8 +208,8 @@
 
 /* Checkout readability — the summary, field labels, and fine print used the
    smallest type on the site. Bump the floor so it's legible on real devices. */
-.force-light .text-xs { font-size: 0.8125rem; line-height: 1.5; }
-.force-light .text-\[11px\] { font-size: 0.8125rem; }
+.force-light .text-xs { font-size: 0.875rem; line-height: 1.5; }
+.force-light .text-\[11px\] { font-size: 0.875rem; }
 .force-light .text-sm { font-size: 0.9375rem; }
 .force-light input,
 .force-light textarea,
@@ -350,6 +350,11 @@
   .safe-left { padding-left: env(safe-area-inset-left); }
   .safe-right { padding-right: env(safe-area-inset-right); }
 
+  .consent-banner-pos { bottom: 1rem; }
+  @media (max-width: 767px) {
+    .consent-banner-pos { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+  }
+
   .tap-44 { min-width: 48px; min-height: 48px; }
 
   .glass-tab {
@@ -372,33 +377,35 @@
 }
 
 /* ── Printable in-store menu ──
-   When printing the admin Print Menu page, only the paper sheet is output:
-   the app chrome (nav, tab bar, chat, editor sidebar) is hidden and the sheet
-   is laid out edge-to-edge in black on white. */
+   Isolates #print-sheet so only it prints. Everything else on the page
+   (nav, editor sidebar, chat, tab bar) is hidden via visibility without
+   collapsing layout. The sheet is lifted out of its grid container with
+   position:absolute so it prints at the full A3 page width. Skipped when
+   printing a bag ticket (body.printing-bag-ticket). */
 @media print {
-  @page { size: A3 landscape; margin: 0.35in; }
+  @page { size: A3 landscape; margin: 0.3in; }
 
-  /* Everything must land on a single A3 landscape sheet — tighten the type
-     and let sections flow across columns instead of breaking to page 2. */
-  #print-sheet { font-size: 10px; }
-  #print-sheet .px-10 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-  #print-sheet .py-8 { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
-
-  body {
+  html, body {
     background: #ffffff !important;
-    padding-bottom: 0 !important;
-    font-size: 12px;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
-  /* Hide global app chrome that isn't part of the menu sheet */
-  nav, footer, .glass-tab, .glass-back { display: none !important; }
-  /* Hide the Smashie chat widget */
-  .smashie-chat-root { display: none !important; }
+  /* Hide every element on the page without collapsing layout */
+  body:not(.printing-bag-ticket) * { visibility: hidden !important; }
 
-  #print-sheet {
-    box-shadow: none !important;
+  /* Reveal only the print sheet and its contents */
+  #print-sheet, #print-sheet * { visibility: visible !important; }
+
+  /* Lift the sheet out of its grid container so it spans the full page */
+  body:not(.printing-bag-ticket) #print-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
   }
 
   #print-sheet * {
@@ -410,10 +417,27 @@
   .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 }
 
-/* On-screen paper preview for the printable menu — A3 landscape (16.5in wide). */
+/* On-screen paper preview — fills its container so the editor + preview sit
+   side-by-side. Print width is handled by the @media print block above. */
 #print-sheet {
-  width: 16.5in;
+  width: 100%;
   max-width: 100%;
+}
+
+/* ── Bag ticket print ──
+   When body has .printing-bag-ticket, the app (#root) is hidden and only
+   the #bag-ticket-print-root portal (rendered to document.body) is shown.
+   The @page size override (80mm receipt) is injected at print time by
+   bagTicketPrint.js so it doesn't conflict with the print menu's A3 page. */
+#bag-ticket-print-root { display: none; }
+
+@media print {
+  body.printing-bag-ticket > #root { display: none !important; }
+  body.printing-bag-ticket #bag-ticket-print-root { display: block !important; }
+  body.printing-bag-ticket .bag-ticket {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
 }
 
 /* ── Mobile / iOS WebView polish (additive, desktop-safe) ── */

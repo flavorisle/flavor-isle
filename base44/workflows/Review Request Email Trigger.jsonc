@@ -1,0 +1,44 @@
+{
+  "name": "Review Request Email Trigger",
+  "description": "Every 10 minutes, sends Google review-request emails for online orders ~3 hours old that haven't received one yet. Respects quiet hours (9 PM\u201310 AM store local: holds and sends at 10 AM).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/10 * * * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "review_request_email_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "processPendingReviewRequestEmails"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send pending review requests",
+            "description": "Find ~3-hour-old completed orders and email Google review requests"
+          }
+        }
+      }
+    ]
+  }
+}
