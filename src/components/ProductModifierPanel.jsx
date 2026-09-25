@@ -213,7 +213,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const allPresetToppings = new Set();
   labelPresets.forEach(p => p.trackedToppings.forEach(t => allPresetToppings.add((t || '').toLowerCase())));
   const nonDeluxeMods = liveModifiers.filter(m => !allPresetToppings.has((m.name || '').toLowerCase()));
-  const burgerModsLabel = [deluxeLabel, ...nonDeluxeMods.map(m => m.name)].filter(Boolean).join(', ') || null;
+  const nonDeluxeLabels = nonDeluxeMods.map(m => deluxeLabel ? `add ${m.name}` : m.name);
+  const burgerModsLabel = [deluxeLabel, ...nonDeluxeLabels].filter(Boolean).join(', ') || null;
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
