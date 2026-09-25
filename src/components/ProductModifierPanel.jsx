@@ -437,10 +437,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
               </div>
             </div>
             <div className="text-right">
-              {comboAddOn > 0 ? (
+              {comboAddOn > 0 && (
                 <span className="text-sm font-semibold">+${comboAddOn.toFixed(2)}</span>
-              ) : (
-                <span className={`text-xs font-heading ${isCombo ? 'text-white/80' : 'text-midnight-cherry'}`}>Pick side + drink</span>
               )}
               <span className={`block text-xs ${isCombo ? 'text-white/80' : 'text-midnight-cherry'}`}>Unbeatable value</span>
             </div>
