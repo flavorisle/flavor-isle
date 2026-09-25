@@ -16,12 +16,12 @@ export default function About() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
-        title="About Flavor Isle — Family-Owned Diner Since 1964, Smiths Grove KY"
-        description="The story behind Flavor Isle: a family-run diner serving hand-patted burgers and real-fruit shakes since 1964, minutes from Mammoth Cave and the Corvette Museum."
-        ogTitle="About Flavor Isle — Small-Town Diner Off I-65 Exit 38 | Smiths Grove, KY"
-        ogDescription="The story behind Flavor Isle: a family-run diner serving hand-patted burgers and real-fruit shakes, minutes from Mammoth Cave and the Corvette Museum."
+        title="About Flavor Isle — Family-Owned Burgers & Shakes Since 1964, Smiths Grove KY"
+        description="The story behind Flavor Isle: a family-run burgers & shakes spot serving hand-patted burgers and real-fruit shakes since 1964, minutes from Mammoth Cave and the Corvette Museum."
+        ogTitle="About Flavor Isle — Burgers & Shakes Off I-65 Exit 38 | Smiths Grove, KY"
+        ogDescription="The story behind Flavor Isle: a family-run burgers & shakes spot serving hand-patted burgers and real-fruit shakes, minutes from Mammoth Cave and the Corvette Museum."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/0e9fde1ed_card-about.png"
-        ogImageAlt="Flavor Isle diner exterior share card"
+        ogImageAlt="Flavor Isle burgers & shakes exterior share card"
       />
       <Navbar />
       <CartDrawer />

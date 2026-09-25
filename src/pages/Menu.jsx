@@ -137,9 +137,9 @@ export default function Menu() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
         path="/menu"
-        title="Menu | Burgers, Shakes & Diner Favorites — Flavor Isle"
+        title="Menu | Burgers, Shakes & More — Flavor Isle"
         description="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
-        ogTitle="Flavor Isle Menu — Burgers, Shakes & Diner Favorites | Smiths Grove, KY"
+        ogTitle="Flavor Isle Menu — Burgers, Shakes & More | Smiths Grove, KY"
         ogDescription="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8bd9c4f84_card-menu.png"
         ogImageAlt="Flavor Isle menu preview card with hand-patted burger and milkshake"
