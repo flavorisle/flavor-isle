@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Check, Sparkles, Clock } from 'lucide-react';
-import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
+import { buildDeluxeLabelFull, buildFullDeluxeLabel } from '@/lib/deluxeLabel';
 import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
@@ -203,18 +203,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     allToppings: p.toppings,
   }));
   const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
-    ? buildDeluxeLabelFull(liveModifiers, labelPresets)
+    ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };
 
-  // Build a human-readable summary of the burger's selected modifiers for the
-  // combo summary box. Includes the deluxe preset label (e.g. "Deluxe, no
-  // Pickles") plus any non-deluxe modifiers (cheese, extras, etc.) not tracked
-  // by a preset.
-  const allPresetToppings = new Set();
-  labelPresets.forEach(p => p.trackedToppings.forEach(t => allPresetToppings.add((t || '').toLowerCase())));
-  const nonDeluxeMods = liveModifiers.filter(m => !allPresetToppings.has((m.name || '').toLowerCase()));
-  const nonDeluxeLabels = nonDeluxeMods.map(m => deluxeLabel ? `add ${m.name}` : m.name);
-  const burgerModsLabel = [deluxeLabel, ...nonDeluxeLabels].filter(Boolean).join(', ') || null;
+  // The full label (preset + "add" extras + "sub/add" cheese) is shown in the
+  // combo summary, badge, and stored on the cart item for consistent display
+  // across the cart, checkout, and email receipts.
+  const burgerModsLabel = deluxeLabel;
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
@@ -255,7 +250,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       }
     }
     const { label, allToppings } = DELUXE_ENABLED
-      ? buildDeluxeLabelFull(selectedMods, labelPresets)
+      ? buildFullDeluxeLabel(selectedMods, labelPresets, item)
       : { label: null, allToppings: [] };
     const dSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));
     const d20ozMod = (dSizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));

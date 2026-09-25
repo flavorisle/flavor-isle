@@ -28,9 +28,8 @@ export function matchScore(modName, topping) {
 }
 
 // Default tracked toppings used only when no presets are passed in
-// (backward compat). Mayo is intentionally absent — it's a silent Deluxe
-// topping that should never show as "no Mayo".
-export const DELUXE_TOPPINGS = ['Mustard', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'];
+// (backward compat).
+export const DELUXE_TOPPINGS = ['Mustard', 'Lettuce', 'Tomato', 'Onion', 'Pickle'];
 
 // True when a tracked topping is present in the current selection (tolerant).
 const toppingPresent = (topping, selectedModifiers) =>
@@ -77,6 +76,44 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
   if (!best) return { label: null, allToppings: [] };
   if (best.missing.length === 0) return { label: best.name, allToppings: best.allToppings };
   return { label: `${best.name}, no ${best.missing.join(', no ')}`, allToppings: best.allToppings };
+}
+
+// Builds the full Deluxe label for display on badges, combo summaries, cart
+// items, and tickets. Combines the preset label ("Deluxe" or "Deluxe, no X")
+// with extras ("add Mayo") and cheese substitutions ("sub Swiss" / "add Swiss").
+//
+// selectedModifiers: array of { group, name, price, id }
+// presets: array of { name, trackedToppings, allToppings }
+// item: the menu item (used to detect if cheese is a sub vs add)
+//
+// Returns { label: string|null, allToppings: string[] } where allToppings is
+// the matched preset's full topping list (for kitchen ticket summarization).
+export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
+  const { label, allToppings } = buildDeluxeLabelFull(selectedModifiers, presets);
+  if (!presets || presets.length === 0) return { label, allToppings };
+
+  const allPresetToppings = new Set();
+  presets.forEach(p => {
+    (p.allToppings || []).forEach(t => allPresetToppings.add((t || '').toLowerCase()));
+    (p.trackedToppings || []).forEach(t => allPresetToppings.add((t || '').toLowerCase()));
+  });
+
+  const itemHasCheese = item ? /cheese/i.test(item.name) : false;
+
+  // When Deluxe is active, preset toppings are summarized by the label.
+  // When not active, all selected modifiers show individually.
+  const extras = label
+    ? selectedModifiers.filter(m => !allPresetToppings.has((m.name || '').toLowerCase()))
+    : selectedModifiers;
+
+  const extraLabels = extras.map(m => {
+    const isCheese = /cheese/i.test(m.name) || /cheese/i.test(m.group || '');
+    if (isCheese) return itemHasCheese ? `sub ${m.name}` : `add ${m.name}`;
+    return allPresetToppings.has((m.name || '').toLowerCase()) ? m.name : `add ${m.name}`;
+  });
+
+  const fullLabel = [label, ...extraLabels].filter(Boolean).join(', ') || null;
+  return { label: fullLabel, allToppings };
 }
 
 // True when at least one default deluxe topping is selected — used to decide

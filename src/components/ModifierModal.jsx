@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, X, Check, Sparkles, Clock } from 'lucide-react';
-import { buildDeluxeLabelFull } from '@/lib/deluxeLabel';
+import { buildDeluxeLabelFull, buildFullDeluxeLabel } from '@/lib/deluxeLabel';
 import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
@@ -202,7 +202,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     allToppings: p.toppings,
   }));
   const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
-    ? buildDeluxeLabelFull(liveModifiers, labelPresets)
+    ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
@@ -227,7 +227,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
       }
     }
     const { label, allToppings } = DELUXE_ENABLED
-      ? buildDeluxeLabelFull(selectedMods, labelPresets)
+      ? buildFullDeluxeLabel(selectedMods, labelPresets, item)
       : { label: null, allToppings: [] };
     const drinkSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));
     const drink20ozMod = (drinkSizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));

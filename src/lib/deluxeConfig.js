@@ -26,8 +26,8 @@ export const DEFAULT_DELUXE_PRESETS = [
   {
     id: 'deluxe',
     name: 'Deluxe',
-    toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
-    silentToppings: ['Mayo'],
+    toppings: ['Mustard', 'Lettuce', 'Tomato', 'Onion', 'Pickle'],
+    silentToppings: [],
     appliesTo: [],
   },
 ];
@@ -60,7 +60,17 @@ export function getDeluxePresets() {
       const parsed = JSON.parse(raw);
       // An empty saved list would silently hide every Deluxe button, so fall
       // through to the defaults instead of returning [].
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(cleanPreset);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Clear the old broken config that had Mayo as a silent preset topping.
+        const isStale = parsed.some(p =>
+          (p.silentToppings || []).some(t => /mayo/i.test(t)) ||
+          (p.toppings || []).some(t => /mayo/i.test(t)));
+        if (isStale) {
+          localStorage.removeItem(STORAGE_KEY);
+        } else {
+          return parsed.map(cleanPreset);
+        }
+      }
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
@@ -69,7 +79,7 @@ export function getDeluxePresets() {
         id: 'deluxe',
         name: lp.name || 'Deluxe',
         toppings: lp.toppings || DEFAULT_DELUXE_PRESETS[0].toppings,
-        silentToppings: ['Mayo'],
+        silentToppings: [],
         appliesTo: lp.appliesTo || [],
       })];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
