@@ -15,6 +15,11 @@ const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
 
 const TIKTOK_VIDEOS = [
   {
+    url: 'https://www.tiktok.com/@ashtonsjokes/video/7534173940646726942',
+    creator: 'ashtonsjokes',
+    title: 'Some of the best mozzarella sticks in the game!',
+  },
+  {
     url: 'https://www.tiktok.com/@lukefoods/video/7505174404419046686',
     creator: 'lukefoods',
     title: "Luke Collins' Flavor Isle review",
