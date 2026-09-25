@@ -236,7 +236,12 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     return (
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
+          <h3
+            onClick={handlePhotoClick}
+            className={`font-heading text-base leading-tight cursor-pointer hover:underline ${light ? 'text-white' : 'text-obsidian-roast'}`}
+          >
+            {item.name}
+          </h3>
           {isHappyHour && happyHourPrice !== null ? (
             <div className="flex flex-col items-end flex-shrink-0">
               <span className={`text-xs line-through ${light ? 'text-white/55' : 'text-muted-foreground'}`}>${item.price.toFixed(2)}</span>
