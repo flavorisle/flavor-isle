@@ -15,7 +15,7 @@ export default function CommunityNews() {
   const isAdmin = user?.role === 'admin';
 
   const loadPosts = async () => {
-    const all = await base44.entities.NewsPost.filter({ is_published: true }, '-created_date', 50);
+    const all = await base44.entities.NewsPost.filter({ is_published: true }, '-post_date', 50);
     setPosts(all || []);
     setLoading(false);
   };
