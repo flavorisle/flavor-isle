@@ -234,7 +234,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       comboSideModsLabel: modNames(comboSideMods).join(', ') || null,
       comboDrinkName: comboDrinkType === 'shake'
         ? (comboFlavor ? `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake` : null)
-        : (comboSoda ? `${comboSoda.name} (20oz)` : null),
+        : (comboSoda ? comboSoda.name : null),
       comboDrinkModsLabel: comboDrinkType === 'shake'
         ? (modNames(comboShakeMods).join(', ') || null)
         : (modNames(comboDrinkMods).join(', ') || null),
@@ -284,7 +284,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
               id: `combo-${comboData.drink.id}`,
               productId: comboData.drink.id,
               comboParentId: item.id,
-              name: `${comboSoda.name} (20oz)`,
+              name: comboSoda.name,
               price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
               selectedModifiers: [
