@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Plus, X, Check, Save, Trash2, Copy } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sparkles, Plus, Save, Trash2, Copy, Search, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
   getDeluxePresets,
@@ -64,6 +64,10 @@ export default function AdminDeluxeManager() {
     });
   };
 
+  const setAppliesToAll = (preset, all) => {
+    update(preset.id, { appliesTo: all ? [] : items.map((i) => i.id) });
+  };
+
   const handleSave = () => {
     setSaving(true);
     saveDeluxePresets(presets);
@@ -77,12 +81,23 @@ export default function AdminDeluxeManager() {
   };
 
   // Collect all unique topping names from items for the topping picker
-  const allToppings = Array.from(new Set(
+  const allToppings = useMemo(() => Array.from(new Set(
     items.flatMap((item) => (item.modifiers || []))
       .flatMap((group) => (group.modifiers || []))
       .map((m) => m.name)
       .filter(Boolean)
-  )).sort();
+  )).sort(), [items]);
+
+  // Items grouped by category for the assignment section
+  const itemsByCategory = useMemo(() => {
+    const map = {};
+    items.forEach((item) => {
+      const cat = item.display_category || item.category || 'Other';
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(item);
+    });
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [items]);
 
   if (loading) {
     return <div className="text-center py-20 text-muted-foreground">Loading…</div>;
@@ -105,7 +120,7 @@ export default function AdminDeluxeManager() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          A preset is a one-tap shortcut in the modifier modal that selects a fixed set of toppings and labels the order with its name. Leave "Applies To" empty to show on all items.
+          Each preset becomes a "Make it {`{name}`}" button in the modifier panel. Create multiple presets and assign each to specific items — great for different Deluxe combos on different burgers.
         </p>
         {dirty && (
           <div className="mb-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
@@ -122,7 +137,10 @@ export default function AdminDeluxeManager() {
           <p>No presets yet. Add one above.</p>
         </div>
       ) : (
-        presets.map((preset) => (
+        presets.map((preset) => {
+          const assignedCount = (preset.appliesTo || []).length;
+          const appliesToAll = assignedCount === 0;
+          return (
           <div key={preset.id} className="card-diner p-6 space-y-4">
             <div className="flex items-center justify-between">
               <input
@@ -130,10 +148,10 @@ export default function AdminDeluxeManager() {
                 value={preset.name}
                 onChange={(e) => update(preset.id, { name: e.target.value })}
                 className="font-heading text-base text-obsidian-roast bg-transparent border-b border-border focus:border-midnight-cherry focus:outline-none flex-1 mr-3"
-                placeholder="Preset name"
+                placeholder="Preset name (e.g. Deluxe, Island Deluxe)"
               />
               <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => copyPreset(preset.id)} className="p-2 rounded-xl bg-muted hover:bg-gray-200 text-muted-foreground transition-colors" title="Copy">
+                <button onClick={() => copyPreset(preset.id)} className="p-2 rounded-xl bg-muted hover:bg-gray-200 text-muted-foreground transition-colors" title="Duplicate">
                   <Copy size={15} />
                 </button>
                 <button onClick={() => deletePreset(preset.id)} className="p-2 rounded-xl bg-muted hover:bg-red-50 hover:text-destructive text-muted-foreground transition-colors" title="Delete">
@@ -186,28 +204,121 @@ export default function AdminDeluxeManager() {
               </div>
             </div>
 
-            {/* Applies To */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Applies To (empty = all items)</p>
-              <div className="max-h-40 overflow-y-auto flex flex-wrap gap-2">
-                {items.map((item) => {
-                  const active = (preset.appliesTo || []).includes(item.id);
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleAppliesTo(preset, item.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-body border-2 transition-all ${
-                        active ? 'border-midnight-cherry bg-midnight-cherry/10 text-midnight-cherry' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                      }`}
-                    >
-                      {item.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Applies To — which items show this Deluxe button */}
+            <AppliesToSection
+              preset={preset}
+              itemsByCategory={itemsByCategory}
+              appliesToAll={appliesToAll}
+              assignedCount={assignedCount}
+              onToggle={toggleAppliesTo}
+              onSetAll={setAppliesToAll}
+            />
           </div>
-        ))
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ── Item assignment section with search + category grouping ──
+function AppliesToSection({ preset, itemsByCategory, appliesToAll, assignedCount, onToggle, onSetAll }) {
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState(true);
+
+  const q = norm(query);
+  const filteredCats = itemsByCategory
+    .map(([cat, list]) => [cat, q ? list.filter((i) => norm(i.name).includes(q)) : list])
+    .filter(([, list]) => list.length > 0);
+
+  return (
+    <div className="border-2 border-border rounded-2xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 hover:bg-muted transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Check size={14} className="text-midnight-cherry" />
+          <span className="text-xs font-semibold text-obsidian-roast uppercase tracking-wider">
+            Which items get this button
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-body ${
+            appliesToAll
+              ? 'bg-midnight-cherry/10 text-midnight-cherry'
+              : 'bg-patina-mint/10 text-patina-mint'
+          }`}>
+            {appliesToAll ? 'All items' : `${assignedCount} item${assignedCount === 1 ? '' : 's'}`}
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">{expanded ? 'Collapse' : 'Expand'}</span>
+      </button>
+
+      {expanded && (
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Leave empty to show on every item with modifiers. Or pick specific items — perfect for giving different burgers their own Deluxe button.
+          </p>
+
+          {/* Quick actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSetAll(preset, true)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-body border-2 transition-all ${
+                appliesToAll ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+              }`}
+            >
+              All items
+            </button>
+            <button
+              onClick={() => onSetAll(preset, false)}
+              className="px-3 py-1.5 rounded-lg text-xs font-body border-2 border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50 transition-all"
+            >
+              Clear
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search items…"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border-2 border-border bg-white text-sm text-obsidian-roast focus:border-midnight-cherry focus:outline-none"
+            />
+          </div>
+
+          {/* Category-grouped item list */}
+          <div className="max-h-64 overflow-y-auto space-y-3">
+            {filteredCats.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-4">No items match "{query}".</p>
+            )}
+            {filteredCats.map(([cat, list]) => (
+              <div key={cat}>
+                <p className="text-[10px] font-heading uppercase tracking-widest text-muted-foreground mb-1.5">{cat}</p>
+                <div className="flex flex-wrap gap-2">
+                  {list.map((item) => {
+                    const active = (preset.appliesTo || []).includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => onToggle(preset, item.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-body border-2 transition-all ${
+                          active ? 'border-midnight-cherry bg-midnight-cherry/10 text-midnight-cherry' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                        }`}
+                      >
+                        {active && <Check size={11} className="inline mr-1" />}
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
