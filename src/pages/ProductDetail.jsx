@@ -36,7 +36,7 @@ export default function ProductDetail() {
   const [savingFavorite, setSavingFavorite] = useState(false);
   const [panelState, setPanelState] = useState({
     total: 0, isCombo: false, comboReady: false, comboAddOn: 0,
-    comboDrinkType: 'shake', deluxeLabel: null, ready: true,
+    comboDrinkType: 'shake', comboStep: 0, deluxeLabel: null, ready: true,
   });
   const panelRef = useRef(null);
 
@@ -142,14 +142,21 @@ export default function ProductDetail() {
 
   const comboNotReady = showPanel && panelState.isCombo && !panelState.comboReady;
   const canAdd = !soldOut && orderingEnabled && !comboNotReady;
+  const comboHint = comboNotReady
+    ? panelState.comboStep < 2
+      ? 'Pick a side to start your combo'
+      : panelState.comboStep < 4
+        ? 'Pick your drink to finish your combo'
+        : `Pick a ${panelState.comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}`
+    : null;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
         ? 'Added to Cart!'
-        : comboNotReady
-          ? `Pick a ${panelState.comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}`
+        : comboHint
+          ? comboHint
           : 'Add to Bag';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
