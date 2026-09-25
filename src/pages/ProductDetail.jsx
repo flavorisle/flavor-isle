@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Zap, Star, Clock, Sparkles, Heart } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Sparkles, Heart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
-import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
-import ModifierModal from '@/components/ModifierModal';
+import ProductModifierPanel from '@/components/ProductModifierPanel';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import Navbar from '@/components/Navbar';
@@ -19,10 +18,10 @@ const PLACEHOLDER_EMOJI = {
   Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
 };
 
-// Full product detail page for a single menu item. Reached by clicking a
-// menu card's photo — a real page (image, description, ratings, add-to-cart)
-// rather than the quick customize modal. The modal is still used for the
-// actual modifier selection when the customer taps "Customize & Add".
+// Two-column product detail: sticky summary (title, price, image, combo CTA,
+// quantity, Add to Bag) on the left; inline modifier panel + reviews on the
+// right. All modifier, combo, deluxe, and happy hour logic lives in the
+// ProductModifierPanel — this page owns layout, quantity, and the add flow.
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -32,11 +31,14 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [added, setAdded] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [openAsCombo, setOpenAsCombo] = useState(false);
-  const [comboAddOn, setComboAddOn] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const [panelState, setPanelState] = useState({
+    total: 0, isCombo: false, comboReady: false, comboAddOn: 0,
+    comboDrinkType: 'shake', deluxeLabel: null, ready: true,
+  });
+  const panelRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,19 +66,7 @@ export default function ProductDetail() {
   const isHappyHour = item ? isHappyHourItem(item, menuSetting) : false;
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const displayPrice = isHappyHour && happyHourPrice !== null ? happyHourPrice : item?.price;
-
-  // Starting combo add-on for burgers (first side + vanilla shake − discount).
-  useEffect(() => {
-    if (!isBurger || soldOut || !item) return;
-    let cancelled = false;
-    getComboData().then((data) => {
-      if (cancelled || !data) return;
-      const side = data.sides[0];
-      if (!side) return;
-      setComboAddOn(+(side.price + data.shake.price - COMBO_DISCOUNT).toFixed(2));
-    });
-    return () => { cancelled = true; };
-  }, [isBurger, soldOut, item]);
+  const showPanel = hasModifiers || isBurger;
 
   useEffect(() => {
     if (!user?.id || !item) return;
@@ -108,13 +98,31 @@ export default function ProductDetail() {
     }
   };
 
-  const handleAdd = () => {
+  const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
+    const baseItem = {
+      ...item,
+      price: item.price + extraCost,
+      selectedModifiers: selectedMods,
+      deluxeLabel: deluxeLabel || undefined,
+      deluxeToppings: deluxeToppings || [],
+    };
+    for (let i = 0; i < quantity; i++) {
+      addItem(baseItem);
+      if (comboItems && comboItems.length > 0) comboItems.forEach(ci => addItem(ci));
+    }
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1200);
+  };
+
+  const handleAddToBag = () => {
     if (!orderingEnabled || soldOut) return;
-    if (hasModifiers) {
+    if (showPanel) {
+      if (!panelRef.current?.isReady()) return;
       trackSelectItem(foodItemToGa4(item));
-      setShowModal(true);
+      panelRef.current.confirm();
     } else {
-      addItem(item);
+      trackSelectItem(foodItemToGa4(item));
+      for (let i = 0; i < quantity; i++) addItem(item);
       setAdded(true);
       setTimeout(() => setAdded(false), 1200);
     }
@@ -123,36 +131,41 @@ export default function ProductDetail() {
   const handleMakeCombo = () => {
     if (!orderingEnabled || soldOut) return;
     trackSelectItem(foodItemToGa4(item));
-    setOpenAsCombo(true);
-    setShowModal(true);
+    panelRef.current?.setCombo(true);
+    // Scroll the right column into view on mobile so the combo builder is visible
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('product-modifiers')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
-    addItem({
-      ...item,
-      price: item.price + extraCost,
-      selectedModifiers: selectedMods,
-      deluxeLabel: deluxeLabel || undefined,
-      deluxeToppings: deluxeToppings || [],
-    });
-    if (comboItems && comboItems.length > 0) comboItems.forEach(ci => addItem(ci));
-    setShowModal(false);
-    setOpenAsCombo(false);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1200);
-  };
-
-  const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
+  const comboNotReady = showPanel && panelState.isCombo && !panelState.comboReady;
+  const canAdd = !soldOut && orderingEnabled && !comboNotReady;
+  const addLabel = soldOut
+    ? 'Sold Out'
+    : !orderingEnabled
+      ? 'Ordering Closed'
+      : added
+        ? 'Added to Cart!'
+        : comboNotReady
+          ? `Pick a ${panelState.comboDrinkType === 'shake' ? 'shake flavor' : 'soda'}`
+          : 'Add to Bag';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
-    : added ? 'bg-patina-mint text-white' : 'btn-cherry';
+    : added
+      ? 'bg-patina-mint text-white'
+      : comboNotReady
+        ? 'btn-cherry opacity-50 cursor-not-allowed'
+        : 'btn-cherry chrome-hover';
+  const liveTotal = showPanel ? panelState.total * quantity : (displayPrice || 0) * quantity;
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <CartDrawer />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-sm font-heading text-patina-mint hover:text-midnight-cherry transition-colors mb-4 tap-44"
@@ -175,139 +188,170 @@ export default function ProductDetail() {
         )}
 
         {item && !loading && (
-          <article className="card-diner overflow-hidden">
-            {/* Hero image */}
-            <div className="relative h-72 sm:h-96 bg-gray-100">
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-7xl bg-gradient-to-br from-amber-50 to-orange-100">
-                  {PLACEHOLDER_EMOJI[item.category] || '⭐'}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left column — sticky product summary */}
+            <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
+              {/* Title + price + calories */}
+              <div>
+                <h1 className="font-heading text-3xl sm:text-4xl text-obsidian-roast leading-tight mb-2">{item.name}</h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {isHappyHour && happyHourPrice !== null ? (
+                    <>
+                      <span className="text-base line-through text-muted-foreground">${item.price.toFixed(2)}</span>
+                      <span className="font-heading text-2xl text-midnight-cherry">${happyHourPrice.toFixed(2)}</span>
+                    </>
+                  ) : (
+                    <span className="font-heading text-2xl text-midnight-cherry">${item.price.toFixed(2)}</span>
+                  )}
+                  {item.calories && (
+                    <>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-sm text-muted-foreground">{item.calories} cal</span>
+                    </>
+                  )}
                 </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+              </div>
 
               {/* Badges */}
-              {item.is_fan_favorite && !soldOut && (
-                <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float">
-                  <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
-                </div>
-              )}
-              {!item.is_fan_favorite && item.is_featured && !soldOut && (
-                <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
-                  <Zap size={10} /> Special
-                </div>
-              )}
-              {soldOut && (
-                <div className="absolute top-3 left-3 bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider">
-                  Sold Out
-                </div>
-              )}
-              {isHappyHour && !soldOut && (
-                <div className="absolute left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1" style={{ top: (item.is_fan_favorite || item.is_featured) ? '2.75rem' : '0.75rem' }}>
-                  <Clock size={10} /> Happy Hour · Online
-                </div>
-              )}
-
-              {/* Favorite + share */}
-              {user && (
-                <button
-                  onClick={toggleFavorite}
-                  disabled={savingFavorite}
-                  className="absolute top-3 right-14 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
-                >
-                  <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
-                </button>
-              )}
-              <ShareItemButton itemId={item.id} variant="icon" ariaLabel={`Share ${item.name}`} className="absolute top-3 right-3" />
-            </div>
-
-            {/* Details */}
-            <div className="p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h1 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">{item.name}</h1>
-                {isHappyHour && happyHourPrice !== null ? (
-                  <div className="flex flex-col items-end flex-shrink-0">
-                    <span className="text-sm line-through text-muted-foreground">${item.price.toFixed(2)}</span>
-                    <span className="font-heading text-2xl text-midnight-cherry">${happyHourPrice.toFixed(2)}</span>
-                  </div>
-                ) : (
-                  <span className="font-heading text-2xl text-midnight-cherry flex-shrink-0">${item.price.toFixed(2)}</span>
+              <div className="flex flex-wrap gap-2">
+                {item.is_fan_favorite && !soldOut && (
+                  <span className="bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
+                    <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
+                  </span>
+                )}
+                {!item.is_fan_favorite && item.is_featured && !soldOut && (
+                  <span className="bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
+                    <Zap size={10} /> Special
+                  </span>
+                )}
+                {isHappyHour && !soldOut && (
+                  <span className="bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1">
+                    <Clock size={10} /> Happy Hour · Online
+                  </span>
+                )}
+                {soldOut && (
+                  <span className="bg-obsidian-roast text-white text-xs font-heading px-3 py-1 rounded-full uppercase tracking-wider">
+                    Sold Out
+                  </span>
                 )}
               </div>
 
+              {/* Large product image */}
+              <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-float">
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-8xl bg-gradient-to-br from-amber-50 to-orange-100">
+                    {PLACEHOLDER_EMOJI[item.category] || '⭐'}
+                  </div>
+                )}
+                {user && (
+                  <button
+                    onClick={toggleFavorite}
+                    disabled={savingFavorite}
+                    className="absolute top-3 right-14 p-2 rounded-full bg-white/90 hover:bg-white transition-colors disabled:opacity-60"
+                  >
+                    <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
+                  </button>
+                )}
+                <ShareItemButton itemId={item.id} variant="icon" ariaLabel={`Share ${item.name}`} className="absolute top-3 right-3" />
+              </div>
+
+              {/* Description */}
               {item.description && (
-                <p className="text-base leading-relaxed text-muted-foreground mb-4">{item.description}</p>
+                <p className="text-base leading-relaxed text-muted-foreground">{item.description}</p>
               )}
 
+              {/* Tags */}
               {item.tags && item.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <div className="flex flex-wrap gap-1.5">
                   {item.tags.map(tag => (
                     <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold bg-patina-mint/10 text-patina-mint">{tag}</span>
                   ))}
                 </div>
               )}
 
-              {item.calories && (
-                <p className="text-sm text-muted-foreground mb-4">{item.calories} cal</p>
-              )}
-
-              {hasModifiers && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available — tap below to build your perfect order.
-                </p>
-              )}
-
-              {/* Combo upsell (burgers) */}
+              {/* Make it a Combo (burgers) */}
               {isBurger && !soldOut && orderingEnabled && (
                 <button
                   onClick={handleMakeCombo}
-                  className="w-full mb-3 py-3 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30 transition-all"
+                  className="w-full py-3 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30 transition-all"
                 >
                   <Sparkles size={16} />
                   Make it a Combo
-                  {comboAddOn !== null && (
-                    <span className="ml-1 text-xs font-body text-midnight-cherry/70">+${comboAddOn.toFixed(2)}</span>
+                  {panelState.comboAddOn > 0 && (
+                    <span className="ml-1 text-xs font-body text-midnight-cherry/70">+${panelState.comboAddOn.toFixed(2)}</span>
                   )}
                 </button>
               )}
 
-              {/* Add to order */}
+              {/* Quantity selector */}
+              {!soldOut && orderingEnabled && (
+                <div className="flex items-center gap-3">
+                  <span className="font-heading text-sm text-obsidian-roast uppercase tracking-widest">Qty</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                      disabled={quantity <= 1}
+                      className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-midnight-cherry hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="font-heading text-lg text-obsidian-roast w-8 text-center">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(q => Math.min(20, q + 1))}
+                      disabled={quantity >= 20}
+                      className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-midnight-cherry hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Bag */}
               <button
-                onClick={handleAdd}
-                disabled={soldOut || !orderingEnabled}
+                onClick={handleAddToBag}
+                disabled={!canAdd}
                 className={`w-full py-4 text-base font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${addBtnClass}`}
               >
                 <Plus size={18} />
                 {addLabel}
-                {!soldOut && orderingEnabled && !added && (
-                  <span className="ml-1 opacity-70 font-body">· ${displayPrice.toFixed(2)}</span>
+                {!soldOut && orderingEnabled && !added && !comboNotReady && (
+                  <span className="ml-1 opacity-70 font-body">· ${liveTotal.toFixed(2)}</span>
                 )}
               </button>
               {!orderingEnabled && orderingClosedMessage && (
-                <p className="text-xs text-center text-muted-foreground mt-2">{orderingClosedMessage}</p>
+                <p className="text-xs text-center text-muted-foreground">{orderingClosedMessage}</p>
+              )}
+            </div>
+
+            {/* Right column — modifiers + reviews */}
+            <div id="product-modifiers" className="space-y-8">
+              {showPanel ? (
+                <ProductModifierPanel
+                  ref={panelRef}
+                  item={item}
+                  onConfirm={handlePanelConfirm}
+                  onStateChange={setPanelState}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="font-body">No customizations available for this item.</p>
+                </div>
               )}
 
-              {/* Ratings + reviews */}
-              <div className="mt-6 pt-5 border-t border-border">
+              {/* Reviews */}
+              <div className="pt-6 border-t border-border">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-1">Customer reviews</h2>
                 <ItemRatings item={item} />
               </div>
             </div>
-          </article>
+          </div>
         )}
       </main>
 
       <Footer />
-
-      {showModal && item && (
-        <ModifierModal
-          item={item}
-          autoCombo={openAsCombo}
-          onClose={() => { setShowModal(false); setOpenAsCombo(false); }}
-          onConfirm={handleModalConfirm}
-        />
-      )}
     </div>
   );
 }
