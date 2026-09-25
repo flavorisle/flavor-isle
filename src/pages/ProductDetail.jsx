@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Sparkles, Heart } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Sparkles, Heart, Pencil } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -37,7 +37,8 @@ export default function ProductDetail() {
   const [panelState, setPanelState] = useState({
     total: 0, isCombo: false, comboReady: false, comboAddOn: 0,
     comboDrinkType: 'shake', comboStep: 0,
-    comboSideName: null, comboFlavorName: null, comboSodaName: null,
+    comboSideName: null, comboSideModsLabel: null,
+    comboDrinkName: null, comboDrinkModsLabel: null,
     deluxeLabel: null, burgerModsLabel: null, ready: true,
   });
   const panelRef = useRef(null);
@@ -103,6 +104,7 @@ export default function ProductDetail() {
   const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
     const baseItem = {
       ...item,
+      productId: item.id,
       price: item.price + extraCost,
       selectedModifiers: selectedMods,
       deluxeLabel: deluxeLabel || undefined,
@@ -124,7 +126,7 @@ export default function ProductDetail() {
       panelRef.current.confirm();
     } else {
       trackSelectItem(foodItemToGa4(item));
-      for (let i = 0; i < quantity; i++) addItem(item);
+      for (let i = 0; i < quantity; i++) addItem({ ...item, productId: item.id });
       setAdded(true);
       setTimeout(() => setAdded(false), 1200);
     }
@@ -306,7 +308,7 @@ export default function ProductDetail() {
 
               {/* Combo summary — shown above Add to Bag while combo is active */}
               {panelState.isCombo && (
-                <div className="rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-3 space-y-1.5">
+                <div className="rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-heading text-xs uppercase tracking-widest text-midnight-cherry">Isle Combo</span>
                     <button
@@ -316,30 +318,61 @@ export default function ProductDetail() {
                       Remove combo
                     </button>
                   </div>
-                  {panelState.burgerModsLabel ? (
-                    <div className="flex justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground flex-shrink-0">Burger</span>
-                      <span className="font-body font-semibold text-obsidian-roast text-right">{panelState.burgerModsLabel}</span>
+                  {/* Burger row */}
+                  <div className="flex justify-between items-start gap-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-body font-semibold text-obsidian-roast">{item.name}</span>
+                      {panelState.burgerModsLabel && (
+                        <span className="block text-xs text-muted-foreground leading-tight">{panelState.burgerModsLabel}</span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground italic">Customize your burger below…</div>
-                  )}
+                    <button
+                      onClick={() => panelRef.current?.editComboStep(0)}
+                      className="text-xs text-patina-mint hover:text-midnight-cherry font-heading flex items-center gap-1 flex-shrink-0"
+                    >
+                      <Pencil size={11} /> Edit
+                    </button>
+                  </div>
+                  {/* Side row */}
                   {panelState.comboSideName ? (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Side</span>
-                      <span className="font-body font-semibold text-obsidian-roast">{panelState.comboSideName}</span>
+                    <div className="flex justify-between items-start gap-3 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-body font-semibold text-obsidian-roast">{panelState.comboSideName}</span>
+                        {panelState.comboSideModsLabel && (
+                          <span className="block text-xs text-muted-foreground leading-tight">{panelState.comboSideModsLabel}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => panelRef.current?.editComboStep(1)}
+                        className="text-xs text-patina-mint hover:text-midnight-cherry font-heading flex items-center gap-1 flex-shrink-0"
+                      >
+                        <Pencil size={11} /> Edit
+                      </button>
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground italic">Pick a side to get started…</div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Drink</span>
-                    <span className="font-body font-semibold text-obsidian-roast">
-                      {panelState.comboDrinkType === 'shake'
-                        ? panelState.comboFlavorName || 'Pick a flavor…'
-                        : panelState.comboSodaName || 'Pick a soda…'}
-                    </span>
-                  </div>
+                  {/* Drink row */}
+                  {panelState.comboDrinkName ? (
+                    <div className="flex justify-between items-start gap-3 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-body font-semibold text-obsidian-roast">{panelState.comboDrinkName}</span>
+                        {panelState.comboDrinkModsLabel && (
+                          <span className="block text-xs text-muted-foreground leading-tight">{panelState.comboDrinkModsLabel}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => panelRef.current?.editComboStep(3)}
+                        className="text-xs text-patina-mint hover:text-midnight-cherry font-heading flex items-center gap-1 flex-shrink-0"
+                      >
+                        <Pencil size={11} /> Edit
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">
+                      {panelState.comboStep < 3 ? 'Pick your drink…' : panelState.comboDrinkType === 'shake' ? 'Pick a shake flavor…' : 'Pick a soda…'}
+                    </div>
+                  )}
                 </div>
               )}
 

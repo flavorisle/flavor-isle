@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, Users } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ArrowRight, Users, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
@@ -185,8 +185,21 @@ export default function CartDrawer() {
                       <Plus size={12} />
                     </button>
                     <button
+                      onClick={() => {
+                        const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                        if (pid && !pid.startsWith('combo-')) {
+                          setIsCartOpen(false);
+                          navigate(`/product/${pid}`);
+                        }
+                      }}
+                      className="ml-auto p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                      aria-label={`Edit ${item.name}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
                       onClick={() => removeItem(item.id)}
-                      className="ml-auto p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>

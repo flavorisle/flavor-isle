@@ -230,9 +230,14 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       comboAddOn,
       comboDrinkType,
       comboStep,
-      comboSideName: comboSide ? [comboSide.name, ...modNames(comboSideMods)].filter(Boolean).join(', ') : null,
-      comboFlavorName: comboFlavor ? [resolveFlavorName(comboFlavor.id, comboFlavor.name), ...modNames(comboShakeMods)].filter(Boolean).join(', ') : null,
-      comboSodaName: comboSoda ? [comboSoda.name, ...modNames(comboDrinkMods)].filter(Boolean).join(', ') : null,
+      comboSideName: comboSide?.name || null,
+      comboSideModsLabel: modNames(comboSideMods).join(', ') || null,
+      comboDrinkName: comboDrinkType === 'shake'
+        ? (comboFlavor ? `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake` : null)
+        : (comboSoda ? `${comboSoda.name} (20oz)` : null),
+      comboDrinkModsLabel: comboDrinkType === 'shake'
+        ? (modNames(comboShakeMods).join(', ') || null)
+        : (modNames(comboDrinkMods).join(', ') || null),
       deluxeLabel,
       burgerModsLabel,
       ready,
@@ -257,10 +262,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     const comboItems = isCombo && comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda)
       ? (comboDrinkType === 'shake'
         ? [
-            { ...comboSide, id: `combo-${comboSide.id}`, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
+            { ...comboSide, id: `combo-${comboSide.id}`, productId: comboSide.id, comboParentId: item.id, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
             {
               ...comboData.shake,
               id: `combo-${comboData.shake.id}`,
+              productId: comboData.shake.id,
+              comboParentId: item.id,
               name: `${resolveFlavorName(comboFlavor.id, comboFlavor.name)} Milkshake`,
               price: +(comboData.shake.price + (comboFlavor.price || 0) + shakeModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
@@ -271,10 +278,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
             },
           ]
         : [
-            { ...comboSide, id: `combo-${comboSide.id}`, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
+            { ...comboSide, id: `combo-${comboSide.id}`, productId: comboSide.id, comboParentId: item.id, price: +(comboSide.price + sideModsExtra).toFixed(2), quantity: 1, selectedModifiers: sideModsToCart },
             {
               ...comboData.drink,
               id: `combo-${comboData.drink.id}`,
+              productId: comboData.drink.id,
+              comboParentId: item.id,
               name: `${comboSoda.name} (20oz)`,
               price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
@@ -294,6 +303,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     isReady: () => ready,
     toggleCombo: () => setIsCombo(prev => !prev),
     setCombo: (val) => { setIsCombo(val); setComboStep(0); },
+    editComboStep: (step) => { setIsCombo(true); setComboStep(step); },
   }));
 
   // Renders a combo item's "extra" modifier groups — every group not already

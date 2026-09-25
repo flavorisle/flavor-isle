@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 import { base44 } from '@/api/base44Client';
@@ -937,11 +937,23 @@ export default function Checkout() {
                       <div className="space-y-2">
                         {cartItems.filter(i => i.person_id === p.id).map(item => (
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                               <CartItemModifiers modifiers={item.selectedModifiers} />
                             </div>
-                            <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => {
+                                  const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                                  if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                                }}
+                                className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                                aria-label={`Edit ${item.name}`}
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -954,11 +966,23 @@ export default function Checkout() {
                 ) : (
                   cartItems.map(item => (
                     <div key={item.id} className="flex justify-between items-start gap-3">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
                         <CartItemModifiers modifiers={item.selectedModifiers} />
                       </div>
-                      <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                            if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                          }}
+                          className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                          aria-label={`Edit ${item.name}`}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
                     </div>
                   ))
                 )}
