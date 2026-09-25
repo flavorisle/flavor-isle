@@ -37,6 +37,14 @@ const TIKTOK_VIDEOS = [
   },
 ];
 
+const FACEBOOK_REEL = {
+  type: 'facebook',
+  url: 'https://www.facebook.com/reel/1611434090062222/',
+  title: 'Update on the amazing local restaurant that deserves all the love and support',
+  creator: 'Luke Collins',
+  subtitle: '37K views · 830 reactions',
+};
+
 const INSTAGRAM_REEL = {
   type: 'instagram',
   url: 'https://www.instagram.com/reel/DarDRBmt4Es/embed',
@@ -212,6 +220,7 @@ export default function Reviews() {
             {TIKTOK_VIDEOS.map((v, i) => (
               <LazyEmbed key={i} type="tiktok" {...v} />
             ))}
+            <LazyEmbed {...FACEBOOK_REEL} />
             <LazyEmbed {...INSTAGRAM_REEL} />
           </div>
         </div>
