@@ -482,7 +482,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                 {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               {group.modifiers.map(mod => {
                 const isMultiple = group.selection_type === 'MULTIPLE';
                 const isSelected = isMultiple
@@ -495,27 +495,21 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                     type="button"
                     disabled={mod.sold_out}
                     onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
+                    className={`px-4 py-2.5 rounded-full border transition-all font-body text-sm font-semibold ${
                       mod.sold_out
-                        ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed'
+                        ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
                         : isSelected
-                          ? 'border-midnight-cherry bg-midnight-cherry/5'
-                          : 'border-gray-300 hover:border-gray-400 bg-white'
+                          ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
+                          : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'
-                      }`}>
-                        {isSelected && <Check size={12} className="text-white" />}
-                      </div>
-                      <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
-                    </div>
+                    {mod.name}
                     {mod.sold_out ? (
-                      <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
+                      <span className="ml-1.5 text-xs text-muted-foreground uppercase">Sold Out</span>
                     ) : mod.price > 0 && (
-                      <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
+                      <span className={`ml-1.5 text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>+${mod.price.toFixed(2)}</span>
                     )}
+                    {isSelected && <Check size={13} className="ml-1 inline" />}
                   </button>
                 );
               })}
