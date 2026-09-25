@@ -366,8 +366,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         </div>
       )}
 
-      {/* Combo toggle — burgers only, hidden once combo flow starts */}
-      {isBurger && comboData && (!isCombo || comboStep === 0) && (
+      {/* Combo toggle — burgers only */}
+      {isBurger && comboData && (
         <div className="space-y-2">
           <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Make it a combo?</h4>
           <button
