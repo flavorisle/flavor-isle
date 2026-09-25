@@ -280,20 +280,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Make it a Combo (burgers) — hidden once combo is active */}
-              {isBurger && !soldOut && orderingEnabled && !panelState.isCombo && (
-                <button
-                  onClick={handleMakeCombo}
-                  className="w-full py-3 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30 transition-all"
-                >
-                  <Sparkles size={16} />
-                  Make it a Combo
-                  {panelState.comboAddOn > 0 && (
-                    <span className="ml-1 text-xs font-body text-midnight-cherry/70">+${panelState.comboAddOn.toFixed(2)}</span>
-                  )}
-                </button>
-              )}
-
               {/* Quantity selector */}
               {!soldOut && orderingEnabled && (
                 <div className="flex items-center gap-3">
