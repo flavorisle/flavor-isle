@@ -60,6 +60,14 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
     ? presets
     : [{ name: 'Deluxe', trackedToppings: DELUXE_TOPPINGS, allToppings: DELUXE_TOPPINGS }];
 
+  // If the customer selected Plain or No Sauce, the Deluxe preset is no longer
+  // active — drop the preset label entirely and just list the selected items.
+  const hasPlainOrNoSauce = selectedModifiers.some((m) => {
+    const name = norm(typeof m === 'string' ? m : m?.name || '');
+    return /plain/i.test(name) || /no\s*sauce/i.test(name);
+  });
+  if (hasPlainOrNoSauce) return { label: null, allToppings: [] };
+
   let best = null;
   for (const preset of list) {
     const tracked = preset.trackedToppings || [];
@@ -74,11 +82,9 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
     }
   }
   if (!best) return { label: null, allToppings: [] };
-  // Only show the preset name when every tracked topping is present.
-  // Partial matches just list the individual selections instead of
-  // "Deluxe, no X, no Y…" which is misleading for small selections.
+  // Full match → "Deluxe"; partial → "Deluxe, no Mustard".
   if (best.missing.length === 0) return { label: best.name, allToppings: best.allToppings };
-  return { label: null, allToppings: [] };
+  return { label: `${best.name}, no ${best.missing.join(', no ')}`, allToppings: best.allToppings };
 }
 
 // Builds the full Deluxe label for display on badges, combo summaries, cart
@@ -105,7 +111,10 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
     (p.allToppings || []).forEach(t => allPresetToppingNames.push(t));
     (p.trackedToppings || []).forEach(t => allPresetToppingNames.push(t));
   });
-  const isPresetTopping = (name) => allPresetToppingNames.some(t => matchScore(name, t) > 0);
+  // Stricter match (score >= 2 = exact or stemmed) so extras like
+  // "Grilled Onions" or "Jalapeños" are NOT treated as the preset's "Onion"
+  // and correctly get the "add" prefix.
+  const isPresetTopping = (name) => allPresetToppingNames.some(t => matchScore(name, t) >= 2);
 
   const itemHasCheese = item ? /cheese/i.test(item.name) : false;
 
