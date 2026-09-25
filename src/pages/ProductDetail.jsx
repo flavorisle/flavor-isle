@@ -38,7 +38,7 @@ export default function ProductDetail() {
     total: 0, isCombo: false, comboReady: false, comboAddOn: 0,
     comboDrinkType: 'shake', comboStep: 0,
     comboSideName: null, comboFlavorName: null, comboSodaName: null,
-    deluxeLabel: null, ready: true,
+    deluxeLabel: null, burgerModsLabel: null, ready: true,
   });
   const panelRef = useRef(null);
 
@@ -316,6 +316,14 @@ export default function ProductDetail() {
                       Remove combo
                     </button>
                   </div>
+                  {panelState.burgerModsLabel ? (
+                    <div className="flex justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground flex-shrink-0">Burger</span>
+                      <span className="font-body font-semibold text-obsidian-roast text-right">{panelState.burgerModsLabel}</span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">Customize your burger below…</div>
+                  )}
                   {panelState.comboSideName ? (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Side</span>

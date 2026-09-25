@@ -195,6 +195,15 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     ? buildDeluxeLabelFull(liveModifiers, labelPresets)
     : { label: null, allToppings: [] };
 
+  // Build a human-readable summary of the burger's selected modifiers for the
+  // combo summary box. Includes the deluxe preset label (e.g. "Deluxe, no
+  // Pickles") plus any non-deluxe modifiers (cheese, extras, etc.) not tracked
+  // by a preset.
+  const allPresetToppings = new Set();
+  labelPresets.forEach(p => p.trackedToppings.forEach(t => allPresetToppings.add((t || '').toLowerCase())));
+  const nonDeluxeMods = liveModifiers.filter(m => !allPresetToppings.has((m.name || '').toLowerCase()));
+  const burgerModsLabel = [deluxeLabel, ...nonDeluxeMods.map(m => m.name)].filter(Boolean).join(', ') || null;
+
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
@@ -218,9 +227,10 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       comboFlavorName: comboFlavor ? resolveFlavorName(comboFlavor.id, comboFlavor.name) : null,
       comboSodaName: comboSoda?.name || null,
       deluxeLabel,
+      burgerModsLabel,
       ready,
     });
-  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, comboSide, comboFlavor, comboSoda, deluxeLabel, ready, onStateChange]);
+  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, comboSide, comboFlavor, comboSoda, deluxeLabel, burgerModsLabel, ready, onStateChange]);
 
   const handleConfirm = () => {
     const selectedMods = [];
