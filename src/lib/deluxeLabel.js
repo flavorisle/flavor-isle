@@ -92,24 +92,30 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   const { label, allToppings } = buildDeluxeLabelFull(selectedModifiers, presets);
   if (!presets || presets.length === 0) return { label, allToppings };
 
-  const allPresetToppings = new Set();
+  // Collect all preset topping names (both tracked and silent) for tolerant
+  // matching — uses matchScore so "Pickles" matches "Pickle", "Onions" matches
+  // "Onion", etc. Without this, a plural modifier name would slip past the
+  // exact lowercase check and show as "add Pickles" even though Pickle is part
+  // of the Deluxe preset.
+  const allPresetToppingNames = [];
   presets.forEach(p => {
-    (p.allToppings || []).forEach(t => allPresetToppings.add((t || '').toLowerCase()));
-    (p.trackedToppings || []).forEach(t => allPresetToppings.add((t || '').toLowerCase()));
+    (p.allToppings || []).forEach(t => allPresetToppingNames.push(t));
+    (p.trackedToppings || []).forEach(t => allPresetToppingNames.push(t));
   });
+  const isPresetTopping = (name) => allPresetToppingNames.some(t => matchScore(name, t) > 0);
 
   const itemHasCheese = item ? /cheese/i.test(item.name) : false;
 
   // When Deluxe is active, preset toppings are summarized by the label.
   // When not active, all selected modifiers show individually.
   const extras = label
-    ? selectedModifiers.filter(m => !allPresetToppings.has((m.name || '').toLowerCase()))
+    ? selectedModifiers.filter(m => !isPresetTopping(m.name))
     : selectedModifiers;
 
   const extraLabels = extras.map(m => {
     const isCheese = /cheese/i.test(m.name) || /cheese/i.test(m.group || '');
     if (isCheese) return itemHasCheese ? `sub ${m.name}` : `add ${m.name}`;
-    return allPresetToppings.has((m.name || '').toLowerCase()) ? m.name : `add ${m.name}`;
+    return isPresetTopping(m.name) ? m.name : `add ${m.name}`;
   });
 
   const fullLabel = [label, ...extraLabels].filter(Boolean).join(', ') || null;

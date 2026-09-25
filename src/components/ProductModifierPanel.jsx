@@ -35,7 +35,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const [isCombo, setIsCombo] = useState(false);
   const [comboData, setComboData] = useState(null);
   const [comboSide, setComboSide] = useState(null);
-  const [comboDrinkType, setComboDrinkType] = useState('shake');
+  const [comboDrinkType, setComboDrinkType] = useState(null);
   const [comboFlavor, setComboFlavor] = useState(null);
   const [comboSoda, setComboSoda] = useState(null);
   const [comboSideMods, setComboSideMods] = useState({});
@@ -60,7 +60,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     getComboData().then(data => {
       if (cancelled || !data) return;
       setComboData(data);
-      setComboSide(data.sides[0]);
     });
     return () => { cancelled = true; };
   }, [isBurger]);
@@ -151,7 +150,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const shakeModsToCart = modsToCart(comboShakeMods);
   const drinkModsExtra = modsExtra(comboDrinkMods);
   const drinkModsToCart = modsToCart(comboDrinkMods);
-  const comboAddOn = comboData && comboSide
+  const comboAddOn = comboData && comboSide && comboDrinkType
     ? (comboDrinkType === 'shake'
         ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra + shakeModsExtra - COMBO_DISCOUNT).toFixed(2)
         : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2))
@@ -449,7 +448,90 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         </div>
       )}
 
-      {/* Step 0: "Pick a side" button — combo just toggled on, sides not yet revealed */}
+      {/* Deluxe presets */}
+      {deluxePresets.length > 0 && deluxePresets.map((preset) => {
+        const active = isDeluxePresetActive(selections, preset);
+        return (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => toggleDeluxe(preset)}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
+              active
+                ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                : 'border-midnight-cherry/40 bg-midnight-cherry/5 text-midnight-cherry hover:bg-midnight-cherry/10'
+            }`}
+          >
+            <span className="flex items-center gap-2 font-heading text-sm">
+              <Sparkles size={16} />
+              Make it {preset.name}
+            </span>
+            <span className="flex items-center gap-2 text-xs font-body">
+              {preset.modifiers.map((m) => m.name).join(', ')}
+              <span className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${active ? 'bg-white border-white' : 'border-midnight-cherry'}`}>
+                {active && <Check size={12} className="text-midnight-cherry" />}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+
+      {/* Modifier groups */}
+      {hasModifiers ? (
+        item.modifiers.map(group => (
+          <div key={group.name}>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {group.modifiers.map(mod => {
+                const isMultiple = group.selection_type === 'MULTIPLE';
+                const isSelected = isMultiple
+                  ? (selections[group.name] || []).some(m => m.id === mod.id)
+                  : selections[group.name]?.id === mod.id;
+
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    disabled={mod.sold_out}
+                    onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                      mod.sold_out
+                        ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                        : isSelected
+                          ? 'border-midnight-cherry bg-red-50'
+                          : 'border-border hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
+                        isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <Check size={12} className="text-white" />}
+                      </div>
+                      <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
+                    </div>
+                    {mod.sold_out ? (
+                      <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
+                    ) : mod.price > 0 && (
+                      <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      ) : !isBurger && (
+        <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
+      )}
+
+      {/* Combo steps — shown below the main modifiers */}
+      {/* Step 0: "Pick a side" button */}
       {isBurger && comboData && isCombo && comboStep === 0 && (
         <button
           type="button"
@@ -610,88 +692,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
           {/* Drink extra modifiers — ice level, etc. */}
           {comboDrinkType === 'soda' && renderExtraGroups(comboData.drink, drinkExclude, comboDrinkMods, setComboDrinkMods)}
         </div>
-      )}
-
-      {/* Deluxe presets — hidden once combo flow starts */}
-      {!(isCombo && comboStep >= 1) && deluxePresets.length > 0 && deluxePresets.map((preset) => {
-        const active = isDeluxePresetActive(selections, preset);
-        return (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => toggleDeluxe(preset)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
-              active
-                ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                : 'border-midnight-cherry/40 bg-midnight-cherry/5 text-midnight-cherry hover:bg-midnight-cherry/10'
-            }`}
-          >
-            <span className="flex items-center gap-2 font-heading text-sm">
-              <Sparkles size={16} />
-              Make it {preset.name}
-            </span>
-            <span className="flex items-center gap-2 text-xs font-body">
-              {preset.modifiers.map((m) => m.name).join(', ')}
-              <span className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${active ? 'bg-white border-white' : 'border-midnight-cherry'}`}>
-                {active && <Check size={12} className="text-midnight-cherry" />}
-              </span>
-            </span>
-          </button>
-        );
-      })}
-
-      {/* Modifier groups — hidden once combo flow starts */}
-      {!(isCombo && comboStep >= 1) && hasModifiers ? (
-        item.modifiers.map(group => (
-          <div key={group.name}>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {group.modifiers.map(mod => {
-                const isMultiple = group.selection_type === 'MULTIPLE';
-                const isSelected = isMultiple
-                  ? (selections[group.name] || []).some(m => m.id === mod.id)
-                  : selections[group.name]?.id === mod.id;
-
-                return (
-                  <button
-                    key={mod.id}
-                    type="button"
-                    disabled={mod.sold_out}
-                    onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                      mod.sold_out
-                        ? 'border-border bg-muted opacity-50 cursor-not-allowed'
-                        : isSelected
-                          ? 'border-midnight-cherry bg-red-50'
-                          : 'border-border hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'
-                      }`}>
-                        {isSelected && <Check size={12} className="text-white" />}
-                      </div>
-                      <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
-                    </div>
-                    {mod.sold_out ? (
-                      <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
-                    ) : mod.price > 0 && (
-                      <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))
-      ) : !(isCombo && comboStep >= 1) && !isBurger && (
-        <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
       )}
     </div>
   );
