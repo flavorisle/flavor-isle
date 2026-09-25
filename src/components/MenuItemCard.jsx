@@ -9,7 +9,6 @@ import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
-import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -24,8 +23,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [openAsCombo, setOpenAsCombo] = useState(false);
-  const [comboAddOn, setComboAddOn] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
 
@@ -39,21 +36,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const isBurger = /burger/i.test(item.name);
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
-
-  // Starting combo add-on for burgers — first side + vanilla shake (the
-  // modal's default drink) minus the combo discount. Uses the shared session
-  // cache so this never bursts the API rate limit across many burger cards.
-  useEffect(() => {
-    if (!isBurger || soldOut) return;
-    let cancelled = false;
-    getComboData().then((data) => {
-      if (cancelled || !data) return;
-      const side = data.sides[0];
-      if (!side) return;
-      setComboAddOn(+(side.price + data.shake.price - COMBO_DISCOUNT).toFixed(2));
-    });
-    return () => { cancelled = true; };
-  }, [isBurger, soldOut]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -133,17 +115,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     setTimeout(() => setAdded(false), 1200);
   };
 
-  // "Make it a Combo" — burgers only. Opens the modifier modal with the Isle
-  // Combo toggle pre-selected so the customer lands straight in the side +
-  // drink picker instead of having to toggle it on inside the modal.
-  const handleMakeCombo = (e) => {
-    e?.stopPropagation();
-    if (!orderingEnabled) return;
-    trackSelectItem(foodItemToGa4(item));
-    setOpenAsCombo(true);
-    setShowModal(true);
-  };
-
   // ── Reusable pieces ──
 
   // Favorite sits just left of the share button so both fit in the top-right.
@@ -170,6 +141,13 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   const badges = (
     <>
+      {isBurger && !soldOut && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+          <div className="bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1.5 rounded-full flex items-center gap-1 shadow-float">
+            <Sparkles size={11} /> Make an Isle Combo on the product page →
+          </div>
+        </div>
+      )}
       {item.is_fan_favorite && !soldOut && (
         <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
           <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
@@ -265,24 +243,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
             {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
           </p>
         )}
-        {isBurger && !soldOut && orderingEnabled && (
-          <button
-            onClick={handleMakeCombo}
-            className={`w-full mb-2 py-2.5 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border transition-all pointer-events-auto ${
-              light
-                ? 'bg-smashie-yellow text-obsidian-roast border-smashie-yellow hover:bg-smashie-yellow/90'
-                : 'bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30'
-            }`}
-          >
-            <Sparkles size={15} />
-            Make it a Combo
-            {comboAddOn !== null && (
-              <span className={`ml-1 text-xs font-body ${light ? 'text-obsidian-roast/70' : 'text-midnight-cherry/70'}`}>
-                +${comboAddOn.toFixed(2)}
-              </span>
-            )}
-          </button>
-        )}
         <button
           onClick={handleAdd}
           disabled={soldOut || !orderingEnabled}
@@ -303,8 +263,8 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const modal = showModal && (
     <ModifierModal
       item={item}
-      autoCombo={openAsCombo}
-      onClose={() => { setShowModal(false); setOpenAsCombo(false); }}
+      autoCombo={false}
+      onClose={() => { setShowModal(false); }}
       onConfirm={handleModalConfirm}
     />
   );
@@ -318,6 +278,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         <div className="group relative card-diner">
           {favoriteBtn}
           {shareBtn}
+          {badges}
           {renderContent(false)}
         </div>
       </>
