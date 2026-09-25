@@ -326,7 +326,7 @@ function LoggedInAccount({ user, logout }) {
             <User size={28} className="text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="font-heading text-3xl text-white">{profile?.name || user.full_name || 'Welcome!'}</h1>
+            <h2 className="font-heading text-3xl text-white">{profile?.name || user.full_name || 'Welcome!'}</h2>
             <p className="text-gray-400 text-sm">{user.email}</p>
           </div>
           <div className="flex items-center gap-6">

@@ -3,6 +3,7 @@ import { ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import Seo from '@/components/Seo';
 
 const SECTIONS = [
   {
@@ -196,6 +197,10 @@ export default function PrivacyPolicy() {
   const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Privacy Policy — Flavor Isle | Smiths Grove, KY"
+        description="How Flavor Isle collects, uses, and protects your personal information, including order data, payment processing, SMS consent, and loyalty rewards."
+      />
       <Navbar />
       <CartDrawer />
 

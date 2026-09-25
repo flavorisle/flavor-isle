@@ -11,6 +11,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
+import Seo from '@/components/Seo';
 
 const SMASHIE_TRAITS = [
   { emoji: '🔥', label: 'Always Hyped', desc: 'Smashie loves this food more than anyone. Every item slaps and he will tell you exactly why.' },
@@ -47,6 +48,10 @@ export default function MeetSmashie() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Meet Smashie — Flavor Isle's AI Assistant | Smiths Grove, KY"
+        description="Meet Smashie, Flavor Isle's AI-powered assistant. He knows the menu, takes orders by phone and text, and helps you plan your visit 24/7."
+      />
       <Navbar />
       <CartDrawer />
 

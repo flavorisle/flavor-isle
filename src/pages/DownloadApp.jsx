@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
 import AppPhoneMockup from '@/components/AppPhoneMockup';
+import Seo from '@/components/Seo';
 
 const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png'; // hands up
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
@@ -21,6 +22,10 @@ const FEATURES = [
 export default function DownloadApp() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Get the Flavor Isle App — Order Ahead, Earn Rewards | Smiths Grove, KY"
+        description="Download the Flavor Isle app for iOS or Android. Order ahead, earn Star Rewards, get order-ready alerts, and chat with Smashie AI — all in one place."
+      />
       <Navbar />
       <CartDrawer />
 

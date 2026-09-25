@@ -77,6 +77,8 @@ export default function Rewards() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Seo
+          title="Star Rewards — Earn Points on Every Order | Flavor Isle"
+          description="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food at the register."
           ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
           ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
           ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"
@@ -323,6 +325,8 @@ export default function Rewards() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Seo
+          title="Star Rewards — Earn Points on Every Order | Flavor Isle"
+          description="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food at the register."
           ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
           ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
           ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"

@@ -5,12 +5,17 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewForm from '@/components/ReviewForm';
+import Seo from '@/components/Seo';
 
 export default function Feedback() {
   const location = useLocation();
   const orderId = new URLSearchParams(location.search).get('order');
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Share Feedback — Flavor Isle | Smiths Grove, KY"
+        description="Tell us how we did. Share your Flavor Isle feedback, rate your experience, and help us serve you better off I-65 Exit 38."
+      />
       <Navbar />
       <CartDrawer />
 

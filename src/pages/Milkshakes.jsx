@@ -69,6 +69,8 @@ export default function Milkshakes() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
+        title="Milkshakes & Ice Cream — Flavor Isle, Smiths Grove KY"
+        description="Thick, hand-spun milkshakes with real fruit — 16 flavors from chocolate and peanut butter to real-fruit strawberry and cherry. Order online or swing by I-65 Exit 38."
         ogTitle="Real-Fruit Milkshakes — Flavor Isle | Smiths Grove, KY"
         ogDescription="Thick, hand-spun milkshakes with real fruit — 16 flavors from chocolate and peanut butter to real-fruit strawberry and cherry. Order online or swing by Exit 38."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e26ad9c1c_card-milkshakes.png"

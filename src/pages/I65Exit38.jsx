@@ -85,7 +85,7 @@ export default function I65Exit38() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Flavor Isle | I-65 Exit 38 Burger & Ice Cream Stop Near Bowling Green, KY"
+        title="Dining off I-65 Exit 38 — Flavor Isle, Smiths Grove KY"
         description="Off I-65 Exit 38 in Smiths Grove — 15 min north of Bowling Green. Fresh hand-patted burgers, hand-cut fries, thick milkshakes & soft-serve since 1964. Order ahead online for pickup."
         ogTitle="I-65 Exit 38 Food Stop — Flavor Isle | Smiths Grove, KY"
         ogDescription="Skip the interstate chains. Flavor Isle is 0.7 miles off I-65 Exit 38 — hand-patted burgers, thick shakes, fast pickup for road trippers."

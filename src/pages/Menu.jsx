@@ -136,6 +136,9 @@ export default function Menu() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
+        path="/menu"
+        title="Menu | Burgers, Shakes & Diner Favorites — Flavor Isle"
+        description="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
         ogTitle="Flavor Isle Menu — Burgers, Shakes & Diner Favorites | Smiths Grove, KY"
         ogDescription="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8bd9c4f84_card-menu.png"
@@ -149,7 +152,7 @@ export default function Menu() {
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">ORDER ONLINE</p>
-          <h1 className="font-heading text-5xl text-white mb-6">The Menu</h1>
+          <h1 className="font-heading text-5xl text-white mb-6">The Flavor Isle Menu</h1>
           <div className="mb-6">
             <SocialProofStrip tone="light" />
           </div>

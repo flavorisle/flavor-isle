@@ -3,6 +3,7 @@ import { FileText, MapPin, Phone, Mail } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import Seo from '@/components/Seo';
 
 const SECTIONS = [
   {
@@ -202,6 +203,10 @@ export default function TermsOfService() {
   const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Terms of Service — Flavor Isle | Smiths Grove, KY"
+        description="The rules and terms for using Flavor Isle's website, online ordering, loyalty program, and AI assistant Smashie."
+      />
       <Navbar />
       <CartDrawer />
 

@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import GalleryGrid from '@/components/gallery/GalleryGrid';
 import GalleryLightbox from '@/components/gallery/GalleryLightbox';
+import Seo from '@/components/Seo';
 import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
 
 export default function Gallery() {
@@ -19,6 +20,10 @@ export default function Gallery() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Gallery — Flavor Isle Photos | Smiths Grove, KY"
+        description="Photos of Flavor Isle's hand-patted burgers, thick milkshakes, and roadside diner in Smiths Grove, KY. See what's cooking off I-65 Exit 38."
+      />
       <Navbar />
 
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-6xl mx-auto text-center">

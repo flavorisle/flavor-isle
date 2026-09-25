@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import NewsPostCard from '@/components/news/NewsPostCard';
 import NewsComposer from '@/components/news/NewsComposer';
+import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -24,6 +25,10 @@ export default function CommunityNews() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Community News — Flavor Isle | Smiths Grove, KY"
+        description="Latest updates from Flavor Isle: community events, diner news, and local partnerships in Smiths Grove, KY. See what's happening at the Isle."
+      />
       <Navbar />
 
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-3xl mx-auto text-center">

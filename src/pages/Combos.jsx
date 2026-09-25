@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
+import Seo from '@/components/Seo';
 import { isNativeApp } from '@/lib/isNativeApp';
 
 // The combo builder is an app-only feature. On the public website we show a
@@ -20,6 +21,10 @@ export default function Combos() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Combo Meals — Build Your Burger & Shake Combo | Flavor Isle"
+        description="Build your own Isle Combo: pick a hand-patted burger, add crinkle fries and a hand-spun shake, and save. Order combos online for pickup or delivery at Flavor Isle."
+      />
       <Navbar />
       <GroupOrderBar />
       <CartDrawer />

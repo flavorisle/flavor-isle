@@ -16,7 +16,7 @@ export default function MammothCaveDining() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Flavor Isle | Kid-Friendly Burger & Shake Stop Near Mammoth Cave National Park"
+        title="Mammoth Cave Dining — Flavor Isle, Smiths Grove KY"
         description="15 minutes from Mammoth Cave on I-65 Exit 38 — hand-patted burgers, thick shakes, and crinkle fries the kids will love. Order ahead online and eat on your way to or from the caves."
         ogTitle="Mammoth Cave Restaurants — Eat at Flavor Isle | Smiths Grove, KY"
         ogDescription="Visiting Mammoth Cave National Park? Flavor Isle is about 30 minutes away in Smiths Grove — burgers, shakes and quick pickup for cave-bound travelers."

@@ -7,6 +7,7 @@ import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 
 const ICONS = { Flame, TrendingUp, AlertCircle, Zap };
 
@@ -35,6 +36,10 @@ export default function BusynessGuide() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="What to Expect — Wait Times & Busyness | Flavor Isle, Smiths Grove KY"
+        description="Check live wait times and kitchen busyness before you order. See how long pickup, delivery, and dine-in take at Flavor Isle off I-65 Exit 38."
+      />
       <Navbar />
       <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-14">
         {/* Header */}

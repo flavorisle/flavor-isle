@@ -16,7 +16,7 @@ export default function CorvetteCarClubs() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Flavor Isle | Classic Diner Stop for Corvette Museum Visitors & Car Clubs"
+        title="Corvette Car Club Dining near Bowling Green — Flavor Isle"
         description="A nostalgic roadside burger stop minutes from the National Corvette Museum in Bowling Green, KY. Group seating, hand-patted burgers, thick shakes, and free parking right off I-65 Exit 38."
         ogTitle="Corvette Museum & Car Club Dining — Flavor Isle | Smiths Grove, KY"
         ogDescription="Rolling into Bowling Green for the Corvette Museum or a car club run? Flavor Isle is 15 minutes up I-65 — big burgers, group-friendly, easy parking."

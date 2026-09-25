@@ -11,6 +11,7 @@ import ReviewSection from '@/components/ReviewSection';
 import HeroSection from '@/components/HeroSection';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
+import Seo from '@/components/Seo';
 
 
 import SocialProofStrip from '@/components/SocialProofStrip';
@@ -73,6 +74,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        path="/"
+        title="Flavor Isle | Burger Diner off I-65 Exit 38, Smiths Grove KY"
+        description="Family-owned burger and ice cream diner since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
+        ogTitle="Flavor Isle | Burger Diner off I-65 Exit 38, Smiths Grove KY"
+        ogDescription="Family-owned burger and ice cream diner since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
+        ogImage="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg"
+        ogImageAlt="Flavor Isle burger restaurant storefront in Smiths Grove, KY"
+      />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />

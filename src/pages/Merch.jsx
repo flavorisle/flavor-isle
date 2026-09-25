@@ -138,6 +138,9 @@ export default function Merch() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
+        path="/merch"
+        title="Tasty Threads — Flavor Isle Merch & Apparel"
+        description="Flavor Isle tees, cups, and gear printed on demand and shipped to your door. Show your love for the Isle's hand-patted burgers and thick shakes."
         ogTitle="Tasty Threads — Flavor Isle Merch"
         ogDescription="Flavor Isle tees and merch. Show your love for the Isle's hand-patted burgers and thick shakes."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e599b55ba_card-merch.png"

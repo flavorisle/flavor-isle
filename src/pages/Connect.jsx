@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Copy, Check, ArrowRight, Sparkles, MessageSquare, MousePointerClick, Code, Bot } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import Seo from '@/components/Seo';
 
 const TABS = [
   { id: 'claude', label: 'Claude', Icon: Sparkles },
@@ -29,6 +30,10 @@ export default function Connect() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Connect AI — Flavor Isle MCP Server | Smiths Grove, KY"
+        description="Connect Flavor Isle's menu and ordering data to your AI assistant via MCP. Get real-time menu items, prices, and availability for Claude, ChatGPT, and Cursor."
+      />
       <Navbar />
       <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-14">
         {/* Header */}

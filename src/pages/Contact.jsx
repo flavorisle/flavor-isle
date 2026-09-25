@@ -8,6 +8,7 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import FaqSection from '@/components/FaqSection';
 import NearbyAreas from '@/components/NearbyAreas';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
+import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -46,6 +47,10 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Contact & Directions — Flavor Isle, Smiths Grove KY"
+        description="Find Flavor Isle at 103 N Main St, Smiths Grove, KY 42171 — 0.7 miles off I-65 Exit 38. Call (270) 563-4618, get directions, or send us a message."
+      />
       <Navbar />
       <CartDrawer />
 
