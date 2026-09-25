@@ -36,7 +36,9 @@ export default function ProductDetail() {
   const [savingFavorite, setSavingFavorite] = useState(false);
   const [panelState, setPanelState] = useState({
     total: 0, isCombo: false, comboReady: false, comboAddOn: 0,
-    comboDrinkType: 'shake', comboStep: 0, deluxeLabel: null, ready: true,
+    comboDrinkType: 'shake', comboStep: 0,
+    comboSideName: null, comboFlavorName: null, comboSodaName: null,
+    deluxeLabel: null, ready: true,
   });
   const panelRef = useRef(null);
 
@@ -278,8 +280,8 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Make it a Combo (burgers) */}
-              {isBurger && !soldOut && orderingEnabled && (
+              {/* Make it a Combo (burgers) — hidden once combo is active */}
+              {isBurger && !soldOut && orderingEnabled && !panelState.isCombo && (
                 <button
                   onClick={handleMakeCombo}
                   className="w-full py-3 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30 transition-all"
@@ -312,6 +314,37 @@ export default function ProductDetail() {
                     >
                       <Plus size={16} />
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Combo summary — shown above Add to Bag while combo is active */}
+              {panelState.isCombo && (
+                <div className="rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading text-xs uppercase tracking-widest text-midnight-cherry">Isle Combo</span>
+                    <button
+                      onClick={() => panelRef.current?.setCombo(false)}
+                      className="text-xs text-muted-foreground hover:text-midnight-cherry underline"
+                    >
+                      Remove combo
+                    </button>
+                  </div>
+                  {panelState.comboSideName ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Side</span>
+                      <span className="font-body font-semibold text-obsidian-roast">{panelState.comboSideName}</span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic">Pick a side to get started…</div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Drink</span>
+                    <span className="font-body font-semibold text-obsidian-roast">
+                      {panelState.comboDrinkType === 'shake'
+                        ? panelState.comboFlavorName || 'Pick a flavor…'
+                        : panelState.comboSodaName || 'Pick a soda…'}
+                    </span>
                   </div>
                 </div>
               )}

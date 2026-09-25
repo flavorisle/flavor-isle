@@ -214,10 +214,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       comboAddOn,
       comboDrinkType,
       comboStep,
+      comboSideName: comboSide?.name || null,
+      comboFlavorName: comboFlavor ? resolveFlavorName(comboFlavor.id, comboFlavor.name) : null,
+      comboSodaName: comboSoda?.name || null,
       deluxeLabel,
       ready,
     });
-  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, deluxeLabel, ready, onStateChange]);
+  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, comboSide, comboFlavor, comboSoda, deluxeLabel, ready, onStateChange]);
 
   const handleConfirm = () => {
     const selectedMods = [];
@@ -363,8 +366,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         </div>
       )}
 
-      {/* Combo toggle — burgers only */}
-      {isBurger && comboData && (
+      {/* Combo toggle — burgers only, hidden once combo flow starts */}
+      {isBurger && comboData && (!isCombo || comboStep === 0) && (
         <div className="space-y-2">
           <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Make it a combo?</h4>
           <button
@@ -581,8 +584,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         </div>
       )}
 
-      {/* Deluxe presets */}
-      {deluxePresets.length > 0 && deluxePresets.map((preset) => {
+      {/* Deluxe presets — hidden once combo flow starts */}
+      {!(isCombo && comboStep >= 1) && deluxePresets.length > 0 && deluxePresets.map((preset) => {
         const active = isDeluxePresetActive(selections, preset);
         return (
           <button
@@ -609,8 +612,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         );
       })}
 
-      {/* Modifier groups */}
-      {hasModifiers ? (
+      {/* Modifier groups — hidden once combo flow starts */}
+      {!(isCombo && comboStep >= 1) && hasModifiers ? (
         item.modifiers.map(group => (
           <div key={group.name}>
             <div className="flex items-center justify-between mb-3">
@@ -659,7 +662,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
             </div>
           </div>
         ))
-      ) : !isBurger && (
+      ) : !(isCombo && comboStep >= 1) && !isBurger && (
         <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
       )}
     </div>
