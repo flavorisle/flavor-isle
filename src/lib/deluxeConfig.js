@@ -169,7 +169,10 @@ export function applyDeluxePreset(selections, preset, active) {
     const current = next[group];
     if (Array.isArray(current)) {
       if (active) {
-        if (!current.some((s) => s.id === m.id)) next[group] = [...current, { id: m.id, name: m.name, price: m.price }];
+        // Remove Plain/No Sauce when adding preset toppings
+        const filtered = current.filter((s) => !/plain/i.test(s.name) && !/no\s*sauce/i.test(s.name));
+        if (!filtered.some((s) => s.id === m.id)) filtered.push({ id: m.id, name: m.name, price: m.price });
+        next[group] = filtered;
       } else {
         next[group] = current.filter((s) => s.id !== m.id);
       }

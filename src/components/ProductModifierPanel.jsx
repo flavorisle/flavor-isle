@@ -180,10 +180,17 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     setSelections(prev => {
       const current = prev[groupName] || [];
       const exists = current.find(m => m.id === mod.id);
-      return {
-        ...prev,
-        [groupName]: exists ? current.filter(m => m.id !== mod.id) : [...current, mod],
-      };
+      const isExclusive = /plain/i.test(mod.name) || /no\s*sauce/i.test(mod.name);
+      if (exists) {
+        return { ...prev, [groupName]: current.filter(m => m.id !== mod.id) };
+      }
+      if (isExclusive) {
+        // Plain / No Sauce clears everything else in the group
+        return { ...prev, [groupName]: [mod] };
+      }
+      // Selecting a regular topping/sauce removes any Plain/No Sauce
+      const filtered = current.filter(m => !/plain/i.test(m.name) && !/no\s*sauce/i.test(m.name));
+      return { ...prev, [groupName]: [...filtered, mod] };
     });
   };
 

@@ -74,8 +74,11 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
     }
   }
   if (!best) return { label: null, allToppings: [] };
+  // Only show the preset name when every tracked topping is present.
+  // Partial matches just list the individual selections instead of
+  // "Deluxe, no X, no Y…" which is misleading for small selections.
   if (best.missing.length === 0) return { label: best.name, allToppings: best.allToppings };
-  return { label: `${best.name}, no ${best.missing.join(', no ')}`, allToppings: best.allToppings };
+  return { label: null, allToppings: [] };
 }
 
 // Builds the full Deluxe label for display on badges, combo summaries, cart
@@ -115,6 +118,9 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   const extraLabels = extras.map(m => {
     const isCheese = /cheese/i.test(m.name) || /cheese/i.test(m.group || '');
     if (isCheese) return itemHasCheese ? `sub ${m.name}` : `add ${m.name}`;
+    // When no Deluxe preset is active, just list the modifier name as-is
+    // (e.g. "Ketchup, Pickles") instead of prefixing with "add".
+    if (!label) return m.name;
     return isPresetTopping(m.name) ? m.name : `add ${m.name}`;
   });
 
