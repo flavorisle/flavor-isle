@@ -236,12 +236,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     return (
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3
-            onClick={handlePhotoClick}
-            className={`font-heading text-base leading-tight cursor-pointer hover:underline ${light ? 'text-white' : 'text-obsidian-roast'}`}
-          >
-            {item.name}
-          </h3>
+          <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
           {isHappyHour && happyHourPrice !== null ? (
             <div className="flex flex-col items-end flex-shrink-0">
               <span className={`text-xs line-through ${light ? 'text-white/55' : 'text-muted-foreground'}`}>${item.price.toFixed(2)}</span>
@@ -273,7 +268,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         {isBurger && !soldOut && orderingEnabled && (
           <button
             onClick={handleMakeCombo}
-            className={`w-full mb-2 py-2.5 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border transition-all ${
+            className={`w-full mb-2 py-2.5 text-sm font-heading rounded-xl flex items-center justify-center gap-2 border transition-all pointer-events-auto ${
               light
                 ? 'bg-smashie-yellow text-obsidian-roast border-smashie-yellow hover:bg-smashie-yellow/90'
                 : 'bg-smashie-yellow/15 text-midnight-cherry border-smashie-yellow/50 hover:bg-smashie-yellow/30'
@@ -291,7 +286,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         <button
           onClick={handleAdd}
           disabled={soldOut || !orderingEnabled}
-          className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${addBtnClass}`}
+          className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 pointer-events-auto ${addBtnClass}`}
         >
           <Plus size={16} />
           {addLabel}
@@ -354,7 +349,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           {favoriteBtn}
           {shareBtn}
           {badges}
-          <div className="relative z-10">
+          <div className="relative z-10 pointer-events-none">
             {renderContent(true, { showRatings: false })}
           </div>
         </div>
