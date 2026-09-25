@@ -344,12 +344,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                       }
                       return { ...prev, [group.name]: prev[group.name]?.id === mod.id ? null : mod };
                     })}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
                       mod.sold_out
-                        ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                        ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed'
                         : isSelected
-                          ? 'border-midnight-cherry bg-red-50'
-                          : 'border-border hover:border-gray-300 bg-white'
+                          ? 'border-midnight-cherry bg-midnight-cherry/5'
+                          : 'border-gray-300 hover:border-gray-400 bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -499,12 +499,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                     type="button"
                     disabled={mod.sold_out}
                     onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                    className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
                       mod.sold_out
-                        ? 'border-border bg-muted opacity-50 cursor-not-allowed'
+                        ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed'
                         : isSelected
-                          ? 'border-midnight-cherry bg-red-50'
-                          : 'border-border hover:border-gray-300 bg-white'
+                          ? 'border-midnight-cherry bg-midnight-cherry/5'
+                          : 'border-gray-300 hover:border-gray-400 bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -558,8 +558,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                   key={s.id}
                   type="button"
                   onClick={() => { setComboSide(s); setComboStep(2); }}
-                  className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                    selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                  className={`px-4 py-2.5 rounded-full border transition-all font-body text-sm font-semibold ${
+                    selected ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry' : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
                   }`}
                 >
                   {s.name}
@@ -602,8 +602,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
             <button
               type="button"
               onClick={() => { setComboDrinkType('soda'); setComboFlavor(null); setComboStep(4); }}
-              className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-heading text-sm ${
-                comboDrinkType === 'soda' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+              className={`px-3 py-2.5 rounded-xl border transition-all font-heading text-sm ${
+                comboDrinkType === 'soda' ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry' : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
               }`}
             >
               Soft Drink (20oz)
@@ -611,8 +611,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
             <button
               type="button"
               onClick={() => { setComboDrinkType('shake'); setComboSoda(null); setComboStep(4); }}
-              className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-heading text-sm ${
-                comboDrinkType === 'shake' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+              className={`px-3 py-2.5 rounded-xl border transition-all font-heading text-sm ${
+                comboDrinkType === 'shake' ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry' : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
               }`}
             >
               Hand-Spun Shake
@@ -626,7 +626,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Drink:</span>
-            <span className="font-heading text-sm text-midnight-cherry">
+            <span className="font-heading text-sm uppercase tracking-wider text-midnight-cherry">
               {comboDrinkType === 'shake' ? 'Hand-Spun Shake' : 'Soft Drink (20oz)'}
             </span>
             <button type="button" onClick={() => setComboStep(3)} className="text-xs text-patina-mint hover:text-midnight-cherry underline">Change</button>
@@ -644,8 +644,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                       key={opt.id}
                       type="button"
                       onClick={() => setComboSoda(opt)}
-                      className={`px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      className={`px-4 py-2.5 rounded-full border transition-all font-body text-sm font-semibold ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry' : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
                       }`}
                     >
                       {opt.name}
@@ -671,8 +671,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                       key={opt.id}
                       type="button"
                       onClick={() => setComboFlavor(opt)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border transition-all font-body text-sm font-semibold ${
+                        selected ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry' : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
                       }`}
                     >
                       <span className="text-base leading-none">{emoji}</span>
