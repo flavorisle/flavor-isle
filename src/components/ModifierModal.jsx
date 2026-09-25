@@ -201,11 +201,17 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
       liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
     }
   }
-  const labelPresets = deluxePresets.map((p) => ({
-    name: p.name,
-    trackedToppings: presetTrackedToppings(p, p.modifiers.map((m) => m.name)),
-    allToppings: p.toppings,
-  }));
+  const silentSets = deluxePresets.map(p => new Set((p.silentToppings || []).map(t => t.toLowerCase())));
+  const labelPresets = deluxePresets.map((p, i) => {
+    const trackedMods = (p.modifiers || []).filter(m => !silentSets[i].has((m.name || '').toLowerCase()));
+    return {
+      name: p.name,
+      trackedToppings: trackedMods.map(m => m.name),
+      allToppings: p.toppings,
+      trackedModifierIds: trackedMods.map(m => m.id),
+      allModifierIds: (p.modifiers || []).map(m => m.id),
+    };
+  });
   const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
     ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };

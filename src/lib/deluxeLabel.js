@@ -56,10 +56,6 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
   return { label: null, allToppings: [] };
   }
 
-  const list = (Array.isArray(presets) && presets.length > 0)
-    ? presets
-    : [{ name: 'Deluxe', trackedToppings: DELUXE_TOPPINGS, allToppings: DELUXE_TOPPINGS }];
-
   // If the customer selected Plain or No Sauce, the Deluxe preset is no longer
   // active — drop the preset label entirely and just list the selected items.
   const hasPlainOrNoSauce = selectedModifiers.some((m) => {
@@ -68,17 +64,53 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
   });
   if (hasPlainOrNoSauce) return { label: null, allToppings: [] };
 
+  const list = (Array.isArray(presets) && presets.length > 0)
+    ? presets
+    : [{ name: 'Deluxe', trackedToppings: DELUXE_TOPPINGS, allToppings: DELUXE_TOPPINGS }];
+
+  const selectedIds = new Set(selectedModifiers.map((m) => m?.id).filter(Boolean));
+
   let best = null;
   for (const preset of list) {
-    const tracked = preset.trackedToppings || [];
-    if (tracked.length === 0) continue;
-    const present = tracked.filter((t) => toppingPresent(t, selectedModifiers));
-    const missing = tracked.filter((t) => !toppingPresent(t, selectedModifiers));
-    if (present.length === 0) continue;
-    // Fully-matched presets win; among those, the one with the most toppings.
-    const score = (missing.length === 0 ? 100000 : 0) + present.length * 100 - missing.length;
+    const trackedNames = preset.trackedToppings || [];
+    const trackedIds = preset.trackedModifierIds || [];
+    if (trackedNames.length === 0 && trackedIds.length === 0) continue;
+
+    let presentCount = 0;
+    let missing = [];
+
+    if (trackedIds.length > 0) {
+      // ID-based matching — reliable: "Dill Pickles" has the same ID as the
+      // preset modifier, so it counts as the preset topping, while "Grilled
+      // Onions" (different ID) does not.
+      trackedIds.forEach((id, i) => {
+        if (selectedIds.has(id)) {
+          presentCount++;
+        } else {
+          missing.push(trackedNames[i] || '');
+        }
+      });
+    } else {
+      // Name-based fallback (no IDs available)
+      trackedNames.forEach((t) => {
+        if (toppingPresent(t, selectedModifiers)) {
+          presentCount++;
+        } else {
+          missing.push(t);
+        }
+      });
+    }
+
+    if (presentCount === 0) continue;
+    // Only show the Deluxe label when at least half the tracked toppings are
+    // present — this distinguishes "Deluxe toggled then a topping removed"
+    // from "customer manually picked 1-2 toppings without Deluxe".
+    const threshold = Math.ceil((trackedIds.length || trackedNames.length) / 2);
+    if (presentCount < threshold) continue;
+
+    const score = (missing.length === 0 ? 100000 : 0) + presentCount * 100 - missing.length;
     if (!best || score > best.score) {
-      best = { name: preset.name, missing, allToppings: preset.allToppings || tracked, score };
+      best = { name: preset.name, missing: missing.filter(Boolean), allToppings: preset.allToppings || trackedNames, score };
     }
   }
   if (!best) return { label: null, allToppings: [] };
@@ -101,40 +133,52 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   const { label, allToppings } = buildDeluxeLabelFull(selectedModifiers, presets);
   if (!presets || presets.length === 0) return { label, allToppings };
 
-  // Collect all preset topping names (both tracked and silent) for tolerant
-  // matching — uses matchScore so "Pickles" matches "Pickle", "Onions" matches
-  // "Onion", etc. Without this, a plural modifier name would slip past the
-  // exact lowercase check and show as "add Pickles" even though Pickle is part
-  // of the Deluxe preset.
-  const allPresetToppingNames = [];
+  // ID-based preset topping check — reliable: uses the actual modifier IDs
+  // the Deluxe button selects, so "Dill Pickles" (same ID) is a preset
+  // topping, while "Grilled Onions" (different ID) is an extra.
+  const allPresetModifierIds = new Set();
   presets.forEach(p => {
-    (p.allToppings || []).forEach(t => allPresetToppingNames.push(t));
-    (p.trackedToppings || []).forEach(t => allPresetToppingNames.push(t));
+    (p.allModifierIds || []).forEach(id => allPresetModifierIds.add(id));
   });
-  // Stricter match (score >= 2 = exact or stemmed) so extras like
-  // "Grilled Onions" or "Jalapeños" are NOT treated as the preset's "Onion"
-  // and correctly get the "add" prefix.
-  const isPresetTopping = (name) => allPresetToppingNames.some(t => matchScore(name, t) >= 2);
+  const isPresetTopping = (m) => m?.id && allPresetModifierIds.has(m.id);
 
   const itemHasCheese = item ? /cheese/i.test(item.name) : false;
 
-  // When Deluxe is active, preset toppings are summarized by the label.
-  // When not active, all selected modifiers show individually.
-  const extras = label
-    ? selectedModifiers.filter(m => !isPresetTopping(m.name))
-    : selectedModifiers;
-
-  const extraLabels = extras.map(m => {
-    const isCheese = /cheese/i.test(m.name) || /cheese/i.test(m.group || '');
-    if (isCheese) return itemHasCheese ? `sub ${m.name}` : `add ${m.name}`;
-    // When no Deluxe preset is active, just list the modifier name as-is
-    // (e.g. "Ketchup, Pickles") instead of prefixing with "add".
-    if (!label) return m.name;
-    return isPresetTopping(m.name) ? m.name : `add ${m.name}`;
+  // Detect Plain / No Sauce so we can prefix remaining items with "Only".
+  const hasPlainOrNoSauce = selectedModifiers.some((m) => {
+    const name = norm(m?.name || '');
+    return /plain/i.test(name) || /no\s*sauce/i.test(name);
   });
 
-  const fullLabel = [label, ...extraLabels].filter(Boolean).join(', ') || null;
-  return { label: fullLabel, allToppings };
+  const cheeseLabel = (m) => {
+    const isCheese = /cheese/i.test(m.name) || /cheese/i.test(m.group || '');
+    if (!isCheese) return null;
+    return itemHasCheese ? `sub ${m.name}` : `add ${m.name}`;
+  };
+
+  if (label) {
+    // Deluxe active — extras (non-preset items like Jalapeños, Grilled Onions)
+    // get the "add" prefix; preset toppings are summarized by the label.
+    const extras = selectedModifiers.filter(m => !isPresetTopping(m));
+    const extraLabels = extras.map(m => cheeseLabel(m) || `add ${m.name}`);
+    const fullLabel = [label, ...extraLabels].filter(Boolean).join(', ') || null;
+    return { label: fullLabel, allToppings };
+  }
+
+  if (hasPlainOrNoSauce) {
+    // Plain / No Sauce selected — Deluxe dropped; list remaining items with
+    // "Only" prefix (e.g. "Only Mustard, Only Onion").
+    const items = selectedModifiers.filter(m => {
+      const name = norm(m.name || '');
+      return !/plain/i.test(name) && !/no\s*sauce/i.test(name);
+    });
+    const itemLabels = items.map(m => cheeseLabel(m) || `Only ${m.name}`);
+    return { label: itemLabels.join(', ') || null, allToppings: [] };
+  }
+
+  // No Deluxe, no Plain — just list selected modifiers by name.
+  const itemLabels = selectedModifiers.map(m => cheeseLabel(m) || m.name);
+  return { label: itemLabels.join(', ') || null, allToppings: [] };
 }
 
 // True when at least one default deluxe topping is selected — used to decide
