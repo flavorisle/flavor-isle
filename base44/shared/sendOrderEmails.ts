@@ -2,6 +2,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
 import { fetchStoreProducts } from './printful.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from './dessertPriority.ts';
+import { formatItemModifiers } from './ticketFormat.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -267,7 +268,11 @@ export async function sendOrderReadyEmail(order, base44?) {
   const customerName = order.customer_name || 'friend';
   const orderType = order.order_type;
   const items = (order.items || [])
-    .map(i => `${i.name || 'Item'}${(i.quantity || 1) > 1 ? ` x${i.quantity}` : ''}`)
+    .map(i => {
+      const mods = formatItemModifiers(i);
+      const modStr = mods.length > 0 ? ` (${mods.join(', ')})` : '';
+      return `${i.name || 'Item'}${(i.quantity || 1) > 1 ? ` x${i.quantity}` : ''}${modStr}`;
+    })
     .join(', ');
   const totalStr = `$${(order.total || 0).toFixed(2)}`;
   const locationLine = orderType === 'delivery'

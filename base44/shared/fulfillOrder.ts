@@ -5,6 +5,7 @@ import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
 import { sendPushToEmail } from './sendPush.ts';
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
+import { formatItemModifiers } from './ticketFormat.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -36,12 +37,19 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
   const hasAccount = await isRegisteredUser(base44, order.customer_email);
 
-  const itemsHtml = (order.items || []).map(item =>
-    `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;">$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
-    </tr>`
-  ).join('');
+  const itemsHtml = (order.items || []).map(item => {
+    const mods = formatItemModifiers(item);
+    const modsHtml = mods.length > 0
+      ? `<div style="font-size:13px;color:#888;padding-left:10px;line-height:1.5;padding-top:2px;">${mods.map(m => `<div>• ${m}</div>`).join('')}</div>`
+      : '';
+    return `<tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;vertical-align:top;">
+        ${item.name}${(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}
+        ${modsHtml}
+      </td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;vertical-align:top;">$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
+    </tr>`;
+  }).join('');
 
   const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[order.order_type] || order.order_type;
   const fulfillmentLine = order.order_type === 'delivery' && order.delivery_address

@@ -133,6 +133,17 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     }
     return out;
   };
+  // Flatten a mods object into a comma-separated list of selected modifier names
+  // (e.g. "Ketchup, No Salt") for display in the combo summary.
+  const modNames = (mods) => {
+    const out = [];
+    for (const sel of Object.values(mods || {})) {
+      if (!sel) continue;
+      if (Array.isArray(sel)) sel.forEach(m => out.push(m.name));
+      else out.push(sel.name);
+    }
+    return out;
+  };
   const sideModsExtra = modsExtra(comboSideMods);
   const sideModsToCart = modsToCart(comboSideMods);
   const shakeModsExtra = modsExtra(comboShakeMods);
@@ -223,14 +234,14 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       comboAddOn,
       comboDrinkType,
       comboStep,
-      comboSideName: comboSide?.name || null,
-      comboFlavorName: comboFlavor ? resolveFlavorName(comboFlavor.id, comboFlavor.name) : null,
-      comboSodaName: comboSoda?.name || null,
+      comboSideName: comboSide ? [comboSide.name, ...modNames(comboSideMods)].filter(Boolean).join(', ') : null,
+      comboFlavorName: comboFlavor ? [resolveFlavorName(comboFlavor.id, comboFlavor.name), ...modNames(comboShakeMods)].filter(Boolean).join(', ') : null,
+      comboSodaName: comboSoda ? [comboSoda.name, ...modNames(comboDrinkMods)].filter(Boolean).join(', ') : null,
       deluxeLabel,
       burgerModsLabel,
       ready,
     });
-  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, comboSide, comboFlavor, comboSoda, deluxeLabel, burgerModsLabel, ready, onStateChange]);
+  }, [footerTotal, isCombo, comboReady, comboAddOn, comboDrinkType, comboStep, comboSide, comboFlavor, comboSoda, comboSideMods, comboShakeMods, comboDrinkMods, deluxeLabel, burgerModsLabel, ready, onStateChange]);
 
   const handleConfirm = () => {
     const selectedMods = [];
