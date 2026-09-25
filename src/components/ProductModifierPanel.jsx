@@ -85,7 +85,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       })
     : null;
   const shakeFlavorOpts = (shakeFlavorGroup?.modifiers || []).filter(m => !m.sold_out);
-  const shakeExclude = shakeFlavorGroup ? [shakeFlavorGroup.name] : [];
+  const shakeSizeGroup = comboData ? (comboData.shake.modifiers || []).find(g => /size/i.test(g.name || '')) : null;
+  const shakeExclude = [shakeFlavorGroup?.name, shakeSizeGroup?.name].filter(Boolean);
 
   const drinkSodaGroup = comboData ? (comboData.drink.modifiers || []).find(g => /soda choice/i.test(g.name || '')) : null;
   const sodaOpts = (drinkSodaGroup?.modifiers || []).filter(m => !m.sold_out);
