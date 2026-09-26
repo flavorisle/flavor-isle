@@ -4,7 +4,7 @@ import { lookupCustomersByIds, normalizePhone } from '../../shared/squareCustome
 import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
 
 const PLACEHOLDER_EMAIL = 'square-pos@flavorisle.com';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 Deno.serve(async (req) => {
   try {

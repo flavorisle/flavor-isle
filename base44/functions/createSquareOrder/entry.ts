@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     let locationId = connection.connectionConfig?.locationId;
     if (!locationId) {
       const locRes = await fetch('https://connect.squareup.com/v2/locations', {
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2026-09-16' }
       });
       const locData = await locRes.json();
       locationId = locData.locations?.[0]?.id;
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const sqHeaders = {
       'Authorization': `Bearer ${accessToken}`,
-      'Square-Version': '2024-01-18',
+      'Square-Version': '2026-09-16',
       'Content-Type': 'application/json',
     };
 
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Square-Version': '2024-01-18',
+        'Square-Version': '2026-09-16',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(squareOrder),
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Square-Version': '2024-01-18',
+          'Square-Version': '2026-09-16',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

@@ -22,7 +22,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 //    user session and proceed as the service role; manual invocations still
 //    require an admin.
 
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 const LOOKBACK_DAYS = 60;
 const TOP_N = 10;
 const MAX_ORDERS = 20000;

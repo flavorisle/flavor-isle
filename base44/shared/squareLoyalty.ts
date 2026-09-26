@@ -4,7 +4,7 @@
 // "Flavor Isle Star Rewards" with the in-store Square loyalty program.
 
 const SQUARE_API = 'https://connect.squareup.com/v2';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 function authToken(): string {
   const t = Deno.env.get('SQUARE_ACCESS_TOKEN');

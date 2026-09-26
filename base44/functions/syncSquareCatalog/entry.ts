@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 async function squareFetch(accessToken, path) {
   const res = await fetch(`https://connect.squareup.com/v2${path}`, {

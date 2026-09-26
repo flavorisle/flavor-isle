@@ -1,5 +1,5 @@
 const SQUARE_API = 'https://connect.squareup.com/v2';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 // Build several normalized variants of a phone number so Square's exact-match
 // customer search is more likely to hit regardless of how the POS stored it.
