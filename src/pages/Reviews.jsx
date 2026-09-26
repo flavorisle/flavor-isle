@@ -10,8 +10,7 @@ import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import LazyEmbed from '@/components/LazyEmbed';
 import ReviewsCarousel from '@/components/ReviewsCarousel';
-
-const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
+import ReviewPlatformLinks, { GOOGLE_REVIEW_URL } from '@/components/ReviewPlatformLinks';
 
 const TIKTOK_VIDEOS = [
   {
@@ -257,6 +256,9 @@ export default function Reviews() {
           )}
         </div>
       </section>
+
+      {/* One-tap review links for every platform we're listed on */}
+      <ReviewPlatformLinks />
 
       {/* CTA band */}
       <section className="bg-obsidian-roast px-4 sm:px-6 py-14">

@@ -74,11 +74,36 @@ export default function ReviewsCarousel({ reviews }) {
   );
 }
 
+// Curated external reviews (Yelp, Tripadvisor, Google, Facebook) carry no
+// rating field of their own, so each source gets its own branded mark: Yelp
+// shows its 5-star row, Tripadvisor its 5 green bubbles. Reviews submitted
+// through our own form still render their actual star rating.
 function ReviewCard({ text, name, source, rating }) {
+  const src = (source || '').toLowerCase();
+  const isYelp = src.includes('yelp');
+  const isTripadvisor = src.includes('tripadvisor');
+
   return (
     <div className="card-diner p-5 h-full">
       <div className="flex items-center gap-2 mb-3">
-        {rating > 0 && (
+        {isYelp ? (
+          <div className="flex" role="img" aria-label="Rated 5 out of 5 on Yelp">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} size={14} className="text-amber-500 fill-amber-500" />
+            ))}
+          </div>
+        ) : isTripadvisor ? (
+          <div className="flex gap-0.5" role="img" aria-label="Rated 5 out of 5 on Tripadvisor">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span
+                key={i}
+                className="w-3.5 h-3.5 rounded-full border-2 border-green-600 flex items-center justify-center"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+              </span>
+            ))}
+          </div>
+        ) : rating > 0 ? (
           <div className="flex">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -88,7 +113,7 @@ function ReviewCard({ text, name, source, rating }) {
               />
             ))}
           </div>
-        )}
+        ) : null}
         {source && (
           <span className="text-xs font-heading uppercase tracking-wider text-patina-mint">{source}</span>
         )}
