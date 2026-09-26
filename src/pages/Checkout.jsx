@@ -47,6 +47,16 @@ const CARD_STYLE = {
   hidePostalCode: true,
 };
 
+// Stable fingerprint of the cart being ordered — recognises "the same cart" so a
+// retry reopens the Order + PaymentIntent already created for it instead of
+// creating a second, duplicate pending order.
+function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, reward, scheduledFor }) {
+  return JSON.stringify({
+    items: items.map(i => [i.name, i.quantity, i.price, (i.selectedModifiers || []).map(m => m.name).join(',')]),
+    orderType, pickupMethod, total, tip, reward: reward || '', scheduledFor,
+  });
+}
+
 // Inner payment form — must be rendered inside <Elements>
 function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
   const stripe = useStripe();
@@ -66,7 +76,13 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
         payment_method: savedCard.stripe_payment_method_id,
       });
     } else {
-      if (!elements) { setPaying(false); return; }
+      // The card field never became ready (script blocked or still loading) —
+      // say so instead of silently doing nothing when the customer taps Pay.
+      if (!elements || !elements.getElement(CardElement)) {
+        setPaying(false);
+        onError("The card form isn't ready yet. Turn off any ad blocker and tap Pay again — if it still won't open, reload the page.");
+        return;
+      }
       result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement) },
       });
@@ -219,10 +235,19 @@ export default function Checkout() {
 
   // Payment step state
   const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
-  const [stripePromise, setStripePromise] = useState(null);
+  // Resolved Stripe.js instance for the payment step, plus a visible load error
+  // so a failed or blocked script shows a reason and a retry instead of a dead
+  // card form the customer cannot use.
+  const [stripe, setStripe] = useState(null);
+  const [stripeLoadError, setStripeLoadError] = useState('');
+  const [publishableKey, setPublishableKey] = useState('');
   const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  // The Order + PaymentIntent already created for the current cart. Reusing it
+  // stops a Back-then-Continue tap (or a failed wallet attempt) from creating a
+  // second, never-paid Order for the same cart.
+  const [pendingOrder, setPendingOrder] = useState(null);
   // Whether the device actually supports a wallet (Apple Pay / Google Pay).
   // The express card stays hidden until the Stripe Payment Request confirms support.
   const [walletReady, setWalletReady] = useState(null);
@@ -334,6 +359,16 @@ export default function Checkout() {
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
   };
 
+  // Load Stripe.js for the payment step. A missing or blocked script used to
+  // leave the customer on a payment step with no card form and no explanation —
+  // now it shows a reason plus a retry that reuses the same order.
+  const initStripe = (pk) => {
+    setStripeLoadError('');
+    setStripe(null);
+    const fail = () => setStripeLoadError("We couldn't load the secure card form. Check your connection, turn off any ad blocker, then tap Retry.");
+    loadStripe(pk).then(instance => (instance ? setStripe(instance) : fail())).catch(fail);
+  };
+
   // Scroll to top when moving to the payment or split step so the card form
   // is immediately visible instead of leaving the user scrolled down past it.
   useEffect(() => {
@@ -395,6 +430,13 @@ export default function Checkout() {
       comboComponents: i.comboComponents || [],
     }));
 
+    // Fingerprint of exactly what is being ordered, so a retry for the same cart
+    // reopens the intent we already created instead of creating another one.
+    const cartFingerprint = buildCartFingerprint(mappedItems, {
+      orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
+      reward: appliedReward?.tierId, scheduledFor,
+    });
+
     setLoading(true);
     try {
       if (groupMode && payMode === 'separate') {
@@ -431,14 +473,23 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored } = res.data;
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
         setSplitIntents(intents);
-        setSplitPublishable(publishableKey);
+        setSplitPublishable(splitPk);
         setOrderNumber(on);
         setStep('split');
+      } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
+        // Same cart as an order we already created (the customer tapped Back, or
+        // a wallet attempt failed) — reopen that same intent instead of creating
+        // a second Order that would sit unpaid forever.
+        setClientSecret(pendingOrder.clientSecret);
+        setPublishableKey(pendingOrder.publishableKey);
+        setOrderNumber(pendingOrder.orderNumber);
+        initStripe(pendingOrder.publishableKey);
+        setStep('payment');
       } else {
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
@@ -457,17 +508,29 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { clientSecret: cs, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        const { clientSecret: cs, publishableKey: pk, orderNumber: on, smsConsentStored } = res.data;
+        // Never advance to a payment step that cannot be paid — a missing secret
+        // or key used to leave the customer there with no card form, holding an
+        // order that was never charged.
+        if (!cs || !pk) {
+          setError('We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
+          return;
+        }
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
         setClientSecret(cs);
+        setPublishableKey(pk);
         setOrderNumber(on);
-        setStripePromise(loadStripe(publishableKey));
+        setPendingOrder({ orderNumber: on, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
+        initStripe(pk);
         setStep('payment');
       }
     } catch (err) {
-      setError('Could not initialize payment. Please try again.');
+      // Surface the server's own explanation (price check, order save) — those
+      // are written for customers — instead of a generic message.
+      const apiError = err?.response?.data?.error || err?.data?.error || '';
+      setError(apiError || 'Could not initialize payment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -570,6 +633,19 @@ export default function Checkout() {
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
+    // Remember this order + intent: if the wallet sheet fails, the card form
+    // below completes the SAME order instead of creating a second pending one.
+    if (res.data?.clientSecret && res.data?.orderNumber) {
+      setPendingOrder({
+        orderNumber: res.data.orderNumber,
+        clientSecret: res.data.clientSecret,
+        publishableKey: res.data.publishableKey,
+        fingerprint: buildCartFingerprint(mappedItems, {
+          orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
+          reward: appliedReward?.tierId, scheduledFor,
+        }),
+      });
+    }
     return res.data;
   };
 
@@ -849,7 +925,7 @@ export default function Checkout() {
               />
             )}
 
-            {step === 'payment' && stripePromise && clientSecret && (
+            {step === 'payment' && clientSecret && (
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
@@ -879,19 +955,37 @@ export default function Checkout() {
                     onSelect={setSelectedCardId}
                   />
                 )}
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <PaymentForm
-                    clientSecret={clientSecret}
-                    orderNumber={orderNumber}
-                    onSuccess={handleSuccess}
-                    onError={setError}
-                    total={totalWithTip}
-                    savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
-                    saveNewCard={saveNewCard}
-                    setSaveNewCard={setSaveNewCard}
-                    canSaveCard={canSaveCard}
-                  />
-                </Elements>
+                {stripeLoadError ? (
+                  <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 text-center">
+                    <p className="text-sm text-destructive mb-3">{stripeLoadError}</p>
+                    <button
+                      type="button"
+                      onClick={() => initStripe(publishableKey)}
+                      className="btn-cherry px-6 py-2.5 text-xs font-heading"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : !stripe ? (
+                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                    <div className="w-5 h-5 border-2 border-midnight-cherry border-t-transparent rounded-full animate-spin" />
+                    Loading the secure card form…
+                  </div>
+                ) : (
+                  <Elements stripe={stripe} options={{ clientSecret }}>
+                    <PaymentForm
+                      clientSecret={clientSecret}
+                      orderNumber={orderNumber}
+                      onSuccess={handleSuccess}
+                      onError={setError}
+                      total={totalWithTip}
+                      savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
+                      saveNewCard={saveNewCard}
+                      setSaveNewCard={setSaveNewCard}
+                      canSaveCard={canSaveCard}
+                    />
+                  </Elements>
+                )}
                 <div className="mt-5">
                   <CheckoutTrustBadges variant="full" />
                 </div>

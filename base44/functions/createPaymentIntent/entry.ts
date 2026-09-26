@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { secrets } from 'base44:runtime';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
@@ -59,7 +60,21 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
-    const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+
+    // The publishable key is handed to the browser to initialize Stripe.js. Read
+    // it the same way getStripePublishableKey does (runtime secrets, falling back
+    // to the env var) and fail BEFORE creating the intent or the order: a missing
+    // key used to leave the customer on a payment step they could not use, while
+    // an unpaid Order sat stranded on the register.
+    let publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+    try {
+      publishableKey = secrets.get('STRIPE_PUBLISHABLE_KEY') || publishableKey;
+    } catch (keyErr) {
+      console.error('Publishable key unavailable via runtime secrets:', keyErr.message);
+    }
+    if (!publishableKey) {
+      return Response.json({ error: 'Payment is temporarily unavailable — nothing was charged. Please try again in a moment.' }, { status: 503 });
+    }
 
     const orderNumber = Date.now().toString().slice(-6);
     const amountCents = Math.round(pricing.total * 100);
