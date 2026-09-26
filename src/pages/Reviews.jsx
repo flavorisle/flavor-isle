@@ -37,13 +37,21 @@ const TIKTOK_VIDEOS = [
   },
 ];
 
-const FACEBOOK_REEL = {
-  type: 'facebook',
-  url: 'https://www.facebook.com/reel/1611434090062222/',
-  title: 'Update on the amazing local restaurant that deserves all the love and support',
-  creator: 'Luke Collins',
-  subtitle: '37K views · 830 reactions',
-};
+const FACEBOOK_REELS = [
+  {
+    type: 'facebook',
+    url: 'https://www.facebook.com/reel/1611434090062222/',
+    title: 'Update on the amazing local restaurant that deserves all the love and support',
+    creator: 'Luke Collins',
+    subtitle: '37K views · 830 reactions',
+  },
+  {
+    type: 'facebook',
+    url: 'https://www.facebook.com/reel/2480054055733414/',
+    title: 'Real hand-pattied burgers at Flavor Isle | Smiths Grove, Ky',
+    creator: 'Brandon Jarrett',
+  },
+];
 
 const INSTAGRAM_REEL = {
   type: 'instagram',
@@ -220,7 +228,9 @@ export default function Reviews() {
             {TIKTOK_VIDEOS.map((v, i) => (
               <LazyEmbed key={i} type="tiktok" {...v} />
             ))}
-            <LazyEmbed {...FACEBOOK_REEL} />
+            {FACEBOOK_REELS.map((v, i) => (
+              <LazyEmbed key={`fb-${i}`} {...v} />
+            ))}
             <LazyEmbed {...INSTAGRAM_REEL} />
           </div>
         </div>
