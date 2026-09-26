@@ -21,8 +21,17 @@ const readSession = (key, fallback) => {
   }
 };
 
+// A cart line carrying combo data (comboConfigId / comboComponents) was priced
+// with the combo discount baked into its price. Combos are switched OFF, so the
+// server can no longer reprice such a line and checkout rejects the stale total
+// ("Price verification failed: server X vs client Y"). Drop those lines when the
+// cart loads — from sessionStorage and from the saved profile cart — so a stale
+// combo line can never be carried into checkout. Every other line is untouched.
+const dropComboLines = (items) =>
+  (items || []).filter(i => !i?.comboConfigId && !i?.comboComponents);
+
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(() => readSession('cartItems', []));
+  const [cartItems, setCartItems] = useState(() => dropComboLines(readSession('cartItems', [])));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
   const [pickupMethod, setPickupMethod] = useState(() => readSession('pickupMethod', 'counter')); // counter | curbside (pickup only)
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -78,7 +87,7 @@ export function CartProvider({ children }) {
         // cart in progress, so we never clobber an order the user is actively building.
         const localHasItems = (readSession('cartItems', []) || []).length > 0;
         if (saved && Array.isArray(saved.cartItems) && saved.cartItems.length > 0 && !localHasItems) {
-          setCartItems(saved.cartItems);
+          setCartItems(dropComboLines(saved.cartItems));
           setOrderType(saved.orderType || 'pickup');
           setGroupMode(!!saved.groupMode);
           setPeople(saved.people || []);
