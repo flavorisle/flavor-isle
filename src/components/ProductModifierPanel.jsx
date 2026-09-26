@@ -8,6 +8,7 @@ import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
+import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
 
 // Inline modifier selection panel for the two-column ProductDetail page.
 // Contains the same modifier, combo builder, deluxe preset, and happy hour
@@ -512,6 +513,19 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                 const isSelected = isMultiple
                   ? (selections[group.name] || []).some(m => m.id === mod.id)
                   : selections[group.name]?.id === mod.id;
+
+                if (!mod.sold_out && getPreferenceList(mod)) {
+                  return (
+                    <PreferencePillButton
+                      key={mod.id}
+                      mod={mod}
+                      isSelected={isSelected}
+                      onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                      nestedSelection={nestedSelections[mod.id] || {}}
+                      onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                    />
+                  );
+                }
 
                 return (
                   <button

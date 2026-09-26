@@ -23,27 +23,27 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
   if (!childLists || childLists.length === 0) return null;
 
   const toggleSingle = (listName, mod) => {
-    onChange(prev => ({
-      ...(prev || {}),
-      [listName]: prev?.[listName]?.id === mod.id ? null : mod,
-    }));
+    const cur = nestedSelections || {};
+    onChange({
+      ...cur,
+      [listName]: cur?.[listName]?.id === mod.id ? null : mod,
+    });
   };
 
   const toggleMultiple = (listName, mod) => {
-    onChange(prev => {
-      const cur = (prev || {})[listName] || [];
-      return {
-        ...(prev || {}),
-        [listName]: cur.find(m => m.id === mod.id)
-          ? cur.filter(m => m.id !== mod.id)
-          : [...cur, mod],
-      };
+    const cur = nestedSelections || {};
+    const arr = cur[listName] || [];
+    onChange({
+      ...cur,
+      [listName]: arr.find(m => m.id === mod.id)
+        ? arr.filter(m => m.id !== mod.id)
+        : [...arr, mod],
     });
   };
 
   return (
     <div className="mt-3 ml-3 pl-3 border-l-2 border-midnight-cherry/20 space-y-4">
-      {childLists.map(list => (
+      {childLists.filter(list => !isPreferenceList(list)).map(list => (
         <div key={list.name} className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{list.name}</h4>

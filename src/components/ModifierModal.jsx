@@ -10,6 +10,7 @@ import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDel
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
+import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -611,6 +612,20 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                     const isSelected = isMultiple
                       ? (selections[group.name] || []).some(m => m.id === mod.id)
                       : selections[group.name]?.id === mod.id;
+
+                    if (!mod.sold_out && getPreferenceList(mod)) {
+                      return (
+                        <div key={mod.id} className="py-1">
+                          <PreferencePillButton
+                            mod={mod}
+                            isSelected={isSelected}
+                            onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                            nestedSelection={nestedSelections[mod.id] || {}}
+                            onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                          />
+                        </div>
+                      );
+                    }
 
                     return (
                       <button
