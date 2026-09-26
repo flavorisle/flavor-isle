@@ -24,6 +24,7 @@ const DEFAULT_SETTING = {
   business_hours: null,
   closure: null,
   site_notice: null,
+  extra_cook_date: '',
   deluxe: { enabled: true, presets: [] },
   happy_hour: {
     active: true,
@@ -217,6 +218,22 @@ export async function setSiteNotice(siteNotice) {
     return { ...setting, site_notice: siteNotice };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], site_notice: siteNotice });
+  bustMenuSettingCache();
+  return created;
+}
+
+// Extra-cook day (YYYY-MM-DD, store local). When it matches today the kitchen
+// is treated as running at double output — the busyness indicator and wait
+// quotes stretch/thin accordingly. Empty string clears it.
+export async function setExtraCookDate(dateKey) {
+  const setting = await getMenuSetting();
+  const updates = { extra_cook_date: dateKey || '' };
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, updates);
+    bustMenuSettingCache();
+    return { ...setting, ...updates };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], ...updates });
   bustMenuSettingCache();
   return created;
 }

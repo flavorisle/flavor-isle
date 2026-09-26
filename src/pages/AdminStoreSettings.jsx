@@ -10,6 +10,7 @@ import OrderCutoffSettings from '@/components/OrderCutoffSettings';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import DeliveryPricingTiers from '@/components/admin/DeliveryPricingTiers';
 import HappyHourPanel from '@/components/admin/HappyHourPanel';
+import ExtraCookPanel from '@/components/admin/ExtraCookPanel';
 
 // Consolidated store operations page: customer notice banner, online ordering
 // toggle, emergency closures, order cutoffs + delivery pause, and business
@@ -37,6 +38,7 @@ export default function AdminStoreSettings() {
       <StoreClosurePanel />
       <OrderCutoffSettings />
       <HappyHourPanel />
+      <ExtraCookPanel />
       <BusinessHoursSettings />
       <DeliveryPricingTiers />
     </div>
