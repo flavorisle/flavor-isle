@@ -9,6 +9,7 @@ import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
+import NestedModifierLists, { flattenNestedSelections, nestedSelectionsExtra } from './NestedModifierLists';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -36,6 +37,8 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const [comboSideMods, setComboSideMods] = useState({});
   const [comboShakeMods, setComboShakeMods] = useState({});
   const [comboDrinkMods, setComboDrinkMods] = useState({});
+  const [nestedSelections, setNestedSelections] = useState({});
+  const [comboSodaNested, setComboSodaNested] = useState({});
 
   const { menuSetting } = useCart();
 
@@ -147,10 +150,11 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const shakeModsToCart = modsToCart(comboShakeMods);
   const drinkModsExtra = modsExtra(comboDrinkMods);
   const drinkModsToCart = modsToCart(comboDrinkMods);
+  const sodaNestedExtra = nestedSelectionsExtra(comboSodaNested);
   const comboAddOn = comboData && comboSide
     ? (comboDrinkType === 'shake'
         ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra + shakeModsExtra - COMBO_DISCOUNT).toFixed(2)
-        : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2))
+        : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra + sodaNestedExtra - COMBO_DISCOUNT).toFixed(2))
     : 0;
 
   const comboReady = !!(comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda));
@@ -196,9 +200,15 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   for (const [groupName, sel] of Object.entries(selections)) {
     if (!sel) continue;
     if (Array.isArray(sel)) {
-      sel.forEach((m) => liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+      sel.forEach((m) => {
+        liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id });
+        const nested = nestedSelections[m.id];
+        if (nested) liveModifiers.push(...flattenNestedSelections(nested));
+      });
     } else {
       liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+      const nested = nestedSelections[sel.id];
+      if (nested) liveModifiers.push(...flattenNestedSelections(nested));
     }
   }
   const silentSets = deluxePresets.map(p => new Set((p.silentToppings || []).map(t => t.toLowerCase())));
@@ -216,11 +226,12 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };
 
+  const nestedExtraCost = Object.values(nestedSelections).reduce((sum, nested) => sum + nestedSelectionsExtra(nested), 0);
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
     return sum + (sel.price || 0);
-  }, 0);
+  }, 0) + nestedExtraCost;
 
   // Total shown in the footer — reflects happy hour discount and combo add-on
   // so it matches what the cart will actually charge.
@@ -232,9 +243,15 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
       if (Array.isArray(sel)) {
-        sel.forEach(m => selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+        sel.forEach(m => {
+          selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id });
+          const nested = nestedSelections[m.id];
+          if (nested) selectedMods.push(...flattenNestedSelections(nested));
+        });
       } else {
         selectedMods.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+        const nested = nestedSelections[sel.id];
+        if (nested) selectedMods.push(...flattenNestedSelections(nested));
       }
     }
     const { label, allToppings } = DELUXE_ENABLED
@@ -264,12 +281,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
               ...comboData.drink,
               id: `combo-${comboData.drink.id}`,
               name: `${comboSoda.name} (20oz)`,
-              price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
+              price: +(drink20ozPrice + drinkModsExtra + sodaNestedExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
               selectedModifiers: [
                 { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
                 ...(drink20ozMod ? [{ id: drink20ozMod.id, name: drink20ozMod.name, price: drink20ozMod.price }] : []),
                 ...drinkModsToCart,
+                ...flattenNestedSelections(comboSodaNested),
               ],
             },
           ])
@@ -515,6 +533,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                   );
                 })}
               </div>
+              {comboSoda?.child_modifier_lists?.length > 0 && (
+                <NestedModifierLists
+                  parentMod={comboSoda}
+                  nestedSelections={comboSodaNested}
+                  onChange={setComboSodaNested}
+                />
+              )}
             </div>
           )}
 
@@ -627,6 +652,21 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                     );
                   })}
                 </div>
+                {/* Nested modifier lists for selected modifiers with children */}
+                {group.modifiers.filter(mod => {
+                  const isMultiple = group.selection_type === 'MULTIPLE';
+                  const isSelected = isMultiple
+                    ? (selections[group.name] || []).some(m => m.id === mod.id)
+                    : selections[group.name]?.id === mod.id;
+                  return isSelected && mod.child_modifier_lists?.length > 0;
+                }).map(mod => (
+                  <NestedModifierLists
+                    key={mod.id}
+                    parentMod={mod}
+                    nestedSelections={nestedSelections[mod.id] || {}}
+                    onChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                  />
+                ))}
               </div>
             ))
           ) : (

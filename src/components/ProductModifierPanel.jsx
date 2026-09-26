@@ -7,6 +7,7 @@ import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import NestedModifierLists, { flattenNestedSelections, nestedSelectionsExtra } from './NestedModifierLists';
 
 // Inline modifier selection panel for the two-column ProductDetail page.
 // Contains the same modifier, combo builder, deluxe preset, and happy hour
@@ -45,6 +46,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // 0 = "Pick a side" button, 1 = side list, 2 = side mods + "Pick drink" button,
   // 3 = drink type picker, 4 = soda choices or shake flavors + add-ons.
   const [comboStep, setComboStep] = useState(0);
+  const [nestedSelections, setNestedSelections] = useState({});
+  const [comboSodaNested, setComboSodaNested] = useState({});
 
   const { menuSetting } = useCart();
 
@@ -150,10 +153,11 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const shakeModsToCart = modsToCart(comboShakeMods);
   const drinkModsExtra = modsExtra(comboDrinkMods);
   const drinkModsToCart = modsToCart(comboDrinkMods);
+  const sodaNestedExtra = nestedSelectionsExtra(comboSodaNested);
   const comboAddOn = comboData && comboSide && comboDrinkType
     ? (comboDrinkType === 'shake'
         ? +(comboSide.price + sideModsExtra + comboData.shake.price + flavorExtra + shakeModsExtra - COMBO_DISCOUNT).toFixed(2)
-        : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2))
+        : +(comboSide.price + sideModsExtra + drink20ozPrice + drinkModsExtra + sodaNestedExtra - COMBO_DISCOUNT).toFixed(2))
     : 0;
 
   const comboReady = !!(comboData && comboSide && (comboDrinkType === 'shake' ? comboFlavor : comboSoda));
@@ -199,9 +203,15 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   for (const [groupName, sel] of Object.entries(selections)) {
     if (!sel) continue;
     if (Array.isArray(sel)) {
-      sel.forEach((m) => liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+      sel.forEach((m) => {
+        liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id });
+        const nested = nestedSelections[m.id];
+        if (nested) liveModifiers.push(...flattenNestedSelections(nested));
+      });
     } else {
       liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+      const nested = nestedSelections[sel.id];
+      if (nested) liveModifiers.push(...flattenNestedSelections(nested));
     }
   }
   const silentSets = deluxePresets.map(p => new Set((p.silentToppings || []).map(t => t.toLowerCase())));
@@ -224,11 +234,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // across the cart, checkout, and email receipts.
   const burgerModsLabel = deluxeLabel;
 
+  const nestedExtraCost = Object.values(nestedSelections).reduce((sum, nested) => sum + nestedSelectionsExtra(nested), 0);
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
     return sum + (sel.price || 0);
-  }, 0);
+  }, 0) + nestedExtraCost;
 
   const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
   const footerTotal = itemTotal + (isCombo ? comboAddOn : 0);
@@ -262,9 +273,15 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
       if (Array.isArray(sel)) {
-        sel.forEach(m => selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id }));
+        sel.forEach(m => {
+          selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id });
+          const nested = nestedSelections[m.id];
+          if (nested) selectedMods.push(...flattenNestedSelections(nested));
+        });
       } else {
         selectedMods.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
+        const nested = nestedSelections[sel.id];
+        if (nested) selectedMods.push(...flattenNestedSelections(nested));
       }
     }
     const { label, allToppings } = DELUXE_ENABLED
@@ -298,12 +315,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
               productId: comboData.drink.id,
               comboParentId: item.id,
               name: comboSoda.name,
-              price: +(drink20ozPrice + drinkModsExtra - COMBO_DISCOUNT).toFixed(2),
+              price: +(drink20ozPrice + drinkModsExtra + sodaNestedExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
               selectedModifiers: [
                 { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
                 ...(d20ozMod ? [{ id: d20ozMod.id, name: d20ozMod.name, price: d20ozMod.price }] : []),
                 ...drinkModsToCart,
+                ...flattenNestedSelections(comboSodaNested),
               ],
             },
           ])
@@ -529,6 +547,21 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                 );
               })}
             </div>
+            {/* Nested modifier lists for selected modifiers with children */}
+            {group.modifiers.filter(mod => {
+              const isMultiple = group.selection_type === 'MULTIPLE';
+              const isSelected = isMultiple
+                ? (selections[group.name] || []).some(m => m.id === mod.id)
+                : selections[group.name]?.id === mod.id;
+              return isSelected && mod.child_modifier_lists?.length > 0;
+            }).map(mod => (
+              <NestedModifierLists
+                key={mod.id}
+                parentMod={mod}
+                nestedSelections={nestedSelections[mod.id] || {}}
+                onChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+              />
+            ))}
           </div>
         ))
       ) : !isBurger && (
@@ -659,6 +692,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
                   );
                 })}
               </div>
+              {comboSoda?.child_modifier_lists?.length > 0 && (
+                <NestedModifierLists
+                  parentMod={comboSoda}
+                  nestedSelections={comboSodaNested}
+                  onChange={setComboSodaNested}
+                />
+              )}
             </div>
           )}
 

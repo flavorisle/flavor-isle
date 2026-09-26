@@ -80,9 +80,14 @@
     },
     "modifiers": {
       "type": "array",
+      "description": "Modifier groups attached to the item. Each group is a Square CatalogModifierList with its options. Options may carry child_modifier_lists (Square nested modifiers) that reveal follow-up choices when selected \u2014 e.g., picking a soda reveals ice level + flavor, or picking a sauce reveals lite/regular/extra.",
       "items": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "Square CatalogModifierList ID"
+          },
           "name": {
             "type": "string"
           },
@@ -105,6 +110,44 @@
                 },
                 "sold_out": {
                   "type": "boolean"
+                },
+                "child_modifier_lists": {
+                  "type": "array",
+                  "description": "Square nested modifier lists revealed when this modifier is selected. Resolved recursively up to 3 levels deep by syncSquareCatalog.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "selection_type": {
+                        "type": "string"
+                      },
+                      "modifiers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "price": {
+                              "type": "number"
+                            },
+                            "sold_out": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }

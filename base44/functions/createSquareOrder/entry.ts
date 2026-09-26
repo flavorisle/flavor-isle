@@ -172,25 +172,70 @@ Deno.serve(async (req) => {
     // Batch-retrieve modifier lists so we can reference modifier options by
     // their catalog IDs (line item modifiers) instead of ad-hoc text. This
     // makes modifier-level sales and pricing report correctly in Square.
+    // Nested (child) modifier lists are retrieved recursively up to 3 levels
+    // so selections from child lists (e.g., sauce preference, ice level, drink
+    // flavor) are also catalog-referenced instead of ad-hoc text.
     const modifierOptionToList: Record<string, string> = {};
+    const childListMap: Record<string, string[]> = {};
+    const retrievedListIds = new Set<string>();
+
+    async function retrieveModifierLists(ids: string[]) {
+      if (ids.length === 0) return [];
+      const res = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+        method: 'POST',
+        headers: sqHeaders,
+        body: JSON.stringify({ object_ids: ids }),
+      });
+      const data = await res.json();
+      return data.objects || [];
+    }
+
     if (allModifierListIds.size > 0) {
       try {
-        const modRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
-          method: 'POST',
-          headers: sqHeaders,
-          body: JSON.stringify({ object_ids: [...allModifierListIds] }),
-        });
-        const modData = await modRes.json();
-        for (const obj of (modData.objects || [])) {
-          if (obj.type === 'MODIFIER_LIST' && obj.modifier_list_data) {
+        let toRetrieve = [...allModifierListIds];
+        let depth = 0;
+        while (toRetrieve.length > 0 && depth < 4) {
+          const objs = await retrieveModifierLists(toRetrieve);
+          const nextBatch: string[] = [];
+          for (const obj of objs) {
+            if (obj.type !== 'MODIFIER_LIST' || !obj.modifier_list_data) continue;
+            retrievedListIds.add(obj.id);
+            const childIds: string[] = [];
             for (const mod of (obj.modifier_list_data.modifiers || [])) {
               modifierOptionToList[mod.id] = obj.id;
+              for (const cid of (mod.modifier_data?.child_modifier_list_ids || [])) {
+                childIds.push(cid);
+                if (!retrievedListIds.has(cid)) nextBatch.push(cid);
+              }
             }
+            if (childIds.length > 0) childListMap[obj.id] = childIds;
           }
+          toRetrieve = [...new Set(nextBatch)];
+          depth++;
         }
       } catch (modErr) {
         console.warn('Modifier list batch-retrieve failed:', modErr.message);
       }
+    }
+
+    // Compute the transitive closure of all modifier list IDs reachable from
+    // a given set of direct list IDs (including nested child lists) so nested
+    // selections are treated as catalog-referenced, not ad-hoc.
+    function getAllReachableListIds(directIds: string[]): Set<string> {
+      const result = new Set<string>(directIds);
+      const queue = [...directIds];
+      while (queue.length > 0) {
+        const id = queue.shift()!;
+        const childIds = childListMap[id];
+        if (!childIds) continue;
+        for (const cid of childIds) {
+          if (!result.has(cid)) {
+            result.add(cid);
+            queue.push(cid);
+          }
+        }
+      }
+      return result;
     }
 
     const lineItems = items.map(item => {
@@ -204,7 +249,7 @@ Deno.serve(async (req) => {
       const catEntry = squareItemId ? catalogMap[squareItemId] : null;
       const variations = catEntry?.variations || [];
       const variationIds = new Set(variations.map((v: any) => v.id));
-      const itemModListIds = new Set(catEntry?.modifierListIds || []);
+      const itemModListIds = getAllReachableListIds(catEntry?.modifierListIds || []);
 
       if (variations.length > 0) {
         const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
