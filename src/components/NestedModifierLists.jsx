@@ -122,27 +122,32 @@ export function mergeNestedIntoParent(parentMod, nested) {
   const silentEntries = [];
   for (const [listName, sel] of Object.entries(nested || {})) {
     if (!sel) continue;
-    const list = (parentMod?.child_modifier_lists || []).find(l => l.name === listName);
-    if (!list || !isPreferenceList(list)) {
-      pushAddOn(addOns, listName, sel);
-      continue;
-    }
     const selName = Array.isArray(sel) ? (sel[0]?.name || '') : (sel?.name || '');
     const selPrice = Array.isArray(sel) ? (sel[0]?.price || 0) : (sel?.price || 0);
     const selId = Array.isArray(sel) ? (sel[0]?.id || '') : (sel?.id || '');
     const n = norm(selName);
+    // Merge preference selections (Lite/Regular/Extra) into the parent name
+    // so summaries show "Extra Pickle" instead of a standalone "Extra".
+    // Check the selection name directly so this works even when the child
+    // list has non-preference options that prevent isPreferenceList() from
+    // matching.
     if (n === 'regular' || n === 'normal') {
       if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
       continue;
     }
-    if (n === 'extra' || n === 'lite' || n === 'light') {
-      if (n === 'extra') mergedName = `Extra ${mergedName}`;
-      else mergedName = `${selName} ${mergedName}`;
+    if (n === 'extra') {
+      mergedName = `Extra ${mergedName}`;
       mergedPrice += selPrice;
       if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
-    } else {
-      pushAddOn(addOns, listName, sel);
+      continue;
     }
+    if (n === 'lite' || n === 'light') {
+      mergedName = `${selName} ${mergedName}`;
+      mergedPrice += selPrice;
+      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
+      continue;
+    }
+    pushAddOn(addOns, listName, sel);
   }
   return { mergedName, mergedPrice, addOns, silentEntries };
 }

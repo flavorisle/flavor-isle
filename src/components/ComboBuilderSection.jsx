@@ -160,7 +160,7 @@ export default function ComboBuilderSection() {
     const name = `${selectedCombo.name}: ${picks.main.name} + ${picks.side.name} + ${picks.drink.name}`;
     const modSummary = [picks.main, picks.side, picks.drink]
       .flatMap(p => p.selectedModifiers || [])
-      .map(m => m.name).join(', ');
+      .filter(m => m.name && !m.silent).map(m => m.name).join(', ');
     addItem({
       id: `combo-${Date.now()}`,
       name,
@@ -213,7 +213,7 @@ export default function ComboBuilderSection() {
                     <p className="text-xs text-patina-mint mt-0.5">Customizable</p>
                   )}
                   {isSelected && selected.selectedModifiers?.length > 0 && (
-                    <p className="text-xs text-patina-mint mt-0.5 truncate">{selected.selectedModifiers.map(m => m.name).join(', ')}</p>
+                    <p className="text-xs text-patina-mint mt-0.5 truncate">{selected.selectedModifiers.filter(m => m.name && !m.silent).map(m => m.name).join(', ')}</p>
                   )}
                 </div>
                 {isSelected ? (
