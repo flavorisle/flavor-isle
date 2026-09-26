@@ -55,7 +55,7 @@ export default function PreferencePillButton({
   const isExtra = prefName === 'extra';
   const isRegular = isSelected && !isLite && !isExtra;
 
-  const label = isLite ? `Lite ${mod.name}` : isExtra ? `Extra ${mod.name}` : mod.name;
+  const label = mod.name;
   const totalPrice = (mod.price || 0) + (currentPref?.price || 0);
 
   const handleLite = () => {
@@ -99,8 +99,7 @@ export default function PreferencePillButton({
               : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
           }`}
         >
-          <Minus size={14} className="group-hover/lite:hidden group-active/lite:hidden" />
-          <span className="hidden group-hover/lite:inline group-active/lite:inline text-xs font-heading uppercase tracking-wide">Lite</span>
+          <Minus size={14} />
         </button>
       )}
 
@@ -131,8 +130,7 @@ export default function PreferencePillButton({
               : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
           }`}
         >
-          <Plus size={14} className="group-hover/extra:hidden group-active/extra:hidden" />
-          <span className="hidden group-hover/extra:inline group-active/extra:inline text-xs font-heading uppercase tracking-wide">Extra</span>
+          <Plus size={14} />
         </button>
       )}
     </div>
