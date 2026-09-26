@@ -6,14 +6,9 @@ import { isDeluxeEnabled, getDeluxePresets, presetTrackedToppings } from '@/lib/
 // Renders the chosen modifiers for a cart/checkout line, with their prices.
 // When the selection matches the Deluxe preset, a compact "Deluxe" (or
 // "Deluxe, no …") badge is shown above the individual modifier lines.
-//
-// `savings` is a combo line's discount amount (main + side + drink vs the combo
-// price). It is customer-facing only — the order payload never carries it, so
-// kitchen tickets and the POS stay free of any discount text.
-export default function CartItemModifiers({ modifiers, savings }) {
+export default function CartItemModifiers({ modifiers }) {
   const hasMods = Array.isArray(modifiers) && modifiers.length > 0;
-  const hasSavings = Number(savings) > 0;
-  if (!hasMods && !hasSavings) return null;
+  if (!hasMods) return null;
   const labelPresets = getDeluxePresets().map((p) => ({
     name: p.name,
     trackedToppings: presetTrackedToppings(p),
@@ -41,11 +36,6 @@ export default function CartItemModifiers({ modifiers, savings }) {
             </li>
           ))}
         </ul>
-      )}
-      {hasSavings && (
-        <p className="text-xs font-heading text-midnight-cherry mt-1">
-          Combo savings − ${Number(savings).toFixed(2)}
-        </p>
       )}
     </div>
   );

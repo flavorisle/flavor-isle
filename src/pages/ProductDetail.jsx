@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Sparkles, Heart, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Heart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
-import { loadComboData, comboForItem, comboPricing, componentTotal } from '@/lib/comboConfig';
 import ProductModifierPanel from '@/components/ProductModifierPanel';
-import ComboPicker from '@/components/ComboPicker';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import Navbar from '@/components/Navbar';
@@ -20,17 +18,10 @@ const PLACEHOLDER_EMOJI = {
   Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
 };
 
-// Two-column product detail: sticky summary (title, price, image, combo summary,
-// quantity, Add to Bag) on the left; the combo picker and the inline modifier
-// panel on the right. Modifier, Deluxe, and Happy Hour logic lives in
-// ProductModifierPanel; ComboConfig combos live in ComboPicker. This page owns
-// layout, quantity, combos, and the add flow.
-//
-// A combo is added as ONE cart line carrying comboConfigId + comboComponents —
-// the shape verifyOrderPricing reprices server-side (component prices from the
-// catalog, discount from the ComboConfig), so the combo price is never trusted
-// from the browser. The savings figure is customer-facing only: it is not part
-// of the order payload, so kitchen tickets and the POS never show discount info.
+// Two-column product detail: sticky summary (title, price, image, quantity, and
+// Add to Bag) on the left; the inline modifier panel and reviews on the right.
+// Modifier (with the switch-gated Deluxe presets) and Happy Hour logic lives in
+// ProductModifierPanel; this page owns layout, quantity, and the add flow.
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,9 +34,6 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
-  const [comboOffer, setComboOffer] = useState(null);
-  const [comboOn, setComboOn] = useState(false);
-  const [comboPick, setComboPick] = useState(null);
   const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true });
   const panelRef = useRef(null);
 
@@ -53,8 +41,6 @@ export default function ProductDetail() {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    setComboOn(false);
-    setComboPick(null);
     base44.entities.MenuItem.get(id)
       .then((data) => {
         if (cancelled) return;
@@ -70,30 +56,6 @@ export default function ProductDetail() {
     window.scrollTo({ top: 0 });
     return () => { cancelled = true; };
   }, [id]);
-
-  // Which active combo this item's category belongs to, resolved against the
-  // live menu. Combos whose side or drink categories are empty are skipped by
-  // resolveCombos and never offered.
-  useEffect(() => {
-    if (!item) return;
-    let cancelled = false;
-    loadComboData()
-      .then(({ usable }) => {
-        if (cancelled) return;
-        const offer = comboForItem(usable, item);
-        setComboOffer(offer ? {
-          id: offer.id,
-          name: offer.name,
-          discount_percent: offer.discount_percent,
-          side_category: offer.side_category,
-          drink_category: offer.drink_category,
-          side: offer.side,
-          drink: offer.drink,
-        } : null);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [item]);
 
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
@@ -133,58 +95,6 @@ export default function ProductDetail() {
     }
   };
 
-  // Live combo math — the burger component is the item's own price plus the
-  // options selected in the panel (no Happy Hour on a combo, matching the
-  // server). Recomputed from the panel's real selection when the combo is added.
-  const burgerBase = item ? Number(item.price) + Number(panelState.extraCost || 0) : 0;
-  const comboReady = !!(comboPick && comboPick.ready);
-  const comboMath = comboOffer && comboReady
-    ? comboPricing(comboOffer, [
-        { name: item.name, total: burgerBase, selectedModifiers: [] },
-        comboPick.sideComponent,
-        comboPick.drinkComponent,
-      ])
-    : null;
-  const comboActive = comboOn && !!comboMath;
-  const comboNotReady = comboOn && !comboReady;
-
-  // Build the single combo line: main + side + drink as components, priced with
-  // the ComboConfig discount. Every component carries its square_item_id and
-  // catalog modifier ids so the server can reprice each one.
-  const buildComboLine = () => {
-    const sel = panelRef.current?.getSelection?.() || { selectedMods: [], label: null, allToppings: [] };
-    const components = [
-      {
-        name: item.name,
-        square_item_id: item.square_item_id,
-        total: componentTotal(item.price, sel.selectedMods),
-        selectedModifiers: sel.selectedMods,
-      },
-      comboPick.sideComponent,
-      comboPick.drinkComponent,
-    ];
-    const { original, price } = comboPricing(comboOffer, components);
-    return {
-      id: `combo-${comboOffer.id}-${Date.now()}`,
-      alwaysUnique: true,
-      productId: item.id,
-      name: `${comboOffer.name}: ${item.name} + ${comboPick.sideName} + ${comboPick.drinkName}`,
-      image_url: item.image_url,
-      price,
-      quantity: 1,
-      selectedModifiers: components.flatMap(c => c.selectedModifiers || []),
-      deluxeLabel: sel.label || undefined,
-      deluxeToppings: sel.allToppings || [],
-      comboConfigId: comboOffer.id,
-      comboComponents: components.map(c => ({
-        name: c.name,
-        square_item_id: c.square_item_id,
-        selectedModifiers: c.selectedModifiers || [],
-      })),
-      comboSavings: original - price,
-    };
-  };
-
   const flashAdded = () => {
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
@@ -205,15 +115,6 @@ export default function ProductDetail() {
 
   const handleAddToBag = () => {
     if (!orderingEnabled || soldOut) return;
-    if (comboOn) {
-      if (!comboReady) return;
-      if (showPanel && !panelRef.current?.isReady()) return;
-      trackSelectItem(foodItemToGa4(item));
-      const line = buildComboLine();
-      for (let i = 0; i < quantity; i++) addItem(line);
-      flashAdded();
-      return;
-    }
     if (showPanel) {
       if (!panelRef.current?.isReady()) return;
       trackSelectItem(foodItemToGa4(item));
@@ -225,31 +126,22 @@ export default function ProductDetail() {
     }
   };
 
-  const canAdd = !soldOut && orderingEnabled && !comboNotReady;
-  const comboHint = comboNotReady ? 'Pick a side and a drink for your combo' : null;
+  const canAdd = !soldOut && orderingEnabled;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
         ? 'Added to Cart!'
-        : comboHint
-          ? comboHint
-          : comboActive
-            ? 'Add Combo to Bag'
-            : 'Add to Bag';
+        : 'Add to Bag';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
     : added
       ? 'bg-patina-mint text-white'
-      : comboNotReady
-        ? 'btn-cherry opacity-50 cursor-not-allowed'
-        : 'btn-cherry chrome-hover';
-  const liveTotal = comboActive
-    ? comboMath.price * quantity
-    : showPanel
-      ? panelState.total * quantity
-      : (displayPrice || 0) * quantity;
+      : 'btn-cherry chrome-hover';
+  const liveTotal = showPanel
+    ? panelState.total * quantity
+    : (displayPrice || 0) * quantity;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -386,68 +278,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Combo summary — shown while a combo is active */}
-              {comboOn && (
-                <div className="rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-heading text-xs uppercase tracking-widest text-midnight-cherry">{comboOffer.name}</span>
-                    <button
-                      onClick={() => setComboOn(false)}
-                      className="text-xs text-muted-foreground hover:text-midnight-cherry underline"
-                    >
-                      Remove combo
-                    </button>
-                  </div>
-                  {/* Main row */}
-                  <div className="flex justify-between items-start gap-3 text-sm">
-                    <div className="flex-1 min-w-0">
-                      <span className="font-body font-semibold text-obsidian-roast">{item.name}</span>
-                      {panelState.burgerModsLabel && (
-                        <span className="block text-xs text-muted-foreground leading-tight">{panelState.burgerModsLabel}</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => document.getElementById('product-modifiers')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      className="text-xs text-patina-mint hover:text-midnight-cherry font-heading flex items-center gap-1 flex-shrink-0"
-                    >
-                      <Pencil size={11} /> Edit
-                    </button>
-                  </div>
-                  {/* Side row */}
-                  {comboPick?.sideName ? (
-                    <div className="flex justify-between items-start gap-3 text-sm">
-                      <div className="flex-1 min-w-0">
-                        <span className="font-body font-semibold text-obsidian-roast">{comboPick.sideName}</span>
-                        {comboPick.sideModsLabel && (
-                          <span className="block text-xs text-muted-foreground leading-tight">{comboPick.sideModsLabel}</span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground italic">Pick a side to get started…</div>
-                  )}
-                  {/* Drink row */}
-                  {comboPick?.drinkName ? (
-                    <div className="flex justify-between items-start gap-3 text-sm">
-                      <div className="flex-1 min-w-0">
-                        <span className="font-body font-semibold text-obsidian-roast">{comboPick.drinkName}</span>
-                        {comboPick.drinkModsLabel && (
-                          <span className="block text-xs text-muted-foreground leading-tight">{comboPick.drinkModsLabel}</span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground italic">Pick your drink…</div>
-                  )}
-                  {comboActive && (
-                    <div className="flex items-center justify-between pt-2 border-t border-midnight-cherry/20 text-sm">
-                      <span className="font-heading text-midnight-cherry">Combo price · save {comboMath.percent}%</span>
-                      <span className="font-heading text-midnight-cherry">${comboMath.price.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Add to Bag */}
               <button
                 onClick={handleAddToBag}
@@ -456,36 +286,17 @@ export default function ProductDetail() {
               >
                 <Plus size={18} />
                 {addLabel}
-                {!soldOut && orderingEnabled && !added && !comboNotReady && (
+                {!soldOut && orderingEnabled && !added && (
                   <span className="ml-1 opacity-70 font-body">· ${liveTotal.toFixed(2)}</span>
                 )}
               </button>
               {!orderingEnabled && orderingClosedMessage && (
                 <p className="text-xs text-center text-muted-foreground">{orderingClosedMessage}</p>
               )}
-              {comboOffer && !comboOn && !soldOut && orderingEnabled && (
-                <p className="text-xs text-center text-patina-mint font-heading flex items-center justify-center gap-1">
-                  <Sparkles size={12} /> Add a side and a drink — save {comboOffer.discount_percent}%
-                </p>
-              )}
-              {comboOffer && comboOn && comboReady && (
-                <p className="text-xs text-center text-midnight-cherry font-heading flex items-center justify-center gap-1">
-                  <Check size={12} /> Combo savings ${(comboMath.original - comboMath.price).toFixed(2)}
-                </p>
-              )}
             </div>
 
-            {/* Right column — combo picker + modifiers + reviews */}
+            {/* Right column — modifiers + reviews */}
             <div id="product-modifiers" className="space-y-8">
-              {comboOffer && !soldOut && orderingEnabled && (
-                <ComboPicker
-                  combo={comboOffer}
-                  active={comboOn}
-                  onToggle={setComboOn}
-                  onChange={setComboPick}
-                />
-              )}
-
               {showPanel ? (
                 <ProductModifierPanel
                   ref={panelRef}

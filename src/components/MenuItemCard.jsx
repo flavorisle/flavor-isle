@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Zap, Heart, Star, Clock, Sparkles } from 'lucide-react';
+import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
@@ -33,7 +33,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   }, [autoOpen]);
 
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
-  const isBurger = /burger/i.test(item.name);
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
 
@@ -141,13 +140,6 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   const badges = (
     <>
-      {isBurger && !soldOut && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
-          <div className="bg-smashie-yellow text-obsidian-roast text-xs font-heading px-3 py-1.5 rounded-full flex items-center gap-1 shadow-float">
-            <Sparkles size={11} /> Make an Isle Combo on the product page →
-          </div>
-        </div>
-      )}
       {item.is_fan_favorite && !soldOut && (
         <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
           <Star size={10} className="fill-obsidian-roast" /> Fan Favorite

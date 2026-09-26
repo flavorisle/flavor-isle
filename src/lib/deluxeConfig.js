@@ -101,14 +101,15 @@ export function normalizeDeluxeConfig(cfg) {
     : DEFAULT_DELUXE_PRESETS.map(cleanPreset);
   const condiment = condimentFromPresets(presets);
   return {
-    enabled: raw.enabled !== false,
+    enabled: raw.enabled === true,
     condiment,
     presets: applyCondimentToPresets(presets, condiment),
   };
 }
 
-// In-memory cache hydrated from the MenuSetting record. Defaults keep the
-// feature on with the built-in preset until the real setting loads.
+// In-memory cache hydrated from the MenuSetting record. It starts OFF: the
+// stored setting must explicitly enable the feature, so a failed or delayed
+// settings load can never make a "Make it Deluxe" button appear.
 let _config = normalizeDeluxeConfig(null);
 
 export function hydrateDeluxeConfig(cfg) {

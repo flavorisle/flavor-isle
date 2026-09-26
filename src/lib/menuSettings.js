@@ -25,7 +25,7 @@ const DEFAULT_SETTING = {
   closure: null,
   site_notice: null,
   extra_cook_date: '',
-  deluxe: { enabled: true, presets: [] },
+  deluxe: { enabled: false, presets: [] },
   happy_hour: {
     active: true,
     start_time: '14:00',

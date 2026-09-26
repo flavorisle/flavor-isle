@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain, IceCream2 } from 'lucide-react';
+import { Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -54,31 +54,7 @@ export default function MammothCaveDining() {
         </div>
       </section>
 
-      {/* Cave Explorer Combo callout */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
-        <div className="card-diner overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 items-stretch">
-            <div className="p-6 sm:p-8 flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
-                <IceCream2 size={14} /> CAVE EXPLORER COMBO
-              </div>
-              <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">Burger + Crinkle Fries + Shake</h2>
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Open any burger on our menu and tap <strong>“Make it an Isle Combo”</strong> to add Crinkle Fries and a hand-spun shake — and save $1.50. The perfect fuel for little explorers (and hungry grown-ups too).
-              </p>
-              <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
-                Build Your Combo <ArrowRight size={16} />
-              </Link>
-            </div>
-            <div className="relative min-h-[200px] bg-patina-mint/10 flex items-center justify-center p-6">
-              <div className="text-center">
-                <div className="font-heading text-5xl text-midnight-cherry">Save $1.50</div>
-                <p className="text-sm text-muted-foreground mt-2">on every Isle Combo</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
