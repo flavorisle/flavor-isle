@@ -2,24 +2,32 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Sparkles, Plus, Save, Trash2, Copy, Search, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
-  getDeluxePresets,
-  saveDeluxePresets,
   makeBlankPreset,
   DEFAULT_DELUXE_PRESETS,
+  normalizeDeluxeConfig,
 } from '@/lib/deluxeConfig';
+import { getMenuSetting, setDeluxeConfig } from '@/lib/menuSettings';
 
 const norm = (s) => (s || '').trim().toLowerCase();
 
 export default function AdminDeluxeManager() {
+  const [enabled, setEnabled] = useState(true);
   const [presets, setPresets] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
+  // Load the saved Deluxe settings from the store settings record so this panel
+  // reflects what customers actually see (not a browser-local copy).
   useEffect(() => {
-    setPresets(getDeluxePresets());
-    base44.entities.MenuItem.list().then((data) => {
+    Promise.all([
+      getMenuSetting(),
+      base44.entities.MenuItem.list().catch(() => []),
+    ]).then(([setting, data]) => {
+      const cfg = normalizeDeluxeConfig(setting?.deluxe);
+      setEnabled(cfg.enabled);
+      setPresets(cfg.presets);
       setItems(data || []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -68,15 +76,24 @@ export default function AdminDeluxeManager() {
     update(preset.id, { appliesTo: all ? [] : items.map((i) => i.id) });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
-    saveDeluxePresets(presets);
-    setDirty(false);
-    setSaving(false);
+    try {
+      await setDeluxeConfig({ enabled, presets });
+      setDirty(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
     setPresets(DEFAULT_DELUXE_PRESETS);
+    setEnabled(true);
+    setDirty(true);
+  };
+
+  const toggleEnabled = () => {
+    setEnabled((e) => !e);
     setDirty(true);
   };
 
@@ -122,6 +139,28 @@ export default function AdminDeluxeManager() {
         <p className="text-sm text-muted-foreground mb-4">
           Each preset becomes a "Make it {`{name}`}" button in the modifier panel. Create multiple presets and assign each to specific items — great for different Deluxe combos on different burgers.
         </p>
+
+        {/* Master switch — controls whether the Deluxe button appears site-wide */}
+        <button
+          type="button"
+          onClick={toggleEnabled}
+          className={`w-full mb-4 flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+            enabled ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border bg-white'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-all ${enabled ? 'bg-midnight-cherry justify-end' : 'bg-gray-300 justify-start'}`}>
+              <span className="w-5 h-5 bg-white rounded-full shadow" />
+            </div>
+            <div>
+              <p className="font-heading text-sm text-obsidian-roast">Show the Deluxe button</p>
+              <p className="text-xs text-muted-foreground">Turn off to hide every "Make it Deluxe" button from customers.</p>
+            </div>
+          </div>
+          <span className={`text-xs font-heading ${enabled ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
+            {enabled ? 'On' : 'Off'}
+          </span>
+        </button>
         {dirty && (
           <div className="mb-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             <span className="text-xs text-amber-700 font-body">You have unsaved changes.</span>

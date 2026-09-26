@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
-import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
+import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
@@ -165,7 +165,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   }, [item]);
 
   // Deluxe presets — one-tap shortcuts that each select a fixed set of toppings.
-  const deluxePresets = DELUXE_ENABLED ? getDeluxePresetsForItem(item) : [];
+  const deluxePresets = isDeluxeEnabled() ? getDeluxePresetsForItem(item) : [];
 
   const toggleDeluxe = (preset) => {
     setSelections((prev) => applyDeluxePreset(prev, preset, !isDeluxePresetActive(prev, preset)));
@@ -219,7 +219,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
       allModifierIds: (p.modifiers || []).map(m => m.id),
     };
   });
-  const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
+  const { label: deluxeLabel, allToppings: deluxeAllToppings } = isDeluxeEnabled()
     ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };
 
@@ -247,7 +247,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
         selectedMods.push(...flattenModifierWithNested(sel, groupName, nestedSelections[sel.id]));
       }
     }
-    const { label, allToppings } = DELUXE_ENABLED
+    const { label, allToppings } = isDeluxeEnabled()
       ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
     const drinkSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));

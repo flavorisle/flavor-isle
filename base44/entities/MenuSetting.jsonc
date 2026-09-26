@@ -183,6 +183,49 @@
           "description": "Display label shown on the menu badge and checkout discount line."
         }
       }
+    },
+    "deluxe": {
+      "type": "object",
+      "description": "Deluxe preset button configuration, controlled from Admin \u2192 Menu Manager \u2192 Deluxe Preset. When enabled is false the 'Make it Deluxe' button is hidden everywhere. Each preset defines a button (name), the toppings it selects, the silent toppings it never calls out, and appliesTo \u2014 the MenuItem ids that show that button (empty = all items with modifiers).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "presets": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "toppings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "silentToppings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "appliesTo": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [],

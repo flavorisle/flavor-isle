@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
@@ -113,6 +114,7 @@ export function CartProvider({ children }) {
   useEffect(() => {
     getMenuSetting()
       .then(s => {
+        hydrateDeluxeConfig(s.deluxe);
         setMenuSetting(s);
         setOrderingEnabledState(s.ordering_enabled !== false);
         if (s.ordering_closed_message) setOrderingClosedMessage(s.ordering_closed_message);

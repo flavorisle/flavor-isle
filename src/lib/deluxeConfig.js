@@ -8,20 +8,15 @@
 // selects but never calls out as missing (e.g. Mayo is part of a Deluxe but
 // shouldn't show "no Mayo").
 //
-// Storage lives in localStorage so it works on the current frontend branch.
-// The read/write surface below is the only place that touches storage, so it
-// can be swapped for a server-side entity later without touching components.
-
-// Master switch — set to false to hide all deluxe preset buttons and badges
-// from the customer-facing UI. Admin can still manage presets; flipping this
-// back to true re-enables the feature everywhere.
-export const DELUXE_ENABLED = true;
+// The configuration is an admin setting stored on the MenuSetting record
+// (`deluxe: { enabled, presets }`) so it applies to every visitor, not just the
+// admin's browser. It's hydrated into a module-level cache once the setting
+// loads (see CartContext) so the many synchronous callers below stay simple.
 
 import { matchScore } from '@/lib/deluxeLabel';
 
-const STORAGE_KEY = 'flavor_isle_deluxe_presets';
-const LEGACY_KEY = 'flavor_isle_deluxe_config';
-
+// Built-in preset used out of the box and whenever the admin hasn't configured
+// any presets yet, so the Deluxe button keeps working before setup.
 export const DEFAULT_DELUXE_PRESETS = [
   {
     id: 'deluxe',
@@ -42,7 +37,7 @@ export function makeBlankPreset(name = 'New Deluxe') {
   return { id: genId(), name, toppings: [], silentToppings: [], appliesTo: [] };
 }
 
-function cleanPreset(p) {
+export function cleanPreset(p) {
   return {
     id: (p && p.id) || genId(),
     name: (p && p.name && p.name.trim()) || 'Deluxe',
@@ -52,49 +47,32 @@ function cleanPreset(p) {
   };
 }
 
-// Read all presets, migrating the legacy single-preset config on first load.
-export function getDeluxePresets() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      // An empty saved list would silently hide every Deluxe button, so fall
-      // through to the defaults instead of returning [].
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Clear the old broken config that had Mayo as a silent preset topping.
-        const isStale = parsed.some(p =>
-          (p.silentToppings || []).some(t => /mayo/i.test(t)) ||
-          (p.toppings || []).some(t => /mayo/i.test(t)));
-        if (isStale) {
-          localStorage.removeItem(STORAGE_KEY);
-        } else {
-          return parsed.map(cleanPreset);
-        }
-      }
-    }
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      const lp = JSON.parse(legacy);
-      const migrated = [cleanPreset({
-        id: 'deluxe',
-        name: lp.name || 'Deluxe',
-        toppings: lp.toppings || DEFAULT_DELUXE_PRESETS[0].toppings,
-        silentToppings: [],
-        appliesTo: lp.appliesTo || [],
-      })];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-  } catch {
-    // fall through
-  }
-  return DEFAULT_DELUXE_PRESETS.map(cleanPreset);
+// Normalize a stored deluxe config into { enabled, presets }. An empty preset
+// list falls back to the built-in Deluxe preset rather than hiding the button.
+export function normalizeDeluxeConfig(cfg) {
+  const raw = cfg || {};
+  const presets = Array.isArray(raw.presets) && raw.presets.length > 0
+    ? raw.presets.map(cleanPreset)
+    : DEFAULT_DELUXE_PRESETS.map(cleanPreset);
+  return { enabled: raw.enabled !== false, presets };
 }
 
-export function saveDeluxePresets(presets) {
-  const clean = (presets || []).map(cleanPreset);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-  return clean;
+// In-memory cache hydrated from the MenuSetting record. Defaults keep the
+// feature on with the built-in preset until the real setting loads.
+let _config = normalizeDeluxeConfig(null);
+
+export function hydrateDeluxeConfig(cfg) {
+  _config = normalizeDeluxeConfig(cfg);
+  return _config;
+}
+
+// Master switch — when false the "Make it Deluxe" button is hidden everywhere.
+export function isDeluxeEnabled() {
+  return _config.enabled;
+}
+
+export function getDeluxePresets() {
+  return _config.presets;
 }
 
 // The topping names a preset's label should track: its toppings minus the
@@ -117,7 +95,7 @@ export function presetTrackedToppings(preset, availableNames) {
 // concrete modifier entries (group + id + name + price) found on the item
 // matching the preset's topping names.
 export function getDeluxePresetsForItem(item) {
-  if (!DELUXE_ENABLED) return [];
+  if (!isDeluxeEnabled()) return [];
   if (!item || !Array.isArray(item.modifiers) || item.modifiers.length === 0) return [];
   const presets = getDeluxePresets();
   const resolved = [];

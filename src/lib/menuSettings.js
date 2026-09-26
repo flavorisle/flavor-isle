@@ -24,6 +24,7 @@ const DEFAULT_SETTING = {
   business_hours: null,
   closure: null,
   site_notice: null,
+  deluxe: { enabled: true, presets: [] },
   happy_hour: {
     active: true,
     start_time: '14:00',
@@ -216,6 +217,18 @@ export async function setSiteNotice(siteNotice) {
     return { ...setting, site_notice: siteNotice };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], site_notice: siteNotice });
+  bustMenuSettingCache();
+  return created;
+}
+
+export async function setDeluxeConfig(deluxe) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { deluxe });
+    bustMenuSettingCache();
+    return { ...setting, deluxe };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], deluxe });
   bustMenuSettingCache();
   return created;
 }

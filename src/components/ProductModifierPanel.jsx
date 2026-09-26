@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { resolveFlavorName, resolveFlavorEmoji } from '@/lib/shakeConfig';
 import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
-import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
+import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
@@ -168,7 +168,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   }, [item]);
 
   // Deluxe presets
-  const deluxePresets = DELUXE_ENABLED ? getDeluxePresetsForItem(item) : [];
+  const deluxePresets = isDeluxeEnabled() ? getDeluxePresetsForItem(item) : [];
 
   const toggleDeluxe = (preset) => {
     setSelections((prev) => applyDeluxePreset(prev, preset, !isDeluxePresetActive(prev, preset)));
@@ -222,7 +222,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       allModifierIds: (p.modifiers || []).map(m => m.id),
     };
   });
-  const { label: deluxeLabel, allToppings: deluxeAllToppings } = DELUXE_ENABLED
+  const { label: deluxeLabel, allToppings: deluxeAllToppings } = isDeluxeEnabled()
     ? buildFullDeluxeLabel(liveModifiers, labelPresets, item)
     : { label: null, allToppings: [] };
 
@@ -277,7 +277,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         selectedMods.push(...flattenModifierWithNested(sel, groupName, nestedSelections[sel.id]));
       }
     }
-    const { label, allToppings } = DELUXE_ENABLED
+    const { label, allToppings } = isDeluxeEnabled()
       ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
     const dSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));

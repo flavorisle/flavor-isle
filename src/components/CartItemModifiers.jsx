@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { buildDeluxeLabel } from '@/lib/deluxeLabel';
-import { DELUXE_ENABLED, getDeluxePresets, presetTrackedToppings } from '@/lib/deluxeConfig';
+import { isDeluxeEnabled, getDeluxePresets, presetTrackedToppings } from '@/lib/deluxeConfig';
 
 // Renders the chosen modifiers for a cart/checkout line, with their prices.
 // When the selection matches the Deluxe preset, a compact "Deluxe" (or
@@ -12,7 +12,7 @@ export default function CartItemModifiers({ modifiers }) {
     name: p.name,
     trackedToppings: presetTrackedToppings(p),
   }));
-  const deluxeLabel = DELUXE_ENABLED ? buildDeluxeLabel(modifiers, labelPresets) : null;
+  const deluxeLabel = isDeluxeEnabled() ? buildDeluxeLabel(modifiers, labelPresets) : null;
   return (
     <div className="mb-1">
       {deluxeLabel && (
