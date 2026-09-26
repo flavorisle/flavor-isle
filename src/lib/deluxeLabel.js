@@ -159,9 +159,18 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   if (label) {
     // Deluxe active — extras (non-preset items like Jalapeños, Grilled Onions)
     // get the "add" prefix; preset toppings are summarized by the label.
+    // Preset toppings carrying a Lite/Extra preference (merged into the name
+    // by the preference pill) are called out so the label says
+    // "Deluxe, Extra Mustard" instead of just "Deluxe".
+    const prefToppings = selectedModifiers.filter(m => {
+      if (!isPresetTopping(m)) return false;
+      const n = norm(m.name);
+      return n.startsWith('extra ') || n.startsWith('lite ') || n.startsWith('light ');
+    });
+    const prefLabels = prefToppings.map(m => m.name);
     const extras = selectedModifiers.filter(m => !isPresetTopping(m));
     const extraLabels = extras.map(m => cheeseLabel(m) || `add ${m.name}`);
-    const fullLabel = [label, ...extraLabels].filter(Boolean).join(', ') || null;
+    const fullLabel = [label, ...prefLabels, ...extraLabels].filter(Boolean).join(', ') || null;
     return { label: fullLabel, allToppings };
   }
 
