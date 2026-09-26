@@ -7,12 +7,14 @@ import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import Seo from '@/components/Seo';
+import { isNativeApp } from '@/lib/isNativeApp';
 
-// The combo builder is live for every visitor — web and native app alike. Each
-// combo is priced from its ComboConfig (main + side + drink, discount_percent)
-// and validated server-side at checkout.
+// The combo builder is an app-only feature. On the public website we show a
+// "Coming Soon" teaser; inside the native mobile build (or installed PWA) we
+// render the live ComboBuilderSection so app users can build and order combos.
 export default function Combos() {
   const navigate = useNavigate();
+  const native = isNativeApp();
 
   const scrollToBuilder = () =>
     document.getElementById('combo-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -34,30 +36,37 @@ export default function Combos() {
         }} />
         <div className="relative z-10 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-5 py-2.5 rounded-full text-xs font-heading uppercase tracking-widest mb-8">
-            <Package size={14} /> Build It Now
+            <Package size={14} /> {native ? 'Build It Now' : 'Coming Soon'}
           </div>
           <h1 className="font-heading text-7xl sm:text-9xl text-white leading-none mb-4">COMBO ISLE</h1>
           <p className="text-gray-300 text-lg mb-2">Pick a main, a side, and a drink.</p>
           <p className="text-gray-400 text-base mb-12">Name it. Stack it.</p>
-          <button onClick={scrollToBuilder} className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base">
-            Start Building <ArrowDown size={18} />
-          </button>
+          {native && (
+            <button onClick={scrollToBuilder} className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base">
+              Start Building <ArrowDown size={18} />
+            </button>
+          )}
         </div>
       </section>
 
-      <div id="combo-builder">
-        <ComboBuilderSection />
-      </div>
-
-      <section className="py-16 px-4 sm:px-6 bg-white">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-heading text-4xl text-obsidian-roast mb-3">Want a specific burger?</h2>
-          <p className="text-muted-foreground mb-8">Build the combo on any burger's page — pick your side and drink right there and save.</p>
-          <button onClick={() => navigate('/menu')} className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm">
-            <ShoppingBag size={16} /> Order from the Menu
-          </button>
+      {native ? (
+        <div id="combo-builder">
+          <ComboBuilderSection />
         </div>
-      </section>
+      ) : (
+        <section className="py-20 px-4 sm:px-6 bg-white">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 text-smashie-yellow px-4 py-2 rounded-full text-xs font-heading uppercase tracking-widest mb-6">
+              <Package size={14} /> Coming Soon
+            </div>
+            <h2 className="font-heading text-5xl sm:text-6xl text-obsidian-roast mb-4">COMBO BUILDER</h2>
+            <p className="text-muted-foreground text-lg mb-10">We're cooking up something special. Our combo builder will let you mix a main, a side, and a drink into one stacked deal — stay tuned!</p>
+            <button onClick={() => navigate('/menu')} className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm">
+              <ShoppingBag size={16} /> Order from the Menu
+            </button>
+          </div>
+        </section>
+      )}
 
       <Footer />
     </div>
