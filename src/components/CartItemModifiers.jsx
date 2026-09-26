@@ -6,13 +6,19 @@ import { isDeluxeEnabled, getDeluxePresets, presetTrackedToppings } from '@/lib/
 // Renders the chosen modifiers for a cart/checkout line, with their prices.
 // When the selection matches the Deluxe preset, a compact "Deluxe" (or
 // "Deluxe, no …") badge is shown above the individual modifier lines.
-export default function CartItemModifiers({ modifiers }) {
-  if (!modifiers || modifiers.length === 0) return null;
+//
+// `savings` is a combo line's discount amount (main + side + drink vs the combo
+// price). It is customer-facing only — the order payload never carries it, so
+// kitchen tickets and the POS stay free of any discount text.
+export default function CartItemModifiers({ modifiers, savings }) {
+  const hasMods = Array.isArray(modifiers) && modifiers.length > 0;
+  const hasSavings = Number(savings) > 0;
+  if (!hasMods && !hasSavings) return null;
   const labelPresets = getDeluxePresets().map((p) => ({
     name: p.name,
     trackedToppings: presetTrackedToppings(p),
   }));
-  const deluxeLabel = isDeluxeEnabled() ? buildDeluxeLabel(modifiers, labelPresets) : null;
+  const deluxeLabel = isDeluxeEnabled() ? buildDeluxeLabel(modifiers || [], labelPresets) : null;
   return (
     <div className="mb-1">
       {deluxeLabel && (
@@ -21,19 +27,26 @@ export default function CartItemModifiers({ modifiers }) {
           {deluxeLabel}
         </div>
       )}
-      <ul className="text-xs text-patina-mint space-y-0.5">
-        {modifiers.filter(m => m.name && !m.silent).map((m, i) => (
-          <li key={i} className="flex items-start gap-1.5">
-            <span className="text-patina-mint opacity-50">+</span>
-            <span className="leading-snug">
-              {m.name}
-              {m.price > 0 && (
-                <span className="ml-1 opacity-70">+${m.price.toFixed(2)}</span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {hasMods && (
+        <ul className="text-xs text-patina-mint space-y-0.5">
+          {modifiers.filter(m => m.name && !m.silent).map((m, i) => (
+            <li key={i} className="flex items-start gap-1.5">
+              <span className="text-patina-mint opacity-50">+</span>
+              <span className="leading-snug">
+                {m.name}
+                {m.price > 0 && (
+                  <span className="ml-1 opacity-70">+${m.price.toFixed(2)}</span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {hasSavings && (
+        <p className="text-xs font-heading text-midnight-cherry mt-1">
+          Combo savings − ${Number(savings).toFixed(2)}
+        </p>
+      )}
     </div>
   );
 }

@@ -10,13 +10,32 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 // confirm toppings back to the customer before logging the order.
 
 // Flavor Isle "Deluxe" requires one condiment choice, never both by default.
+// Web orders default to mayo (the web preset's condiment); on the phone Smashie
+// asks the caller which one they want.
 const DELUXE_PRESET = {
   name: 'Deluxe',
   condiment_choice: ['Mustard', 'Mayo'],
+  default_condiment: 'Mayo',
   toppings: ['Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
 };
 
-const BURGER_CATEGORIES = ['Burgers', 'Chicken'];
+// Menu sections that carry burgers and sandwiches. Square's section names are
+// what the live menu actually groups by (an admin regroup via display_category
+// overrides them), so the old category labels ('Burgers'/'Chicken') matched
+// nothing — every MenuItem's category field reads 'Specials', which is why this
+// helper came back with zero burgers.
+const BURGER_SECTIONS = [
+  'Old-Fashioned Burgers',
+  'Handheld Classics',
+  'Seasonal & Supreme',
+  'Crisp & Cluck',
+  'Golden Crisp & Savory',
+  'Grill',
+];
+
+const BURGER_NAME_RE = /burger|cheeseburger|sandwich|b\.l\.t/i;
+
+const itemSection = (it) => it.display_category || it.square_category || it.category || '';
 
 const norm = (s) => (s || '').toString().toLowerCase();
 
@@ -33,7 +52,8 @@ Deno.serve(async (req) => {
     );
 
     const candidates = items.filter(
-      (it) => BURGER_CATEGORIES.includes(it.category) && !it.is_hidden
+      (it) => !it.is_hidden
+        && (BURGER_SECTIONS.includes(itemSection(it)) || BURGER_NAME_RE.test(it.name || ''))
     );
 
     // Score each candidate by keyword overlap with the spoken request.

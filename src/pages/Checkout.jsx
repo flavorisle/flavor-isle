@@ -1033,7 +1033,7 @@ export default function Checkout() {
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
                             <div className="flex-1 min-w-0">
                               <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                              <CartItemModifiers modifiers={item.selectedModifiers} />
+                              <CartItemModifiers modifiers={item.selectedModifiers} savings={item.comboSavings} />
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <button
@@ -1062,7 +1062,7 @@ export default function Checkout() {
                     <div key={item.id} className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                        <CartItemModifiers modifiers={item.selectedModifiers} />
+                        <CartItemModifiers modifiers={item.selectedModifiers} savings={item.comboSavings} />
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button

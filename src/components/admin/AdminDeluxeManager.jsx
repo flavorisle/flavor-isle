@@ -4,14 +4,19 @@ import { base44 } from '@/api/base44Client';
 import {
   makeBlankPreset,
   DEFAULT_DELUXE_PRESETS,
+  DEFAULT_DELUXE_CONDIMENT,
+  DELUXE_CONDIMENT_OPTIONS,
+  applyCondimentToPresets,
   normalizeDeluxeConfig,
 } from '@/lib/deluxeConfig';
+import { matchScore } from '@/lib/deluxeLabel';
 import { getMenuSetting, setDeluxeConfig } from '@/lib/menuSettings';
 
 const norm = (s) => (s || '').trim().toLowerCase();
 
 export default function AdminDeluxeManager() {
   const [enabled, setEnabled] = useState(true);
+  const [condiment, setCondiment] = useState(DEFAULT_DELUXE_CONDIMENT);
   const [presets, setPresets] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +32,7 @@ export default function AdminDeluxeManager() {
     ]).then(([setting, data]) => {
       const cfg = normalizeDeluxeConfig(setting?.deluxe);
       setEnabled(cfg.enabled);
+      setCondiment(cfg.condiment);
       setPresets(cfg.presets);
       setItems(data || []);
       setLoading(false);
@@ -56,11 +62,15 @@ export default function AdminDeluxeManager() {
     setDirty(true);
   };
 
+  // Tolerant matching: the stored presets use display names ("Pickle") while the
+  // menu offers the catalog names ("PICKLES"), so compare with the same tolerant
+  // matcher the Deluxe button itself uses — otherwise a stored topping shows as
+  // unselected and toggling it adds a duplicate.
   const toggleTopping = (preset, field, name) => {
     const list = preset[field] || [];
-    const has = list.some((t) => norm(t) === norm(name));
+    const has = list.some((t) => matchScore(name, t) > 0);
     update(preset.id, {
-      [field]: has ? list.filter((t) => norm(t) !== norm(name)) : [...list, name],
+      [field]: has ? list.filter((t) => matchScore(name, t) === 0) : [...list, name],
     });
   };
 
@@ -89,6 +99,7 @@ export default function AdminDeluxeManager() {
   const handleReset = () => {
     setPresets(DEFAULT_DELUXE_PRESETS);
     setEnabled(true);
+    setCondiment(DEFAULT_DELUXE_CONDIMENT);
     setDirty(true);
   };
 
@@ -161,6 +172,35 @@ export default function AdminDeluxeManager() {
             {enabled ? 'On' : 'Off'}
           </span>
         </button>
+        {/* Deluxe condiment — Deluxe is pickles, onions, tomatoes, and lettuce
+            plus exactly ONE condiment, never both. This is the site-wide choice
+            customers get; the phone flow asks the caller mustard or mayo. */}
+        <div className="mb-4 rounded-2xl border-2 border-border p-4">
+          <p className="font-heading text-sm text-obsidian-roast mb-1">Deluxe condiment</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Every Deluxe gets pickles, onions, tomatoes, lettuce, and exactly one of these — never both.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {DELUXE_CONDIMENT_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => {
+                  setCondiment(option.key);
+                  setPresets((prev) => applyCondimentToPresets(prev, option.key));
+                  setDirty(true);
+                }}
+                className={`py-2.5 rounded-xl border-2 font-heading text-sm transition-all ${
+                  condiment === option.key
+                    ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                    : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/40'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {dirty && (
           <div className="mb-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             <span className="text-xs text-amber-700 font-body">You have unsaved changes.</span>
@@ -204,7 +244,7 @@ export default function AdminDeluxeManager() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Toppings (selected by the button)</p>
               <div className="flex flex-wrap gap-2">
                 {allToppings.map((name) => {
-                  const active = (preset.toppings || []).some((t) => norm(t) === norm(name));
+                  const active = (preset.toppings || []).some((t) => matchScore(name, t) > 0);
                   return (
                     <button
                       key={name}
@@ -226,7 +266,7 @@ export default function AdminDeluxeManager() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Silent Toppings (selected but never called out as "no X")</p>
               <div className="flex flex-wrap gap-2">
                 {(preset.toppings || []).map((name) => {
-                  const active = (preset.silentToppings || []).some((t) => norm(t) === norm(name));
+                  const active = (preset.silentToppings || []).some((t) => matchScore(name, t) > 0);
                   return (
                     <button
                       key={name}

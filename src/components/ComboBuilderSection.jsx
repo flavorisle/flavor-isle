@@ -3,6 +3,7 @@ import { Package, Check, X, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { itemCategoryKey } from '@/lib/menuCategory';
+import { resolveCombos } from '@/lib/comboConfig';
 
 function ModifierModal({ item, onClose, onConfirm }) {
   const initSelections = () => {
@@ -121,9 +122,14 @@ export default function ComboBuilderSection() {
       base44.entities.ComboConfig.filter({ is_active: true }),
       base44.entities.MenuItem.filter({ is_available: true, is_hidden: false }),
     ]).then(([c, m]) => {
-      setCombos(c || []);
-      setMenuItems(m || []);
-      if (c && c.length > 0) setSelectedCombo(c[0]);
+      // Only catalog-backed items can be combo components (the server reprices
+      // each one), and a combo whose side or drink slot resolves to nothing is
+      // hidden rather than rendered with an empty column.
+      const catalog = (m || []).filter((i) => i.square_item_id);
+      const { usable } = resolveCombos(c || [], catalog);
+      setCombos(usable);
+      setMenuItems(catalog);
+      if (usable.length > 0) setSelectedCombo(usable[0]);
     });
   }, []);
 

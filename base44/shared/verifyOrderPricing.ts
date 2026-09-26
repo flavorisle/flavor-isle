@@ -41,11 +41,21 @@ function round2(n: number): number {
 // Build a modifier-option id → authoritative price map from a MenuItem record.
 function buildModifierPriceMap(menuItem: any): Record<string, number> {
   const map: Record<string, number> = {};
-  for (const group of (menuItem?.modifiers || [])) {
-    for (const opt of (group?.modifiers || [])) {
-      if (opt?.id) map[opt.id] = Number(opt.price) || 0;
+  // Nested modifier lists (Square child_modifier_lists — sauce Lite/Extra
+  // preferences, soda ice/flavor follow-ups) are chosen by the customer and
+  // carried on the line, so their authoritative prices belong in this map too.
+  // Without them any order containing a nested choice was rejected as an
+  // unknown modifier. Prices still come from the catalog, never the client.
+  const walk = (groups: any[]) => {
+    for (const group of (groups || [])) {
+      for (const opt of (group?.modifiers || [])) {
+        if (!opt?.id) continue;
+        map[opt.id] = Number(opt.price) || 0;
+        walk(opt.child_modifier_lists);
+      }
     }
-  }
+  };
+  walk(menuItem?.modifiers);
   return map;
 }
 

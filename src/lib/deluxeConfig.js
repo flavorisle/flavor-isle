@@ -15,13 +15,27 @@
 
 import { matchScore } from '@/lib/deluxeLabel';
 
+// Flavor Isle's Deluxe: pickles, onions, tomatoes, and lettuce, plus exactly ONE
+// condiment — mustard or mayo, never both. The condiment is an admin setting
+// (`condiment` on the stored deluxe config, default mayo) so Pulse can flip the
+// whole site to mustard without touching code. See normalizeDeluxeConfig.
+export const DELUXE_BASE_TOPPINGS = ['Pickle', 'Onion', 'Tomato', 'Lettuce'];
+export const DEFAULT_DELUXE_CONDIMENT = 'mayo';
+export const DELUXE_CONDIMENT_OPTIONS = [
+  { key: 'mayo', label: 'Mayo' },
+  { key: 'mustard', label: 'Mustard' },
+];
+const CONDIMENT_LABEL = { mayo: 'Mayo', mustard: 'Mustard' };
+
+export const condimentLabel = (key) => CONDIMENT_LABEL[key] || CONDIMENT_LABEL[DEFAULT_DELUXE_CONDIMENT];
+
 // Built-in preset used out of the box and whenever the admin hasn't configured
 // any presets yet, so the Deluxe button keeps working before setup.
 export const DEFAULT_DELUXE_PRESETS = [
   {
     id: 'deluxe',
     name: 'Deluxe',
-    toppings: ['Mustard', 'Lettuce', 'Tomato', 'Onion', 'Pickle'],
+    toppings: [...DELUXE_BASE_TOPPINGS, condimentLabel(DEFAULT_DELUXE_CONDIMENT)],
     silentToppings: [],
     appliesTo: [],
   },
@@ -47,14 +61,50 @@ export function cleanPreset(p) {
   };
 }
 
-// Normalize a stored deluxe config into { enabled, presets }. An empty preset
-// list falls back to the built-in Deluxe preset rather than hiding the button.
+// A Deluxe preset must carry exactly ONE condiment. Whatever a stored topping
+// list says, every condiment is stripped and a single one is appended, so a
+// preset can never select mustard and mayo together.
+//
+// The condiment lives in the preset's own topping list — storage the deluxe
+// config already has — so Pulse's condiment choice is a plain server-side
+// setting with no extra field to migrate.
+const isCondiment = (name) => /^(mayo|mayonnaise|mustard|honey mustard)$/i.test((name || '').trim());
+
+// Rewrite every preset so its only condiment is `condiment` (mayo by default).
+export function applyCondimentToPresets(presets, condiment) {
+  const chosen = DELUXE_CONDIMENT_OPTIONS.some((o) => o.key === condiment)
+    ? condiment
+    : DEFAULT_DELUXE_CONDIMENT;
+  return (presets || []).map((p) => ({
+    ...p,
+    toppings: [...(p.toppings || []).filter((t) => !isCondiment(t)), condimentLabel(chosen)],
+  }));
+}
+
+// The condiment the stored presets currently use — mustard only when a preset
+// actually carries mustard and no mayo.
+export function condimentFromPresets(presets) {
+  const names = (presets || []).flatMap((p) => p.toppings || []).map((t) => (t || '').toLowerCase());
+  const hasMayo = names.some((t) => /^mayo/.test(t));
+  const hasMustard = names.some((t) => /mustard/.test(t));
+  if (hasMustard && !hasMayo) return 'mustard';
+  return DEFAULT_DELUXE_CONDIMENT;
+}
+
+// Normalize a stored deluxe config into { enabled, condiment, presets }. An
+// empty preset list falls back to the built-in Deluxe preset rather than hiding
+// the button.
 export function normalizeDeluxeConfig(cfg) {
   const raw = cfg || {};
   const presets = Array.isArray(raw.presets) && raw.presets.length > 0
     ? raw.presets.map(cleanPreset)
     : DEFAULT_DELUXE_PRESETS.map(cleanPreset);
-  return { enabled: raw.enabled !== false, presets };
+  const condiment = condimentFromPresets(presets);
+  return {
+    enabled: raw.enabled !== false,
+    condiment,
+    presets: applyCondimentToPresets(presets, condiment),
+  };
 }
 
 // In-memory cache hydrated from the MenuSetting record. Defaults keep the
@@ -69,6 +119,11 @@ export function hydrateDeluxeConfig(cfg) {
 // Master switch — when false the "Make it Deluxe" button is hidden everywhere.
 export function isDeluxeEnabled() {
   return _config.enabled;
+}
+
+// The active condiment ('mayo' | 'mustard') for the Deluxe preset.
+export function getDeluxeCondiment() {
+  return _config.condiment;
 }
 
 export function getDeluxePresets() {
