@@ -17,6 +17,18 @@
     "drink_category": {
       "type": "string"
     },
+    "drink_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Extra categories the drink slot also offers, on top of drink_category \u2014 e.g. the 20 oz soda category plus the shake categories, so the customer can pick either. The slot shows the union of all of them."
+    },
+    "drink_label": {
+      "type": "string",
+      "description": "Customer-facing heading for the drink slot when it spans more than one category, e.g. '20 oz Coke or a milkshake'. Falls back to the category names joined with ' or '."
+    },
     "discount_percent": {
       "type": "number",
       "default": 12

@@ -196,7 +196,7 @@ export default function ComboPicker({ combo, active, onToggle, onChange }) {
       {active && (
         <div className="space-y-4 rounded-2xl border-2 border-midnight-cherry/25 bg-white p-4">
           {slotRow('side', combo.side_category, combo.side, side, modsLabel(sideMods))}
-          {slotRow('drink', combo.drink_category, combo.drink, drink, modsLabel(drinkMods))}
+          {slotRow('drink', combo.drinkLabel || combo.drink_category, combo.drink, drink, modsLabel(drinkMods))}
           {!ready && (
             <p className="text-xs text-muted-foreground">Pick a side and a drink to finish your combo.</p>
           )}

@@ -3,8 +3,10 @@ import { itemCategoryKey } from '@/lib/menuCategory';
 
 // ComboConfig-driven combos.
 //
-// A combo is a main + a side + a drink picked from the ComboConfig's three
-// categories, with its discount_percent applied to the whole combo. Only
+// A combo is a main + a side + a drink picked from the ComboConfig's
+// categories — the drink slot takes drink_category plus any drink_categories,
+// so it can offer a 20 oz soda or a shake — with its discount_percent applied
+// to the whole combo. Only
 // catalog-backed MenuItems (ones carrying a square_item_id) are offered as
 // components, because verifyOrderPricing reprices every component from the
 // authoritative MenuItem records and the discount from the ComboConfig record —
@@ -38,13 +40,14 @@ export function resolveCombos(combos, items) {
     const catalogItems = (items || []).filter((i) => i.square_item_id);
     const main = catalogItems.filter((i) => matchesCategory(i, combo.main_category));
     const side = catalogItems.filter((i) => matchesCategory(i, combo.side_category));
-    const drink = catalogItems.filter((i) => matchesCategory(i, combo.drink_category));
+    const drinkCats = [combo.drink_category, ...(combo.drink_categories || [])].filter(Boolean);
+    const drink = catalogItems.filter((i) => drinkCats.some((c) => matchesCategory(i, c)));
     const missing = [];
     if (main.length === 0) missing.push(`main "${combo.main_category}"`);
     if (side.length === 0) missing.push(`side "${combo.side_category}"`);
-    if (drink.length === 0) missing.push(`drink "${combo.drink_category}"`);
+    if (drink.length === 0) missing.push(`drink "${drinkCats.join(' or ')}"`);
     if (missing.length > 0) skipped.push({ combo, missing });
-    else usable.push({ ...combo, main, side, drink });
+    else usable.push({ ...combo, main, side, drink, drinkLabel: combo.drink_label || drinkCats.join(' or ') });
   }
   return { usable, skipped };
 }

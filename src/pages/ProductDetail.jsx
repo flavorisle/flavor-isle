@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ProductModifierPanel from '@/components/ProductModifierPanel';
+import ComboPicker from '@/components/ComboPicker';
+import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboConfig';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import Navbar from '@/components/Navbar';
@@ -36,6 +38,9 @@ export default function ProductDetail() {
   const [savingFavorite, setSavingFavorite] = useState(false);
   const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true });
   const panelRef = useRef(null);
+  const [combo, setCombo] = useState(null);
+  const [comboOn, setComboOn] = useState(false);
+  const [comboParts, setComboParts] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +61,17 @@ export default function ProductDetail() {
     window.scrollTo({ top: 0 });
     return () => { cancelled = true; };
   }, [id]);
+
+  // The combo offered for this item: the item must sit in the combo's main slot
+  // and the combo must be switched on. No combo resolves, no section renders.
+  useEffect(() => {
+    if (!item?.square_item_id) return;
+    let cancelled = false;
+    loadComboData()
+      .then(({ usable }) => { if (!cancelled) setCombo(comboForItem(usable, item)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [item]);
 
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
@@ -113,12 +129,58 @@ export default function ProductDetail() {
     flashAdded();
   };
 
+  // Combo price preview: raw component totals (no Happy Hour) × the combo's
+  // discount — the same recomputation verifyOrderPricing does server-side.
+  const comboComponents = combo && comboParts?.sideComponent && comboParts?.drinkComponent
+    ? [
+        { name: item.name, square_item_id: item.square_item_id, total: round2(item.price + panelState.extraCost) },
+        comboParts.sideComponent,
+        comboParts.drinkComponent,
+      ]
+    : null;
+  const comboPreview = combo && comboComponents ? comboPricing(combo, comboComponents) : null;
+
+  // Add the combo as ONE cart line: the line carries no catalog id (so the
+  // server reprices it from the components), keeps the burger's chosen
+  // modifiers, and lists the picked items in selectedModifiers so the cart,
+  // the POS ticket, and the kitchen ticket all show what was chosen.
+  const addComboItem = (selection) => {
+    if (!comboPreview) return;
+    const displayMods = [
+      { name: item.name, price: 0 },
+      ...selection.selectedMods.map((m) => ({ name: m.name, price: 0, silent: m.silent })),
+      { name: comboParts.sideComponent.name, price: 0 },
+      { name: comboParts.drinkComponent.name, price: 0 },
+    ];
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        name: combo.name,
+        image_url: item.image_url,
+        category: item.category,
+        price: comboPreview.price,
+        alwaysUnique: true,
+        comboParentId: item.id,
+        comboConfigId: combo.id,
+        comboComponents,
+        selectedModifiers: displayMods,
+        deluxeLabel: selection.label || undefined,
+        deluxeToppings: selection.allToppings || [],
+      });
+    }
+  };
+
   const handleAddToBag = () => {
     if (!orderingEnabled || soldOut) return;
     if (showPanel) {
       if (!panelRef.current?.isReady()) return;
+      if (combo && comboOn && !comboParts?.ready) return;
       trackSelectItem(foodItemToGa4(item));
-      panelRef.current.confirm();
+      if (combo && comboOn) {
+        addComboItem(panelRef.current.getSelection());
+        flashAdded();
+      } else {
+        panelRef.current.confirm();
+      }
     } else {
       trackSelectItem(foodItemToGa4(item));
       for (let i = 0; i < quantity; i++) addItem({ ...item, productId: item.id });
@@ -126,22 +188,27 @@ export default function ProductDetail() {
     }
   };
 
-  const canAdd = !soldOut && orderingEnabled;
+  const comboSideReady = !(combo && comboOn) || !!comboParts?.ready;
+  const canAdd = !soldOut && orderingEnabled && comboSideReady;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
         ? 'Added to Cart!'
-        : 'Add to Bag';
+        : comboSideReady
+          ? 'Add to Bag'
+          : 'Pick a side & drink';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
     : added
       ? 'bg-patina-mint text-white'
       : 'btn-cherry chrome-hover';
-  const liveTotal = showPanel
-    ? panelState.total * quantity
-    : (displayPrice || 0) * quantity;
+  const liveTotal = comboPreview
+    ? comboPreview.price * quantity
+    : showPanel
+      ? panelState.total * quantity
+      : (displayPrice || 0) * quantity;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -297,6 +364,9 @@ export default function ProductDetail() {
 
             {/* Right column — modifiers + reviews */}
             <div id="product-modifiers" className="space-y-8">
+              {combo && orderingEnabled && !soldOut && (
+                <ComboPicker combo={combo} active={comboOn} onToggle={setComboOn} onChange={setComboParts} />
+              )}
               {showPanel ? (
                 <ProductModifierPanel
                   ref={panelRef}
