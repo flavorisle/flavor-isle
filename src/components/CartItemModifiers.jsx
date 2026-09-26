@@ -22,7 +22,7 @@ export default function CartItemModifiers({ modifiers }) {
         </div>
       )}
       <ul className="text-xs text-patina-mint space-y-0.5">
-        {modifiers.map((m, i) => (
+        {modifiers.filter(m => m.name && !m.silent).map((m, i) => (
           <li key={i} className="flex items-start gap-1.5">
             <span className="text-patina-mint opacity-50">+</span>
             <span className="leading-snug">

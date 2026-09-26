@@ -9,7 +9,7 @@ import { getComboData, COMBO_DISCOUNT } from '@/lib/comboData';
 import { DELUXE_ENABLED, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset, presetTrackedToppings } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
-import NestedModifierLists, { flattenNestedSelections, nestedSelectionsExtra } from './NestedModifierLists';
+import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
@@ -201,14 +201,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     if (!sel) continue;
     if (Array.isArray(sel)) {
       sel.forEach((m) => {
-        liveModifiers.push({ group: groupName, name: m.name, price: m.price, id: m.id });
-        const nested = nestedSelections[m.id];
-        if (nested) liveModifiers.push(...flattenNestedSelections(nested));
+        liveModifiers.push(...flattenModifierWithNested(m, groupName, nestedSelections[m.id]).filter(x => !x.silent));
       });
     } else {
-      liveModifiers.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
-      const nested = nestedSelections[sel.id];
-      if (nested) liveModifiers.push(...flattenNestedSelections(nested));
+      liveModifiers.push(...flattenModifierWithNested(sel, groupName, nestedSelections[sel.id]).filter(x => !x.silent));
     }
   }
   const silentSets = deluxePresets.map(p => new Set((p.silentToppings || []).map(t => t.toLowerCase())));
@@ -244,18 +240,14 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
       if (!sel) continue;
       if (Array.isArray(sel)) {
         sel.forEach(m => {
-          selectedMods.push({ group: groupName, name: m.name, price: m.price, id: m.id });
-          const nested = nestedSelections[m.id];
-          if (nested) selectedMods.push(...flattenNestedSelections(nested));
+          selectedMods.push(...flattenModifierWithNested(m, groupName, nestedSelections[m.id]));
         });
       } else {
-        selectedMods.push({ group: groupName, name: sel.name, price: sel.price, id: sel.id });
-        const nested = nestedSelections[sel.id];
-        if (nested) selectedMods.push(...flattenNestedSelections(nested));
+        selectedMods.push(...flattenModifierWithNested(sel, groupName, nestedSelections[sel.id]));
       }
     }
     const { label, allToppings } = DELUXE_ENABLED
-      ? buildFullDeluxeLabel(selectedMods, labelPresets, item)
+      ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
     const drinkSizeGroup = (comboData?.drink?.modifiers || []).find(g => /size/i.test(g.name || ''));
     const drink20ozMod = (drinkSizeGroup?.modifiers || []).find(m => /20oz/i.test(m.name));
@@ -284,10 +276,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
               price: +(drink20ozPrice + drinkModsExtra + sodaNestedExtra - COMBO_DISCOUNT).toFixed(2),
               quantity: 1,
               selectedModifiers: [
-                { id: comboSoda.id, name: comboSoda.name, price: comboSoda.price },
+                ...flattenModifierWithNested(comboSoda, drinkSodaGroup?.name || 'SODA CHOICE', comboSodaNested),
                 ...(drink20ozMod ? [{ id: drink20ozMod.id, name: drink20ozMod.name, price: drink20ozMod.price }] : []),
                 ...drinkModsToCart,
-                ...flattenNestedSelections(comboSodaNested),
               ],
             },
           ])
