@@ -10,7 +10,7 @@ const PHONE = '(270) 563-4618';
 const HOURS = 'Mon–Sat 11am–9pm · Sun 12pm–7pm';
 
 const CAPTION =
-  `Hand-patted burgers. Real-ice-cream shakes. All-day breakfast. 🍔🥤
+  `Hand-patted burgers. Real-ice-cream shakes. 🍔🥤
 
 That's the Flavor Isle promise — fresh, never-frozen food served right in the heart of Smiths Grove, KY. Dine-in, takeout, or delivery — your call.
 
