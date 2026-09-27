@@ -282,6 +282,11 @@ export default function Menu() {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-sm text-muted-foreground">{rowItems.length} item{rowItems.length !== 1 ? 's' : ''}</span>
                 </div>
+                {!search && /crunch\s*&\s*munch/i.test(key) && (
+                  <p className="text-sm text-muted-foreground -mt-3 mb-4">
+                    Our sides aren’t salted — add salt packets at checkout if you’d like them.
+                  </p>
+                )}
                 <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
                   {rowItems.map((item) =>
               <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0 w-72">
