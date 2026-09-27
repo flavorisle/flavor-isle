@@ -4,6 +4,7 @@ import { getMenuSetting } from '@/lib/menuSettings';
 import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
+import { toCents, fromCents, salesTaxCents } from '@/lib/tax';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const CartContext = createContext(null);
@@ -240,8 +241,14 @@ export function CartProvider({ children }) {
   const deliveryFee = orderType === 'delivery'
     ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
     : 0;
-  const tax = adjustedSubtotal * 0.06;
-  const total = adjustedSubtotal + deliveryFee + tax;
+  // Tax and total in WHOLE CENTS, rounded half up (see @/lib/tax) — the same
+  // rule the server verifies with. Float math here used to round the half-cent
+  // down in the total while the tax line displayed it rounded up, so a single
+  // $3.25 item ($3.25 × 6% = $0.195) showed $0.20 tax on a $3.44 total and was
+  // rejected as a mismatch against the server's $3.45.
+  const taxCentsValue = salesTaxCents(toCents(adjustedSubtotal));
+  const tax = fromCents(taxCentsValue);
+  const total = fromCents(toCents(adjustedSubtotal) + toCents(deliveryFee) + taxCentsValue);
 
   // Per-person subtotal (group mode breakdown)
   const personSubtotals = people.map(p => {

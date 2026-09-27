@@ -9,7 +9,9 @@
 //  - Catalog modifier price: MenuItem.modifiers[].modifiers[].price matched by id (authoritative)
 //  - Ad-hoc modifier price:  client selectedModifier.price (trusted — see BLOCKER note)
 //  - Happy Hour:             MenuSetting.happy_hour (authoritative, online-only 2–6 PM Chicago)
-//  - Tax:                    6% of (subtotal − discount − happyHour) (derived)
+//  - Tax:                    6% of (subtotal − discount − happyHour), in whole
+//                            cents rounded half up (derived — see taxMath.ts,
+//                            mirrored by src/lib/tax.js on the client)
 //  - Delivery fee:           getDeliveryQuote (tiers) or MenuSetting.delivery_fee (flat) (authoritative)
 //  - Reward discount:        client value, capped at adjusted subtotal (trusted — see BLOCKER note)
 //  - Tip:                    client value, clamped ≥ 0 (customer choice, not validated)
@@ -30,8 +32,8 @@
 
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
+import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 
-const TAX_RATE = 0.06;
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
 
 function round2(n: number): number {
@@ -222,7 +224,13 @@ export async function verifyOrderPricing(base44: any, opts: {
   const adjustedSubtotal = round2(serverSubtotal - serverHappyHour);
 
   // ── Tax ──
-  const serverTax = round2(adjustedSubtotal * TAX_RATE);
+  // Whole cents, rounded half up — the identical rule the client cart/checkout
+  // uses (taxMath.ts ↔ src/lib/tax.js). Float tax on an odd-cent subtotal
+  // rounded the half-cent the other way ($3.25 × 6% = $0.195) and rejected
+  // genuinely correct carts with a total mismatch.
+  const adjustedCents = toCents(adjustedSubtotal);
+  const taxCents = salesTaxCents(adjustedCents);
+  const serverTax = fromCents(taxCents);
 
   // ── Delivery fee (authoritative) ──
   let serverDeliveryFee = 0;
@@ -253,7 +261,10 @@ export async function verifyOrderPricing(base44: any, opts: {
   // ── Reward discount (capped, trusted) + tip (trusted) ──
   const serverDiscount = round2(Math.min(Math.max(0, clientDiscount), adjustedSubtotal));
   const serverTip = Math.max(0, Number(clientTip) || 0);
-  const serverTotal = round2(Math.max(0, adjustedSubtotal + serverDeliveryFee + serverTax - serverDiscount) + serverTip);
+  // Total assembled in whole cents so it is exactly the sum the client shows.
+  const serverTotal = fromCents(
+    Math.max(0, adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount)) + toCents(serverTip),
+  );
 
   // ── Validate each authoritative component against the client ──
   const checks: Array<[number, number, string]> = [

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
 
 import { base44 } from '@/api/base44Client';
 
@@ -344,7 +345,10 @@ export default function Checkout() {
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = appliedReward?.discountValue || 0;
-  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
+  // Composed in whole cents with the shared half-up rule, exactly like the
+  // cart total and the server's verification — never a float sum re-rounded by
+  // toFixed (which is what produced the $3.44 / $3.45 mismatch).
+  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount)) + toCents(tipAmount));
 
   // Single combined ready-by label: "~N min · clock time". For ASAP the clock
   // time is order time + prep minutes; for a scheduled order it's the chosen slot.
@@ -450,9 +454,9 @@ export default function Checkout() {
         const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
         const splits = withItems.map((p, idx) => {
           const pSub = +(p.subtotal - (p.happyHourDiscount || 0)).toFixed(2);
-          const pTax = +(pSub * 0.06).toFixed(2);
+          const pTax = salesTaxFor(pSub);
           const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
-          const pTotal = +(pSub + pTax + feeTip).toFixed(2);
+          const pTotal = fromCents(toCents(pSub) + toCents(pTax) + toCents(feeTip));
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
