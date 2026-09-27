@@ -38,11 +38,16 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
-  const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true });
+  const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true, selectedIds: [], nestedSelections: {} });
   const panelRef = useRef(null);
   const [combo, setCombo] = useState(null);
   const [comboOn, setComboOn] = useState(false);
   const [comboParts, setComboParts] = useState(null);
+
+  // The "What's on it" chips toggle the customization panel's own selection
+  // state, so chips, list, price, and cart all stay in agreement.
+  const toggleChip = (groupName, mod) => panelRef.current?.toggleModifier(groupName, mod);
+  const setChipNested = (modId, nested) => panelRef.current?.setNested(modId, nested);
 
   useEffect(() => {
     let cancelled = false;
@@ -333,8 +338,16 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Summary — what's on it, straight from the item's own options */}
-              <ItemBuildSummary item={item} menuSetting={menuSetting} />
+              {/* What's on it — the selectable chips and the customization list
+                  below are two views of one selection. */}
+              <ItemBuildSummary
+                item={item}
+                menuSetting={menuSetting}
+                selectedIds={panelState.selectedIds}
+                nestedSelections={panelState.nestedSelections}
+                onToggle={toggleChip}
+                onNestedChange={setChipNested}
+              />
 
               {/* Quantity selector */}
               {!soldOut && orderingEnabled && (

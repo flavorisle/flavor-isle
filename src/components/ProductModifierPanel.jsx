@@ -128,6 +128,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const ready = !soldOut;
 
   // Notify parent of live state so the left-column CTA can reflect it.
+  // The selected option ids and nested Lite/Extra levels are reported too, so
+  // the product page's "What's on it" chips render the same selection this
+  // panel holds (and the same one pricing and checkout read).
+  const selectedModIds = Object.values(selections).flatMap((sel) =>
+    sel ? (Array.isArray(sel) ? sel.map((m) => m.id) : [sel.id]) : []);
+  const selectedIdKey = selectedModIds.join(',');
+
   useEffect(() => {
     onStateChange?.({
       total: itemTotal,
@@ -135,8 +142,10 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       deluxeLabel,
       burgerModsLabel,
       ready,
+      selectedIds: selectedIdKey ? selectedIdKey.split(',') : [],
+      nestedSelections,
     });
-  }, [itemTotal, extraCost, deluxeLabel, burgerModsLabel, ready, onStateChange]);
+  }, [itemTotal, extraCost, deluxeLabel, burgerModsLabel, ready, selectedIdKey, nestedSelections, onStateChange]);
 
   // The customer's configuration for this item. Used by confirm(), and — when a
   // combo is being built — by the product page, which needs the burger's own
@@ -168,6 +177,16 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     confirm: handleConfirm,
     isReady: () => ready,
     getSelection: () => buildSelection(),
+    // Driven by the product page's "What's on it" chips: they toggle this
+    // panel's own selection rather than keeping a parallel copy.
+    toggleModifier: (groupName, mod) => {
+      if (!mod || mod.sold_out) return;
+      const group = groups.find((g) => g.name === groupName);
+      if (!group) return;
+      if (group.selection_type === 'MULTIPLE') toggleMultiple(groupName, mod);
+      else toggleSingle(groupName, mod);
+    },
+    setNested: (modId, nested) => setNestedSelections((prev) => ({ ...prev, [modId]: nested })),
   }));
 
   return (
