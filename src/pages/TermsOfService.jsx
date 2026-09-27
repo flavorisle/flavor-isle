@@ -104,7 +104,7 @@ const SECTIONS = [
       },
       {
         heading: 'Account Sync',
-        text: 'Your account, orders, rewards, and cart sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.',
+        text: 'Your account, orders, rewards, and bag sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.',
       },
     ],
   },

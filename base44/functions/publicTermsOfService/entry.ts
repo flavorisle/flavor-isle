@@ -73,7 +73,7 @@ const HTML = `<!DOCTYPE html>
 <h3>App Updates</h3>
 <p>We may release app updates with new features, fixes, or changes. Keeping the app updated helps ensure it works correctly. We are not liable for issues caused by using an outdated version of the app.</p>
 <h3>Account Sync</h3>
-<p>Your account, orders, rewards, and cart sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.</p>
+<p>Your account, orders, rewards, and bag sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.</p>
 
 <h2>Tasty Threads Merchandise</h2>
 <h3>Merch Orders</h3>

@@ -681,7 +681,7 @@ export default function Checkout() {
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
           <div className="text-6xl mb-6">🛒</div>
-          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your cart is empty</h2>
+          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your bag is empty</h2>
           <p className="text-muted-foreground mb-8">Add some delicious items from our menu first!</p>
           <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-block">Browse Menu</Link>
         </div>

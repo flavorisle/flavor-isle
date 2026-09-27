@@ -105,7 +105,7 @@ export default function MerchCheckout() {
 
   const handlePay = async () => {
     setError('');
-    if (items.length === 0) { setError('Your cart is empty.'); return; }
+    if (items.length === 0) { setError('Your bag is empty.'); return; }
     const v = validateAddress();
     if (v) { setError(v); return; }
     if (shipping == null) { setError('Please calculate shipping first.'); return; }
@@ -153,7 +153,7 @@ export default function MerchCheckout() {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Navbar />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
-          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your merch cart is empty</h2>
+          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your merch bag is empty</h2>
           <Link to="/merch" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-block">Browse Tasty Threads</Link>
         </div>
       </div>

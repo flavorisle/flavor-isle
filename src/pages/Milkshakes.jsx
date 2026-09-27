@@ -206,7 +206,7 @@ export default function Milkshakes() {
               onClick={() => setIsCartOpen(true)}
               className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm"
             >
-              <ShoppingBag size={16} /> View Cart
+              <ShoppingBag size={16} /> View Bag
             </button>
             <Link
               to="/menu"

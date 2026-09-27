@@ -57,7 +57,7 @@ export default async function (req) {
         const { error } = await resend.emails.send({
           from: FROM,
           to: p.email,
-          subject: `🔥 Your cart's getting cold, ${p.name?.split(/\s+/)[0] || 'friend'} — the grill's still hot!`,
+          subject: `🔥 Your bag's getting cold, ${p.name?.split(/\s+/)[0] || 'friend'} — the grill's still hot!`,
           html,
         });
         if (error) throw new Error(error.message || 'send failed');

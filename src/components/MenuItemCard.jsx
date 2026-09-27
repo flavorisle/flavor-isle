@@ -196,7 +196,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   // Text content block. `light` flips colors for the background layout.
   const renderContent = (light = false, { showRatings = true } = {}) => {
-    const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
+    const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Bag!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
     const addBtnClass = (soldOut || !orderingEnabled)
       ? 'bg-muted text-muted-foreground cursor-not-allowed'
       : added

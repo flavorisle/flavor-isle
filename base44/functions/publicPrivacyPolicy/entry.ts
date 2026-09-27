@@ -71,7 +71,7 @@ const HTML = `<!DOCTYPE html>
 <h3>Permissions</h3>
 <p>The app may request permission to send notifications. It does not require access to your camera, contacts, microphone, or location to place an order. Any permission prompts come from your device and can be managed in your device settings.</p>
 <h3>Data Sync</h3>
-<p>When you sign in, your account, orders, rewards, and cart sync across the website and the app. If you use the app without signing in, your order and cart data stays on that device and is not shared with other devices.</p>
+<p>When you sign in, your account, orders, rewards, and bag sync across the website and the app. If you use the app without signing in, your order and bag data stays on that device and is not shared with other devices.</p>
 
 <h2>Tasty Threads Merchandise</h2>
 <h3>Shipping Information</h3>
@@ -101,7 +101,7 @@ const HTML = `<!DOCTYPE html>
 
 <h2>Cookies &amp; Analytics</h2>
 <h3>Cookies</h3>
-<p>We use essential cookies to keep your cart, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.</p>
+<p>We use essential cookies to keep your bag, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.</p>
 <h3>Analytics</h3>
 <p>We use event tracking to understand which menu items and order types are popular so we can improve the experience. This data is aggregated and never tied to your identity for marketing.</p>
 

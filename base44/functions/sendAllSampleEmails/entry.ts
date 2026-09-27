@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
       const { error } = await resend.emails.send({
         from: 'Flavor Isle <smashie@order.flavor-isle.com>',
         to,
-        subject: "🔥 Your cart's getting cold, Jordan — the grill's still hot!",
+        subject: "🔥 Your bag's getting cold, Jordan — the grill's still hot!",
         html,
       });
       results.push({ email: '6. Cart Abandonment Reminder', success: !error, error: error?.message });

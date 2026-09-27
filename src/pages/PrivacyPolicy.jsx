@@ -98,7 +98,7 @@ const SECTIONS = [
       },
       {
         heading: 'Data Sync',
-        text: 'When you sign in, your account, orders, rewards, and cart sync across the website and the app. If you use the app without signing in, your order and cart data stays on that device and is not shared with other devices.',
+        text: 'When you sign in, your account, orders, rewards, and bag sync across the website and the app. If you use the app without signing in, your order and bag data stays on that device and is not shared with other devices.',
       },
     ],
   },
@@ -162,7 +162,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Cookies',
-        text: 'We use essential cookies to keep your cart, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.',
+        text: 'We use essential cookies to keep your bag, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.',
       },
       {
         heading: 'Analytics',

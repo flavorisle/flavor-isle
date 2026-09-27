@@ -39,7 +39,7 @@ export async function buildCartReminderHtml(base44: any, name: string, items: an
   }).join('');
   const moreCount = items.length - visibleItems.length;
   const moreLine = moreCount > 0
-    ? `<p style="font-size:13px;color:#888;margin:8px 0 0;font-style:italic;">+ ${moreCount} more item${moreCount !== 1 ? 's' : ''} waiting in your cart</p>`
+    ? `<p style="font-size:13px;color:#888;margin:8px 0 0;font-style:italic;">+ ${moreCount} more item${moreCount !== 1 ? 's' : ''} waiting in your bag</p>`
     : '';
 
   // Star Rewards — 4 stars per $10 spent.
@@ -53,8 +53,8 @@ export async function buildCartReminderHtml(base44: any, name: string, items: an
 
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${escapeHtml(firstName)},</p>
-    <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0 0 8px;letter-spacing:1px;">Your cart's getting cold! 🛒</h2>
-    <p style="color:#141414;font-size:16px;line-height:1.6;margin:0 0 6px;">Smashie here — looks like you were this close to something delicious. Your cart's still saved, and the grill's still hot. Two taps and we'll have it ready for you.</p>
+    <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0 0 8px;letter-spacing:1px;">Your bag's getting cold! 🛒</h2>
+    <p style="color:#141414;font-size:16px;line-height:1.6;margin:0 0 6px;">Smashie here — looks like you were this close to something delicious. Your bag's still saved, and the grill's still hot. Two taps and we'll have it ready for you.</p>
     <p style="color:#141414;font-size:16px;line-height:1.6;margin:0 0 18px;">Here's what you left behind:</p>
 
     <div style="background:#FFFDF8;border:1px solid #f0e8d0;border-radius:14px;padding:12px 16px;margin:0 0 8px;">
@@ -72,7 +72,7 @@ export async function buildCartReminderHtml(base44: any, name: string, items: an
     <div style="text-align:center;margin:22px 0 6px;">
       <a href="${finishLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:16px 40px;border-radius:999px;font-size:16px;font-weight:bold;">FINISH MY ORDER →</a>
     </div>
-    <p style="text-align:center;color:#888;font-size:13px;margin:0 0 18px;">Your cart's saved — just tap and check out. It takes less than a minute.</p>
+    <p style="text-align:center;color:#888;font-size:13px;margin:0 0 18px;">Your bag's saved — just tap and check out. It takes less than a minute.</p>
 
     ${whatToExpectHtml()}
     ${await foodHeroHtml(base44)}

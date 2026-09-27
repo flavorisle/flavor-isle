@@ -106,7 +106,7 @@ export default function Merch() {
   const handleAdd = (item) => {
     addItem(item);
     setActiveProduct(null);
-    toast({ title: 'Added to cart', description: `${item.name} — ${item.variantName}` });
+    toast({ title: 'Added to bag', description: `${item.name} — ${item.variantName}` });
     setIsCartOpen(true);
   };
 

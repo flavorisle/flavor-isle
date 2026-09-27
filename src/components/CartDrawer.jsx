@@ -63,7 +63,7 @@ export default function CartDrawer() {
           <div className="flex items-center gap-3">
             <img
               src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-              alt="Your cart"
+              alt="Your bag"
               className="w-10 h-10 object-contain"
             />
             <div>
@@ -117,10 +117,10 @@ export default function CartDrawer() {
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img
                 src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-                alt="Your cart"
+                alt="Your bag"
                 className="w-28 h-28 object-contain animate-float-up"
               />
-              <p className="font-body">Your cart is empty</p>
+              <p className="font-body">Your bag is empty</p>
               <button
                 onClick={() => setIsCartOpen(false)}
                 className="btn-cherry px-6 py-2.5 text-sm"

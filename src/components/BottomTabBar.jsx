@@ -18,7 +18,7 @@ export default function BottomTabBar() {
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
     { to: '/merch', label: 'Merch', icon: Shirt },
-    { cart: true, label: 'Cart', icon: ShoppingBag },
+    { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
   ];
@@ -57,7 +57,7 @@ export default function BottomTabBar() {
                 {tab.cart ? (
                   <img
                     src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-                    alt="Cart"
+                    alt="Your bag"
                     className="w-8 h-8 object-contain"
                   />
                 ) : tab.smashie ? (
@@ -91,7 +91,7 @@ export default function BottomTabBar() {
                 key="cart"
                 onClick={() => setIsCartOpen(true)}
                 className="tap-44 flex-1 flex items-center justify-center select-none"
-                aria-label={`Cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
+                aria-label={`Bag, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
               >
                 {content}
               </button>

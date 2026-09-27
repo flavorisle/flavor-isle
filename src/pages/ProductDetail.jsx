@@ -206,7 +206,7 @@ export default function ProductDetail() {
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
-        ? 'Added to Cart!'
+        ? 'Added to Bag!'
         : comboSideReady
           ? 'Add to Bag'
           : 'Pick a side & drink';

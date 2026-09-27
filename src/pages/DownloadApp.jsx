@@ -103,7 +103,7 @@ export default function DownloadApp() {
             </p>
             <ul className="space-y-2 text-sm text-obsidian-roast max-w-md mx-auto md:mx-0">
               <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> Craving pills to jump to burgers, shakes & more</li>
-              <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> One-tap add to cart from best sellers</li>
+              <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> One-tap add to bag from best sellers</li>
               <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-midnight-cherry" /> Live order tracking + rewards on the home screen</li>
             </ul>
           </div>

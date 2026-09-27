@@ -145,7 +145,7 @@ export default function AppPhoneMockup() {
           </div>
           <div className="flex flex-col items-center gap-0.5 relative">
             <ShoppingBag size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>CART</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>BAG</span>
             <span className="absolute -top-1 right-1 w-3 h-3 rounded-full text-[14px] text-white flex items-center justify-center" style={{ backgroundColor: '#C23126' }}>2</span>
           </div>
         </div>
