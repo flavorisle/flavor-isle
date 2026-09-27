@@ -324,11 +324,6 @@ export default function ProductDetail() {
                 />
               </div>
 
-              {/* Description */}
-              {item.description && (
-                <p className="text-base leading-relaxed text-muted-foreground">{item.description}</p>
-              )}
-
               {/* Tags */}
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -338,11 +333,12 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* What's on it — the selectable chips and the customization list
-                  below are two views of one selection. */}
+              {/* Description + the selectable "What's on it" chips — the chips
+                  drive the modifier panel's selection so price and cart agree. */}
               <ItemBuildSummary
                 item={item}
                 menuSetting={menuSetting}
+                description={item.description}
                 selectedIds={panelState.selectedIds}
                 nestedSelections={panelState.nestedSelections}
                 onToggle={toggleChip}
