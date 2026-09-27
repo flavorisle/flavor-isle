@@ -12,6 +12,7 @@ import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboCo
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import { findMenuItem, productSlug, productPath } from '@/lib/productSlug';
+import ItemBuildSummary from '@/components/ItemBuildSummary';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -331,6 +332,9 @@ export default function ProductDetail() {
                   ))}
                 </div>
               )}
+
+              {/* Summary — what's on it, straight from the item's own options */}
+              <ItemBuildSummary item={item} menuSetting={menuSetting} />
 
               {/* Quantity selector */}
               {!soldOut && orderingEnabled && (
