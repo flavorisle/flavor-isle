@@ -12,6 +12,8 @@ import EmailClickStats from '@/components/admin/EmailClickStats';
 import PopupClickStats from '@/components/admin/PopupClickStats';
 import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
 import AutoPrintToggle from '@/components/admin/AutoPrintToggle';
+import FailedOrderAlert from '@/components/admin/FailedOrderAlert';
+import OrderDiagnostics from '@/components/admin/OrderDiagnostics';
 
 const orderPages = [
 {
@@ -92,6 +94,13 @@ export default function AdminDashboard() {
           <p className="text-gray-300 mt-3 max-w-2xl">Manage your restaurant's menu, orders, and media from one place.</p>
         </div>
       </div>
+
+      {/* Failed-order alert — paid orders that never reached Square, failed
+          payments, and missed customer/staff emails. Silent when all clear. */}
+      <FailedOrderAlert />
+
+      {/* Order pipeline diagnostics — where orders are stuck right now */}
+      <OrderDiagnostics />
 
       <BroadcastPushCard />
       <PushLogList />
