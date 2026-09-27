@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Check, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
 
 // The five specialty "Bliss" shakes — standalone Square items with their own
@@ -33,7 +34,7 @@ const SHORT_NAMES = {
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {
-  const { addItem, setIsCartOpen, orderingEnabled } = useCart();
+  const { addItem, setIsCartOpen, orderingEnabled, menuSetting } = useCart();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState(null);
@@ -60,7 +61,9 @@ export default function PremiumShakesSection({ autoOpenId }) {
 
   const handleCardClick = (item) => {
     if (!orderingEnabled) return;
-    const hasModifiers = item.modifiers && item.modifiers.length > 0;
+    // Only open the customizer when the item still has choices after the admin's
+    // modifier controls (hidden groups/options) are applied.
+    const hasModifiers = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides).length > 0;
     if (hasModifiers) {
       setActiveItem(item);
     } else {

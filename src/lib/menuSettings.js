@@ -26,6 +26,7 @@ const DEFAULT_SETTING = {
   site_notice: null,
   extra_cook_date: '',
   deluxe: { enabled: false, presets: [] },
+  modifier_overrides: { hidden_groups: [], hidden_options: [], sold_out_options: [], option_prices: {} },
   happy_hour: {
     active: true,
     start_time: '14:00',
@@ -246,6 +247,20 @@ export async function setDeluxeConfig(deluxe) {
     return { ...setting, deluxe };
   }
   const created = await base44.entities.MenuSetting.create({ hidden_categories: [], deluxe });
+  bustMenuSettingCache();
+  return created;
+}
+
+// Admin modifier controls (hidden groups/options, sold out, site price
+// overrides) — see src/lib/modifierOverrides.js for the shape.
+export async function setModifierOverrides(overrides) {
+  const setting = await getMenuSetting();
+  if (setting?.id) {
+    await base44.entities.MenuSetting.update(setting.id, { modifier_overrides: overrides });
+    bustMenuSettingCache();
+    return { ...setting, modifier_overrides: overrides };
+  }
+  const created = await base44.entities.MenuSetting.create({ hidden_categories: [], modifier_overrides: overrides });
   bustMenuSettingCache();
   return created;
 }

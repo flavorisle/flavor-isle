@@ -6,6 +6,7 @@ import AdminCategoriesManager from '@/components/admin/AdminCategoriesManager';
 import AdminPromosManager from '@/components/admin/AdminPromosManager';
 import AdminDeluxeManager from '@/components/admin/AdminDeluxeManager';
 import AdminShakeManager from '@/components/admin/AdminShakeManager';
+import AdminModifierManager from '@/components/admin/AdminModifierManager';
 import { base44 } from '@/api/base44Client';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
@@ -207,7 +208,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6 overflow-x-auto scrollbar-hide">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'modifiers', label: 'Modifiers', Icon: SlidersHorizontal }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
           <button key={t.id} onClick={() => setTab(t.id)}
           className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all flex-shrink-0 whitespace-nowrap ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}
@@ -382,6 +383,9 @@ export default function AdminMenu() {
 
         {/* ── MILKSHAKES TAB ── */}
         {tab === 'shakes' && <AdminShakeManager />}
+
+        {/* ── MODIFIERS TAB ── */}
+        {tab === 'modifiers' && <AdminModifierManager items={items} />}
 
         {/* ── PROMOS TAB ── */}
         {tab === 'promos' && <AdminPromosManager />}

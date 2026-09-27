@@ -31,6 +31,7 @@
 //    clientDiscount, so the total check below confirms it.
 
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
+import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 
@@ -41,7 +42,10 @@ function round2(n: number): number {
 }
 
 // Build a modifier-option id → authoritative price map from a MenuItem record.
-function buildModifierPriceMap(menuItem: any): Record<string, number> {
+function buildModifierPriceMap(
+  menuItem: any,
+  optionPriceOverrides: Record<string, number> = {},
+): Record<string, number> {
   const map: Record<string, number> = {};
   // Nested modifier lists (Square child_modifier_lists — sauce Lite/Extra
   // preferences, soda ice/flavor follow-ups) are chosen by the customer and
@@ -52,7 +56,12 @@ function buildModifierPriceMap(menuItem: any): Record<string, number> {
     for (const group of (groups || [])) {
       for (const opt of (group?.modifiers || [])) {
         if (!opt?.id) continue;
-        map[opt.id] = Number(opt.price) || 0;
+        // An admin price override (Menu Manager → Modifiers) wins over the
+        // Square catalog price, so the server charges exactly what the customer
+        // was shown. Mirrored client-side by src/lib/modifierOverrides.js.
+        map[opt.id] = optionPriceOverrides[opt.id] != null
+          ? Number(optionPriceOverrides[opt.id]) || 0
+          : Number(opt.price) || 0;
         walk(opt.child_modifier_lists);
       }
     }
@@ -69,6 +78,7 @@ async function validateComboItem(
   base44: any,
   item: any,
   menuBySquareId: Map<string, any>,
+  optionPriceOverrides: Record<string, number> = {},
 ): Promise<{ ok: boolean; error?: string; lineUnitPrice?: number }> {
   const components = item.comboComponents as any[];
   let originalTotal = 0;
@@ -78,7 +88,7 @@ async function validateComboItem(
     const mi = menuBySquareId.get(sqId);
     if (!mi) return { ok: false, error: `Combo component "${comp.name || sqId}" is no longer available. Please rebuild the combo and try again.` };
     let compTotal = Number(mi.price) || 0;
-    const modPriceMap = buildModifierPriceMap(mi);
+    const modPriceMap = buildModifierPriceMap(mi, optionPriceOverrides);
     for (const sm of (comp.selectedModifiers || [])) {
       if (!sm) continue;
       if (sm.id && sm.id in modPriceMap) {
@@ -151,6 +161,11 @@ export async function verifyOrderPricing(base44: any, opts: {
   const hhActive = isHappyHourActive(setting);
   const pct = (hh.discount_percent || 0) / 100;
   const hhIds = new Set(hh.square_item_ids || []);
+  // Admin modifier price overrides. MenuItem.modifiers keeps the full Square
+  // catalog (so the admin panel can always list and un-hide everything) and the
+  // overrides live on MenuSetting — applied here so the charge matches the price
+  // the customer was shown.
+  const optionPrices = getOptionPriceOverrides(setting);
 
   const allMenuItems = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 500);
   const menuBySquareId = new Map<string, any>();
@@ -175,7 +190,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       // trusting the client-supplied price (closes the ad-hoc modifier trust
       // gap and enforces permitted selections).
       lineUnitPrice = Number(menuItem.price) || 0;
-      const modPriceMap = buildModifierPriceMap(menuItem);
+      const modPriceMap = buildModifierPriceMap(menuItem, optionPrices);
       for (const sm of (item.selectedModifiers || [])) {
         if (!sm) continue;
         if (sm.id && sm.id in modPriceMap) {
@@ -194,7 +209,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       // comboConfigId). Each component must reference a real square_item_id with
       // id'd modifiers (same enforcement as a catalog item).
       if (Array.isArray(item.comboComponents) && item.comboComponents.length > 0) {
-        const comboResult = await validateComboItem(base44, item, menuBySquareId);
+        const comboResult = await validateComboItem(base44, item, menuBySquareId, optionPrices);
         if (!comboResult.ok) return comboResult;
         lineUnitPrice = comboResult.lineUnitPrice!;
       } else {

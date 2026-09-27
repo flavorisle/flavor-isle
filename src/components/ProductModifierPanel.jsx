@@ -7,6 +7,7 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
 // modifiers, Deluxe presets, and Happy Hour pricing — rendered inline (no
@@ -17,13 +18,20 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   { item, onConfirm, onStateChange },
   ref,
 ) {
-  const hasModifiers = item.modifiers && item.modifiers.length > 0;
+  const { menuSetting } = useCart();
+
+  // Admin modifier controls (Menu Manager → Modifiers) applied to the parent
+  // groups and their nested child lists before anything renders or prices, so
+  // this panel always matches what the admin set — hidden options are gone,
+  // sold-out ones can't be picked, and overridden prices are shown and charged.
+  const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
+  const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
 
   // Initialize selections: SINGLE → null, MULTIPLE → []
   const initSelections = () => {
     if (!hasModifiers) return {};
-    return item.modifiers.reduce((acc, group) => {
+    return groups.reduce((acc, group) => {
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
         : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
@@ -33,8 +41,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   const [selections, setSelections] = useState(initSelections);
   const [nestedSelections, setNestedSelections] = useState({});
-
-  const { menuSetting } = useCart();
 
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
@@ -214,7 +220,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
       {/* Modifier groups */}
       {hasModifiers ? (
-        item.modifiers.map(group => (
+        groups.map(group => (
           <div key={group.name}>
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>

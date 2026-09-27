@@ -226,6 +226,39 @@
           }
         }
       }
+    },
+    "modifier_overrides": {
+      "type": "object",
+      "description": "Admin modifier controls from Admin \u2192 Menu Manager \u2192 Modifiers, applied to the Square modifier catalog at render time (and to prices at checkout). Square stays the source of truth, so these survive every catalog sync. hidden_groups holds group keys (a Square modifier list id, or 'name:<list name>' for the synthetic Size group), hidden_options/sold_out_options hold modifier option ids, and option_prices maps an option id to the site price in USD.",
+      "default": {},
+      "properties": {
+        "hidden_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "hidden_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "sold_out_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "option_prices": {
+          "type": "object",
+          "default": {},
+          "description": "Map of modifier option id -> site price in USD. Overrides the Square catalog price in the menu, the cart, and checkout."
+        }
+      }
     }
   },
   "required": [],

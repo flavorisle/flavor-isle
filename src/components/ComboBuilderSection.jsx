@@ -4,11 +4,16 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { itemCategoryKey } from '@/lib/menuCategory';
 import { resolveCombos } from '@/lib/comboConfig';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
-function ModifierModal({ item, onClose, onConfirm }) {
+function ModifierModal({ item, onClose, onConfirm, overrides }) {
+  // Admin modifier controls apply to combo components too, so a combo's main,
+  // side, and drink respect the same hidden groups/options and site prices.
+  const groups = applyModifierOverrides(item.modifiers, overrides);
+
   const initSelections = () => {
-    if (!item.modifiers?.length) return {};
-    return item.modifiers.reduce((acc, group) => {
+    if (!groups.length) return {};
+    return groups.reduce((acc, group) => {
       // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
@@ -60,7 +65,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {item.modifiers.map(group => (
+          {groups.map(group => (
             <div key={group.name}>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
@@ -115,7 +120,8 @@ export default function ComboBuilderSection() {
   const [picks, setPicks] = useState({ main: null, side: null, drink: null });
   const [added, setAdded] = useState(false);
   const [modifierModal, setModifierModal] = useState(null); // { item, slot }
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem, setIsCartOpen, menuSetting } = useCart();
+  const overrides = menuSetting?.modifier_overrides;
 
   useEffect(() => {
     Promise.all([
@@ -148,7 +154,7 @@ export default function ComboBuilderSection() {
   const allPicked = picks.main && picks.side && picks.drink;
 
   const handleSelectItem = (item, slot) => {
-    if (item.modifiers && item.modifiers.length > 0) {
+    if (applyModifierOverrides(item.modifiers, overrides).length > 0) {
       setModifierModal({ item, slot });
     } else {
       setPicks(p => ({ ...p, [slot]: { ...item, selectedModifiers: [] } }));
@@ -200,7 +206,7 @@ export default function ComboBuilderSection() {
         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {items.map(item => {
             const isSelected = selected?.id === item.id;
-            const hasModifiers = item.modifiers && item.modifiers.length > 0;
+            const hasModifiers = applyModifierOverrides(item.modifiers, overrides).length > 0;
             return (
               <button
                 key={item.id}
@@ -240,6 +246,7 @@ export default function ComboBuilderSection() {
       {modifierModal && (
         <ModifierModal
           item={modifierModal.item}
+          overrides={overrides}
           onClose={() => setModifierModal(null)}
           onConfirm={handleModifierConfirm}
         />

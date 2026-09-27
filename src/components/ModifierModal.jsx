@@ -9,15 +9,23 @@ import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
-  const hasModifiers = item.modifiers && item.modifiers.length > 0;
+  const { menuSetting } = useCart();
+
+  // Admin modifier controls (Menu Manager → Modifiers) applied to the parent
+  // groups and their nested child lists before anything renders or prices, so
+  // the modal always matches what the admin set — hidden options are gone,
+  // sold-out ones can't be picked, and overridden prices are shown and charged.
+  const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
+  const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
 
   // Initialize selections: SINGLE → null, MULTIPLE → []
   const initSelections = () => {
     if (!hasModifiers) return {};
-    return item.modifiers.reduce((acc, group) => {
+    return groups.reduce((acc, group) => {
       // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
@@ -28,8 +36,6 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
   const [selections, setSelections] = useState(initSelections);
   const [nestedSelections, setNestedSelections] = useState({});
-
-  const { menuSetting } = useCart();
 
   // Happy Hour pricing — eligible items show a struck-through base price and
   // discounted total so the modal matches what the cart will actually charge.
@@ -197,7 +203,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
           })}
 
           {hasModifiers ? (
-            item.modifiers.map(group => (
+            groups.map(group => (
               <div key={group.name}>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>

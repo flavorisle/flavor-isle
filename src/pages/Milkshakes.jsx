@@ -10,6 +10,7 @@ import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { base44 } from '@/api/base44Client';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
@@ -17,7 +18,7 @@ import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 // "Whirl & Twirl" category as its own card. Tapping a card opens the
 // ShakeCustomizer where the customer picks size, base, and extra flavors.
 export default function Milkshakes() {
-  const { setIsCartOpen } = useCart();
+  const { setIsCartOpen, menuSetting } = useCart();
   const [searchParams] = useSearchParams();
   const blissId = searchParams.get('bliss');
   const [shakes, setShakes] = useState([]);
@@ -42,7 +43,11 @@ export default function Milkshakes() {
 
   // "From" price = item base + cheapest size option (if any).
   const getFromPrice = (item) => {
-    const sizeGroup = (item.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('size'));
+    // Admin modifier controls apply here too (hidden or sold-out sizes, site
+    // price overrides), so the "from" price reflects the sizes customers can
+    // actually pick.
+    const sizeGroup = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides)
+      .find((g) => (g.name || '').toLowerCase().includes('size'));
     const sizeOpts = (sizeGroup?.modifiers || []).filter((m) => !m.sold_out);
     const minSizePrice = sizeOpts.length ? Math.min(...sizeOpts.map((o) => o.price || 0)) : 0;
     return ((item.price || 0) + minSizePrice).toFixed(2);

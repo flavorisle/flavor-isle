@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useCart } from '@/context/CartContext';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 // Dynamic promo banner for the Shake Isle page. Pulls the live flavor count
 // and starting price from the milkshake menu items so the offer always
@@ -10,6 +12,7 @@ import { base44 } from '@/api/base44Client';
 //   variant="strip"    — horizontal card that replaces the shake category row on the menu
 export default function MilkshakePromoBanner({ variant = 'feature' }) {
   const [shakes, setShakes] = useState([]);
+  const { menuSetting } = useCart();
 
   useEffect(() => {
     base44.entities.MenuItem
@@ -26,7 +29,10 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
   const fromPrice = (() => {
     if (shakes.length === 0) return null;
     const prices = shakes.map((item) => {
-      const sizeGroup = (item.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('size'));
+      // Honors the admin's modifier controls (hidden/sold-out sizes, site price
+      // overrides) so the advertised "from" price matches what customers pay.
+      const sizeGroup = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides)
+        .find((g) => (g.name || '').toLowerCase().includes('size'));
       const sizeOpts = (sizeGroup?.modifiers || []).filter((m) => !m.sold_out);
       const minSizePrice = sizeOpts.length ? Math.min(...sizeOpts.map((o) => o.price || 0)) : 0;
       return (item.price || 0) + minSizePrice;
