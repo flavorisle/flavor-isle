@@ -11,6 +11,7 @@ import ComboPicker from '@/components/ComboPicker';
 import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboConfig';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
+import { findMenuItem, productSlug, productPath } from '@/lib/productSlug';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -25,7 +26,7 @@ const PLACEHOLDER_EMOJI = {
 // Modifier (with the switch-gated Deluxe presets) and Happy Hour logic lives in
 // ProductModifierPanel; this page owns layout, quantity, and the add flow.
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { user } = useAuth();
@@ -46,7 +47,7 @@ export default function ProductDetail() {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    base44.entities.MenuItem.get(id)
+    findMenuItem(slug)
       .then((data) => {
         if (cancelled) return;
         if (!data || data.is_hidden) {
@@ -54,13 +55,17 @@ export default function ProductDetail() {
         } else {
           setItem(data);
           trackViewItem(foodItemToGa4(data), { item_list_id: 'product', item_list_name: 'Product Detail' });
+          // Keep the address bar on the item's name URL — older id-based links
+          // (cart edit, previously shared ids) resolve to the same page.
+          const canonical = productSlug(data);
+          if (canonical && canonical !== slug) navigate(`/product/${canonical}`, { replace: true });
         }
       })
       .catch(() => { if (!cancelled) setNotFound(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     window.scrollTo({ top: 0 });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [slug, navigate]);
 
   // The combo offered for this item: the item must sit in the combo's main slot
   // and the combo must be switched on. No combo resolves, no section renders.
@@ -304,7 +309,13 @@ export default function ProductDetail() {
                     <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
                   </button>
                 )}
-                <ShareItemButton itemId={item.id} variant="icon" ariaLabel={`Share ${item.name}`} className="absolute top-3 right-3" />
+                <ShareItemButton
+                  itemId={item.id}
+                  url={`${window.location.origin}${productPath(item)}`}
+                  variant="icon"
+                  ariaLabel={`Share ${item.name}`}
+                  className="absolute top-3 right-3"
+                />
               </div>
 
               {/* Description */}

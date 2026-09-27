@@ -9,6 +9,7 @@ import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { productPath } from '@/lib/productSlug';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -82,7 +83,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const handlePhotoClick = (e) => {
     e?.stopPropagation();
     trackSelectItem(foodItemToGa4(item));
-    navigate(`/product/${item.id}`);
+    navigate(productPath(item));
   };
 
   const handleAdd = (e) => {
