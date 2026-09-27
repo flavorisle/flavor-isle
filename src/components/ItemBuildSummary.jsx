@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Plus } from 'lucide-react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import PreferencePillButton, { getPreferenceList } from '@/components/PreferencePillButton';
+import NestedModifierLists from '@/components/NestedModifierLists';
 
 // Selectable "What's on it" chips for a product page.
 //
@@ -113,6 +114,18 @@ export default function ItemBuildSummary({
                   );
                 })}
               </div>
+              {/* Follow-up choices for a picked option — a soda's ice level and
+                  flavor, for instance. Lite/Extra levels stay on the pill. */}
+              {group.modifiers
+                .filter((mod) => selected.has(mod.id) && mod.child_modifier_lists?.length > 0)
+                .map((mod) => (
+                  <NestedModifierLists
+                    key={`nested-${mod.id}`}
+                    parentMod={mod}
+                    nestedSelections={nestedSelections[mod.id] || {}}
+                    onChange={(nested) => onNestedChange?.(mod.id, nested)}
+                  />
+                ))}
             </div>
           );
         })}

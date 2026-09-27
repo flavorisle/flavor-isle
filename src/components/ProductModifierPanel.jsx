@@ -5,8 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { isHappyHourItem, getHappyHourItemPrice, getHappyHourConfig } from '@/lib/happyHour';
 import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDeluxePreset } from '@/lib/deluxeConfig';
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
-import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
-import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
+import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
@@ -237,79 +236,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
         );
       })}
 
-      {/* Modifier groups */}
-      {hasModifiers ? (
-        groups.map(group => (
-          <div key={group.name}>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {group.modifiers.map(mod => {
-                const isMultiple = group.selection_type === 'MULTIPLE';
-                const isSelected = isMultiple
-                  ? (selections[group.name] || []).some(m => m.id === mod.id)
-                  : selections[group.name]?.id === mod.id;
-
-                if (!mod.sold_out && getPreferenceList(mod)) {
-                  return (
-                    <PreferencePillButton
-                      key={mod.id}
-                      mod={mod}
-                      isSelected={isSelected}
-                      onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                      nestedSelection={nestedSelections[mod.id] || {}}
-                      onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-                    />
-                  );
-                }
-
-                return (
-                  <button
-                    key={mod.id}
-                    type="button"
-                    disabled={mod.sold_out}
-                    onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                    className={`px-4 py-2.5 rounded-full border transition-all font-body text-sm font-semibold ${
-                      mod.sold_out
-                        ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
-                        : isSelected
-                          ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                          : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                    }`}
-                  >
-                    {mod.name}
-                    {mod.sold_out ? (
-                      <span className="ml-1.5 text-xs text-muted-foreground uppercase">Sold Out</span>
-                    ) : mod.price > 0 && (
-                      <span className={`ml-1.5 text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>+${mod.price.toFixed(2)}</span>
-                    )}
-                    {isSelected && <Check size={13} className="ml-1 inline" />}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Nested modifier lists for selected modifiers with children */}
-            {group.modifiers.filter(mod => {
-              const isMultiple = group.selection_type === 'MULTIPLE';
-              const isSelected = isMultiple
-                ? (selections[group.name] || []).some(m => m.id === mod.id)
-                : selections[group.name]?.id === mod.id;
-              return isSelected && mod.child_modifier_lists?.length > 0;
-            }).map(mod => (
-              <NestedModifierLists
-                key={mod.id}
-                parentMod={mod}
-                nestedSelections={nestedSelections[mod.id] || {}}
-                onChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-              />
-            ))}
-          </div>
-        ))
-      ) : !isBurger && (
+      {/* The item's options are picked on the "What's on it" chips — this panel
+          owns that selection, the Deluxe preset, and the add-to-bag flow. */}
+      {!hasModifiers && !isBurger && (
         <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
       )}
 
