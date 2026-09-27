@@ -44,5 +44,8 @@ export async function findMenuItem(param) {
 
   const wanted = value.toLowerCase();
   const items = await base44.entities.MenuItem.list();
-  return (items || []).find((item) => productSlug(item) === wanted) || null;
+  const matches = (items || []).filter((item) => productSlug(item) === wanted);
+  // Retired Square catalog records often keep the same name as the live item, so
+  // always resolve the name to the record customers can actually order.
+  return matches.find((item) => !item.is_hidden) || matches[0] || null;
 }
