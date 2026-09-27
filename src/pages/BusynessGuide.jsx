@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
+import BusynessBetaTag from '@/components/BusynessBetaTag';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
@@ -72,6 +73,7 @@ export default function BusynessGuide() {
                   {isClosed ? 'Closed' : level?.level || 'Checking…'}
                 </p>
               </div>
+              {!isClosed && <BusynessBetaTag />}
             </div>
             {!isClosed && waitMin > 0 && (
               <div className="text-right">

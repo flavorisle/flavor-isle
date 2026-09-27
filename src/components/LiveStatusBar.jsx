@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Lock, Clock, ArrowRight, ShoppingBag } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import BusynessBetaTag from '@/components/BusynessBetaTag';
 
 // Colored status dot per live busyness level.
 const DOT = {
@@ -142,6 +143,7 @@ export default function LiveStatusBar() {
           <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
             {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
           </p>
+          <BusynessBetaTag />
           <Link
             to="/what-to-expect"
             className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
