@@ -3,6 +3,7 @@ import { Check, Plus } from 'lucide-react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import PreferencePillButton, { getPreferenceList } from '@/components/PreferencePillButton';
 import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/PreferenceGroupPill';
+import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
 
 // The product page's "What's on it" box: the item description followed by
@@ -64,8 +65,8 @@ export default function ItemBuildSummary({
         <>
           <h2 className="font-heading text-lg text-obsidian-roast mb-1">What's on it</h2>
           <p className="text-xs text-muted-foreground mb-3">
-            Tap a chip to add it, tap it again to take it off. On sauces and toppings,
-            − and + make it Lite or Extra. Anything with a price adds that much.
+            Tap a chip to add it, tap it again to take it off. On sauces, toppings, and
+            shake flavors, − and + make it Lite or Extra. Anything with a price adds that much.
           </p>
           <div className="space-y-4">
             {groups.map((group) => {
@@ -94,6 +95,21 @@ export default function ItemBuildSummary({
                       if (getPreferenceList(mod)) {
                         return (
                           <PreferencePillButton
+                            key={mod.id}
+                            mod={mod}
+                            isSelected={isSelected}
+                            onToggle={() => onToggle?.(group.name, mod)}
+                            nestedSelection={nestedSelections[mod.id] || {}}
+                            onNestedChange={(nested) => onNestedChange?.(mod.id, nested)}
+                          />
+                        );
+                      }
+
+                      // Shake flavors carry the same − / + pill as the sauces:
+                      // − is Lite, + is Extra.
+                      if (isFlavorGroup(group)) {
+                        return (
+                          <FlavorPillButton
                             key={mod.id}
                             mod={mod}
                             isSelected={isSelected}

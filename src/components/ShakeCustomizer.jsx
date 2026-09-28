@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
+import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -17,6 +18,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const [size, setSize] = useState(null);
   const [base, setBase] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
+  // Lite / Extra level per added flavor, chosen with the − / + zones on the
+  // flavor pill; regular (no entry) is the default.
+  const [flavorLevels, setFlavorLevels] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -25,6 +29,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       setSize(null);
       setBase(null);
       setExtraFlavors([]);
+      setFlavorLevels({});
       setQuantity(1);
       setAdded(false);
     }
@@ -73,7 +78,11 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
   const totalPrice = unitPrice * quantity;
 
-  const extraFlavorNames = extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config));
+  // A flavor's Lite/Extra level rides as a name prefix on the flavor's own
+  // catalog id — the same way a burger reads "Extra Pickle" — so the flavor
+  // stays one permitted catalog modifier for pricing and the kitchen ticket.
+  const levelPrefix = (id) => (flavorLevels[id] === 'lite' ? 'Lite ' : flavorLevels[id] === 'extra' ? 'Extra ' : '');
+  const extraFlavorNames = extraFlavors.map((f) => `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`);
   const allFlavorNames = [flavorName, ...extraFlavorNames];
   // Only call out the base when it differs from the shake's own flavor —
   // otherwise it reads "Vanilla Milkshake (Vanilla)" and confuses the crew.
@@ -86,7 +95,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
       ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
-      ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
+      ...extraFlavors.map((f) => ({ id: f.id, name: `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`, price: f.price })),
     ];
 
     const cartItem = {
@@ -191,18 +200,15 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
                   const name = resolveFlavorName(opt.id, opt.name, config);
                   const emoji = resolveFlavorEmoji(opt.id, config);
                   return (
-                    <button
+                    <FlavorPillButton
                       key={opt.id}
-                      onClick={() => toggleMulti(extraFlavors, setExtraFlavors, opt)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                      }`}
-                    >
-                      <span className="text-base leading-none">{emoji}</span>
-                      {name}
-                      <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>
-                      {selected && <Check size={13} className="ml-0.5" />}
-                    </button>
+                      mod={{ id: opt.id, name, price: opt.price }}
+                      leading={<span className="text-base leading-none">{emoji}</span>}
+                      isSelected={selected}
+                      onToggle={() => toggleMulti(extraFlavors, setExtraFlavors, opt)}
+                      nestedSelection={flavorAmountNested(flavorLevels[opt.id])}
+                      onNestedChange={(nested) => setFlavorLevels((prev) => ({ ...prev, [opt.id]: getFlavorLevel(nested) }))}
+                    />
                   );
                 })}
               </div>

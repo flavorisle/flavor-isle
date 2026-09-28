@@ -10,6 +10,7 @@ import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
 import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill';
+import FlavorPillButton, { isFlavorGroup } from './FlavorPillButton';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
@@ -230,6 +231,24 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                       return (
                         <div key={mod.id} className="py-1">
                           <PreferencePillButton
+                            mod={mod}
+                            isSelected={isSelected}
+                            onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                            nestedSelection={nestedSelections[mod.id] || {}}
+                            onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                          />
+                        </div>
+                      );
+                    }
+
+                    // Flavors get the same − / + pill the burger sauces use:
+                    // − is Lite, + is Extra, carried as a name prefix on the
+                    // flavor's own catalog id so pricing and tickets still see
+                    // one permitted modifier.
+                    if (!mod.sold_out && isFlavorGroup(group)) {
+                      return (
+                        <div key={mod.id} className="py-1">
+                          <FlavorPillButton
                             mod={mod}
                             isSelected={isSelected}
                             onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
