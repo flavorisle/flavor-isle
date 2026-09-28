@@ -6,6 +6,7 @@ import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiB
 import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
 import AllergyNote from '@/components/AllergyNote';
 import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -209,6 +210,8 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
           {allExtraOpts.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add Another Flavor</p>
+              {/* − is Lite, + is Extra on each flavor pill. */}
+              <FlavorAmountLegend align="left" className="mb-2.5" />
               <div className="flex flex-wrap gap-2">
                 {allExtraOpts.map((opt) => {
                   const selected = extraFlavors.some((s) => s.id === opt.id);

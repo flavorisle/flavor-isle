@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Plus } from 'lucide-react';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 
 // Dedicated section for the malt milkshake on the Shake Isle page. Shows a
 // single centered malt tile above a short explainer of what a malt is.
@@ -46,9 +47,12 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
 
         {/* Explainer */}
         <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-2 text-center">Malt Syrup Blended In</p>
-        <h2 className="font-heading text-3xl sm:text-4xl text-white mb-6 leading-tight text-center">
+        <h2 className="font-heading text-3xl sm:text-4xl text-white mb-4 leading-tight text-center">
           What a Malt Milkshake Is at Flavor Isle
         </h2>
+        {/* The malt builds its flavors with the same − / + pills as every other
+            shake, so the amounts are explained here too. */}
+        <FlavorAmountLegend tone="dark" className="mb-6" />
         <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
           <p>A malt is a milkshake with malt syrup blended in.</p>
           <p>That syrup gives your shake a richer, deeper, slightly toasty flavor that makes the whole thing taste more bold and satisfying.</p>

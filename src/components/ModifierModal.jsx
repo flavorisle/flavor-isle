@@ -13,6 +13,7 @@ import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill
 import FlavorPillButton, { isFlavorGroup } from './FlavorPillButton';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
+import FlavorAmountLegend from './FlavorAmountLegend';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
@@ -192,6 +193,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
+          {/* Flavor pills show − / + zones — say what they do whenever any
+              flavor group is on screen. */}
+          {groups.some(isFlavorGroup) && <FlavorAmountLegend align="left" />}
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
             return (

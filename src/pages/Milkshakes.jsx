@@ -9,6 +9,7 @@ import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
 import AllergyNote from '@/components/AllergyNote';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
@@ -129,6 +130,9 @@ export default function Milkshakes() {
           <div className="text-center mb-10">
             <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-2">Pick Your Flavor</p>
             <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">EVERY SHAKE WE MAKE</h2>
+            {/* Flavor pills carry − / + zones — spell out what they do before
+                the customer starts tapping, on every device. */}
+            <FlavorAmountLegend className="mt-4" />
           </div>
 
           {loading ? (
