@@ -9,6 +9,7 @@ import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
+import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
@@ -211,6 +212,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                     {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
                   </span>
                 </div>
+                {getPreferenceTriplet(group) ? (
+                  <PreferenceGroupPill
+                    group={group}
+                    selectedId={selections[group.name]?.id}
+                    onSelect={(mod) => toggleSingle(group.name, mod)}
+                  />
+                ) : (
                 <div className="space-y-2">
                   {group.modifiers.map(mod => {
                     const isMultiple = group.selection_type === 'MULTIPLE';
@@ -263,6 +271,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                     );
                   })}
                 </div>
+                )}
                 {/* Nested modifier lists for selected modifiers with children */}
                 {group.modifiers.filter(mod => {
                   const isMultiple = group.selection_type === 'MULTIPLE';

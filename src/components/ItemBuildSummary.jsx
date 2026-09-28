@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Plus } from 'lucide-react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import PreferencePillButton, { getPreferenceList } from '@/components/PreferencePillButton';
+import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/PreferenceGroupPill';
 import NestedModifierLists from '@/components/NestedModifierLists';
 
 // The product page's "What's on it" box: the item description followed by
@@ -78,7 +79,13 @@ export default function ItemBuildSummary({
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {group.modifiers.map((mod) => {
+                    {getPreferenceTriplet(group) ? (
+                      <PreferenceGroupPill
+                        group={group}
+                        selectedId={group.modifiers.find((m) => selected.has(m.id))?.id}
+                        onSelect={(mod) => onToggle?.(group.name, mod)}
+                      />
+                    ) : group.modifiers.map((mod) => {
                       const isSelected = selected.has(mod.id);
 
                       // Sauces and toppings carry Lite / Regular / Extra zones —
