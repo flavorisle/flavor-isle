@@ -18,10 +18,22 @@ export const GALLERY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a0b6bcef9_NorthWarrenCommunityWalk.jpg', alt: 'Community walk group holding milkshakes under the sign', category: 'Our People', caption: 'North Warren Community Walk' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/99f75bee4_CD56F694-082A-4650-9E1C-5F5F95B2F288.jpg', alt: 'Busy lunch crowd at the outdoor tables', category: 'Our People', caption: 'Busy lunch rush' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/742efcb4d_IMG_0429.jpeg', alt: 'Hand-patted burgers and buns on the flat-top grill', category: 'Food', caption: 'Fresh patties on the grill' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/af3fdb22d_44faedbf2_IMG_1241.jpg', alt: 'Golden breaded fried pickles on a paper tray', category: 'Food', caption: 'Fried pickles, hot out of the basket' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/dbd2fb8df_15cbe6581_IMG_1240.jpg', alt: 'Double burger with melted cheese and grilled onions', category: 'Food', caption: 'Stacked and smothered' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/590e97d65_IMG_8855.jpeg', alt: 'Inside the Flavor Isle dining room looking toward the front door', category: 'The Diner', caption: 'The dining room' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/31cacd6b0_Screenshot_20250607-195606_Maps_Original.jpeg', alt: 'Order counter with a view into the kitchen', category: 'The Diner', caption: 'The order counter' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b563c5b72_IMG_0987_Original.jpeg', alt: 'Flavor Isle sign glowing at night over the picnic tables', category: 'The Diner', caption: 'The sign at night' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1ade54fbc_IMG_0427.jpeg', alt: 'Walk-up window and blue picnic tables under the awning', category: 'The Diner', caption: 'Under the awning' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/0a273b2c0_5094a0c6b_IMG_1044.jpg', alt: 'Flavor Isle dining room with light blue walls and community bulletin board', category: 'The Diner', caption: 'Blue walls and the community board' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/5b33a8620_9e3fd68e9_IMG_1046.jpg', alt: 'Award plaques on the dining room wall including Best Restaurant in Smiths Grove 2025', category: 'The Diner', caption: 'The award wall' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/f04c3396c_b663f50e0_IMG_1045.jpg', alt: 'Framed pencil sketch of the Flavor Isle building with newspaper clippings', category: 'The Diner', caption: 'A sketch of the Isle' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e291f1489_IMG_1724_Original.jpeg', alt: 'Classic cars parked on Main Street during the 50th anniversary', category: 'Our People', caption: '50th anniversary, May 2014' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg', alt: 'Crowd with balloons celebrating the 50th anniversary', category: 'Our People', caption: 'Celebrating 50 years with Joyce' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/c9e2452b8_c8fa8ebb3_IMG_1225.jpg', alt: 'Colonel Sanders lookalike posing outside under the Flavor Isle awning', category: 'Our People', caption: 'The Colonel stops by the Isle' },
 ];
+
+// The two food shots featured in the compact homepage photo strip. Pulled
+// from GALLERY_PHOTOS so the homepage and the gallery never drift apart.
+export const HOMEPAGE_PHOTOS = GALLERY_PHOTOS.filter((photo) =>
+  ['Fried pickles, hot out of the basket', 'Stacked and smothered'].includes(photo.caption)
+);

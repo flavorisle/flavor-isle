@@ -29,6 +29,7 @@ import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import { FallDivider } from '@/components/RetroFallTheme';
+import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
 
 
 const SPECIALS_TICKER = [
@@ -188,6 +189,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── FRESH OFF THE FLATTOP (two food photos → /gallery) ── */}
+      <GalleryPhotoStrip />
 
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
