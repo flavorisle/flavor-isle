@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import {
   upsertSmsConsent,
@@ -154,12 +153,29 @@ Deno.serve(async (req) => {
       message_count: (smsRecord.message_count || 0) + 1,
     });
 
-    const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
-    await twilioClient.messages.create({
-      body: replyText,
-      from: twilioPhoneNumber,
-      to: from,
+    // Send the reply via the Twilio REST API directly. The Twilio npm SDK
+    // throws "Unsupported cache mode: default" under Deno, so we call the REST
+    // endpoint with fetch + Basic auth instead — same pattern as
+    // sendOrderReadyAlert. StatusCallback records delivery failures.
+    const smsUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+    const smsParams = new URLSearchParams({
+      From: twilioPhoneNumber,
+      To: from,
+      Body: replyText,
+      StatusCallback: 'https://flavor-isle.com/functions/twilioSmsStatus',
     });
+    const smsRes = await fetch(smsUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: smsParams.toString(),
+    });
+    if (!smsRes.ok) {
+      const smsErr = await smsRes.text();
+      throw new Error(`Twilio SMS failed (${smsRes.status}): ${smsErr}`);
+    }
 
     console.log(`Replied to ${from}: ${replyText.substring(0, 100)}`);
 

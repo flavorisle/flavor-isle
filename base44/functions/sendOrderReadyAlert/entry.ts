@@ -7,7 +7,13 @@ import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 // with fetch + Basic auth instead — lighter and runtime-safe.
 async function sendTwilioSms(accountSid, authToken, from, to, body) {
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-  const params = new URLSearchParams({ From: from, To: to, Body: body });
+  const params = new URLSearchParams({
+    From: from,
+    To: to,
+    Body: body,
+    // Delivery-failure reporting back into the app.
+    StatusCallback: 'https://flavor-isle.com/functions/twilioSmsStatus',
+  });
   const auth = btoa(`${accountSid}:${authToken}`);
   const res = await fetch(url, {
     method: 'POST',
