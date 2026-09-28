@@ -182,9 +182,12 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
   const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
+  // Allergy notification — when ticked, the allergy text is required and goes to
+  // the top of the order notes prefixed "ALLERGY:".
+  const [hasAllergy, setHasAllergy] = useState(false);
   const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
   const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
@@ -332,13 +335,16 @@ export default function Checkout() {
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
-  // Compose the kitchen-facing notes: customer instructions + requested extras.
+  // Compose the kitchen-facing notes: the allergy alert first so it is the very
+  // first thing the kitchen reads on the ticket, then the customer's own
+  // instructions, then requested extras.
   const extrasList = Object.entries(extras)
     .filter(([, v]) => v)
     .map(([k]) => ({
       forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
     }[k]));
   const instructionsWithExtras = [
+    hasAllergy && form.allergy.trim() ? `ALLERGY: ${form.allergy.trim()}` : '',
     form.instructions.trim(),
     extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
   ].filter(Boolean).join('\n');
@@ -407,6 +413,8 @@ export default function Checkout() {
       if (!vehicle.make.trim()) errors.carMake = 'Car make is required.';
     }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
+    // Allergy alert ticked — the kitchen needs to know what the allergy is.
+    if (hasAllergy && !form.allergy.trim()) errors.allergy = 'Tell us what the allergy is.';
 
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -602,6 +610,11 @@ export default function Checkout() {
   // Build a single-pay intent from the current cart + wallet-provided contact
   // details. Used by the express Apple Pay / Google Pay button.
   const createIntent = async (walletCustomer) => {
+    // One-tap checkout skips the details form, so it must not skip the required
+    // allergy text — otherwise the kitchen would never see the alert.
+    if (hasAllergy && !form.allergy.trim()) {
+      throw new Error('Tell us what the allergy is, then tap again — or pay with the card form below.');
+    }
     const scheduledFor = schedule.scheduledFor;
     const estimatedTime = schedule.estimatedTime;
     const mappedItems = cartItems.map(i => ({
@@ -892,6 +905,29 @@ export default function Checkout() {
                     <textarea value={form.instructions} onChange={e => updateForm('instructions', e.target.value)}
                       placeholder="Allergies, extra sauce, no pickles…" rows={3}
                       className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
+                  </div>
+
+                  {/* Allergy alert — ticking it opens a required text box, and the
+                      text is placed at the top of the order notes as "ALLERGY: …". */}
+                  <div className="mt-4">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={hasAllergy}
+                        onChange={e => { setHasAllergy(e.target.checked); if (!e.target.checked) updateForm('allergy', ''); }}
+                        className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                      />
+                      <span className="text-sm text-obsidian-roast leading-relaxed">Someone in my party has a food allergy</span>
+                    </label>
+                    {hasAllergy && (
+                      <div className="mt-3 pl-8">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Tell us what the allergy is *</label>
+                        <textarea value={form.allergy} onChange={e => updateForm('allergy', e.target.value)}
+                          placeholder="e.g. Severe peanut allergy…" rows={2}
+                          className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none ${fieldErrors.allergy ? 'border-destructive' : 'border-border'}`} />
+                        {fieldErrors.allergy && <p className="text-xs text-destructive mt-1">{fieldErrors.allergy}</p>}
+                      </div>
+                    )}
                   </div>
                 </div>
 
