@@ -26,7 +26,7 @@ export default function FlavorAmountLegend({ align = 'center', tone = 'light', c
         </span>
         Extra
       </span>
-      <span>Tap the flavor name for regular.</span>
+      <span>Tap the name for regular.</span>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import PreferencePillButton, { getPreferenceList } from '@/components/Preference
 import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/PreferenceGroupPill';
 import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 
 // The product page's "What's on it" box: the item description followed by
 // selectable chips for every option the item offers.
@@ -53,6 +54,15 @@ export default function ItemBuildSummary({
 
   const selected = new Set(selectedIds);
 
+  // Only explain the − / + zones on items that actually show one of those
+  // pills — a plain topping list has no such control.
+  const hasAmountPills = groups.some(
+    (group) =>
+      isFlavorGroup(group) ||
+      getPreferenceTriplet(group) ||
+      group.modifiers.some((mod) => getPreferenceList(mod)),
+  );
+
   return (
     <div className="card-diner p-4 sm:p-5">
       {description && (
@@ -64,10 +74,12 @@ export default function ItemBuildSummary({
       {hasGroups && (
         <>
           <h2 className="font-heading text-lg text-obsidian-roast mb-1">What's on it</h2>
-          <p className="text-xs text-muted-foreground mb-3">
-            Tap a chip to add it, tap it again to take it off. On sauces, toppings, and
-            shake flavors, − and + make it Lite or Extra. Anything with a price adds that much.
+          <p className="text-xs text-muted-foreground mb-2">
+            Tap a chip to add it, tap it again to take it off. Anything with a price adds that much.
           </p>
+          {/* Same − / + legend the Shake Isle shows, so the zones on these chips
+              are spelled out here too. */}
+          {hasAmountPills && <FlavorAmountLegend align="left" className="mb-3" />}
           <div className="space-y-4">
             {groups.map((group) => {
               const multiple = group.selection_type === 'MULTIPLE';
