@@ -4,6 +4,7 @@ import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
+import AllergyNote from '@/components/AllergyNote';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -239,6 +240,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
               <p className="text-xs text-muted-foreground mt-0.5">{cartName}</p>
             </div>
           </div>
+          <AllergyNote compact />
           <button
             onClick={handleAddToCart}
             disabled={!size}

@@ -11,6 +11,7 @@ import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra }
 import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
 import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill';
 import FlavorPillButton, { isFlavorGroup } from './FlavorPillButton';
+import AllergyNote, { isShakeItem } from './AllergyNote';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
@@ -315,6 +316,8 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
         {/* Footer */}
         <div className="p-5 border-t border-border flex-shrink-0 bg-white safe-bottom">
+          {/* Every milkshake carries the allergy note, right above the add button. */}
+          {isShakeItem(item) && <AllergyNote compact className="mb-3" />}
           <button
             type="button"
             onClick={handleConfirm}

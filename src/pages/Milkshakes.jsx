@@ -8,6 +8,7 @@ import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
+import AllergyNote from '@/components/AllergyNote';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
@@ -117,6 +118,10 @@ export default function Milkshakes() {
           </Link>
         </div>
       </section>
+
+      {/* Allergy note — sits above the flavors so the shared-equipment warning
+          is read before a shake is ever built. */}
+      <AllergyNote />
 
       {/* Flavor grid */}
       <section className="py-16 px-4 sm:px-6">
