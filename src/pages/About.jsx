@@ -11,6 +11,7 @@ import AboutVisit from '@/components/about/AboutVisit';
 import AboutTraveler from '@/components/about/AboutTraveler';
 import AboutTastyThreads from '@/components/about/AboutTastyThreads';
 import AboutExplore from '@/components/about/AboutExplore';
+import FoodPhotoRow from '@/components/FoodPhotoRow';
 
 export default function About() {
   return (
@@ -27,6 +28,14 @@ export default function About() {
       <CartDrawer />
       <AboutHero />
       <AboutStory />
+      <section className="pb-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+        <div className="max-w-6xl mx-auto">
+          <FoodPhotoRow
+            heading="Straight From the Kitchen"
+            subtext="Hand-patted burgers, sides dropped fresh in the fryer, and shakes spun to order — this is what lands on the tray."
+          />
+        </div>
+      </section>
       <AboutValues />
       <AboutSmashie />
       <AboutTastyThreads />
