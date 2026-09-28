@@ -73,8 +73,8 @@ export default function PremiumShakesSection({ autoOpenId }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost) => {
-    addItem({ ...activeItem, price: activeItem.price + extraCost, selectedModifiers: selectedMods });
+  const handleModalConfirm = (selectedMods, extraCost, _label, _allToppings, _comboItems, allergyNote) => {
+    addItem({ ...activeItem, price: activeItem.price + extraCost, selectedModifiers: selectedMods, allergyNote: allergyNote || undefined });
     setAddedId(activeItem.id);
     setActiveItem(null);
     setTimeout(() => setAddedId(null), 1200);

@@ -156,7 +156,10 @@ export function CartProvider({ children }) {
       .sort()
       .join('|');
     const personKey = item.person_id ? `p${item.person_id}` : '';
-    return mods || personKey ? `${item.id}__${personKey}${mods ? '|' : ''}${mods}` : item.id;
+    // A customer's per-item allergy note joins the line key, so two of the same
+    // shake with different allergies stay separate lines instead of merging.
+    const noteKey = item.allergyNote ? `a${item.allergyNote}` : '';
+    return mods || personKey || noteKey ? `${item.id}__${personKey}${noteKey}${mods ? '|' : ''}${mods}` : item.id;
   };
 
   const activePerson = people.find(p => p.id === activePersonId) || null;

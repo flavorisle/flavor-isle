@@ -99,13 +99,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote) => {
     addItem({
       ...item,
       price: item.price + extraCost,
       selectedModifiers: selectedMods,
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
+      allergyNote: allergyNote || undefined,
     });
     if (comboItems && comboItems.length > 0) {
       comboItems.forEach(ci => addItem(ci));

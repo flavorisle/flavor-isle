@@ -143,7 +143,7 @@ export default function CartDrawer() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
-                  <CartItemModifiers modifiers={item.selectedModifiers} />
+                  <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                   <p className="text-patina-mint font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
 
                   {groupMode && (

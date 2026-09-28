@@ -4,6 +4,11 @@ import { AlertTriangle } from 'lucide-react';
 // Shake allergy notice from the Flavor Isle team. Shown once on the Shake Isle
 // page and again inside every milkshake's customization, so the shared-equipment
 // warning is in front of the customer wherever they commit to a shake.
+// The note shown inside a shake's own customization — the specific allergens
+// that shake carries.
+export const SHAKE_ALLERGY_INSIDE_TEXT =
+  'Contains: milk, eggs, soy. May contain trace wheat.';
+
 export const ALLERGY_NOTE_TEXT =
   'Every Flavor Isle milkshake is hand-spun on shared equipment. While each flavor lists its specific allergens, all shakes may contain trace amounts of milk, eggs, soy, wheat, peanuts, and tree nuts. Please let our team know about any severe allergy before ordering.';
 
@@ -22,7 +27,7 @@ export default function AllergyNote({ compact = false, className = '' }) {
           <AlertTriangle size={13} className="text-midnight-cherry flex-shrink-0" />
           <p className="font-heading text-[11px] uppercase tracking-widest text-obsidian-roast">Allergy Note</p>
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">{ALLERGY_NOTE_TEXT}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{SHAKE_ALLERGY_INSIDE_TEXT}</p>
       </div>
     );
   }

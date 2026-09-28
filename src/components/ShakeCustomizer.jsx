@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
 import AllergyNote from '@/components/AllergyNote';
+import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -24,6 +25,10 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const [flavorLevels, setFlavorLevels] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  // This shake's allergy flag + note — carried on the shake's own cart line so
+  // the kitchen ticket names the shake that's allergic, not just the order.
+  const [allergy, setAllergy] = useState({ flag: false, note: '' });
+  const [allergyError, setAllergyError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -33,6 +38,8 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       setFlavorLevels({});
       setQuantity(1);
       setAdded(false);
+      setAllergy({ flag: false, note: '' });
+      setAllergyError('');
     }
   }, [open, shakeItem?.id]);
 
@@ -93,6 +100,12 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const cartName = `${allFlavorNames.join(' + ')} Milkshake`;
 
   const handleAddToCart = () => {
+    // Flagged allergy with no explanation — ask for the details first, otherwise
+    // the kitchen gets an alert with nothing to act on.
+    if (allergy.flag && !allergy.note.trim()) {
+      setAllergyError('Tell us what the allergy is.');
+      return;
+    }
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
       ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
@@ -108,6 +121,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       category: 'Shakes',
       image_url: shakeItem.image_url || '',
       selectedModifiers,
+      allergyNote: allergy.flag ? allergy.note.trim() : undefined,
     };
     for (let i = 0; i < quantity; i++) addItem(cartItem);
 
@@ -241,6 +255,12 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
             </div>
           </div>
           <AllergyNote compact />
+          <ShakeAllergyCheckbox
+            checked={allergy.flag}
+            note={allergy.note}
+            error={allergyError}
+            onChange={(next) => { setAllergy(next); setAllergyError(''); }}
+          />
           <button
             onClick={handleAddToCart}
             disabled={!size}

@@ -12,6 +12,7 @@ import PreferencePillButton, { getPreferenceList } from './PreferencePillButton'
 import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill';
 import FlavorPillButton, { isFlavorGroup } from './FlavorPillButton';
 import AllergyNote, { isShakeItem } from './AllergyNote';
+import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
@@ -39,6 +40,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
   const [selections, setSelections] = useState(initSelections);
   const [nestedSelections, setNestedSelections] = useState({});
+
+  // Milkshakes only: the customer can flag that THIS shake has an allergy and
+  // say what it is. The note rides on the shake's own cart line so the kitchen
+  // ticket names the shake that's allergic rather than the whole order.
+  const shakeItem = isShakeItem(item);
+  const [allergy, setAllergy] = useState({ flag: false, note: '' });
+  const [allergyError, setAllergyError] = useState('');
 
   // Happy Hour pricing — eligible items show a struck-through base price and
   // discounted total so the modal matches what the cart will actually charge.
@@ -123,6 +131,12 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const footerTotal = itemTotal;
 
   const handleConfirm = () => {
+    // Flagged allergy with no explanation — the kitchen would get the alert with
+    // nothing to act on, so ask for the details first.
+    if (shakeItem && allergy.flag && !allergy.note.trim()) {
+      setAllergyError('Tell us what the allergy is.');
+      return;
+    }
     const selectedMods = [];
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
@@ -137,7 +151,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     const { label, allToppings } = isDeluxeEnabled()
       ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
-    onConfirm(selectedMods, extraCost, label, allToppings, []);
+    onConfirm(selectedMods, extraCost, label, allToppings, [], shakeItem && allergy.flag ? allergy.note.trim() : '');
   };
 
   return createPortal(
@@ -316,8 +330,19 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
         {/* Footer */}
         <div className="p-5 border-t border-border flex-shrink-0 bg-white safe-bottom">
-          {/* Every milkshake carries the allergy note, right above the add button. */}
-          {isShakeItem(item) && <AllergyNote compact className="mb-3" />}
+          {/* Every milkshake carries the allergy note — and the customer can flag
+              this particular shake — right above the add button. */}
+          {shakeItem && (
+            <div className="mb-3 space-y-2">
+              <AllergyNote compact />
+              <ShakeAllergyCheckbox
+                checked={allergy.flag}
+                note={allergy.note}
+                error={allergyError}
+                onChange={(next) => { setAllergy(next); setAllergyError(''); }}
+              />
+            </div>
+          )}
           <button
             type="button"
             onClick={handleConfirm}
