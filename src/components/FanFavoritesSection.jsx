@@ -33,12 +33,10 @@ export default function FanFavoritesSection({ items, shakeRank }) {
       <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
         {favorites.map((item) => (
           <div key={item.id} className="snap-start flex-shrink-0 w-72 relative">
-            {item.shake ? <ShakeFavoriteTile rank={item.rank} /> : <>
-              {item.rank <= 3 && (
-                <div className="absolute -top-2 -left-2 z-30 bg-smashie-yellow text-obsidian-roast text-xs font-heading w-7 h-7 rounded-full flex items-center justify-center shadow-float">{item.rank}</div>
-              )}
-              <FavoritePhotoCard item={item} />
-            </>}
+            <span className={`absolute top-2 left-2 z-20 pointer-events-none rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
+              TOP #{item.rank}
+            </span>
+            {item.shake ? <ShakeFavoriteTile /> : <FavoritePhotoCard item={item} />}
           </div>
         ))}
       </div>
