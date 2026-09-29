@@ -22,6 +22,7 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           realtime_sip_enabled: false,
+          sip_transfer_target: "",
           personality_notes: "",
         });
       }
@@ -47,6 +48,7 @@ export default function SmashieSettingsPanel() {
           realtime_sip_enabled: settings.realtime_sip_enabled,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
+          sip_transfer_target: settings.sip_transfer_target,
         });
       } else {
         const created = await base44.entities.SmashieSettings.create({
@@ -57,6 +59,7 @@ export default function SmashieSettingsPanel() {
           realtime_sip_enabled: settings.realtime_sip_enabled,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
+          sip_transfer_target: settings.sip_transfer_target,
         });
         setSettings(created);
       }
@@ -118,6 +121,23 @@ export default function SmashieSettingsPanel() {
           description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."
           checked={settings.realtime_sip_enabled}
           onChange={v => update('realtime_sip_enabled', v)}
+        />
+      </div>
+
+      {/* Counter transfer address — the REFER target Smashie hands a caller to */}
+      <div className="card-diner p-5">
+        <h3 className="font-heading text-obsidian-roast mb-2">Counter Transfer Address</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Where Smashie sends a call when he hands it to the counter on the Live phone pipeline. This is the Twilio SIP address, not a phone number. Leave it blank to fall back to the saved transfer secret.
+        </p>
+        <input
+          type="text"
+          value={settings.sip_transfer_target || ''}
+          onChange={e => update('sip_transfer_target', e.target.value)}
+          placeholder="sip:counter@flavorisle-counter.sip.twilio.com"
+          spellCheck={false}
+          autoComplete="off"
+          className="w-full px-4 py-3 bg-white rounded-xl text-sm font-mono border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
         />
       </div>
 

@@ -1,6 +1,8 @@
 // Executes the tools Smashie's delegated backend asks for during a Live SIP
 // call. Thin wrappers over the functions the phone line already uses, so the
 // SIP pipeline and the current Twilio pipeline place orders the same way.
+import { getSmashieSettings } from './smashieSettings.ts';
+
 const MAX_MENU_RESULTS = 20;
 const MAX_GROUPS_PER_ITEM = 3;
 const MAX_OPTIONS_PER_GROUP = 8;
@@ -81,8 +83,12 @@ async function takeMessage(base44, args, callerPhone, sessionId) {
   return { output: JSON.stringify({ saved: true, id: saved.id }) };
 }
 
-function requestTransfer() {
-  const target = Deno.env.get('SIP_TRANSFER_TARGET');
+// The counter address lives in SmashieSettings (Admin → Communications) so the
+// crew can see and update it; the SIP_TRANSFER_TARGET secret stays as the
+// fallback for when the field is blank.
+async function requestTransfer(base44) {
+  const settings = await getSmashieSettings(base44);
+  const target = String(settings.sip_transfer_target || '').trim() || Deno.env.get('SIP_TRANSFER_TARGET');
   if (!target) {
     return {
       output: JSON.stringify({
@@ -109,7 +115,7 @@ export async function runSmashieTool(base44, { name, args = {}, callerPhone, ses
     case 'take_message':
       return takeMessage(base44, args, callerPhone, sessionId);
     case 'transfer_to_counter':
-      return requestTransfer();
+      return requestTransfer(base44);
     default:
       return { output: JSON.stringify({ error: `Unknown tool ${name}` }) };
   }

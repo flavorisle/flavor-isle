@@ -9,6 +9,7 @@ const DEFAULTS = {
   sms_auto_reply_enabled: true,
   voice_ordering_enabled: true,
   realtime_sip_enabled: false,
+  sip_transfer_target: "",
   personality_notes: "",
 };
 

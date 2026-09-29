@@ -31,6 +31,11 @@
       "default": false,
       "description": "When true, inbound calls arriving over the OpenAI SIP trunk are handled by the Live phone pipeline (sub-second turns). Off by default: the Twilio line keeps answering calls through the existing voice webhook until the SIP trunk is pointed at this app and a test call has passed."
     },
+    "sip_transfer_target": {
+      "type": "string",
+      "default": "",
+      "description": "Counter-transfer destination for the Live (SIP) phone pipeline \u2014 the Twilio SIP address Smashie hands a caller to on a counter transfer. A plain routing address (sip:counter@<subdomain>.sip.twilio.com), not a phone number. Editable from Admin \u2192 Communications so the address is visible to the crew; the SIP_TRANSFER_TARGET secret is used only as a fallback when this field is blank."
+    },
     "personality_notes": {
       "type": "string",
       "default": "",
