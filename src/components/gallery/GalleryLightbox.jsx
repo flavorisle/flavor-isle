@@ -38,7 +38,7 @@ export default function GalleryLightbox({ photos, index, onClose, onPrev, onNext
         onClick={(e) => e.stopPropagation()}
       />
 
-      <div className="mt-4 text-center text-white/90" onClick={(e) => e.stopPropagation()}>
+      <div key={photo.url} className="mt-4 text-center text-white/90 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500" onClick={(e) => e.stopPropagation()}>
         <p className="font-heading text-lg tracking-wide">{photo.caption}</p>
         <p className="text-xs text-white/60 mt-1">{index + 1} of {photos.length}</p>
       </div>

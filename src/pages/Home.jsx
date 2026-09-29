@@ -8,7 +8,9 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import HeroSection from '@/components/HeroSection';
+import CinematicHero from '@/components/cinematic/CinematicHero';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -29,7 +31,7 @@ import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import { FallDivider } from '@/components/RetroFallTheme';
-import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
+
 
 
 const SPECIALS_TICKER = [
@@ -90,8 +92,11 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── HERO ── */}
-      <HeroSection />
+      {/* ── EXIT 38 PHOTO STORY ── */}
+      <CinematicHero />
+      <PhotoChapter photo={islePhotos.dining} heading="Come on in." text="Pull up a seat in Smiths Grove." />
+      <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
+      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
 
       <ExpressPickupStrip />
 
@@ -189,9 +194,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── FRESH OFF THE FLATTOP (two food photos → /gallery) ── */}
-      <GalleryPhotoStrip />
 
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">

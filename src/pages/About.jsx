@@ -12,6 +12,8 @@ import AboutTraveler from '@/components/about/AboutTraveler';
 import AboutTastyThreads from '@/components/about/AboutTastyThreads';
 import AboutExplore from '@/components/about/AboutExplore';
 import FoodPhotoRow from '@/components/FoodPhotoRow';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 
 export default function About() {
   return (
@@ -28,6 +30,10 @@ export default function About() {
       <CartDrawer />
       <AboutHero />
       <AboutStory />
+      <PhotoChapter photo={islePhotos.dining} heading="The neighborhood’s table." />
+      <PhotoChapter photo={islePhotos.awards} heading="A roadside stand that became Smiths Grove’s best." />
+      <PhotoChapter photo={islePhotos.sketch} heading="Every frame tells a story." text="The building, remembered in pencil and print." />
+      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into." />
       <section className="pb-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <div className="max-w-6xl mx-auto">
           <FoodPhotoRow

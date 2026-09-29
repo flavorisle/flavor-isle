@@ -30,6 +30,10 @@ export const GALLERY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e291f1489_IMG_1724_Original.jpeg', alt: 'Classic cars parked on Main Street during the 50th anniversary', category: 'Our People', caption: '50th anniversary, May 2014' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg', alt: 'Crowd with balloons celebrating the 50th anniversary', category: 'Our People', caption: 'Celebrating 50 years with Joyce' },
   { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/c9e2452b8_c8fa8ebb3_IMG_1225.jpg', alt: 'Colonel Sanders lookalike posing outside under the Flavor Isle awning', category: 'Our People', caption: 'The Colonel stops by the Isle' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8d0ee9043_cde8962dd_IMG_5507_Original.jpg', alt: 'Fried chicken sandwich with waffle fries', category: 'Food', caption: 'Chicken sandwich, made fresh' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/da1c384f6_b9bf38b7d_IMG_0099_Original.jpg', alt: 'Cheeseburger with tater tots', category: 'Food', caption: 'Cheeseburger & tots' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8537ab539_7b6ce8d79_IMG_5526_Original.png', alt: 'Hanging Flavor Isle sign with a palm tree and Coke logo', category: 'The Diner', caption: 'The hanging Flavor Isle sign' },
+  { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/f5aaaf821_ee6a6bf73_IMG_5250_Original.jpg', alt: 'Close-up of a fried chicken sandwich', category: 'Food', caption: 'Chicken sandwich, up close' },
 ];
 
 // The two food shots featured in the compact homepage photo strip. Pulled

@@ -59,6 +59,7 @@ export async function upsertSmsConsent(base44: any, opts: {
   sourcePage: string;
   disclosureVersion?: string;
   disclosureText?: string;
+  revokeMarketingConsent?: boolean;
 }) {
   const {
     phone, name, email,
@@ -67,6 +68,7 @@ export async function upsertSmsConsent(base44: any, opts: {
     sourcePage,
     disclosureVersion = SMS_CONSENT_VERSION,
     disclosureText,
+    revokeMarketingConsent = false,
   } = opts;
 
   const normalized = normalizePhone(phone);
@@ -95,6 +97,20 @@ export async function upsertSmsConsent(base44: any, opts: {
   };
 
   const existing = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: normalized });
+  if (revokeMarketingConsent) {
+    if (!existing[0]) return { ok: true, exists: false, marketing_consent: false };
+    const sub = existing[0];
+    const revoked = {
+      marketing_consent: false,
+      proven_marketing_consent: false,
+      consent_category: sub.transactional_consent ? CONSENT_CATEGORY.TRANSACTIONAL : CONSENT_CATEGORY.NONE,
+      consent_timestamp: now,
+      consent_source_page: sourcePage,
+      opted_in: !!sub.transactional_consent,
+    };
+    await base44.asServiceRole.entities.SMSSubscriber.update(sub.id, revoked);
+    return { ok: true, id: sub.id, ...consentFlags({ ...sub, ...revoked }) };
+  }
   if (existing[0]) {
     const merged = { ...patch };
     // Don't downgrade a proven marketing grant when only re-confirming transactional.

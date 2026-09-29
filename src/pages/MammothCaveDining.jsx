@@ -7,6 +7,8 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 
@@ -56,6 +58,8 @@ export default function MammothCaveDining() {
 
 
 
+      <PhotoChapter photo={islePhotos.burger} heading="Add Flavor Isle to your route." action="Order Now" />
+      <PhotoChapter photo={islePhotos.chickenFries} heading="Fuel up before the caves." action="Get Directions" to="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" />
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
         <div className="text-center mb-6">

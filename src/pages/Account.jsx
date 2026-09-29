@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import SavedCardsPanel from '@/components/account/SavedCardsPanel';
+import CommunicationPreferences from '@/components/account/CommunicationPreferences';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
 import {
@@ -643,6 +644,7 @@ function LoggedInAccount({ user, logout }) {
                   </div>
                 </div>
               )}
+              <CommunicationPreferences phone={profile?.phone} />
             </div>
 
             <PushNotificationPrompt />

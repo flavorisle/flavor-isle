@@ -8,6 +8,7 @@ import GalleryGrid from '@/components/gallery/GalleryGrid';
 import GalleryLightbox from '@/components/gallery/GalleryLightbox';
 import Seo from '@/components/Seo';
 import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
+import CinematicHero from '@/components/cinematic/CinematicHero';
 
 export default function Gallery() {
   const [category, setCategory] = useState('All');
@@ -26,6 +27,7 @@ export default function Gallery() {
       />
       <Navbar />
 
+      <CinematicHero heading="A look around Flavor Isle." subtitle="Real food. Real folks. Real Smiths Grove." />
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-heading tracking-widest uppercase text-white mb-3 bg-midnight-cherry">
           <Camera size={13} /> Gallery

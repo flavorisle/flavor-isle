@@ -7,6 +7,9 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
+import CinematicHero from '@/components/cinematic/CinematicHero';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
@@ -94,34 +97,11 @@ export default function I65Exit38() {
       />
       <Navbar />
 
-      {/* Hero */}
-      <section className="relative bg-patina-mint text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <img src={BUILDING} alt="" loading="lazy" className="w-full h-full object-cover" />
-        </div>
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-          <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">
-            <Car size={16} /> I-65 EXIT 38 · SMITHS GROVE, KY
-          </div>
-          <h1 className="font-heading text-4xl sm:text-6xl leading-tight">
-            The Burger &amp; Ice Cream Stop at I-65 Exit 38
-          </h1>
-          <p className="font-body text-lg sm:text-xl text-white/90 mt-4">
-            15 minutes north of Bowling Green · Family-owned since 1964
-          </p>
-          <p className="font-body text-base text-white/80 mt-3 max-w-xl mx-auto">
-            Stretch your legs, grab a hand-patted burger and a thick shake, and get back on the road. Fresh, never frozen — made to order.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-base font-heading flex items-center justify-center gap-2">
-              Order Ahead <ArrowRight size={18} />
-            </Link>
-            <a href="tel:+12705634618" className="btn-yellow chrome-hover px-8 py-4 text-base font-heading flex items-center justify-center gap-2">
-              <Phone size={18} /> (270) 563-4618
-            </a>
-          </div>
-        </div>
-      </section>
+      <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." />
+      <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
+      <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
+      <PhotoChapter photo={islePhotos.sketch} heading="A Smiths Grove original." />
+      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into at the Isle." />
 
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
