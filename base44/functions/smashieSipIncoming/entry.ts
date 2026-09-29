@@ -39,10 +39,20 @@ const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/
 // anything.
 function extractCallerPhone(sipHeaders) {
   if (!sipHeaders || typeof sipHeaders !== 'object') return '';
-  const candidates = Object.entries(sipHeaders)
-    .filter(([key]) => ['from', 'p-asserted-identity', 'contact'].includes(String(key).toLowerCase()))
-    .map(([, value]) => String(value || ''));
-  candidates.push(JSON.stringify(sipHeaders));
+  // OpenAI sends sip_headers as [{ name, value }] pairs; a plain object map is
+  // tolerated too. Caller-ID headers are ranked first (From is the caller),
+  // then every other header value, so the number is read deliberately rather
+  // than from whatever digits happen to appear first.
+  const headers = Array.isArray(sipHeaders)
+    ? sipHeaders.map((h) => ({ name: String(h?.name || '').toLowerCase(), value: String(h?.value || '') }))
+    : Object.entries(sipHeaders).map(([name, value]) => ({ name: name.toLowerCase(), value: String(value || '') }));
+
+  const callerHeaders = ['from', 'p-asserted-identity', 'contact'];
+  const candidates = [
+    ...callerHeaders.map((name) => headers.find((h) => h.name === name)?.value || ''),
+    ...headers.map((h) => h.value),
+    JSON.stringify(sipHeaders),
+  ].filter(Boolean);
 
   for (const raw of candidates) {
     const digits = (raw.match(/\d[\d\s().-]{8,}\d/) || [''])[0].replace(/\D/g, '');
@@ -213,13 +223,17 @@ export default async function (req) {
 
     const event = JSON.parse(rawBody || '{}');
     const type = event?.type || '';
+    const data = event.data || {};
+    // Log every arrival: without this line, "OpenAI never dispatched a webhook"
+    // and "the app received one it does not handle" look identical in the logs.
+    console.log(`Live webhook ${type} (data.type=${data.type || 'none'}, session=${data.session_id || data.call_id || 'none'})`);
+
     if (!HANDLED_EVENTS.includes(type)) {
       // The same pending call can also arrive as a Realtime webhook. Accepting
       // through both APIs loses the race, so we only answer the Live events.
       return Response.json({ ignored: type });
     }
 
-    const data = event.data || {};
     const sessionId = data.session_id;
     if (!sessionId) return Response.json({ error: 'Webhook carried no session_id' }, { status: 400 });
 
