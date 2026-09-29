@@ -80,6 +80,10 @@
       "type": "string",
       "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, the kitchen runs with an extra cook: order completion rate doubles, so quoted wait times shrink and busyness thresholds stretch. Auto-expires after the date passes."
     },
+    "open_all_day_date": {
+      "type": "string",
+      "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, ordering stays open around the clock for that one day \u2014 business hours are ignored (no 8 AM unlock, no closing or delivery cutoffs) on BOTH the website and Smashie's phone line. Use for overnight ordering tests. Auto-expires after the date passes; ordering_enabled and an active closure still take precedence."
+    },
     "site_notice": {
       "type": "object",
       "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden.",

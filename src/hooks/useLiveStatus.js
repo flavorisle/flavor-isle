@@ -21,6 +21,7 @@ export default function useLiveStatus() {
   const closure = useStoreClosure();
   const [data, setData] = useState(null);
   const [orderingEnabled, setOrderingEnabled] = useState(true);
+  const [openAllDayDate, setOpenAllDayDate] = useState('');
   const [now, setNow] = useState(() => chicagoNow());
 
   // Poll the live busyness backend every 60s.
@@ -44,11 +45,21 @@ export default function useLiveStatus() {
   useEffect(() => {
     let active = true;
     getMenuSetting().then((s) => {
-      if (active && typeof s?.ordering_enabled === 'boolean') setOrderingEnabled(s.ordering_enabled);
+      if (!active) return;
+      if (typeof s?.ordering_enabled === 'boolean') setOrderingEnabled(s.ordering_enabled);
+      // Date-scoped 24/7 ordering override (MenuSetting.open_all_day_date) —
+      // today only, so it expires on its own.
+      setOpenAllDayDate(s?.open_all_day_date || '');
     });
     const id = setInterval(() => setNow(chicagoNow()), 15000);
     return () => { active = false; clearInterval(id); };
   }, []);
+
+  // MenuSetting.open_all_day_date keeps ordering open around the clock for the
+  // rest of that store-local day — the bar reads open with no closing countdown
+  // instead of "Closed" once the normal closing time has passed.
+  const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  const openAllDay = !!openAllDayDate && openAllDayDate === todayKey;
 
   const todayHours = businessHours?.[now.dayKey] || {};
   const closeMins = (() => {
@@ -60,11 +71,14 @@ export default function useLiveStatus() {
     closeMins != null && !todayHours.closed ? closeMins - now.totalMinutes : null;
 
   const isClosed =
-    data?.busyness_level === 'Closed' ||
     closure.closed ||
-    todayHours.closed === true ||
-    (minutesUntilClose != null && minutesUntilClose <= 0);
+    (!openAllDay && (
+      data?.busyness_level === 'Closed' ||
+      todayHours.closed === true ||
+      (minutesUntilClose != null && minutesUntilClose <= 0)
+    ));
   const closingSoon =
+    !openAllDay &&
     !isClosed &&
     minutesUntilClose != null &&
     minutesUntilClose > 0 &&
@@ -89,7 +103,7 @@ export default function useLiveStatus() {
     activeCount: data?.activeCount ?? 0,
     orderingEnabled,
     minutesUntilClose,
-    closeTime: todayHours.close ? formatTime12(todayHours.close) : null,
+    closeTime: openAllDay || !todayHours.close ? null : formatTime12(todayHours.close),
     closureMessage: closure.message || data?.closure_message || '',
   };
 }

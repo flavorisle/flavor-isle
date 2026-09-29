@@ -66,8 +66,16 @@ export async function getStoreStatus(base44) {
       }
     }
 
-    // Business hours check (store-local time)
+    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date): when
+    // today's store-local date matches, online ordering counts as open around
+    // the clock — no 8 AM unlock and no closing time. A fixed date, so it
+    // expires on its own; an active closure above still wins.
     const now = todayChicago();
+    if (s.open_all_day_date && s.open_all_day_date === now.dateKey) {
+      return { open: true, message: '' };
+    }
+
+    // Business hours check (store-local time)
     const dayKey = DAY_KEYS[(now.weekday + 6) % 7];
     const dayHours = (s.business_hours || {})[dayKey] || {};
     if (dayHours.closed) return { open: false, message: 'closed today' };
@@ -113,9 +121,17 @@ export async function getPhysicalStoreStatus(base44) {
       }
     }
 
+    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date): when
+    // today's store-local date matches, the phone line counts as open around
+    // the clock so Smashie can take orders overnight. A fixed date, so it
+    // expires on its own; an active closure above still wins.
+    const now = todayChicago();
+    if (s.open_all_day_date && s.open_all_day_date === now.dateKey) {
+      return { open: true, message: '' };
+    }
+
     // Business hours check (store-local time) — physical doors open at the
     // configured open time, not the 8 AM online-ordering unlock.
-    const now = todayChicago();
     const dayKey = DAY_KEYS[(now.weekday + 6) % 7];
     const dayHours = (s.business_hours || {})[dayKey] || {};
     if (dayHours.closed) return { open: false, message: 'closed today' };

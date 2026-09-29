@@ -18,17 +18,6 @@ export function getCutoffStatus(setting) {
   // Admin can pause delivery entirely — it stays unavailable regardless of hours.
   const deliveryPaused = setting?.delivery_enabled === false;
 
-  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
-  // When active and today falls within the inclusive date range, every order
-  // type is cut off — same as a closed weekday.
-  const closure = setting?.closure;
-  if (closure?.active) {
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
-    const start = closure.start_date || todayStr;
-    const end = closure.end_date || start;
-    if (todayStr >= start && todayStr <= end) return allClosed;
-  }
-
   const allClosed = {
     delivery: true,
     pickup: true,
@@ -36,6 +25,26 @@ export function getCutoffStatus(setting) {
     deliveryCutoff,
     pickupCutoff,
   };
+
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
+
+  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
+  // When active and today falls within the inclusive date range, every order
+  // type is cut off — same as a closed weekday.
+  const closure = setting?.closure;
+  if (closure?.active) {
+    const start = closure.start_date || todayStr;
+    const end = closure.end_date || start;
+    if (todayStr >= start && todayStr <= end) return allClosed;
+  }
+
+  // Date-scoped 24/7 override (MenuSetting.open_all_day_date): when today
+  // matches, ordering stays available around the clock — no morning unlock and
+  // no wind-down cutoffs. Fixed date, so it expires on its own; the admin can
+  // still pause delivery, and a closure above still wins.
+  if (setting?.open_all_day_date === todayStr) {
+    return { delivery: deliveryPaused, pickup: false, dine_in: false, deliveryCutoff, pickupCutoff };
+  }
 
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
   const dayKey = DAY_KEYS[(now.getDay() + 6) % 7];
