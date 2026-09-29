@@ -23,7 +23,7 @@ const SMASHIE_TRAITS = [
 ];
 
 const FAQS = [
-  { q: "Can Smashie actually take my order?", a: "Yep! Text or call the restaurant number and Smashie will take your order, confirm it, and route it straight to the kitchen. He's legit." },
+  { q: "Can Smashie actually take my order?", a: "Yep! Text or call Smashie at (270) 563-7230 and he'll take your order, confirm it, and route it straight to the kitchen. He's legit." },
   { q: "What if I have allergies or dietary needs?", a: "Smashie knows the menu inside out. Ask him about ingredients, substitutions, or what's safe for your dietary needs and he'll give you the real answer." },
   { q: "Is Smashie a robot?", a: "He's AI — but he's built specifically for Flavor Isle. He knows our menu and our vibe. He's basically one of us at this point." },
   { q: "What's Smashie's favorite order?", a: "Double Cheeseburger, loaded fries, and a Chocolate Fudge Shake. Hot Fudge Cake for dessert, obviously. No cap." },
@@ -143,16 +143,16 @@ export default function MeetSmashie() {
               <div className="text-5xl mb-4">📱</div>
               <h3 className="font-heading text-white text-lg mb-2">Text Us</h3>
               <p className="text-teal-200 text-sm mb-3">Text your order to our number and Smashie takes it from there.</p>
-              <a href="sms:+12705634618" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
-                Text (270) 563-4618
+              <a href="sms:+12705637230" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
+                Text (270) 563-7230
               </a>
             </div>
             <div className="bg-white/10 border border-white/20 rounded-3xl p-7 text-center">
               <div className="text-5xl mb-4">📞</div>
               <h3 className="font-heading text-white text-lg mb-2">Call In</h3>
               <p className="text-teal-200 text-sm mb-3">Call and Smashie answers. He'll take your order over the phone like a pro.</p>
-              <a href="tel:+12705634618" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
-                Call (270) 563-4618
+              <a href="tel:+12705637230" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
+                Call (270) 563-7230
               </a>
             </div>
           </div>
