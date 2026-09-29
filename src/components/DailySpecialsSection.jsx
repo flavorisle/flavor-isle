@@ -48,7 +48,7 @@ export default function DailySpecialsSection() {
   };
 
   return (
-    <section className="py-16 px-4 sm:px-6 fall26-section" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+    <section className="pt-6 pb-16 px-4 sm:px-6 fall26-section" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-midnight-cherry text-white px-4 py-1.5 rounded-full text-xs font-heading uppercase tracking-widest mb-3">

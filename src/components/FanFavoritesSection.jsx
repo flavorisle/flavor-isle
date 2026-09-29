@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ArrowRight } from 'lucide-react';
-import MenuItemCard from './MenuItemCard';
+import FavoritePhotoCard from './FavoritePhotoCard';
 
 // Horizontal rail of the top 10 best-sellers (online + in-store).
 // Items are pre-stamped with is_fan_favorite + fan_favorite_rank by the
 // refreshFanFavorites backend function / workflow.
 export default function FanFavoritesSection({ items }) {
   const favorites = items
-    .filter((i) => i.is_fan_favorite && !i.is_hidden)
+    .filter((i) => i.is_fan_favorite === true && !i.is_hidden && i.image_url)
     .sort((a, b) => (a.fan_favorite_rank || 99) - (b.fan_favorite_rank || 99))
     .slice(0, 10);
 
@@ -35,7 +35,7 @@ export default function FanFavoritesSection({ items }) {
                 {item.fan_favorite_rank}
               </div>
             )}
-            <MenuItemCard item={item} />
+            <FavoritePhotoCard item={item} />
           </div>
         ))}
       </div>

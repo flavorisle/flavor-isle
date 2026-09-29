@@ -3,16 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
-import PopularTimesCard from '@/components/PopularTimesCard';
+import HeroStats from '@/components/HeroStats';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { FallStyles, FallSunburst, FallHeroLeaves, FallEyebrow } from '@/components/RetroFallTheme';
-
-const STATS = [
-  { num: '3.4M', label: 'BURGERS SERVED' },
-  { num: '1.8M', label: 'SHAKES SPUN & STILL SWIRLING' },
-  { num: '100%', label: 'FRESH, NEVER-FROZEN BEEF' },
-  { num: '0', label: 'SHORTCUTS. EVER.' },
-];
 
 // Fast, always-available hero photo so the hero paints with a real image
 // immediately instead of the brown gradient fallback. If the OneDrive media
@@ -88,30 +81,10 @@ export default function HeroSection() {
             </a>
           </div>
 
-          {/* Live busy graph */}
-          <div className="mt-10">
-            <PopularTimesCard embedded />
-          </div>
         </div>
       </div>
 
-      {/* Navy stats block */}
-      <div style={{ background: '#0B355A' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
-          <div className="grid grid-cols-2 gap-8 sm:gap-12">
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="font-heading text-5xl sm:text-6xl mb-2 leading-none" style={{ color: '#E3481C' }}>
-                  {s.num}
-                </div>
-                <div className="text-[11px] sm:text-sm uppercase tracking-widest text-white/80 font-body">
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <HeroStats />
     </section>
   );
 }

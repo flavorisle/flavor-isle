@@ -8,11 +8,7 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import CinematicHero from '@/components/cinematic/CinematicHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
-import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
-import HomeStats from '@/components/cinematic/HomeStats';
+import HeroSection from '@/components/HeroSection';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -33,7 +29,7 @@ import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import { FallDivider } from '@/components/RetroFallTheme';
-
+import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
 
 
 const SPECIALS_TICKER = [
@@ -67,9 +63,21 @@ export default function Home() {
   // Load visible menu items so the Fan Favorites rail can show the real
   // top-10 best-sellers stamped by the refreshFanFavorites backend function.
   useEffect(() => {
-    base44.entities.MenuItem.list()
-      .then((data) => setMenuItems((data || []).filter((i) => !i.is_hidden)))
-      .catch(() => {});
+    let active = true;
+    const load = async () => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const data = await base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10);
+          if (active) setMenuItems((data || []).filter((i) => !i.is_hidden));
+          return;
+        } catch (error) {
+          console.error(`Fan Favorites load failed (attempt ${attempt + 1}/2):`, error);
+          if (active) setMenuItems([]);
+        }
+      }
+    };
+    load();
+    return () => { active = false; };
   }, []);
 
   const handleOrder = (type) => {
@@ -94,13 +102,8 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero />
-      <PhotoChapter photo={islePhotos.dining} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
-      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
-      <HomeOrderOptions />
-      <HomeStats />
+      {/* ── HERO ── */}
+      <HeroSection />
 
       <ExpressPickupStrip />
 
@@ -134,8 +137,6 @@ export default function Home() {
 
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
-
-      <FallDivider />
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
@@ -198,6 +199,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── FRESH OFF THE FLATTOP (two food photos → /gallery) ── */}
+      <GalleryPhotoStrip />
 
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
