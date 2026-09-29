@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
+import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
@@ -188,9 +189,11 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      const storeStatus = await getPhysicalStoreStatus(base44);
+      const [storeStatus, busynessLevel] = await Promise.all([
+        getPhysicalStoreStatus(base44),
+        getBusynessLevel(base44),
+      ]);
       const closedToday = !storeStatus.open;
-      const busynessLevel = await getBusynessLevel(base44);
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
         ? "Heads up fam, we're slammed right now — expect up to an hour wait!"
         : busynessLevel === 'Busy'
@@ -226,20 +229,21 @@ export default async function(req) {
         transcript: [{ role: 'assistant', content: voiceGreeting, timestamp: startedAt }],
       });
 
-      // Resolve the caller's Square customer so Smashie knows their name + email
-      // without asking. Powers email-based payment link delivery.
-      try {
-        const squareCust = await lookupCustomerByPhone(base44, from);
-        if (squareCust) {
-          await base44.asServiceRole.entities.SmsConversation.update(callRecord.id, {
-            customer_name: squareCust.name,
-            square_customer_id: squareCust.id,
-            customer_email: squareCust.email,
-          });
+      // Caller lookup is useful for later turns, but must never hold up the greeting.
+      waitUntil((async () => {
+        try {
+          const squareCust = await lookupCustomerByPhone(base44, from);
+          if (squareCust) {
+            await base44.asServiceRole.entities.SmsConversation.update(callRecord.id, {
+              customer_name: squareCust.name,
+              square_customer_id: squareCust.id,
+              customer_email: squareCust.email,
+            });
+          }
+        } catch (e) {
+          console.error('Caller Square lookup failed:', e.message);
         }
-      } catch (e) {
-        console.error('Caller Square lookup failed:', e.message);
-      }
+      })());
 
       const twiml = new VoiceResponse();
       await speak(twiml, voiceGreeting);
@@ -292,7 +296,12 @@ export default async function(req) {
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
+    const [callRecords, liveBusyness, storeStatus, settings] = await Promise.all([
+      base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId }),
+      getBusynessLevel(base44),
+      getPhysicalStoreStatus(base44),
+      getSmashieSettings(base44),
+    ]);
 
     // Inject the caller's phone (and their resolved Square name/email) so
     // Smashie can take an order and text the payment link without asking.
@@ -302,10 +311,7 @@ export default async function(req) {
       : callerRecord.customer_name
         ? `Name: ${callerRecord.customer_name}. No email on file in Square. The link is texted to the number above, so the email is optional — ask for one only if the caller wants it emailed as well.`
         : `Caller not found in Square. Ask for the caller's name. The link is texted to the number above, so an email is optional.`}]`;
-    const liveBusyness = await getBusynessLevel(base44);
-    const storeStatus = await getPhysicalStoreStatus(base44);
     const closedToday = !storeStatus.open;
-    const settings = await getSmashieSettings(base44);
     const statusContext = closedToday
       ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's introduction. Do not introduce yourself again. When CLOSED: only share history if enabled, opening information if enabled, or save a message if enabled. Never discuss the menu, recommend food, take or build an order, give directions, offer a counter transfer, or quote busyness or wait times. Never say we are open.]\n${callerInfo}`
       : `[STORE STATUS: OPEN. Follow the admin ability switches. The caller already heard Smashie's introduction. Respond directly without repeating it.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}`;
@@ -372,19 +378,18 @@ export default async function(req) {
     spokenReply = spokenReply.replace(/\[\[PHONE_MESSAGE:\{[\s\S]*?\}\]\]/gi, '').trim() || (abilityEnabled(settings, 'messages') ? "I couldn't save that message. Please try again." : "I can't take a message right now.");
 
     // Persist a clean, admin-readable transcript independent of agent ownership.
-    const existing = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
-    if (existing[0]) {
+    if (callRecords[0]) {
       const timestamp = new Date().toISOString();
       const transcript = [
-        ...(existing[0].transcript || []),
+        ...(callRecords[0].transcript || []),
         { role: 'user', content: speechResult, timestamp },
         { role: 'assistant', content: spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim(), timestamp },
       ];
-      await base44.asServiceRole.entities.SmsConversation.update(existing[0].id, {
+      waitUntil(base44.asServiceRole.entities.SmsConversation.update(callRecords[0].id, {
         last_message_at: timestamp,
-        message_count: (existing[0].message_count || 0) + 2,
+        message_count: (callRecords[0].message_count || 0) + 2,
         transcript,
-      });
+      }).catch(e => console.error('Voice transcript update failed:', e.message)));
     }
 
     // Check if order was completed (Smashie says goodbye/confirmed)
