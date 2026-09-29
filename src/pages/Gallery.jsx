@@ -28,18 +28,6 @@ export default function Gallery() {
       <Navbar />
 
       <CinematicHero heading="A look around Flavor Isle." subtitle="Real food. Real folks. Real Smiths Grove." />
-      <section className="px-4 sm:px-6 pt-8 pb-6 max-w-6xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-heading tracking-widest uppercase text-white mb-3 bg-midnight-cherry">
-          <Camera size={13} /> Gallery
-        </div>
-        <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">
-          A LOOK AROUND FLAVOR ISLE
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground font-body mt-3 max-w-xl mx-auto">
-          Real food, real folks, real Smiths Grove. Every photo here was taken right at the Isle.
-        </p>
-      </section>
-
       {/* Category filter */}
       <div className="sticky top-[104px] z-30 bg-vanilla-malt/95 backdrop-blur py-3">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto scrollbar-hide">

@@ -248,6 +248,7 @@ export default function I65Exit38() {
         <Link to="/menu" className="btn-cherry chrome-hover px-10 py-4 text-base font-heading inline-flex items-center gap-2 mt-6">
           Order Online <ArrowRight size={18} />
         </Link>
+        <a href="tel:+12705634618" className="btn-mint chrome-hover px-8 py-4 text-base font-heading inline-flex items-center gap-2 mt-6 ml-3"><Phone size={18} /> Call Us</a>
         <div className="mt-8 flex flex-wrap gap-3 justify-center text-sm">
           <Link to="/mammoth-cave-dining" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Mammoth Cave Dining</Link>
           <span className="text-muted-foreground">·</span>
