@@ -8,6 +8,7 @@ import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
 import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -101,6 +102,9 @@ export default async function(req) {
     const from = params.get('From') || '';
     const speechResult = params.get('SpeechResult') || '';
     const url = new URL(req.url);
+    const greeting = fastGreetingResponse(url, params);
+    if (greeting) return greeting;
+    const greetingStarted = url.searchParams.get('greetingStarted') === '1' || params.get('greetingStarted') === '1';
     const isCallback = url.searchParams.get('callback') === '1' || params.get('callback') === '1';
     const isTransferCallback = url.searchParams.get('transfer') === '1' || params.get('transfer') === '1';
     const buildCallbackUrl = (caller, conversationId, turn) => {
@@ -253,8 +257,13 @@ export default async function(req) {
         language: 'en-US',
         timeout: 8,
       });
+      // The fixed hello has already played while this request prepared the call.
+      // Keep the full greeting in the transcript, without saying his name twice.
+      const remainingGreeting = greetingStarted && voiceGreeting.startsWith(SMASHIE_HELLO)
+        ? voiceGreeting.slice(SMASHIE_HELLO.length).trim()
+        : voiceGreeting;
       // Play inside Gather so speaking over Smashie interrupts playback and is heard.
-      await speak(greetingGather, voiceGreeting);
+      await speak(greetingGather, remainingGreeting);
       await speak(twiml, "My bad fam, I didn't catch that. Run it back when you're ready!");
       twiml.hangup();
 
