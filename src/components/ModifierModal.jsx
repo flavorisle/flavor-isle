@@ -15,6 +15,8 @@ import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import ClassicDrinkIceSize from './ClassicDrinkIceSize';
+import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   const { menuSetting } = useCart();
@@ -41,6 +43,17 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
   const [selections, setSelections] = useState(initSelections);
   const [nestedSelections, setNestedSelections] = useState({});
+  const iceContext = getIceContext(groups);
+  const soda = iceContext && selections[iceContext.sodaGroup.name];
+  const iceLevel = iceLevelFor(soda, nestedSelections);
+  const selectIceSize = (mod, level) => {
+    setSelections(prev => ({ ...prev, [iceContext.sizeGroup.name]: mod }));
+    const chosenSoda = soda || iceContext.sodaGroup.modifiers.find(m => !m.sold_out);
+    if (chosenSoda && (soda || level !== 'regular') && iceOption(chosenSoda, level)) {
+      if (!soda) setSelections(prev => ({ ...prev, [iceContext.sodaGroup.name]: chosenSoda }));
+      setNestedSelections(prev => withIceSelection(prev, chosenSoda, level));
+    }
+  };
 
   // Milkshakes only: the customer can flag that THIS shake has an allergy and
   // say what it is. The note rides on the shake's own cart line so the kitchen
@@ -68,6 +81,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   };
 
   const toggleSingle = (groupName, mod) => {
+    if (iceContext && groupName === iceContext.sodaGroup.name && soda?.id !== mod.id) {
+      setNestedSelections(prev => withIceSelection(prev, mod, iceLevelFor(soda, prev)));
+    }
     setSelections(prev => ({
       ...prev,
       // Size is required — tapping the selected size keeps it instead of clearing it.
@@ -246,6 +262,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                       ? (selections[group.name] || []).some(m => m.id === mod.id)
                       : selections[group.name]?.id === mod.id;
 
+                    if (iceContext && group.name === iceContext.sizeGroup.name) {
+                      return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={selectIceSize} />;
+                    }
+
                     if (!mod.sold_out && getPreferenceList(mod)) {
                       return (
                         <div key={mod.id} className="py-1">
@@ -322,6 +342,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                     key={mod.id}
                     parentMod={mod}
                     nestedSelections={nestedSelections[mod.id] || {}}
+                    hiddenListId={iceContext && group.name === iceContext.sodaGroup.name ? ICE_LIST_ID : undefined}
                     onChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
                   />
                 ))}

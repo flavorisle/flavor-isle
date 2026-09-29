@@ -18,7 +18,7 @@ import { Check } from 'lucide-react';
 //   parentMod         — the selected modifier object (has child_modifier_lists)
 //   nestedSelections  — { [childListName]: childMod | [childMod, ...] }
 //   onChange           — (newNestedSelections) => void
-export default function NestedModifierLists({ parentMod, nestedSelections, onChange }) {
+export default function NestedModifierLists({ parentMod, nestedSelections, onChange, hiddenListId }) {
   const childLists = parentMod?.child_modifier_lists;
   if (!childLists || childLists.length === 0) return null;
 
@@ -43,7 +43,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
 
   return (
     <div className="mt-3 ml-3 pl-3 border-l-2 border-midnight-cherry/20 space-y-4">
-      {childLists.filter(list => !isPreferenceList(list)).map(list => (
+      {childLists.filter(list => !isPreferenceList(list) && list.id !== hiddenListId).map(list => (
         <div key={list.name} className="space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{list.name}</h4>

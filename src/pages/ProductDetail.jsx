@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus, Zap, Star, Clock, Heart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
@@ -16,6 +16,7 @@ import ItemBuildSummary from '@/components/ItemBuildSummary';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import { getIceContext } from '@/components/classicDrinkIce';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -29,7 +30,8 @@ const PLACEHOLDER_EMOJI = {
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
+  const location = useLocation();
+  const { addItem, removeItem, cartItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { user } = useAuth();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,7 @@ export default function ProductDetail() {
   // state, so chips, list, price, and cart all stay in agreement.
   const toggleChip = (groupName, mod) => panelRef.current?.toggleModifier(groupName, mod);
   const setChipNested = (modId, nested) => panelRef.current?.setNested(modId, nested);
+  const setChipIceSize = (mod, level) => panelRef.current?.selectIceSize(mod, level);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +67,7 @@ export default function ProductDetail() {
           // Keep the address bar on the item's name URL — older id-based links
           // (cart edit, previously shared ids) resolve to the same page.
           const canonical = productSlug(data);
-          if (canonical && canonical !== slug) navigate(`/product/${canonical}`, { replace: true });
+          if (canonical && canonical !== slug) navigate(`/product/${canonical}`, { replace: true, state: location.state });
         }
       })
       .catch(() => { if (!cancelled) setNotFound(true); })
@@ -84,6 +87,10 @@ export default function ProductDetail() {
     return () => { cancelled = true; };
   }, [item]);
 
+  const editingLine = item && getIceContext(item.modifiers || [])
+    ? cartItems.find(line => line.id === location.state?.editCartLineId && (line.productId || line.id.split('__')[0]) === item.id)
+    : null;
+  useEffect(() => { if (editingLine) setQuantity(editingLine.quantity); }, [editingLine?.id]);
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
   const soldOut = item?.is_available === false;
@@ -136,7 +143,9 @@ export default function ProductDetail() {
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
     };
+    if (editingLine) removeItem(editingLine.id);
     for (let i = 0; i < quantity; i++) addItem(baseItem);
+    if (editingLine) navigate(location.pathname, { replace: true, state: null });
     flashAdded();
   };
 
@@ -343,6 +352,7 @@ export default function ProductDetail() {
                 nestedSelections={panelState.nestedSelections}
                 onToggle={toggleChip}
                 onNestedChange={setChipNested}
+                onIceSizeChange={setChipIceSize}
               />
 
               {/* Quantity selector */}
@@ -397,6 +407,7 @@ export default function ProductDetail() {
                   item={item}
                   onConfirm={handlePanelConfirm}
                   onStateChange={setPanelState}
+                  initialCartItem={editingLine}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

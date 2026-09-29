@@ -7,6 +7,7 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { getIceContext, iceLevelFor, iceOption, withIceSelection, restoreDrinkSelections } from './classicDrinkIce';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
 // modifiers, Deluxe presets, and Happy Hour pricing — rendered inline (no
@@ -14,7 +15,7 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 // (see ComboPicker), and the Add to Bag CTA.
 // The parent drives confirm() and reads live state via onStateChange.
 const ProductModifierPanel = forwardRef(function ProductModifierPanel(
-  { item, onConfirm, onStateChange },
+  { item, onConfirm, onStateChange, initialCartItem },
   ref,
 ) {
   const { menuSetting } = useCart();
@@ -38,8 +39,18 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     }, {});
   };
 
-  const [selections, setSelections] = useState(initSelections);
-  const [nestedSelections, setNestedSelections] = useState({});
+  const [selections, setSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).selections : initSelections());
+  const [nestedSelections, setNestedSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).nested : {});
+  const iceContext = getIceContext(groups);
+  const soda = iceContext && selections[iceContext.sodaGroup.name];
+  const selectIceSize = (mod, level) => {
+    setSelections(prev => ({ ...prev, [iceContext.sizeGroup.name]: mod }));
+    const chosenSoda = soda || iceContext.sodaGroup.modifiers.find(m => !m.sold_out);
+    if (chosenSoda && (soda || level !== 'regular') && iceOption(chosenSoda, level)) {
+      if (!soda) setSelections(prev => ({ ...prev, [iceContext.sodaGroup.name]: chosenSoda }));
+      setNestedSelections(prev => withIceSelection(prev, chosenSoda, level));
+    }
+  };
 
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
@@ -60,6 +71,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   };
 
   const toggleSingle = (groupName, mod) => {
+    if (iceContext && groupName === iceContext.sodaGroup.name && soda?.id !== mod.id) {
+      setNestedSelections(prev => withIceSelection(prev, mod, iceLevelFor(soda, prev)));
+    }
     setSelections(prev => ({
       ...prev,
       [groupName]: prev[groupName]?.id === mod.id ? (groupName === 'Size' ? mod : null) : mod,
@@ -186,6 +200,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       else toggleSingle(groupName, mod);
     },
     setNested: (modId, nested) => setNestedSelections((prev) => ({ ...prev, [modId]: nested })),
+    selectIceSize,
   }));
 
   return (

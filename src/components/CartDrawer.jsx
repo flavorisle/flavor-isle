@@ -7,6 +7,7 @@ import AdBannerStrip from './AdBannerStrip';
 import CartDessertUpsell from './CartDessertUpsell';
 import CartFallingLeaves from './CartFallingLeaves';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { getIceContext } from '@/components/classicDrinkIce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
@@ -189,7 +190,7 @@ export default function CartDrawer() {
                         const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
                         if (pid && !pid.startsWith('combo-')) {
                           setIsCartOpen(false);
-                          navigate(`/product/${pid}`);
+                          navigate(`/product/${pid}`, getIceContext(item.modifiers || []) ? { state: { editCartLineId: item.id } } : undefined);
                         }
                       }}
                       className="ml-auto p-1 text-muted-foreground hover:text-patina-mint transition-colors"

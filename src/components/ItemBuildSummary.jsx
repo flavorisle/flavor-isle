@@ -6,6 +6,8 @@ import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/Preferen
 import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
+import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
+import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 
 // The product page's "What's on it" box: the item description followed by
 // selectable chips for every option the item offers.
@@ -41,6 +43,7 @@ export default function ItemBuildSummary({
   nestedSelections = {},
   onToggle,
   onNestedChange,
+  onIceSizeChange,
 }) {
   const groups = applyModifierOverrides(item?.modifiers, getModifierOverrides(menuSetting))
     .map((group) => ({
@@ -53,6 +56,9 @@ export default function ItemBuildSummary({
   if (!hasGroups && !description) return null;
 
   const selected = new Set(selectedIds);
+  const iceContext = getIceContext(groups);
+  const soda = iceContext?.sodaGroup.modifiers.find(mod => selected.has(mod.id));
+  const iceLevel = iceLevelFor(soda, nestedSelections);
 
   // Only explain the − / + zones on items that actually show one of those
   // pills — a plain topping list has no such control.
@@ -104,6 +110,9 @@ export default function ItemBuildSummary({
                       // Sauces and toppings carry Lite / Regular / Extra zones —
                       // reuse the same pill the customization list uses so those
                       // options stay available right on the chip.
+                      if (iceContext && group.name === iceContext.sizeGroup.name) {
+                        return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={onIceSizeChange} />;
+                      }
                       if (getPreferenceList(mod)) {
                         return (
                           <PreferencePillButton
@@ -169,6 +178,7 @@ export default function ItemBuildSummary({
                         key={`nested-${mod.id}`}
                         parentMod={mod}
                         nestedSelections={nestedSelections[mod.id] || {}}
+                        hiddenListId={iceContext && group.name === iceContext.sodaGroup.name ? ICE_LIST_ID : undefined}
                         onChange={(nested) => onNestedChange?.(mod.id, nested)}
                       />
                     ))}
