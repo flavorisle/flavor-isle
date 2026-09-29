@@ -9,6 +9,7 @@ import { todayChicago } from '../../shared/busynessTime.ts';
 import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
+import { greetingAudio } from '../../shared/smashieGreetingAudio.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -120,7 +121,12 @@ export default async function(req) {
     // instead of waiting here for generation plus a second file upload.
     const speak = async (twiml, text) => {
       const cleanText = forTTS(text);
-      const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
+      const recorded = greetingAudio(cleanText);
+      if (recorded) {
+        twiml.play({}, recorded);
+        return;
+      }
+      const audioUrl = new URL('https://taste-isle-express.base44.app/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
       twiml.play({}, audioUrl.toString());
     };
@@ -193,9 +199,19 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      const [storeStatus, busynessLevel] = await Promise.all([
+      const [storeStatus, busynessLevel, convo] = await Promise.all([
         getPhysicalStoreStatus(base44),
         getBusynessLevel(base44),
+        base44.asServiceRole.agents.createConversation({
+          agent_name: 'smashie',
+          metadata: {
+            name: `Voice Call - ${from}`,
+            description: `Voice call from ${from}`,
+            channel: 'voice',
+            phone: from,
+            call_sid: callSid,
+          },
+        }),
       ]);
       const closedToday = !storeStatus.open;
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
@@ -211,18 +227,8 @@ export default async function(req) {
       const voiceGreeting = closedToday
         ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} ${abilityEnabled(settings, 'hours') ? 'I can tell you when we open next. ' : ''}${abilityEnabled(settings, 'messages') ? 'I can take a message for the crew. ' : ''}What do you need today?`
         : `Hey fam, Smashie here at Flavor Isle! ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
-      const convo = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'smashie',
-        metadata: {
-          name: `Voice Call - ${from}`,
-          description: `Voice call from ${from}`,
-          channel: 'voice',
-          phone: from,
-          call_sid: callSid,
-        },
-      });
       const conversationId = convo.id;
-      const callRecord = await base44.asServiceRole.entities.SmsConversation.create({
+      const callRecordPromise = base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,
         conversation_id: conversationId,
         call_sid: callSid,
@@ -236,6 +242,7 @@ export default async function(req) {
       // Caller lookup is useful for later turns, but must never hold up the greeting.
       waitUntil((async () => {
         try {
+          const callRecord = await callRecordPromise;
           const squareCust = await lookupCustomerByPhone(base44, from);
           if (squareCust) {
             await base44.asServiceRole.entities.SmsConversation.update(callRecord.id, {
@@ -262,8 +269,14 @@ export default async function(req) {
       const remainingGreeting = greetingStarted && voiceGreeting.startsWith(SMASHIE_HELLO)
         ? voiceGreeting.slice(SMASHIE_HELLO.length).trim()
         : voiceGreeting;
-      // Play inside Gather so speaking over Smashie interrupts playback and is heard.
-      await speak(greetingGather, remainingGreeting);
+      // Keep live wait information, but play each fixed greeting segment directly.
+      // Changing the admin intro or ability switches still uses its exact live text.
+      if (greetingStarted && !closedToday) {
+        if (abilityEnabled(settings, 'wait')) await speak(greetingGather, busynessLine);
+        await speak(greetingGather, phoneIntro(settings));
+      } else {
+        await speak(greetingGather, remainingGreeting);
+      }
       await speak(twiml, "My bad fam, I didn't catch that. Run it back when you're ready!");
       twiml.hangup();
 

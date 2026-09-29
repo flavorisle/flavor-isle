@@ -35,8 +35,8 @@ export default async function (req: Request): Promise<Response> {
       }),
     });
     if (res.ok) {
-      const bytes = await res.arrayBuffer();
-      return new Response(bytes, {
+      // Forward the stream immediately instead of buffering the entire speech.
+      return new Response(res.body, {
         headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' },
       });
     }
@@ -57,8 +57,7 @@ export default async function (req: Request): Promise<Response> {
     if (gs?.url) {
       const audioRes = await fetch(gs.url);
       if (audioRes.ok) {
-        const bytes = await audioRes.arrayBuffer();
-        return new Response(bytes, {
+        return new Response(audioRes.body, {
           headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' },
         });
       }
