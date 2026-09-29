@@ -46,7 +46,7 @@ export default function Gallery() {
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
         title="Gallery — Flavor Isle Photos | Smiths Grove, KY"
-        description="Photos of Flavor Isle's hand-patted burgers, thick milkshakes, and roadside diner in Smiths Grove, KY. See what's cooking off I-65 Exit 38."
+        description="Photos of Flavor Isle's hand-patted burgers, thick milkshakes, and burgers and shakes restaurant in Smiths Grove, KY. See what's cooking off I-65 Exit 38."
       />
       <Navbar />
 

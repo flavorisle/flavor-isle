@@ -1,6 +1,6 @@
 // Real Flavor Isle photos grouped for the /gallery page.
 import { issue23Photos } from '@/lib/issue23Photos';
-export const GALLERY_CATEGORIES = ['All', 'Food', 'The Diner', 'Community & Events', 'Our People'];
+export const GALLERY_CATEGORIES = ['All', 'Food', 'Our Restaurant', 'Community & Events', 'Our People'];
 
 const LEGACY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png', alt: 'Double cheeseburger with lettuce, tomato and onion', category: 'Food', caption: 'The Double, stacked right' },
@@ -42,10 +42,10 @@ const LEGACY_PHOTOS = [
 export const GALLERY_PHOTOS = [
   ...LEGACY_PHOTOS.map((photo) => ({
     ...photo,
-    category: photo.caption === 'North Warren Community Walk' ? 'Community & Events' : photo.category === 'The Place' ? 'The Diner' : photo.category === 'The People' ? 'Our People' : photo.category,
+    category: photo.caption === 'North Warren Community Walk' ? 'Community & Events' : photo.category === 'The Place' ? 'Our Restaurant' : photo.category === 'The People' ? 'Our People' : photo.category,
   })),
-  { url: issue23Photos.hero, alt: 'Flavor Isle storefront lit up at night', caption: 'Flavor Isle at night', category: 'The Diner' },
-  { url: issue23Photos.seasonal, alt: 'Seasonal Flavor Isle storefront', caption: 'Seasonal storefront', category: 'The Diner' },
+  { url: issue23Photos.hero, alt: 'Flavor Isle storefront lit up at night', caption: 'Flavor Isle at night', category: 'Our Restaurant' },
+  { url: issue23Photos.seasonal, alt: 'Seasonal Flavor Isle storefront', caption: 'Seasonal storefront', category: 'Our Restaurant' },
   { url: issue23Photos.ecto, alt: 'Ghostbusters Ecto-1 outside Flavor Isle', caption: 'Ecto-1 visits the Isle', category: 'Community & Events' },
   { url: issue23Photos.corvette, alt: 'Corvettes at a Flavor Isle car show', caption: 'Corvette show day', category: 'Community & Events' },
   { url: issue23Photos.anniversary, alt: 'Crowd celebrating Flavor Isle’s 50th anniversary', caption: '50th anniversary celebration', category: 'Community & Events' },
@@ -56,7 +56,7 @@ export const GALLERY_PHOTOS = [
   { url: issue23Photos.diner1240, alt: 'Double burger with melted cheese and grilled onions', caption: 'Stacked and smothered', category: 'Food' },
   { url: issue23Photos.diner1241, alt: 'Golden breaded fried pickles on a tray', caption: 'Fried pickles, hot out of the basket', category: 'Food' },
   { url: issue23Photos.diner1225, alt: 'Colonel Sanders lookalike outside the Flavor Isle awning', caption: 'The Colonel stops by the Isle', category: 'Our People' },
-  { url: issue23Photos.diner5526, alt: 'Hanging Flavor Isle sign with palm tree and Coke logo', caption: 'The hanging Flavor Isle sign', category: 'The Diner' },
+  { url: issue23Photos.diner5526, alt: 'Hanging Flavor Isle sign with palm tree and Coke logo', caption: 'The hanging Flavor Isle sign', category: 'Our Restaurant' },
   { url: issue23Photos.diner0099, alt: 'Cheeseburger with tater tots', caption: 'Cheeseburger & tots', category: 'Food' },
   { url: issue23Photos.diner5507, alt: 'Fried chicken sandwich with waffle fries', caption: 'Chicken sandwich, made fresh', category: 'Food' },
   { url: issue23Photos.diner5250, alt: 'Close-up of a fried chicken sandwich', caption: 'Chicken sandwich, up close', category: 'Food' },

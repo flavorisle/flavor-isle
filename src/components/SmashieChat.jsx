@@ -106,7 +106,7 @@ export default function SmashieChat() {
             <img src={SMASHIE_HEAD} alt="Smashie" className="w-10 h-10 object-cover rounded-full flex-shrink-0" />
             <div className="flex-1">
               <p className="font-heading text-white text-base leading-none">Smashie AI</p>
-              <p className="text-red-200 text-xs mt-0.5">Flavor Isle's Diner Assistant</p>
+              <p className="text-red-200 text-xs mt-0.5">Flavor Isle's Burgers &amp; Shakes Assistant</p>
             </div>
             <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors">
               <X size={20} />

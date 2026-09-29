@@ -7,7 +7,7 @@ import { Mountain, Car, Clock, Dog, ArrowRight } from 'lucide-react';
 const TIPS = [
   { icon: Mountain, text: 'Mammoth Cave National Park is about 30 minutes away — book cave tours ahead at recreation.gov.' },
   { icon: Car, text: 'The National Corvette Museum is about 15 minutes up I-65 at Exit 28; Corvette plant tours need reservations.' },
-  { icon: Clock, text: "We're a small-town diner, so check our hours before you swing by." },
+  { icon: Clock, text: "We're a small-town burgers and shakes restaurant, so check our hours before you swing by." },
   { icon: Dog, text: 'Traveling with a four-legged copilot? Ask for curbside pickup and we\'ll bring it out.' },
 ];
 

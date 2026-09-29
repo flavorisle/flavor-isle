@@ -31,7 +31,6 @@ export default function About() {
       <AboutStory />
       <PhotoChapter photo={islePhotos.dining} heading="The neighborhood’s table." />
       <PhotoChapter photo={islePhotos.awards} heading="A roadside stand that became Smiths Grove’s best." />
-      <PhotoChapter photo={islePhotos.sketch} heading="Every frame tells a story." text="The building, remembered in pencil and print." />
       <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into." />
       <AboutValues />
       <AboutSmashie />

@@ -27,7 +27,7 @@ export default function CommunityNews() {
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
         title="Community News — Flavor Isle | Smiths Grove, KY"
-        description="Latest updates from Flavor Isle: community events, diner news, and local partnerships in Smiths Grove, KY. See what's happening at the Isle."
+        description="Latest updates from Flavor Isle: community events, restaurant news, and local partnerships in Smiths Grove, KY. See what's happening at the Isle."
       />
       <Navbar />
 
@@ -39,7 +39,7 @@ export default function CommunityNews() {
           WHAT'S HAPPENING AT THE ISLE
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground font-body mt-3 max-w-xl mx-auto">
-          Community events, diner updates, and local partnerships — straight from Smiths Grove.
+          Community events, restaurant updates, and local partnerships — straight from Smiths Grove.
         </p>
         {isAdmin && (
           <div className="mt-5">
@@ -56,7 +56,7 @@ export default function CommunityNews() {
         ) : posts.length === 0 ? (
           <div className="card-diner p-8 text-center">
             <p className="font-heading text-lg text-obsidian-roast mb-1">Nothing posted yet</p>
-            <p className="text-sm text-muted-foreground font-body">Check back soon — news from the diner lands here first.</p>
+            <p className="text-sm text-muted-foreground font-body">Check back soon — news from Flavor Isle lands here first.</p>
           </div>
         ) : (
           posts.map((post) => <NewsPostCard key={post.id} post={post} />)

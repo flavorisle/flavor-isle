@@ -37,7 +37,7 @@ export default function CorvetteCarClubs() {
             <Gauge size={16} /> CORVETTE MUSEUM & CAR CLUBS
           </div>
           <h1 className="font-heading text-4xl sm:text-6xl leading-tight">
-            The Classic Diner Stop for Car Clubs
+            The Burgers &amp; Shakes Stop for Car Clubs
           </h1>
           <p className="font-body text-lg sm:text-xl text-white/90 mt-4">
             Nostalgic roadside burgers & shakes · Minutes from the Corvette Museum

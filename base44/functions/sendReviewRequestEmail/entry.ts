@@ -88,7 +88,7 @@ export default async function (req: Request) {
 
     const bodyHtml = `
       <p style="color:#666;margin:0 0 10px;font-size:16px;">Thanks for eating with us, ${firstName}!</p>
-      <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Flavor Isle has been family-run since 1964, and word of mouth is how a small-town diner survives. If we made your day, would you leave us a quick Google review? Takes about 30 seconds — and honestly, it means the world to us.</p>
+      <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Flavor Isle has been a family-run burgers and shakes restaurant since 1964, and word of mouth keeps a small-town favorite going. If we made your day, would you leave us a quick Google review? Takes about 30 seconds — and honestly, it means the world to us.</p>
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${reviewLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Leave a Google review →</a>
       </div>
