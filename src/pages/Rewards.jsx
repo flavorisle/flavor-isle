@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import BonusStars from '@/components/rewards/BonusStars';
 
 // Subtitle for a reward tier card — "Free item · item reward" for item-scoped
 // rewards, "{pct}% off · order reward" for percentage order rewards.
@@ -147,6 +148,22 @@ export default function Rewards() {
       a: 'Just provide your phone number at checkout (in-store or online). Stars are added automatically to your Star Rewards balance on every eligible purchase — no app or punch card needed.',
     },
     {
+      q: 'Do I get anything extra for ordering online?',
+      a: 'Yes. Online orders earn a 10% Star bonus, your second online order scores 50 bonus Stars, and 3 online orders within 30 days earn a 50-Star streak bonus. Order at flavor-isle.com.',
+    },
+    {
+      q: 'Is there a birthday bonus?',
+      a: 'Yes. 100 bonus Stars land on your account on your birthday. Add your birthday (month and day) in your account profile so we know when it is.',
+    },
+    {
+      q: "I haven't ordered in a while. Any reason to come back?",
+      a: 'Yes. After 30 days away, your next online order lands 100 welcome-back bonus Stars in your account.',
+    },
+    {
+      q: 'Can I use more than one reward on an order?',
+      a: "No. One reward per order, and rewards can't be stacked with other offers or discounts.",
+    },
+    {
       q: 'Do my stars expire?',
       a: 'Stars and lifetime stars follow the program rules set by Flavor Isle. We may change expiration policies at any time, so check the terms below for the latest details.',
     },
@@ -214,13 +231,12 @@ export default function Rewards() {
           </div>
           <div>
             <p className="font-heading text-obsidian-roast mb-1">Earning Stars</p>
-            <p>Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice.</p>
-            <p className="mt-1">Stars have no cash value, are non-transferable, and may expire or change according to program rules.</p>
+            <p>Stars are earned at a rate of 1 Star per $1 on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. Orders placed directly on flavor-isle.com earn an additional 10% Star bonus. Flavor Isle may also award one-time bonus Stars under promotional rules, such as a second-order bonus, birthday bonus, welcome-back bonus, or order streak bonus; each bonus is granted once under its stated rules. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.</p>
           </div>
           <div>
             <p className="font-heading text-obsidian-roast mb-1">Redeeming Stars</p>
             <p>Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice.</p>
-            <p className="mt-1">Rewards cannot be transferred, combined across accounts, or exchanged for cash.</p>
+            <p className="mt-1">Rewards cannot be transferred, combined across accounts, or exchanged for cash. Only one reward may be applied per order, and rewards cannot be combined with other offers, promotions, or discounts.</p>
           </div>
           <div>
             <p className="font-heading text-obsidian-roast mb-1">Account &amp; Phone Number Responsibility</p>
@@ -295,6 +311,7 @@ export default function Rewards() {
           </div>
 
           <HowItWorks />
+          <BonusStars />
           <RewardsList />
 
           <RewardsFAQ />

@@ -40,7 +40,7 @@ const SECTIONS = [
       },
       {
         heading: 'Loyalty & Rewards',
-        text: 'Your Star Rewards loyalty account is managed through Square, our point-of-sale system. When you join, Square stores your loyalty membership, points, and reward history; we use your phone number to look up your account so your rewards stay available in-store and online. Flavor Isle does not keep a separate copy of your loyalty points or balances.',
+        text: 'Your Star Rewards loyalty account is managed through Square, our point-of-sale system. When you join, Square stores your loyalty membership, points, and reward history; we use your phone number to look up your account so your rewards stay available in-store and online. If you add your birthday (month and day) to your account profile, we use it to send your birthday bonus and birthday email. Flavor Isle does not keep a separate copy of your loyalty points or balances.',
       },
       {
         heading: 'Marketing & Promotions',
