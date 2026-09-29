@@ -37,26 +37,18 @@ const LEGACY_PHOTOS = [
   { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/f5aaaf821_ee6a6bf73_IMG_5250_Original.jpg', alt: 'Close-up of a fried chicken sandwich', category: 'Food', caption: 'Chicken sandwich, up close' },
 ];
 
-// Keep the previously published gallery photos except images assigned by issue #23
-// to a different single placement. New issue photos have one category each.
-const elsewhere = new Set([
-  'Fried pickles, hot out of the basket', 'Stacked and smothered',
-  'Blue walls and the community board', 'The award wall', 'A sketch of the Isle',
-  '50th anniversary, May 2014', 'Celebrating 50 years with Joyce',
-  'The Colonel stops by the Isle', 'Chicken sandwich, made fresh',
-  'Cheeseburger & tots', 'The hanging Flavor Isle sign', 'Chicken sandwich, up close',
-]);
+// The gallery is a collection: photos featured elsewhere can also appear here.
+// Preserve every previously published photo and group them under the current tabs.
 export const GALLERY_PHOTOS = [
-  ...LEGACY_PHOTOS.filter((photo) => !elsewhere.has(photo.caption)).map((photo) => ({
+  ...LEGACY_PHOTOS.map((photo) => ({
     ...photo,
     category: photo.caption === 'North Warren Community Walk' ? 'Community & Events' : photo.category === 'The Place' ? 'The Diner' : photo.category === 'The People' ? 'Our People' : photo.category,
   })),
-  { url: issue23Photos.food1045, alt: 'IMG 1045 at Flavor Isle', caption: 'Flavor Isle · IMG 1045', category: 'Food' },
-  { url: issue23Photos.food1046, alt: 'IMG 1046 at Flavor Isle', caption: 'Flavor Isle · IMG 1046', category: 'Food' },
-  ...[
-    [issue23Photos.diner1240, 'IMG 1240'], [issue23Photos.diner1241, 'IMG 1241'],
-    [issue23Photos.diner1225, 'IMG 1225'], [issue23Photos.diner5526, 'IMG 5526'],
-    [issue23Photos.diner0099, 'IMG 0099'], [issue23Photos.diner5507, 'IMG 5507'],
-    [issue23Photos.diner5250, 'IMG 5250'], [issue23Photos.seasonal, 'Seasonal storefront'],
-  ].map(([url, caption]) => ({ url, alt: caption + ' at Flavor Isle', caption, category: 'The Diner' })),
+  { url: issue23Photos.hero, alt: 'Flavor Isle storefront lit up at night', caption: 'Flavor Isle at night', category: 'The Diner' },
+  { url: issue23Photos.seasonal, alt: 'Seasonal Flavor Isle storefront', caption: 'Seasonal storefront', category: 'The Diner' },
+  { url: issue23Photos.ecto, alt: 'Ghostbusters Ecto-1 outside Flavor Isle', caption: 'Ecto-1 visits the Isle', category: 'Community & Events' },
+  { url: issue23Photos.corvette, alt: 'Corvettes at a Flavor Isle car show', caption: 'Corvette show day', category: 'Community & Events' },
+  { url: issue23Photos.anniversary, alt: 'Crowd celebrating Flavor Isle’s 50th anniversary', caption: '50th anniversary celebration', category: 'Community & Events' },
+  { url: issue23Photos.parking, alt: 'Parking map for Flavor Isle at I-65 Exit 38', caption: 'Where to park when you visit', category: 'Community & Events' },
+  { url: issue23Photos.flattop, alt: 'Food cooking on the Flavor Isle flattop', caption: 'Fresh off the flattop', category: 'Food' },
 ];
