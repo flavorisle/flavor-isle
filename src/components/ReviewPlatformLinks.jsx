@@ -4,6 +4,7 @@
 // Google review link is exported and reused by the page's own CTAs.
 import React from 'react';
 import { Star, Facebook, Instagram, ExternalLink } from 'lucide-react';
+import ReviewNextSteps from '@/components/reviews/ReviewNextSteps';
 
 export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
 
@@ -65,11 +66,11 @@ export const REVIEW_PLATFORMS = [
 
 export default function ReviewPlatformLinks() {
   return (
-    <section className="px-4 sm:px-6 py-14">
+    <section className="bg-obsidian-roast px-4 sm:px-6 py-14">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="font-heading text-3xl text-obsidian-roast mb-2">Review us on your favorite app</h2>
-          <p className="text-muted-foreground">
+          <h2 className="font-heading text-3xl sm:text-4xl text-white mb-2">Tried us lately? Review us on your favorite app.</h2>
+          <p className="text-gray-300">
             One tap takes you straight to our page. Your review helps the next traveler find the Isle.
           </p>
         </div>
@@ -96,6 +97,7 @@ export default function ReviewPlatformLinks() {
             </a>
           ))}
         </div>
+        <ReviewNextSteps />
       </div>
     </section>
   );
