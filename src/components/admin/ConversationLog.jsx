@@ -41,6 +41,14 @@ export default function ConversationLog({ channel }) {
       // Existing records created before the `channel` field default to "sms".
       const filtered = (all || []).filter(c => (c.channel || 'sms') === channel);
       setConversations(filtered);
+      // Refresh the expanded transcript as well as the call list.
+      setMessages(prev => {
+        const next = { ...prev };
+        filtered.forEach(c => {
+          if (c.transcript?.length) next[c.id] = c.transcript;
+        });
+        return next;
+      });
     } catch (e) { console.error(e); }
     setLoading(false);
   };

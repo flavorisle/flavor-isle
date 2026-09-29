@@ -33,6 +33,7 @@ import {
   buildCallContext,
 } from '../../shared/smashieLivePrompt.ts';
 import { runSmashieTool } from '../../shared/smashieToolRunner.ts';
+import { createCallTranscript } from '../../shared/callTranscript.ts';
 import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/smashieAdminContext.ts';
 
 const LIVE_MODEL = 'gpt-live-1';
@@ -73,11 +74,8 @@ function extractCallerPhone(sipHeaders) {
 // the counter transfer to SIP.
 async function driveLiveSession({ base44, sessionId, apiKey, conversationId, callerPhone }) {
   const startedAt = Date.now();
-  const transcript = [];
-  let userText = '';
-  let assistantText = '';
-  let userSegment = null;
-  let assistantSegment = null;
+  const callTranscript = createCallTranscript();
+  let saveTimer = null;
   let finalized = false;
   let sideband = null;
   let sessionClosed = false;
@@ -92,6 +90,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
   };
 
   const persist = async () => {
+    const transcript = callTranscript.snapshot();
     await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
       transcript,
       last_message_at: new Date().toISOString(),
@@ -99,19 +98,20 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     });
   };
 
-  const flush = async (role: 'user' | 'assistant') => {
-    const text = (role === 'user' ? userText : assistantText).trim();
-    if (role === 'user') userText = ''; else assistantText = '';
-    if (!text) return;
-    transcript.push({ role, content: text, timestamp: new Date().toISOString() });
-    await persist();
+  // Save partial speech too: a missing turn-end event must not lose the call.
+  const scheduleSave = () => {
+    if (saveTimer || finalized) return;
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      queue(persist);
+    }, 2000);
   };
 
   const finalize = async (failure = '') => {
+    clearTimeout(saveTimer);
+    saveTimer = null;
     if (finalized) return;
-    finalized = true;
-    await flush('user');
-    await flush('assistant');
+    const transcript = callTranscript.snapshot();
     await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
       transcript,
       last_message_at: new Date().toISOString(),
@@ -121,6 +121,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
       description: failure ? failure.slice(0, 1000) : 'Live session ended normally.',
       call_duration: Math.round((Date.now() - startedAt) / 1000),
     });
+    finalized = true;
   };
 
   const handleDelegation = (envelope) => {
@@ -130,7 +131,8 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     if (item.type !== 'function_call' || !item.name || !item.call_id) return;
 
     queue(async () => {
-      await flush('user');
+      // Preserve both sides before tools can hand the caller to the counter.
+      await persist();
       let args = {};
       if (item.arguments) {
         try {
@@ -163,24 +165,15 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     const type = event?.type || '';
 
     if (type === 'session.input_transcript.delta' || type === 'session.output_transcript.delta') {
-      const isUser = type.includes('input');
-      // event_id identifies each fragment, not a spoken turn. Using it here
-      // queued a database write per word ahead of counter-transfer tools.
-      const key = event.item_id || null;
-      if (isUser) {
-        if (userSegment && key && key !== userSegment) queue(() => flush('user'));
-        userSegment = key || userSegment;
-        userText += event.delta ?? event.text ?? '';
-      } else {
-        if (assistantSegment && key && key !== assistantSegment) queue(() => flush('assistant'));
-        assistantSegment = key || assistantSegment;
-        assistantText += event.delta ?? event.text ?? '';
-      }
+      // Capture synchronously; queued writes must never clear newer speech.
+      callTranscript.capture(type.includes('input') ? 'user' : 'assistant', event);
+      scheduleSave();
       return;
     }
 
     if (TRANSCRIPT_DONE.test(type)) {
-      queue(() => flush(type.includes('input') ? 'user' : 'assistant'));
+      callTranscript.capture(type.includes('input') ? 'user' : 'assistant', event, true);
+      queue(persist);
       return;
     }
 
