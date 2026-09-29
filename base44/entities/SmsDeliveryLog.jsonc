@@ -1,0 +1,73 @@
+{
+  "name": "SmsDeliveryLog",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "milestone": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "preparing",
+        "ready",
+        "completed"
+      ]
+    },
+    "body": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "message_sid": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "status_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "order_id",
+    "milestone",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

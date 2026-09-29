@@ -14,19 +14,27 @@ export function normalizePhone(phone) {
 // Returns true on success, false on any failure (so callers can log + move on).
 // Calls the Twilio REST API directly — the npm SDK throws
 // "Unsupported cache mode: default" under Deno.
-export async function sendSmashieSms(to, body) {
+export async function sendSmashieSms(to, body, audit = {}) {
+  const record = async (patch) => {
+    if (audit.base44 && audit.logId) await audit.base44.asServiceRole.entities.SmsDeliveryLog.updateMany(
+      { id: audit.logId, status: 'pending' },
+      { $set: { ...patch, status_at: new Date().toISOString() } }
+    );
+  };
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const from = Deno.env.get('TWILIO_PHONE_NUMBER');
 
   if (!accountSid || !authToken || !from) {
     console.error('sendSmashieSms: Twilio credentials not set — SMS skipped');
+    await record({ status: 'failed', reason: 'Twilio credentials are missing' });
     return false;
   }
 
   const normalizedTo = normalizePhone(to);
   if (!normalizedTo) {
     console.warn(`sendSmashieSms: invalid phone "${to}" — SMS skipped`);
+    await record({ status: 'skipped', reason: 'Invalid phone number' });
     return false;
   }
 
@@ -37,6 +45,7 @@ export async function sendSmashieSms(to, body) {
       To: normalizedTo,
       Body: body,
     });
+    if (audit.logId) params.set('StatusCallback', `https://taste-isle-express.base44.app/functions/twilioSmsStatus?log_id=${encodeURIComponent(audit.logId)}`);
     const auth = btoa(`${accountSid}:${authToken}`);
     const res = await fetch(url, {
       method: 'POST',
@@ -49,13 +58,18 @@ export async function sendSmashieSms(to, body) {
     if (!res.ok) {
       const text = await res.text();
       console.error(`sendSmashieSms: failed to send to ${normalizedTo}: Twilio ${res.status} ${text}`);
+      let details = {};
+      try { details = JSON.parse(text); } catch { /* Non-JSON Twilio failure. */ }
+      await record({ status: 'failed', reason: String(details.message || text).slice(0, 1000), error_code: String(details.code || res.status) });
       return false;
     }
     const data = await res.json();
+    await record({ status: data.status || 'queued', message_sid: data.sid });
     console.log(`sendSmashieSms: sent to ${normalizedTo} (sid ${data.sid})`);
     return true;
   } catch (err) {
     console.error(`sendSmashieSms: failed to send to ${normalizedTo}:`, err.message);
+    await record({ status: 'failed', reason: err.message });
     return false;
   }
 }

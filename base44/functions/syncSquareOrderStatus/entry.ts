@@ -1,11 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
+import { sendOrderStatusSms } from '../../shared/sendOrderStatusSms.ts';
 import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
-import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
+
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 
@@ -18,7 +18,7 @@ function missedMilestones(prevStatus, newStatus) {
   const order = ['confirmed', 'preparing', 'ready', 'completed'];
   const startIdx = order.indexOf(prevStatus);
   const endIdx = order.indexOf(newStatus);
-  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return [];
+  if ((startIdx === -1 && prevStatus !== 'pending') || endIdx === -1 || endIdx <= startIdx) return [];
   return order.slice(startIdx + 1, endIdx + 1);
 }
 
@@ -202,22 +202,20 @@ export default async function(req) {
       const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
-      // Never notify placeholder addresses used for in-store POS / walk-in
-      // orders — those aren't real customers and just burn email credits.
-      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
-      if (!customerEmail || isPlaceholderEmail) continue;
-
       const milestones = missedMilestones(prevStatus, newStatus);
-      // Transactional SMS requires explicit active transactional consent for
-      // this order's phone AND the global admin toggle. STOP suppresses all.
-      let canTxSms = false;
-      if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
-        try {
-          canTxSms = (await checkSmsConsent(base44, order.customer_phone, 'transactional')).ok;
-        } catch (e) {
-          canTxSms = false;
+      // Record each text outcome independently of email/push success.
+      if (order.order_source !== 'in_store') {
+        for (const milestone of milestones) {
+          try {
+            await sendOrderStatusSms(base44, order, milestone, { settings: smashieSettings });
+          } catch (smsError) {
+            console.error(`Order ${order.order_number} ${milestone} SMS log failed:`, smsError.message);
+          }
         }
       }
+      // Placeholder email addresses do not suppress a customer's text history.
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      if (!customerEmail || isPlaceholderEmail) continue;
       try {
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
@@ -233,10 +231,7 @@ export default async function(req) {
           } catch (e) {
             console.error('live wait for push failed:', e.message);
           }
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
             body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
@@ -248,10 +243,7 @@ export default async function(req) {
         if (milestone === 'ready') {
           await sendOrderReadyEmail(order, base44);
           notified++;
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: '✅ Order ready!',
             body: order.order_type === 'delivery'
@@ -265,10 +257,7 @@ export default async function(req) {
         if (milestone === 'completed') {
           await sendOrderCompletedEmail(order, base44);
           notified++;
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
