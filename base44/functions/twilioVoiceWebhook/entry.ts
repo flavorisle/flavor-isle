@@ -294,14 +294,14 @@ export default async function(req) {
     // Phone ordering is intentionally available at all hours for testing.
     const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
 
-    // Inject the caller's resolved Square info so Smashie knows their name and
-    // email without asking. Powers email-based payment link delivery.
+    // Inject the caller's phone (and their resolved Square name/email) so
+    // Smashie can take an order and text the payment link without asking.
     const callerRecord = callRecords[0] || {};
-    const callerInfo = callerRecord.customer_email
-      ? `[CALLER INFO: Name: ${callerRecord.customer_name || 'Unknown'}, Email: ${callerRecord.customer_email}, SquareCustomerId: ${callerRecord.square_customer_id || 'none'}. Resolved automatically from the caller's phone via Square. When confirming a phone order, pass this email to logPhoneOrder as customer_email — do NOT ask the caller for their email.]`
+    const callerInfo = `[CALLER INFO: Caller phone number: ${callerFrom}. Pass this exact number to logPhoneOrder as customer_phone — the payment link is texted there. ${callerRecord.customer_email
+      ? `Name: ${callerRecord.customer_name || 'Unknown'}, Email: ${callerRecord.customer_email} (resolved automatically from the caller's phone via Square). Pass the email to logPhoneOrder as customer_email too — do NOT ask the caller for it.`
       : callerRecord.customer_name
-        ? `[CALLER INFO: Name: ${callerRecord.customer_name}. No email on file in Square. When confirming a phone order, ask the caller for their email so the payment link can be emailed, and pass it to logPhoneOrder as customer_email.]`
-        : `[CALLER INFO: Caller not found in Square. When confirming a phone order, ask for the caller's name and email, and pass both to logPhoneOrder.]`;
+        ? `Name: ${callerRecord.customer_name}. No email on file in Square. The link is texted to the number above, so the email is optional — ask for one only if the caller wants it emailed as well.`
+        : `Caller not found in Square. Ask for the caller's name. The link is texted to the number above, so an email is optional.`}]`;
     const liveBusyness = await getBusynessLevel(base44);
     const storeStatus = await getPhysicalStoreStatus(base44);
     const closedToday = !storeStatus.open;
