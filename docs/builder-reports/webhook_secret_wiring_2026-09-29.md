@@ -1,15 +1,12 @@
 # Builder report: webhook_secret_wiring_2026-09-29
 
-## OpenAI webhook signing secret — where to paste it, and how to confirm it worked
-
-**Status:** draft  
+**Item:** webhook_secret_wiring_2026-09-29
+**Status:** draft
 **App entity:** BuilderReport `6abb6c90eae69d2177cb2807`
 
-### Before
+> Secret value redacted. This file records wiring status and verification results only.
 
-OPENAI_WEBHOOK_SECRET exists in the app but its value cannot be read or verified from the builder side. Live Phone Pipeline (realtime_sip_enabled) is OFF.
-
-### After
+## Before
 
 WHERE TO PASTE (Wesley does this himself)
   Base44 dashboard → this app → Secrets (environment variables) → the secret named exactly:  OPENAI_WEBHOOK_SECRET
@@ -53,3 +50,19 @@ OPEN ITEMS TO WATCH ON THE FIRST CALL
    d) The counter off-hook admin alert will not fire under SIP (old dial callback path no longer exists).
 
 NO SECRET VALUE APPEARS IN THIS REPORT. No menu changes, no test orders, main line untouched.
+
+## After
+
+VERIFIED 2026-09-29 07:52 UTC — OPENAI_WEBHOOK_SECRET holds the correct OpenAI signing secret (50 chars; sha256 of the configured value matches the expected digest 54f04c88e11ac51b25ecb1213d42c150400b5298b7182399f2cf8ab533644aff). The secret itself is redacted here.
+
+Verification performed:
+1. sha256 of the configured value == expected digest. MATCH.
+2. Standard Webhooks probe signed with the configured value (headers webhook-id / webhook-timestamp / webhook-signature v1,base64 over `id.timestamp.body`) POSTed to smashieSipIncoming -> HTTP 200 ({"ignored":"probe.smashie.secretcheck"}). PASS.
+3. Same request with a deliberately bad signature -> HTTP 400 {"error":"Invalid signature"}. PASS (proves the endpoint reads and compares the header).
+4. live.transport.incoming with a fabricated session id -> HTTP 502 (OpenAI accept returns 404 for a non-existent session). Expected for a fake id; it also proves the signature gate AND the settings gate passed, so "Live Phone Pipeline" and voice ordering are both ON.
+
+On the reported "400 Invalid signature": not reproducible with the configured value. If external probes still 400, the signing is most likely wrong — the HMAC key must be the configured value base64-decoded with the `whsec_` prefix stripped, and the signature must be base64 (not hex) sent as `v1,<sig>`. Signing with the raw string as the key also produces 400.
+
+Test window (02:41-02:52 CT = 07:41-07:52 UTC): no OpenAI-delivered webhook is visible in app data. The only voice call within 45 minutes is 2026-09-29T07:33:37Z (02:33 CT), call_sid prefix "CA..." (a Twilio CallSid, not an OpenAI session id), status completed, 215s, 11 transcript turns, matched customer — i.e. it was answered by the legacy Twilio voice webhook, not the SIP pipeline. Function runtime logs cannot be read from the builder, so the exact request lines for that window still need to be read on the dashboard Logs page. There, expect either no smashieSipIncoming rows at all (OpenAI is not delivering to this endpoint) or rows returning {"ignored":"<type>"} (the handler accepts only live.transport.incoming / live.call.incoming and deliberately ignores the Realtime equivalents).
+
+Open items: confirm the OpenAI dashboard webhook endpoint points at .../functions/smashieSipIncoming; keep the SIP trunk's origination URL on the live OpenAI project; Wesley re-tests by phone (+1 270-438-4728).
