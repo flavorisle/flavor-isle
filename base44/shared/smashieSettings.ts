@@ -8,6 +8,7 @@ const DEFAULTS = {
   sms_status_updates_enabled: true,
   sms_auto_reply_enabled: true,
   voice_ordering_enabled: true,
+  realtime_sip_enabled: false,
   personality_notes: "",
 };
 

@@ -26,6 +26,11 @@
       "default": true,
       "description": "When true, inbound voice calls are handled by the Smashie AI voice agent"
     },
+    "realtime_sip_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, inbound calls arriving over the OpenAI SIP trunk are handled by the Live phone pipeline (sub-second turns). Off by default: the Twilio line keeps answering calls through the existing voice webhook until the SIP trunk is pointed at this app and a test call has passed."
+    },
     "personality_notes": {
       "type": "string",
       "default": "",

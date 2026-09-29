@@ -21,6 +21,7 @@ export default function SmashieSettingsPanel() {
           sms_status_updates_enabled: true,
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
+          realtime_sip_enabled: false,
           personality_notes: "",
         });
       }
@@ -43,6 +44,7 @@ export default function SmashieSettingsPanel() {
           sms_status_updates_enabled: settings.sms_status_updates_enabled,
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
+          realtime_sip_enabled: settings.realtime_sip_enabled,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
         });
@@ -52,6 +54,7 @@ export default function SmashieSettingsPanel() {
           sms_status_updates_enabled: settings.sms_status_updates_enabled,
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
+          realtime_sip_enabled: settings.realtime_sip_enabled,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
         });
@@ -109,6 +112,12 @@ export default function SmashieSettingsPanel() {
           description="Let Smashie answer inbound phone calls and take orders by voice."
           checked={settings.voice_ordering_enabled}
           onChange={v => update('voice_ordering_enabled', v)}
+        />
+        <Toggle
+          label="Live Phone Pipeline (OpenAI SIP)"
+          description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."
+          checked={settings.realtime_sip_enabled}
+          onChange={v => update('realtime_sip_enabled', v)}
         />
       </div>
 
