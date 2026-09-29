@@ -3,7 +3,7 @@ import { optimizedImageUrl } from '@/lib/utils';
 
 const photos = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/99f75bee4_CD56F694-082A-4650-9E1C-5F5F95B2F288.jpg', alt: 'Guests at the outdoor tables at Flavor Isle', caption: 'Around the table' },
-  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/742efcb4d_IMG_0429.jpeg', alt: 'Fresh burger patties on the Flavor Isle flat-top', caption: 'Fresh off the flat-top' },
+  { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b2e82dac6_IMG_1268.jpeg', alt: 'Burger patties and buns cooking on the Flavor Isle flat-top grill', caption: 'Fresh off the flat-top' },
 ];
 
 const words = [
