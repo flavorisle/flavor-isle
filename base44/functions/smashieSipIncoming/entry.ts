@@ -164,7 +164,9 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
 
     if (type === 'session.input_transcript.delta' || type === 'session.output_transcript.delta') {
       const isUser = type.includes('input');
-      const key = event.item_id || event.event_id || null;
+      // event_id identifies each fragment, not a spoken turn. Using it here
+      // queued a database write per word ahead of counter-transfer tools.
+      const key = event.item_id || null;
       if (isUser) {
         if (userSegment && key && key !== userSegment) queue(() => flush('user'));
         userSegment = key || userSegment;
