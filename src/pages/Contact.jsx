@@ -8,6 +8,7 @@ import AdBannerStrip from '@/components/AdBannerStrip';
 import FaqSection from '@/components/FaqSection';
 import NearbyAreas from '@/components/NearbyAreas';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
+import ParkingGuide from '@/components/ParkingGuide';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
@@ -126,6 +127,8 @@ export default function Contact() {
             </div>
           </div>
         </div>
+
+        <ParkingGuide />
 
         {/* Google reviews */}
         <div className="max-w-3xl mx-auto mb-12">
