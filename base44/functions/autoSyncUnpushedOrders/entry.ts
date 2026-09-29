@@ -51,6 +51,7 @@ export default async function (req: Request) {
 
     const candidates = (orders || []).filter((o) =>
       o.status !== 'cancelled' &&
+      !o.pay_cash_on_pickup &&
       o.order_source !== 'in_store' &&
       o.created_date && new Date(o.created_date).getTime() > twoHoursAgo &&
       (

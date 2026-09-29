@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendOrderStatusSms } from '../../shared/sendOrderStatusSms.ts';
+import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
@@ -136,7 +137,9 @@ export default async function(req) {
       // Look up the matching Order entity from the in-memory index
       let order = orderBySquareId.get(sqOrder.id);
       if (!order) continue;
-      if (order.payment_provider === 'square' && order.payment_status !== 'paid') {
+      if (order.pay_cash_on_pickup) {
+        order = await settleCashPickupPayment(base44, order, false, sqOrder);
+      } else if (order.payment_provider === 'square' && order.payment_status !== 'paid') {
         order = await settleSquarePhonePayment(base44, order, sqOrder);
         // Checkout creation is not confirmation: wait for an actual completed payment.
         if (order.payment_status !== 'paid') continue;

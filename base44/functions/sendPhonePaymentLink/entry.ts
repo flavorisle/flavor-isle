@@ -15,6 +15,7 @@ export default async function(req) {
     if (!body.order_id) return Response.json({ error: 'Select a phone order.' }, { status: 400 });
     let order = await base44.asServiceRole.entities.Order.get(body.order_id);
     if (!order || !(order.payment_provider || order.payment_url || order.manual_pay_required)) return Response.json({ error: 'This is not a phone-payment order.' }, { status: 400 });
+    if (order.pay_cash_on_pickup) return Response.json({ error: 'This order is cash at pickup. Collect and record cash instead of sending a card link.' }, { status: 409 });
     order = await settleSquarePhonePayment(base44, order);
     if (order.payment_status === 'paid' || order.status === 'cancelled' || order.payment_status === 'refunded') return Response.json({ error: 'This order cannot accept another payment.' }, { status: 409 });
     let paymentUrl = order.payment_url;

@@ -142,6 +142,8 @@ export default function AdminKitchen() {
                     <span className="text-sm text-obsidian-roast font-semibold truncate">{order.customer_name}</span>
                   </div>
 
+                  {order.pay_cash_on_pickup && <p className="mb-3 text-sm font-semibold text-foreground">{order.payment_status === 'paid' ? 'Cash received' : `Cash at pickup — collect $${Number(order.total).toFixed(2)}`}</p>}
+
                   {/* Items */}
                   <div className="space-y-2 mb-3">
                     {(order.items || []).map((item, idx) => {

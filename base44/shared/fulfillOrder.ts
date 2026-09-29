@@ -87,6 +87,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
         <div style="background:#f5edd6;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
           <p style="margin:0;font-size:14px;color:#1A3A5C;"><strong>Pickup/Delivery:</strong> ${fulfillmentLine}</p>
+          ${order.pay_cash_on_pickup && order.payment_status !== 'paid' ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Payment:</strong> Pay $${Number(order.total).toFixed(2)} in cash at the counter at pickup.</p>` : ''}
           <p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Order Time:</strong> ~${estTime}</p>
           ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
         </div>
@@ -150,7 +151,7 @@ export async function sendAdminReceiptEmail(order) {
 
   const html = brandedEmailHtml(`
         <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">🧾 New Online Order</h2>
-        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 20px;">A web order just came in and was paid online.</p>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 20px;">${order.pay_cash_on_pickup ? 'A phone pickup order is confirmed. Collect $' + Number(order.total).toFixed(2) + ' in cash at pickup — NOT PAID yet.' : 'A web order just came in and was paid online.'}</p>
 
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:20px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER #${order.order_number || ''}
@@ -460,7 +461,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   }
 
   // Loyalty — only for new pushes (tied to the Square push)
-  const loyalty = squarePushed ? await processLoyalty(base44, order, squareOrderId) : null;
+  const loyalty = squarePushed && (!order.pay_cash_on_pickup || order.payment_status === 'paid') ? await processLoyalty(base44, order, squareOrderId) : null;
 
   // Customer confirmation email — INDEPENDENT dedupe via confirmation_email_sent_at.
   // Fires exactly once regardless of whether this call did the Square push.

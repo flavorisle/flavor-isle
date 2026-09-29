@@ -3,7 +3,9 @@ import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
 
 export async function sendOrderStatusSms(base44, order, milestone, options = {}) {
-  const body = options.body || smashieSmsTemplates[milestone](order);
+  const cashNote = order.pay_cash_on_pickup && order.payment_status !== 'paid' && ['confirmed', 'ready'].includes(milestone)
+    ? ` Pay $${Number(order.total).toFixed(2)} in cash at the counter at pickup.` : '';
+  const body = (options.body || smashieSmsTemplates[milestone](order)) + cashNote;
   const log = await base44.asServiceRole.entities.SmsDeliveryLog.create({
     order_id: order.id, order_number: order.order_number, customer_name: order.customer_name || '',
     phone: normalizePhone(order.customer_phone) || '', milestone, body,

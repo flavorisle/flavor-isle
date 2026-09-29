@@ -1,6 +1,7 @@
 import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
+import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -14,7 +15,10 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { customer_name, customer_phone, customer_email, items, order_type, delivery_address, special_instructions, total } = body;
+    const { customer_name, customer_phone, customer_email, items, order_type, delivery_address, special_instructions, total, payment_method = 'card' } = body;
+    if (!['card', 'cash_on_pickup'].includes(payment_method)) return Response.json({ error: 'Choose card or cash_on_pickup.' }, { status: 400 });
+    const cashPickup = payment_method === 'cash_on_pickup';
+    if (cashPickup && order_type && order_type !== 'pickup') return Response.json({ error: 'Cash at pickup is available only for pickup orders.' }, { status: 400 });
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_phone, items' }, { status: 400 });
@@ -52,7 +56,8 @@ export default async function(req) {
     const order = await base44.asServiceRole.entities.Order.create({
       order_number: orderNumber,
       order_type: order_type || 'pickup',
-      status: 'pending',
+      status: cashPickup ? 'confirmed' : 'pending',
+      pay_cash_on_pickup: cashPickup,
       items,
       subtotal,
       tax,
@@ -66,6 +71,13 @@ export default async function(req) {
       payment_provider: 'square',
       manual_pay_required: true,
     });
+
+    if (cashPickup) {
+      await pushOrderToSquareAndKitchen(base44, order);
+      return Response.json({ success: true, order_number: orderNumber, order_id: order.id, subtotal, tax, total: finalTotal,
+        payment_method: 'cash_on_pickup', payment_status: 'pending', payment_url: null, payment_link_sent: false,
+        manual_pay_required: true, message: `Order #${orderNumber} is confirmed for pickup. Pay $${finalTotal.toFixed(2)} in cash at the counter when you pick it up. No payment link is needed; cash has not yet been collected.` });
+    }
 
     let paymentUrl = null;
     let paymentLinkSent = false;

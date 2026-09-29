@@ -166,7 +166,7 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
             </div>
           )}
 
-          {isOnline && (
+          {(isOnline || order.pay_cash_on_pickup) && (
             <button
               onClick={() => onPrintBagTicket(order)}
               className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-heading rounded-full border-2 border-patina-mint text-patina-mint hover:bg-patina-mint hover:text-white transition-colors"

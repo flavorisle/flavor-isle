@@ -21,7 +21,7 @@ import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.t
 // square_order_id is already set, so it's safe when both this fallback and the
 // webhook fire for the same order — only the first one pushes, the second is a
 // no-op.
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const { orderNumber } = await req.json();
@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'order not found' });
     }
     const order = orders[0];
+    if (order.pay_cash_on_pickup) return Response.json({ skipped: true, reason: 'Cash must be collected and recorded by staff at pickup.' });
 
     // Group/split orders: never settle on the client's word. Verify every
     // share succeeded at the correct amount via Stripe, then settle the parent
@@ -77,4 +78,4 @@ Deno.serve(async (req) => {
     console.error('confirmOnlinePayment error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

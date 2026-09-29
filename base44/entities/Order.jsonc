@@ -143,6 +143,15 @@
       "type": "boolean",
       "default": false
     },
+    "pay_cash_on_pickup": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phone pickup order confirmed for preparation; collect cash at pickup. This flag is not proof of payment."
+    },
+    "cash_payment_id": {
+      "type": "string",
+      "description": "Verified Square cash payment recorded when staff collect cash."
+    },
     "payment_provider": {
       "type": "string",
       "enum": [

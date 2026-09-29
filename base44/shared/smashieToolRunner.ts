@@ -64,6 +64,7 @@ async function placeOrder(base44, args, callerPhone) {
     customer_phone: args.customer_phone || callerPhone,
     customer_email: args.customer_email || undefined,
     order_type: args.order_type || 'pickup',
+    payment_method: args.payment_method || 'card',
     delivery_address: args.delivery_address || undefined,
     special_instructions: args.special_instructions || undefined,
     items: Array.isArray(args.items) ? args.items : [],

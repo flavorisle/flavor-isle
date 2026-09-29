@@ -1,12 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
     const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, pickupMethod, vehicle } = body;
+    const storedOrder = orderId ? await base44.asServiceRole.entities.Order.get(orderId) : null;
+    const cashPickup = storedOrder?.pay_cash_on_pickup === true && storedOrder.order_type === 'pickup';
 
     // Atomic claim: try to set square_sync_claimed_at only if it's currently
     // null/empty. If another concurrent call already claimed or pushed the
@@ -408,6 +410,8 @@ Deno.serve(async (req) => {
       pickupNote = `DINE IN\nTable: ${customer.table || 'N/A'}\n${customer.name}`;
     }
 
+    if (cashPickup) pickupNote += `\nCASH AT PICKUP — ${storedOrder.payment_status === 'paid' ? 'PAID' : 'COLLECT $' + Number(storedOrder.total).toFixed(2)}`;
+
     const squareOrder = {
       idempotency_key: idempotencyKey,
       order: {
@@ -499,7 +503,7 @@ Deno.serve(async (req) => {
     // Square POS only surfaces PAID orders as active tickets, so without this
     // step the order never appears on the register.
     const netDue = data.order?.net_amount_due_money?.amount || 0;
-    if (netDue > 0) {
+    if (netDue > 0 && !cashPickup) {
       const payRes = await fetch('https://connect.squareup.com/v2/payments', {
         method: 'POST',
         headers: {
@@ -531,4 +535,4 @@ Deno.serve(async (req) => {
     console.error('Square order error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
+import CashPickupPayment from '@/components/admin/CashPickupPayment';
 
 export default function PhonePaymentActions({ order }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  if (order.pay_cash_on_pickup) return <CashPickupPayment order={order} />;
   if (!(order.payment_provider || order.payment_url || order.manual_pay_required) || order.payment_status === 'paid' || order.status === 'cancelled') return null;
   const send = async (backup) => {
     if (backup && !window.confirm('Switch this unpaid order to Stripe and send the backup link? The old Square link will be disabled.')) return;
