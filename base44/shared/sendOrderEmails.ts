@@ -260,6 +260,36 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
   }
 }
 
+// Show the birthday ask only when the order's phone-linked profile has no
+// birthday. If no phone profile exists, use the order email as a fallback.
+// A failed lookup omits the ask rather than risking a repeat to someone who
+// has already saved their birthday.
+async function birthdayAskForReadyOrder(order: any, base44?: any) {
+  if (!base44) return '';
+  try {
+    const digits = String(order.customer_phone || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+    const phones = digits.length === 10
+      ? [...new Set([order.customer_phone, digits, `+1${digits}`, `1${digits}`, `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`, `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`].filter(Boolean))]
+      : (order.customer_phone ? [order.customer_phone] : []);
+    let profile: any = null;
+    for (const phone of phones) {
+      const matches = await base44.asServiceRole.entities.CustomerProfile.filter({ phone });
+      if (matches?.length) { profile = matches.find(p => p.birthday) || matches[0]; break; }
+    }
+    if (!profile && order.customer_email) {
+      profile = (await base44.asServiceRole.entities.CustomerProfile.filter({ email: order.customer_email }))?.[0];
+    }
+    if (profile?.birthday) return '';
+    return `<div style="margin:12px 0 14px;">
+      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">P.S. When's your birthday? Tell us once and we'll drop 100 Stars on your Star Rewards account as your gift.</p>
+      <a href="${APP_URL}/account?tab=profile" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:bold;">Add your birthday</a>
+    </div>`;
+  } catch (error) {
+    console.error('Birthday lookup for ready email failed:', error.message);
+    return '';
+  }
+}
+
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
 export async function sendOrderReadyEmail(order, base44?) {
@@ -299,6 +329,7 @@ export async function sendOrderReadyEmail(order, base44?) {
     <p style="color:#141414;font-size:15px;margin:0 0 4px;"><strong>Total:</strong> ${totalStr}</p>
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
+    ${await birthdayAskForReadyOrder(order, base44)}
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${await foodHeroHtml(base44)}
     ${await merchPromoHtml()}`;

@@ -721,7 +721,7 @@ function GuestAuth({ onSuccess }) {
     try {
       if (mode === 'login') {
         await base44.auth.loginViaEmailPassword(email, password);
-        window.location.href = '/account';
+        window.location.href = window.location.pathname + window.location.search;
       } else {
         await base44.auth.register({ email, password, full_name: name });
         setStep('otp');
@@ -740,7 +740,7 @@ function GuestAuth({ onSuccess }) {
     try {
       const { access_token } = await base44.auth.verifyOtp({ email, otpCode });
       base44.auth.setToken(access_token);
-      window.location.href = '/account';
+      window.location.href = window.location.pathname + window.location.search;
     } catch (err) {
       setError(err.message || 'Invalid code. Please try again.');
     } finally {
