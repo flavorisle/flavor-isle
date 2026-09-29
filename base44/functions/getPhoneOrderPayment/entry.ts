@@ -7,7 +7,7 @@ import {
   resolvePublishableKey,
 } from '../../shared/phonePay.ts';
 
-// Public read endpoint behind flavor-isle.com/pay/PH123456 — the short link
+// Public read endpoint behind the phone-order short payment link — the link
 // Smashie texts. It returns the customer's own order summary plus the
 // PaymentIntent client secret so the page can mount the embedded card form.
 //

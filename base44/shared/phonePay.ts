@@ -44,12 +44,14 @@ export function verifyPhoneOrderTip(order, rawTip) {
   return { ok: true, tip, base, total: Math.round((base + tip) * 100) / 100 };
 }
 
-// The /pay link carries the order number (PH123456) — look it up case-insensitively.
+// The /pay link carries the six-digit order number (or a legacy PH number).
+// A numeric order number can also belong to an online checkout, so never
+// expose an unrelated order's payment details through the phone-pay page.
 export async function findOrderByNumber(base44, orderNumber) {
   const wanted = String(orderNumber || '').trim().toUpperCase();
   if (!wanted) return null;
   const orders = await base44.asServiceRole.entities.Order.filter({ order_number: wanted });
-  return orders && orders.length > 0 ? orders[0] : null;
+  return (orders || []).find(order => order.payment_url || order.manual_pay_required) || null;
 }
 
 // What the customer sees on their own payment page. Deliberately narrow: first

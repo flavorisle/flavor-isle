@@ -16,7 +16,7 @@ const FALLBACK_ERROR =
   'We could not open that payment page. Please try the link in your text again, or call us at (270) 563-4618.';
 const PHONE = '(270) 563-4618';
 
-// The page behind the short link Smashie texts (flavor-isle.com/pay/PH123456).
+// The page behind the short payment link Smashie texts.
 // The customer sees their order, picks a tip, and pays with the card form
 // embedded right here — they never leave flavor-isle.com.
 export default function PayPhoneOrder() {

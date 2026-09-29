@@ -46,7 +46,7 @@ export default async function(req) {
     const subtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
     const tax = Math.round(subtotal * 0.06 * 100) / 100;
     const finalTotal = Math.round((subtotal + tax) * 100) / 100;
-    const orderNumber = 'PH' + Date.now().toString().slice(-6);
+    const orderNumber = Date.now().toString().slice(-6);
 
     // Keep the order pending until the customer pays on the payment page.
     const order = await base44.asServiceRole.entities.Order.create({
