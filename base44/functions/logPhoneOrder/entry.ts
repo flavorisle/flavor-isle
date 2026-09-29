@@ -1,8 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
-import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { abilityEnabled } from '../../shared/smashieAdminContext.ts';
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -16,9 +14,6 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    if (!abilityEnabled(await getSmashieSettings(base44), 'orders')) {
-      return Response.json({ error: 'Smashie ordering is currently unavailable.' }, { status: 403 });
-    }
     const { customer_name, customer_phone, customer_email, items, order_type, delivery_address, special_instructions, total } = body;
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {

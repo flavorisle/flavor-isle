@@ -202,7 +202,7 @@ export default async function(req) {
         ? `Just a heads up — ${storeStatus.message}.`
         : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} I can tell you when we open next${abilityEnabled(settings, 'messages') ? ' or take a message for the crew' : ''}. What do you need today?`
+        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} ${abilityEnabled(settings, 'hours') ? 'I can tell you when we open next. ' : ''}${abilityEnabled(settings, 'messages') ? 'I can take a message for the crew. ' : ''}What do you need today?`
         : `Hey fam, Smashie here at Flavor Isle! ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
       const convo = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
@@ -215,7 +215,7 @@ export default async function(req) {
         },
       });
       const conversationId = convo.id;
-      await base44.asServiceRole.entities.SmsConversation.create({
+      const callRecord = await base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,
         conversation_id: conversationId,
         call_sid: callSid,
@@ -231,7 +231,7 @@ export default async function(req) {
       try {
         const squareCust = await lookupCustomerByPhone(base44, from);
         if (squareCust) {
-          await base44.asServiceRole.entities.SmsConversation.update(convo.id, {
+          await base44.asServiceRole.entities.SmsConversation.update(callRecord.id, {
             customer_name: squareCust.name,
             square_customer_id: squareCust.id,
             customer_email: squareCust.email,
@@ -292,7 +292,6 @@ export default async function(req) {
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    // Phone ordering is intentionally available at all hours for testing.
     const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
 
     // Inject the caller's phone (and their resolved Square name/email) so
@@ -308,8 +307,8 @@ export default async function(req) {
     const closedToday = !storeStatus.open;
     const settings = await getSmashieSettings(base44);
     const statusContext = closedToday
-      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said. When CLOSED: you may ONLY share Flavor Isle history, tell the caller we're closed right now and back to normal soon, or take and save a message for management. Do NOT tell the caller the store is open. Do NOT mention closing time or today's hours. Do NOT say "we're open until 8" or anything similar. Do not discuss the menu, recommend food, take or build an order, provide directions, or offer a counter transfer. Do not mention busyness or wait times — we are closed.]\n${callerInfo}`
-      : `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}`;
+      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's introduction. Do not introduce yourself again. When CLOSED: only share history if enabled, opening information if enabled, or save a message if enabled. Never discuss the menu, recommend food, take or build an order, give directions, offer a counter transfer, or quote busyness or wait times. Never say we are open.]\n${callerInfo}`
+      : `[STORE STATUS: OPEN. Follow the admin ability switches. The caller already heard Smashie's introduction. Respond directly without repeating it.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}`;
 
     const messageTurn = abilityEnabled(settings, 'messages') ? await processPhoneMessageTurn(
       base44,
@@ -346,7 +345,7 @@ export default async function(req) {
 
     // Smashie emits a structured token only after collecting all message details.
     const messageMatch = replyText.match(/\[\[PHONE_MESSAGE:(\{[\s\S]*?\})\]\]/i);
-    if (messageMatch && abilityEnabled(settings, 'messages') && !closedToday) {
+    if (messageMatch && abilityEnabled(settings, 'messages')) {
       try {
         const messageData = JSON.parse(messageMatch[1]);
         if (!messageData.caller_name || !messageData.recipient || !messageData.message) {
@@ -368,6 +367,9 @@ export default async function(req) {
         spokenReply = "I'm sorry, I couldn't save that message. Please try that one more time.";
       }
     }
+
+    // Never read a disabled message action token aloud or show it in the transcript.
+    spokenReply = spokenReply.replace(/\[\[PHONE_MESSAGE:\{[\s\S]*?\}\]\]/gi, '').trim() || (abilityEnabled(settings, 'messages') ? "I couldn't save that message. Please try again." : "I can't take a message right now.");
 
     // Persist a clean, admin-readable transcript independent of agent ownership.
     const existing = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });

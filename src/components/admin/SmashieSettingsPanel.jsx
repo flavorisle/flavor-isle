@@ -15,6 +15,7 @@ export default function SmashieSettingsPanel() {
   const [error, setError] = useState('');
 
   const load = async () => {
+    setError('');
     try {
       const all = await base44.entities.SmashieSettings.list();
       if (all && all.length > 0) {
