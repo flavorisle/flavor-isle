@@ -6,6 +6,8 @@ import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
+import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 // Maps Square fulfillment/order states to our app's order statuses.
 // Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
@@ -46,9 +48,11 @@ function missedMilestones(prevStatus, newStatus) {
   return order.slice(startIdx + 1, endIdx + 1);
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
+    const auth = await requireAdmin(base44);
+    if (auth.error) return auth.error;
 
     // Get Square connection
     const connection = await base44.asServiceRole.connectors.getConnection('square');
@@ -139,6 +143,7 @@ Deno.serve(async (req) => {
     const orderBySquareId = new Map();
     (recentOrders || []).forEach(o => {
       if (o.square_order_id) orderBySquareId.set(o.square_order_id, o);
+      if (o.payment_provider === 'square' && o.square_checkout_order_id) orderBySquareId.set(o.square_checkout_order_id, o);
     });
 
     let updated = 0;
@@ -156,8 +161,13 @@ Deno.serve(async (req) => {
       if (!newStatus) continue;
 
       // Look up the matching Order entity from the in-memory index
-      const order = orderBySquareId.get(sqOrder.id);
+      let order = orderBySquareId.get(sqOrder.id);
       if (!order) continue;
+      if (order.payment_provider === 'square' && order.payment_status !== 'paid') {
+        order = await settleSquarePhonePayment(base44, order, sqOrder);
+        // Checkout creation is not confirmation: wait for an actual completed payment.
+        if (order.payment_status !== 'paid') continue;
+      }
 
       // Loyalty accrual retry — online orders paid via Stripe sometimes miss
       // Star Rewards points because the Square order isn't in a computed state
@@ -315,4 +325,4 @@ Deno.serve(async (req) => {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}
