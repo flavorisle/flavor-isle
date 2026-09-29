@@ -33,6 +33,9 @@ export function formatItemModifiers(item: any): string[] {
     .filter((m: any) => {
       const name = m?.name;
       if (!name) return false;
+      // An adjusted preset topping (e.g. Extra Pickle) is an instruction,
+      // not the plain topping already represented by the Deluxe label.
+      if (/^(extra|lite|light)\s/i.test(name)) return true;
       return !tracked.some((t) => {
         const ms = stem(name);
         return ms === t || ms.includes(t) || t.includes(ms);

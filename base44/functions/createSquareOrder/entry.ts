@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
     // so selections from child lists (e.g., sauce preference, ice level, drink
     // flavor) are also catalog-referenced instead of ad-hoc text.
     const modifierOptionToList: Record<string, string> = {};
+    const modifierOptionToName: Record<string, string> = {};
     const childListMap: Record<string, string[]> = {};
     const retrievedListIds = new Set<string>();
 
@@ -207,6 +208,7 @@ Deno.serve(async (req) => {
             const childIds: string[] = [];
             for (const mod of (obj.modifier_list_data.modifiers || [])) {
               modifierOptionToList[mod.id] = obj.id;
+              modifierOptionToName[mod.id] = mod.modifier_data?.name || '';
               for (const cid of (mod.modifier_data?.child_modifier_list_ids || [])) {
                 childIds.push(cid);
                 if (!retrievedListIds.has(cid)) nextBatch.push(cid);
@@ -287,12 +289,18 @@ Deno.serve(async (req) => {
         const modListId = modifierOptionToList[sm.id];
         if (modListId && itemModListIds.has(modListId)) {
           const mod: any = { catalog_object_id: sm.id };
-          if (typeof sm.price === 'number' && sm.price !== 0) {
-            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
+          // A child preference (Regular/Extra/Lite) is already folded into the
+          // parent's display name and price. Explicitly zero its catalog price
+          // so Square does not add the child's default price a second time.
+          if (sm.silent || typeof sm.price === 'number') {
+            mod.base_price_money = { amount: sm.silent ? 0 : Math.round(sm.price * 100), currency: 'USD' };
           }
           appliedModifiers.push(mod);
-          catalogModPerUnit += (sm.price || 0);
-          if (sm.name) alreadyOnTicket.add(sm.name);
+          catalogModPerUnit += sm.silent ? 0 : (sm.price || 0);
+          // Only suppress the printed name when it matches Square's actual
+          // modifier label. A merged parent such as "Extra Pickle" has the
+          // same catalog id as "Pickle" but MUST remain on the kitchen ticket.
+          if (sm.name && sm.name === modifierOptionToName[sm.id]) alreadyOnTicket.add(sm.name);
         }
         // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
         // and their prices stay in base_price_money.
