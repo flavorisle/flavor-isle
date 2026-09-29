@@ -32,6 +32,15 @@ export default function About() {
       <PhotoChapter photo={islePhotos.dining} heading="The neighborhood’s table." />
       <PhotoChapter photo={islePhotos.awards} heading="A roadside stand that became Smiths Grove’s best." />
       <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into." />
+      <figure className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+        <img
+          src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0f76418c9_IMG_0884.jpeg"
+          alt="Visitors dressed as Ghostbusters beside their themed car in front of Flavor Isle"
+          loading="lazy"
+          className="w-full h-auto rounded-xl"
+        />
+        <figcaption className="mt-3 text-center font-body text-sm text-muted-foreground">A memorable visit to Flavor Isle.</figcaption>
+      </figure>
       <AboutValues />
       <AboutSmashie />
       <AboutTastyThreads />
