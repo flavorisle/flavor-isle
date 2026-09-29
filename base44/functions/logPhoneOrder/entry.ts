@@ -1,4 +1,4 @@
-import Stripe from 'npm:stripe@14.25.0';
+import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
@@ -63,54 +63,18 @@ export default async function(req) {
       delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
+      payment_provider: 'square',
+      manual_pay_required: true,
     });
 
     let paymentUrl = null;
-    let stripeSessionId = null;
     let paymentLinkSent = false;
     let paymentLinkEmailed = false;
     let manualPayRequired = false;
 
     try {
-      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
-      const origin = req.headers.get('origin') || 'https://flavor-isle.com';
-
-      // Phone orders are not tied to catalog variations, so there are no line
-      // items to send: the intent is priced from the same verified numbers the
-      // order was saved with (subtotal + tax), and nothing here comes from the
-      // customer's device. The intent id is stored in stripe_session_id, which
-      // is how the existing payment_intent.succeeded webhook finds this order,
-      // marks it paid, and pushes it to Square + the kitchen with the tip the
-      // customer added on the pay page.
-      // No receipt_email: the processor's own receipt carries its brand, and our
-      // confirmation email already covers the customer.
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(finalTotal * 100),
-        currency: 'usd',
-        payment_method_types: ['card'],
-        metadata: {
-          base44_app_id: Deno.env.get('BASE44_APP_ID'),
-          order_id: order.id,
-          order_number: orderNumber,
-          order_type: order_type || 'pickup',
-          phone_order: 'true',
-          customer_name,
-          customer_phone,
-        },
-        description: `Flavor Isle order #${orderNumber}`,
-      });
-
-      // The link the customer gets is our own short page, not a processor URL.
-      paymentUrl = `${origin}/pay/${orderNumber}`;
-      stripeSessionId = paymentIntent.id;
-
-      // stripe_session_id holds the PaymentIntent id — that is how the existing
-      // webhook finds this order again: it marks it paid and pushes it to
-      // Square + the kitchen.
-      await base44.asServiceRole.entities.Order.update(order.id, {
-        stripe_session_id: stripeSessionId,
-        payment_url: paymentUrl,
-      });
+      // Square is the default. Only staff can explicitly select Stripe later.
+      paymentUrl = await createSquarePhonePayment(base44, order);
 
       // Text it first — the customer is on the phone (or in chat), so it lands
       // instantly. This is the primary delivery channel for the payment link.
@@ -179,7 +143,8 @@ export default async function(req) {
       manual_pay_required: manualPayRequired,
       message: paymentLinkSent
         ? `Order #${orderNumber} is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
-        : `Order #${orderNumber} was saved, but no payment link could be sent. Tell the customer to pay at the counter — the order is flagged for manual payment.`,
+        : `Order #${orderNumber} was saved, but no payment link could be sent. Ask staff to resend the Square link or send a Stripe backup; do not claim the order is paid.`,
+      payment_provider: 'square',
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);

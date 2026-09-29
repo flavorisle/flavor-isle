@@ -1,4 +1,5 @@
 import Stripe from 'npm:stripe@14.25.0';
+import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import {
   TIP_EDITABLE_INTENT_STATUSES,
@@ -19,7 +20,7 @@ export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const order = await findOrderByNumber(base44, body.order_number);
+    let order = await findOrderByNumber(base44, body.order_number);
 
     if (!order) {
       return Response.json(
@@ -28,13 +29,21 @@ export default async function (req) {
       );
     }
 
+    if (order.payment_provider === 'square') order = await settleSquarePhonePayment(base44, order);
     const summary = orderPaySummary(order);
 
     if (order.payment_status === 'paid') {
       return Response.json({ ...summary, paid: true, payable: false });
     }
 
-    // Payment setup failed when the order was taken (the Square fallback): the
+    if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+      return Response.json({ ...summary, paid: false, payable: false, reason: 'payment_closed' });
+    }
+    if (order.payment_provider === 'square') {
+      return Response.json({ ...summary, paid: false, payable: !!order.payment_url, payment_provider: 'square', payment_url: order.payment_url });
+    }
+
+    // Payment setup failed when the order was taken: the
     // order is saved and the crew collects at the counter, so the page says so
     // instead of showing a form that cannot work.
     if (!order.stripe_session_id) {

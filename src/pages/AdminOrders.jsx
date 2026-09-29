@@ -11,6 +11,7 @@ import OccupancyTracker from '@/components/OccupancyTracker';
 import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 import MerchOrdersList from '@/components/admin/MerchOrdersList';
 import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
+import PhonePaymentActions from '@/components/admin/PhonePaymentActions';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -41,7 +42,7 @@ const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 // Detect where an order came from.
 function getSource(order) {
   if (order.order_source === 'in_store') return 'pos';
-  if (order.order_number?.startsWith('PH')) return 'phone';
+  if (order.payment_provider || order.payment_url || order.manual_pay_required || order.order_number?.startsWith('PH')) return 'phone';
   return 'online';
 }
 
@@ -173,6 +174,8 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
               <Printer size={16} /> Print Bag Ticket
             </button>
           )}
+
+          <PhonePaymentActions order={order} />
 
           {isActive && (
             <div className="mt-4 flex gap-3">

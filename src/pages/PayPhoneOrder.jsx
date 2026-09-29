@@ -118,6 +118,12 @@ export default function PayPhoneOrder() {
             title="Pay at the counter"
             body={`This order is set to be paid in person, so there's nothing to pay here. Come on in to the counter — we'll have it ready. Questions? Call ${PHONE}.`}
           />
+        ) : order.payment_provider === 'square' ? (
+          <>
+            <PayOrderSummary order={order} tip={order.tip || 0} />
+            <a href={order.payment_url} className="inline-flex min-h-11 w-full justify-center items-center rounded-full bg-primary text-primary-foreground py-3 font-heading">Pay securely with Square</a>
+            <p className="text-center text-sm text-muted-foreground">You can add a tip on the Square checkout page.</p>
+          </>
         ) : (
           <>
             <PayOrderSummary order={order} tip={tip} />

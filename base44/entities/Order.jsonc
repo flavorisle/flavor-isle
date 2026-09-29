@@ -143,6 +143,21 @@
       "type": "boolean",
       "default": false
     },
+    "payment_provider": {
+      "type": "string",
+      "enum": [
+        "square",
+        "stripe"
+      ],
+      "description": "Processor selected for a phone/chat payment link; Stripe is staff-selected only."
+    },
+    "square_payment_link_id": {
+      "type": "string"
+    },
+    "square_checkout_order_id": {
+      "type": "string",
+      "description": "Square hosted-checkout order; only copied to square_order_id after verified payment."
+    },
     "payment_status": {
       "type": "string",
       "enum": [
