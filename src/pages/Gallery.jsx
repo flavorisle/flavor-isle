@@ -11,11 +11,11 @@ import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 
 export default function Gallery() {
-  const [category, setCategory] = useState('All');
+  const [category, setCategory] = useState('Food');
   const [openIndex, setOpenIndex] = useState(null);
 
   const photos = useMemo(
-    () => (category === 'All' ? GALLERY_PHOTOS : GALLERY_PHOTOS.filter((p) => p.category === category)),
+    () => GALLERY_PHOTOS.filter((p) => p.category === category),
     [category]
   );
 
@@ -34,7 +34,7 @@ export default function Gallery() {
           {GALLERY_CATEGORIES.map((c) => (
             <button
               key={c}
-              onClick={() => setCategory(c)}
+              onClick={() => { setCategory(c); setOpenIndex(null); }}
               className={`px-4 py-2.5 rounded-full text-xs font-heading tracking-widest uppercase whitespace-nowrap transition-colors ${
                 category === c
                   ? 'bg-midnight-cherry text-white shadow-float'

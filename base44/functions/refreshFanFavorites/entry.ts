@@ -228,13 +228,7 @@ export default async function (req) {
     uniqueLineItemObjects: catIds.length,
     uniqueParentItems: Object.keys(parentCounts).length,
     eligibleRankedItems: rankedVisible.length,
-    ranked: rankedVisible.map((r) => ({
-      rank: rankById[r.item.id],
-      menu_item_id: r.item.id,
-      name: r.item.name,
-      square_item_id: r.sqId,
-      qty: r.qty,
-    })),
+    ranked,
     menuItemsUpdated: toUpdate.length,
     cleared,
   });

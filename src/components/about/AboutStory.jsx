@@ -2,7 +2,6 @@ import React from 'react';
 
 const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0dfcdf627_1CCAA2A1-AA3C-4C56-9922-CB1452069518.JPG';
 const PHOTO_GUESTBOOK = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/49f86bd0c_IMG_1445_Original.jpeg';
-const PHOTO_50TH = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/18c69de7c_FlavorIsle50thAnniversary5-3-14A.jpeg';
 
 export default function AboutStory() {
   return (
@@ -40,12 +39,8 @@ export default function AboutStory() {
         </div>
       </div>
 
-      {/* 50th anniversary, May 2014 */}
-      <div className="max-w-6xl mx-auto mt-20 grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <figure>
-          <img src={PHOTO_50TH} alt="Crowd gathered outside Flavor Isle with balloons for the 50th anniversary" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
-          <figcaption className="mt-3 text-sm text-muted-foreground">May 3, 2014 — the 50th anniversary celebration on Main Street</figcaption>
-        </figure>
+      {/* The anniversary crowd photo has its sole placement on the homepage. */}
+      <div className="max-w-6xl mx-auto mt-20">
         <figure>
           <img src={PHOTO_GUESTBOOK} alt="Guest book and anniversary note for Joyce at the 50th celebration" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
           <figcaption className="mt-3 text-sm text-muted-foreground">Neighbors signed Joyce's guest book with memories from fifty years of shakes</figcaption>

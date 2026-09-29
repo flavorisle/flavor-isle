@@ -1,7 +1,8 @@
 // Real Flavor Isle photos grouped for the /gallery page.
-export const GALLERY_CATEGORIES = ['All', 'Food', 'The Place', 'The People'];
+import { issue23Photos } from '@/lib/issue23Photos';
+export const GALLERY_CATEGORIES = ['Food', 'The Diner', 'Community & Events', 'Our People'];
 
-export const GALLERY_PHOTOS = [
+const LEGACY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png', alt: 'Double cheeseburger with lettuce, tomato and onion', category: 'Food', caption: 'The Double, stacked right' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d03ee300c_IMG_9874.jpg', alt: 'Loaded cheese fries with bacon and ranch', category: 'Food', caption: 'Loaded bacon cheese fries' },
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/bb9b490bf_IMG_0371.png', alt: 'Brownie dessert with fudge and peanuts', category: 'Food', caption: 'Hot fudge cake' },
@@ -36,8 +37,26 @@ export const GALLERY_PHOTOS = [
   { url: 'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/f5aaaf821_ee6a6bf73_IMG_5250_Original.jpg', alt: 'Close-up of a fried chicken sandwich', category: 'Food', caption: 'Chicken sandwich, up close' },
 ];
 
-// The two food shots featured in the compact homepage photo strip. Pulled
-// from GALLERY_PHOTOS so the homepage and the gallery never drift apart.
-export const HOMEPAGE_PHOTOS = GALLERY_PHOTOS.filter((photo) =>
-  ['Fried pickles, hot out of the basket', 'Stacked and smothered'].includes(photo.caption)
-);
+// Keep the previously published gallery photos except images assigned by issue #23
+// to a different single placement. New issue photos have one category each.
+const elsewhere = new Set([
+  'Fried pickles, hot out of the basket', 'Stacked and smothered',
+  'Blue walls and the community board', 'The award wall', 'A sketch of the Isle',
+  '50th anniversary, May 2014', 'Celebrating 50 years with Joyce',
+  'The Colonel stops by the Isle', 'Chicken sandwich, made fresh',
+  'Cheeseburger & tots', 'The hanging Flavor Isle sign', 'Chicken sandwich, up close',
+]);
+export const GALLERY_PHOTOS = [
+  ...LEGACY_PHOTOS.filter((photo) => !elsewhere.has(photo.caption)).map((photo) => ({
+    ...photo,
+    category: photo.caption === 'North Warren Community Walk' ? 'Community & Events' : photo.category === 'The Place' ? 'The Diner' : photo.category === 'The People' ? 'Our People' : photo.category,
+  })),
+  { url: issue23Photos.food1045, alt: 'IMG 1045 at Flavor Isle', caption: 'Flavor Isle · IMG 1045', category: 'Food' },
+  { url: issue23Photos.food1046, alt: 'IMG 1046 at Flavor Isle', caption: 'Flavor Isle · IMG 1046', category: 'Food' },
+  ...[
+    [issue23Photos.diner1240, 'IMG 1240'], [issue23Photos.diner1241, 'IMG 1241'],
+    [issue23Photos.diner1225, 'IMG 1225'], [issue23Photos.diner5526, 'IMG 5526'],
+    [issue23Photos.diner0099, 'IMG 0099'], [issue23Photos.diner5507, 'IMG 5507'],
+    [issue23Photos.diner5250, 'IMG 5250'], [issue23Photos.seasonal, 'Seasonal storefront'],
+  ].map(([url, caption]) => ({ url, alt: caption + ' at Flavor Isle', caption, category: 'The Diner' })),
+];

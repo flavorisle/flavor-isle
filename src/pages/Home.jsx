@@ -30,6 +30,8 @@ import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import { FallDivider } from '@/components/RetroFallTheme';
 import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
+import CommunityPhotoStrip from '@/components/CommunityPhotoStrip';
+import HeroStats from '@/components/HeroStats';
 
 
 const SPECIALS_TICKER = [
@@ -59,20 +61,29 @@ export default function Home() {
   const businessHours = useBusinessHours();
   const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
   const [menuItems, setMenuItems] = useState([]);
+  const [shakeRank, setShakeRank] = useState(null);
 
   // Load visible menu items so the Fan Favorites rail can show the real
   // top-10 best-sellers stamped by the refreshFanFavorites backend function.
   useEffect(() => {
     let active = true;
     const load = async () => {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3 && active; attempt++) {
         try {
-          const data = await base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10);
-          if (active) setMenuItems((data || []).filter((i) => !i.is_hidden));
+          const [data, snapshots] = await Promise.all([
+            base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10),
+            base44.entities.FanFavoriteSnapshot.list('-computed_at', 1),
+          ]);
+          const visible = (data || []).filter((i) => !i.is_hidden);
+          if (!visible.length && attempt < 2) throw new Error('Fan Favorites read returned empty');
+          if (active) {
+            setMenuItems(visible);
+            setShakeRank(snapshots?.[0]?.shake_rank || null);
+          }
           return;
         } catch (error) {
-          console.error(`Fan Favorites load failed (attempt ${attempt + 1}/2):`, error);
-          if (active) setMenuItems([]);
+          console.error(`Fan Favorites load failed (attempt ${attempt + 1}/3):`, error);
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
         }
       }
     };
@@ -102,38 +113,31 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── HERO ── */}
+      {/* ── HERO → FOOD → COMMUNITY → SHAKES → FAVORITES → REVIEWS → STATS ── */}
       <HeroSection />
-
-      <ExpressPickupStrip />
-
-      {/* ── FAN FAVORITES (dynamic top-10 best-sellers rail) ── */}
-      {menuItems.some((i) => i.is_fan_favorite) && (
+      <GalleryPhotoStrip items={menuItems} />
+      <CommunityPhotoStrip />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <MilkshakePromoBanner variant="strip" />
+      </div>
+      {(menuItems.length > 0 || shakeRank) && (
         <section className="py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
-            <FanFavoritesSection items={menuItems} />
-            <div className="mt-6">
-              <MilkshakePromoBanner variant="strip" />
-            </div>
+            <FanFavoritesSection items={menuItems} shakeRank={shakeRank} />
           </div>
         </section>
       )}
+      <ReviewSection />
+      <HeroStats />
 
-      {/* ── PROMO BANNERS ── */}
+      <ExpressPickupStrip />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
-
-      {/* ── REVIEWS (What people are saying) ── */}
-      <ReviewSection />
-
-      {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
       <WhyFlavorIsle />
 
       <HeritageBadges />
-
-      <FallDivider />
 
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
@@ -199,9 +203,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── FRESH OFF THE FLATTOP (two food photos → /gallery) ── */}
-      <GalleryPhotoStrip />
 
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">

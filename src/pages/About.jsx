@@ -12,8 +12,6 @@ import AboutTraveler from '@/components/about/AboutTraveler';
 import AboutTastyThreads from '@/components/about/AboutTastyThreads';
 import AboutExplore from '@/components/about/AboutExplore';
 import FoodPhotoRow from '@/components/FoodPhotoRow';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 
 export default function About() {
   return (
@@ -30,10 +28,11 @@ export default function About() {
       <CartDrawer />
       <AboutHero />
       <AboutStory />
-      <PhotoChapter photo={islePhotos.dining} heading="The neighborhood’s table." />
-      <PhotoChapter photo={islePhotos.awards} heading="A roadside stand that became Smiths Grove’s best." />
-      <PhotoChapter photo={islePhotos.sketch} heading="Every frame tells a story." text="The building, remembered in pencil and print." />
-      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into." />
+      <section className="px-4 sm:px-6 py-14 max-w-5xl mx-auto">
+        <h2 className="font-heading text-4xl text-obsidian-roast">The history wall</h2>
+        <p className="text-muted-foreground mt-3">From Joyce’s roadside stand in 1964 to the anniversary celebrations and the award wall, every frame tells a little of Smiths Grove’s story. See the award photos and the diner’s collected memories in our gallery.</p>
+        <a href="/gallery" className="inline-flex min-h-11 items-center font-heading text-midnight-cherry mt-4">Explore the gallery</a>
+      </section>
       <section className="pb-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <div className="max-w-6xl mx-auto">
           <FoodPhotoRow

@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { HOMEPAGE_PHOTOS } from '@/lib/galleryPhotos';
+import { issue23Photos } from '@/lib/issue23Photos';
+
 
 // Compact two-photo strip on the homepage — real food shots pulled from the
 // gallery data, linking through to the full /gallery page.
-export default function GalleryPhotoStrip() {
-  if (HOMEPAGE_PHOTOS.length === 0) return null;
+export default function GalleryPhotoStrip({ items = [] }) {
+  const photos = [...items.filter((item) => item.image_url).slice(0, 2).map((item) => ({
+    url: item.image_url, alt: item.name, caption: item.name,
+  })), { url: issue23Photos.flattop, alt: 'Fresh Off the Flattop at Flavor Isle', caption: 'Fresh off the flattop' }];
 
   return (
     <section className="py-10 px-4 sm:px-6 bg-vanilla-malt">
@@ -20,8 +23,8 @@ export default function GalleryPhotoStrip() {
             See the gallery <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {HOMEPAGE_PHOTOS.map((photo) => (
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          {photos.map((photo) => (
             <Link key={photo.url} to="/gallery" className="card-diner overflow-hidden block group">
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img

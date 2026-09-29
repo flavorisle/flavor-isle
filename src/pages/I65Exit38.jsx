@@ -8,8 +8,7 @@ import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import CinematicHero from '@/components/cinematic/CinematicHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
+import Exit38Walkthrough from '@/components/Exit38Walkthrough';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
@@ -98,10 +97,7 @@ export default function I65Exit38() {
       <Navbar />
 
       <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." />
-      <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
-      <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
-      <PhotoChapter photo={islePhotos.sketch} heading="A Smiths Grove original." />
-      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into at the Isle." />
+      <Exit38Walkthrough />
 
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">

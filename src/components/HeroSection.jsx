@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
-import HeroStats from '@/components/HeroStats';
+import { issue23Photos } from '@/lib/issue23Photos';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { FallStyles, FallSunburst, FallHeroLeaves, FallEyebrow } from '@/components/RetroFallTheme';
 
 // Fast, always-available hero photo so the hero paints with a real image
 // immediately instead of the brown gradient fallback. If the OneDrive media
 // lookup resolves, the storefront sign photo swaps in on top.
-const DEFAULT_HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg';
+const DEFAULT_HERO_PHOTO = issue23Photos.hero;
 
 export default function HeroSection() {
   const navigate = useNavigate();
@@ -84,7 +84,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      <HeroStats />
     </section>
   );
 }

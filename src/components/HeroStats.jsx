@@ -10,21 +10,19 @@ const RIGHT = [
   { num: '0', label: 'SHORTCUTS. EVER.' },
 ];
 
-function StatColumn({ stats }) {
-  return <div className="flex flex-col gap-5 text-center">
-    {stats.map(({ num, label }) => <div key={label}>
-      <div className="font-heading text-5xl lg:text-6xl leading-none mb-1" style={{ color: '#E3481C' }}>{num}</div>
-      <div className="text-xs sm:text-sm uppercase tracking-widest text-white/80 font-body">{label}</div>
-    </div>)}
+function Stat({ num, label }) {
+  return <div className="text-center">
+    <div className="font-heading text-[32px] leading-none mb-1 text-smashie-yellow">{num}</div>
+    <div className="text-xs uppercase tracking-wide text-white/80 font-body">{label}</div>
   </div>;
 }
 
 export default function HeroStats() {
-  return <div style={{ background: '#0B355A' }}>
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-6 lg:gap-8">
-      <StatColumn stats={LEFT} />
-      <div className="w-full md:w-[340px] lg:w-[410px]"><PopularTimesCard embedded /></div>
-      <StatColumn stats={RIGHT} />
+  return <section aria-label="Flavor Isle by the numbers" className="bg-obsidian-roast">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-2 lg:grid-cols-[1fr_1fr_minmax(300px,1.8fr)_1fr_1fr] items-center gap-4">
+      {LEFT.map((stat) => <Stat key={stat.label} {...stat} />)}
+      <div className="col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1"><PopularTimesCard embedded /></div>
+      {RIGHT.map((stat) => <Stat key={stat.label} {...stat} />)}
     </div>
-  </div>;
+  </section>;
 }

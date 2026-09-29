@@ -32,7 +32,7 @@ export default async function(req: Request): Promise<Response> {
       const result = await upsertSmsConsent(base44, {
         phone, sourcePage: 'account_preferences',
         disclosureVersion: SMS_CONSENT_VERSION,
-        transactionalConsent: action === 'smsOn' && existingSms[0]?.status === 'active' && existingSms[0]?.transactional_consent === true,
+        transactionalConsent: existingSms[0]?.status === 'active' && existingSms[0]?.transactional_consent === true,
         ...(action === 'smsOff'
           ? { revokeMarketingConsent: true }
           : { marketingConsent: true, disclosureText: DISCLOSURE_TEXT.marketing }),

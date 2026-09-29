@@ -7,8 +7,6 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b75912a_FlavorIsleBuilding.png';
 
@@ -56,8 +54,11 @@ export default function CorvetteCarClubs() {
         </div>
       </section>
 
-      <PhotoChapter photo={islePhotos.burgerTots} heading="Add Flavor Isle to your route." action="Order Now" />
-      <PhotoChapter photo={islePhotos.chicken} heading="A stop worth the drive." action="Get Directions" to="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" />
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        <h2 className="font-heading text-3xl text-obsidian-roast">Your car club is welcome here</h2>
+        <p className="text-muted-foreground mt-3">Make Smiths Grove part of the cruise: pull in together, share a meal, and swap stories over burgers and shakes. For a group visit, call ahead so we can welcome your crew.</p>
+        <Link to="/gallery" className="inline-flex min-h-11 items-center text-midnight-cherry font-heading mt-4">See the Flavor Isle gallery <ArrowRight size={16} className="ml-2" /></Link>
+      </section>
 
       {/* Group seating + scenic route */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
