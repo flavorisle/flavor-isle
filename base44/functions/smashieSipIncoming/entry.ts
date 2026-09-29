@@ -37,7 +37,7 @@ import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/sm
 
 const LIVE_MODEL = 'gpt-live-1';
 const BACKEND_MODEL = 'gpt-6-luna';
-const VOICE = 'marin';
+const VOICE = 'verse';
 const HANDLED_EVENTS = ['live.transport.incoming', 'live.call.incoming'];
 const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/;
 
@@ -288,7 +288,7 @@ export default async function (req) {
     const accepted = await acceptLiveSession(sessionId, apiKey, {
       type: 'live',
       model: LIVE_MODEL,
-      instructions: `${VOICE_INSTRUCTIONS}\n\n${context}\n\n${smashieAdminContext(settings)}\n\nWhen OPEN use this introduction after your name: ${phoneIntro(settings)}`,
+      instructions: `${VOICE_INSTRUCTIONS}\n\n${context}\n\n${smashieAdminContext(settings)}\n\nWhen OPEN use this introduction after the welcome, without saying your name: ${phoneIntro(settings)}`,
       audio: { output: { voice: VOICE } },
       delegation: {
         type: 'responses',

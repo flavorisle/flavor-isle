@@ -225,8 +225,8 @@ export default async function(req) {
         ? `Just a heads up — ${storeStatus.message}.`
         : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} ${abilityEnabled(settings, 'hours') ? 'I can tell you when we open next. ' : ''}${abilityEnabled(settings, 'messages') ? 'I can take a message for the crew. ' : ''}What do you need today?`
-        : `Hey fam, Smashie here at Flavor Isle! ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
+        ? `${SMASHIE_HELLO} ${headsUp} ${abilityEnabled(settings, 'hours') ? 'I can tell you when we open next. ' : ''}${abilityEnabled(settings, 'messages') ? 'I can take a message for the crew. ' : ''}What do you need today?`
+        : `${SMASHIE_HELLO} ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
       const conversationId = convo.id;
       const callRecordPromise = base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,

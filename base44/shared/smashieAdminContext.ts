@@ -30,6 +30,7 @@ export function smashieAdminContext(settings) {
   const disabled = Object.entries(CAPABILITIES).filter(([key]) => !abilityEnabled(settings, key)).map(([, label]) => label);
   const topics = (settings?.knowledge_topics || []).filter(t => t.enabled !== false && t.title?.trim() && t.content?.trim()).slice(0, 20);
   return [
+    `PHONE IDENTITY RULE: Do not say your name or introduce yourself as Smashie unless the caller explicitly asks your name or who they are speaking with. This overrides older greeting/persona instructions about introducing yourself.`,
     `ADMIN PHONE ABILITIES: ${disabled.length ? `Do NOT ${disabled.join('; ')}. Do not call tools for disabled abilities, even if the caller asks. Offer only remaining abilities.` : 'All built-in abilities enabled.'} Store closures still take precedence.`,
     settings?.personality_notes?.trim() ? `PERSONALITY NOTES: ${settings.personality_notes.trim().slice(0, 1000)}` : '',
     `ADMIN KNOWLEDGE: ${topics.length ? topics.map(t => `${t.title.slice(0, 80)}: ${t.content.slice(0, 2000)}`).join('\n') : 'No active custom topics.'}`,

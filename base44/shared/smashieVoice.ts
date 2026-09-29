@@ -1,4 +1,5 @@
 import { secrets } from 'base44:runtime';
+import { SMASHIE_VOICE, SMASHIE_VOICE_STYLE } from './smashieVoiceConfig.ts';
 
 export async function generateSmashieVoice(base44, text) {
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -9,9 +10,9 @@ export async function generateSmashieVoice(base44, text) {
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini-tts',
-      voice: 'verse',
+      voice: SMASHIE_VOICE,
       input: text,
-      instructions: 'Use the clear, articulate voice of a confident 21-year-old American man. Sound relaxed, upbeat, socially natural, and effortlessly cool—not performative. Keep pronunciation crisp, pacing steady, and sentences easy to understand over a phone call. Use only a light conversational edge; do not exaggerate slang, mumble, slur words, use a character voice, sound childish, or sound older than 25.',
+      instructions: SMASHIE_VOICE_STYLE,
       response_format: 'mp3',
       speed: 1.02,
     }),

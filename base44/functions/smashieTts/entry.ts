@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { SMASHIE_VOICE, SMASHIE_VOICE_STYLE } from '../../shared/smashieVoiceConfig.ts';
 
 // Public TTS endpoint for Smashie's voice calls. Twilio <Play> GETs this with
 // ?text=... and we return natural OpenAI TTS audio (young male "verse" voice) so
@@ -27,9 +28,9 @@ export default async function (req: Request): Promise<Response> {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini-tts',
-        voice: 'verse',
+        voice: SMASHIE_VOICE,
         input: text,
-        instructions: 'Use the clear, articulate voice of a confident 21-year-old American man. Sound relaxed, upbeat, socially natural, and easy to understand over a phone call.',
+        instructions: SMASHIE_VOICE_STYLE,
         response_format: 'mp3',
         speed: 1.02,
       }),
