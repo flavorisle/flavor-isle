@@ -1,6 +1,6 @@
 import React from 'react';
-import { Car, ExternalLink } from 'lucide-react';
-import { issue23Photos } from '@/lib/issue23Photos';
+import { Car } from 'lucide-react';
+import PickupZoneMap from '@/components/PickupZoneMap';
 
 export default function ParkingGuide() {
   return (
@@ -19,14 +19,7 @@ export default function ParkingGuide() {
           </span>
         </div>
       </div>
-      <figure>
-        <a href={issue23Photos.parking} target="_blank" rel="noopener noreferrer" aria-label="Open full-size Flavor Isle parking map in a new tab" className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-midnight-cherry">
-          <img src={issue23Photos.parking} alt="Flavor Isle parking map: blue P markers show available spaces along N Main St and nearby lots; red crossed-out P markers show where parking is prohibited" loading="lazy" className="block w-full max-w-3xl mx-auto h-auto" />
-        </a>
-        <figcaption className="p-4 text-center text-sm text-patina-mint font-semibold inline-flex items-center justify-center gap-2 w-full">
-          <ExternalLink size={16} aria-hidden="true" /> Tap the map to open it full size
-        </figcaption>
-      </figure>
+      <PickupZoneMap />
     </section>
   );
 }
