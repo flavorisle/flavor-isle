@@ -1,14 +1,15 @@
 # Builder report: webhook_secret_wiring_2026-09-29
 
-**Item:** OpenAI webhook signing secret — where to paste it, and how to confirm it worked
-**Status:** draft
+## OpenAI webhook signing secret — where to paste it, and how to confirm it worked
+
+**Status:** draft  
 **App entity:** BuilderReport `6abb6c90eae69d2177cb2807`
 
-## Before
+### Before
 
 OPENAI_WEBHOOK_SECRET exists in the app but its value cannot be read or verified from the builder side. Live Phone Pipeline (realtime_sip_enabled) is OFF.
 
-## After
+### After
 
 WHERE TO PASTE (Wesley does this himself)
   Base44 dashboard → this app → Secrets (environment variables) → the secret named exactly:  OPENAI_WEBHOOK_SECRET
