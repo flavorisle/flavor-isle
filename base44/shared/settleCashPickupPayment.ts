@@ -25,5 +25,15 @@ export async function settleCashPickupPayment(base44, order, recordCash = false,
   const cash = payments.find(p => verified(p) && p.source_type === 'CASH');
   const updates = { payment_status: 'paid', manual_pay_required: false, ...(cash ? { cash_payment_id: cash.id } : {}) };
   await base44.asServiceRole.entities.Order.update(order.id, updates);
+  // A cash order often completes before the crew collects the money, and the
+  // profile-stats sync only counts paid orders — so re-run it once cash lands
+  // or the customer's order history would silently miss this visit.
+  if (order.status === 'completed') {
+    try {
+      await base44.functions.invoke('syncCustomerProfileStats', { order_id: order.id });
+    } catch (syncErr) {
+      console.warn(`Profile sync after cash payment failed for order ${order.order_number}:`, syncErr.message);
+    }
+  }
   return { ...order, ...updates };
 }
