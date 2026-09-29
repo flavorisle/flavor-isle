@@ -8,7 +8,7 @@ export default function OrderSmsLog() {
   const [error, setError] = useState('');
   const load = async () => {
     setLoading(true); setError('');
-    try { setLogs(await base44.entities.SmsDeliveryLog.list('-created_date', 50)); }
+    try { setLogs(await base44.entities.SmsDeliveryLog.list('-status_at', 50)); }
     catch { setError('Could not load order texts. Try Refresh.'); }
     finally { setLoading(false); }
   };
@@ -16,7 +16,7 @@ export default function OrderSmsLog() {
     load();
     return base44.entities.SmsDeliveryLog.subscribe(event => {
       setLogs(current => event.type === 'delete' ? current.filter(row => row.id !== event.id) :
-        [event.data, ...current.filter(row => row.id !== event.id)].filter(Boolean).sort((a, b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
+        [event.data, ...current.filter(row => row.id !== event.id)].filter(Boolean).sort((a, b) => (b.status_at || b.created_date || '').localeCompare(a.status_at || a.created_date || '')).slice(0, 50));
     });
   }, []);
   return <section className="mb-8" aria-label="Order status text delivery log">
@@ -31,7 +31,7 @@ export default function OrderSmsLog() {
         <summary className="cursor-pointer min-h-11 text-foreground break-words">
           <span className="font-semibold">#{log.order_number} · {log.milestone}</span>
           <span className={`ml-2 capitalize font-semibold ${['failed', 'undelivered'].includes(log.status) ? 'text-destructive' : 'text-foreground'}`}>{log.status === 'pending' ? 'Sending' : log.status}</span>
-          <span className="block text-sm text-muted-foreground">{log.customer_name || log.phone || 'No phone'} · {new Date(log.created_date).toLocaleString()}</span>
+          <span className="block text-sm text-muted-foreground">{log.customer_name || log.phone || 'No phone'} · {new Date(log.status_at || log.created_date).toLocaleString()}</span>
         </summary>
         <div className="pt-3 text-sm space-y-2 break-words"><p>{log.phone}</p><p className="whitespace-pre-wrap">{log.body}</p>
           {log.reason && <p><strong>Reason:</strong> {log.reason}</p>}{log.error_code && <p>Twilio error: {log.error_code}</p>}
