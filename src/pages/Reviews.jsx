@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { Star, MessageCircle, Instagram } from 'lucide-react';
 import ReviewsHero from '@/components/reviews/ReviewsHero';
 import ReviewsRatings from '@/components/reviews/ReviewsRatings';
+import ReviewWordWall from '@/components/reviews/ReviewWordWall';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
@@ -175,7 +176,7 @@ export default function Reviews() {
       <section className="px-4 sm:px-6 py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-2">As Seen on TikTok & Instagram</h2>
+            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-2">As Seen on TikTok, Instagram & Facebook</h2>
             <p className="text-muted-foreground">Food creators stopped by the Isle — here's what they captured.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -198,6 +199,8 @@ export default function Reviews() {
         }}
         heading="Good food brings people together."
       />
+
+      <ReviewWordWall />
 
       {/* Wall of Love */}
       <section className="bg-patina-mint/5 px-4 sm:px-6 py-20">
