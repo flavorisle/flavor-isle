@@ -21,7 +21,7 @@ export async function createSquarePhonePayment(base44, order) {
         recipient, schedule_type: 'ASAP',
         note: `${order.order_type.toUpperCase()}\n${order.delivery_address || ''}\n${order.special_instructions || ''}`.trim(),
       } }],
-      metadata: { app_order_id: order.id, order_source: 'flavor-isle-phone', order_type: order.order_type },
+      metadata: { app_order_id: order.id, order_source: 'flavor-isle-website', order_type: order.order_type }, // Existing POS import skips app-owned orders.
     },
     checkout_options: { allow_tipping: true, redirect_url: `https://flavor-isle.com/pay/${order.order_number}` },
     ...(email ? { pre_populated_data: { buyer_email: email } } : {}),
