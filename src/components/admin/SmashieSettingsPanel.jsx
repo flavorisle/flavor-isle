@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Bot, Save, Loader2, Check, Facebook } from 'lucide-react';
 import SmashieAbilities from './SmashieAbilities';
 import SmashieKnowledge, { INITIAL_TOPICS } from './SmashieKnowledge';
+import SmashieToolInventory from './SmashieToolInventory';
 
 // Edits the single SmashieSettings record. These values are read at runtime by
 // the Twilio webhooks (greeting + toggles) and the order-status sync (SMS
@@ -32,7 +33,7 @@ export default function SmashieSettingsPanel() {
           knowledge_topics: INITIAL_TOPICS,
         });
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setError('Could not load Smashie’s settings.'); }
   };
 
   useEffect(() => { load(); }, []);
@@ -83,6 +84,7 @@ export default function SmashieSettingsPanel() {
   };
 
   if (!settings) {
+    if (error) return <div role="alert" className="card-diner p-5"><p>{error}</p><button onClick={load} className="btn-cherry px-5 py-3 mt-3">Try again</button></div>;
     return (
       <div className="flex justify-center py-12">
         <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
@@ -98,7 +100,7 @@ export default function SmashieSettingsPanel() {
           <Bot size={18} className="text-midnight-cherry" />
           <h3 className="font-heading text-obsidian-roast">Smashie's Greeting</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">The first thing Smashie says on a phone call or when replying to an SMS.</p>
+        <p className="text-xs text-muted-foreground mb-3">Fallback reply if Smashie can't answer a text. The separate phone introduction below is spoken on calls.</p>
         <textarea
           value={settings.greeting || ''}
           onChange={e => update('greeting', e.target.value)}
@@ -109,17 +111,14 @@ export default function SmashieSettingsPanel() {
 
       <div className="card-diner p-5">
         <label htmlFor="smashie-phone-intro" className="font-heading text-obsidian-roast">Phone introduction</label>
-        <p className="text-sm text-muted-foreground mb-3">Spoken after Smashie's name and current wait when the restaurant is open. Leave blank to use the standard card-order explanation. Keep it under 450 characters so the ending is heard.</p>
+        <p className="text-sm text-muted-foreground mb-3">Spoken after Smashie's name and current wait when the restaurant is open. Leave blank for the standard introduction. If you switch off an ability, Smashie uses an introduction listing only enabled abilities. Keep custom wording under 450 characters.</p>
         <textarea id="smashie-phone-intro" value={settings.phone_intro || ''} maxLength={450} onChange={e => update('phone_intro', e.target.value)} rows={5}
           placeholder="Use the standard introduction" className="w-full px-4 py-3 bg-background rounded-xl border border-border" />
       </div>
 
       <SmashieAbilities value={settings.capabilities} onChange={value => update('capabilities', value)} />
       <SmashieKnowledge topics={settings.knowledge_topics} onChange={value => update('knowledge_topics', value)} />
-      <div className="card-diner p-5">
-        <h3 className="font-heading text-obsidian-roast">Built-in phone tools</h3>
-        <p className="text-sm text-muted-foreground">Live menu lookup, burger toppings, shake details, secure-link ordering, crew messages and counter transfer are maintained in Smashie's phone service. The switches above control which he may use; knowledge topics are separate from actions.</p>
-      </div>
+      <SmashieToolInventory />
 
       {/* Toggles */}
       <div className="card-diner p-5 space-y-4">
@@ -171,7 +170,7 @@ export default function SmashieSettingsPanel() {
       {/* Personality notes */}
       <div className="card-diner p-5">
         <h3 className="font-heading text-obsidian-roast mb-2">Personality Notes</h3>
-        <p className="text-xs text-muted-foreground mb-3">Quick reference notes about Smashie's tone and persona for your team.</p>
+        <p className="text-xs text-muted-foreground mb-3">Notes that guide Smashie's tone and persona on phone calls.</p>
         <textarea
           value={settings.personality_notes || ''}
           onChange={e => update('personality_notes', e.target.value)}

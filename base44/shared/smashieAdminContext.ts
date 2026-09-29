@@ -11,8 +11,9 @@ export function abilityEnabled(settings, key) {
 }
 
 export function phoneIntro(settings) {
-  if (settings?.phone_intro?.trim()) return settings.phone_intro.trim();
-  if (Object.keys(CAPABILITIES).every(key => abilityEnabled(settings, key))) return OPEN_PHONE_INTRO;
+  if (Object.keys(CAPABILITIES).every(key => abilityEnabled(settings, key))) {
+    return settings?.phone_intro?.trim() || OPEN_PHONE_INTRO;
+  }
   const offers = [];
   if (abilityEnabled(settings, 'orders')) offers.push("take your pickup, delivery, or dine-in order and text you a secure payment link to enter your card details; the crew starts cooking once you've paid");
   if (abilityEnabled(settings, 'menu')) offers.push('answer live menu questions');
