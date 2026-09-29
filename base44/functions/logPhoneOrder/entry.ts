@@ -2,13 +2,14 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
-// Phone / website-chat order intake for Smashie. Saves the order, creates a
-// Stripe Checkout payment link, then TEXTS that link to the customer's number
-// (and emails the same link whenever we have an address).
+// Phone / website-chat order intake for Smashie. Saves the order, sets up the
+// payment server-side, then TEXTS the customer a short link to our own
+// flavor-isle.com/pay page (and emails the same link whenever we have an
+// address). The customer pays on our site and never sees a processor URL.
 //
-// Nothing is cooked until Stripe confirms payment: the Stripe webhook matches
-// the session back to this order via stripe_session_id, marks it paid, and
-// pushes it to Square + the kitchen.
+// Nothing is cooked until the payment clears: the webhook matches the
+// PaymentIntent back to this order via stripe_session_id, marks it paid, and
+// pushes it to Square + the kitchen — including any tip added on the pay page.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -38,16 +39,16 @@ export default async function(req) {
       (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
       0,
     );
-    // Price from the verified items the customer agreed to — the Stripe line
-    // items are built from the same numbers, so the charge, the saved order, and
-    // the kitchen ticket can never disagree. A caller-supplied total is only a
+    // Price from the verified items the customer agreed to — the payment intent
+    // is created for these same numbers, so the charge, the saved order, and the
+    // kitchen ticket can never disagree. A caller-supplied total is only a
     // fallback for an item that arrived without a price.
     const subtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
     const tax = Math.round(subtotal * 0.06 * 100) / 100;
     const finalTotal = Math.round((subtotal + tax) * 100) / 100;
     const orderNumber = 'PH' + Date.now().toString().slice(-6);
 
-    // Keep the order pending until the customer pays through the Stripe link.
+    // Keep the order pending until the customer pays on the payment page.
     const order = await base44.asServiceRole.entities.Order.create({
       order_number: orderNumber,
       order_type: order_type || 'pickup',
@@ -68,43 +69,25 @@ export default async function(req) {
     let stripeSessionId = null;
     let paymentLinkSent = false;
     let paymentLinkEmailed = false;
+    let manualPayRequired = false;
 
     try {
       const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
       const origin = req.headers.get('origin') || 'https://flavor-isle.com';
 
-      // Phone orders are not tied to catalog variations, so the picked items go
-      // in as their own line items at the verified prices Smashie read back.
-      const lineItems = items.map((item) => {
-        const mods = (item.selectedModifiers || []).map((m) => m.name).filter(Boolean).join(', ');
-        return {
-          price_data: {
-            currency: 'usd',
-            product_data: { name: mods ? `${item.name || 'Item'} (${mods})` : (item.name || 'Item') },
-            unit_amount: Math.round((Number(item.price) || 0) * 100),
-          },
-          quantity: Number(item.quantity) || 1,
-        };
-      });
-
-      if (tax > 0) {
-        lineItems.push({
-          price_data: {
-            currency: 'usd',
-            product_data: { name: 'Sales Tax (6%)' },
-            unit_amount: Math.round(tax * 100),
-          },
-          quantity: 1,
-        });
-      }
-
-      const session = await stripe.checkout.sessions.create({
+      // Phone orders are not tied to catalog variations, so there are no line
+      // items to send: the intent is priced from the same verified numbers the
+      // order was saved with (subtotal + tax), and nothing here comes from the
+      // customer's device. The intent id is stored in stripe_session_id, which
+      // is how the existing payment_intent.succeeded webhook finds this order,
+      // marks it paid, and pushes it to Square + the kitchen with the tip the
+      // customer added on the pay page.
+      // No receipt_email: the processor's own receipt carries its brand, and our
+      // confirmation email already covers the customer.
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(finalTotal * 100),
+        currency: 'usd',
         payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        ...(emailOk ? { customer_email } : {}),
-        success_url: `${origin}/order-status?order=${orderNumber}`,
-        cancel_url: `${origin}/menu`,
         metadata: {
           base44_app_id: Deno.env.get('BASE44_APP_ID'),
           order_id: order.id,
@@ -114,19 +97,16 @@ export default async function(req) {
           customer_name,
           customer_phone,
         },
-        payment_intent_data: {
-          metadata: { order_number: orderNumber, phone_order: 'true' },
-        },
-        custom_text: {
-          submit: { message: `Order #${orderNumber} — we start cooking the second this goes through!` },
-        },
+        description: `Flavor Isle order #${orderNumber}`,
       });
 
-      paymentUrl = session.url;
-      stripeSessionId = session.id;
+      // The link the customer gets is our own short page, not a processor URL.
+      paymentUrl = `${origin}/pay/${orderNumber}`;
+      stripeSessionId = paymentIntent.id;
 
-      // stripe_session_id is how the Stripe webhook finds this order again: it
-      // marks it paid and pushes it to Square + the kitchen.
+      // stripe_session_id holds the PaymentIntent id — that is how the existing
+      // webhook finds this order again: it marks it paid and pushes it to
+      // Square + the kitchen.
       await base44.asServiceRole.entities.Order.update(order.id, {
         stripe_session_id: stripeSessionId,
         payment_url: paymentUrl,
@@ -151,7 +131,7 @@ export default async function(req) {
             body: [
               `Hey ${customer_name}!`,
               ``,
-              `Your order #${orderNumber} is locked in for $${finalTotal.toFixed(2)}. Tap the secure Stripe link below to pay:`,
+              `Your order #${orderNumber} is locked in for $${finalTotal.toFixed(2)}. Tap the secure payment link below to pay — you can add a tip for the crew right on that page:`,
               ``,
               paymentUrl,
               ``,
@@ -168,7 +148,16 @@ export default async function(req) {
         }
       }
     } catch (linkErr) {
-      console.error('Phone order payment link error:', linkErr.message);
+      // Square fallback: the order is already saved, so when payment setup fails
+      // we flag it for manual payment at the counter instead of sending the
+      // customer a link that cannot be paid.
+      console.error('Phone order payment setup error:', linkErr.message);
+      manualPayRequired = true;
+      try {
+        await base44.asServiceRole.entities.Order.update(order.id, { manual_pay_required: true });
+      } catch (flagErr) {
+        console.error(`Manual-pay flag failed for order ${orderNumber}:`, flagErr.message);
+      }
     }
 
     const deliveredVia = [
@@ -187,9 +176,10 @@ export default async function(req) {
       payment_url: paymentUrl,
       payment_link_sent: paymentLinkSent,
       payment_link_emailed: paymentLinkEmailed,
+      manual_pay_required: manualPayRequired,
       message: paymentLinkSent
-        ? `Order #${orderNumber} is pending payment. A secure Stripe link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
-        : `Order #${orderNumber} was saved, but the payment link could not be sent. Text the pay link to ${customer_phone} manually, or have the customer pay at the counter.`,
+        ? `Order #${orderNumber} is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
+        : `Order #${orderNumber} was saved, but no payment link could be sent. Tell the customer to pay at the counter — the order is flagged for manual payment.`,
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);

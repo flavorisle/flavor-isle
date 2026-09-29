@@ -62,6 +62,7 @@ const Order = lazy(() => import('./pages/Order'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const MerchCheckout = lazy(() => import('./pages/MerchCheckout'));
 const MerchConfirmation = lazy(() => import('./pages/MerchConfirmation'));
+const PayPhoneOrder = lazy(() => import('./pages/PayPhoneOrder'));
 const AdminMerchCategories = lazy(() => import('./pages/AdminMerchCategories'));
 const AdminReviews = lazy(() => import('./pages/AdminReviews'));
 const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
@@ -216,6 +217,7 @@ const AuthenticatedApp = () => {
       <Route path="/merch-confirmation" element={<MerchConfirmation />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
+      <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
 
