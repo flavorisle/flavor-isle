@@ -25,14 +25,14 @@ export default function WhyFlavorIsle() {
         </p>
       </div>
       <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {CARDS.map((c) => (
-            <div key={c.title} className="bg-card rounded-2xl p-6 shadow-float flex items-start gap-4">
-              <span className="text-3xl flex-shrink-0" aria-hidden="true">{c.icon}</span>
-              <div>
-                <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">{c.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{c.body}</p>
-              </div>
+            <div key={c.title} className="bg-card rounded-2xl p-7 shadow-float">
+              <div className="text-3xl mb-3">{c.icon}</div>
+              <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">
+                {c.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{c.body}</p>
             </div>
           ))}
         </div>
