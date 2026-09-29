@@ -158,12 +158,26 @@ Deno.serve(async (req) => {
     const channelLine = `CHANNEL: SMS text message — this is a TEXT, not a phone call. The customer's phone number is ${from}: pass this exact number to logPhoneOrder as customer_phone. Counter transfers are NOT possible by text and the customer sees every character you send, so never offer a transfer, never use the [[TRANSFER]] token, and never use the [[PHONE_MESSAGE:...]] token — offer (270) 563-4618 or take the details and say management will follow up.`;
     const smsContext = `[[CTX]]${statusLine}\n${channelLine}[[/CTX]]\n`;
 
-    const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
+    // Smashie's reply lands on the conversation asynchronously, so wait for it
+    // the same way the voice webhook does (up to 10s). Reading the conversation
+    // straight after addMessage returned no messages and the customer got the
+    // canned greeting instead of an answer.
+    const conversationId = smsRecord.conversation_id;
+    const before = await base44.asServiceRole.agents.getConversation(conversationId);
+    const priorAssistantCount = (before.messages || []).filter(m => m.role === 'assistant').length;
+
+    await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
       content: `${smsContext}${body}`,
     });
 
-    const messages = updatedConversation.messages || [];
+    let messages = [];
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
+      messages = refreshed.messages || [];
+      if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
+    }
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
     // Strip any structured token Smashie may have emitted for another channel
