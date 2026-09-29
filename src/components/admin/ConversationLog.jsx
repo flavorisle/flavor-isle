@@ -49,11 +49,32 @@ export default function ConversationLog({ channel }) {
         });
         return next;
       });
+      setLoading(false);
+      if (channel === 'voice') {
+        const missing = filtered.filter(c => !c.square_customer_id && /\d{10}/.test((c.phone_number || '').replace(/\D/g, '')));
+        for (let i = 0; i < missing.length; i += 20) {
+          const res = await base44.functions.invoke('lookupCaller', { conversation_ids: missing.slice(i, i + 20).map(c => c.id) });
+          const matches = new Map((res.data?.results || []).filter(c => c.found).map(c => [c.id, c]));
+          setConversations(prev => prev.map(c => matches.has(c.id) ? { ...c, ...matches.get(c.id) } : c));
+        }
+      }
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [channel]);
+  useEffect(() => {
+    load();
+    return base44.entities.SmsConversation.subscribe(event => {
+      if (event.type === 'delete') {
+        setConversations(prev => prev.filter(c => c.id !== event.id));
+        return;
+      }
+      const c = event.data;
+      if (!c || (c.channel || 'sms') !== channel) return;
+      setConversations(prev => [c, ...prev.filter(row => row.id !== c.id)].sort((a, b) => (b.last_message_at || '').localeCompare(a.last_message_at || '')).slice(0, 100));
+      if (c.transcript?.length) setMessages(prev => ({ ...prev, [c.id]: c.transcript }));
+    });
+  }, [channel]);
 
   const resolveName = async (c) => {
     if (resolving[c.id]) return;
@@ -61,7 +82,7 @@ export default function ConversationLog({ channel }) {
     try {
       const res = await base44.functions.invoke('lookupCaller', { conversation_id: c.id, phone: c.phone_number });
       if (res.data?.name) {
-        setConversations(prev => prev.map(x => x.id === c.id ? { ...x, customer_name: res.data.name } : x));
+        setConversations(prev => prev.map(x => x.id === c.id ? { ...x, customer_name: res.data.name, customer_email: res.data.customer_email, square_customer_id: res.data.square_customer_id } : x));
       }
     } catch (e) { console.error(e); }
     setResolving(prev => ({ ...prev, [c.id]: false }));
@@ -156,6 +177,12 @@ export default function ConversationLog({ channel }) {
 
                 {isOpen && (
                   <div className="border-t border-border bg-muted/30 p-4 space-y-3 max-h-96 overflow-y-auto">
+                    {channel === 'voice' && c.square_customer_id && (
+                      <div className="text-sm text-foreground border-b border-border pb-3">
+                        <p className="font-semibold">Square customer: {c.customer_name || 'Name not on file'}</p>
+                        {c.customer_email && <p className="text-muted-foreground break-all">{c.customer_email}</p>}
+                      </div>
+                    )}
                     {/* Call details (voice only) */}
                     {channel === 'voice' && (c.call_status || c.call_duration != null || c.call_direction || c.call_started_at) && (
                       <div className="flex flex-wrap gap-2 text-xs pb-3 mb-1 border-b border-border">
