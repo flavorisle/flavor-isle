@@ -52,7 +52,11 @@ const FEATURES = [
 { icon: '🍗', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
 
-
+const HOME_DINING_PHOTO = {
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c9373f338_C503A316-B057-4EF3-A71C-5B8F7E5D7A59.JPG',
+  alt: 'Flavor Isle dining room with tables, blue walls, and a view of the outdoor seating',
+  caption: 'Pull up a seat. Stay a while.',
+};
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -114,7 +118,7 @@ export default function Home() {
 
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero />
-      <PhotoChapter photo={islePhotos.dining} heading="Come on in." text="Pull up a seat in Smiths Grove." />
+      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
       <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
       <HomeOrderOptions />
