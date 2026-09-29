@@ -407,7 +407,10 @@ export default async function(req) {
     if (wantsTransfer && counterNumber && abilityEnabled(settings, 'transfer') && !closedToday) {
       const cleanReply = spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
-      await speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
+      // A failed audio download aborts Twilio's entire response before <Dial>.
+      // Use Twilio's built-in voice for this announcement so transfers do not
+      // depend on the separate TTS endpoint being available.
+      transferTwiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
       const transferCallback = new URL(`https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook`);
       transferCallback.searchParams.set('transfer', '1');
       transferCallback.searchParams.set('from', callerFrom);
