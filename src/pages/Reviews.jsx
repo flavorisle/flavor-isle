@@ -3,7 +3,6 @@
 // same Navbar/Footer) and the BusynessGuide page's centered, generous layout.
 import React, { useState, useEffect } from 'react';
 import ReviewsHero from '@/components/reviews/ReviewsHero';
-import ReviewsRatings from '@/components/reviews/ReviewsRatings';
 import ReviewWordWall from '@/components/reviews/ReviewWordWall';
 import HometownMap from '@/components/reviews/HometownMap';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
@@ -169,7 +168,6 @@ export default function Reviews() {
       <Navbar />
 
       <ReviewsHero />
-      <ReviewsRatings />
 
       {/* As Seen on TikTok & Instagram */}
       <section className="px-4 sm:px-6 py-20">
