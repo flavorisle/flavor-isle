@@ -1,0 +1,13 @@
+# Classic Drinks ice-on-size buttons — 2026-09-29
+
+BuilderReport key: classic_drinks_ice_size_buttons_2026-09-29
+Approval: Wesley, 2026-09-29 ~06:23 CT. Source: issue #25.
+
+1. Detection: gates on Square child list 2L2MO2C5CVK5VILJZNGS26EM named “How much ice?” plus a Size group, not an item id. Catalog inspection found the list on all six Classic Drinks sodas, with real Light/Regular/Extra options at $0.00; the three size prices remain $0, +$0.52, +$1.51. No catalog changes.
+2. Size UI: 12oz/14oz/20oz show separate −, center, + buttons. − selects Light Ice, center selects size and Regular Ice, + selects Extra Ice. Each displays its ice label below size and the existing price delta. A −/+ press selects its size and, if needed, the first available soda.
+3. State: current pill level reads the selected soda’s nested “How much ice?” option. Selection writes the real catalog option under nestedSelections[soda.id]['How much ice?']; a soda switch transfers the current ice choice. Unselected sizes display Regular Ice. The existing flattening path still supplies cart modifiers and tickets.
+4. Duplicate control: only the exact ice-list row is hidden on this item’s selected soda; ADD A FLAVOR TO YOUR DRINK remains in its original nested list.
+5. Cart/tickets: no checkout, Square order, verification, tax, cart storage or ticket-format code changed; no discount/savings ticket lines added. No test orders placed. Live fulfillment remains unverified until real orders/logs.
+6. Scope: no menu structure, prices, Happy Hour, combos, Fan Favorites, milkshake flavor controls, sauces, burgers, voice or SMS changed. Nonmatching items follow the original controls.
+7. Verification: production build succeeded. Builder preview screenshots captured in this conversation: (A) /product/classic-drinks shows three size pills with Regular Ice beneath each, +$0.52 and +$1.51, and soda choices; (B) /menu?item=6a3e37fd8c01988e6d7e40f3 shows the same three-zone controls in the customization modal. These are initial-state render checks; the screenshot tool supplied images in chat without downloadable URLs, so the repo mirror records their descriptions rather than embedding image files. Interactive state transitions were traced through the code, not exercised via test orders. The existing cart edit action opens a fresh product page rather than hydrating any prior selection; reopening an existing cart line with its ice level was not verified.
+8. Report: BuilderReport record plus this markdown mirrored on a dedicated GitHub branch; main branch left untouched.
