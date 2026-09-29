@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -9,15 +9,38 @@ import GalleryLightbox from '@/components/gallery/GalleryLightbox';
 import Seo from '@/components/Seo';
 import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
 import CinematicHero from '@/components/cinematic/CinematicHero';
+import { base44 } from '@/api/base44Client';
+
+const SQUARE_PHOTO_NAMES = ['Mini Cheeseburger', 'Cheeseburger', 'French Fries', 'Curly Fries', 'Tater Tots', 'Onion Rings', 'Double Cheeseburger', 'Hamburger', 'Bacon Cheeseburger', 'Sundae'];
 
 export default function Gallery() {
-  const [category, setCategory] = useState('Food');
+  const [category, setCategory] = useState('All');
   const [openIndex, setOpenIndex] = useState(null);
+  const [squarePhotos, setSquarePhotos] = useState([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [photoError, setPhotoError] = useState(false);
 
-  const photos = useMemo(
-    () => GALLERY_PHOTOS.filter((p) => p.category === category),
-    [category]
-  );
+  useEffect(() => {
+    let active = true;
+    base44.entities.MenuItem.list().then((items) => {
+      if (!active) return;
+      setSquarePhotos(SQUARE_PHOTO_NAMES.map((name) => {
+        const item = items.find((row) => row.name?.toLowerCase() === name.toLowerCase() && row.image_url);
+        return item && { url: item.image_url, alt: name, caption: name, category: 'Food' };
+      }).filter(Boolean));
+    }).catch(() => { if (active) setPhotoError(true); })
+      .finally(() => { if (active) setLoadingPhotos(false); });
+    return () => { active = false; };
+  }, []);
+
+  const photos = useMemo(() => {
+    const seen = new Set();
+    return [...GALLERY_PHOTOS, ...squarePhotos].filter((photo) => {
+      if (seen.has(photo.url) || (category !== 'All' && photo.category !== category)) return false;
+      seen.add(photo.url);
+      return true;
+    });
+  }, [category, squarePhotos]);
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
@@ -48,6 +71,8 @@ export default function Gallery() {
       </div>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        {loadingPhotos && <p className="text-sm text-muted-foreground mb-4" role="status">Loading menu photos…</p>}
+        {photoError && <p className="text-sm text-muted-foreground mb-4" role="status">Menu photos could not load right now.</p>}
         <GalleryGrid photos={photos} onSelect={setOpenIndex} />
       </section>
 

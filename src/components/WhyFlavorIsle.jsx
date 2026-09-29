@@ -12,7 +12,7 @@ const CARDS = [
 
 export default function WhyFlavorIsle() {
   return (
-    <section className="pt-8 pb-20 px-4 sm:px-6 bg-background fall26-section">
+    <section className="py-20 px-4 sm:px-6 bg-background fall26-section">
       <div className="text-center mb-12">
         <p className="font-heading uppercase tracking-widest text-sm mb-3" style={{ color: '#d36a44' }}>
           Why Flavor Isle?

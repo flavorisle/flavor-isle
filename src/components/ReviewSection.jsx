@@ -16,7 +16,7 @@ export default function ReviewSection() {
   }, []);
 
   return (
-    <section className="pt-20 pb-8 px-4 sm:px-6 fall26-section">
+    <section className="py-20 px-4 sm:px-6 fall26-section">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 gap-4">
           <div>

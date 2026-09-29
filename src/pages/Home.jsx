@@ -8,7 +8,11 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import HeroSection from '@/components/HeroSection';
+import CinematicHero from '@/components/cinematic/CinematicHero';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
+import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
+import HomeStats from '@/components/cinematic/HomeStats';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -28,8 +32,6 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
-import { FallDivider } from '@/components/RetroFallTheme';
-import HeroStats from '@/components/HeroStats';
 
 
 const SPECIALS_TICKER = [
@@ -111,11 +113,16 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── HERO → SHAKES → FAVORITES → REVIEWS → STATS ── */}
-      <HeroSection />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <MilkshakePromoBanner variant="strip" />
-      </div>
+      {/* ── EXIT 38 PHOTO STORY ── */}
+      <CinematicHero />
+      <PhotoChapter photo={islePhotos.dining} heading="Come on in." text="Pull up a seat in Smiths Grove." />
+      <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
+      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
+      <HomeOrderOptions />
+      <HomeStats />
+
+      <ExpressPickupStrip />
+
       {(menuItems.length > 0 || shakeRank) && (
         <section className="py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
@@ -123,14 +130,14 @@ export default function Home() {
           </div>
         </section>
       )}
-      <ReviewSection />
-      <HeroStats />
-
-      <ExpressPickupStrip />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <MilkshakePromoBanner variant="strip" />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
+      <ReviewSection />
       <WhyFlavorIsle />
 
       <HeritageBadges />
@@ -140,8 +147,6 @@ export default function Home() {
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
-
-      <FallDivider />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
