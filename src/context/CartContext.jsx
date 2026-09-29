@@ -159,7 +159,8 @@ export function CartProvider({ children }) {
     // A customer's per-item allergy note joins the line key, so two of the same
     // shake with different allergies stay separate lines instead of merging.
     const noteKey = item.allergyNote ? `a${item.allergyNote}` : '';
-    return mods || personKey || noteKey ? `${item.id}__${personKey}${noteKey}${mods ? '|' : ''}${mods}` : item.id;
+    const flavorKey = item.flavorLevel ? `|f${item.flavorLevel}` : '';
+    return mods || personKey || noteKey || flavorKey ? `${item.id}__${personKey}${noteKey}${flavorKey}${mods ? '|' : ''}${mods}` : item.id;
   };
 
   const activePerson = people.find(p => p.id === activePersonId) || null;

@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
+import { withShakeFlavorLevel } from './ShakeFlavorControl';
 
 // The five specialty "Bliss" shakes — standalone Square items with their own
 // pricing and a Size modifier. Displayed below the build-your-own flavor grid.
@@ -73,8 +74,8 @@ export default function PremiumShakesSection({ autoOpenId }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, _label, _allToppings, _comboItems, allergyNote) => {
-    addItem({ ...activeItem, price: activeItem.price + extraCost, selectedModifiers: selectedMods, allergyNote: allergyNote || undefined });
+  const handleModalConfirm = (selectedMods, extraCost, _label, _allToppings, _comboItems, allergyNote, coreLevel) => {
+    addItem({ ...activeItem, name: withShakeFlavorLevel(activeItem.name, coreLevel), flavorLevel: coreLevel || undefined, price: activeItem.price + extraCost, selectedModifiers: selectedMods, allergyNote: allergyNote || undefined });
     setAddedId(activeItem.id);
     setActiveItem(null);
     setTimeout(() => setAddedId(null), 1200);

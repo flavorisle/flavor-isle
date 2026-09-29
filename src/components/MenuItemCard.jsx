@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
+import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
@@ -99,9 +100,11 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel) => {
     addItem({
       ...item,
+      name: withShakeFlavorLevel(item.name, coreLevel),
+      flavorLevel: coreLevel || undefined,
       price: item.price + extraCost,
       selectedModifiers: selectedMods,
       deluxeLabel: deluxeLabel || undefined,

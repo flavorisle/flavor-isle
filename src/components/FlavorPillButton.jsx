@@ -75,9 +75,10 @@ export default function FlavorPillButton({
       <button
         type="button"
         onClick={handleLite}
+        aria-pressed={isLite}
         aria-label={`Lite ${mod.name}`}
         title={`Lite ${mod.name}`}
-        className={`group/lite flex items-center justify-center px-3 transition-colors ${
+        className={`group/lite flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
           isLite
             ? 'bg-midnight-cherry text-white'
             : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
@@ -108,9 +109,10 @@ export default function FlavorPillButton({
       <button
         type="button"
         onClick={handleExtra}
+        aria-pressed={isExtra}
         aria-label={`Extra ${mod.name}`}
         title={`Extra ${mod.name}`}
-        className={`group/extra flex items-center justify-center px-3 transition-colors ${
+        className={`group/extra flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
           isExtra
             ? 'bg-midnight-cherry text-white'
             : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'

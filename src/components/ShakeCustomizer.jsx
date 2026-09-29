@@ -4,6 +4,7 @@ import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
+import ShakeFlavorControl, { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
 import AllergyNote from '@/components/AllergyNote';
 import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
@@ -21,6 +22,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const [size, setSize] = useState(null);
   const [base, setBase] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
+  const [coreLevel, setCoreLevel] = useState(null);
   // Lite / Extra level per added flavor, chosen with the − / + zones on the
   // flavor pill; regular (no entry) is the default.
   const [flavorLevels, setFlavorLevels] = useState({});
@@ -36,6 +38,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       setSize(null);
       setBase(null);
       setExtraFlavors([]);
+      setCoreLevel(null);
       setFlavorLevels({});
       setQuantity(1);
       setAdded(false);
@@ -92,7 +95,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   // stays one permitted catalog modifier for pricing and the kitchen ticket.
   const levelPrefix = (id) => (flavorLevels[id] === 'lite' ? 'Lite ' : flavorLevels[id] === 'extra' ? 'Extra ' : '');
   const extraFlavorNames = extraFlavors.map((f) => `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`);
-  const allFlavorNames = [flavorName, ...extraFlavorNames];
+  const allFlavorNames = [withShakeFlavorLevel(flavorName, coreLevel), ...extraFlavorNames];
   // Only call out the base when it differs from the shake's own flavor —
   // otherwise it reads "Vanilla Milkshake (Vanilla)" and confuses the crew.
   // The ice cream base already prints in the modifier line, so it never goes in
@@ -120,6 +123,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       name: cartName,
       price: unitPrice,
       category: 'Shakes',
+      flavorLevel: coreLevel || undefined,
       image_url: shakeItem.image_url || '',
       selectedModifiers,
       allergyNote: allergy.flag ? allergy.note.trim() : undefined,
@@ -180,6 +184,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
               })}
             </div>
           </div>
+
+          {/* The included flavor has its own no-upcharge amount control. */}
+          <ShakeFlavorControl item={shakeItem} level={coreLevel} onChange={setCoreLevel} />
 
           {/* Ice Cream Base */}
           {baseOpts.length > 0 && (

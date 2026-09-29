@@ -14,6 +14,7 @@ import FlavorPillButton, { isFlavorGroup } from './FlavorPillButton';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
+import ShakeFlavorControl from './ShakeFlavorControl';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
@@ -59,6 +60,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
   // say what it is. The note rides on the shake's own cart line so the kitchen
   // ticket names the shake that's allergic rather than the whole order.
   const shakeItem = isShakeItem(item);
+  const [coreLevel, setCoreLevel] = useState(null);
   const [allergy, setAllergy] = useState({ flag: false, note: '' });
   const [allergyError, setAllergyError] = useState('');
 
@@ -168,7 +170,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
     const { label, allToppings } = isDeluxeEnabled()
       ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
-    onConfirm(selectedMods, extraCost, label, allToppings, [], shakeItem && allergy.flag ? allergy.note.trim() : '');
+    onConfirm(selectedMods, extraCost, label, allToppings, [], shakeItem && allergy.flag ? allergy.note.trim() : '', coreLevel);
   };
 
   return createPortal(
@@ -209,6 +211,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
+          {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
           {/* Flavor pills show − / + zones — say what they do whenever any
               flavor group is on screen. */}
           {groups.some(isFlavorGroup) && <FlavorAmountLegend align="left" />}

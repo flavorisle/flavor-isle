@@ -8,6 +8,8 @@ import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, restoreDrinkSelections } from './classicDrinkIce';
+import { isShakeItem } from './AllergyNote';
+import ShakeFlavorControl from './ShakeFlavorControl';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
 // modifiers, Deluxe presets, and Happy Hour pricing — rendered inline (no
@@ -41,6 +43,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   const [selections, setSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).selections : initSelections());
   const [nestedSelections, setNestedSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).nested : {});
+  const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const selectIceSize = (mod, level) => {
@@ -183,7 +186,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   const handleConfirm = () => {
     const { selectedMods, label, allToppings } = buildSelection();
-    onConfirm(selectedMods, extraCost, label, allToppings, []);
+    onConfirm(selectedMods, extraCost, label, allToppings, coreLevel);
   };
 
   useImperativeHandle(ref, () => ({
@@ -205,6 +208,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   return (
     <div className="space-y-6">
+      {isShakeItem(item) && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
       {/* Happy Hour badge */}
       {isHappyHour && (
         <div className="inline-flex items-center gap-1.5 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">

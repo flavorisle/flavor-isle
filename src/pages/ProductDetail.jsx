@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ProductModifierPanel from '@/components/ProductModifierPanel';
+import { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
 import ComboPicker from '@/components/ComboPicker';
 import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboConfig';
 import ItemRatings from '@/components/ItemRatings';
@@ -134,9 +135,11 @@ export default function ProductDetail() {
     setTimeout(() => setAdded(false), 1200);
   };
 
-  const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings) => {
+  const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, coreLevel) => {
     const baseItem = {
       ...item,
+      name: withShakeFlavorLevel(item.name, coreLevel),
+      flavorLevel: coreLevel || undefined,
       productId: item.id,
       price: item.price + extraCost,
       selectedModifiers: selectedMods,
