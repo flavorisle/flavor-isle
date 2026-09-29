@@ -207,7 +207,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     sideband.send({
       type: 'session.instructions.append',
       delegation_id: null,
-      content: 'Greet the caller now in English: Hey fam, Smashie here at Flavor Isle! Follow the STORE STATUS in your context, then offer the help allowed by that status. Begin immediately, then pause and listen.',
+      content: 'Greet the caller now in English. Follow the opening wording and STORE STATUS in your voice instructions exactly; when open, explain card ordering and the secure payment link before describing other help, then ask what they need. Begin immediately, then pause and listen.',
     });
     // Keep waitUntil pending for the entire connection, not just the handshake.
     await connectionClosed;

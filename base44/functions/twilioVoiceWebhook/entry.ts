@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { OPEN_PHONE_INTRO } from '../../shared/smashieLivePrompt.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
@@ -201,8 +202,8 @@ export default async function(req) {
         ? `Just a heads up — ${storeStatus.message}.`
         : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} We'll be back to normal soon! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?`
-        : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;
+        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} I can tell you when we open next or take a message for the crew. What do you need today?`
+        : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} ${OPEN_PHONE_INTRO}`;
       const convo = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
         metadata: {
