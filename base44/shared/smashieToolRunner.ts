@@ -2,6 +2,7 @@
 // call. Thin wrappers over the functions the phone line already uses, so the
 // SIP pipeline and the current Twilio pipeline place orders the same way.
 import { getSmashieSettings } from './smashieSettings.ts';
+import { abilityEnabled } from './smashieAdminContext.ts';
 
 const MAX_MENU_RESULTS = 20;
 const MAX_GROUPS_PER_ITEM = 3;
@@ -105,6 +106,10 @@ async function requestTransfer(base44) {
 // Returns { output } — the JSON string handed back to the Live session — and
 // transferTargetUri when the call should be handed to the counter.
 export async function runSmashieTool(base44, { name, args = {}, callerPhone, sessionId }) {
+  const needed = { place_order: 'orders', lookup_menu: 'menu', burger_toppings: 'menu', shake_menu: 'menu', take_message: 'messages', transfer_to_counter: 'transfer' }[name];
+  if (needed && !abilityEnabled(await getSmashieSettings(base44), needed)) {
+    return { output: JSON.stringify({ error: 'This ability is currently unavailable.' }) };
+  }
   switch (name) {
     case 'lookup_menu':
       return lookupMenu(base44, args);

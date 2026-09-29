@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { OPEN_PHONE_INTRO } from '../../shared/smashieLivePrompt.ts';
+import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
@@ -202,8 +202,8 @@ export default async function(req) {
         ? `Just a heads up — ${storeStatus.message}.`
         : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} I can tell you when we open next or take a message for the crew. What do you need today?`
-        : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} ${OPEN_PHONE_INTRO}`;
+        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} I can tell you when we open next${abilityEnabled(settings, 'messages') ? ' or take a message for the crew' : ''}. What do you need today?`
+        : `Hey fam, Smashie here at Flavor Isle! ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
       const convo = await base44.asServiceRole.agents.createConversation({
         agent_name: 'smashie',
         metadata: {
@@ -306,18 +306,19 @@ export default async function(req) {
     const liveBusyness = await getBusynessLevel(base44);
     const storeStatus = await getPhysicalStoreStatus(base44);
     const closedToday = !storeStatus.open;
+    const settings = await getSmashieSettings(base44);
     const statusContext = closedToday
       ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said. When CLOSED: you may ONLY share Flavor Isle history, tell the caller we're closed right now and back to normal soon, or take and save a message for management. Do NOT tell the caller the store is open. Do NOT mention closing time or today's hours. Do NOT say "we're open until 8" or anything similar. Do not discuss the menu, recommend food, take or build an order, provide directions, or offer a counter transfer. Do not mention busyness or wait times — we are closed.]\n${callerInfo}`
-      : `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${liveBusyness}. If the caller asks how busy you are, tell them this.]\n${callerInfo}`;
+      : `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}`;
 
-    const messageTurn = await processPhoneMessageTurn(
+    const messageTurn = abilityEnabled(settings, 'messages') ? await processPhoneMessageTurn(
       base44,
       callRecords[0],
       speechResult,
       callerFrom,
       callSid,
       conversationId,
-    );
+    ) : null;
 
     let replyText;
     if (messageTurn) {
@@ -327,7 +328,7 @@ export default async function(req) {
       const priorAssistantCount = (conversation.messages || []).filter(m => m.role === 'assistant').length;
       await base44.asServiceRole.agents.addMessage(conversation, {
         role: 'user',
-        content: `${statusContext}\nCaller said: ${speechResult}`,
+        content: `${statusContext}\n${smashieAdminContext(settings)}\nCaller said: ${speechResult}`,
       });
 
       let messages = conversation.messages || [];
@@ -345,7 +346,7 @@ export default async function(req) {
 
     // Smashie emits a structured token only after collecting all message details.
     const messageMatch = replyText.match(/\[\[PHONE_MESSAGE:(\{[\s\S]*?\})\]\]/i);
-    if (messageMatch) {
+    if (messageMatch && abilityEnabled(settings, 'messages') && !closedToday) {
       try {
         const messageData = JSON.parse(messageMatch[1]);
         if (!messageData.caller_name || !messageData.recipient || !messageData.message) {
@@ -395,7 +396,7 @@ export default async function(req) {
     // take a message instead.
     const wantsTransfer = /\[\[TRANSFER\]\]/i.test(spokenReply);
     const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
-    if (wantsTransfer && counterNumber) {
+    if (wantsTransfer && counterNumber && abilityEnabled(settings, 'transfer') && !closedToday) {
       const cleanReply = spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
       await speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");

@@ -9,7 +9,73 @@
     "greeting": {
       "type": "string",
       "default": "Hey fam, Flavor Isle\u2014Smashie here. What can I get started for you?",
-      "description": "Smashie's short opening greeting for voice calls and SMS replies."
+      "description": "Fallback SMS reply when Smashie cannot answer."
+    },
+    "phone_intro": {
+      "type": "string",
+      "default": "",
+      "description": "Editable open-hours phone introduction after Smashie's name and current busyness. Leave blank for the standard introduction."
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Per-ability phone controls. Missing keys default to enabled.",
+      "properties": {
+        "orders": {
+          "type": "boolean",
+          "default": true
+        },
+        "menu": {
+          "type": "boolean",
+          "default": true
+        },
+        "hours": {
+          "type": "boolean",
+          "default": true
+        },
+        "wait": {
+          "type": "boolean",
+          "default": true
+        },
+        "history": {
+          "type": "boolean",
+          "default": true
+        },
+        "directions": {
+          "type": "boolean",
+          "default": true
+        },
+        "messages": {
+          "type": "boolean",
+          "default": true
+        },
+        "transfer": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "default": {}
+    },
+    "knowledge_topics": {
+      "type": "array",
+      "description": "Admin-authored factual answers for Smashie's phone conversations; menu, prices, hours and live conditions always use their live sources.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "default": []
     },
     "sms_status_updates_enabled": {
       "type": "boolean",

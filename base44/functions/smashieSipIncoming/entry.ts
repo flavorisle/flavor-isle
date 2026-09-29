@@ -27,6 +27,7 @@ import {
   buildCallContext,
 } from '../../shared/smashieLivePrompt.ts';
 import { runSmashieTool } from '../../shared/smashieToolRunner.ts';
+import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/smashieAdminContext.ts';
 
 const LIVE_MODEL = 'gpt-live-1';
 const BACKEND_MODEL = 'gpt-6-luna';
@@ -281,14 +282,14 @@ export default async function (req) {
     const accepted = await acceptLiveSession(sessionId, apiKey, {
       type: 'live',
       model: LIVE_MODEL,
-      instructions: `${VOICE_INSTRUCTIONS}\n\n${context}`,
+      instructions: `${VOICE_INSTRUCTIONS}\n\n${context}\n\n${smashieAdminContext(settings)}\n\nWhen OPEN use this introduction after your name: ${phoneIntro(settings)}`,
       audio: { output: { voice: VOICE } },
       delegation: {
         type: 'responses',
         responses: {
           model: BACKEND_MODEL,
-          instructions: `${BACKEND_INSTRUCTIONS}\n\n${context}`,
-          tools: SMASHIE_LIVE_TOOLS,
+          instructions: `${BACKEND_INSTRUCTIONS}\n\n${context}\n\n${smashieAdminContext(settings)}`,
+          tools: SMASHIE_LIVE_TOOLS.filter(tool => ({ place_order: 'orders', lookup_menu: 'menu', burger_toppings: 'menu', shake_menu: 'menu', take_message: 'messages', transfer_to_counter: 'transfer' }[tool.name] ? abilityEnabled(settings, { place_order: 'orders', lookup_menu: 'menu', burger_toppings: 'menu', shake_menu: 'menu', take_message: 'messages', transfer_to_counter: 'transfer' }[tool.name]) : true)),
           tool_choice: 'auto',
         },
       },

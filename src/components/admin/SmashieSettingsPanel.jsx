@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Bot, Save, Loader2, Check, Facebook } from 'lucide-react';
+import SmashieAbilities from './SmashieAbilities';
+import SmashieKnowledge, { INITIAL_TOPICS } from './SmashieKnowledge';
 
 // Edits the single SmashieSettings record. These values are read at runtime by
 // the Twilio webhooks (greeting + toggles) and the order-status sync (SMS
@@ -9,12 +11,13 @@ export default function SmashieSettingsPanel() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   const load = async () => {
     try {
       const all = await base44.entities.SmashieSettings.list();
       if (all && all.length > 0) {
-        setSettings(all[0]);
+        setSettings({ ...all[0], knowledge_topics: all[0].knowledge_topics ?? INITIAL_TOPICS });
       } else {
         setSettings({
           greeting: "Hey there, welcome to Flavor Isle! This is Smashie. What can I get started for you today?",
@@ -24,6 +27,9 @@ export default function SmashieSettingsPanel() {
           realtime_sip_enabled: false,
           sip_transfer_target: "",
           personality_notes: "",
+          phone_intro: "",
+          capabilities: {},
+          knowledge_topics: INITIAL_TOPICS,
         });
       }
     } catch (e) { console.error(e); }
@@ -34,6 +40,7 @@ export default function SmashieSettingsPanel() {
   const update = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     setSaved(false);
+    setError('');
   };
 
   const save = async () => {
@@ -49,6 +56,9 @@ export default function SmashieSettingsPanel() {
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
           sip_transfer_target: settings.sip_transfer_target,
+          phone_intro: settings.phone_intro || '',
+          capabilities: settings.capabilities || {},
+          knowledge_topics: settings.knowledge_topics || [],
         });
       } else {
         const created = await base44.entities.SmashieSettings.create({
@@ -60,12 +70,15 @@ export default function SmashieSettingsPanel() {
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
           sip_transfer_target: settings.sip_transfer_target,
+          phone_intro: settings.phone_intro || '',
+          capabilities: settings.capabilities || {},
+          knowledge_topics: settings.knowledge_topics || [],
         });
         setSettings(created);
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setError('Could not save Smashie’s settings. Please try again.'); }
     setSaving(false);
   };
 
@@ -92,6 +105,20 @@ export default function SmashieSettingsPanel() {
           rows={3}
           className="w-full px-4 py-3 bg-white rounded-xl text-sm border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 resize-none"
         />
+      </div>
+
+      <div className="card-diner p-5">
+        <label htmlFor="smashie-phone-intro" className="font-heading text-obsidian-roast">Phone introduction</label>
+        <p className="text-sm text-muted-foreground mb-3">Spoken after Smashie's name and current wait when the restaurant is open. Leave blank to use the standard card-order explanation. Keep it under 450 characters so the ending is heard.</p>
+        <textarea id="smashie-phone-intro" value={settings.phone_intro || ''} maxLength={450} onChange={e => update('phone_intro', e.target.value)} rows={5}
+          placeholder="Use the standard introduction" className="w-full px-4 py-3 bg-background rounded-xl border border-border" />
+      </div>
+
+      <SmashieAbilities value={settings.capabilities} onChange={value => update('capabilities', value)} />
+      <SmashieKnowledge topics={settings.knowledge_topics} onChange={value => update('knowledge_topics', value)} />
+      <div className="card-diner p-5">
+        <h3 className="font-heading text-obsidian-roast">Built-in phone tools</h3>
+        <p className="text-sm text-muted-foreground">Live menu lookup, burger toppings, shake details, secure-link ordering, crew messages and counter transfer are maintained in Smashie's phone service. The switches above control which he may use; knowledge topics are separate from actions.</p>
       </div>
 
       {/* Toggles */}
@@ -182,7 +209,8 @@ export default function SmashieSettingsPanel() {
           {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
           {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Settings'}
         </button>
-        {saved && <span className="text-sm text-patina-mint font-heading">Changes are live.</span>}
+        {saved && <span className="text-sm text-patina-mint font-heading">Changes are live on phone calls.</span>}
+        {error && <span role="alert" className="text-sm text-destructive">{error}</span>}
       </div>
     </div>
   );
