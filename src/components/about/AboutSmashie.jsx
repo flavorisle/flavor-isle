@@ -24,10 +24,10 @@ export default function AboutSmashie() {
               Meet Smashie <ArrowRight size={16} />
             </Link>
             <a href="tel:+12705637230" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
-              <Phone size={16} /> Call
+              <Phone size={16} /> Call <span className="text-xs font-body normal-case">· Try now</span>
             </a>
             <a href="sms:+12705637230" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
-              <MessageCircle size={16} /> Text
+              <MessageCircle size={16} /> Text <span className="text-xs font-body normal-case">· Try now</span>
             </a>
           </div>
         </div>
