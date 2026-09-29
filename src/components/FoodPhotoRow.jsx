@@ -1,4 +1,5 @@
 import React from 'react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Three food shots from the Isle, featured outside the gallery: on the About
 // page and on the What to Expect page. Kept in one place so both pages always
@@ -40,9 +41,12 @@ export default function FoodPhotoRow({ heading, subtext, className = '' }) {
         {FOOD_PHOTOS.map((photo) => (
           <figure key={photo.url}>
             <img
-              src={photo.url}
+              src={optimizedImageUrl(photo.url, 500, 500)}
               alt={photo.alt}
+              width="500"
+              height="500"
               loading="lazy"
+              decoding="async"
               className="w-full aspect-[4/3] sm:aspect-square object-cover rounded-3xl shadow-float"
             />
             <figcaption className="mt-3 text-sm text-muted-foreground">{photo.caption}</figcaption>

@@ -40,6 +40,10 @@ export default function AboutTastyThreads() {
                 <img
                   src={t.image}
                   alt={`${t.name} tee`}
+                  width="500"
+                  height="500"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover scale-[1.7] group-hover:scale-[1.8] transition-transform duration-500"
                   style={{ transformOrigin: '50% 42%' }}
                 />

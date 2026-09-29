@@ -11,6 +11,7 @@ import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
 import { issue23Photos } from '@/lib/issue23Photos';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
@@ -100,7 +101,7 @@ export default function I65Exit38() {
 
       <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." />
       <figure className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <img src={issue23Photos.parking} alt="Parking map for Flavor Isle at I-65 Exit 38" loading="lazy" className="w-full rounded-xl" />
+        <img src={optimizedImageUrl(issue23Photos.parking, 800, 600, 'fit')} alt="Parking map for Flavor Isle at I-65 Exit 38" width="800" height="600" loading="lazy" decoding="async" className="w-full rounded-xl" />
         <figcaption className="mt-2 text-sm text-muted-foreground">Where to park when you visit Flavor Isle</figcaption>
       </figure>
       <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
@@ -156,7 +157,7 @@ export default function I65Exit38() {
       {/* Story */}
       <section className="bg-white border-y border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 text-center">
-          <img src={LOGO} alt="Flavor Isle" loading="lazy" className="w-16 h-16 object-contain mx-auto mb-4 rounded-xl" />
+          <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle" width="200" height="200" loading="lazy" decoding="async" className="w-16 h-16 object-contain mx-auto mb-4 rounded-xl" />
           <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">A Roadside Favorite Since 1964</h2>
           <p className="text-muted-foreground mt-4 leading-relaxed">
             Flavor Isle has been feeding I-65 travelers and Smiths Grove locals for three generations. What started as a small roadside burger stand is still the same family recipe today — hand-patted burgers, hand-cut fries, and thick milkshakes made to order. No freezers, no shortcuts. Just a quick, friendly stop worth pulling off for.

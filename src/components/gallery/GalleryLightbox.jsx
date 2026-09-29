@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function GalleryLightbox({ photos, index, onClose, onPrev, onNext }) {
   useEffect(() => {
@@ -32,8 +33,9 @@ export default function GalleryLightbox({ photos, index, onClose, onPrev, onNext
       </button>
 
       <img
-        src={photo.url}
+        src={optimizedImageUrl(photo.url, 1200, 1200, 'fit')}
         alt={photo.alt}
+        decoding="async"
         className="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-float-lg"
         onClick={(e) => e.stopPropagation()}
       />

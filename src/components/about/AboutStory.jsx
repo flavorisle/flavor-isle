@@ -1,4 +1,5 @@
 import React from 'react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0dfcdf627_1CCAA2A1-AA3C-4C56-9922-CB1452069518.JPG';
 const PHOTO_GUESTBOOK = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/49f86bd0c_IMG_1445_Original.jpeg';
@@ -27,8 +28,12 @@ export default function AboutStory() {
         <div className="order-1 md:order-2">
           <div className="relative">
             <img
-              src={PHOTO_1964}
+              src={optimizedImageUrl(PHOTO_1964, 800, 800)}
               alt="Original black-and-white photo of Joyce's Flavor Isle walk-up stand, 1964"
+              width="800"
+              height="800"
+              loading="lazy"
+              decoding="async"
               className="w-full aspect-square object-cover rounded-3xl shadow-float-lg"
             />
             <div className="absolute -bottom-5 -left-3 sm:-left-6 bg-smashie-yellow text-obsidian-roast rounded-2xl px-5 py-3 shadow-float">
@@ -42,7 +47,7 @@ export default function AboutStory() {
       {/* The anniversary crowd photo has its sole placement on the homepage. */}
       <div className="max-w-6xl mx-auto mt-20">
         <figure>
-          <img src={PHOTO_GUESTBOOK} alt="Guest book and anniversary note for Joyce at the 50th celebration" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
+          <img src={optimizedImageUrl(PHOTO_GUESTBOOK, 1200, 750)} alt="Guest book and anniversary note for Joyce at the 50th celebration" width="1200" height="750" loading="lazy" decoding="async" className="w-full aspect-[16/10] object-cover rounded-3xl shadow-float" />
           <figcaption className="mt-3 text-sm text-muted-foreground">Neighbors signed Joyce's guest book with memories from fifty years of shakes</figcaption>
         </figure>
       </div>

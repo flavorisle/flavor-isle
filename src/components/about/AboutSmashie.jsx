@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Phone, MessageCircle } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SMASHIE_PEACE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c08ec5331_IMG_9970.png';
 
@@ -9,8 +10,10 @@ export default function AboutSmashie() {
     <section className="py-20 px-4 sm:px-6 bg-background">
       <div className="max-w-5xl mx-auto card-diner p-8 sm:p-12 flex flex-col md:flex-row items-center gap-10">
         <img
-          src={SMASHIE_PEACE}
+          src={optimizedImageUrl(SMASHIE_PEACE, 500, 600, 'fit')}
           alt="Smashie, the Flavor Isle mascot, flashing a peace sign"
+          width="500"
+          height="600"
           className="w-40 sm:w-52 object-contain drop-shadow-xl flex-shrink-0"
         />
         <div className="text-center md:text-left">

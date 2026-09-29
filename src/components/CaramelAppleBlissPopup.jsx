@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Visit pop-up promoting the limited-time Caramel Apple Bliss shake.
 // Shows once per browser session (sessionStorage) so it doesn't nag repeat
@@ -71,10 +72,13 @@ export default function CaramelAppleBlissPopup() {
         {/* Promo graphic */}
         <div className="relative">
           <img
-            src={PROMO_IMAGE}
+            src={optimizedImageUrl(PROMO_IMAGE, 800, 800, 'fit')}
             alt="Caramel Apple Bliss shake — new limited-time flavor at Flavor Isle"
+            width="800"
+            height="800"
             className="w-full h-auto block"
             loading="eager"
+            decoding="async"
           />
         </div>
 

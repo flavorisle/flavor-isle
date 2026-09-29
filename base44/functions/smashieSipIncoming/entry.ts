@@ -6,6 +6,12 @@
 // pointed at it, and "Live Phone Pipeline" is switched on in Admin →
 // Communications, this endpoint rejects every call and the Twilio line keeps
 // working exactly as it does today.
+//
+// 2026-09-29: re-written unchanged to force a redeploy. Every live-session row
+// from the 08:26–08:49 UTC test calls was finalized 78–140 ms after creation
+// with no description and call_status "completed" — the pre-sideband-fix
+// finalizer's exact field set — so the crashed build was still serving those
+// calls. No logic in this file was altered by that rewrite.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';

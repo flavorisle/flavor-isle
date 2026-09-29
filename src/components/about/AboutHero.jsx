@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const HERO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b563c5b72_IMG_0987_Original.jpeg';
 const SMASHIE_WAVE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png';
 
 export default function AboutHero() {
   return (
-    <section className="relative bg-cover bg-center" style={{ backgroundImage: `url('${HERO_PHOTO}')` }}>
+    <section className="relative bg-cover bg-center" style={{ backgroundImage: `url('${optimizedImageUrl(HERO_PHOTO, 1600, 900)}')` }}>
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-24 pb-20 text-white">
         <div className="flex flex-col md:flex-row items-center gap-10">
@@ -26,8 +27,10 @@ export default function AboutHero() {
             </Link>
           </div>
           <img
-            src={SMASHIE_WAVE}
+            src={optimizedImageUrl(SMASHIE_WAVE, 500, 600, 'fit')}
             alt="Smashie, the Flavor Isle mascot, waving hello"
+            width="500"
+            height="600"
             className="w-44 sm:w-56 md:w-64 object-contain drop-shadow-2xl flex-shrink-0"
           />
         </div>

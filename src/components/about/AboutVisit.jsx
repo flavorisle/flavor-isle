@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Clock, ArrowRight } from 'lucide-react';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const STREET_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1ade54fbc_IMG_0427.jpeg';
 
@@ -12,8 +13,12 @@ export default function AboutVisit() {
     <section className="py-20 px-4 sm:px-6" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <img
-          src={STREET_PHOTO}
+          src={optimizedImageUrl(STREET_PHOTO, 800, 600)}
           alt="Flavor Isle walk-up window and picnic tables under the awning"
+          width="800"
+          height="600"
+          loading="lazy"
+          decoding="async"
           className="w-full aspect-[4/3] object-cover rounded-3xl shadow-float-lg"
         />
         <div>

@@ -2,13 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { issue23Photos } from '@/lib/issue23Photos';
+import { optimizedImageUrl } from '@/lib/utils';
 
 
 // Compact two-photo strip on the homepage — real food shots pulled from the
 // gallery data, linking through to the full /gallery page.
 export default function GalleryPhotoStrip({ items = [] }) {
-  const photos = [...items.filter((item) => item.image_url).slice(0, 2).map((item) => ({
-    url: item.image_url, alt: item.name, caption: item.name,
+  const photos = [...items.filter((item) => item.image_url_opt || item.image_url).slice(0, 2).map((item) => ({
+    url: item.image_url_opt || item.image_url, alt: item.name, caption: item.name,
   })), { url: issue23Photos.flattop, alt: 'Fresh Off the Flattop at Flavor Isle', caption: 'Fresh off the flattop' }];
 
   return (
@@ -28,9 +29,12 @@ export default function GalleryPhotoStrip({ items = [] }) {
             <Link key={photo.url} to="/gallery" className="card-diner overflow-hidden block group">
               <div className="relative aspect-[4/3] overflow-hidden">
                 <img
-                  src={photo.url}
+                  src={optimizedImageUrl(photo.url, 500, 375)}
                   alt={photo.alt}
+                  width="500"
+                  height="375"
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
                 />
               </div>

@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { Check, Copy, MapPin, Phone, ThumbsUp, Share, MessageCircle } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const ORDER_URL = 'https://flavor-isle.com';
 const ADDRESS = '103 N Main St, Smiths Grove, KY 42171';
@@ -73,8 +74,10 @@ export default function FacebookAd() {
               {/* Post header */}
               <div className="flex items-center gap-3 p-4">
                 <img
-                  src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png"
+                  src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png', 200, 200, 'fit')}
                   alt="Flavor Isle"
+                  width="200"
+                  height="200"
                   className="w-12 h-12 rounded-xl object-contain bg-vanilla-malt flex-shrink-0"
                 />
                 <div className="min-w-0">
@@ -90,7 +93,7 @@ export default function FacebookAd() {
 
               {/* Photo */}
               <div className="aspect-square w-full bg-muted">
-                <img src={POST_IMAGE} alt="Flavor Isle storefront" className="w-full h-full object-cover" />
+                <img src={optimizedImageUrl(POST_IMAGE, 800, 800)} alt="Flavor Isle storefront" width="800" height="800" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               </div>
 
               {/* Link row */}
@@ -131,7 +134,7 @@ export default function FacebookAd() {
                 <p className="text-xs font-heading uppercase tracking-widest text-patina-mint">Photo</p>
                 <a href={POST_IMAGE} target="_blank" rel="noopener noreferrer" className="text-xs font-heading uppercase tracking-widest text-patina-mint hover:underline">Open</a>
               </div>
-              <img src={POST_IMAGE} alt="Flavor Isle storefront" className="w-full aspect-square object-cover rounded-xl" />
+              <img src={optimizedImageUrl(POST_IMAGE, 800, 800)} alt="Flavor Isle storefront" width="800" height="800" loading="lazy" decoding="async" className="w-full aspect-square object-cover rounded-xl" />
               <p className="text-xs text-muted-foreground mt-2">Right-click to save (or use the original photo on your phone), then attach it to the post.</p>
             </div>
 

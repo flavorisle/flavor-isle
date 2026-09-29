@@ -11,6 +11,7 @@ import ReviewSection from '@/components/ReviewSection';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
+import { optimizedImageUrl } from '@/lib/utils';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
@@ -191,9 +192,12 @@ export default function Home() {
             {/* Storefront photo */}
             <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80 group">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
                 alt="Flavor Isle storefront in Smiths Grove, KY"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -219,9 +223,12 @@ export default function Home() {
           <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
             <div className="sm:col-span-2 relative min-h-[180px]">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 800, 600)}
                 alt="Flavor Isle roadside stand off I-65 Exit 38"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>

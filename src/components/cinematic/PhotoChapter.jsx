@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function PhotoChapter({ photo, heading, text, action, to = '/order', full = false }) {
   const ref = useRef(null);
@@ -16,7 +17,7 @@ export default function PhotoChapter({ photo, heading, text, action, to = '/orde
   return (
     <section ref={ref} className={`relative isolate overflow-clip bg-patina-mint text-white ${full ? 'min-h-[85svh]' : 'min-h-[68svh]'}`}>
       <div className="sticky top-0 h-[85svh] overflow-hidden">
-        <img src={photo.url} alt={photo.alt} width="1600" height="1000" loading="lazy" decoding="async"
+        <img src={optimizedImageUrl(photo.url, 1200, 800)} alt={photo.alt} width="1200" height="800" loading="lazy" decoding="async"
           className="w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-1000"
           style={{ transform: visible ? 'scale(1)' : 'scale(1.045)' }} />
         <div className="absolute inset-0 bg-patina-mint/60" aria-hidden="true" />

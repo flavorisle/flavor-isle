@@ -5,6 +5,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 import FooterEmailSignup from '@/components/FooterEmailSignup';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
@@ -15,9 +16,12 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+            src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 600, 400, 'fit')}
             alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
+            width="600"
+            height="400"
             loading="lazy"
+            decoding="async"
             className="w-full max-w-[260px] object-contain mb-4"
           />
           <p className="text-gray-300 text-sm leading-relaxed">

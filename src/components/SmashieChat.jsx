@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { fetchBusyness } from '@/lib/busynessCache';
 import ReactMarkdown from 'react-markdown';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Build the same STORE STATUS / BUSYNESS context the phone + SMS webhooks
 // attach, so web-chat Smashie never guesses whether the store is open.
@@ -27,7 +28,7 @@ async function buildStatusContext() {
 
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 
-const SMASHIE_HEAD = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png';
+const SMASHIE_HEAD = optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png', 160, 160);
 
 export default function SmashieChat() {
   const [open, setOpen] = useState(false);

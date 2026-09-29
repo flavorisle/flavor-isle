@@ -1,5 +1,6 @@
 import React from 'react';
 import { Printer, MapPin, Phone, Clock, Globe, UtensilsCrossed, IceCream2, Flame } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
@@ -57,7 +58,7 @@ export default function Flyer() {
           {/* Top brand band */}
           <div className="bg-patina-mint text-white px-8 py-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src={LOGO} alt="Flavor Isle logo" className="w-14 h-14 object-contain rounded-xl bg-white/95 p-1" />
+              <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle logo" width="200" height="200" className="w-14 h-14 object-contain rounded-xl bg-white/95 p-1" />
               <div>
                 <div className="font-heading text-3xl leading-none tracking-wide">FLAVOR ISLE</div>
                 <div className="text-xs tracking-[0.3em] text-white/80 mt-1">BURGERS &middot; SHAKES &middot; SIDES</div>
@@ -72,8 +73,10 @@ export default function Flyer() {
           {/* Building illustration */}
           <div className="bg-patina-mint/5 px-8 pt-8 pb-2 flex justify-center">
             <img
-              src={BUILDING}
+              src={optimizedImageUrl(BUILDING, 800, 600, 'fit')}
               alt="Flavor Isle roadside stand"
+              width="800"
+              height="600"
               className="w-full max-w-[5.5in] object-contain"
             />
           </div>
@@ -130,7 +133,7 @@ export default function Flyer() {
               ].map((m) => (
                 <div key={m.name} className="rounded-2xl overflow-hidden border border-patina-mint/15 bg-patina-mint/5">
                   <div className="h-28 overflow-hidden">
-                    <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
+                    <img src={m.img} alt={m.name} width="500" height="500" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </div>
                   <div className="p-3">
                     <div className="flex items-center justify-between mb-1">

@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import { optimizedImageUrl } from '@/lib/utils';
 import { hoursGroups } from '@/lib/businessHours';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
@@ -30,7 +31,7 @@ export default function MammothCaveDining() {
       {/* Hero */}
       <section className="relative bg-patina-mint text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img src={BUILDING} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(BUILDING, 1600, 900)} alt="" width="1600" height="900" loading="lazy" decoding="async" className="w-full h-full object-cover" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">

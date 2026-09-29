@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { optimizedImageUrl } from '@/lib/utils';
 import { issue23Photos } from '@/lib/issue23Photos';
 
 export default function HeroSection() {
@@ -12,7 +13,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-[560px] sm:min-h-[650px] flex items-center justify-center overflow-hidden bg-obsidian-roast">
-      <img src={issue23Photos.hero} alt="Flavor Isle storefront glowing at night" className="absolute inset-0 w-full h-full object-cover" fetchPriority="high" />
+      <img src={optimizedImageUrl(issue23Photos.hero, 1600, 900)} alt="Flavor Isle storefront glowing at night" width="1600" height="900" className="absolute inset-0 w-full h-full object-cover" fetchPriority="high" decoding="async" />
       <div className="absolute inset-0 bg-black/55" />
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-24 text-center text-white">
         <p className="font-body uppercase tracking-widest mb-4">Smiths Grove, Kentucky</p>

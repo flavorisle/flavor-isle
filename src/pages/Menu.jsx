@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
+import { optimizedImageUrl } from '@/lib/utils';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import MenuShakeCard from '@/components/MenuShakeCard';
@@ -173,9 +174,12 @@ export default function Menu() {
                 }`}
               >
                 <img
-                  src={t.img}
+                  src={optimizedImageUrl(t.img, 400, 400)}
                   alt={t.label}
+                  width="400"
+                  height="400"
                   loading="lazy"
+                  decoding="async"
                   className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${t.isActive ? '' : 'opacity-90 group-hover:opacity-100'}`}
                 />
                 {/* Item-card style: gradient overlay so the label/time overlap

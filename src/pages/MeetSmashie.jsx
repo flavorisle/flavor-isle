@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MessageCircle, Sparkles, Zap, Heart } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SMASHIE_POSES = [
   'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png', // waving
@@ -66,8 +67,10 @@ export default function MeetSmashie() {
             {SMASHIE_POSES.map((src, i) => (
               <img
                 key={src}
-                src={src}
+                src={optimizedImageUrl(src, 600, 800, 'fit')}
                 alt="Smashie mascot"
+                width="600"
+                height="800"
                 className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300"
                 style={{ opacity: i === poseIndex ? (fading ? 0 : 1) : 0 }}
               />
@@ -126,8 +129,12 @@ export default function MeetSmashie() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12 flex flex-col items-center">
             <img
-              src={SMASHIE_POSES[0]}
+              src={optimizedImageUrl(SMASHIE_POSES[0], 400, 500, 'fit')}
               alt="Smashie waving"
+              width="400"
+              height="500"
+              loading="lazy"
+              decoding="async"
               className="w-28 mb-2 drop-shadow-lg"
             />
             <h2 className="font-heading text-4xl text-white mb-3">How to Reach Smashie</h2>
@@ -161,7 +168,7 @@ export default function MeetSmashie() {
 
       {/* His faves */}
       <section className="py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <img src={SMASHIE_POSES[2]} alt="Smashie peace sign" className="w-24 mx-auto mb-2 drop-shadow-lg" />
+        <img src={optimizedImageUrl(SMASHIE_POSES[2], 400, 500, 'fit')} alt="Smashie peace sign" width="400" height="500" loading="lazy" decoding="async" className="w-24 mx-auto mb-2 drop-shadow-lg" />
         <h2 className="font-heading text-4xl text-obsidian-roast mb-4">Smashie's Personal Top Picks</h2>
         <p className="text-muted-foreground mb-10">Ask him for a recommendation. This is usually where he starts.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

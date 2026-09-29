@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -10,7 +11,7 @@ export default function AppDroppingSoonBanner() {
   return (
     <div className="mt-4 rounded-2xl overflow-hidden" style={{ backgroundColor: '#003366' }}>
       <div className="flex items-center gap-3 p-4">
-        <img src={APP_ICON} alt="Flavor Isle app" className="w-10 h-10 rounded-xl object-contain bg-white/90 p-1 flex-shrink-0" />
+        <img src={optimizedImageUrl(APP_ICON, 160, 160, 'fit')} alt="Flavor Isle app" width="160" height="160" className="w-10 h-10 rounded-xl object-contain bg-white/90 p-1 flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" />

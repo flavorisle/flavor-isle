@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
 import AppPhoneMockup from '@/components/AppPhoneMockup';
 import Seo from '@/components/Seo';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png'; // hands up
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
@@ -41,8 +42,11 @@ export default function DownloadApp() {
         <div className="relative max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10">
           <div className="flex-shrink-0 w-52 md:w-72 h-72 md:h-96">
             <img
-              src={SMASHIE_HERO}
+              src={optimizedImageUrl(SMASHIE_HERO, 600, 800, 'fit')}
               alt="Smashie mascot cheering"
+              width="600"
+              height="800"
+              decoding="async"
               className="w-full h-full object-contain drop-shadow-2xl animate-float-up"
             />
           </div>
@@ -59,8 +63,12 @@ export default function DownloadApp() {
             </p>
             <div className="flex items-center gap-4 justify-center md:justify-start">
               <img
-                src={APP_ICON}
+                src={optimizedImageUrl(APP_ICON, 200, 200, 'fit')}
                 alt="Flavor Isle app icon"
+                width="200"
+                height="200"
+                loading="lazy"
+                decoding="async"
                 className="w-20 h-20 rounded-2xl object-contain bg-white p-1.5 shadow-float-lg"
               />
               <div>
@@ -138,7 +146,7 @@ export default function DownloadApp() {
       {/* Smashie CTA band */}
       <section className="py-16 bg-patina-mint px-4 sm:px-6">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-          <img src={SMASHIE_POSE} alt="Smashie waving" className="w-32 flex-shrink-0 drop-shadow-lg" />
+          <img src={optimizedImageUrl(SMASHIE_POSE, 400, 500, 'fit')} alt="Smashie waving" width="400" height="500" loading="lazy" decoding="async" className="w-32 flex-shrink-0 drop-shadow-lg" />
           <div className="flex-1">
             <h2 className="font-heading text-3xl text-white mb-2">Smashie's Already On It</h2>
             <p className="text-teal-200 mb-6 max-w-xl">

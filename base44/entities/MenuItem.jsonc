@@ -31,7 +31,12 @@
       "description": "Admin-defined override category; when set the item groups under this name instead of its Square/original category. Used to build custom categories (e.g. unique burger groupings)."
     },
     "image_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Original Square catalog photo URL. Owned by the Square catalog sync \u2014 never written by anything else."
+    },
+    "image_url_opt": {
+      "type": "string",
+      "description": "Optimized copy of image_url: the same Square photo resized to at most 800px on its longest edge (never upscaled) and converted to WebP in the app's public media library. Written by the image optimization backfill and by the catalog sync when a photo changes. Renders fall back to image_url whenever this is empty."
     },
     "image_position": {
       "type": "string",

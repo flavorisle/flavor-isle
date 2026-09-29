@@ -1,4 +1,5 @@
 import React from "react";
+import { optimizedImageUrl } from "@/lib/utils";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
@@ -6,8 +7,10 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/20ada4255_NewFlavorIsleBuilding.png"
+            src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/20ada4255_NewFlavorIsleBuilding.png', 600, 400, 'fit')}
             alt="Flavor Isle — Smiths Grove, KY, Est. 1964"
+            width="600"
+            height="400"
             className="w-full max-w-[260px] rounded-2xl shadow-sm"
           />
         </div>

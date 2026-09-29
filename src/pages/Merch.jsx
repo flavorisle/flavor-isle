@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import ProductCard from '@/components/merch/ProductCard';
+import { optimizedImageUrl } from '@/lib/utils';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ProductDetailModal from '@/components/merch/ProductDetailModal';
@@ -172,9 +173,12 @@ export default function Merch() {
                 <Shirt size={12} /> Est. 1964 · Flavor Isle
               </div>
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png', 800, 600, 'fit')}
                 alt="Tasty Threads — Flavor Isle Apparel, est. 1964"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full max-w-sm h-auto bg-white rounded-2xl p-4 mb-6 shadow-float"
               />
               <p className="text-gray-200 max-w-xl text-lg leading-relaxed">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const photos = [
   { url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/99f75bee4_CD56F694-082A-4650-9E1C-5F5F95B2F288.jpg', alt: 'Guests at the outdoor tables at Flavor Isle', caption: 'Around the table' },
@@ -20,7 +21,7 @@ export default function ReviewWordWall() {
         <h2 id="word-wall-heading" className="font-heading text-4xl sm:text-6xl leading-none mt-2 mb-8">The Word Wall</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <figure className="relative min-h-64 overflow-hidden rounded-xl sm:row-span-2">
-            <img src={photos[0].url} alt={photos[0].alt} width="800" height="1000" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={optimizedImageUrl(photos[0].url, 800, 1000)} alt={photos[0].alt} width="800" height="1000" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
             <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pt-12 pb-5 font-heading text-xl">{photos[0].caption}</figcaption>
           </figure>
           {words.slice(0, 2).map(({ quote, name, source }, i) => (
@@ -38,7 +39,7 @@ export default function ReviewWordWall() {
             </figure>
           ))}
           <figure className="relative min-h-64 overflow-hidden rounded-xl">
-            <img src={photos[1].url} alt={photos[1].alt} width="800" height="600" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={optimizedImageUrl(photos[1].url, 800, 600)} alt={photos[1].alt} width="800" height="600" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
             <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pt-12 pb-5 font-heading text-xl">{photos[1].caption}</figcaption>
           </figure>
         </div>
