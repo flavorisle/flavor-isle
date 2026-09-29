@@ -19,6 +19,14 @@
     },
     "longitude": {
       "type": "number"
+    },
+    "visitor_name": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Optional publicly accessible visitor photo for the map pin"
     }
   },
   "required": [
