@@ -12,6 +12,8 @@ export const REVIEW_PLATFORMS = [
   {
     name: 'Google',
     note: 'Leave a Google review',
+    rating: '4.7 / 5',
+    count: '445 reviews',
     href: GOOGLE_REVIEW_URL,
     tint: 'bg-amber-100',
     icon: <Star size={20} className="text-amber-600 fill-amber-500" />,
@@ -19,6 +21,8 @@ export const REVIEW_PLATFORMS = [
   {
     name: 'Yelp',
     note: 'Leave a Yelp review',
+    rating: '4.9 / 5',
+    count: '29 reviews',
     href: 'https://www.yelp.com/biz/flavor-isle-smiths-grove',
     tint: 'bg-red-100',
     mark: 'Y',
@@ -27,6 +31,8 @@ export const REVIEW_PLATFORMS = [
   {
     name: 'Tripadvisor',
     note: 'Leave a Tripadvisor review',
+    rating: '4.5 / 5',
+    count: '30 reviews',
     href: 'https://www.tripadvisor.com/Restaurant_Review-g39867-d942916-Reviews-Flavor_Isle-Smiths_Grove_Kentucky.html',
     tint: 'bg-green-100',
     mark: 'TA',
@@ -35,6 +41,8 @@ export const REVIEW_PLATFORMS = [
   {
     name: 'Facebook',
     note: 'Recommend us on Facebook',
+    rating: '90% recommend',
+    count: '249 reviews',
     href: 'https://facebook.com/flavorisle',
     tint: 'bg-blue-100',
     icon: <Facebook size={20} className="text-blue-600" />,
@@ -57,6 +65,8 @@ export const REVIEW_PLATFORMS = [
   {
     name: 'Trustpilot',
     note: 'Leave a Trustpilot review',
+    rating: '4.7 / 5',
+    count: '34 reviews',
     href: 'https://www.trustpilot.com/review/flavor-isle.com',
     tint: 'bg-emerald-100',
     mark: 'TP',
@@ -92,11 +102,13 @@ export default function ReviewPlatformLinks() {
                   {p.name}
                   <ExternalLink size={12} className="opacity-0 group-hover:opacity-60 transition-opacity" />
                 </p>
-                <p className="text-xs text-muted-foreground mt-1 truncate">{p.note}</p>
+                {p.rating && <p className="text-sm font-semibold text-obsidian-roast mt-1">{p.rating} <span className="font-normal text-muted-foreground">· {p.count}</span></p>}
+                <p className="text-xs text-muted-foreground mt-1">{p.note}</p>
               </div>
             </a>
           ))}
         </div>
+        <p className="text-xs text-gray-300 text-center mt-4">Ratings and counts are snapshots as of September 2026, not live. Check each site for the latest figures; Instagram and Bing figures are not verified here.</p>
         <ReviewNextSteps />
       </div>
     </section>

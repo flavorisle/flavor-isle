@@ -12,7 +12,7 @@ export default function ReviewsRatings() {
         </div>
         <div className="bg-card text-card-foreground rounded-xl px-5 py-4 flex items-center gap-3 min-w-[200px]">
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center"><span className="font-heading text-xs text-green-700">TA</span></div>
-          <div><p className="font-heading text-xl leading-none">4.5/5</p><p className="text-sm text-muted-foreground">Tripadvisor</p></div>
+          <div><p className="font-heading text-xl leading-none">4.5/5</p><p className="text-sm text-muted-foreground">30 reviews · Tripadvisor</p></div>
         </div>
         <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener noreferrer" className="bg-card text-card-foreground rounded-xl px-5 py-4 flex items-center gap-3 min-w-[200px] hover:shadow-float-lg transition-shadow">
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center"><Star size={20} className="text-amber-600 fill-amber-500" /></div>
