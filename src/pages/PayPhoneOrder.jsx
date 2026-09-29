@@ -9,6 +9,7 @@ import PayOrderSummary from '@/components/pay/PayOrderSummary';
 import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayOrderForm from '@/components/pay/PayOrderForm';
 import PayPageState from '@/components/pay/PayPageState';
+import PayPhoneDemo from '@/components/pay/PayPhoneDemo';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
 
 const FALLBACK_ERROR =
@@ -31,6 +32,7 @@ export default function PayPhoneOrder() {
   const [customTip, setCustomTip] = useState('');
 
   useEffect(() => {
+    if (orderNumber === 'demo') return;
     let active = true;
     setLoading(true);
     base44.functions
@@ -66,6 +68,8 @@ export default function PayPhoneOrder() {
   const tip = tipAmountFor(tipPreset, presets, customTip);
   const totalDue =
     (Number(order?.subtotal) || 0) + (Number(order?.tax) || 0) + (Number(order?.delivery_fee) || 0) + tip;
+
+  if (orderNumber === 'demo') return <PayPhoneDemo />;
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
