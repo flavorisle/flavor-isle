@@ -7,6 +7,7 @@ import { Star, MessageCircle, Instagram } from 'lucide-react';
 import ReviewsHero from '@/components/reviews/ReviewsHero';
 import ReviewsRatings from '@/components/reviews/ReviewsRatings';
 import ReviewWordWall from '@/components/reviews/ReviewWordWall';
+import HometownMap from '@/components/reviews/HometownMap';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
@@ -223,6 +224,8 @@ export default function Reviews() {
           )}
         </div>
       </section>
+
+      <HometownMap />
 
       {/* One-tap review links for every platform we're listed on */}
       <ReviewPlatformLinks />
