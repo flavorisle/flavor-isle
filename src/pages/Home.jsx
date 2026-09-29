@@ -58,6 +58,12 @@ const HOME_DINING_PHOTO = {
   caption: 'Pull up a seat. Stay a while.',
 };
 
+const HOME_AWARDS_PHOTO = {
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cfc62ca68_IMG_1046.jpeg',
+  alt: 'Flavor Isle dining room wall with framed local history and awards',
+  caption: 'Best Restaurant in Smiths Grove 2025. Come check the wall yourself.',
+};
+
 export default function Home() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
@@ -119,7 +125,7 @@ export default function Home() {
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero />
       <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
+      <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
       <HomeOrderOptions />
 
