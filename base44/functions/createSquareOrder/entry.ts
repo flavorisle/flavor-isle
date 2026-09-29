@@ -280,30 +280,37 @@ Deno.serve(async (req) => {
       // a modifier twice (once in the name, once as a sub-line). The Deluxe
       // preset label and true ad-hoc modifiers stay in the name.
       const alreadyOnTicket = new Set<string>();
-      for (const sm of (item.selectedModifiers || [])) {
+      const selections = item.selectedModifiers || [];
+      for (let index = 0; index < selections.length; index++) {
+        const sm = selections[index];
         if (!sm?.id) continue;
         if (variationIds.has(sm.id)) {
           if (sm.name) alreadyOnTicket.add(sm.name); // Size selection
           continue;
         }
+        const next = selections[index + 1];
+        // The cart stores a merged display name immediately followed by its
+        // silent preference (Regular/Extra/Lite). Print only that complete name
+        // as a zero-priced ad-hoc modifier; its full price stays in the item
+        // base price. Never send either catalog option as a separate row.
+        if (sm.name && next?.silent && /^Preferences on (Sauce|Toppings)$/i.test(next.group || '')) {
+          appliedModifiers.push({ name: sm.name, base_price_money: { amount: 0, currency: 'USD' } });
+          alreadyOnTicket.add(sm.name);
+          index++; // skip the paired silent child preference
+          continue;
+        }
+        if (sm.silent) continue;
         const modListId = modifierOptionToList[sm.id];
         if (modListId && itemModListIds.has(modListId)) {
           const mod: any = { catalog_object_id: sm.id };
-          // A child preference (Regular/Extra/Lite) is already folded into the
-          // parent's display name and price. Explicitly zero its catalog price
-          // so Square does not add the child's default price a second time.
-          if (sm.silent || typeof sm.price === 'number') {
-            mod.base_price_money = { amount: sm.silent ? 0 : Math.round(sm.price * 100), currency: 'USD' };
+          if (typeof sm.price === 'number') {
+            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
           }
           appliedModifiers.push(mod);
-          catalogModPerUnit += sm.silent ? 0 : (sm.price || 0);
-          // Only suppress the printed name when it matches Square's actual
-          // modifier label. A merged parent such as "Extra Pickle" has the
-          // same catalog id as "Pickle" but MUST remain on the kitchen ticket.
+          catalogModPerUnit += sm.price || 0;
           if (sm.name && sm.name === modifierOptionToName[sm.id]) alreadyOnTicket.add(sm.name);
         }
-        // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
-        // and their prices stay in base_price_money.
+        // True ad-hoc extras stay in the name and in base_price_money.
       }
 
       // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,

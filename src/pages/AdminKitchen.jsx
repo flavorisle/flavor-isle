@@ -23,9 +23,7 @@ function minutesAgo(date) {
 }
 
 function formatModifiers(item) {
-  const mods = item.selectedModifiers || [];
-  if (!mods.length) return null;
-  return mods.map(m => m.name || m).join(', ');
+  return (item.selectedModifiers || []).map(m => typeof m === 'string' ? m : m?.name).filter(Boolean);
 }
 
 export default function AdminKitchen() {
@@ -154,7 +152,9 @@ export default function AdminKitchen() {
                           <span className="font-heading text-lg text-midnight-cherry flex-shrink-0 w-7 text-center">{qty}×</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-obsidian-roast font-semibold leading-tight">{item.name}</p>
-                            {mods && <p className="text-xs text-muted-foreground mt-0.5">+ {mods}</p>}
+                            {mods.map((name, index) => (
+                              <p key={index} className="text-xs text-muted-foreground mt-0.5">+ {name}</p>
+                            ))}
                           </div>
                         </div>
                       );

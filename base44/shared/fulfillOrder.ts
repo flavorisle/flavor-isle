@@ -131,8 +131,8 @@ export async function sendAdminReceiptEmail(order) {
 
   const itemsHtml = (order.items || []).map(item => {
     const qty = item.quantity || 1;
-    const mods = (item.selectedModifiers || []).map(m => m.name || m).join(', ');
-    const modLine = mods ? `<div style="font-size:12px;color:#666;margin:2px 0 0;">+ ${mods}</div>` : '';
+    const mods = formatItemModifiers(item);
+    const modLine = mods.map(m => `<div style="font-size:12px;color:#666;margin:2px 0 0;">+ ${m}</div>`).join('');
     return `<tr>
       <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${qty > 1 ? ` x${qty}` : ''}${modLine}</td>
       <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;">$${(item.price * qty).toFixed(2)}</td>

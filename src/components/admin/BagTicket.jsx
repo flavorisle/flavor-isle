@@ -86,13 +86,13 @@ export default function BagTicket({ order }) {
         ) : items.map((item, i) => {
           const qty = item.quantity || 1;
           const mods = item.selectedModifiers || item.modifiers || [];
-          const modNames = mods.map(m => m.name || m).filter(Boolean);
+          const modNames = mods.map(m => typeof m === 'string' ? m : m?.name).filter(Boolean);
           return (
             <div key={i} style={{ marginBottom: '3px', fontSize: '12px' }}>
               <div style={{ fontWeight: 'bold' }}>{qty}&times; {item.name}</div>
               {modNames.length > 0 && (
                 <div style={{ fontSize: '10px', paddingLeft: '10px', color: '#333' }}>
-                  {modNames.join(', ')}
+                  {modNames.map((name, index) => <div key={index}>{name}</div>)}
                 </div>
               )}
             </div>

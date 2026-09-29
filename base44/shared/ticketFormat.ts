@@ -6,8 +6,8 @@
 // to see. Any modifiers the customer added beyond the preset are still listed
 // individually so extras (Bacon, extra sauce, a Size choice) are not lost.
 //
-// Used by createSquareOrder (Square POS line item name) and printKitchenOrder
-// (kitchen SMS ticket) so both surfaces stay in sync.
+// Used by createSquareOrder (Square POS line item name) and staff order
+// notifications so modifier names stay consistent across these surfaces.
 
 const norm = (s: string): string => (s || '').toString().toLowerCase();
 const stem = (s: string): string => norm(s).replace(/(es|s)$/, '');
