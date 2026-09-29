@@ -8,6 +8,8 @@ import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
+import MenuShakeCard from '@/components/MenuShakeCard';
+import ShakeCustomizer from '@/components/ShakeCustomizer';
 import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
@@ -43,7 +45,8 @@ export default function Menu() {
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
-  const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
+  const [activeShake, setActiveShake] = useState(null);
+  const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { level } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
   const location = useLocation();
@@ -58,6 +61,10 @@ export default function Menu() {
 
   const focusedItem = focusItemId ? items.find((i) => i.id === focusItemId) : null;
   const focusMissing = !!focusItemId && !loading && !focusedItem;
+
+  useEffect(() => {
+    if (focusedItem && itemCategoryKey(focusedItem) === 'Whirl & Twirl') setActiveShake(focusedItem);
+  }, [focusedItem?.id]);
 
   // Scroll the focused card into view once the items have loaded.
   useEffect(() => {
@@ -98,15 +105,13 @@ export default function Menu() {
   useEffect(() => { reload(); }, []);
   const { pull, refreshing } = usePullToRefresh(reload);
 
-  // Milkshakes live on their own page — pull them out of the menu and promote
-  // the Shake Isle page in their place.
+  // Keep the Shake Isle page intact while showing its orderable shakes and malt on the menu.
   const SHAKE_KEY = 'Whirl & Twirl';
 
-  // Items matching the search, excluding hidden categories and the shake category.
+  // Items matching the search, excluding hidden categories.
   const visibleItems = items.filter((item) => {
     const key = itemCategoryKey(item);
     if (hiddenCats.includes(key)) return false;
-    if (key === SHAKE_KEY) return false;
     const matchSearch = !search ||
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     (item.description || '').toLowerCase().includes(search.toLowerCase());
@@ -114,7 +119,6 @@ export default function Menu() {
   });
 
   // Group items by effective category; one row per category (items scroll left→right).
-  // The shake category is replaced by a promo banner row linking to Shake Isle.
   const rows = (() => {
     if (search) {
       return [{ key: 'Results', items: visibleItems, isShakeBanner: false }];
@@ -125,10 +129,10 @@ export default function Menu() {
       if (!map[key]) map[key] = [];
       map[key].push(item);
     }
-    const keys = [...Object.keys(map), SHAKE_KEY];
+    const keys = Object.keys(map);
     return sortCategories(keys, categoryOrder).map((key) => ({
       key,
-      items: key === SHAKE_KEY ? [] : sortItemsInCategory(map[key], itemOrder[key] || []),
+      items: sortItemsInCategory(map[key], itemOrder[key] || []),
       isShakeBanner: key === SHAKE_KEY,
     }));
   })();
@@ -272,6 +276,13 @@ export default function Menu() {
                 <div className="flex-1 h-px bg-border" />
               </div>
               <MilkshakePromoBanner variant="strip" />
+              <div className="flex gap-6 overflow-x-auto scrollbar-hide pt-5 pb-2 snap-x">
+                {rowItems.map((item) => (
+                  <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0">
+                    <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
           <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
@@ -290,7 +301,9 @@ export default function Menu() {
                 <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
                   {rowItems.map((item) =>
               <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0 w-72">
-                      <MenuItemCard item={item} autoOpen={item.id === focusItemId} />
+                      {itemCategoryKey(item) === SHAKE_KEY
+                        ? <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
+                        : <MenuItemCard item={item} autoOpen={item.id === focusItemId} />}
                     </div>
               )}
                 </div>
@@ -321,6 +334,7 @@ export default function Menu() {
       }
 
       <Footer />
+      <ShakeCustomizer open={!!activeShake} onClose={() => setActiveShake(null)} shakeItem={activeShake} />
     </div>);
 
 }
