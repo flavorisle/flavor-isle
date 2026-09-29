@@ -246,14 +246,15 @@ export default async function(req) {
       })());
 
       const twiml = new VoiceResponse();
-      await speak(twiml, voiceGreeting);
-      twiml.gather({
+      const greetingGather = twiml.gather({
         input: 'speech',
         action: buildCallbackUrl(from, conversationId, 1),
         speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });
+      // Play inside Gather so speaking over Smashie interrupts playback and is heard.
+      await speak(greetingGather, voiceGreeting);
       await speak(twiml, "My bad fam, I didn't catch that. Run it back when you're ready!");
       twiml.hangup();
 
@@ -275,14 +276,14 @@ export default async function(req) {
     if (!speechResult) {
       const twiml = new VoiceResponse();
       if (turn <= 2) {
-        await speak(twiml, "Yo, I didn't catch that — run that back for me?");
-        twiml.gather({
+        const retryGather = twiml.gather({
           input: 'speech',
           action: callbackUrl(turn + 1),
           speechTimeout: '1',
           language: 'en-US',
           timeout: 8,
         });
+        await speak(retryGather, "Yo, I didn't catch that — run that back for me?");
       }
       await speak(twiml, "No worries fam — hit us back when you're ready. Bet!");
       twiml.hangup();
@@ -417,22 +418,22 @@ export default async function(req) {
     }
 
     const twiml = new VoiceResponse();
-    await speak(twiml, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
-
     if (isOrderComplete || atTurnCap) {
+      await speak(twiml, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
       if (atTurnCap && !isOrderComplete) {
         await speak(twiml, "Aight fam, let's wrap this up — hit us back if you need anything else. We got you!");
       }
       twiml.hangup();
     } else {
-      // Keep listening
-      twiml.gather({
+      // Keep listening while speaking, so callers can cut in mid-sentence.
+      const replyGather = twiml.gather({
         input: 'speech',
         action: callbackUrl(turn + 1),
         speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });
+      await speak(replyGather, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
       await speak(twiml, "You still there fam? Hit us back if we got disconnected!");
       twiml.hangup();
     }
