@@ -44,13 +44,18 @@ export default async function (req: Request) {
     // 2. Has square_order_id but missing confirmation_email_sent_at or
     //    staff_alert_sent_at — Square push done but emails failed; retry emails
     //    only (pushOrderToSquareAndKitchen skips the push, tries emails).
+    // Phone/chat orders taken without an email carry a placeholder address —
+    // there is no confirmation email to retry, so they must not stay in this
+    // list forever (that re-processed them every few minutes).
+    const hasRealEmail = (o: any) => !!o.customer_email && o.customer_email !== 'phone-order@flavorisle.com';
+
     const candidates = (orders || []).filter((o) =>
       o.status !== 'cancelled' &&
       o.order_source !== 'in_store' &&
       o.created_date && new Date(o.created_date).getTime() > twoHoursAgo &&
       (
         !o.square_order_id ||
-        (o.square_order_id && (!o.confirmation_email_sent_at || !o.staff_alert_sent_at))
+        (o.square_order_id && (!o.staff_alert_sent_at || (hasRealEmail(o) && !o.confirmation_email_sent_at)))
       )
     );
 
@@ -81,6 +86,20 @@ export default async function (req: Request) {
           }
         } catch (err) {
           results.push({ order_number: order.order_number, skipped: true, reason: `Stripe lookup failed: ${err.message}` });
+        }
+      } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('cs_')) {
+        // Phone/chat orders pay through a Stripe Checkout Session. If the
+        // checkout.session.completed webhook never arrived, verify the session
+        // with Stripe before pushing so an unpaid order never reaches the kitchen.
+        try {
+          const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+          if (session.payment_status === 'paid') {
+            paymentConfirmed = true;
+          } else {
+            results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session payment_status: ${session.payment_status}` });
+          }
+        } catch (err) {
+          results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session lookup failed: ${err.message}` });
         }
       }
 

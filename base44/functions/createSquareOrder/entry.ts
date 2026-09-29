@@ -84,7 +84,11 @@ Deno.serve(async (req) => {
     let customerId = null;
     const digits = (customer.phone || '').replace(/\D/g, '');
     const e164Phone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : null;
-    const normalizedEmail = (customer.email || '').toLowerCase().trim();
+    // Phone/chat orders taken without an email carry a placeholder so the
+    // required field is satisfied — never match or create a Square customer
+    // with it as if it were a real address. The phone still links the customer.
+    const rawEmail = (customer.email || '').toLowerCase().trim();
+    const normalizedEmail = rawEmail === 'phone-order@flavorisle.com' ? '' : rawEmail;
 
     const searchCustomer = async (filter) => {
       const res = await fetch('https://connect.squareup.com/v2/customers/search', {

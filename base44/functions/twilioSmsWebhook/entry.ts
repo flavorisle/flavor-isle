@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
 import {
   upsertSmsConsent,
   stopSubscriber,
@@ -138,15 +139,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Attach the same STORE STATUS + CHANNEL context the phone and web-chat
+    // channels attach, so Smashie knows this is a TEXT (not a call), already
+    // knows the customer's number (that's how the secure pay link gets texted
+    // back to the right person), and never attempts a call-only action in a
+    // reply the customer reads verbatim.
+    let statusLine = '';
+    try {
+      const storeStatus = await getPhysicalStoreStatus(base44);
+      statusLine = storeStatus.open
+        ? 'STORE STATUS: OPEN'
+        : `STORE STATUS: CLOSED${storeStatus.message ? ` — ${storeStatus.message}` : ''}`;
+    } catch (statusErr) {
+      // Never let the status lookup break the reply — the chat channel fails
+      // open the same way.
+      console.warn('SMS store status lookup failed:', statusErr.message);
+    }
+    const channelLine = `CHANNEL: SMS text message — this is a TEXT, not a phone call. The customer's phone number is ${from}: pass this exact number to logPhoneOrder as customer_phone. Counter transfers are NOT possible by text and the customer sees every character you send, so never offer a transfer, never use the [[TRANSFER]] token, and never use the [[PHONE_MESSAGE:...]] token — offer (270) 563-4618 or take the details and say management will follow up.`;
+    const smsContext = `[[CTX]]${statusLine}\n${channelLine}[[/CTX]]\n`;
+
     const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
-      content: body,
+      content: `${smsContext}${body}`,
     });
 
     const messages = updatedConversation.messages || [];
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
-    const replyText = lastReply?.content || settings.greeting;
+    // Strip any structured token Smashie may have emitted for another channel
+    // (call transfers, phone messages) — raw tokens must never reach a
+    // customer's phone.
+    const rawReply = lastReply?.content || settings.greeting;
+    const replyText = rawReply.replace(/\[\[[\s\S]*?\]\]/g, '').trim() || settings.greeting;
 
     await base44.asServiceRole.entities.SmsConversation.update(smsRecord.id, {
       last_message_at: new Date().toISOString(),

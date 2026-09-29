@@ -38,7 +38,11 @@ export default async function(req) {
       (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
       0,
     );
-    const subtotal = Number(total) > 0 ? Number(total) : itemSubtotal;
+    // Price from the verified items the customer agreed to — the Stripe line
+    // items are built from the same numbers, so the charge, the saved order, and
+    // the kitchen ticket can never disagree. A caller-supplied total is only a
+    // fallback for an item that arrived without a price.
+    const subtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
     const tax = Math.round(subtotal * 0.06 * 100) / 100;
     const finalTotal = Math.round((subtotal + tax) * 100) / 100;
     const orderNumber = 'PH' + Date.now().toString().slice(-6);
