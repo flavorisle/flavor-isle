@@ -133,7 +133,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // across the cart, checkout, and email receipts.
   const burgerModsLabel = deluxeLabel;
 
-  const nestedExtraCost = Object.values(nestedSelections).reduce((sum, nested) => sum + nestedSelectionsExtra(nested), 0);
+  const nestedExtraCost = Object.values(selections).flatMap(sel => sel ? (Array.isArray(sel) ? sel : [sel]) : [])
+    .reduce((sum, mod) => sum + nestedSelectionsExtra(nestedSelections[mod.id]), 0);
   const extraCost = Object.values(selections).reduce((sum, sel) => {
     if (!sel) return sum;
     if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);

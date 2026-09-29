@@ -31,7 +31,7 @@ export function getFlavorLevel(nestedSelection) {
 
 // Left zone = Lite (−), center = the flavor (tap to add/remove), right zone =
 // Extra (+). Picking a level selects the flavor if it isn't picked yet and
-// never deselects it; the center returns it to regular (or removes it).
+// never deselects it; tapping the center adds/removes the parent and clears its level.
 export default function FlavorPillButton({
   mod,
   isSelected,
@@ -58,10 +58,7 @@ export default function FlavorPillButton({
   };
 
   const handleCenter = () => {
-    if (isSelected && level) {
-      onNestedChange?.({});
-      return;
-    }
+    // Lite/Extra is a child preference, not a lock on the parent selection.
     onToggle?.();
     onNestedChange?.({});
   };

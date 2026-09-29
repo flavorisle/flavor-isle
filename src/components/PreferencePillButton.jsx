@@ -71,15 +71,9 @@ export default function PreferencePillButton({
   };
 
   const handleCenter = () => {
-    if (!isSelected) {
-      onToggle();
-      onNestedChange({});
-    } else if (isLite || isExtra) {
-      onNestedChange(regular ? { [prefList.name]: regular } : {});
-    } else {
-      onToggle();
-      onNestedChange({});
-    }
+    // The name toggles the parent, even when a Lite/Extra child is selected.
+    onToggle();
+    onNestedChange({});
   };
 
   return (
