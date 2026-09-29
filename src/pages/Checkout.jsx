@@ -51,10 +51,10 @@ const CARD_STYLE = {
 // Stable fingerprint of the cart being ordered — recognises "the same cart" so a
 // retry reopens the Order + PaymentIntent already created for it instead of
 // creating a second, duplicate pending order.
-function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, reward, scheduledFor }) {
+function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, reward, scheduledFor, loyaltyOptIn, phone }) {
   return JSON.stringify({
     items: items.map(i => [i.name, i.quantity, i.price, (i.selectedModifiers || []).map(m => m.name).join(',')]),
-    orderType, pickupMethod, total, tip, reward: reward || '', scheduledFor,
+    orderType, pickupMethod, total, tip, reward: reward || '', scheduledFor, loyaltyOptIn, phone,
   });
 }
 
@@ -185,6 +185,7 @@ export default function Checkout() {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
   const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
+  const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".
   const [hasAllergy, setHasAllergy] = useState(false);
@@ -350,7 +351,8 @@ export default function Checkout() {
   ].filter(Boolean).join('\n');
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
-  const rewardDiscount = appliedReward?.discountValue || 0;
+  const rewardDiscount = happyHourDiscount > 0 ? 0 : appliedReward?.discountValue || 0;
+  useEffect(() => { if (happyHourDiscount > 0 && appliedReward) setAppliedReward(null); }, [happyHourDiscount, appliedReward, setAppliedReward]);
   // Composed in whole cents with the shared half-up rule, exactly like the
   // cart total and the server's verification — never a float sum re-rounded by
   // toFixed (which is what produced the $3.44 / $3.45 mismatch).
@@ -415,6 +417,7 @@ export default function Checkout() {
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
     // Allergy alert ticked — the kitchen needs to know what the allergy is.
     if (hasAllergy && !form.allergy.trim()) errors.allergy = 'Tell us what the allergy is.';
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(form.phone.replace(/[\s().-]/g, ''))) errors.phone = 'Enter a valid phone to join, or uncheck Star Rewards.';
 
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -447,7 +450,7 @@ export default function Checkout() {
     // reopens the intent we already created instead of creating another one.
     const cartFingerprint = buildCartFingerprint(mappedItems, {
       orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
-      reward: appliedReward?.tierId, scheduledFor,
+      reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: form.phone,
     });
 
     setLoading(true);
@@ -481,6 +484,7 @@ export default function Checkout() {
           splits,
           groupName: people.map(p => p.name).join(', '),
           happyHourDiscount,
+          loyaltyOptIn,
           smsTransactionalConsent: smsConsent,
           smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
           smsConsentVersion: SMS_CONSENT_VERSION,
@@ -512,6 +516,7 @@ export default function Checkout() {
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+          loyaltyOptIn,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
@@ -649,6 +654,7 @@ export default function Checkout() {
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+      loyaltyOptIn,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
@@ -661,7 +667,7 @@ export default function Checkout() {
         publishableKey: res.data.publishableKey,
         fingerprint: buildCartFingerprint(mappedItems, {
           orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
-          reward: appliedReward?.tierId, scheduledFor,
+          reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: customer.phone,
         }),
       });
     }
@@ -807,6 +813,7 @@ export default function Checkout() {
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
                       <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
                         className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      {fieldErrors.phone && <p className="text-xs text-destructive mt-1">{fieldErrors.phone}</p>}
                     </div>
                     {orderType === 'dine_in' && (
                       <div>
@@ -853,6 +860,11 @@ export default function Checkout() {
                   {isCurbside && (
                     <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
                   )}
+
+                  <label className="flex items-center gap-3 mt-4 min-h-11 cursor-pointer select-none">
+                    <input type="checkbox" checked={loyaltyOptIn} onChange={e => setLoyaltyOptIn(e.target.checked)} className="w-5 h-5 flex-shrink-0 accent-primary" />
+                    <span className="text-sm text-obsidian-roast">Join Star Rewards — earn 1 Star per $1 <span className="text-muted-foreground">(optional; uses the phone number above)</span></span>
+                  </label>
 
                   {/* SMS opt-in for order status updates — transactional only, optional,
                       unchecked, and persisted through order creation (createPaymentIntent /
@@ -1125,12 +1137,12 @@ export default function Checkout() {
               </div>
 
               {/* Star Rewards — compact balance + redeemable rewards */}
-              <CheckoutLoyaltyBox
+              {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
                 subtotal={subtotal}
                 phone={form.phone}
                 appliedReward={appliedReward}
                 onApply={setAppliedReward}
-              />
+              />}
 
               {/* Add a Tip — lives in the summary so the running total reflects it live */}
               <div className="border-t border-border pt-3 mb-3">

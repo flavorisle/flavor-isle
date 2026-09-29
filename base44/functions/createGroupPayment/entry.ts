@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
       scheduledFor, estimatedTime,
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
-      happyHourDiscount,
+      happyHourDiscount, loyaltyOptIn,
       smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion,
     } = body;
 
@@ -27,6 +27,9 @@ Deno.serve(async (req) => {
     }
     if (!splits || splits.length === 0) {
       return Response.json({ error: 'No payment splits provided' }, { status: 400 });
+    }
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(String(customer?.phone || '').replace(/[\s().-]/g, ''))) {
+      return Response.json({ error: 'Enter a valid phone number to join Star Rewards, or uncheck the optional box.' }, { status: 400 });
     }
 
     // ── Trusted pricing: recompute the GROUP total authoritatively ──
@@ -87,6 +90,8 @@ Deno.serve(async (req) => {
         tip: pricing.tip,
         discount: 0,
         happy_hour_discount: pricing.happyHourDiscount,
+        loyalty_opt_in: loyaltyOptIn === true,
+        direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,

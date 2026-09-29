@@ -35,6 +35,23 @@ export async function getLoyaltyProgram(): Promise<any | null> {
   return data?.program || null;
 }
 
+async function getSquareOrderCustomerId(orderId: string): Promise<string | null> {
+  const res = await fetch(`${SQUARE_API}/orders/${encodeURIComponent(orderId)}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`RetrieveOrder failed: ${JSON.stringify(data?.errors || data)}`);
+  return data?.order?.customer_id || null;
+}
+
+export async function getAccrualEventForOrder(orderId: string): Promise<any | null> {
+  const res = await fetch(`${SQUARE_API}/loyalty/events/search`, {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ query: { filter: { order_filter: { order_id: orderId } } }, limit: 30 }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`SearchLoyaltyEvents failed: ${JSON.stringify(data?.errors || data)}`);
+  return (data.events || []).find((event: any) => event.type === 'ACCUMULATE_POINTS') || null;
+}
+
 // Check the Square loyalty ledger for an existing ACCUMULATE_POINTS event on a
 // given order. Used by the order-status sync's accrual retry to guarantee an
 // order is never credited twice — if an event already exists we just mark the
@@ -133,7 +150,7 @@ export async function createLoyaltyAccount({
   const res = await fetch(`${SQUARE_API}/loyalty/accounts`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ loyalty_account, idempotency_key: crypto.randomUUID() }),
+    body: JSON.stringify({ loyalty_account, idempotency_key: `enroll:${e164 || customerId}` }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`CreateLoyaltyAccount failed: ${JSON.stringify(data?.errors || data)}`);
@@ -193,10 +210,6 @@ export async function adjustLoyaltyPoints({
   return data?.loyalty_account || null;
 }
 
-// Welcome bonus granted once to every customer the first time they're enrolled
-// in Star Rewards from an online order.
-export const WELCOME_BONUS_STARS = 40;
-
 export function describeRewardTier(tier: any): string {
   const def = tier?.definition || {};
   if (def.discount_type === 'FIXED_AMOUNT') {
@@ -239,10 +252,16 @@ export async function accrueForOrder({
   squareOrderId,
   email,
   phone,
+  enroll = false,
+  directWebOrderId,
+  skipAccrual = false,
 }: {
   squareOrderId: string;
   email: string;
   phone?: string;
+  enroll?: boolean;
+  directWebOrderId?: string;
+  skipAccrual?: boolean;
 }): Promise<{ pointsEarned: number; balance: number; newlyEnrolled: boolean }> {
   const program = await getLoyaltyProgram();
   if (!program?.id) throw new Error('Square loyalty program not found');
@@ -251,51 +270,41 @@ export async function accrueForOrder({
   const locationId = await getLocationId();
   if (!locationId) throw new Error('Could not resolve Square location for loyalty accrual');
 
-  // Phone is the primary identifier for Square loyalty — look up the account
-  // by phone mapping first, then fall back to email-based customer lookup.
-  let account: any | null = null;
+  // A phone is the member identity; never enroll a caller just because an email
+  // matches another Square customer. Only a paid order with explicit opt-in may
+  // create a new account. Existing members can earn without opting in again.
+  if (!toE164Phone(phone)) throw new Error('A valid member phone is required');
+  let account = await searchLoyaltyAccountByPhone(phone);
   let newlyEnrolled = false;
-  if (phone) account = await searchLoyaltyAccountByPhone(phone);
-
   if (!account) {
-    let customerId = phone ? await searchSquareCustomerIdByPhone(phone) : null;
-    if (!customerId && email) customerId = await searchSquareCustomerIdByEmail(email);
-    if (!customerId) throw new Error('No Square customer found for loyalty accrual');
-    account = await findLoyaltyAccountByCustomer(customerId);
-    if (!account) {
+    const customerId = await searchSquareCustomerIdByPhone(phone) || (enroll ? await getSquareOrderCustomerId(squareOrderId) : null);
+    if (customerId) {
+      const matched = await findLoyaltyAccountByCustomer(customerId);
+      if (matched && toE164Phone(matched.mapping?.phone_number) === toE164Phone(phone)) account = matched;
+    }
+    if (!account && enroll) {
+      if (!customerId) throw new Error('No Square customer found for enrollment');
       account = await createLoyaltyAccount({ programId: program.id, customerId, phone });
       newlyEnrolled = true;
     }
   }
+  if (!account) throw new Error('Phone is not enrolled in Star Rewards');
 
-  // Welcome bonus: grant 40 stars to first-time enrollees before the spend-based
-  // accrual so a new member always starts with a head start on their first reward.
-  if (newlyEnrolled) {
-    try {
-      await adjustLoyaltyPoints({
-        accountId: account.id,
-        points: WELCOME_BONUS_STARS,
-        reason: 'Welcome bonus for joining Star Rewards',
-        idempotencyKey: `loyalty-welcome:${account.id}`,
-      });
-      console.log(`Welcome bonus of ${WELCOME_BONUS_STARS} stars granted to new loyalty account ${account.id}`);
-    } catch (err) {
-      console.error('Welcome bonus adjust failed:', (err as Error).message);
-    }
+  const accrual = skipAccrual ? null : await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
+  const event = accrual?.event || accrual?.events?.[0] || (skipAccrual ? await getAccrualEventForOrder(squareOrderId) : null);
+  const pointsEarned = Number(event?.accumulate_points?.points || 0);
+  // Bonus is based on Square's actual earn event, not untrusted cart prices.
+  // A deterministic key makes webhook retries safe after a partial success.
+  if (directWebOrderId) {
+    const standardEarn = pointsEarned;
+    const bonus = standardEarn >= 10 ? Math.max(1, Math.floor(standardEarn * 0.10)) : Math.floor(standardEarn * 0.10);
+    if (bonus > 0) await adjustLoyaltyPoints({ accountId: account.id, points: bonus, reason: 'Direct order bonus', idempotencyKey: `direct-web-bonus:${directWebOrderId}` });
   }
-
-  const accrual = await accumulateLoyaltyPoints({ accountId: account.id, programId: program.id, orderId: squareOrderId, locationId, idempotencyKey: `loyalty-accrue:${squareOrderId}` });
-
-  // Points earned come back on the accrual event; balance = pre-accrual
-  // balance + welcome bonus (if any) + stars just earned.
-  const event = accrual?.event || accrual?.events?.[0];
-  const pointsEarned = event?.accumulate_points?.points || 0;
-  const balance = (account.balance || 0) + (newlyEnrolled ? WELCOME_BONUS_STARS : 0) + pointsEarned;
-  return { pointsEarned, balance, newlyEnrolled };
+  return { pointsEarned, balance: (account.balance || 0) + pointsEarned, newlyEnrolled };
 }
 
-// Build the status payload shown on the Account rewards screen. Finds (or
-// creates, when a phone number is available) the buyer's loyalty account and
+// Build the status payload shown on the Account rewards screen. Finds
+// the buyer's loyalty account without enrolling them and
 // returns their live balance, lifetime stars, and available reward tiers.
 export async function buildLoyaltyStatus({ email, phone }: { email: string; phone?: string }): Promise<any> {
   const program = await getLoyaltyProgram();
@@ -359,12 +368,8 @@ export async function buildLoyaltyStatus({ email, phone }: { email: string; phon
         result.needsPhone = true;
         return result;
       }
-      try {
-        account = await createLoyaltyAccount({ programId: program.id, customerId, phone: e164 });
-      } catch (e) {
-        // If we can't create (e.g. conflict), surface needsPhone so the UI nudges.
-        console.error('Loyalty account create failed:', (e as Error).message);
-      }
+      // Status is read-only. Enrollment happens only when explicitly requested
+      // at checkout and payment is confirmed, not when someone looks up a phone.
     }
   }
 

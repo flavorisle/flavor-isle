@@ -9,10 +9,19 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(String(customer?.phone || '').replace(/[\s().-]/g, ''))) {
+      return Response.json({ error: 'Enter a valid phone number to join Star Rewards, or uncheck the optional box.' }, { status: 400 });
+    }
+    if (redemptionId && Number(happyHourDiscount) > 0) {
+      return Response.json({ error: 'Star Rewards cannot be combined with Happy Hour or another discount.' }, { status: 400 });
+    }
+    if (!redemptionId && Number(discount) > 0) {
+      return Response.json({ error: 'Choose a valid Star Reward for this discount.' }, { status: 400 });
     }
 
     // ── Reward validation: verify the claimed reward tier, exact discount,
@@ -131,6 +140,8 @@ Deno.serve(async (req) => {
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
         redemption_id: redemptionId || '',
+        loyalty_opt_in: loyaltyOptIn === true,
+        direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,

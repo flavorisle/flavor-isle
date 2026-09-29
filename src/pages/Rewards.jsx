@@ -8,23 +8,6 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 
-// Loyalty status tiers — derived from lifetime stars. Each tier grants a
-// benefit multiplier (Nx) applied to stars earned on every order. Ordered
-// descending by min so deriveTier returns the highest reached tier first.
-const LOYALTY_TIERS = [
-  { min: 150, label: 'Big Burger Energy', multiplier: 5, iconColor: '#f1c40f' },
-  { min: 120, label: 'Mega Flex', multiplier: 4, iconColor: '#2c3e50' },
-  { min: 70, label: 'Big Flex', multiplier: 3, iconColor: '#d9534f' },
-  { min: 40, label: 'Big Bite', multiplier: 2, iconColor: '#e6a23c' },
-];
-
-function deriveTier(lifetime) {
-  for (const t of LOYALTY_TIERS) {
-    if (lifetime >= t.min) return t;
-  }
-  return { min: 0, label: 'Starter', multiplier: 1, iconColor: '#b0c4de' };
-}
-
 // Subtitle for a reward tier card — "Free item · item reward" for item-scoped
 // rewards, "{pct}% off · order reward" for percentage order rewards.
 function rewardSubtitle(t) {
@@ -62,16 +45,12 @@ export default function Rewards() {
   const lifetime = status?.lifetimePoints || 0;
   const tiers = status?.rewardTiers || [];
   const earnText = status?.earnText;
-  const tier = deriveTier(lifetime);
 
   // Progress toward the next unreached reward tier
   const sortedTiers = [...tiers].sort((a, b) => a.points - b.points);
   const nextTier = sortedTiers.find(t => t.points > balance);
   const nextTierProgress = nextTier ? Math.min(100, Math.round((balance / nextTier.points) * 100)) : 100;
   const starsToNext = nextTier ? Math.max(0, nextTier.points - balance) : 0;
-
-  // Ascending tier list for the ladder display (lowest tier first).
-  const ladderTiers = [...LOYALTY_TIERS].reverse();
 
   if (loading) {
     return (
@@ -93,45 +72,6 @@ export default function Rewards() {
       </div>
     );
   }
-
-  // ── Tier ladder card ──
-  // reached = lifetime meets the tier threshold; current = the highest reached
-  // tier (the one the user is currently on). Below-current tiers show UNLOCKED,
-  // the current tier shows CURRENT with a highlighted border, unreached tiers
-  // are greyed.
-  const renderTierCard = (t) => {
-    const reached = lifetime >= t.min;
-    const isCurrent = tier && t.min === tier.min && reached;
-    return (
-      <div
-        key={t.label}
-        className="flex items-center gap-4 rounded-2xl p-4 bg-white"
-        style={{ border: `2px solid ${isCurrent ? '#d9534f' : '#d1dbe5'}` }}
-      >
-        <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${reached ? '' : 'opacity-40 grayscale'}`}
-          style={{ backgroundColor: t.iconColor }}
-        >
-          <Award size={22} className="text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-heading text-obsidian-roast">{t.label}</p>
-            {isCurrent ? (
-              <span className="text-xs font-heading text-white rounded-full px-2 py-0.5" style={{ backgroundColor: '#d9534f' }}>CURRENT</span>
-            ) : reached ? (
-              <span className="text-xs font-heading text-white rounded-full px-2 py-0.5" style={{ backgroundColor: '#b0c4de' }}>UNLOCKED</span>
-            ) : null}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{t.min}+ lifetime stars</p>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 font-heading text-lg" style={{ color: '#e67e22' }}>
-          <Zap size={16} />
-          {t.multiplier}x
-        </div>
-      </div>
-    );
-  };
 
   // ── Reward card ──
   // redeemable = balance meets the reward's star cost; those show a READY badge.
@@ -163,16 +103,6 @@ export default function Rewards() {
     );
   };
 
-  const TierLadder = () => (
-    <div className="card-diner p-6 mb-8">
-      <h3 className="font-heading text-lg text-obsidian-roast mb-1">Star Tiers</h3>
-      <p className="text-sm text-muted-foreground mb-5">Earn more lifetime stars to unlock bigger multipliers on every order.</p>
-      <div className="space-y-3">
-        {ladderTiers.map(renderTierCard)}
-      </div>
-    </div>
-  );
-
   const RewardsList = () => (
     <div>
       <h3 className="font-heading text-xl text-obsidian-roast mb-1">Available Rewards</h3>
@@ -194,9 +124,9 @@ export default function Rewards() {
   const HowItWorks = () => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
       {[
-        { icon: Star, title: 'Earn Stars', text: 'Collect stars on every online order — automatically tracked by your phone number.' },
-        { icon: Zap, title: 'Climb Tiers', text: 'Stack lifetime stars to unlock bigger multipliers on every order.' },
-        { icon: Gift, title: 'Redeem Rewards', text: 'Cash in your stars for free food at the Flavor Isle register.' },
+        { icon: Star, title: 'Earn Stars', text: 'Earn 1 Star per $1 when you use your member phone number.' },
+        { icon: Zap, title: 'Order Direct', text: '+10% bonus Stars on every flavor-isle.com order.' },
+        { icon: Gift, title: 'Redeem Rewards', text: 'Choose a reward from the live Square program when you have enough Stars.' },
       ].map((s, i) => (
         <div key={s.title} className="card-diner p-5 text-center">
           <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center mx-auto mb-3">
@@ -222,7 +152,7 @@ export default function Rewards() {
     },
     {
       q: 'What are the star tiers?',
-      a: 'As you stack lifetime stars you climb tiers — Starter, Big Bite, Big Flex, Mega Flex, and Big Burger Energy. Each tier unlocks a bigger multiplier on the stars you earn on every order.',
+      a: 'Square sets the live reward tiers. Your current balance and available rewards appear above when your member phone number is linked.',
     },
     {
       q: 'How do I redeem a reward?',
@@ -345,7 +275,7 @@ export default function Rewards() {
               </div>
               <h1 className="font-heading text-4xl sm:text-5xl leading-none mt-4">Earn stars on every online order</h1>
               <p className="text-sm text-white/70 mt-3 max-w-md leading-relaxed">
-                Join Star Rewards to stack up stars on every order, climb the tiers for bigger multipliers, and cash them in for free food at the register — just like in-store.
+                Earn 1 Star per $1 and redeem your Stars for rewards set by the live Square program. +10% bonus Stars on every flavor-isle.com order, with your member phone number.
               </p>
               {earnText && (
                 <div className="mt-4 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
@@ -365,7 +295,6 @@ export default function Rewards() {
           </div>
 
           <HowItWorks />
-          <TierLadder />
           <RewardsList />
 
           <RewardsFAQ />
@@ -411,20 +340,12 @@ export default function Rewards() {
             </div>
             <h1 className="font-heading text-3xl sm:text-4xl leading-none">Your Star Rewards</h1>
             <p className="text-sm text-white/70 mt-2 max-w-md">
-              The same rewards you earn in-store — synced to your online account{earnText ? `. ${earnText}.` : '.'}
+              Earn 1 Star per $1 with your member phone number. Your balance is synced with Square.
             </p>
-            <div className="mt-5 flex flex-wrap items-center gap-3 bg-white/10 rounded-2xl p-3">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: tier.iconColor }}>
-                <Award size={15} className="text-white" />
-              </div>
-              <span className="font-heading text-sm tracking-wide">{tier.label}</span>
-              <span className="text-xs font-heading text-smashie-yellow bg-white/20 rounded-full px-2 py-0.5">{tier.multiplier}× stars</span>
-              <span className="text-xs text-white/60">·</span>
-              <span className="text-xs text-white/70">{Number(lifetime).toLocaleString()} lifetime</span>
+            <p className="mt-4 text-sm text-white/80">+10% bonus Stars on every flavor-isle.com order.</p>
             </div>
-          </div>
 
-          {earnText && (
+            {earnText && (
             <div className="px-8 py-4 bg-midnight-cherry/5 flex items-center gap-2 text-sm text-obsidian-roast">
               <Sparkles size={15} className="text-midnight-cherry flex-shrink-0" />
               <span>{earnText}</span>
@@ -485,7 +406,6 @@ export default function Rewards() {
         )}
 
         {/* Star Tiers ladder */}
-        {status?.hasAccount && <TierLadder />}
 
         {/* Progress to next reward */}
         {status?.hasAccount && nextTier && (

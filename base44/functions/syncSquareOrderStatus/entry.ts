@@ -179,10 +179,11 @@ Deno.serve(async (req) => {
         try {
           const alreadyAccrued = await hasAccrualEventForOrder(order.square_order_id);
           if (alreadyAccrued) {
+            if (order.direct_web_rewards_v2 === true) await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone, directWebOrderId: order.id, skipAccrual: true });
             await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
             console.log(`Loyalty already accrued for order ${order.order_number} — marked`);
           } else {
-            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone });
+            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone, enroll: order.loyalty_opt_in === true, directWebOrderId: order.direct_web_rewards_v2 === true ? order.id : undefined });
             await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
             console.log(`Loyalty accrual retry succeeded for order ${order.order_number}`);
           }

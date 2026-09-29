@@ -240,7 +240,7 @@ async function processLoyalty(base44, order, squareOrderId) {
     for (let attempt = 1; attempt <= 3 && !accrued; attempt++) {
       try {
         if (attempt > 1) await sleep(3000);
-        loyaltyResult = await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
+        loyaltyResult = await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone, enroll: order.loyalty_opt_in === true, directWebOrderId: order.direct_web_rewards_v2 === true ? order.id : undefined });
         accrued = true;
         console.log(`Square Star Rewards points accrued for order ${order.order_number} (attempt ${attempt})`);
       } catch (accrueErr) {
