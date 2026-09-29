@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import PickupZoneMap, { ZONES } from '@/components/PickupZoneMap';
 import CurbsideArrivalModal from '@/components/CurbsideArrivalModal';
 import MerchOrderStatusCard from '@/components/merch/MerchOrderStatusCard';
+import useTrackedOrderRefresh from '@/hooks/useTrackedOrderRefresh';
 
 const STAGES = [
   { key: 'confirmed', label: 'Confirmed', Icon: CheckCircle2 },
@@ -34,6 +35,7 @@ export default function OrderLookup() {
   const [selectedZone, setSelectedZone] = useState('');
   const [showArrival, setShowArrival] = useState(false);
   const [hasArrived, setHasArrived] = useState(false);
+  useTrackedOrderRefresh(order && !['completed', 'delivered', 'cancelled'].includes(order.status) ? order.order_number : null, setOrder);
 
   // Auto-load when the page is opened with ?order=123456 (e.g. from the
   // confirmation email link) so the customer lands straight on their tracker.

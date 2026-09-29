@@ -9,33 +9,7 @@ import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 
-// Maps Square fulfillment/order states to our app's order statuses.
-// Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
-// COMPLETED) maps to `ready` even if the order-level state already flipped to
-// COMPLETED in the same Square update — otherwise the `ready` email is skipped.
-function mapSquareStateToStatus(squareOrder) {
-  const fulfillment = squareOrder.fulfillments?.[0];
-  const fulfillmentState = fulfillment?.state;
-  const orderState = squareOrder.state;
-
-  if (orderState === 'CANCELED') return 'cancelled';
-
-  switch (fulfillmentState) {
-    case 'PROPOSED': return 'confirmed';
-    case 'RESERVED': return 'confirmed';
-    case 'PREPARED': return 'preparing';
-    case 'COMPLETED':
-      // Fulfillment done = ready for pickup/delivery. Only escalate to
-      // `completed` when the ORDER itself is also closed out.
-      return orderState === 'COMPLETED' ? 'completed' : 'ready';
-    default: break;
-  }
-
-  // Fallback on order-level state
-  if (orderState === 'COMPLETED') return 'completed';
-  if (orderState === 'OPEN') return 'confirmed';
-  return null;
-}
+import { mapSquareFulfillmentStatus, advanceOrderStatus } from '../../shared/orderTrackingStatus.ts';
 
 // Returns the ordered list of status milestones between (prev, new] so the
 // sync can send catch-up emails for any states the polling interval skipped.
@@ -148,7 +122,6 @@ export default async function(req) {
 
     let updated = 0;
     let notified = 0;
-    const pendingUpdates = [];
     const completedThisRun = [];
     // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
     // lookup, and bursting through dozens at once trips Square's rate limit.
@@ -157,7 +130,7 @@ export default async function(req) {
     const LOYALTY_RETRY_CAP = 3;
 
     for (const sqOrder of squareOrders) {
-      const newStatus = mapSquareStateToStatus(sqOrder);
+      let newStatus = mapSquareFulfillmentStatus(sqOrder);
       if (!newStatus) continue;
 
       // Look up the matching Order entity from the in-memory index
@@ -202,13 +175,15 @@ export default async function(req) {
         }
       }
 
-      // Only update if status actually changed
+      // A staff update must not be rolled backwards by stale Square state.
+      newStatus = advanceOrderStatus(order.status, newStatus);
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
 
-      // Stage the status update; applied in a single bulkUpdate after the loop
-      pendingUpdates.push({ id: order.id, status: newStatus });
+      // Persist before notifications: an email/SMS failure must never hide Ready.
+      // Keep bulk semantics so unrelated entity triggers do not fire here.
+      await base44.asServiceRole.entities.Order.bulkUpdate([{ id: order.id, status: newStatus }]);
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
@@ -243,6 +218,7 @@ export default async function(req) {
           canTxSms = false;
         }
       }
+      try {
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
           await sendOrderPreparingEmail(order, base44);
@@ -301,10 +277,9 @@ export default async function(req) {
           });
         }
       }
-    }
-
-    if (pendingUpdates.length > 0) {
-      await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
+      } catch (notificationError) {
+        console.error(`Status saved for order ${order.order_number}, but notification failed:`, notificationError.message);
+      }
     }
 
     // Sync customer profile stats for orders that just completed. The entity
