@@ -6,7 +6,6 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { BUSYNESS_STAGES } from '@/lib/busynessStages';
 import OrderStatusStages from '@/components/OrderStatusStages';
 import BusynessBetaTag from '@/components/BusynessBetaTag';
-import FoodPhotoRow from '@/components/FoodPhotoRow';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
@@ -180,11 +179,6 @@ export default function BusynessGuide() {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Food shots straight off the line — backs up the cook-to-order story */}
-        <div className="mb-10">
-          <FoodPhotoRow />
         </div>
 
         {/* Order tracking stages */}

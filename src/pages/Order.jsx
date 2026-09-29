@@ -6,7 +6,6 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
-import FoodRail from '@/components/cinematic/FoodRail';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -58,8 +57,6 @@ export default function Order() {
             Hand-patted burgers, shakes & more — fired up fresh. Pick how you want it and we'll get it started.
           </p>
         </div>
-
-        <FoodRail />
 
         {/* Live status — driven by the kitchen busyness backend */}
         <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
