@@ -29,7 +29,6 @@ import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import { FallDivider } from '@/components/RetroFallTheme';
-import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
 import CommunityPhotoStrip from '@/components/CommunityPhotoStrip';
 import HeroStats from '@/components/HeroStats';
 
@@ -113,9 +112,8 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── HERO → FOOD → COMMUNITY → SHAKES → FAVORITES → REVIEWS → STATS ── */}
+      {/* ── HERO → COMMUNITY → SHAKES → FAVORITES → REVIEWS → STATS ── */}
       <HeroSection />
-      <GalleryPhotoStrip items={menuItems} />
       <CommunityPhotoStrip />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <MilkshakePromoBanner variant="strip" />
