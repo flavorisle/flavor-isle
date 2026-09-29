@@ -53,8 +53,8 @@ const FEATURES = [
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
 
 const HOME_DINING_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c9373f338_C503A316-B057-4EF3-A71C-5B8F7E5D7A59.JPG',
-  alt: 'Flavor Isle dining room with tables, blue walls, and a view of the outdoor seating',
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
+  alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
   caption: 'Pull up a seat. Stay a while.',
 };
 
