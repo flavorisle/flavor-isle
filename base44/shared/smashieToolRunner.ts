@@ -88,7 +88,9 @@ async function takeMessage(base44, args, callerPhone, sessionId) {
 // fallback for when the field is blank.
 async function requestTransfer(base44) {
   const settings = await getSmashieSettings(base44);
-  const target = String(settings.sip_transfer_target || '').trim() || Deno.env.get('SIP_TRANSFER_TARGET');
+  const configured = String(settings.sip_transfer_target || '').trim() || Deno.env.get('SIP_TRANSFER_TARGET');
+  // A bare user@domain address gets the sip: scheme the REFER needs.
+  const target = configured && !/^(sip|sips|tel):/i.test(configured) ? `sip:${configured}` : configured;
   if (!target) {
     return {
       output: JSON.stringify({
