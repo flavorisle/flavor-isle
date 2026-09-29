@@ -5,10 +5,8 @@
 // Direct-SIP model: Twilio exchanges the call audio with OpenAI, so this code
 // never touches audio — it only controls the session and does the business
 // logic. Docs: developers.openai.com/api/docs/guides/voice-sip
-import WS from 'npm:ws@8.18.0';
-
 const SESSIONS_URL = 'https://api.openai.com/v1/live/sessions';
-const ATTACH_URL = 'wss://api.openai.com/v1/live/sessions';
+const ATTACH_URL = 'https://api.openai.com/v1/live/sessions';
 
 function authHeaders(apiKey: string) {
   return { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
@@ -57,44 +55,32 @@ export interface Sideband {
   close: () => void;
 }
 
-// Attaches the sideband socket to an accepted session. Resolves once the socket
-// is open, so callers can start sending commands. The Authorization header
-// can't be set through Deno's global WebSocket constructor, which is why this
-// uses the `ws` client.
-export function attachLiveSideband(sessionId: string, apiKey: string, handlers: SidebandHandlers): Promise<Sideband> {
-  const socket = new WS(`${ATTACH_URL}/${sessionId}/attach`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
+// The worker runtime supports authenticated outbound sockets through fetch's
+// Upgrade handshake, not the browser build of the Node `ws` package.
+export async function attachLiveSideband(sessionId: string, apiKey: string, handlers: SidebandHandlers): Promise<Sideband> {
+  const response = await fetch(`${ATTACH_URL}/${sessionId}/attach`, {
+    headers: { Authorization: `Bearer ${apiKey}`, Upgrade: 'websocket' },
   });
-
-  return new Promise<Sideband>((resolve, reject) => {
-    socket.on('open', () => {
-      resolve({
-        send: (message: object) => {
-          try {
-            socket.send(JSON.stringify(message));
-          } catch (e) {
-            console.error('Live sideband send failed:', e.message);
-          }
-        },
-        close: () => {
-          try { socket.close(); } catch (e) { /* already closed */ }
-        },
-      });
-    });
-
-    socket.on('message', (data) => {
-      try {
-        handlers.onEvent(JSON.parse(data.toString()));
-      } catch (e) {
-        console.error('Live sideband event parse failed:', e.message);
-      }
-    });
-
-    socket.on('error', (err) => {
-      console.error('Live sideband error:', err.message);
-      reject(err);
-    });
-
-    socket.on('close', (code, reason) => handlers.onClose(code, reason?.toString()));
+  const socket = response.webSocket;
+  if (!socket) {
+    const detail = (await response.text()).slice(0, 400);
+    throw new Error(`Live sideband upgrade failed (${response.status}): ${detail}`);
+  }
+  socket.addEventListener('message', (event) => {
+    try {
+      handlers.onEvent(JSON.parse(event.data));
+    } catch (error) {
+      console.error('Live sideband event failed:', error.message);
+    }
   });
+  socket.addEventListener('close', (event) => handlers.onClose(event.code, event.reason));
+  socket.addEventListener('error', () => {
+    console.error('Live sideband transport error');
+    socket.close(1011, 'Sideband transport error');
+  });
+  socket.accept();
+  return {
+    send: (message: object) => socket.send(JSON.stringify(message)),
+    close: () => socket.close(1000, 'Session finished'),
+  };
 }

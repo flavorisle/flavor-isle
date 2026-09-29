@@ -73,6 +73,9 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
   let assistantSegment = null;
   let finalized = false;
   let sideband = null;
+  let sessionClosed = false;
+  let finishConnection;
+  const connectionClosed = new Promise<void>((resolve) => { finishConnection = resolve; });
   // Events arrive faster than the writes they trigger — every write goes
   // through this chain so the transcript keeps the caller's order.
   let chain = Promise.resolve();
@@ -97,7 +100,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     await persist();
   };
 
-  const finalize = async () => {
+  const finalize = async (failure = '') => {
     if (finalized) return;
     finalized = true;
     await flush('user');
@@ -107,7 +110,8 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
       last_message_at: new Date().toISOString(),
       message_count: transcript.length,
       status: 'completed',
-      call_status: 'completed',
+      call_status: failure ? 'failed' : 'completed',
+      description: failure ? failure.slice(0, 1000) : 'Live session ended normally.',
       call_duration: Math.round((Date.now() - startedAt) / 1000),
     });
   };
@@ -177,6 +181,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
     }
 
     if (type === 'session.closed') {
+      sessionClosed = true;
       queue(async () => {
         await finalize();
         sideband?.close();
@@ -190,17 +195,28 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
   try {
     sideband = await attachLiveSideband(sessionId, apiKey, {
       onEvent,
-      onClose: (code) => {
-        console.log(`Live sideband closed (${code}) for session ${sessionId}`);
-        // Dropping before session.closed means we cannot finalize usage, but the
-        // call itself may have gone fine — keep what we captured.
-        queue(finalize);
+      onClose: (code, reason) => {
+        console.log(`Live sideband closed (${code}) for session ${sessionId}: ${reason || ''}`);
+        queue(() => finalize(sessionClosed ? '' : `Sideband disconnected before session.closed (${code}): ${reason || 'no reason supplied'}`));
+        finishConnection();
       },
     });
     console.log(`Live sideband attached for session ${sessionId}`);
+    // Acceptance has already started the session. Explicitly request the
+    // opening turn rather than waiting for the caller to speak first.
+    sideband.send({
+      type: 'session.instructions.append',
+      delegation_id: null,
+      content: 'Greet the caller now in English: Hey fam, Smashie here at Flavor Isle! Follow the STORE STATUS in your context, then offer the help allowed by that status. Begin immediately, then pause and listen.',
+    });
+    // Keep waitUntil pending for the entire connection, not just the handshake.
+    await connectionClosed;
+    await chain;
   } catch (e) {
-    console.error(`Live sideband attach failed for ${sessionId}:`, e.message);
-    queue(finalize);
+    console.error(`Live sideband failed for ${sessionId}:`, e.message);
+    sideband?.close();
+    await chain;
+    await finalize(`Live sideband failed: ${e.message}`);
     await hangupLiveSession(sessionId, apiKey);
   }
 }
