@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import PopularTimesCard from '@/components/PopularTimesCard';
+import HomeStats from '@/components/cinematic/HomeStats';
 
 export default function HomeOrderOptions() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function HomeOrderOptions() {
   };
   return (
     <section className="bg-patina-mint text-white px-4 py-10 sm:py-14" aria-label="Choose how to order">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap justify-center gap-3">
           {options.map(({ type, label, time, Icon }) => (
             <button key={type} type="button" onClick={() => start(type)}
@@ -32,7 +33,11 @@ export default function HomeOrderOptions() {
           ))}
           <a href="tel:+12705634618" className="min-h-12 inline-flex items-center gap-2 border-2 border-white px-5 py-3 rounded-full font-heading"><Phone size={16} aria-hidden="true" />Call Us</a>
         </div>
-        <div className="mt-8"><PopularTimesCard embedded /></div>
+        <div className="mt-8 grid grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)_minmax(0,1fr)] items-stretch gap-6 lg:gap-8">
+          <div className="order-2 lg:order-1"><HomeStats side="left" /></div>
+          <div className="col-span-2 order-1 lg:col-span-1 lg:order-2"><PopularTimesCard embedded /></div>
+          <div className="order-3"><HomeStats side="right" /></div>
+        </div>
       </div>
     </section>
   );

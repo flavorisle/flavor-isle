@@ -12,7 +12,6 @@ import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
-import HomeStats from '@/components/cinematic/HomeStats';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -119,7 +118,6 @@ export default function Home() {
       <PhotoChapter photo={islePhotos.awards} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
       <HomeOrderOptions />
-      <HomeStats />
 
       <ExpressPickupStrip />
 
