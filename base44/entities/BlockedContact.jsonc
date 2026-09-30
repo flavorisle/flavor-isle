@@ -1,0 +1,50 @@
+{
+  "name": "BlockedContact",
+  "type": "object",
+  "properties": {
+    "phone": {
+      "type": "string",
+      "description": "Blocked phone number. Matched on the last 10 digits, so any formatting (270) 555-1234 or +12705551234 works."
+    },
+    "email": {
+      "type": "string",
+      "description": "Optional blocked customer email, matched case-insensitively. Use for customers blocked by account rather than by number."
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Who this is, so the crew can recognize the entry (e.g. 'Sam K.')."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this number or customer is blocked, for the crew's reference. Never shown to the customer."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true the block is enforced on calls, texts, website chat, and online checkout. Set false to lift it without losing the record."
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

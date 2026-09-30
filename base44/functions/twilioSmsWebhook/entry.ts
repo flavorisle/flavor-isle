@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
+import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
 import {
   upsertSmsConsent,
   stopSubscriber,
@@ -156,7 +157,11 @@ Deno.serve(async (req) => {
       console.warn('SMS store status lookup failed:', statusErr.message);
     }
     const channelLine = `CHANNEL: SMS text message — this is a TEXT, not a phone call. The customer's phone number is ${from}: pass this exact number to logPhoneOrder as customer_phone. Counter transfers are NOT possible by text and the customer sees every character you send, so never offer a transfer, never use the [[TRANSFER]] token, and never use the [[PHONE_MESSAGE:...]] token — offer (270) 563-4618 or take the details and say management will follow up.`;
-    const smsContext = `[[CTX]]${statusLine}\n${channelLine}[[/CTX]]\n`;
+    // Blocked numbers get a polite refusal instead of an order. They can still
+    // ask us to pass a note to management — it stays in this thread for the crew.
+    const block = await findBlock(base44, { phone: from });
+    const blockedLine = block ? `\n${blockedCallerInstruction({ channel: 'sms', reason: block.reason })}` : '';
+    const smsContext = `[[CTX]]${statusLine}\n${channelLine}${blockedLine}[[/CTX]]\n`;
 
     // Smashie's reply lands on the conversation asynchronously, so wait for it
     // the same way the voice webhook does (up to 10s). Reading the conversation

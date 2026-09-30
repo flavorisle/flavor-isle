@@ -9,7 +9,8 @@ import SmsBroadcastPanel from '@/components/admin/SmsBroadcastPanel';
 import SmsSubscribersList from '@/components/admin/SmsSubscribersList';
 import SmsQrCode from '@/components/SmsQrCode';
 import OrderSmsLog from '@/components/admin/OrderSmsLog';
-import { Send, Users } from 'lucide-react';
+import BlockedContactsPanel from '@/components/admin/BlockedContactsPanel';
+import { Send, Users, ShieldOff } from 'lucide-react';
 
 const TABS = [
   { key: 'phone', label: 'Phone Log', Icon: Phone },
@@ -17,6 +18,7 @@ const TABS = [
   { key: 'broadcast', label: 'Send Text', Icon: Send },
   { key: 'subscribers', label: 'Subscribers', Icon: Users },
   { key: 'messages', label: 'Message Log', Icon: MessagesSquare },
+  { key: 'blocked', label: 'Blocked', Icon: ShieldOff },
   { key: 'settings', label: 'Smashie Settings', Icon: Bot },
 ];
 
@@ -66,6 +68,7 @@ export default function AdminCommunications() {
           </>
         )}
         {tab === 'messages' && <ManagementMessageLog />}
+        {tab === 'blocked' && <BlockedContactsPanel />}
         {tab === 'settings' && <SmashieSettingsPanel />}
       </div>
     </div>

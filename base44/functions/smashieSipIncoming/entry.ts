@@ -35,6 +35,7 @@ import {
 import { runSmashieTool } from '../../shared/smashieToolRunner.ts';
 import { createCallTranscript } from '../../shared/callTranscript.ts';
 import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/smashieAdminContext.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 const LIVE_MODEL = 'gpt-live-1';
 const BACKEND_MODEL = 'gpt-6-luna';
@@ -278,7 +279,10 @@ export default async function (req) {
       callerPhone ? lookupCustomerByPhone(base44, callerPhone).catch(() => null) : Promise.resolve(null),
     ]);
 
-    const context = buildCallContext({ storeStatus, busyness, callerPhone, customer });
+    // Blocked callers are declined on the Live pipeline too; they may still leave
+    // a message for the crew.
+    const block = await findBlock(base44, { phone: callerPhone, email: customer?.email });
+    const context = buildCallContext({ storeStatus, busyness, callerPhone, customer, blockedContact: block });
 
     const accepted = await acceptLiveSession(sessionId, apiKey, {
       type: 'live',

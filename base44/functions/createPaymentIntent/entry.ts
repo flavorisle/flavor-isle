@@ -4,6 +4,7 @@ import { secrets } from 'base44:runtime';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,6 +14,11 @@ Deno.serve(async (req) => {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // Blocked customers cannot complete an online checkout.
+    if (await findBlock(base44, { phone: customer?.phone, email: customer?.email })) {
+      return Response.json({ error: 'We are not able to take this order online. Please call the store at (270) 563-4618.' }, { status: 403 });
     }
     if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(String(customer?.phone || '').replace(/[\s().-]/g, ''))) {
       return Response.json({ error: 'Enter a valid phone number to join Star Rewards, or uncheck the optional box.' }, { status: 400 });

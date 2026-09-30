@@ -3,6 +3,7 @@ import twilio from 'npm:twilio@5.3.3';
 import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
+import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
@@ -334,10 +335,15 @@ export default async function(req) {
       : callerRecord.customer_name
         ? `Name: ${callerRecord.customer_name}. No email on file in Square. The link is texted to the number above, so the email is optional — ask for one only if the caller wants it emailed as well.`
         : `Caller not found in Square. Ask for the caller's name. The link is texted to the number above, so an email is optional.`}]`;
+    // Blocked numbers can't order on the phone: Smashie declines and may still
+    // take a message for the crew.
+    const block = await findBlock(base44, { phone: callerFrom, email: callerRecord.customer_email });
+    const blockedLine = block ? `\n${blockedCallerInstruction({ channel: 'voice', reason: block.reason })}` : '';
+
     const closedToday = !storeStatus.open;
     const statusContext = closedToday
-      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's introduction. Do not introduce yourself again. When CLOSED: only share history if enabled, opening information if enabled, or save a message if enabled. Never discuss the menu, recommend food, take or build an order, give directions, offer a counter transfer, or quote busyness or wait times. Never say we are open.]\n${callerInfo}`
-      : `[STORE STATUS: OPEN. Follow the admin ability switches. The caller already heard Smashie's introduction. Respond directly without repeating it.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}`;
+      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's introduction. Do not introduce yourself again. When CLOSED: only share history if enabled, opening information if enabled, or save a message if enabled. Never discuss the menu, recommend food, take or build an order, give directions, offer a counter transfer, or quote busyness or wait times. Never say we are open.]\n${callerInfo}${blockedLine}`
+      : `[STORE STATUS: OPEN. Follow the admin ability switches. The caller already heard Smashie's introduction. Respond directly without repeating it.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}${blockedLine}`;
 
     const messageTurn = abilityEnabled(settings, 'messages') ? await processPhoneMessageTurn(
       base44,

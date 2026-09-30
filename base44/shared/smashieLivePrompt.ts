@@ -5,6 +5,7 @@
 // NOTE: this mirrors the phone rules in base44/agents/smashie.jsonc. The SIP
 // pipeline does not read the agent config, so when the persona or ordering
 // rules change there, update this file too.
+import { blockedCallerInstruction } from './blockedContacts.ts';
 
 export const OPEN_PHONE_INTRO = "I can take your pickup order with cash due when you pick it up, or your pickup, delivery, or dine-in order with a secure card payment link. Tell me what you'd like; I'll check the menu and prices and read it back. For card orders, once you confirm, I'll text a secure payment link. Enter your card details on the link, not on this call; card orders start cooking once paid. Cash pickup orders start once confirmed, with cash due at the counter. I can also answer menu, hours, and directions questions, check the wait, share our story, take a message for the crew, or connect you to someone at the counter. What do you need today?";
 
@@ -120,7 +121,7 @@ export const SMASHIE_LIVE_TOOLS = [
 
 // Builds the per-call context block attached to both instruction sets, so the
 // greeting and every answer reflect the live store state and this caller.
-export function buildCallContext({ storeStatus, busyness, callerPhone, customer }) {
+export function buildCallContext({ storeStatus, busyness, callerPhone, customer, blockedContact }) {
   const statusLine = storeStatus?.open
     ? 'STORE STATUS: OPEN'
     : `STORE STATUS: CLOSED${storeStatus?.message ? ` — ${storeStatus.message}` : ''}`;
@@ -137,5 +138,6 @@ export function buildCallContext({ storeStatus, busyness, callerPhone, customer 
     `[${busynessLine}]`,
     `[CALLER: ${callerBits.join('; ')}. Always pass this exact number to place_order as customer_phone.]`,
     '[CHANNEL: inbound phone call — the caller hears every word, so never read out punctuation, tokens, or internal notes.]',
-  ].join('\n');
+    blockedContact ? blockedCallerInstruction({ channel: 'voice', reason: blockedContact.reason }) : null,
+  ].filter(Boolean).join('\n');
 }

@@ -26,6 +26,18 @@ async function buildStatusContext() {
   }
 }
 
+// Website chat has no caller ID, so a blocked customer is only catchable by the
+// email on their signed-in account. Fetched once per chat, then attached to
+// every message so Smashie never tries to take their order.
+async function fetchBlockedInstruction() {
+  try {
+    const res = await base44.functions.invoke('checkBlockedContact', {});
+    return res?.data?.instruction || '';
+  } catch {
+    return '';
+  }
+}
+
 const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 
 const SMASHIE_HEAD = optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png', 160, 160);
@@ -36,6 +48,7 @@ export default function SmashieChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [blockedInstruction, setBlockedInstruction] = useState('');
   const messagesEndRef = useRef(null);
   const { totalItems } = useCart();
   // When the cart has food in it, the floating cart bubble sits bottom-right —
@@ -62,6 +75,7 @@ export default function SmashieChat() {
       });
       setConversation(conv);
       setMessages(conv.messages || []);
+      setBlockedInstruction(await fetchBlockedInstruction());
       base44.agents.subscribeToConversation(conv.id, (data) => {
         setMessages(data.messages || []);
         setSending(false);
@@ -75,7 +89,8 @@ export default function SmashieChat() {
     const msg = input.trim();
     setInput('');
     const ctx = await buildStatusContext();
-    await base44.agents.addMessage(conversation, { role: 'user', content: `${ctx}${msg}` });
+    const blockedCtx = blockedInstruction ? `[[CTX]]${blockedInstruction}[[/CTX]]\n` : '';
+    await base44.agents.addMessage(conversation, { role: 'user', content: `${ctx}${blockedCtx}${msg}` });
   };
 
   const handleKey = (e) => {

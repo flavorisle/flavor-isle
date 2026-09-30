@@ -2,6 +2,7 @@ import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -31,6 +32,15 @@ export default async function(req) {
       return Response.json({ error: 'A valid customer_phone is required — the payment link is texted.' }, { status: 400 });
     }
     const emailOk = !!customer_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email);
+
+    // Blocked callers, texters, and chat customers never get an order placed.
+    // Smashie is told to decline up front; this is the gate that guarantees it.
+    const block = await findBlock(base44, { phone: customer_phone, email: emailOk ? customer_email : '' });
+    if (block) {
+      console.log(`Blocked order attempt from ${customer_phone}`);
+      return Response.json({ error: 'This customer is blocked — their order was not placed. Politely say we are not able to take their order and offer to pass a message to management.' }, { status: 403 });
+    }
+
     if (order_type === 'delivery' && !delivery_address) {
       return Response.json({ error: 'A delivery address is required for delivery orders' }, { status: 400 });
     }
