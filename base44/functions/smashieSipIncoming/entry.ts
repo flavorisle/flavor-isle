@@ -43,6 +43,11 @@ const VOICE = 'verse';
 const HANDLED_EVENTS = ['live.transport.incoming', 'live.call.incoming'];
 const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/;
 
+// Accepted sideband sockets are held here for the life of the call. The webhook
+// response is already sent by then, so this reference is what keeps the live
+// socket — and the session it drives — reachable while the caller is talking.
+const LIVE_SOCKETS = new Set<string>();
+
 // The caller's number arrives as untrusted SIP metadata — good enough to
 // resolve who is calling and where to text the payment link, never to authorize
 // anything.
@@ -80,8 +85,6 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
   let finalized = false;
   let sideband = null;
   let sessionClosed = false;
-  let finishConnection;
-  const connectionClosed = new Promise<void>((resolve) => { finishConnection = resolve; });
   // Events arrive faster than the writes they trigger — every write goes
   // through this chain so the transcript keeps the caller's order.
   let chain = Promise.resolve();
@@ -123,6 +126,7 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
       call_duration: Math.round((Date.now() - startedAt) / 1000),
     });
     finalized = true;
+    LIVE_SOCKETS.delete(sessionId);
   };
 
   const handleDelegation = (envelope) => {
@@ -201,10 +205,13 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
       onClose: (code, reason) => {
         console.log(`Live sideband closed (${code}) for session ${sessionId}: ${reason || ''}`);
         queue(() => finalize(sessionClosed ? '' : `Sideband disconnected before session.closed (${code}): ${reason || 'no reason supplied'}`));
-        finishConnection();
       },
     });
     console.log(`Live sideband attached for session ${sessionId}`);
+    // The accepted socket is what carries the call from here, so hold the only
+    // reference to it: the response has already gone out and nothing else keeps
+    // this socket reachable for the length of the conversation.
+    LIVE_SOCKETS.add(sessionId);
     // Acceptance has already started the session. Explicitly request the
     // opening turn rather than waiting for the caller to speak first.
     sideband.send({
@@ -212,9 +219,12 @@ async function driveLiveSession({ base44, sessionId, apiKey, conversationId, cal
       delegation_id: null,
       content: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
     });
-    // Keep waitUntil pending for the entire connection, not just the handshake.
-    await connectionClosed;
-    await chain;
+    // Deliberately NOT waiting for the connection here. Parked in the webhook's
+    // background task, every call was cancelled at the 30-second mark with no
+    // close event — Smashie went silent mid-order and the record stayed active.
+    // Now the session runs on this socket's own event handlers until the caller
+    // hangs up or OpenAI closes it.
+    return;
   } catch (e) {
     console.error(`Live sideband failed for ${sessionId}:`, e.message);
     sideband?.close();
@@ -321,8 +331,8 @@ export default async function (req) {
       customer_email: customer?.email || undefined,
     });
 
-    // Answer OpenAI immediately and keep the sideband running after the
-    // response, so a long call never holds up the webhook delivery.
+    // Answer OpenAI immediately. The accepted sideband socket outlives this
+    // response, so the call is not tied to the webhook's background-task window.
     waitUntil(driveLiveSession({
       base44,
       sessionId,
