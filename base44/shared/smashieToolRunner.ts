@@ -3,53 +3,13 @@
 // SIP pipeline and the current Twilio pipeline place orders the same way.
 import { getSmashieSettings } from './smashieSettings.ts';
 import { abilityEnabled } from './smashieAdminContext.ts';
+import { searchMenu } from './smashieMenuSearch.ts';
 
-const MAX_MENU_RESULTS = 20;
-const MAX_GROUPS_PER_ITEM = 3;
-const MAX_OPTIONS_PER_GROUP = 8;
-
-function summariseModifiers(modifiers) {
-  return (modifiers || [])
-    .slice(0, MAX_GROUPS_PER_ITEM)
-    .map((group) => {
-      const options = (group.modifiers || [])
-        .filter((option) => option && !option.sold_out)
-        .slice(0, MAX_OPTIONS_PER_GROUP)
-        .map((option) => (Number(option.price) > 0 ? `${option.name} (+$${Number(option.price).toFixed(2)})` : option.name));
-      return `${group.name}: ${options.join(', ')}`;
-    })
-    .filter((line) => !line.endsWith(': '));
-}
-
-async function lookupMenu(base44, { query, category }) {
-  const items = await base44.asServiceRole.entities.MenuItem.filter({ is_available: true });
-  const wanted = String(query || '').trim().toLowerCase();
-  const wantedCategory = String(category || '').trim().toLowerCase();
-
-  const matches = (items || [])
-    .filter((item) => item.name && !item.is_hidden)
-    .filter((item) => {
-      const group = String(item.display_category || item.category || '').toLowerCase();
-      return (!wantedCategory || group.includes(wantedCategory))
-        && (!wanted || `${item.name} ${item.description || ''} ${group}`.toLowerCase().includes(wanted));
-    });
-
-  const list = matches.slice(0, MAX_MENU_RESULTS).map((item) => ({
-    name: item.name,
-    price: Number(item.price) || 0,
-    category: item.display_category || item.category || '',
-    description: item.description || '',
-    options: summariseModifiers(item.modifiers),
-  }));
-
-  return {
-    output: JSON.stringify({
-      matches: matches.length,
-      shown: list.length,
-      note: list.length < matches.length ? 'More items match — narrow the question or ask again.' : undefined,
-      items: list,
-    }),
-  };
+// The explicit limit matters: without one, only the first page of the menu is
+// searched and later items would read as "not on the menu".
+async function lookupMenu(base44, args) {
+  const items = await base44.asServiceRole.entities.MenuItem.filter({ is_available: true }, '-created_date', 500);
+  return { output: JSON.stringify(searchMenu(items, args)) };
 }
 
 async function invokeFunction(base44, name, payload) {

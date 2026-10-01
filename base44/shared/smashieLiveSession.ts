@@ -30,16 +30,24 @@ const TOOL_STALL_MS = 12000;
 // socket reachable while the caller is talking.
 const LIVE_SOCKETS = new Set<string>();
 
-// Resolves a finished function call from either event shape.
-function functionCallFrom(event) {
-  const nested = event?.event && typeof event.event === 'object' ? event.event : null;
-  for (const candidate of [nested, event]) {
-    const item = candidate?.item;
-    if (candidate?.type === 'response.output_item.done' && item?.type === 'function_call' && item.name && item.call_id) {
-      return item;
+const DRIVER_VERSION = 'live-driver-2026-10-01b';
+
+// Finished function calls can be reported as a nested or top-level
+// output_item.done, or inside a completed response's output list. Only
+// completed events are read, so a call still streaming its arguments is never
+// run early; duplicates are dropped by call_id before anything executes.
+function functionCallsFrom(event) {
+  const calls = [];
+  const visit = (node, depth) => {
+    if (!node || typeof node !== 'object' || depth > 6) return;
+    if (node.type === 'function_call' && node.name && node.call_id && typeof node.arguments === 'string' && node.status !== 'in_progress') {
+      calls.push(node);
+      return;
     }
-  }
-  return null;
+    for (const value of Object.values(node)) visit(value, depth + 1);
+  };
+  if (/\.(done|completed)$/.test(event?.event?.type || event?.type || '')) visit(event, 0);
+  return calls;
 }
 
 function nestedType(event) {
@@ -55,6 +63,9 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
   let finalized = false;
   let sideband = null;
   let sessionClosed = false;
+  // Each action runs once: the same finished call can be observed more than
+  // once, and a repeat of place_order would create a second order.
+  const handledCalls = new Set();
   // True until the introduction has finished: a caller who talks over it still
   // has their first request captured and answered.
   let introPlaying = true;
@@ -131,9 +142,9 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
     LIVE_SOCKETS.delete(sessionId);
   };
 
-  const handleDelegation = (event) => {
-    const item = functionCallFrom(event);
-    if (!item) return;
+  const runCall = (item) => {
+    if (handledCalls.has(item.call_id)) return;
+    handledCalls.add(item.call_id);
 
     queue(async () => {
       // Preserve both sides before a tool can hand the caller to the counter.
@@ -188,8 +199,23 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
     });
   };
 
+  const handleDelegation = (event) => functionCallsFrom(event).forEach(runCall);
+
+  // The first time each kind of event arrives it is written to the call record,
+  // so what the line really sends is visible in Admin without server logs.
+  const seenEvents = new Set();
+  const noteEvent = (event) => {
+    const outer = event?.type || '';
+    const label = event?.event?.type ? `${outer} > ${event.event.type}` : outer;
+    if (!label || /_transcript\.delta$/.test(outer) || seenEvents.has(label) || seenEvents.size >= 40) return;
+    seenEvents.add(label);
+    recordTool({ name: 'event', ok: true, detail: label });
+    scheduleSave();
+  };
+
   const onEvent = (event) => {
     const type = event?.type || '';
+    noteEvent(event);
 
     if (type === 'session.input_transcript.delta' || type === 'session.output_transcript.delta') {
       // Capture synchronously; queued writes must never clear newer speech.
@@ -217,12 +243,8 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
       return;
     }
 
-    const inner = nestedType(event);
-    if (type === 'response.event' || type === 'response.output_item.done' || inner === 'response.completed') {
-      handleDelegation(event);
-      if (inner === 'response.completed') clearStall();
-      return;
-    }
+    handleDelegation(event);
+    if (nestedType(event) === 'response.completed') clearStall();
 
     if (type === 'session.closed') {
       sessionClosed = true;
@@ -251,7 +273,8 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
     // Acceptance has already started the session; explicitly request the
     // opening turn rather than waiting for the caller to speak first.
     appendInstruction(sideband, greeting);
-    recordTool({ name: 'sideband_attached', ok: true, detail: 'call connected to the app' });
+    recordTool({ name: 'sideband_attached', ok: true, detail: `call connected to the app (${DRIVER_VERSION})` });
+    scheduleSave();
     // Deliberately NOT waiting for the connection here. Parked in the webhook's
     // background task, every call was cancelled at the 30-second mark with no
     // close event — Smashie went silent mid-order and the record stayed active.
