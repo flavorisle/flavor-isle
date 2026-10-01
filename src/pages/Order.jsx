@@ -16,7 +16,7 @@ export default function Order() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
-  const { level, waitMin, isClosed, closingSoon, closeTime } = useLiveStatus();
+  const { level, waitMin, isClosed, closingSoon, closeTime, preOpen, minutesUntilOpen, openTime } = useLiveStatus();
   const businessHours = useBusinessHours();
 
   // Before the store opens for pickup, show "from {open}" instead of a minute
@@ -112,7 +112,9 @@ export default function Order() {
           <p className="text-sm text-muted-foreground mt-2">
             {isClosed
               ? "We're closed right now — see our hours and busy times."
-              : `Current wait: ~${waitMin || 20} min · ${level?.level || 'Running Smooth'}. Tap to see today's busy times and plan ahead.`}
+              : preOpen
+                ? `Opening in ${minutesUntilOpen} min${openTime ? ` (${openTime})` : ''} — order ahead and we'll start cooking as soon as the grill's on.`
+                : `Current wait: ~${waitMin || 20} min · ${level?.level || 'Running Smooth'}. Tap to see today's busy times and plan ahead.`}
           </p>
         </Link>
 
