@@ -70,6 +70,14 @@ export default function useLiveStatus() {
   const minutesUntilClose =
     closeMins != null && !todayHours.closed ? closeMins - now.totalMinutes : null;
 
+  const openMins = (() => {
+    if (!todayHours.open) return null;
+    const [h, m] = todayHours.open.split(':').map(Number);
+    return h * 60 + (m || 0);
+  })();
+  const minutesUntilOpen =
+    openMins != null && !todayHours.closed ? openMins - now.totalMinutes : null;
+
   const isClosed =
     closure.closed ||
     (!openAllDay && (
@@ -84,6 +92,16 @@ export default function useLiveStatus() {
     minutesUntilClose > 0 &&
     minutesUntilClose <= CLOSING_SOON_WINDOW;
 
+  // Online ordering unlocks before the doors do, so the kitchen has no real
+  // load yet. In that window the bar counts down to opening instead of
+  // quoting a busyness level that hasn't happened.
+  const preOpen =
+    !openAllDay &&
+    !closure.closed &&
+    !todayHours.closed &&
+    minutesUntilOpen != null &&
+    minutesUntilOpen > 0;
+
   let level = null;
   if (!isClosed && data && data.busyness_level !== 'Closed') {
     // Trust the backend's computed level (single source of truth) so the
@@ -96,6 +114,9 @@ export default function useLiveStatus() {
     loading: !data,
     isClosed,
     closingSoon,
+    preOpen,
+    minutesUntilOpen,
+    openTime: !todayHours.closed && todayHours.open ? formatTime12(todayHours.open) : null,
     level,
     wait: data?.estimated_wait || level?.waitRange,
     waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 24,
