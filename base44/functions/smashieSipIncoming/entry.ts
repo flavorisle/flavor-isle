@@ -1,17 +1,20 @@
 // Inbound SIP calls for the OpenAI-hosted (GPT-Live) phone pipeline.
 //
 // OpenAI POSTs each incoming call here; we accept it with Smashie's session
-// config, then hold the sideband WebSocket that runs his tools and captures the
-// transcript. Until OpenAI SIP is enabled for the project, a Twilio trunk is
-// pointed at it, and "Live Phone Pipeline" is switched on in Admin →
-// Communications, this endpoint rejects every call and the Twilio line keeps
-// working exactly as it does today.
+// config, then hand the call to the sideband driver that runs his tools and
+// captures the transcript. Until OpenAI SIP is enabled for the project, a
+// Twilio trunk is pointed at it, and "Live Phone Pipeline" is switched on in
+// Admin → Communications, this endpoint rejects every call and the Twilio line
+// keeps working exactly as it does today.
 //
-// 2026-09-29: re-written unchanged to force a redeploy. Every live-session row
-// from the 08:26–08:49 UTC test calls was finalized 78–140 ms after creation
-// with no description and call_status "completed" — the pre-sideband-fix
-// finalizer's exact field set — so the crashed build was still serving those
-// calls. No logic in this file was altered by that rewrite.
+// 2026-10-01: the session driver moved to shared/smashieLiveSession.ts. Calls
+// were answering and playing the introduction but never running a single
+// action — no menu lookup, no order, no message, no transfer — because the
+// driver only recognised one of the two shapes a finished function call arrives
+// in, and a missed call is never answered, so the caller heard silence. The
+// driver now accepts both shapes, always asks for the next turn after a tool
+// result, speaks a fallback instead of going quiet, and records every action on
+// the call record.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
@@ -19,21 +22,14 @@ import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { verifyOpenAIWebhookSignature } from '../../shared/openaiWebhookSignature.ts';
-import {
-  acceptLiveSession,
-  rejectLiveSession,
-  referLiveSession,
-  hangupLiveSession,
-  attachLiveSideband,
-} from '../../shared/openaiLiveApi.ts';
+import { acceptLiveSession, rejectLiveSession } from '../../shared/openaiLiveApi.ts';
+import { driveLiveSession, closeAbandonedVoiceCalls } from '../../shared/smashieLiveSession.ts';
 import {
   VOICE_INSTRUCTIONS,
   BACKEND_INSTRUCTIONS,
   SMASHIE_LIVE_TOOLS,
   buildCallContext,
 } from '../../shared/smashieLivePrompt.ts';
-import { runSmashieTool } from '../../shared/smashieToolRunner.ts';
-import { createCallTranscript } from '../../shared/callTranscript.ts';
 import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/smashieAdminContext.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 
@@ -41,12 +37,16 @@ const LIVE_MODEL = 'gpt-live-1';
 const BACKEND_MODEL = 'gpt-6-luna';
 const VOICE = 'verse';
 const HANDLED_EVENTS = ['live.transport.incoming', 'live.call.incoming'];
-const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/;
 
-// Accepted sideband sockets are held here for the life of the call. The webhook
-// response is already sent by then, so this reference is what keeps the live
-// socket — and the session it drives — reachable while the caller is talking.
-const LIVE_SOCKETS = new Set<string>();
+// Which admin ability switch guards each tool.
+const TOOL_ABILITIES = {
+  place_order: 'orders',
+  lookup_menu: 'menu',
+  burger_toppings: 'menu',
+  shake_menu: 'menu',
+  take_message: 'messages',
+  transfer_to_counter: 'transfer',
+};
 
 // The caller's number arrives as untrusted SIP metadata — good enough to
 // resolve who is calling and where to text the payment link, never to authorize
@@ -73,165 +73,6 @@ function extractCallerPhone(sipHeaders) {
     if (digits.length >= 10) return `+1${digits.slice(-10)}`;
   }
   return '';
-}
-
-// Holds the sideband socket for the life of the call: appends spoken turns to
-// the admin transcript as they finish, runs each delegated tool call, and hands
-// the counter transfer to SIP.
-async function driveLiveSession({ base44, sessionId, apiKey, conversationId, callerPhone }) {
-  const startedAt = Date.now();
-  const callTranscript = createCallTranscript();
-  let saveTimer = null;
-  let finalized = false;
-  let sideband = null;
-  let sessionClosed = false;
-  // Events arrive faster than the writes they trigger — every write goes
-  // through this chain so the transcript keeps the caller's order.
-  let chain = Promise.resolve();
-
-  const queue = (work: () => Promise<any>) => {
-    chain = chain.then(work).catch((err) => console.error('Live session task failed:', err.message));
-  };
-
-  const persist = async () => {
-    const transcript = callTranscript.snapshot();
-    await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
-      transcript,
-      last_message_at: new Date().toISOString(),
-      message_count: transcript.length,
-    });
-  };
-
-  // Save partial speech too: a missing turn-end event must not lose the call.
-  const scheduleSave = () => {
-    if (saveTimer || finalized) return;
-    saveTimer = setTimeout(() => {
-      saveTimer = null;
-      queue(persist);
-    }, 2000);
-  };
-
-  const finalize = async (failure = '') => {
-    clearTimeout(saveTimer);
-    saveTimer = null;
-    if (finalized) return;
-    const transcript = callTranscript.snapshot();
-    await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
-      transcript,
-      last_message_at: new Date().toISOString(),
-      message_count: transcript.length,
-      status: 'completed',
-      call_status: failure ? 'failed' : 'completed',
-      description: failure ? failure.slice(0, 1000) : 'Live session ended normally.',
-      call_duration: Math.round((Date.now() - startedAt) / 1000),
-    });
-    finalized = true;
-    LIVE_SOCKETS.delete(sessionId);
-  };
-
-  const handleDelegation = (envelope) => {
-    const nested = envelope?.event || {};
-    if (nested.type !== 'response.output_item.done') return;
-    const item = nested.item || {};
-    if (item.type !== 'function_call' || !item.name || !item.call_id) return;
-
-    queue(async () => {
-      // Preserve both sides before tools can hand the caller to the counter.
-      await persist();
-      let args = {};
-      if (item.arguments) {
-        try {
-          args = JSON.parse(item.arguments);
-        } catch (e) {
-          console.error('Tool arguments were not valid JSON:', e.message);
-        }
-      }
-      console.log(`Live tool call: ${item.name}`);
-      const result = await runSmashieTool(base44, { name: item.name, args, callerPhone, sessionId });
-
-      let output = result.output;
-      if (result.transferTargetUri) {
-        const refer = await referLiveSession(sessionId, apiKey, result.transferTargetUri);
-        console.log(`Counter transfer refer: ${refer.ok ? 'accepted' : `failed (${refer.status})`}`);
-        if (!refer.ok) {
-          output = JSON.stringify({
-            transfer_available: false,
-            note: 'The counter line could not take the transfer. Offer (270) 563-4618 or take a message for the crew.',
-          });
-        }
-      }
-
-      sideband?.send({ type: 'response.item.create', item: { type: 'function_call_output', call_id: item.call_id, output } });
-      sideband?.send({ type: 'response.create' });
-    });
-  };
-
-  const onEvent = (event) => {
-    const type = event?.type || '';
-
-    if (type === 'session.input_transcript.delta' || type === 'session.output_transcript.delta') {
-      // Capture synchronously; queued writes must never clear newer speech.
-      callTranscript.capture(type.includes('input') ? 'user' : 'assistant', event);
-      scheduleSave();
-      return;
-    }
-
-    if (TRANSCRIPT_DONE.test(type)) {
-      callTranscript.capture(type.includes('input') ? 'user' : 'assistant', event, true);
-      queue(persist);
-      return;
-    }
-
-    if (type === 'response.event') {
-      handleDelegation(event);
-      return;
-    }
-
-    if (type === 'session.closed') {
-      sessionClosed = true;
-      queue(async () => {
-        await finalize();
-        sideband?.close();
-      });
-      return;
-    }
-
-    if (type === 'error') console.error('Live session error event:', JSON.stringify(event).slice(0, 400));
-  };
-
-  try {
-    sideband = await attachLiveSideband(sessionId, apiKey, {
-      onEvent,
-      onClose: (code, reason) => {
-        console.log(`Live sideband closed (${code}) for session ${sessionId}: ${reason || ''}`);
-        queue(() => finalize(sessionClosed ? '' : `Sideband disconnected before session.closed (${code}): ${reason || 'no reason supplied'}`));
-      },
-    });
-    console.log(`Live sideband attached for session ${sessionId}`);
-    // The accepted socket is what carries the call from here, so hold the only
-    // reference to it: the response has already gone out and nothing else keeps
-    // this socket reachable for the length of the conversation.
-    LIVE_SOCKETS.add(sessionId);
-    // Acceptance has already started the session. Explicitly request the
-    // opening turn rather than waiting for the caller to speak first.
-    sideband.send({
-      type: 'session.instructions.append',
-      delegation_id: null,
-      content: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
-    });
-    // Deliberately NOT waiting for the connection here. Parked in the webhook's
-    // background task, every call was cancelled at the 30-second mark with no
-    // close event — Smashie went silent mid-order and the record stayed active.
-    // Now the session runs on this socket's own event handlers until the caller
-    // hangs up or OpenAI closes it.
-    return;
-  } catch (e) {
-    console.error(`Live sideband failed for ${sessionId}:`, e.message);
-    sideband?.close();
-    await chain;
-    await finalize(`Live sideband failed: ${e.message}`);
-    await hangupLiveSession(sessionId, apiKey);
-  }
 }
 
 export default async function (req) {
@@ -294,6 +135,11 @@ export default async function (req) {
     const block = await findBlock(base44, { phone: callerPhone, email: customer?.email });
     const context = buildCallContext({ storeStatus, busyness, callerPhone, customer, blockedContact: block });
 
+    const enabledTools = SMASHIE_LIVE_TOOLS.filter((tool) => {
+      const ability = TOOL_ABILITIES[tool.name];
+      return !ability || abilityEnabled(settings, ability);
+    });
+
     const accepted = await acceptLiveSession(sessionId, apiKey, {
       type: 'live',
       model: LIVE_MODEL,
@@ -304,8 +150,11 @@ export default async function (req) {
         responses: {
           model: BACKEND_MODEL,
           instructions: `${BACKEND_INSTRUCTIONS}\n\n${context}\n\n${smashieAdminContext(settings)}`,
-          tools: SMASHIE_LIVE_TOOLS.filter(tool => ({ place_order: 'orders', lookup_menu: 'menu', burger_toppings: 'menu', shake_menu: 'menu', take_message: 'messages', transfer_to_counter: 'transfer' }[tool.name] ? abilityEnabled(settings, { place_order: 'orders', lookup_menu: 'menu', burger_toppings: 'menu', shake_menu: 'menu', take_message: 'messages', transfer_to_counter: 'transfer' }[tool.name]) : true)),
+          tools: enabledTools,
           tool_choice: 'auto',
+          // One action at a time: every result is returned as its own answer,
+          // so sequential calls always get a complete reply.
+          parallel_tool_calls: false,
         },
       },
     });
@@ -314,6 +163,10 @@ export default async function (req) {
       console.error(`Accept failed for ${sessionId} (${accepted.status}): ${accepted.body}`);
       return Response.json({ error: 'Accept failed', status: accepted.status, detail: accepted.body }, { status: 502 });
     }
+
+    // Housekeeping before the call starts: a call whose app connection died
+    // never reports a close, and those records would stay "active" forever.
+    await closeAbandonedVoiceCalls(base44).catch((e) => console.error('Stale voice call sweep failed:', e.message));
 
     const conversation = await base44.asServiceRole.entities.SmsConversation.create({
       phone_number: callerPhone || 'unknown',
@@ -326,6 +179,7 @@ export default async function (req) {
       message_count: 0,
       status: 'active',
       transcript: [],
+      tool_log: [],
       customer_name: customer?.name || undefined,
       square_customer_id: customer?.id || undefined,
       customer_email: customer?.email || undefined,
@@ -339,6 +193,8 @@ export default async function (req) {
       apiKey,
       conversationId: conversation.id,
       callerPhone,
+      counterPhone: Deno.env.get('COUNTER_PHONE_NUMBER') || '',
+      greeting: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
     }));
 
     console.log(`Accepted Live call ${sessionId} from ${callerPhone || 'unknown caller'}`);

@@ -85,19 +85,31 @@ async function takeMessage(base44, args, callerPhone, sessionId) {
   return { output: JSON.stringify({ saved: true, id: saved.id }) };
 }
 
+// A REFER destination has to be a routing address. A phone number cannot be
+// handed to it, so a number is treated as no transfer target at all rather than
+// sending a handoff that cannot connect.
+function routingAddress(value) {
+  const configured = String(value || '').trim();
+  if (!configured) return '';
+  if (/^tel:/i.test(configured) || /^\+?[\d\s().-]{7,}$/.test(configured)) return '';
+  // A bare user@domain address gets the scheme the REFER needs.
+  return /^sips?:/i.test(configured) ? configured : `sip:${configured}`;
+}
+
 // The counter address lives in SmashieSettings (Admin → Communications) so the
 // crew can see and update it; the SIP_TRANSFER_TARGET secret stays as the
 // fallback for when the field is blank.
 async function requestTransfer(base44) {
   const settings = await getSmashieSettings(base44);
-  const configured = String(settings.sip_transfer_target || '').trim() || Deno.env.get('SIP_TRANSFER_TARGET');
-  // A bare user@domain address gets the sip: scheme the REFER needs.
-  const target = configured && !/^(sip|sips|tel):/i.test(configured) ? `sip:${configured}` : configured;
+  const target = routingAddress(settings.sip_transfer_target) || routingAddress(Deno.env.get('SIP_TRANSFER_TARGET'));
+  const counterPhone = Deno.env.get('COUNTER_PHONE_NUMBER');
   if (!target) {
     return {
       output: JSON.stringify({
         transfer_available: false,
-        note: 'The counter line cannot take a transfer right now. Offer (270) 563-4618 or take a message for the crew.',
+        note: counterPhone
+          ? `The counter line cannot take a transfer right now. Offer ${counterPhone} or take a message for the crew.`
+          : 'The counter line cannot take a transfer right now. Take a message for the crew.',
       }),
     };
   }

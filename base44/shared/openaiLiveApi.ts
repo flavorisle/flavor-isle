@@ -55,6 +55,31 @@ export interface Sideband {
   close: () => void;
 }
 
+// Return one finished function call's result to the session. The documented
+// pair is this event followed by response.create; neither takes a delegation_id.
+export function sendFunctionCallOutput(sideband: Sideband, callId: string, output: string) {
+  sideband.send({
+    type: 'response.item.create',
+    item: { type: 'function_call_output', call_id: callId, output },
+  });
+}
+
+// Ask the backend to continue after a tool result, so a finished action is
+// always spoken instead of leaving the caller in silence.
+export function requestBackendTurn(sideband: Sideband) {
+  sideband.send({ type: 'response.create' });
+}
+
+// Context appends steer the live model directly. `instructions` is quiet
+// context, `commentary` is spoken to the caller.
+export function appendInstruction(sideband: Sideband, content: string) {
+  sideband.send({ type: 'session.instructions.append', delegation_id: null, content });
+}
+
+export function appendSpeakableNote(sideband: Sideband, content: string) {
+  sideband.send({ type: 'session.commentary.append', delegation_id: null, content });
+}
+
 // The worker runtime supports authenticated outbound sockets through fetch's
 // Upgrade handshake, not the browser build of the Node `ws` package.
 export async function attachLiveSideband(sessionId: string, apiKey: string, handlers: SidebandHandlers): Promise<Sideband> {

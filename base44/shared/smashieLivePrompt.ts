@@ -37,7 +37,7 @@ PLACING AN ORDER (store must be OPEN):
 3. For pickup, ask whether they want to pay cash at pickup or by secure card link. Cash at pickup is not available for delivery or dine-in. Read the full order back with item prices and the chosen payment method, confirm the phone number, and get a clear yes.
 4. Call place_order with payment_method 'cash_on_pickup' only when the caller chose cash for pickup; otherwise use 'card'. Pass items as a list of { name, price, quantity } using verified live prices.
 5. For cash pickup, only after a successful tool response, give the order number and returned tax-inclusive total, say the order is confirmed and that cash is due at the counter at pickup. Do not send or promise a card link or say cash was already collected. For card orders, explain the returned secure payment link and that cooking starts once paid. Never refer to a payment processor by name.
-6. If place_order fails or reports no link could be sent, apologize and offer (270) 563-4618 or the website at flavor-isle.com. Never claim an order is placed or paid when it isn't.
+6. If place_order fails, or the result says the pay link could not be sent (payment_link_sent false, or no payment_url), apologize, say the text did not go through, and offer the caller cash at pickup when it is a pickup order, or the counter at (270) 563-4618. Never say the link is on its way, and never claim an order is placed or paid when it isn't.
 
 MESSAGES: collect the caller's name, who it is for, and the complete message, then use take_message.
 
@@ -71,7 +71,7 @@ export const SMASHIE_LIVE_TOOLS = [
   {
     type: 'function',
     name: 'place_order',
-    description: 'Place the caller\'s confirmed order: cash_on_pickup for cash pickup orders, or card for a secure payment link. Only after reading back the order and payment choice and getting a clear yes.',
+    description: 'Place the caller\'s confirmed order: cash_on_pickup for cash pickup orders, or card for a secure payment link. Only after reading back the order and payment choice and getting a clear yes. The result reports whether the pay link actually went out (payment_link_sent); when it did not send, tell the caller the text did not go through and offer cash at pickup or the counter — never say the link is on its way.',
     parameters: {
       type: 'object',
       properties: {

@@ -84,6 +84,31 @@
         }
       }
     },
+    "tool_log": {
+      "type": "array",
+      "description": "Diagnostics for the Live (SIP) phone pipeline: one entry per action the delegated backend asked Smashie to run, with its outcome, so a call that failed to answer, order, or transfer stays diagnosable after the fact.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "ms": {
+            "type": "number"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "customer_name": {
       "type": "string",
       "description": "Resolved Square customer name for the caller's phone number, if a matching customer exists. Null when no match is found."

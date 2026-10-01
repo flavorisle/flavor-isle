@@ -101,10 +101,20 @@ export default async function(req) {
       // Text it first — the customer is on the phone (or in chat), so it lands
       // instantly. This is the primary delivery channel for the payment link.
       if (paymentUrl) {
-        paymentLinkSent = await sendSmashieSms(
-          customer_phone,
-          `Flavor Isle: pay $${finalTotal.toFixed(2)} for order #${orderNumber} here: ${paymentUrl}`,
-        );
+        const payLinkBody = `Flavor Isle: pay $${finalTotal.toFixed(2)} for order #${orderNumber} here: ${paymentUrl}`;
+        // Logged like every other customer text, so a pay link the carrier
+        // refuses is visible in admin instead of looking like it went out.
+        const payLinkLog = await base44.asServiceRole.entities.SmsDeliveryLog.create({
+          order_id: order.id,
+          order_number: orderNumber,
+          customer_name,
+          phone: customer_phone,
+          milestone: 'confirmed',
+          body: payLinkBody,
+          status: 'pending',
+          status_at: new Date().toISOString(),
+        });
+        paymentLinkSent = await sendSmashieSms(customer_phone, payLinkBody, { base44, logId: payLinkLog.id });
       }
 
       // Email the same link as a backup when we have an address on file.
@@ -139,6 +149,22 @@ export default async function(req) {
       // customer a link that cannot be paid.
       console.error('Phone order payment setup error:', linkErr.message);
       manualPayRequired = true;
+      // Record why no link went out so it sits alongside the other customer texts.
+      try {
+        await base44.asServiceRole.entities.SmsDeliveryLog.create({
+          order_id: order.id,
+          order_number: orderNumber,
+          customer_name,
+          phone: customer_phone,
+          milestone: 'confirmed',
+          body: 'Secure pay link could not be created for this order.',
+          status: 'failed',
+          reason: String(linkErr.message || linkErr).slice(0, 1000),
+          status_at: new Date().toISOString(),
+        });
+      } catch (logErr) {
+        console.error(`Pay-link delivery log failed for order ${orderNumber}:`, logErr.message);
+      }
       try {
         await base44.asServiceRole.entities.Order.update(order.id, { manual_pay_required: true });
       } catch (flagErr) {
@@ -165,7 +191,7 @@ export default async function(req) {
       manual_pay_required: manualPayRequired,
       message: paymentLinkSent
         ? `Order #${orderNumber} is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
-        : `Order #${orderNumber} was saved, but no payment link could be sent. Ask staff to resend the Square link or send a Stripe backup; do not claim the order is paid.`,
+        : `Order #${orderNumber} was saved, but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
       payment_provider: 'square',
     });
   } catch (error) {
