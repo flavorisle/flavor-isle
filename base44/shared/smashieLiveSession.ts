@@ -1,6 +1,17 @@
-// Drives one Live (SIP) phone call over the sideband socket: runs the actions
-// the delegated backend asks Smashie for, returns their results, records what
-// happened on the call record, and closes the record when the call ends.
+// Drives one slice of a Live (SIP) phone call over the sideband socket: runs the
+// actions the delegated backend asks Smashie for, returns their results, records
+// what happened on the call record, then hands the call to a fresh invocation.
+//
+// Why hops: the platform takes a backend function down about twenty seconds
+// after it has answered, so no single invocation can hold this socket for a
+// whole conversation. The first version of this pipeline held it from the
+// webhook and every call went silent around the twenty-second mark — measured
+// again on 2026-10-02 with a probe: background writes stopped between twenty and
+// thirty seconds. Each hop here drives the call for a short window and starts
+// the next hop before its own worker is taken down, and the next socket is
+// attached before this one closes so the caller never hears a gap. The few
+// hundred milliseconds where both sockets are attached are why every action that
+// costs money is guarded against running twice.
 //
 // Event shapes follow OpenAI's GPT-Live guides. Delegated work arrives inside a
 // `response.event` envelope, a finished function call is a nested
@@ -21,57 +32,39 @@ import {
 } from './openaiLiveApi.ts';
 
 const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/;
-// How long a tool result may sit unanswered before Smashie says something
-// useful instead of leaving the caller in silence.
-const TOOL_STALL_MS = 12000;
+// How long a tool result may sit unanswered before Smashie says something useful
+// instead of leaving the caller in silence. Shorter than one hop, so the
+// fallback is always spoken inside the worker that started the action.
+const TOOL_STALL_MS = 9000;
+// How long one hop drives the call before handing the socket over.
+export const HOP_MS = 12000;
+const MAX_HOP_FAILURES = 3;
+const MAX_CALL_MS = 15 * 60 * 1000;
+const DRIVER_VERSION = 'live-driver-2026-10-02-hop';
 
-// Accepted sideband sockets are held here for the life of the call: the webhook
-// response has already gone out, so this reference is what keeps the live
-// socket reachable while the caller is talking.
-const LIVE_SOCKETS = new Set<string>();
+export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, handoff }) {
+  const startedAt = state.startedAt || Date.now();
+  const hopNumber = (state.hop || 0) + 1;
+  const callTranscript = createCallTranscript(state.transcript || []);
+  const toolLog = Array.isArray(state.toolLog) ? [...state.toolLog] : [];
+  // Each action runs once: the same finished call can be observed by two sockets
+  // during a handover, and a repeat of place_order would create a second order.
+  const handledCalls = new Set(state.handledCallIds || []);
+  let introPlaying = state.introPlaying !== false;
+  let introHandedOver = !!state.introHandedOver;
 
-const DRIVER_VERSION = 'live-driver-2026-10-01b';
-
-// Finished function calls can be reported as a nested or top-level
-// output_item.done, or inside a completed response's output list. Only
-// completed events are read, so a call still streaming its arguments is never
-// run early; duplicates are dropped by call_id before anything executes.
-function functionCallsFrom(event) {
-  const calls = [];
-  const visit = (node, depth) => {
-    if (!node || typeof node !== 'object' || depth > 6) return;
-    if (node.type === 'function_call' && node.name && node.call_id && typeof node.arguments === 'string' && node.status !== 'in_progress') {
-      calls.push(node);
-      return;
-    }
-    for (const value of Object.values(node)) visit(value, depth + 1);
-  };
-  if (/\.(done|completed)$/.test(event?.event?.type || event?.type || '')) visit(event, 0);
-  return calls;
-}
-
-function nestedType(event) {
-  return event?.event?.type || event?.type || '';
-}
-
-export async function driveLiveSession({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting }) {
-  const startedAt = Date.now();
-  const callTranscript = createCallTranscript();
-  const toolLog = [];
   let saveTimer = null;
   let stallTimer = null;
+  let hopTimer = null;
   let finalized = false;
-  let sideband = null;
+  let handedOff = false;
+  let detached = false;
   let sessionClosed = false;
-  // Each action runs once: the same finished call can be observed more than
-  // once, and a repeat of place_order would create a second order.
-  const handledCalls = new Set();
-  // True until the introduction has finished: a caller who talks over it still
-  // has their first request captured and answered.
-  let introPlaying = true;
-  let introHandedOver = false;
-  // Events arrive faster than the writes they trigger — every write goes
-  // through this chain so the transcript keeps the caller's order.
+  let sideband = null;
+  let finishHop;
+  const hopFinished = new Promise((resolve) => { finishHop = resolve; });
+  // Events arrive faster than the writes they trigger — every write goes through
+  // this chain so the transcript keeps the caller's order.
   let chain = Promise.resolve();
 
   const queue = (work) => {
@@ -84,6 +77,7 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
   };
 
   const persist = async (extra = {}) => {
+    if (handedOff) return;
     const transcript = callTranscript.snapshot();
     await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
       transcript,
@@ -96,7 +90,7 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
 
   // Save partial speech too: a missing turn-end event must not lose the call.
   const scheduleSave = () => {
-    if (saveTimer || finalized) return;
+    if (saveTimer || finalized || handedOff) return;
     saveTimer = setTimeout(() => {
       saveTimer = null;
       queue(persist);
@@ -112,7 +106,7 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
     clearStall();
     stallTimer = setTimeout(() => {
       stallTimer = null;
-      if (finalized || !sideband) return;
+      if (finalized || detached || !sideband) return;
       const fallback = counterPhone
         ? `My bad fam, I'm having trouble pulling that up. I can take a message for the crew, or you can call the counter at ${counterPhone}.`
         : "My bad fam, I'm having trouble pulling that up. I can take a message for the crew and they'll follow up with you.";
@@ -124,9 +118,13 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
 
   const finalize = async (failure = '') => {
     clearStall();
+    if (hopTimer) clearTimeout(hopTimer);
     clearTimeout(saveTimer);
     saveTimer = null;
+    hopTimer = null;
+    finishHop();
     if (finalized) return;
+    finalized = true;
     const transcript = callTranscript.snapshot();
     await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
       transcript,
@@ -138,8 +136,6 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
       description: failure ? failure.slice(0, 1000) : 'Live session ended normally.',
       call_duration: Math.round((Date.now() - startedAt) / 1000),
     });
-    finalized = true;
-    LIVE_SOCKETS.delete(sessionId);
   };
 
   const runCall = (item) => {
@@ -214,6 +210,7 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
   };
 
   const onEvent = (event) => {
+    if (detached) return;
     const type = event?.type || '';
     noteEvent(event);
 
@@ -249,13 +246,80 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
     if (type === 'session.closed') {
       sessionClosed = true;
       queue(async () => {
+        if (handedOff) return;
         await finalize();
+        detached = true;
         sideband?.close();
       });
       return;
     }
 
-    if (type === 'error') console.error('Live session error event:', JSON.stringify(event).slice(0, 400));
+    if (type === 'error') console.error('Live session error event:', JSON.stringify(event).slice(0, 500));
+  };
+
+  // Everything the next hop needs to carry on: one continuous transcript, the
+  // actions already run, and the introduction state.
+  const hopState = () => ({
+    transcript: callTranscript.snapshot(),
+    toolLog,
+    handledCallIds: [...handledCalls],
+    introPlaying,
+    introHandedOver,
+    startedAt,
+    hop: hopNumber,
+  });
+
+  const endCall = async (failure, hangUp = false) => {
+    detached = true;
+    await chain.catch(() => {});
+    await finalize(failure);
+    sideband?.close();
+    if (hangUp) await hangupLiveSession(sessionId, apiKey).catch(() => {});
+    finishHop();
+  };
+
+  const startHopTimer = () => {
+    hopTimer = setTimeout(() => {
+      queue(async () => {
+        if (finalized || handedOff) return;
+        // Let an in-flight action finish, so its result is actually spoken
+        // before the call changes hands.
+        await chain.catch(() => {});
+        if (finalized || handedOff) return;
+
+        if (Date.now() - startedAt > MAX_CALL_MS) {
+          if (sideband) appendSpeakableNote(sideband, 'I have to let you go here — sorry about that. Give the counter a call and they will take care of you.');
+          await endCall('Call ran past the maximum tracked length; whatever was captured was saved.', true);
+          return;
+        }
+
+        let failures = 0;
+        while (!finalized && !handedOff) {
+          try {
+            if (await handoff(hopState())) {
+              handedOff = true;
+              detached = true;
+              sideband?.close();
+              finishHop();
+              return;
+            }
+            failures += 1;
+          } catch (err) {
+            failures += 1;
+            console.error('Live handoff failed:', err.message);
+          }
+          if (failures >= MAX_HOP_FAILURES) break;
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+
+        // No successor picked the call up: end it openly rather than letting the
+        // caller talk into a line that has stopped listening.
+        if (sideband && !finalized) {
+          appendSpeakableNote(sideband, "My bad fam, I'm losing the line here. Give the counter a call and they will take care of you.");
+        }
+        await endCall('The call could not be handed to a fresh worker before this one was shut down.', true);
+      });
+    }, HOP_MS);
   };
 
   try {
@@ -263,34 +327,69 @@ export async function driveLiveSession({ base44, sessionId, apiKey, conversation
       onEvent,
       onClose: (code, reason) => {
         console.log(`Live sideband closed (${code}) for session ${sessionId}: ${reason || ''}`);
-        // Guidance: if the connection drops before session.closed, record the
-        // finalization as incomplete rather than reporting a clean end.
-        queue(() => finalize(sessionClosed ? '' : `Call ended without a close event (sideband disconnected, ${code}): ${reason || 'no reason supplied'}`));
+        // A handover closes this socket on purpose; the next hop owns the call.
+        if (handedOff) return;
+        queue(async () => {
+          // OpenAI sends session.closed just before the socket drops; give that
+          // event a moment so a normal ending is not recorded as a fault.
+          await new Promise((r) => setTimeout(r, 1500));
+          if (handedOff || finalized) return;
+          await finalize(sessionClosed ? '' : `Call ended without a close event (sideband disconnected, ${code}): ${reason || 'no reason supplied'}`);
+          finishHop();
+        });
       },
     });
-    console.log(`Live sideband attached for session ${sessionId}`);
-    LIVE_SOCKETS.add(sessionId);
-    // Acceptance has already started the session; explicitly request the
-    // opening turn rather than waiting for the caller to speak first.
-    appendInstruction(sideband, greeting);
-    recordTool({ name: 'sideband_attached', ok: true, detail: `call connected to the app (${DRIVER_VERSION})` });
+    console.log(`Live sideband attached for session ${sessionId} (hop ${hopNumber})`);
+    if (greeting) appendInstruction(sideband, greeting);
+    recordTool({ name: 'sideband_attached', ok: true, detail: `call connected to the app (${DRIVER_VERSION}, hop ${hopNumber})` });
     scheduleSave();
-    // Deliberately NOT waiting for the connection here. Parked in the webhook's
-    // background task, every call was cancelled at the 30-second mark with no
-    // close event — Smashie went silent mid-order and the record stayed active.
+    if (onAttached) onAttached();
+    startHopTimer();
+    // Hold on until this hop is done: the handler's response has already gone
+    // out, and this pending promise is what keeps the socket alive this long.
+    await hopFinished;
     return;
   } catch (e) {
     console.error(`Live sideband failed for ${sessionId}:`, e.message);
     sideband?.close();
-    await chain;
-    await finalize(`The app could not connect to the call, so no menu answers or orders could run: ${e.message}`);
-    await hangupLiveSession(sessionId, apiKey);
+    clearTimeout(hopTimer);
+    clearTimeout(saveTimer);
+    await chain.catch(() => {});
+    // A later hop that cannot attach must leave the call alone: the previous hop
+    // is still holding it and will retry the handover.
+    if (!state.hop) {
+      await finalize(`The app could not connect to the call, so no menu answers or orders could run: ${e.message}`);
+      await hangupLiveSession(sessionId, apiKey).catch(() => {});
+    }
+    finishHop();
   }
 }
 
-// A call whose socket died with the worker never reports a close, so it would
-// sit as "active" forever with no outcome. The next inbound call sweeps those
-// records closed with the duration we can still work out.
+// Finished function calls can be reported as a nested or top-level
+// output_item.done, or inside a completed response's output list. Only completed
+// events are read, so a call still streaming its arguments is never run early;
+// duplicates are dropped by call_id before anything executes.
+function functionCallsFrom(event) {
+  const calls = [];
+  const visit = (node, depth) => {
+    if (!node || typeof node !== 'object' || depth > 6) return;
+    if (node.type === 'function_call' && node.name && node.call_id && typeof node.arguments === 'string' && node.status !== 'in_progress') {
+      calls.push(node);
+      return;
+    }
+    for (const value of Object.values(node)) visit(value, depth + 1);
+  };
+  if (/\.(done|completed)$/.test(event?.event?.type || event?.type || '')) visit(event, 0);
+  return calls;
+}
+
+function nestedType(event) {
+  return event?.event?.type || event?.type || '';
+}
+
+// A call whose sockets all died before it was recorded as finished would sit as
+// "active" forever with no outcome. The next inbound call sweeps those records
+// closed with the duration we can still work out.
 export async function closeAbandonedVoiceCalls(base44, { olderThanMinutes = 15 } = {}) {
   const cutoff = Date.now() - olderThanMinutes * 60 * 1000;
   const open = await base44.asServiceRole.entities.SmsConversation.filter({ channel: 'voice', status: 'active' }, '-last_message_at', 50);

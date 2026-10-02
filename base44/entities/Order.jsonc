@@ -9,6 +9,10 @@
     "order_number": {
       "type": "string"
     },
+    "source_call_sid": {
+      "type": "string",
+      "description": "For phone orders, the id of the call that placed the order. While the phone pipeline hands a call between workers, both can briefly observe the same confirmation; logPhoneOrder returns the existing order for a repeated call id instead of creating a second one."
+    },
     "order_type": {
       "type": "string",
       "enum": [

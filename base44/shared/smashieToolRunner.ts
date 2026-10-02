@@ -18,8 +18,11 @@ async function invokeFunction(base44, name, payload) {
   return { output: JSON.stringify(data) };
 }
 
-async function placeOrder(base44, args, callerPhone) {
+async function placeOrder(base44, args, callerPhone, sessionId) {
   return invokeFunction(base44, 'logPhoneOrder', {
+    // The call id travels with the order so a handover that briefly puts two
+    // workers on the same call can never turn one order into two.
+    call_sid: sessionId,
     customer_name: args.customer_name,
     customer_phone: args.customer_phone || callerPhone,
     customer_email: args.customer_email || undefined,
@@ -91,7 +94,7 @@ export async function runSmashieTool(base44, { name, args = {}, callerPhone, ses
     case 'shake_menu':
       return invokeFunction(base44, 'milkshakeOrderHelper', {});
     case 'place_order':
-      return placeOrder(base44, args, callerPhone);
+      return placeOrder(base44, args, callerPhone, sessionId);
     case 'take_message':
       return takeMessage(base44, args, callerPhone, sessionId);
     case 'transfer_to_counter':

@@ -23,7 +23,7 @@ import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { verifyOpenAIWebhookSignature } from '../../shared/openaiWebhookSignature.ts';
 import { acceptLiveSession, rejectLiveSession } from '../../shared/openaiLiveApi.ts';
-import { driveLiveSession, closeAbandonedVoiceCalls } from '../../shared/smashieLiveSession.ts';
+import { closeAbandonedVoiceCalls } from '../../shared/smashieLiveSession.ts';
 import {
   VOICE_INSTRUCTIONS,
   BACKEND_INSTRUCTIONS,
@@ -185,16 +185,18 @@ export default async function (req) {
       customer_email: customer?.email || undefined,
     });
 
-    // Answer OpenAI immediately. The accepted sideband socket outlives this
-    // response, so the call is not tied to the webhook's background-task window.
-    waitUntil(driveLiveSession({
-      base44,
+    // Answer OpenAI immediately, then start the first hop. One worker cannot
+    // hold the call's socket for a whole conversation — the platform takes a
+    // function down about twenty seconds after it answers — so the hop drives
+    // the call for a short window and passes it to the next one.
+    waitUntil(base44.asServiceRole.functions.invoke('smashieLiveHop', {
+      relayKey: webhookSecret,
       sessionId,
-      apiKey,
       conversationId: conversation.id,
       callerPhone,
       counterPhone: Deno.env.get('COUNTER_PHONE_NUMBER') || '',
       greeting: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
+      state: {},
     }));
 
     console.log(`Accepted Live call ${sessionId} from ${callerPhone || 'unknown caller'}`);

@@ -45,6 +45,34 @@ export default async function(req) {
       return Response.json({ error: 'A delivery address is required for delivery orders' }, { status: 400 });
     }
 
+    // One call places one order. While the phone pipeline hands a call between
+    // workers, both can briefly observe the same confirmation, and a second
+    // order for the same call would mean a second payment link and a second
+    // ticket. The original order is returned instead.
+    const callSid = String(body.call_sid || '').trim();
+    if (callSid) {
+      const alreadyPlaced = await base44.asServiceRole.entities.Order.filter({ source_call_sid: callSid }, '-created_date', 1);
+      if (alreadyPlaced && alreadyPlaced.length) {
+        const prior = alreadyPlaced[0];
+        return Response.json({
+          success: true,
+          duplicate: true,
+          order_number: prior.order_number,
+          order_id: prior.id,
+          subtotal: prior.subtotal,
+          tax: prior.tax,
+          total: prior.total,
+          payment_url: prior.payment_url || null,
+          payment_link_sent: !!prior.payment_url,
+          manual_pay_required: !!prior.manual_pay_required,
+          payment_method: prior.pay_cash_on_pickup ? 'cash_on_pickup' : 'card',
+          message: prior.pay_cash_on_pickup
+            ? `Order #${prior.order_number} was already confirmed on this call — repeat the same order number and total and say cash is due at the counter. Do not place a second order.`
+            : `Order #${prior.order_number} was already placed on this call — repeat the same order number and total, and the payment-link status you gave before. Do not place a second order.`,
+        });
+      }
+    }
+
     // Orders without an email still need a value for the required field — this
     // placeholder is already treated as "no email" by the order emails.
     const orderEmail = emailOk ? customer_email : 'phone-order@flavorisle.com';
@@ -65,6 +93,7 @@ export default async function(req) {
     // Keep the order pending until the customer pays on the payment page.
     const order = await base44.asServiceRole.entities.Order.create({
       order_number: orderNumber,
+      source_call_sid: callSid || undefined,
       order_type: order_type || 'pickup',
       status: cashPickup ? 'confirmed' : 'pending',
       pay_cash_on_pickup: cashPickup,

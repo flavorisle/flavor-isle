@@ -1,9 +1,23 @@
 // Keep transcript fragments in arrival order, independently of async saves.
-export function createCallTranscript() {
+// `initialEntries` seeds a transcript carried over from an earlier worker, so a
+// call that changes hands mid-conversation keeps one continuous transcript
+// instead of restarting with each handover.
+export function createCallTranscript(initialEntries = []) {
   const entries = [];
   const active = {};
   const byId = new Map();
   let lastRole = '';
+
+  for (const entry of initialEntries || []) {
+    if (!entry || !entry.content) continue;
+    entries.push({
+      role: entry.role,
+      content: String(entry.content),
+      timestamp: entry.timestamp || new Date().toISOString(),
+      completed: true,
+    });
+    lastRole = entry.role;
+  }
 
   const capture = (role, event = {}, completed = false) => {
     const key = event.item_id ? `${role}:${event.item_id}` : '';
