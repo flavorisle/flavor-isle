@@ -11,22 +11,24 @@
       "enum": [
         "winback",
         "digest",
-        "birthday"
+        "birthday",
+        "day14_showcase",
+        "day45_nudge"
       ],
-      "description": "Which loyalty automation sent this email: winback (30-day lapsed customer), digest (monthly points summary), birthday (annual birthday treat)"
+      "description": "Which loyalty automation sent this email: winback (30-day lapsed customer), digest (monthly points summary), birthday (annual birthday treat), day14_showcase (issue #37 step 6 \u2014 three items the customer has not ordered, 14 days after their first order), day45_nudge (issue #37 step 6 \u2014 45 days after a first order with no repeat order). Every row doubles as the once-per-customer claim for its type."
     },
     "customer_email": {
       "type": "string",
-      "description": "Recipient email \u2014 used for frequency caps (1 birthday/year, 1 winback/90 days)"
+      "description": "Recipient email \u2014 used for frequency caps (1 birthday/year, 1 winback/90 days, and one row per customer per follow-up type)"
     },
     "order_id": {
       "type": "string",
-      "description": "Optional order id when the email is tied to a specific order (win-back uses the customer's most recent completed order)"
+      "description": "Optional order id when the email is tied to a specific order (win-back uses the customer's most recent completed order; the Day 14 and Day 45 emails use the customer's first order)"
     },
     "points_granted": {
       "type": "number",
       "default": 0,
-      "description": "How many loyalty points were auto-granted with this email (150 for win-back and birthday, 0 for digest)"
+      "description": "How many loyalty points were auto-granted with this email (150 for win-back and birthday, 0 for digest and the Day 14 / Day 45 follow-ups)"
     },
     "sent_at": {
       "type": "string",

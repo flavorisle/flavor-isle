@@ -48,6 +48,7 @@ const GROUPS = [
     links: [
       { label: 'About Us', to: '/about' },
       { label: 'Contact & Location', to: '/contact' },
+      { label: 'FAQ', to: '/faq' },
       { label: 'What to Expect', to: '/what-to-expect' },
       { label: 'Get the App', to: '/download' },
       { label: 'Newsletter', to: '/newsletter' },

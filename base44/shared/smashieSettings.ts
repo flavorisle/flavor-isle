@@ -11,6 +11,11 @@ const DEFAULTS = {
   realtime_sip_enabled: false,
   sip_transfer_target: "",
   personality_notes: "",
+  // Issue #37 toggles — all three ship OFF and are only ever turned on by the
+  // owner from Admin → Communications.
+  googleReviewSmsEnabled: false,
+  day14ShowcaseEmailEnabled: false,
+  day45NudgeEmailEnabled: false,
 };
 
 // Returns the active settings merged over defaults. Always resolves (never

@@ -1,0 +1,44 @@
+{
+  "name": "Day 14 Showcase Email Trigger",
+  "description": "Daily at 10 AM store local: emails the Day 14 'here's what you didn't try yet' loyalty message to customers whose first order was 14 days ago and who are subscribed. Nothing sends while day14ShowcaseEmailEnabled (default OFF) is off.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 10 * * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "day14_showcase_email_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendDay14ShowcaseEmails"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send Day 14 showcase emails",
+            "description": "Find 14-day-old first orders from subscribed customers and send the showcase email"
+          }
+        }
+      }
+    ]
+  }
+}

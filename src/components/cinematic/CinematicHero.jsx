@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { islePhotos } from '@/components/cinematic/photos';
 import { optimizedImageUrl } from '@/lib/utils';
 
-export default function CinematicHero({ heading = 'Two minutes off I-65. Zero regrets.', subtitle = 'Burgers & shakes in Smiths Grove since 1964.', photo = islePhotos.sign }) {
+export default function CinematicHero({ heading = 'Two minutes off I-65. Zero regrets.', subtitle = 'Burgers & shakes in Smiths Grove since 1964.', photo = islePhotos.sign, cityLine = false }) {
   const image = useRef(null);
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -25,6 +25,7 @@ export default function CinematicHero({ heading = 'Two minutes off I-65. Zero re
       <div className="relative max-w-6xl mx-auto w-full px-5 sm:px-10 pb-16 pt-32">
         <p className="font-heading text-sm tracking-widest text-smashie-yellow uppercase">I-65 Exit 38 · Smiths Grove, Kentucky</p>
         <h1 className="font-heading text-5xl sm:text-7xl leading-none max-w-3xl mt-3">{heading}</h1>
+        {cityLine && <p className="font-heading text-sm drop-shadow-lg tracking-widest">SMITHS GROVE, KENTUCKY</p>}
         <p className="text-lg mt-4 max-w-xl">{subtitle}</p>
         <Link to="/order" className="btn-cherry chrome-hover inline-flex items-center min-h-12 px-8 py-3 mt-6 text-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Order Now</Link>
       </div>

@@ -5,6 +5,7 @@ import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
+import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
 import { optimizedImageUrl } from '@/lib/utils';
 import GroupOrderBar from '@/components/GroupOrderBar';
@@ -149,6 +150,7 @@ export default function Menu() {
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8bd9c4f84_card-menu.png"
         ogImageAlt="Flavor Isle menu preview card with hand-patted burger and milkshake"
       />
+      <MenuStructuredData rows={rows} renames={renames} />
       <Navbar />
       <CartDrawer />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />

@@ -107,6 +107,21 @@
       "default": "",
       "description": "Admin notes about Smashie's persona, tone, or things to emphasize"
     },
+    "googleReviewSmsEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #37 step 2 \u2014 post-order Google review request by text. DEFAULT FALSE: nothing sends until the owner turns this on himself, and it is also gated on the GOOGLE_REVIEW_URL secret being set. One text per order ~2 hours after completion, never outside 10 AM\u20138 PM store local, max one per phone number per 90 days."
+    },
+    "day14ShowcaseEmailEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #37 step 6 \u2014 Day 14 'here's what you didn't try yet' loyalty email. DEFAULT FALSE: not switched on until the owner approves the final copy."
+    },
+    "day45NudgeEmailEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #37 step 6 \u2014 Day 45 'we'd love to see you again' loyalty nudge for customers with no repeat order. DEFAULT FALSE: not switched on until the owner approves the final copy."
+    },
     "facebook_access_token": {
       "type": "string",
       "default": "",

@@ -290,6 +290,19 @@ async function birthdayAskForReadyOrder(order: any, base44?: any) {
   }
 }
 
+// Google-review P.S. for the order-ready email (issue #37, step 1). Rendered
+// only when the GOOGLE_REVIEW_URL app secret holds a real link — an unset
+// secret omits the P.S. entirely so a broken link can never reach a customer.
+// Sits directly after the birthday P.S. and reuses its typography.
+function googleReviewPsHtml() {
+  const url = String(Deno.env.get('GOOGLE_REVIEW_URL') || '').trim();
+  if (!url) return '';
+  return `<div style="margin:12px 0 14px;">
+      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">P.S. Tell Google how we did — takes 10 seconds:</p>
+      <a href="${url}" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:bold;">Leave a quick Google review</a>
+    </div>`;
+}
+
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
 export async function sendOrderReadyEmail(order, base44?) {
@@ -330,6 +343,7 @@ export async function sendOrderReadyEmail(order, base44?) {
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
     ${await birthdayAskForReadyOrder(order, base44)}
+    ${googleReviewPsHtml()}
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${await foodHeroHtml(base44)}
     ${await merchPromoHtml()}`;

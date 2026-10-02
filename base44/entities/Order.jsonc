@@ -140,6 +140,16 @@
       "type": "string",
       "format": "date-time"
     },
+    "review_sms_due_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the post-order Google review text for this order becomes due (completion + 2 hours, moved into the 10 AM\u20138 PM store-local window). Stamped once by processPendingReviewSms so later writes to the order cannot move the send time. Issue #37, step 2."
+    },
+    "review_sms_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the Google review request text was dispatched for this order. Doubles as the atomic claim that stops two overlapping scanner runs from texting the same order twice. Issue #37, step 2."
+    },
     "payment_url": {
       "type": "string"
     },

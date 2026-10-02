@@ -20,8 +20,10 @@
         "confirmed",
         "preparing",
         "ready",
-        "completed"
-      ]
+        "completed",
+        "review_request"
+      ],
+      "description": "Which customer text this is. review_request is the post-order Google review ask (issue #37, step 2) and doubles as its 90-day per-phone frequency cap."
     },
     "body": {
       "type": "string"

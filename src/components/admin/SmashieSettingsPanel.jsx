@@ -27,6 +27,9 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           realtime_sip_enabled: false,
+          googleReviewSmsEnabled: false,
+          day14ShowcaseEmailEnabled: false,
+          day45NudgeEmailEnabled: false,
           sip_transfer_target: "",
           personality_notes: "",
           phone_intro: "",
@@ -55,6 +58,9 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
           realtime_sip_enabled: settings.realtime_sip_enabled,
+          googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
+          day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
+          day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
           sip_transfer_target: settings.sip_transfer_target,
@@ -69,6 +75,9 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
           voice_ordering_enabled: settings.voice_ordering_enabled,
           realtime_sip_enabled: settings.realtime_sip_enabled,
+          googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
+          day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
+          day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
           personality_notes: settings.personality_notes,
           facebook_access_token: settings.facebook_access_token,
           sip_transfer_target: settings.sip_transfer_target,
@@ -148,6 +157,24 @@ export default function SmashieSettingsPanel() {
           description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."
           checked={settings.realtime_sip_enabled}
           onChange={v => update('realtime_sip_enabled', v)}
+        />
+        <Toggle
+          label="Google Review Text After an Order"
+          description="Text the customer a Google review ask about two hours after their order completes — never outside 10 AM–8 PM, and no more than once per phone number every 90 days. Needs the GOOGLE_REVIEW_URL secret set. Leave off until the copy is approved."
+          checked={settings.googleReviewSmsEnabled}
+          onChange={v => update('googleReviewSmsEnabled', v)}
+        />
+        <Toggle
+          label="Day 14 Loyalty Email"
+          description="Two weeks after a customer's first order, email three things they haven't tried yet. Subscribed customers only. Leave off until the copy is approved."
+          checked={settings.day14ShowcaseEmailEnabled}
+          onChange={v => update('day14ShowcaseEmailEnabled', v)}
+        />
+        <Toggle
+          label="Day 45 Loyalty Nudge"
+          description="45 days after a first order with no repeat order since, send one 'come back' email. Subscribed customers only. Leave off until the copy is approved."
+          checked={settings.day45NudgeEmailEnabled}
+          onChange={v => update('day45NudgeEmailEnabled', v)}
         />
       </div>
 

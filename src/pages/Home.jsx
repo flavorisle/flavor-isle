@@ -16,6 +16,7 @@ import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
+import HomeStructuredData from '@/components/schema/HomeStructuredData';
 
 
 import SocialProofStrip from '@/components/SocialProofStrip';
@@ -117,6 +118,7 @@ export default function Home() {
         ogImage="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg"
         ogImageAlt="Flavor Isle burgers & shakes storefront in Smiths Grove, KY"
       />
+      <HomeStructuredData hours={businessHours} />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
@@ -124,7 +126,7 @@ export default function Home() {
       <EarlyCloseNotice />
 
       {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero />
+      <CinematicHero cityLine />
       <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
       <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />

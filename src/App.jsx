@@ -38,6 +38,7 @@ const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
 const Milkshakes = lazy(() => import('./pages/Milkshakes'));
 const MeetSmashie = lazy(() => import('./pages/MeetSmashie'));
+const Faq = lazy(() => import('./pages/Faq'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Login = lazy(() => import('./pages/Login'));
@@ -182,6 +183,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/faq" element={<Faq />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
