@@ -42,7 +42,7 @@ export function restaurantSchema(hours) {
     logo: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png',
     url: 'https://flavor-isle.com',
     menu: 'https://flavor-isle.com/menu',
-    telephone: '+12705634618',
+    telephone: '+12705637230',
     priceRange: '$$',
     servesCuisine: ['Hamburgers', 'American', 'Burgers and Shakes Restaurant'],
     address: {
@@ -76,7 +76,7 @@ export function menuSchema(rows, renames = {}) {
       hasMenuItem: row.items.map((item) => ({
         '@type': 'MenuItem',
         name: item.name,
-        ...(item.image_url ? { image: item.image_url } : {}),
+        ...(item.image_url_opt || item.image_url ? { image: item.image_url_opt || item.image_url } : {}),
       })),
     }));
 

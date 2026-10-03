@@ -1,6 +1,6 @@
 {
   "name": "Review Request SMS Trigger",
-  "description": "Every 10 minutes, sends the post-order Google review request text for completed orders whose two-hour mark has passed inside the 10 AM\u20138 PM store-local window. Nothing sends while the googleReviewSmsEnabled toggle is off or the GOOGLE_REVIEW_URL secret is empty (issue #37, step 2).",
+  "description": "Every 10 minutes, sends one post-order Google review request text per completed order inside the 10 AM\u20138 PM store-local window, only when both transactional and marketing SMS consent are on. The owner can pause with googleReviewSmsEnabled.",
   "trigger": {
     "condition": null,
     "config": {

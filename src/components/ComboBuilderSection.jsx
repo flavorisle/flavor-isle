@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { itemCategoryKey } from '@/lib/menuCategory';
 import { resolveCombos } from '@/lib/comboConfig';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { optimizedImageUrl } from '@/lib/utils';
 
 function ModifierModal({ item, onClose, onConfirm, overrides }) {
   // Admin modifier controls apply to combo components too, so a combo's main,
@@ -215,8 +216,8 @@ export default function ComboBuilderSection() {
                   isSelected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40 bg-white'
                 }`}
               >
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                {(item.image_url_opt || item.image_url) && (
+                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-xs text-obsidian-roast truncate">{item.name}</p>

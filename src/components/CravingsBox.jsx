@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Flame } from 'lucide-react';
 import MenuItemCard from './MenuItemCard';
 import { loadApprovedReviews } from './ItemRatings';
+import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 
 // "Cravings Box" — a horizontal rail of the highest-rated menu items, pulled
 // from approved customer reviews. Complements the Fan Favorites rail (which
@@ -25,7 +26,7 @@ export default function CravingsBox({ items }) {
       }
 
       const ranked = items
-        .filter(i => i && !i.is_hidden && tally[i.id])
+        .filter(i => i && !i.is_hidden && !isExcludedFromMarketing(i) && tally[i.id])
         .map(i => {
           const t = tally[i.id];
           return { ...i, avgRating: t.sum / t.count, reviewCount: t.count };

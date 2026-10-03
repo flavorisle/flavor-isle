@@ -1,20 +1,15 @@
 // ┌───────────────────────────────────────────────────────────────────────┐
 // │  GOOGLE_REVIEW_URL — the public Google Business Profile review link.  │
 // │                                                                       │
-// │  >>> Replace the placeholder below with the real link from the Google  │
-// │      Business Profile dashboard:                                      │
-// │      Business > Reviews > "Ask for reviews" → copy the short link.    │
+// │  The app secret GOOGLE_REVIEW_URL overrides this default so the link    │
+// │  can be changed without a code update.                                 │
 // │                                                                       │
 // │  Both sendReviewRequestEmail and trackReviewClick import this single   │
 // │  constant, so the real link only needs to be dropped in HERE.          │
 // └───────────────────────────────────────────────────────────────────────┘
-export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
+export const GOOGLE_REVIEW_URL = 'https://www.google.com/maps?cid=12490290050666246750';
 
-// The same link, read from the app secret. The order-ready email's Google P.S.
-// and the post-order review text (issue #37) are gated on this secret: when it
-// is empty they are omitted entirely rather than risking a broken link going
-// out to a customer. The review-request email above keeps using the constant,
-// so it is never affected by the secret being unset.
+// The app secret can replace the canonical listing URL without a code update.
 export function googleReviewSecretUrl() {
-  return String(Deno.env.get('GOOGLE_REVIEW_URL') || '').trim();
+  return String(Deno.env.get('GOOGLE_REVIEW_URL') || GOOGLE_REVIEW_URL).trim();
 }

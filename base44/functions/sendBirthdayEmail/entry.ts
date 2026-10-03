@@ -40,7 +40,7 @@ async function birthdayPhotosHtml(base44) {
       heroHtml = `
       <a href="${heroLink}" style="text-decoration:none;color:#141414;display:block;margin:0 0 20px;">
         <div style="position:relative;border-radius:16px;overflow:hidden;">
-          <img src="${hero.image_url}" alt="${(hero.name || 'Birthday treat').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
+          <img src="${hero.image_url_opt || hero.image_url}" alt="${(hero.name || 'Birthday treat').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
           <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.55) 100%);border-radius:16px;"></div>
           <div style="position:absolute;bottom:16px;left:20px;right:20px;">
             <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🎂 YOUR BIRTHDAY TREAT</p>
@@ -57,7 +57,7 @@ async function birthdayPhotosHtml(base44) {
         const price = typeof p.price === 'number' ? `$${p.price.toFixed(2)}` : '';
         return `<td style="width:50%;vertical-align:top;padding:0 5px;">
           <a href="${link}" style="text-decoration:none;color:#141414;display:block;">
-            <img src="${p.image_url}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:12px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />
+            <img src="${p.image_url_opt || p.image_url}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:12px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />
             <div style="font-family:'Oswald',Arial,sans-serif;font-size:15px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Flavor Isle Favorite'}</div>
             ${price ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:13px;font-weight:bold;margin-top:2px;">${price}</div>` : ''}
           </a>

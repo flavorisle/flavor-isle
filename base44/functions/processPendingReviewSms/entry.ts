@@ -6,16 +6,16 @@ import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 
 // Post-order Google review request by text — issue #37, step 2.
 //
-// Two gates, both owned by the owner: the `googleReviewSmsEnabled` toggle in
-// SmashieSettings (ships OFF) and the GOOGLE_REVIEW_URL secret. While either is
-// off this scanner reports it and sends nothing.
+// The owner can pause this using the `googleReviewSmsEnabled` toggle in
+// SmashieSettings. The review URL has a single configurable secret override
+// and a canonical listing URL fallback.
 //
 // Rules, exactly as approved:
 //   • One text per completed order, about two hours after it completed.
 //   • Never outside 10 AM–8 PM store local (America/Chicago); a +2h mark that
 //     lands outside the window is held to 10 AM the next day.
-//   • At most one review request per phone number every 90 days, checked
-//     against the SMS delivery log before dispatching.
+//   • One review request per completed order, guarded by the order's atomic
+//     sent marker.
 //   • Only ever the order's own phone number — no other numbers, no blasts.
 //
 // The completion moment is read once, from the order's own record, and stamped
@@ -23,7 +23,6 @@ import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
 // order) can't move the send time.
 
 const REVIEW_MILESTONE = 'review_request';
-const CAP_DAYS = 90;
 const DELAY_HOURS = 2;
 const WINDOW_START_HOUR = 10; // store local, inclusive
 const WINDOW_END_HOUR = 20;   // store local, exclusive
@@ -69,9 +68,6 @@ export default async function (req) {
       return Response.json({ ok: true, skipped: true, reason: 'googleReviewSmsEnabled is off' });
     }
     const reviewUrl = googleReviewSecretUrl();
-    if (!reviewUrl) {
-      return Response.json({ ok: true, skipped: true, reason: 'GOOGLE_REVIEW_URL secret is not set' });
-    }
 
     const orders = await base44.asServiceRole.entities.Order.filter({ status: 'completed' }, '-updated_date', 200);
     const now = Date.now();
@@ -99,20 +95,11 @@ export default async function (req) {
       }
       if (now < due.getTime()) { held++; continue; }
 
-      // One review request per phone number every 90 days.
-      const cutoff = new Date(now - CAP_DAYS * 24 * 60 * 60 * 1000).toISOString();
-      const prior = await base44.asServiceRole.entities.SmsDeliveryLog.filter(
-        { phone, milestone: REVIEW_MILESTONE }, '-created_date', 20,
-      );
-      if ((prior || []).some((log) => log.created_date && log.created_date >= cutoff && log.status !== 'failed')) {
-        skipped++;
-        continue;
-      }
-
-      // Same consent gate as every other text on this line: transactional
-      // consent on file, otherwise nothing goes out.
-      const consent = await checkSmsConsent(base44, phone, 'transactional');
-      if (!consent?.ok) { skipped++; continue; }
+      // A review request is only sent to customers who consented to both
+      // transactional SMS and marketing messages, and have not opted out.
+      const transactionalConsent = await checkSmsConsent(base44, phone, 'transactional');
+      const marketingConsent = await checkSmsConsent(base44, phone, 'marketing');
+      if (!transactionalConsent?.ok || !marketingConsent?.ok) { skipped++; continue; }
 
       // Atomic claim so two overlapping runs can never text the same order twice.
       const claim = await base44.asServiceRole.entities.Order.updateMany(
@@ -135,6 +122,7 @@ export default async function (req) {
       const ok = await sendSmashieSms(phone, body, { base44, logId: log.id });
       if (ok) {
         await markSmsSent(base44, phone, 'transactional');
+        await markSmsSent(base44, phone, 'marketing');
         sent++;
       } else {
         // Delivery failed: clear the send stamp so the next run can try again.

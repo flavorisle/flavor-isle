@@ -11,6 +11,8 @@ import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
+import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -37,6 +39,9 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
+  const imageUrl = item.image_url_opt || item.image_url;
+  const showPhoto = imageUrl && !isDiscontinuedMenuItem(item);
+  const showMarketingBadge = !isExcludedFromMarketing(item);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -64,7 +69,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           menu_item_id: item.id,
           menu_item_name: item.name,
           menu_item_price: item.price,
-          menu_item_image: item.image_url,
+          menu_item_image: imageUrl,
           menu_item_category: item.category,
         });
       }
@@ -145,12 +150,12 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   const badges = (
     <>
-      {item.is_fan_favorite && !soldOut && (
+      {showMarketingBadge && item.is_fan_favorite && !soldOut && (
         <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
           <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
         </div>
       )}
-      {!item.is_fan_favorite && item.is_featured && !soldOut && (
+      {showMarketingBadge && !item.is_fan_favorite && item.is_featured && !soldOut && (
         <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10">
           <Zap size={10} /> Special
         </div>
@@ -171,10 +176,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     </>
   );
 
-  const photo = item.image_url ? (
+  const photo = showPhoto ? (
     <img
-      src={item.image_url}
+      src={optimizedImageUrl(imageUrl, 500, 500)}
       alt={item.name}
+      width="500"
+      height="500"
+      loading="lazy"
+      decoding="async"
       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
     />
   ) : (
@@ -288,8 +297,8 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         {modal}
         <div className="group relative card-diner overflow-hidden min-h-[240px] flex flex-col justify-end">
           <div className="absolute inset-0">
-            {item.image_url ? (
-              <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
+            {showPhoto ? (
+              <img src={optimizedImageUrl(imageUrl, 500, 500)} alt={item.name} width="500" height="500" loading="lazy" decoding="async" className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-obsidian-roast to-midnight-cherry" />
             )}

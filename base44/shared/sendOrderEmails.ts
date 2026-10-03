@@ -3,6 +3,7 @@ import { getLiveBusyness } from './liveBusyness.ts';
 import { fetchStoreProducts } from './printful.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from './dessertPriority.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
+import { GOOGLE_REVIEW_URL } from './googleReviewUrl.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -91,6 +92,7 @@ export async function foodHeroHtml(base44?: any) {
       m.is_available !== false &&
       m.is_hidden !== true &&
       m.image_url &&
+      !/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(m.name || '') &&
       (m.is_fan_favorite || m.is_featured)
     );
     const allowed = excludeMaltSundae(withPhotos);
@@ -100,10 +102,11 @@ export async function foodHeroHtml(base44?: any) {
     allowed.sort(fanFavoriteSort);
     const pick = dailyRotate(allowed)[0];
     const price = typeof pick.price === 'number' ? `$${pick.price.toFixed(2)}` : '';
+    const photo = pick.image_url_opt || pick.image_url;
     const link = trackedLink('/menu', 'food_hero');
     return `
     <a href="${link}" style="text-decoration:none;color:#141414;display:block;margin:20px 0 8px;">
-      <img src="${pick.image_url}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
+      <img src="${photo}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
       <div style="padding:12px 4px 0;">
         <div style="font-family:'Oswald',Arial,sans-serif;font-size:20px;color:#C0392B;letter-spacing:1px;">${pick.name || 'Flavor Isle Favorite'}</div>
         ${price ? `<div style="font-family:'Oswald',Arial,sans-serif;font-size:16px;color:#141414;margin-top:2px;">${price}</div>` : ''}
@@ -295,11 +298,9 @@ async function birthdayAskForReadyOrder(order: any, base44?: any) {
 // secret omits the P.S. entirely so a broken link can never reach a customer.
 // Sits directly after the birthday P.S. and reuses its typography.
 function googleReviewPsHtml() {
-  const url = String(Deno.env.get('GOOGLE_REVIEW_URL') || '').trim();
-  if (!url) return '';
+  const url = String(Deno.env.get('GOOGLE_REVIEW_URL') || GOOGLE_REVIEW_URL).trim();
   return `<div style="margin:12px 0 14px;">
-      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">P.S. Tell Google how we did — takes 10 seconds:</p>
-      <a href="${url}" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:bold;">Leave a quick Google review</a>
+      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">How'd we do? Smashie would love 10 seconds of your time on Google: <a href="${url}" style="color:#1A3A5C;">leave a review</a>.</p>
     </div>`;
 }
 

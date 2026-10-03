@@ -60,6 +60,7 @@ export default function Footer() {
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
+            <Link to="/faq" className="hover:text-white transition-colors">FAQ</Link>
             <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Stop</Link>
             <Link to="/mammoth-cave-dining" className="hover:text-white transition-colors">Mammoth Cave Dining</Link>
             <Link to="/corvette-car-clubs" className="hover:text-white transition-colors">Corvette Car Clubs</Link>

@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
 import { withShakeFlavorLevel } from './ShakeFlavorControl';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // The five specialty "Bliss" shakes — standalone Square items with their own
 // pricing and a Size modifier. Displayed below the build-your-own flavor grid.
@@ -127,10 +128,14 @@ export default function PremiumShakesSection({ autoOpenId }) {
               >
                 {/* Image */}
                 <div className="relative h-32 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100">
-                  {item.image_url ? (
+                  {item.image_url_opt || item.image_url ? (
                     <img
-                      src={item.image_url}
+                      src={optimizedImageUrl(item.image_url_opt || item.image_url, 500, 500)}
                       alt={item.name}
+                      width="500"
+                      height="500"
+                      loading="lazy"
+                      decoding="async"
                       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                         soldOut ? 'grayscale opacity-60' : ''
                       }`}

@@ -4,10 +4,10 @@ const stats = {
   right: [['1.8M', 'Shakes spun & still swirling'], ['0', 'Shortcuts. Ever.']],
 };
 export default function HomeStats({ side }) {
-  return <div className="flex flex-col justify-around gap-6 text-center" aria-label="Flavor Isle by the numbers">
-    {stats[side].map(([num, label]) => <div key={label}>
-      <p className="font-heading text-5xl text-smashie-yellow">{num}</p>
-      <p className="text-sm uppercase tracking-wide">{label}</p>
+  return <div className="contents" aria-label="Flavor Isle by the numbers">
+    {stats[side].map(([num, label]) => <div key={label} className="flex h-8 flex-shrink-0 items-center gap-1.5">
+      <span className="font-heading text-xl text-smashie-yellow">{num}</span>
+      <span className="text-[10px] uppercase tracking-wide">{label}</span>
     </div>)}
   </div>;
 }

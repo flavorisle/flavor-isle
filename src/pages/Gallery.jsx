@@ -26,7 +26,7 @@ export default function Gallery() {
       if (!active) return;
       setSquarePhotos(SQUARE_PHOTO_NAMES.map((name) => {
         const item = items.find((row) => row.name?.trim().toLowerCase() === name.toLowerCase() && row.image_url && !row.is_hidden && row.is_available !== false);
-        return item && { url: item.image_url, alt: name, caption: name, category: 'Food' };
+        return item && { url: item.image_url_opt || item.image_url, alt: name, caption: name, category: 'Food' };
       }).filter(Boolean));
     }).catch(() => { if (active) setPhotoError(true); })
       .finally(() => { if (active) setLoadingPhotos(false); });

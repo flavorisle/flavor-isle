@@ -27,7 +27,7 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           realtime_sip_enabled: false,
-          googleReviewSmsEnabled: false,
+          googleReviewSmsEnabled: true,
           day14ShowcaseEmailEnabled: false,
           day45NudgeEmailEnabled: false,
           sip_transfer_target: "",
@@ -160,7 +160,7 @@ export default function SmashieSettingsPanel() {
         />
         <Toggle
           label="Google Review Text After an Order"
-          description="Text the customer a Google review ask about two hours after their order completes — never outside 10 AM–8 PM, and no more than once per phone number every 90 days. Needs the GOOGLE_REVIEW_URL secret set. Leave off until the copy is approved."
+          description="Send one Google review text per completed order about two hours later, only when the customer has both transactional and marketing SMS consent. The owner can pause this automation."
           checked={settings.googleReviewSmsEnabled}
           onChange={v => update('googleReviewSmsEnabled', v)}
         />
