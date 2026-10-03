@@ -35,7 +35,7 @@ export function getPreferenceTriplet(group) {
 
 // Left zone = − (Lite · Light Milk), center = the chosen level, right zone = +
 // (Extra · Extra Milk) — the same three-zone pill the burger sauces use, with
-// the same hover/"active" word reveal on the two side zones.
+// the same hover/active word reveal on the two side zones.
 export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
   const triplet = getPreferenceTriplet(group);
   if (!triplet) return null;
