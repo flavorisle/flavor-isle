@@ -21,7 +21,7 @@ import { getSmashieSettings } from './smashieSettings.ts';
 //   • PULLED PORK SANDWICH and LOADED BBQ WAFFLE FRIES are discontinued and can
 //     never appear.
 
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const APP_URL = 'https://flavor-isle.com';
 const EMAIL_TYPE = { day14: 'day14_showcase', day45: 'day45_nudge' };
 const TOGGLE = { day14: 'day14ShowcaseEmailEnabled', day45: 'day45NudgeEmailEnabled' };
@@ -120,7 +120,7 @@ export async function activeSubscriber(base44, email) {
 function unsubscribeFooter(subscriber) {
   const link = subscriber?.unsubscribe_token
     ? `<a href="${APP_URL}/unsubscribe?token=${encodeURIComponent(subscriber.unsubscribe_token)}" style="color:#999;text-decoration:underline;">Unsubscribe</a>`
-    : `<a href="mailto:smashie@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>`;
+    : `<a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>`;
   return `<p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you subscribed to Flavor Isle emails and you've ordered with us before. ${link}.</p>`;
 }
 

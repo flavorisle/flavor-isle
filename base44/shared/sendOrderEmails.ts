@@ -14,7 +14,7 @@ const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain
 // (they return "unauthorized" there). Email clients must hit the base44.app
 // function URL; the function then 302-redirects to the custom domain.
-const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
+const FUNCTION_BASE = 'https://flavor-isle.com';
 
 // Build a click-tracked link. Routes the email CTA through the trackEmailClick
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
@@ -246,7 +246,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
     const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@order.flavor-isle.com>`,
+      from: `${fromName} <smashie@flavor-isle.com>`,
       to,
       subject,
       html: brandedEmailHtml(body.replace(/\n/g, '<br>')),
@@ -354,7 +354,7 @@ export async function sendOrderReadyEmail(order, base44?) {
     let sent = false;
     for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: order.customer_email,
         subject: `✅ Order #${orderNum} is ready!`,
         html: brandedEmailHtml(body),
@@ -382,7 +382,7 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
     let sent = false;
     for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
       const { error } = await resend.emails.send({
-        from: `${fromName} <smashie@order.flavor-isle.com>`,
+        from: `${fromName} <smashie@flavor-isle.com>`,
         to,
         subject,
         html: brandedEmailHtml(bodyHtml),

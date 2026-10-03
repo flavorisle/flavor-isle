@@ -13,7 +13,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 //    not re-emailed — returns ok without a duplicate send.
 //  - Retryable: a failed send leaves the record as `failed` (not deleted) so an
 //    admin can re-send; the client shows a genuine retryable error.
-const INBOX = 'hello@order.flavor-isle.com';
+const INBOX = 'hello@flavor-isle.com';
 const RATE_LIMIT_PER_HOUR = 5;
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 

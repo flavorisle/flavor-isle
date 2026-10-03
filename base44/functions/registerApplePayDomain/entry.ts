@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   try {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const body = await req.json().catch(() => ({}));
-    const domain = (body.domain || 'taste-isle-express.base44.app').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const domain = (body.domain || 'flavor-isle.com').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
 
     let result;
     try {

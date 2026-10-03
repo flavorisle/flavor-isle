@@ -45,7 +45,7 @@ export async function sendSmashieSms(to, body, audit = {}) {
       To: normalizedTo,
       Body: body,
     });
-    if (audit.logId) params.set('StatusCallback', `https://taste-isle-express.base44.app/functions/twilioSmsStatus?log_id=${encodeURIComponent(audit.logId)}`);
+    if (audit.logId) params.set('StatusCallback', `https://flavor-isle.com/functions/twilioSmsStatus?log_id=${encodeURIComponent(audit.logId)}`);
     const auth = btoa(`${accountSid}:${authToken}`);
     const res = await fetch(url, {
       method: 'POST',

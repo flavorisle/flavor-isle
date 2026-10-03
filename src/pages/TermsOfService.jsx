@@ -41,7 +41,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
-        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. See our Privacy Policy at https://taste-isle-express.base44.app/privacy-policy.',
+        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. See our Privacy Policy at https://flavor-isle.com/privacy-policy.',
       },
       {
         heading: 'Receiving Phone Calls From Us',
@@ -167,7 +167,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Points & Phone Number Ownership',
-        text: 'Flavor Isle Star Rewards is our free rewards program. Points accrue only to the rewards account matching the phone number provided at checkout. Entering a phone number on another customer\u2019s purchase does not transfer that purchase\u2019s points to the person entering the number; points belong to the account that earned them. If we reasonably suspect that someone has claimed points on another customer\u2019s purchase, we may suspend or terminate the rewards account used and void its points. Automatic card recognition at the register is a convenience feature and is not the same as signing in to your account on this website. Rewards questions or disputes: hello@order.flavor-isle.com.',
+        text: 'Flavor Isle Star Rewards is our free rewards program. Points accrue only to the rewards account matching the phone number provided at checkout. Entering a phone number on another customer\u2019s purchase does not transfer that purchase\u2019s points to the person entering the number; points belong to the account that earned them. If we reasonably suspect that someone has claimed points on another customer\u2019s purchase, we may suspend or terminate the rewards account used and void its points. Automatic card recognition at the register is a convenience feature and is not the same as signing in to your account on this website. Rewards questions or disputes: rewards@flavor-isle.com.',
       },
     ],
   },
@@ -256,7 +256,7 @@ export default function TermsOfService() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@order.flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>

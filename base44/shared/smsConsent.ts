@@ -25,7 +25,7 @@ export const DISCLOSURE_TEXT = {
   transactional:
     'Flavor Isle order status updates (confirmed, preparing, ready) and a secure pay-by-text link. Optional and not a condition of purchase. Msg & data rates may apply. Reply STOP to cancel, HELP for help.',
   marketing:
-    'Recurring promotional offers and specials from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (typically a few per month). Msg & data rates may apply. Reply STOP to cancel, HELP for help. See https://taste-isle-express.base44.app/terms-of-service and https://taste-isle-express.base44.app/privacy-policy',
+    'Recurring promotional offers and specials from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (typically a few per month). Msg & data rates may apply. Reply STOP to cancel, HELP for help. See https://flavor-isle.com/terms-of-service and https://flavor-isle.com/privacy-policy',
 };
 
 function deriveCategory(transactional: boolean, marketing: boolean): string {

@@ -7,8 +7,8 @@ export const SMS_CONSENT_VERSION = 'a2p-v2-2026-09-22';
 
 // Verified public domain (the app's published host). Update to flavor-isle.com
 // only after Wesley confirms the custom domain is connected.
-export const SMS_POLICY_URL = 'https://taste-isle-express.base44.app/privacy-policy';
-export const SMS_TERMS_URL = 'https://taste-isle-express.base44.app/terms-of-service';
+export const SMS_POLICY_URL = 'https://flavor-isle.com/privacy-policy';
+export const SMS_TERMS_URL = 'https://flavor-isle.com/terms-of-service';
 
 // Normalize a US phone number to E.164.
 export function toE164(raw) {
@@ -25,4 +25,4 @@ export const TRANSACTIONAL_DISCLOSURE_TEXT =
   'Flavor Isle order status updates (confirmed, preparing, ready) and a secure pay-by-text link. Optional and not a condition of purchase. Msg & data rates may apply. Reply STOP to cancel, HELP for help.';
 
 export const MARKETING_DISCLOSURE_TEXT =
-  'Recurring promotional offers and specials from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (typically a few per month). Msg & data rates may apply. Reply STOP to cancel, HELP for help. See https://taste-isle-express.base44.app/terms-of-service and https://taste-isle-express.base44.app/privacy-policy';
+  'Recurring promotional offers and specials from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (typically a few per month). Msg & data rates may apply. Reply STOP to cancel, HELP for help. See https://flavor-isle.com/terms-of-service and https://flavor-isle.com/privacy-policy';
