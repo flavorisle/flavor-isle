@@ -114,7 +114,8 @@ export default async function (req: Request) {
       // confirmed, send to Square, fire kitchen printer, notify customer/staff.
       try {
         await base44.asServiceRole.functions.invoke('confirmOnlinePayment', {
-          orderNumber: String(order.order_number),
+          orderId: String(order.id),
+          paymentReference: order.stripe_session_id || undefined,
         });
         pushed++;
         results.push({ order_number: order.order_number, pushed: true });

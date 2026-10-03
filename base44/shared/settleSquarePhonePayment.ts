@@ -1,8 +1,8 @@
 import { squarePhoneApi } from './squarePhoneApi.ts';
 import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
 
-export async function settleSquarePhonePayment(base44, order, suppliedSquareOrder = null) {
-  if (order.payment_provider !== 'square' || !order.square_checkout_order_id || order.payment_status === 'paid') return order;
+export async function settleSquarePhonePayment(base44, order, suppliedSquareOrder = null, { forceVerify = false } = {}) {
+  if (order.payment_provider !== 'square' || !order.square_checkout_order_id || (order.payment_status === 'paid' && !forceVerify)) return order;
   const api = await squarePhoneApi(base44);
   const squareOrder = suppliedSquareOrder || (await api.request(`orders/${order.square_checkout_order_id}`)).order;
   const paymentIds = (squareOrder.tenders || []).map(tender => tender.payment_id).filter(Boolean);

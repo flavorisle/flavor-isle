@@ -32,12 +32,12 @@ export default function FailedOrderAlert() {
 
   if (loading || !data) return null;
 
-  const retry = async (orderNumber) => {
-    if (!orderNumber) return;
-    setRetrying(orderNumber);
+  const retry = async (orderId, orderNumber) => {
+    if (!orderId) return;
+    setRetrying(orderId);
     setNotice('');
     try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(orderNumber) });
+      await base44.functions.invoke('confirmOnlinePayment', { orderId: String(orderId) });
       await reload();
     } catch (err) {
       setNotice(`Retry could not finish for #${orderNumber}. Check the sync log for the reason.`);
@@ -117,12 +117,12 @@ export default function FailedOrderAlert() {
               </div>
               {item.retryable && item.order_number ? (
                 <button
-                  onClick={() => retry(item.order_number)}
-                  disabled={retrying === item.order_number}
+                  onClick={() => retry(item.order_id, item.order_number)}
+                  disabled={retrying === item.order_id}
                   className="btn-cherry px-3 py-1.5 text-xs flex items-center gap-1.5 flex-shrink-0"
                 >
-                  <RefreshCw size={12} className={retrying === item.order_number ? 'animate-spin' : ''} />
-                  {retrying === item.order_number ? 'Retrying…' : 'Retry push'}
+                  <RefreshCw size={12} className={retrying === item.order_id ? 'animate-spin' : ''} />
+                  {retrying === item.order_id ? 'Retrying…' : 'Retry push'}
                 </button>
               ) : (
                 <Link to="/admin/orders" className="text-xs font-heading text-patina-mint hover:text-midnight-cherry flex-shrink-0">

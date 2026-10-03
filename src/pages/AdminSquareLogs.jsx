@@ -35,10 +35,10 @@ export default function AdminSquareLogs() {
 
   useEffect(() => { loadData(); }, []);
 
-  const retryOrder = async (orderNumber) => {
-    setRetrying(orderNumber);
+  const retryOrder = async (orderId) => {
+    setRetrying(orderId);
     try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(orderNumber) });
+      await base44.functions.invoke('confirmOnlinePayment', { orderId: String(orderId) });
       await loadData();
     } catch (err) {
       console.error('Retry failed:', err);
@@ -96,11 +96,11 @@ export default function AdminSquareLogs() {
                     <p className="text-xs text-muted-foreground truncate">{o.customer_email} · ${o.total?.toFixed(2)}</p>
                   </div>
                   <button
-                    onClick={() => retryOrder(o.order_number)}
-                    disabled={retrying === o.order_number}
+                    onClick={() => retryOrder(o.id)}
+                    disabled={retrying === o.id}
                     className="btn-cherry px-4 py-2 text-xs flex items-center gap-2 flex-shrink-0 ml-3"
                   >
-                    {retrying === o.order_number ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    {retrying === o.id ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                     Retry
                   </button>
                 </div>
@@ -175,13 +175,13 @@ export default function AdminSquareLogs() {
                         {new Date(log.created_date).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                       </p>
                     </div>
-                    {log.status === 'failed' && log.order_number && (
+                    {log.status === 'failed' && log.order_id && (
                       <button
-                        onClick={() => retryOrder(log.order_number)}
-                        disabled={retrying === log.order_number}
+                        onClick={() => retryOrder(log.order_id)}
+                        disabled={retrying === log.order_id}
                         className="btn-mint px-3 py-1.5 text-xs flex items-center gap-1.5 flex-shrink-0"
                       >
-                        {retrying === log.order_number ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                        {retrying === log.order_id ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                         Retry
                       </button>
                     )}

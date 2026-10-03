@@ -5,6 +5,7 @@ import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.t
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { createOrderNumber } from '../../shared/orderNumber.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payment is temporarily unavailable — nothing was charged. Please try again in a moment.' }, { status: 503 });
     }
 
-    const orderNumber = Date.now().toString().slice(-6);
+    const orderNumber = await createOrderNumber(base44);
     const amountCents = Math.round(pricing.total * 100);
 
     // When a signed-in customer has saved cards (or wants to save this card),
@@ -124,8 +125,9 @@ Deno.serve(async (req) => {
     // error. This closes the orphan-paid-order gap from the audit.
     let orderSaved = false;
     let orderSaveError: string | null = null;
+    let orderId = '';
     try {
-      await base44.asServiceRole.entities.Order.create({
+      const order = await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
         ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
@@ -160,6 +162,7 @@ Deno.serve(async (req) => {
         estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
       orderSaved = true;
+      orderId = order.id;
     } catch (dbError) {
       orderSaveError = dbError.message;
       console.error('Order.create failed — canceling unconfirmed intent:', dbError.message);
@@ -207,6 +210,7 @@ Deno.serve(async (req) => {
       clientSecret: paymentIntent.client_secret,
       publishableKey,
       orderNumber,
+      orderId,
       smsConsentStored,
     });
   } catch (error) {

@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { createOrderNumber } from '../../shared/orderNumber.ts';
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -88,7 +89,7 @@ export default async function(req) {
     const subtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
     const tax = Math.round(subtotal * 0.06 * 100) / 100;
     const finalTotal = Math.round((subtotal + tax) * 100) / 100;
-    const orderNumber = Date.now().toString().slice(-6);
+    const orderNumber = await createOrderNumber(base44);
 
     // Keep the order pending until the customer pays on the payment page.
     const order = await base44.asServiceRole.entities.Order.create({

@@ -59,7 +59,7 @@ function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, rewa
 }
 
 // Inner payment form — must be rendered inside <Elements>
-function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
+function PaymentForm({ clientSecret, orderNumber, orderId, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -105,7 +105,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
           console.error('Save new card failed:', err);
         }
       }
-      onSuccess(orderNumber);
+      onSuccess(orderNumber, result.paymentIntent.id, orderId);
     }
   };
 
@@ -116,7 +116,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
           clientSecret={clientSecret}
           total={total}
           label={`Flavor Isle #${orderNumber}`}
-          onSuccess={() => onSuccess(orderNumber)}
+          onSuccess={(paymentIntentId) => onSuccess(orderNumber, paymentIntentId, orderId)}
           onError={onError}
         />
       )}
@@ -249,6 +249,7 @@ export default function Checkout() {
   const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [orderId, setOrderId] = useState('');
   // The Order + PaymentIntent already created for the current cart. Reusing it
   // stops a Back-then-Continue tap (or a failed wallet attempt) from creating a
   // second, never-paid Order for the same cart.
@@ -490,13 +491,14 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored } = res.data;
+        const { intents, publishableKey: splitPk, orderNumber: on, orderId: oi, smsConsentStored } = res.data;
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
         setSplitIntents(intents);
         setSplitPublishable(splitPk);
         setOrderNumber(on);
+        setOrderId(oi);
         setStep('split');
       } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
         // Same cart as an order we already created (the customer tapped Back, or
@@ -505,6 +507,7 @@ export default function Checkout() {
         setClientSecret(pendingOrder.clientSecret);
         setPublishableKey(pendingOrder.publishableKey);
         setOrderNumber(pendingOrder.orderNumber);
+        setOrderId(pendingOrder.orderId);
         initStripe(pendingOrder.publishableKey);
         setStep('payment');
       } else {
@@ -526,7 +529,7 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { clientSecret: cs, publishableKey: pk, orderNumber: on, smsConsentStored } = res.data;
+        const { clientSecret: cs, publishableKey: pk, orderNumber: on, orderId: oi, smsConsentStored } = res.data;
         // Never advance to a payment step that cannot be paid — a missing secret
         // or key used to leave the customer there with no card form, holding an
         // order that was never charged.
@@ -540,7 +543,8 @@ export default function Checkout() {
         setClientSecret(cs);
         setPublishableKey(pk);
         setOrderNumber(on);
-        setPendingOrder({ orderNumber: on, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
+        setOrderId(oi);
+        setPendingOrder({ orderNumber: on, orderId: oi, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
         initStripe(pk);
         setStep('payment');
       }
@@ -554,7 +558,7 @@ export default function Checkout() {
     }
   };
 
-  const handleSuccess = async (on) => {
+  const handleSuccess = async (on, paymentIntentId, confirmedOrderId) => {
     trackPurchase(cartItems.map(foodItemToGa4), {
       transaction_id: on,
       value: totalWithTip,
@@ -570,12 +574,15 @@ export default function Checkout() {
     // the customer sees natural "processing" feedback. Idempotent, so it's
     // safe when the webhook also fires.
     try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(on) });
+      await base44.functions.invoke('confirmOnlinePayment', {
+        orderId: confirmedOrderId || orderId,
+        paymentReference: paymentIntentId,
+      });
     } catch (err) {
       console.error('confirmOnlinePayment fallback failed:', err);
     }
     clearCart();
-    navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
+    navigate(`/order-confirmation?order_number=${on}&order_id=${confirmedOrderId || orderId}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
   };
 
   // Load the Stripe publishable key once so Apple Pay / Google Pay can render
@@ -660,9 +667,10 @@ export default function Checkout() {
     });
     // Remember this order + intent: if the wallet sheet fails, the card form
     // below completes the SAME order instead of creating a second pending one.
-    if (res.data?.clientSecret && res.data?.orderNumber) {
+    if (res.data?.clientSecret && res.data?.orderNumber && res.data?.orderId) {
       setPendingOrder({
         orderNumber: res.data.orderNumber,
+        orderId: res.data.orderId,
         clientSecret: res.data.clientSecret,
         publishableKey: res.data.publishableKey,
         fingerprint: buildCartFingerprint(mappedItems, {
@@ -974,6 +982,7 @@ export default function Checkout() {
                 intents={splitIntents}
                 publishableKey={splitPublishable}
                 orderNumber={orderNumber}
+                orderId={orderId}
                 onSuccess={handleSuccess}
                 onError={setError}
               />
@@ -1030,6 +1039,7 @@ export default function Checkout() {
                     <PaymentForm
                       clientSecret={clientSecret}
                       orderNumber={orderNumber}
+                      orderId={orderId}
                       onSuccess={handleSuccess}
                       onError={setError}
                       total={totalWithTip}

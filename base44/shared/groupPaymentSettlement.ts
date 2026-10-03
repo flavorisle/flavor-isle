@@ -33,8 +33,7 @@ export async function settleGroupOrderIfComplete(base44: any, orderId: string) {
 }
 
 // Idempotently update a share's settlement status. For 'succeeded', verify the
-// received amount >= the expected share amount — an underpayment is recorded
-// as 'failed' so the group can never settle on a short payment. Stale events
+// received amount and currency exactly match the expected share. Stale events
 // that would revert a terminal state are ignored (except succeeded→refunded).
 // No-op (found:false) for single-order intents, which have no GroupPaymentShare.
 export async function updateGroupShareStatus(
@@ -42,6 +41,7 @@ export async function updateGroupShareStatus(
   intentId: string,
   status: string,
   amountReceivedCents?: number | null,
+  currency = 'usd',
 ) {
   const shares = await base44.asServiceRole.entities.GroupPaymentShare.filter({ intent_id: intentId });
   if (!shares || shares.length === 0) return { found: false };
@@ -49,8 +49,8 @@ export async function updateGroupShareStatus(
   let finalStatus = status;
   if (status === 'succeeded' && amountReceivedCents != null) {
     const expectedCents = Math.round((Number(share.expected_amount) || 0) * 100);
-    if (amountReceivedCents < expectedCents) {
-      console.error(`Group share ${intentId} underpaid: expected ${expectedCents}c, received ${amountReceivedCents}c — marking failed`);
+    if (currency !== 'usd' || amountReceivedCents !== expectedCents) {
+      console.error(`Group share ${intentId} amount/currency mismatch: expected ${expectedCents}c USD, received ${amountReceivedCents}c ${currency} — marking failed`);
       finalStatus = 'failed';
     }
   }
@@ -81,10 +81,12 @@ export async function verifyAndSettleGroupOrder(base44: any, stripe: any, orderI
   for (const share of shares) {
     let piStatus = 'pending';
     let amountReceivedCents: number | null = null;
+    let currency = '';
     try {
       const pi = await stripe.paymentIntents.retrieve(share.intent_id);
       piStatus = pi.status;
       amountReceivedCents = pi.amount_received ?? pi.amount ?? null;
+      currency = pi.currency;
     } catch (e) {
       console.warn(`Group share ${share.intent_id} retrieve failed:`, (e as Error).message);
       allSucceeded = false;
@@ -96,7 +98,11 @@ export async function verifyAndSettleGroupOrder(base44: any, stripe: any, orderI
     else if (piStatus === 'canceled') mapped = 'canceled';
     else if (['requires_payment_method', 'requires_action', 'requires_confirmation'].includes(piStatus)) mapped = 'pending';
     else mapped = 'failed';
-    await updateGroupShareStatus(base44, share.intent_id, mapped, amountReceivedCents);
+    if (mapped === 'succeeded' &&
+        (currency !== 'usd' || amountReceivedCents !== Math.round((Number(share.expected_amount) || 0) * 100))) {
+      mapped = 'failed';
+    }
+    await updateGroupShareStatus(base44, share.intent_id, mapped, amountReceivedCents, currency);
     if (mapped !== 'succeeded') allSucceeded = false;
     statuses.push({ person_name: share.person_name, status: mapped });
   }

@@ -51,7 +51,8 @@ export async function findOrderByNumber(base44, orderNumber) {
   const wanted = String(orderNumber || '').trim().toUpperCase();
   if (!wanted) return null;
   const orders = await base44.asServiceRole.entities.Order.filter({ order_number: wanted });
-  return (orders || []).find(order => order.payment_url || order.manual_pay_required) || null;
+  const payableOrders = (orders || []).filter(order => order.payment_url || order.manual_pay_required);
+  return payableOrders.length === 1 ? payableOrders[0] : null;
 }
 
 // What the customer sees on their own payment page. Deliberately narrow: first

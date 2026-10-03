@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import Stripe from 'npm:stripe@14.25.0';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.ts';
+import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
 
 // Client-side payment confirmation fallback.
 //
@@ -24,25 +25,20 @@ import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.t
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const { orderNumber } = await req.json();
-    if (!orderNumber) {
-      return Response.json({ error: 'orderNumber is required' }, { status: 400 });
+    const { orderId, paymentReference } = await req.json();
+    if (!orderId) {
+      return Response.json({ error: 'orderId is required' }, { status: 400 });
     }
 
-    const orders = await base44.asServiceRole.entities.Order.filter({ order_number: String(orderNumber) });
-    if (!orders || orders.length === 0) {
-      return Response.json({ skipped: true, reason: 'order not found' });
-    }
-    const order = orders[0];
+    const order = await base44.asServiceRole.entities.Order.get(String(orderId));
+    if (!order) return Response.json({ skipped: true, reason: 'order not found' }, { status: 404 });
     if (order.pay_cash_on_pickup) return Response.json({ skipped: true, reason: 'Cash must be collected and recorded by staff at pickup.' });
+    if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+      return Response.json({ error: 'This order is no longer payable.' }, { status: 409 });
+    }
 
-    // Group/split orders: never settle on the client's word. Verify every
-    // share succeeded at the correct amount via Stripe, then settle the parent
-    // order only when all shares are confirmed. Legacy group orders (no shares)
-    // are NOT retroactively marked paid without payment evidence. The webhook's
-    // per-share handler settles independently; both paths rely on
-    // pushOrderToSquareAndKitchen's per-action dedupe so a race never
-    // double-pushes or double-notifies.
+    // A group order has no parent intent; verify every stored share directly
+    // with Stripe before settling it.
     if (order.stripe_session_id === 'GROUP') {
       const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
       const result = await verifyAndSettleGroupOrder(base44, stripe, order.id);
@@ -57,22 +53,50 @@ export default async function(req) {
       return Response.json({ ok: true, order_number: order.order_number, group: true });
     }
 
-    // Mark paid + confirmed if the webhook hasn't already.
-    if (order.payment_status !== 'paid' || order.status === 'pending') {
-      await base44.asServiceRole.entities.Order.update(order.id, {
-        payment_status: 'paid',
-        status: 'confirmed',
-      });
-      console.log(`Order ${order.order_number} confirmed via client fallback`);
+    if (order.payment_provider === 'square') {
+      if (!order.square_checkout_order_id) {
+        return Response.json({ error: 'Square payment details are unavailable for this order.' }, { status: 409 });
+      }
+      const settled = await settleSquarePhonePayment(base44, order, null, { forceVerify: true });
+      if (settled.payment_status !== 'paid') {
+        return Response.json({ error: 'Square has not confirmed payment for this order.' }, { status: 409 });
+      }
+      return Response.json({ ok: true, order_number: order.order_number });
     }
 
-    // Always call pushOrderToSquareAndKitchen — per-action dedupe inside
-    // handles the Square push (skips if square_order_id already set) and the
-    // emails (independent atomic claims via staff_alert_sent_at /
-    // confirmation_email_sent_at). This ensures emails fire exactly once even
-    // if the webhook already pushed to Square but failed to send emails.
-    await pushOrderToSquareAndKitchen(base44, { ...order, payment_status: 'paid', status: 'confirmed' });
+    const reference = String(order.stripe_session_id || '');
+    if (!reference || (paymentReference && paymentReference !== reference)) {
+      return Response.json({ error: 'Payment reference does not match this order.' }, { status: 400 });
+    }
 
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+    let paymentVerified = false;
+    if (reference.startsWith('pi_')) {
+      const intent = await stripe.paymentIntents.retrieve(reference);
+      paymentVerified =
+        intent.status === 'succeeded' &&
+        intent.currency === 'usd' &&
+        Number(intent.amount_received) === Math.round(Number(order.total) * 100);
+    } else if (reference.startsWith('cs_')) {
+      const session = await stripe.checkout.sessions.retrieve(reference);
+      paymentVerified =
+        session.payment_status === 'paid' &&
+        session.currency === 'usd' &&
+        Number(session.amount_total) === Math.round(Number(order.total) * 100);
+    }
+    if (!paymentVerified) {
+      return Response.json({ error: 'Stripe has not confirmed the full payment for this order.' }, { status: 409 });
+    }
+
+    const updates = {
+      payment_status: 'paid',
+      ...(order.status === 'pending' ? { status: 'confirmed' } : {}),
+    };
+    if (order.payment_status !== 'paid' || order.status === 'pending') {
+      await base44.asServiceRole.entities.Order.update(order.id, updates);
+      console.log(`Order ${order.order_number} confirmed after processor verification`);
+    }
+    await pushOrderToSquareAndKitchen(base44, { ...order, ...updates });
     return Response.json({ ok: true, order_number: order.order_number });
   } catch (error) {
     console.error('confirmOnlinePayment error:', error.message);

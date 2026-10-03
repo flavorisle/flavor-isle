@@ -54,11 +54,11 @@ export default function WalletPayButton({ clientSecret, total, label, onSuccess,
         ev.complete('success');
 
         if (paymentIntent.status === 'succeeded') {
-          cbRef.current.onSuccess();
+          cbRef.current.onSuccess(paymentIntent.id);
         } else if (paymentIntent.status === 'requires_action') {
           const { error: err2, paymentIntent: pi2 } = await stripe.confirmCardPayment(clientSecret);
           if (err2) cbRef.current.onError(err2.message);
-          else if (pi2 && pi2.status === 'succeeded') cbRef.current.onSuccess();
+          else if (pi2 && pi2.status === 'succeeded') cbRef.current.onSuccess(pi2.id);
           else cbRef.current.onError('Payment could not be completed.');
         } else {
           cbRef.current.onError('Payment could not be completed.');

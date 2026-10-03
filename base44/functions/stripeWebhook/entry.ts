@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     // amount verification), then settle the parent order only when ALL shares
     // succeeded at the correct amounts. No-op for single-order intents.
     try {
-      const shareUpdate = await updateGroupShareStatus(base44, pi.id, 'succeeded', pi.amount_received ?? pi.amount ?? null);
+      const shareUpdate = await updateGroupShareStatus(base44, pi.id, 'succeeded', pi.amount_received ?? pi.amount ?? null, pi.currency);
       if (shareUpdate.found) {
         await settleGroupOrderIfComplete(base44, shareUpdate.share.order_id);
       }

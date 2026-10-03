@@ -37,6 +37,7 @@ const byNewest = (a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).g
 // confirmOnlinePayment); a declined card is not retryable from here.
 const orderItem = (o, reason, retryable = false) => ({
   id: o.id,
+  order_id: o.id,
   order_number: o.order_number,
   customer_name: o.customer_name,
   total: o.total,
@@ -47,6 +48,7 @@ const orderItem = (o, reason, retryable = false) => ({
 
 const logItem = (l) => ({
   id: l.id,
+  order_id: l.order_id,
   order_number: l.order_number,
   customer_name: l.customer_name,
   total: l.total,
@@ -59,7 +61,7 @@ const logItem = (l) => ({
 const dedupeByOrder = (items) => {
   const seen = new Set();
   return items.filter((i) => {
-    const key = i.order_number || i.id;
+    const key = i.order_id || i.id;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -179,7 +181,7 @@ export function analyzeOrderHealth({ orders = [], logs = [], now = Date.now() })
   // Headline count: distinct orders needing attention — an order that failed a
   // payment and a push is still one order.
   const attention = new Set();
-  alerts.forEach((a) => a.items.forEach((i) => attention.add(i.order_number || i.id)));
+  alerts.forEach((a) => a.items.forEach((i) => attention.add(i.order_id || i.id)));
 
   const newest = alerts
     .flatMap((a) => a.items)

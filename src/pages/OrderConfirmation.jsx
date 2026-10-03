@@ -17,6 +17,7 @@ export default function OrderConfirmation() {
   const params = new URLSearchParams(location.search);
   const sessionId = params.get('session_id');
   const orderNumber = params.get('order_number');
+  const orderId = params.get('order_id');
   const readyFor = params.get('ready_for');
   const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }) : null;
   const [confetti, setConfetti] = useState(false);
@@ -30,16 +31,18 @@ export default function OrderConfirmation() {
   const [kitchenStatus, setKitchenStatus] = useState('sending');
 
   useEffect(() => {
-    if (!orderNumber) { setKitchenStatus('unknown'); return; }
+    if (!orderId && !orderNumber) { setKitchenStatus('unknown'); return; }
     let cancelled = false;
     let attempts = 0;
     const check = async () => {
       while (!cancelled && attempts < 6) {
         attempts++;
         try {
-          const orders = await base44.entities.Order.filter({ order_number: String(orderNumber) });
-          const order = orders?.[0];
-          if (order?.square_order_id) { if (!cancelled) setKitchenStatus('sent'); return; }
+          let order = null;
+          if (orderId) order = await base44.entities.Order.get(String(orderId));
+          const orders = order ? null : await base44.entities.Order.filter({ order_number: String(orderNumber) });
+          const matchedOrder = order || (orders?.length === 1 ? orders[0] : null);
+          if (matchedOrder?.square_order_id) { if (!cancelled) setKitchenStatus('sent'); return; }
         } catch {}
         if (attempts < 6) await new Promise(r => setTimeout(r, 3000));
       }
@@ -47,7 +50,7 @@ export default function OrderConfirmation() {
     };
     check();
     return () => { cancelled = true; };
-  }, [orderNumber]);
+  }, [orderId, orderNumber]);
 
   useEffect(() => {
     setConfetti(true);

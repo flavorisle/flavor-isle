@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { createOrderNumber } from '../../shared/orderNumber.ts';
 
 // Group / split payment:
 // Creates ONE order record for the whole group (so the kitchen sees a single
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
 
-    const orderNumber = Date.now().toString().slice(-6);
+    const orderNumber = await createOrderNumber(base44);
 
     // ── Persist the shared Order BEFORE creating any payable intent ──
     // A failed Order.create now returns an error (no intents created) so there
@@ -213,6 +214,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       orderNumber,
+      orderId: groupOrderId,
       publishableKey,
       intents,
       smsConsentStored,

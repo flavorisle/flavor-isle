@@ -75,7 +75,7 @@ function PersonPayment({ intent, onComplete }) {
   );
 }
 
-export default function SplitPayment({ intents, publishableKey, orderNumber, onSuccess, onError }) {
+export default function SplitPayment({ intents, publishableKey, orderNumber, orderId, onSuccess, onError }) {
   const [stripePromise] = useState(() => loadStripe(publishableKey));
   const [paidIntents, setPaidIntents] = useState([]);
 
@@ -83,7 +83,7 @@ export default function SplitPayment({ intents, publishableKey, orderNumber, onS
     setPaidIntents(prev => {
       const next = prev.find(i => i.intentId === intent.intentId) ? prev : [...prev, intent];
       if (next.length === intents.length) {
-        onSuccess(orderNumber);
+        onSuccess(orderNumber, null, orderId);
       }
       return next;
     });

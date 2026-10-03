@@ -63,7 +63,7 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
         // Create the intent now (using wallet contact details) and confirm with
         // the wallet's payment method.
         const data = await cbRef.current.createIntent(walletCustomer);
-        const { clientSecret, orderNumber } = data;
+        const { clientSecret, orderNumber, orderId } = data;
 
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
@@ -79,7 +79,7 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
 
         if (paymentIntent.status === 'succeeded') {
           ev.complete('success');
-          cbRef.current.onSuccess(orderNumber);
+          cbRef.current.onSuccess(orderNumber, paymentIntent.id, orderId);
         } else if (paymentIntent.status === 'requires_action') {
           const { error: err2, paymentIntent: pi2 } = await stripe.confirmCardPayment(clientSecret);
           if (err2) {
@@ -87,7 +87,7 @@ export default function ExpressCheckout({ total, label, createIntent, onSuccess,
             cbRef.current.onError(err2.message);
           } else if (pi2 && pi2.status === 'succeeded') {
             ev.complete('success');
-            cbRef.current.onSuccess(orderNumber);
+            cbRef.current.onSuccess(orderNumber, pi2.id, orderId);
           } else {
             ev.complete('fail');
             cbRef.current.onError('Payment could not be completed.');

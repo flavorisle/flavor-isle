@@ -269,9 +269,9 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     hop: hopNumber,
   });
 
-  const endCall = async (failure, hangUp = false) => {
+  const endCall = async (failure, hangUp = false, pendingTasks = chain) => {
     detached = true;
-    await chain.catch(() => {});
+    await pendingTasks.catch(() => {});
     await finalize(failure);
     sideband?.close();
     if (hangUp) await hangupLiveSession(sessionId, apiKey).catch(() => {});
@@ -280,16 +280,17 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
 
   const startHopTimer = () => {
     hopTimer = setTimeout(() => {
+      const pendingTasks = chain;
       queue(async () => {
         if (finalized || handedOff) return;
         // Let an in-flight action finish, so its result is actually spoken
         // before the call changes hands.
-        await chain.catch(() => {});
+        await pendingTasks.catch(() => {});
         if (finalized || handedOff) return;
 
         if (Date.now() - startedAt > MAX_CALL_MS) {
           if (sideband) appendSpeakableNote(sideband, 'I have to let you go here — sorry about that. Give the counter a call and they will take care of you.');
-          await endCall('Call ran past the maximum tracked length; whatever was captured was saved.', true);
+          await endCall('Call ran past the maximum tracked length; whatever was captured was saved.', true, pendingTasks);
           return;
         }
 
@@ -317,7 +318,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
         if (sideband && !finalized) {
           appendSpeakableNote(sideband, "My bad fam, I'm losing the line here. Give the counter a call and they will take care of you.");
         }
-        await endCall('The call could not be handed to a fresh worker before this one was shut down.', true);
+        await endCall('The call could not be handed to a fresh worker before this one was shut down.', true, pendingTasks);
       });
     }, HOP_MS);
   };

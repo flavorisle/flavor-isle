@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { createOrderNumber } from '../../shared/orderNumber.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
     const orderTypeLabel = orderType === 'pickup' ? 'Pickup' : orderType === 'delivery' ? 'Delivery' : 'Dine-In';
 
     // Generate order number
-    const orderNumber = Date.now().toString().slice(-6);
+    const orderNumber = await createOrderNumber(base44);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
