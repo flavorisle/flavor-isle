@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { isExcludedFromMarketing } from '@/lib/menuMarketing';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function DailySpecialsSection() {
   const [specials, setSpecials] = useState([]);
@@ -16,7 +18,10 @@ export default function DailySpecialsSection() {
     const today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()];
     const run = async () => {
       const all = await base44.entities.DailySpecial.filter({ is_active: true });
-      return (all || []).filter((s) => s.day_of_week === today || s.day_of_week === 'Daily');
+      return (all || []).filter((s) =>
+        (s.day_of_week === today || s.day_of_week === 'Daily') &&
+        !isExcludedFromMarketing(s.menu_item_name)
+      );
     };
     try {
       setSpecials(await run());
@@ -62,7 +67,7 @@ export default function DailySpecialsSection() {
             {/* Image */}
             <div className="relative h-64 md:h-auto min-h-64 bg-muted">
               {special.menu_item_image ?
-              <img src={special.menu_item_image} alt={special.menu_item_name} className="w-full h-full object-cover" /> :
+              <img src={optimizedImageUrl(special.menu_item_image, 500, 500)} alt={special.menu_item_name} width="500" height="500" loading="lazy" decoding="async" className="w-full h-full object-cover" /> :
 
               <div className="w-full h-full flex items-center justify-center text-6xl">🍔</div>
               }

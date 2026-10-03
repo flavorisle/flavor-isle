@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
-import { GOOGLE_REVIEW_URL } from '../../shared/googleReviewUrl.ts';
 
 // Backend function endpoints are NOT reachable through the custom domain.
 const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
@@ -92,7 +91,6 @@ export default async function (req: Request) {
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${reviewLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Leave a Google review →</a>
       </div>
-      <p style="color:#999;font-size:13px;margin:18px 0 0;line-height:1.5;">P.S. If something wasn't right with your order, don't post it — just reply to this email and we'll make it right.</p>
       <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:smashie@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
     `;
 

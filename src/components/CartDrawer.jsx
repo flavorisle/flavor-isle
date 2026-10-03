@@ -144,8 +144,8 @@ export default function CartDrawer() {
             <>
             {cartItems.map(item => (
               <div key={item.id} className="card-diner p-3 flex gap-3">
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
+                {(item.image_url_opt || item.image_url) && (
+                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>

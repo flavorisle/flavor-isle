@@ -33,10 +33,14 @@ export default function HomeOrderOptions() {
           ))}
           <a href="tel:+12705634618" className="min-h-12 inline-flex items-center gap-2 border-2 border-white px-5 py-3 rounded-full font-heading"><Phone size={16} aria-hidden="true" />Call Us</a>
         </div>
-        <div className="mt-8 grid grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)_minmax(0,1fr)] items-stretch gap-6 lg:gap-8">
-          <div className="order-2 lg:order-1"><HomeStats side="left" /></div>
-          <div className="col-span-2 order-1 lg:col-span-1 lg:order-2"><PopularTimesCard embedded /></div>
-          <div className="order-3"><HomeStats side="right" /></div>
+        <div className="mt-8 rounded-2xl bg-[#1A3A5C] px-4 py-5 text-white">
+          <div className="max-w-md mx-auto">
+            <PopularTimesCard embedded />
+          </div>
+          <div className="mt-5 flex items-center justify-start gap-5 overflow-x-auto whitespace-nowrap sm:justify-around">
+            <HomeStats side="left" />
+            <HomeStats side="right" />
+          </div>
         </div>
       </div>
     </section>

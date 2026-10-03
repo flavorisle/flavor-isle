@@ -180,6 +180,8 @@ export default async function (req) {
   for (const [sqId, qty] of Object.entries(parentCounts)) {
     const name = (names[sqId] || visibleBySquareId.get(sqId)?.name || '').trim();
     const normalized = name.toLowerCase();
+    if (/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(name)) continue;
+    if (/\bmalts?\b|\bsundaes?\b/i.test(name)) continue;
     if (normalized.includes('add deluxe')) continue;
     if (normalized.includes('milkshake')) { shakeQty += qty; continue; }
     if (drinkNames.has(normalized)) { drinkQty += qty; continue; }

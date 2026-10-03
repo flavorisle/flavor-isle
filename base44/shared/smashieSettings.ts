@@ -11,9 +11,8 @@ const DEFAULTS = {
   realtime_sip_enabled: false,
   sip_transfer_target: "",
   personality_notes: "",
-  // Issue #37 toggles — all three ship OFF and are only ever turned on by the
-  // owner from Admin → Communications.
-  googleReviewSmsEnabled: false,
+  // The approved review request is active unless paused by the owner.
+  googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
   day45NudgeEmailEnabled: false,
 };

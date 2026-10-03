@@ -86,7 +86,7 @@ function trackedLink(path, linkId, orderId) {
 
 function heroCardHtml(item, orderId) {
   const link = trackedLink('/menu', 'recommendation_item', orderId);
-  const img = item.image_url || '';
+  const img = item.image_url_opt || item.image_url || '';
   const price = typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '';
   const copy = itemCopy(item);
   return `

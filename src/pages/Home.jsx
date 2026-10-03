@@ -17,6 +17,9 @@ import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
 import HomeStructuredData from '@/components/schema/HomeStructuredData';
+import MenuStructuredData from '@/components/schema/MenuStructuredData';
+import { getMenuSetting } from '@/lib/menuSettings';
+import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 
 import SocialProofStrip from '@/components/SocialProofStrip';
@@ -72,6 +75,8 @@ export default function Home() {
   const businessHours = useBusinessHours();
   const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
   const [menuItems, setMenuItems] = useState([]);
+  const [menuSchemaRows, setMenuSchemaRows] = useState([]);
+  const [menuRenames, setMenuRenames] = useState({});
   const [shakeRank, setShakeRank] = useState(null);
 
   // Load visible menu items so the Fan Favorites rail can show the real
@@ -102,6 +107,31 @@ export default function Home() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      base44.entities.MenuItem.list(),
+      getMenuSetting().catch(() => ({})),
+    ]).then(([allItems, setting]) => {
+      if (!active) return;
+      const hidden = new Set(setting?.hidden_categories || []);
+      const grouped = new Map();
+      for (const item of (allItems || []).filter((entry) => !entry.is_hidden)) {
+        const key = itemCategoryKey(item);
+        if (hidden.has(key)) continue;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(item);
+      }
+      setMenuSchemaRows(sortCategories([...grouped.keys()], setting?.category_sort_order || [])
+        .map((key) => ({
+          key,
+          items: sortItemsInCategory(grouped.get(key), setting?.category_item_order?.[key] || []),
+        })));
+      setMenuRenames(setting?.category_renames || {});
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const handleOrder = (type) => {
     setOrderType(type);
     navigate('/menu');
@@ -119,6 +149,7 @@ export default function Home() {
         ogImageAlt="Flavor Isle burgers & shakes storefront in Smiths Grove, KY"
       />
       <HomeStructuredData hours={businessHours} />
+      <MenuStructuredData rows={menuSchemaRows} renames={menuRenames} />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
@@ -262,7 +293,7 @@ export default function Home() {
                 <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
                 <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
               </div>
-              <Link to="/contact#faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+              <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
                 View FAQs <ArrowRight size={16} />
               </Link>
             </div>

@@ -43,7 +43,7 @@ export default function Navbar() {
             <img src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png', 200, 200, 'fit')} alt="Flavor Isle logo" width="200" height="200" className="w-12 h-12 object-contain flex-shrink-0 rounded-xl" />
             <div className="min-w-0 whitespace-nowrap">
               <div className="font-heading text-xl text-obsidian-roast leading-none">FLAVOR ISLE</div>
-              <div className="text-xs text-patina-mint font-body tracking-widest">SMITHS GROVE, KY</div>
+              <div className="text-xs text-patina-mint font-body tracking-widest">Flavor Isle — Smiths Grove, KY</div>
             </div>
           </Link>
 

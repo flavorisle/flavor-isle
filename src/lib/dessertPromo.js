@@ -5,11 +5,14 @@
 
 export function isMaltOrSundae(item) {
   const name = (item?.name || '').toLowerCase();
-  return /\bmalt\b/.test(name) || /\bsundae\b/.test(name);
+  return /\bmalts?\b/.test(name) || /\bsundaes?\b/.test(name);
 }
 
 export function excludeMaltSundae(items) {
-  return (items || []).filter((m) => !isMaltOrSundae(m));
+  return (items || []).filter((m) =>
+    !isMaltOrSundae(m) &&
+    !/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(m?.name || '')
+  );
 }
 
 export function fanFavoriteSort(a, b) {

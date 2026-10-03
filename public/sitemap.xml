@@ -10,6 +10,7 @@
   <url><loc>https://flavor-isle.com/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://flavor-isle.com/contact</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://flavor-isle.com/reviews</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://flavor-isle.com/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://flavor-isle.com/rewards</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://flavor-isle.com/newsletter</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://flavor-isle.com/community-news</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>

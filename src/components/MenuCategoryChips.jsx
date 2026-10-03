@@ -117,7 +117,7 @@ export default function MenuCategoryChips({ rows, renames }) {
       className="sticky z-30 bg-vanilla-malt/90 backdrop-blur border-b border-border"
       style={{ top: `${headerHeight}px` }}
     >
-      <div ref={chipRowRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex gap-2.5 overflow-x-auto scrollbar-hide">
+      <div ref={chipRowRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex gap-4 overflow-x-auto scrollbar-hide">
         {rows.map((row) => {
           const label = row.isShakeBanner ? 'Whirl & Twirl' : categoryLabel(row.key, renames);
           const icon = row.isShakeBanner ? '🥤' : iconFor(row.key);

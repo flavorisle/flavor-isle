@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
 
 const SQUARE_VERSION = '2026-09-16';
 
@@ -200,15 +201,31 @@ Deno.serve(async (req) => {
 
     for (const item of menuItems) {
       const existingItem = existingBySquareId[item.square_item_id];
+      let image_url_opt = existingItem?.image_url_opt || null;
+      if (!existingItem || existingItem.image_url !== item.image_url) {
+        image_url_opt = null;
+        if (item.image_url) {
+          try {
+            image_url_opt = await optimizeItemImage(
+              base44,
+              item.image_url,
+              `menu-item-${item.square_item_id || item.name}`,
+            );
+          } catch (error) {
+            console.error(`Square catalog image optimization failed for ${item.name}:`, error.message);
+          }
+        }
+      }
+      const itemWithOptimizedImage = { ...item, image_url_opt };
       if (existingItem) {
         toUpdate.push({
           id: existingItem.id,
-          ...item,
+          ...itemWithOptimizedImage,
           is_hidden: existingItem.is_hidden ?? false,
           is_featured: existingItem.is_featured ?? false,
         });
       } else {
-        toCreate.push(item);
+        toCreate.push(itemWithOptimizedImage);
       }
     }
 

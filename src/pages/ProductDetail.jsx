@@ -19,6 +19,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { getIceContext } from '@/components/classicDrinkIce';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -96,6 +97,7 @@ export default function ProductDetail() {
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
   const soldOut = item?.is_available === false;
+  const imageUrl = item?.image_url_opt || item?.image_url;
   const isHappyHour = item ? isHappyHourItem(item, menuSetting) : false;
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const displayPrice = isHappyHour && happyHourPrice !== null ? happyHourPrice : item?.price;
@@ -121,7 +123,7 @@ export default function ProductDetail() {
       } else {
         await base44.entities.Favorite.create({
           user_id: user.id, menu_item_id: item.id, menu_item_name: item.name,
-          menu_item_price: item.price, menu_item_image: item.image_url, menu_item_category: item.category,
+          menu_item_price: item.price, menu_item_image: imageUrl, menu_item_category: item.category,
         });
       }
     } catch (err) {
@@ -179,7 +181,7 @@ export default function ProductDetail() {
     for (let i = 0; i < quantity; i++) {
       addItem({
         name: combo.name,
-        image_url: item.image_url,
+        image_url: imageUrl,
         category: item.category,
         price: comboPreview.price,
         alwaysUnique: true,
@@ -312,8 +314,8 @@ export default function ProductDetail() {
 
               {/* Large product image */}
               <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-float">
-                {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
+                {imageUrl ? (
+                  <img src={optimizedImageUrl(imageUrl, 800, 800)} alt={item.name} width="800" height="800" loading="lazy" decoding="async" className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-8xl bg-gradient-to-br from-amber-50 to-orange-100">
                     {PLACEHOLDER_EMOJI[item.category] || '⭐'}

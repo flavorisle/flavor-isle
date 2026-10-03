@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Star, ArrowRight } from 'lucide-react';
 import FavoritePhotoCard from './FavoritePhotoCard';
 import ShakeFavoriteTile from '@/components/ShakeFavoriteTile';
+import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 
 // Horizontal rail of the top 10 best-sellers (online + in-store).
 // Items are pre-stamped with is_fan_favorite + fan_favorite_rank by the
 // refreshFanFavorites backend function / workflow.
 export default function FanFavoritesSection({ items, shakeRank }) {
   const favorites = items
-    .filter((i) => i.is_fan_favorite === true && !i.is_hidden)
+    .filter((i) => i.is_fan_favorite === true && !i.is_hidden && !isExcludedFromMarketing(i))
     .map((item) => ({ ...item, rank: item.fan_favorite_rank }))
     .concat(shakeRank ? [{ id: 'shake-isle', rank: shakeRank, shake: true }] : [])
     .sort((a, b) => a.rank - b.rank)
