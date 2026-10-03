@@ -24,7 +24,7 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
     setSubmitting(true);
     try {
       await base44.functions.invoke('logCurbsideArrival', {
-        order_number: order.order_number,
+        order_id: order.id,
         zone: zoneLabel || '',
         car_color: carColor.trim(),
         car_make: carMake.trim(),

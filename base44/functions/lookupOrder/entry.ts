@@ -14,10 +14,13 @@ export default async function(req) {
     }
 
     const orders = await base44.asServiceRole.entities.Order.filter({ order_number: q });
-    const order = orders?.[0];
-    if (!order) {
+    if (!orders?.length) {
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
+    if (orders.length !== 1) {
+      return Response.json({ error: 'That order number is ambiguous. Please call the store for help.' }, { status: 409 });
+    }
+    const order = orders[0];
 
     // Fetch only this order's live fulfillment, rather than making the guest
     // wait for the scheduled Square sync. No customer or payment data is exposed.

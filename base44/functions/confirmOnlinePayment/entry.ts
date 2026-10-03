@@ -58,7 +58,7 @@ export default async function(req) {
         return Response.json({ error: 'Square payment details are unavailable for this order.' }, { status: 409 });
       }
       const settled = await settleSquarePhonePayment(base44, order, null, { forceVerify: true });
-      if (settled.payment_status !== 'paid') {
+      if (settled.payment_status !== 'paid' || settled.square_order_id !== order.square_checkout_order_id) {
         return Response.json({ error: 'Square has not confirmed payment for this order.' }, { status: 409 });
       }
       return Response.json({ ok: true, order_number: order.order_number });

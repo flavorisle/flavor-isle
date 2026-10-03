@@ -105,7 +105,7 @@ export default function OrderLookup() {
               type="text"
               value={orderNum}
               onChange={(e) => setOrderNum(e.target.value)}
-              placeholder="123456"
+              placeholder="12345678"
               className="w-full pl-10 pr-4 py-3.5 border border-border rounded-2xl bg-white font-body text-obsidian-roast focus:outline-none focus:border-midnight-cherry focus:ring-2 focus:ring-midnight-cherry/20 transition-all"
             />
           </div>

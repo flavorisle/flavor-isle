@@ -9,15 +9,21 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { order_number, zone, car_color, car_make, car_model, notes } = body;
+    const { order_id, order_number, zone, car_color, car_make, car_model, notes } = body;
 
-    if (!order_number) {
-      return Response.json({ error: 'Missing order_number' }, { status: 400 });
+    if (!order_id && !order_number) {
+      return Response.json({ error: 'Missing order_id' }, { status: 400 });
     }
 
-    // Validate the order actually exists before notifying anyone.
-    const orders = await base44.asServiceRole.entities.Order.filter({ order_number: String(order_number) });
-    const order = orders?.[0];
+    const orders = order_id
+      ? null
+      : await base44.asServiceRole.entities.Order.filter({ order_number: String(order_number) });
+    if (orders && orders.length > 1) {
+      return Response.json({ error: 'That order number is ambiguous. Please call the store for help.' }, { status: 409 });
+    }
+    const order = order_id
+      ? await base44.asServiceRole.entities.Order.get(String(order_id))
+      : orders?.[0];
     if (!order) {
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
