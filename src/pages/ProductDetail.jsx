@@ -10,6 +10,7 @@ import ProductModifierPanel from '@/components/ProductModifierPanel';
 import { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
 import ComboPicker from '@/components/ComboPicker';
 import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboConfig';
+import ProductSuggestions from '@/components/ProductSuggestions';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import { findMenuItem, productSlug, productPath } from '@/lib/productSlug';
@@ -417,6 +418,8 @@ export default function ProductDetail() {
                   <p className="font-body">No customizations available for this item.</p>
                 </div>
               )}
+
+              {!soldOut && <ProductSuggestions item={item} />}
 
               {/* Reviews */}
               <div className="pt-6 border-t border-border">
