@@ -552,3 +552,22 @@ export async function grantLoyaltyPointsByEmail({
   });
   return { balance: updated?.balance ?? (account.balance || 0) + points, accountId: account.id };
 }
+
+export async function grantLoyaltyPointsByPhone({
+  phone,
+  points,
+  reason,
+  idempotencyKey,
+}: {
+  phone: string;
+  points: number;
+  reason: string;
+  idempotencyKey: string;
+}): Promise<{ balance: number; accountId: string } | null> {
+  const e164 = toE164Phone(phone);
+  if (!e164) return null;
+  const account = await searchLoyaltyAccountByPhone(e164);
+  if (!account) return null;
+  const updated = await adjustLoyaltyPoints({ accountId: account.id, points, reason, idempotencyKey });
+  return { balance: updated?.balance ?? (account.balance || 0) + points, accountId: account.id };
+}

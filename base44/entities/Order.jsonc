@@ -205,6 +205,18 @@
       "default": false,
       "description": "Created through web checkout after Star Rewards v2; excludes phone, POS and historical orders from direct-order bonuses."
     },
+    "loyalty_second_order_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "loyalty_streak_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "loyalty_welcome_back_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "arrival_details": {
       "type": "object",
       "properties": {

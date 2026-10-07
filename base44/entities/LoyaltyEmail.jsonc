@@ -28,7 +28,7 @@
     "points_granted": {
       "type": "number",
       "default": 0,
-      "description": "How many loyalty points were auto-granted with this email (150 for win-back and birthday, 0 for digest and the Day 14 / Day 45 follow-ups)"
+      "description": "How many loyalty points were auto-granted with this email (100 for birthday, 0 for win-back and digest and the Day 14 / Day 45 follow-ups)"
     },
     "sent_at": {
       "type": "string",

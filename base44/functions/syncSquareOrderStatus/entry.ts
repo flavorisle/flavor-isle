@@ -6,6 +6,7 @@ import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
+import { grantCompletedWebOrderBonuses } from '../../shared/webOrderLoyaltyBonuses.ts';
 
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
@@ -180,6 +181,13 @@ export default async function(req) {
 
       // A staff update must not be rolled backwards by stale Square state.
       newStatus = advanceOrderStatus(order.status, newStatus);
+      if (newStatus === 'completed' && order.payment_status === 'paid') {
+        try {
+          await grantCompletedWebOrderBonuses(base44, { ...order, status: newStatus }, recentOrders);
+        } catch (bonusErr) {
+          console.error(`Web Star Rewards bonus failed for order ${order.order_number}:`, bonusErr.message);
+        }
+      }
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
