@@ -92,7 +92,7 @@ export default function Faq() {
       <Navbar />
       <CartDrawer />
 
-      <CinematicHero heading="Questions, answered." subtitle="Directions, hours, ordering, parking and the rest of it — all in one place." />
+      <CinematicHero heading="Questions, answered." subtitle="Directions, hours, ordering, parking and the rest of it — all in one place." photo={null} />
 
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <div className="card-diner p-5 sm:p-7">

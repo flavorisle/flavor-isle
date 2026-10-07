@@ -8,8 +8,6 @@ import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import CinematicHero from '@/components/cinematic/CinematicHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 import { issue23Photos } from '@/lib/issue23Photos';
 import { optimizedImageUrl } from '@/lib/utils';
 
@@ -99,15 +97,21 @@ export default function I65Exit38() {
       />
       <Navbar />
 
-      <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." />
+      <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." photo={null} />
       <figure className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <img src={optimizedImageUrl(issue23Photos.parking, 800, 600, 'fit')} alt="Parking map for Flavor Isle at I-65 Exit 38" width="800" height="600" loading="lazy" decoding="async" className="w-full rounded-xl" />
         <figcaption className="mt-2 text-sm text-muted-foreground">Where to park when you visit Flavor Isle</figcaption>
       </figure>
-      <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
-      <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
-      <PhotoChapter photo={islePhotos.sketch} heading="A Smiths Grove original." />
-      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into at the Isle." />
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-4" aria-labelledby="traveler-walkthrough-heading">
+        <div className="card-diner p-6 sm:p-8">
+          <h2 id="traveler-walkthrough-heading" className="font-heading text-2xl text-obsidian-roast">From the Ramp to the Counter</h2>
+          <ol className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+            <li><strong className="text-obsidian-roast">1. Take Exit 38.</strong> Follow the ramp toward Smiths Grove and N Main Street.</li>
+            <li><strong className="text-obsidian-roast">2. Park nearby.</strong> Use the parking map above to find visitor parking before heading in.</li>
+            <li><strong className="text-obsidian-roast">3. Come to the counter.</strong> Order a small-town favorite instead of another interstate chain.</li>
+          </ol>
+        </div>
+      </section>
 
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
@@ -160,7 +164,7 @@ export default function I65Exit38() {
           <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle" width="200" height="200" loading="lazy" decoding="async" className="w-16 h-16 object-contain mx-auto mb-4 rounded-xl" />
           <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">A Roadside Favorite Since 1964</h2>
           <p className="text-muted-foreground mt-4 leading-relaxed">
-            Flavor Isle has been feeding I-65 travelers and Smiths Grove locals for three generations. What started as a small roadside burger stand is still the same family recipe today — hand-patted burgers, hand-cut fries, and thick milkshakes made to order. No freezers, no shortcuts. Just a quick, friendly stop worth pulling off for.
+            Flavor Isle has been feeding I-65 travelers and Smiths Grove locals for three generations. What started as a small roadside burger stand is still the same family recipe today — hand-patted burgers, hand-cut fries, and thick milkshakes made to order. No freezers, no shortcuts. Just a quick, friendly small-town stop worth pulling off for on the way to Mammoth Cave or the Corvette Museum.
           </p>
         </div>
       </section>

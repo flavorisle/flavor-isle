@@ -23,6 +23,9 @@ export default function AboutStory() {
             <p>
               The sign has been repainted, the grill has gotten busier, and Smashie showed up to answer the phones. But the promise hasn't moved an inch: fresh ingredients, made to order, served to neighbors like family.
             </p>
+            <p>
+              The memories live on the history wall, alongside the 2025 Best Restaurant in Smiths Grove recognition and the community traditions behind Flavor Isle.
+            </p>
           </div>
         </div>
         <div className="order-1 md:order-2">

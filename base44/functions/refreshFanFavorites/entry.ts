@@ -181,7 +181,6 @@ export default async function (req) {
     const name = (names[sqId] || visibleBySquareId.get(sqId)?.name || '').trim();
     const normalized = name.toLowerCase();
     if (/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(name)) continue;
-    if (/\bmalts?\b|\bsundaes?\b/i.test(name)) continue;
     if (normalized.includes('add deluxe')) continue;
     if (normalized.includes('milkshake')) { shakeQty += qty; continue; }
     if (drinkNames.has(normalized)) { drinkQty += qty; continue; }
@@ -198,6 +197,23 @@ export default async function (req) {
   }));
   const dryRun = (await req.clone().json().catch(() => ({}))).dryRun === true;
   if (dryRun) return Response.json({ success: true, preview: true, ordersPulled, completedPaidOrders, ranked });
+
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+  const previewRows = ranked.map((item) =>
+    `<li>#${item.rank} ${escapeHtml(item.name)} — ${item.qty} sold</li>`
+  ).join('');
+  try {
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: 'wesleyrbooker1@gmail.com',
+      subject: 'Projected Flavor Isle Fan Favorites ranking',
+      body: `<p>Projected top 10 from the last ${LOOKBACK_DAYS} days, computed ${escapeHtml(new Date().toISOString())}:</p><ol>${previewRows}</ol>`,
+    });
+  } catch (error) {
+    console.error('refreshFanFavorites: preview email failed; previous ranking retained:', error.message);
+    return Response.json({ error: 'Could not email projected ranking; previous ranking retained' }, { status: 502 });
+  }
 
   const newFavIds = new Set(rankedVisible.filter((r) => r.item).map((r) => r.item.id));
   const rankById = {};
