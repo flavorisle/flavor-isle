@@ -28,7 +28,7 @@ const SECTIONS = [
       },
       {
         heading: 'Payment',
-        text: 'Payment is processed securely through our payment partner, Square. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order.',
+        text: 'Payment is processed securely through our payment partners, Square and Stripe. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers. If you use group (split-the-bill) checkout, each participant authorizes only their own share.',
       },
       {
         heading: 'Order Times & Availability',
@@ -50,6 +50,10 @@ const SECTIONS = [
       {
         heading: 'Twilio',
         text: 'SMS and phone calls are delivered through Twilio. When you consent, Twilio processes your phone number and message content to deliver these communications on our behalf.',
+      },
+      {
+        heading: 'Email Newsletters',
+        text: 'If you subscribe to our email newsletter, your subscription starts when you confirm it through the link we send you. We may send occasional news, offers, and updates from Flavor Isle. You can unsubscribe at any time using the link in any newsletter email. Order confirmations and other emails about your active orders are transactional and are not affected by unsubscribing.',
       },
     ],
   },
