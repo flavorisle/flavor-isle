@@ -19,8 +19,8 @@ export default function CinematicHero({ heading = 'Two minutes off I-65. Zero re
   }, []);
   return (
     <section className="relative isolate min-h-[78svh] flex items-end overflow-hidden bg-patina-mint text-white">
-      <img ref={image} src={optimizedImageUrl(photo.url, 1600, 900)} alt={photo.alt} width="1600" height="900" fetchPriority="high" decoding="async"
-        className="absolute inset-0 w-full h-full object-cover motion-safe:scale-[1.08]" />
+      {photo && <img ref={image} src={optimizedImageUrl(photo.url, 1600, 900)} alt={photo.alt} width="1600" height="900" fetchPriority="high" decoding="async"
+        className="absolute inset-0 w-full h-full object-cover motion-safe:scale-[1.08]" />}
       <div className="absolute inset-0 bg-patina-mint/60" aria-hidden="true" />
       <div className="relative max-w-6xl mx-auto w-full px-5 sm:px-10 pb-16 pt-32">
         <p className="font-heading text-sm tracking-widest text-smashie-yellow uppercase">I-65 Exit 38 · Smiths Grove, Kentucky</p>

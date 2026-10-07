@@ -11,9 +11,6 @@ import AboutVisit from '@/components/about/AboutVisit';
 import AboutTraveler from '@/components/about/AboutTraveler';
 import AboutTastyThreads from '@/components/about/AboutTastyThreads';
 import AboutExplore from '@/components/about/AboutExplore';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
-
 export default function About() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -29,17 +26,6 @@ export default function About() {
       <CartDrawer />
       <AboutHero />
       <AboutStory />
-      <PhotoChapter photo={islePhotos.dining} heading="Every story starts around a table." />
-      <PhotoChapter photo={islePhotos.awards} heading="And some make it onto the wall." />
-      <PhotoChapter photo={islePhotos.colonel} heading="Then someone unexpected walks in." />
-      <PhotoChapter
-        photo={{
-          url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0f76418c9_IMG_0884.jpeg',
-          alt: 'Visitors dressed as Ghostbusters beside their themed car in front of Flavor Isle',
-          caption: 'Ghostbusters fans at Flavor Isle',
-        }}
-        heading="And sometimes the whole crew rolls up."
-      />
       <AboutValues />
       <AboutSmashie />
       <AboutTastyThreads />

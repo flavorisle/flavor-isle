@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, HelpCircle, Car } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -9,10 +9,9 @@ import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
 import CinematicHero from '@/components/cinematic/CinematicHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 import { optimizedImageUrl } from '@/lib/utils';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
+import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -22,7 +21,6 @@ import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 
-import SocialProofStrip from '@/components/SocialProofStrip';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
 import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -36,6 +34,7 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
+import { issue23Photos } from '@/lib/issue23Photos';
 
 
 const SPECIALS_TICKER = [
@@ -56,18 +55,6 @@ const FEATURES = [
 { icon: '🥤', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
 { icon: '🍗', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
-
-const HOME_DINING_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
-  alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
-  caption: 'Pull up a seat. Stay a while.',
-};
-
-const HOME_AWARDS_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cfc62ca68_IMG_1046.jpeg',
-  alt: 'Flavor Isle dining room wall with framed local history and awards',
-  caption: 'Best Restaurant in Smiths Grove 2025. Come check the wall yourself.',
-};
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -156,14 +143,32 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero cityLine />
-      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
-      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
-      <HomeOrderOptions />
-
-      <ExpressPickupStrip />
+      <CinematicHero cityLine photo={{
+        url: issue23Photos.hero,
+        alt: 'Flavor Isle storefront glowing at night',
+        caption: 'Flavor Isle after dark',
+      }} />
+      <GalleryPhotoStrip items={menuSchemaRows.flatMap((row) => row.items)} />
+      <section className="px-4 sm:px-6 py-8 bg-vanilla-malt" aria-labelledby="community-highlights-heading">
+        <div className="max-w-6xl mx-auto">
+          <h2 id="community-highlights-heading" className="font-heading text-2xl sm:text-3xl text-obsidian-roast mb-4">Part of the Community</h2>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {[
+              { url: issue23Photos.ecto, alt: 'Ghostbusters Ecto-1 visiting Flavor Isle', caption: 'Ecto-1 rolls into the Isle' },
+              { url: issue23Photos.corvette, alt: 'Corvettes gathered for a Flavor Isle show day', caption: 'Corvette show day' },
+              { url: issue23Photos.anniversary, alt: 'Neighbors celebrating Flavor Isle’s 50th anniversary', caption: '50 years of neighbors and memories' },
+            ].map((photo) => (
+              <figure key={photo.url} className="card-diner overflow-hidden">
+                <img src={optimizedImageUrl(photo.url, 700, 500)} alt={photo.alt} width="700" height="500" loading="lazy" decoding="async" className="w-full aspect-[4/3] object-cover" />
+                <figcaption className="px-3 py-2 text-sm text-muted-foreground">{photo.caption}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <MilkshakePromoBanner variant="strip" />
+      </div>
 
       {(menuItems.length > 0 || shakeRank) && (
         <section className="py-10 px-4 sm:px-6">
@@ -172,15 +177,15 @@ export default function Home() {
           </div>
         </section>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <MilkshakePromoBanner variant="strip" />
-      </div>
+      <ReviewSection />
+      <WhyFlavorIsle />
+      <HomeOrderOptions />
+
+      <ExpressPickupStrip />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
-      <ReviewSection />
-      <WhyFlavorIsle />
 
       <HeritageBadges />
 

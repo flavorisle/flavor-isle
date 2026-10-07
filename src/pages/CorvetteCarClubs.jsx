@@ -8,8 +8,6 @@ import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { optimizedImageUrl } from '@/lib/utils';
 import { hoursGroups } from '@/lib/businessHours';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 
@@ -44,7 +42,7 @@ export default function CorvetteCarClubs() {
             Nostalgic roadside burgers & shakes · Minutes from the Corvette Museum
           </p>
           <p className="font-body text-base text-white/80 mt-3 max-w-xl mx-auto">
-            Pull off I-65 Exit 38 and step back into 1964. Hand-patted burgers, hand-cut fries, and thick milkshakes — the kind of stop your car club will want to make a tradition.
+            Corvette clubs are welcome to pull off I-65 Exit 38 and step back into 1964. Hand-patted burgers, hand-cut fries, and thick milkshakes — the kind of stop your club will want to make a tradition.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-base font-heading flex items-center justify-center gap-2">
@@ -56,9 +54,6 @@ export default function CorvetteCarClubs() {
           </div>
         </div>
       </section>
-
-      <PhotoChapter photo={islePhotos.burgerTots} heading="Add Flavor Isle to your route." action="Order Now" />
-      <PhotoChapter photo={islePhotos.chicken} heading="A stop worth the drive." action="Get Directions" to="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" />
 
       {/* Group seating + scenic route */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
@@ -142,6 +137,8 @@ export default function CorvetteCarClubs() {
           Order Online <ArrowRight size={18} />
         </Link>
         <div className="mt-8 flex flex-wrap gap-3 justify-center text-sm">
+          <Link to="/gallery" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">See Flavor Isle photos</Link>
+          <span className="text-muted-foreground">·</span>
           <Link to="/i65-exit-38" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">I-65 Exit 38 Guide</Link>
           <span className="text-muted-foreground">·</span>
           <Link to="/mammoth-cave-dining" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Mammoth Cave Dining</Link>
