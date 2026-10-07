@@ -77,7 +77,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
 
   const recordTool = (entry) => {
     toolLog.push({ at: new Date().toISOString(), ...entry });
-    console.log(`Live tool ${entry.name} ${entry.ok ? 'ok' : 'FAILED'}${entry.ms ? ` in ${entry.ms}ms` : ''}${entry.ok ? '' : ` — ${entry.detail || 'no detail'}`}`);
+    console.log(`Live tool ${entry.name} (caller ${callerPhone || 'unknown'}) ${entry.ok ? 'ok' : 'FAILED'}${entry.ms ? ` in ${entry.ms}ms` : ''}${entry.ok ? '' : ` — ${entry.detail || 'no detail'}`}`);
   };
 
   const persist = async (extra = {}) => {
