@@ -23,7 +23,7 @@ export default function ConversionNudgeBar() {
     activeOrders > 0
       ? `🔥 ${activeOrders} order${activeOrders !== 1 ? 's' : ''} on the grill right now`
       : null,
-    '⭐ Earn points on your very first order → redeem for free food',
+    '⭐ 2nd online order scores 50 bonus Stars → free food awaits',
     `🚚 Pickup ready in ~${waitMin || 20} min · Delivery in ~${(waitMin || 20) + 20} min`,
     '❤️ Family-owned in Smiths Grove since 1964',
   ].filter(Boolean);

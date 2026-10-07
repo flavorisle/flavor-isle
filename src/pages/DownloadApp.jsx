@@ -15,7 +15,7 @@ const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 
 const FEATURES = [
   { icon: Zap, title: 'Order Ahead', desc: 'Skip the wait. Build your order and grab it hot — pickup, delivery, or dine-in.' },
-  { icon: Star, title: 'Star Rewards', desc: 'Every order earns points toward free food. Your tier grows the more you smash.' },
+  { icon: Star, title: 'Star Rewards', desc: 'Every order earns Stars toward free food — and your 2nd online order scores 50 bonus Stars.' },
   { icon: Bell, title: 'Order Ready Alerts', desc: 'We ping you the second your food is ready. No guessing, no waiting around.' },
   { icon: MessageCircle, title: 'Chat with Smashie', desc: 'Ask the menu, get recommendations, or place an order — Smashie is built in.' },
 ];
