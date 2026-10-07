@@ -131,8 +131,12 @@ export default async function (req) {
     ]);
 
     // Blocked callers are declined on the Live pipeline too; they may still leave
-    // a message for the crew.
-    const block = await findBlock(base44, { phone: callerPhone, email: customer?.email });
+    // a message for the crew. A failed lookup must never stop the call from being
+    // answered; logPhoneOrder re-checks the block before any order is placed.
+    const block = await findBlock(base44, { phone: callerPhone, email: customer?.email }).catch((e) => {
+      console.error('Blocked-contact lookup failed, answering anyway:', e.message);
+      return null;
+    });
     const context = buildCallContext({ storeStatus, busyness, callerPhone, customer, blockedContact: block });
 
     const enabledTools = SMASHIE_LIVE_TOOLS.filter((tool) => {
