@@ -270,10 +270,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                       return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={selectIceSize} />;
                     }
 
-                    if (!mod.sold_out && getPreferenceList(mod)) {
+                    // Flavors get the same − / + pill the burger sauces use:
+                    // − is Lite, + is Extra, using the flavor's real
+                    // "- / + Flavors" child list so Extra is charged like everywhere else.
+                    if (!mod.sold_out && isFlavorGroup(group)) {
                       return (
                         <div key={mod.id} className="py-1">
-                          <PreferencePillButton
+                          <FlavorPillButton
                             mod={mod}
                             isSelected={isSelected}
                             onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
@@ -284,14 +287,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
                       );
                     }
 
-                    // Flavors get the same − / + pill the burger sauces use:
-                    // − is Lite, + is Extra, carried as a name prefix on the
-                    // flavor's own catalog id so pricing and tickets still see
-                    // one permitted modifier.
-                    if (!mod.sold_out && isFlavorGroup(group)) {
+                    if (!mod.sold_out && getPreferenceList(mod)) {
                       return (
                         <div key={mod.id} className="py-1">
-                          <FlavorPillButton
+                          <PreferencePillButton
                             mod={mod}
                             isSelected={isSelected}
                             onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}

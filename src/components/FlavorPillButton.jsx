@@ -1,12 +1,14 @@
 import React from 'react';
 import { Minus, Plus, Check } from 'lucide-react';
+import { getPreferenceList } from './PreferencePillButton';
 
-// Flavors are plain MULTIPLE options in Square's flavor list — unlike a sauce,
-// they carry no Lite/Regular/Extra child options of their own. This pill gives
-// every flavor button the same three zones the burger sauces use and records
-// the level as a name prefix on the flavor's own catalog id ("Extra Cookies and
-// Cream"), so the flavor stays one permitted catalog modifier: the cart, the
-// kitchen ticket, and the server-side price check all keep working untouched.
+// Flavors in Square's flavor list carry a nested "- / + Flavors" child list
+// (Lite / Regular / Extra, Extra is +$0.75). This pill gives every flavor
+// button the same three zones the burger sauces use and records the level as
+// the REAL nested selection (with its catalog id and price), so the Extra
+// amount is charged and reaches Square. Only a flavor with no such child list
+// (e.g. the shake's own core flavor) falls back to a synthetic, id-less level
+// that just prefixes the name ("Extra Cookies and Cream").
 
 export const FLAVOR_AMOUNT_LIST = 'Flavor Amount';
 
@@ -22,10 +24,22 @@ export function flavorAmountNested(level) {
   return { [FLAVOR_AMOUNT_LIST]: { name: level === 'lite' ? 'Lite' : 'Extra', price: 0 } };
 }
 
+// Nested selection for a level: the flavor's real child option when it has one.
+export function flavorNestedFor(mod, level) {
+  if (!level) return {};
+  const list = getPreferenceList(mod);
+  const want = level === 'lite' ? ['lite', 'light'] : ['extra'];
+  const opt = (list?.modifiers || []).find((m) => want.includes((m.name || '').toLowerCase().trim()));
+  if (list && opt) return { [list.name]: opt };
+  return flavorAmountNested(level);
+}
+
 export function getFlavorLevel(nestedSelection) {
-  const n = (nestedSelection?.[FLAVOR_AMOUNT_LIST]?.name || '').toLowerCase();
-  if (n === 'lite' || n === 'light') return 'lite';
-  if (n === 'extra') return 'extra';
+  for (const sel of Object.values(nestedSelection || {})) {
+    const n = ((Array.isArray(sel) ? sel[0]?.name : sel?.name) || '').toLowerCase().trim();
+    if (n === 'lite' || n === 'light') return 'lite';
+    if (n === 'extra') return 'extra';
+  }
   return null;
 }
 
@@ -45,16 +59,18 @@ export default function FlavorPillButton({
   const level = getFlavorLevel(nestedSelection);
   const isLite = level === 'lite';
   const isExtra = level === 'extra';
-  const price = Number(mod.price) || 0;
+  const nestedPrice = Object.values(nestedSelection || {}).reduce(
+    (sum, sel) => sum + (Number((Array.isArray(sel) ? sel[0] : sel)?.price) || 0), 0);
+  const price = (Number(mod.price) || 0) + nestedPrice;
 
   const handleLite = () => {
     if (!isSelected) onToggle?.();
-    if (!isLite) onNestedChange?.(flavorAmountNested('lite'));
+    if (!isLite) onNestedChange?.(flavorNestedFor(mod, 'lite'));
   };
 
   const handleExtra = () => {
     if (!isSelected) onToggle?.();
-    if (!isExtra) onNestedChange?.(flavorAmountNested('extra'));
+    if (!isExtra) onNestedChange?.(flavorNestedFor(mod, 'extra'));
   };
 
   const handleCenter = () => {
