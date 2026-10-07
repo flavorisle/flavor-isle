@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
 import ModifierModal from './ModifierModal';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Sandwich / burger pages suggest sides and drinks for one-tap add.
 export function isSandwichOrBurger(item) {
@@ -29,7 +30,7 @@ export default function ProductSuggestions({ item }) {
       .then(items => {
         if (cancelled) return;
         const pool = (items || []).filter(m =>
-          m.id !== item.id && m.is_available !== false && m.is_hidden !== true && m.image_url);
+          m.id !== item.id && m.is_available !== false && m.is_hidden !== true && (m.image_url_opt || m.image_url));
         setSuggestions([...pick(pool, 'SIDE', 3), ...pick(pool, 'DRINK', 3)]);
       })
       .catch(() => {});
@@ -42,6 +43,7 @@ export default function ProductSuggestions({ item }) {
     id: m.id,
     name: m.name,
     price: m.price + (extraCost || 0),
+    image_url_opt: m.image_url_opt,
     image_url: m.image_url,
     category: m.category,
     catalog_object_id: m.square_item_id || '',
@@ -70,7 +72,7 @@ export default function ProductSuggestions({ item }) {
         <div className="space-y-2">
           {suggestions.map(m => (
             <div key={m.id} className="flex items-center gap-2.5">
-              <img src={m.image_url} alt={m.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+              <img src={optimizedImageUrl(m.image_url_opt || m.image_url, 200, 200)} alt={m.name} width="200" height="200" loading="lazy" decoding="async" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-heading text-sm text-obsidian-roast truncate leading-tight">{m.name}</p>
                 <p className="text-xs text-patina-mint font-semibold">${m.price.toFixed(2)}</p>

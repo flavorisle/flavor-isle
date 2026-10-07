@@ -80,7 +80,7 @@ export default function AdminMenu() {
       ...specialForm,
       menu_item_name: item.name,
       menu_item_price: item.price,
-      menu_item_image: item.image_url || ''
+      menu_item_image: item.image_url_opt || item.image_url || ''
     });
     setSpecialForm({ title: '', description: '', menu_item_id: '', day_of_week: 'Daily', is_active: true });
     await loadSpecials();
@@ -415,8 +415,8 @@ export default function AdminMenu() {
                 {catItems.map((item) =>
               <div key={item.id} className={`card-diner overflow-hidden transition-all ${item.is_hidden ? 'opacity-50' : ''}`}>
                     <div className="flex items-center gap-4 p-4">
-                      {item.image_url ?
-                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" /> :
+                      {(item.image_url_opt || item.image_url) ?
+                  <img src={item.image_url_opt || item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" /> :
 
                   <div className="w-16 h-16 bg-muted rounded-xl flex-shrink-0 flex items-center justify-center text-2xl">
                           {item.category === 'Burgers' ? '🍔' : item.category === 'Shakes' ? '🥤' : item.category === 'Sides' ? '🍟' : '🍽️'}

@@ -35,6 +35,8 @@ export default function GalleryLightbox({ photos, index, onClose, onPrev, onNext
       <img
         src={optimizedImageUrl(photo.url, 1200, 1200, 'fit')}
         alt={photo.alt}
+        width="1200"
+        height="1200"
         decoding="async"
         className="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-float-lg"
         onClick={(e) => e.stopPropagation()}

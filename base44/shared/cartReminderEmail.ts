@@ -26,8 +26,9 @@ export async function buildCartReminderHtml(base44: any, name: string, items: an
   const itemCards = visibleItems.map((i: any) => {
     const qty = Number(i.quantity) || 1;
     const lineTotal = (Number(i.price) || 0) * qty;
-    const img = i.image_url_opt || i.image_url
-      ? `<img src="${i.image_url}" alt="${escapeHtml(i.name)}" width="64" height="64" style="width:64px;height:64px;border-radius:10px;object-fit:cover;display:block;flex-shrink:0;background:#f5edd6;" />`
+    const imageUrl = i.image_url_opt || i.image_url;
+    const img = imageUrl
+      ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(i.name)}" width="64" height="64" style="width:64px;height:64px;border-radius:10px;object-fit:cover;display:block;flex-shrink:0;background:#f5edd6;" />`
       : `<div style="width:64px;height:64px;border-radius:10px;background:#f5edd6;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">🍔</div>`;
     return `<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #f0e8d0;">
       ${img}
