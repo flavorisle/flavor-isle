@@ -222,10 +222,10 @@ const AuthenticatedApp = () => {
       <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
+      <Route path="/account" element={<AccountNew />} />
 
-      {/* Login required to view account or admin tools */}
+      {/* Login required to view admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/account" element={<AccountNew />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
         <Route path="/admin/print-menu" element={<AdminPrintMenu />} />
