@@ -11,7 +11,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Payment Information',
-        text: 'Payment is processed securely through our payment partners. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order.',
+        text: 'Payment is processed securely through our payment partners, Square and Stripe. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order. If you save a payment method for faster checkout, the card details are held by our payment processor, not by us.',
       },
       {
         heading: 'Order History & Preferences',
@@ -20,6 +20,10 @@ const SECTIONS = [
       {
         heading: 'Order & Account Information',
         text: 'When you place an order or create an account, we collect your name, email address, phone number, and — for delivery orders — your delivery address. For dine-in orders we may also store your table number.',
+      },
+      {
+        heading: 'Email Newsletter Subscriptions',
+        text: 'If you subscribe to our email newsletter, we store your email address, subscription status, and opt-in confirmation records so we can send you occasional news, offers, and updates. Newsletter subscriptions use confirmed (double) opt-in. When you unsubscribe, we keep a record of it so we do not email you again.',
       },
       {
         heading: 'Photos & Your Likeness',
