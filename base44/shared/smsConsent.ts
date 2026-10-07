@@ -113,16 +113,23 @@ export async function upsertSmsConsent(base44: any, opts: {
   }
   if (existing[0]) {
     const merged = { ...patch };
-    // Don't downgrade a proven marketing grant when only re-confirming transactional.
-    if (!marketingConsent && existing[0].proven_marketing_consent) {
-      merged.proven_marketing_consent = true;
-      merged.marketing_consent = existing[0].marketing_consent ?? true;
-      merged.consent_category = deriveCategory(!!transactionalConsent, true);
-    }
-    // If nothing is being granted now, don't reactivate a stopped record.
+    const prev = existing[0];
+    const stopped = prev.status === 'unsubscribed';
     if (!granting) {
-      delete merged.status;
-      merged.opted_in = existing[0].opted_in;
+      // A no-op submit must never wipe or alter existing consent or reactivate a stopped record.
+      return { ok: true, id: prev.id, ...consentFlags(prev) };
+    }
+    // Granting one category never downgrades the other (e.g. OFFERS-only keeps
+    // ORDERS). A stopped record starts clean: STOP already cleared its flags.
+    if (!stopped) {
+      const transactional = !!transactionalConsent || !!prev.transactional_consent;
+      merged.transactional_consent = transactional;
+      if (!marketingConsent && prev.proven_marketing_consent) {
+        merged.proven_marketing_consent = true;
+        merged.marketing_consent = prev.marketing_consent ?? true;
+      }
+      merged.consent_category = deriveCategory(transactional, !!merged.marketing_consent);
+      merged.opted_in = true;
     }
     await base44.asServiceRole.entities.SMSSubscriber.update(existing[0].id, merged);
     return { ok: true, id: existing[0].id, ...consentFlags(merged) };
