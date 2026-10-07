@@ -172,7 +172,7 @@
         "square",
         "stripe"
       ],
-      "description": "Processor selected for a phone/chat payment link; Stripe is staff-selected only."
+      "description": "Processor behind a phone/chat payment link; Stripe (paid on flavor-isle.com/pay) is the default, square is legacy."
     },
     "square_payment_link_id": {
       "type": "string"

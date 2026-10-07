@@ -29,6 +29,7 @@ export default async function (req) {
       );
     }
 
+    // Orders created by the earlier hosted-checkout flow can still settle here.
     if (order.payment_provider === 'square') order = await settleSquarePhonePayment(base44, order);
     const summary = orderPaySummary(order);
 
@@ -39,10 +40,6 @@ export default async function (req) {
     if (order.status === 'cancelled' || order.payment_status === 'refunded') {
       return Response.json({ ...summary, paid: false, payable: false, reason: 'payment_closed' });
     }
-    if (order.payment_provider === 'square') {
-      return Response.json({ ...summary, paid: false, payable: !!order.payment_url, payment_provider: 'square', payment_url: order.payment_url });
-    }
-
     // Payment setup failed when the order was taken: the
     // order is saved and the crew collects at the counter, so the page says so
     // instead of showing a form that cannot work.

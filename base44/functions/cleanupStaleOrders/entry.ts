@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isPhoneOrder } from '../../shared/phoneOrderPricing.ts';
 
 // End-of-night cleanup for abandoned checkouts.
 //
@@ -11,7 +12,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 //
 // This closes them. It NEVER touches an order that was actually paid — it asks
 // Stripe for the truth first and skips anything that saw money, leaving a paid
-// order that missed the webhook to autoSyncUnpushedOrders. Group/split orders are
+// order that missed the webhook to autoSyncUnpushedOrders. Phone orders whose pay
+// link was never created are closed. Group/split orders are
 // skipped outright: their own share flow settles them.
 //
 // Runs nightly after close via the "End of Night Order Cleanup" workflow. Safe to
@@ -46,6 +48,20 @@ export default async function (req: Request) {
       if (!order.created_date || new Date(order.created_date).getTime() > cutoff) continue;
 
       const ref = order.stripe_session_id;
+      // A phone order with no Stripe ref never got a payable link (setup failed),
+      // so nothing can be charged: close it instead of keeping it as a group
+      // order. Legacy Square-hosted checkouts are left to the Square status sync.
+      if (!ref && isPhoneOrder(order) && !order.square_checkout_order_id) {
+        if (!dryRun) await base44.asServiceRole.entities.Order.update(order.id, { status: 'cancelled' });
+        closed.push({
+          order_number: order.order_number,
+          total: order.total,
+          customer: order.customer_name,
+          created: order.created_date,
+        });
+        continue;
+      }
+
       if (!ref || ref === 'GROUP') {
         kept.push({ order_number: order.order_number, reason: 'group order — settled by its own share flow' });
         continue;
