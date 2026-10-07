@@ -32,6 +32,17 @@ async function logSquareSyncAttempt(base44, order, status, squareOrderId = null,
 // customer/staff notifications identically — so orders reach the kitchen even
 // when the Stripe webhook stops delivering events.
 
+const escapeHtml = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// Pickup label, upgraded to "Curbside Pickup · <car>" for curbside orders.
+function curbsideFulfillmentLine(order, orderTypeLabel) {
+  if (order.order_type !== 'pickup' || order.pickup_method !== 'curbside') return orderTypeLabel;
+  const car = order.arrival_details
+    ? [order.arrival_details.car_color, order.arrival_details.car_make, order.arrival_details.car_model].filter(Boolean).join(' ')
+    : '';
+  return `Curbside Pickup${car ? ` · ${escapeHtml(car)}` : ''}`;
+}
+
 export async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -56,7 +67,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
     ? `Delivery to ${order.delivery_address}`
     : order.order_type === 'dine_in' && order.table_number
       ? `Dine-In · Table ${order.table_number}`
-      : orderTypeLabel;
+      : curbsideFulfillmentLine(order, orderTypeLabel);
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
 
   const html = brandedEmailHtml(`
@@ -145,7 +156,7 @@ export async function sendAdminReceiptEmail(order) {
     ? `Delivery to ${order.delivery_address}`
     : order.order_type === 'dine_in' && order.table_number
       ? `Dine-In · Table ${order.table_number}`
-      : orderTypeLabel;
+      : curbsideFulfillmentLine(order, orderTypeLabel);
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
   const scheduled = order.scheduled_for ? new Date(order.scheduled_for).toLocaleString('en-US', { timeZone: 'America/Chicago', weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'ASAP';
 

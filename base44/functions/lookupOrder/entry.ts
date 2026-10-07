@@ -45,6 +45,8 @@ export default async function(req) {
         order_type: order.order_type,
         pickup_method: order.pickup_method || null,
         status,
+        payment_status: order.payment_status || 'pending',
+        pay_cash_on_pickup: order.pay_cash_on_pickup === true,
         estimated_time: order.estimated_time || null,
         total: order.total,
         items: (order.items || []).map((i) => ({ name: i.name, quantity: i.quantity || 1 })),
