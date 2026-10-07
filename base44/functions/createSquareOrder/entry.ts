@@ -275,7 +275,6 @@ export default async function(req) {
       // Square computes each modifier's total as base_price_money × line item
       // quantity, so we set the per-unit price and let Square scale it.
       const appliedModifiers: any[] = [];
-      let catalogModPerUnit = 0;
       // Names of modifiers already shown on the POS ticket as a variation
       // (size) line or a catalog modifier sub-line. These are excluded from
       // the line item name's parenthetical so the kitchen ticket never prints
@@ -290,26 +289,14 @@ export default async function(req) {
           if (sm.name) alreadyOnTicket.add(sm.name); // Size selection
           continue;
         }
-        const next = selections[index + 1];
-        // The cart stores a merged display name immediately followed by its
-        // silent preference (Regular/Extra/Lite). Print only that complete name
-        // as a zero-priced ad-hoc modifier; its full price stays in the item
-        // base price. Never send either catalog option as a separate row.
-        if (sm.name && next?.silent && /^Preferences on (Sauce|Toppings)$/i.test(next.group || '')) {
-          appliedModifiers.push({ name: sm.name, base_price_money: { amount: 0, currency: 'USD' } });
-          alreadyOnTicket.add(sm.name);
-          index++; // skip the paired silent child preference
-          continue;
-        }
-        if (sm.silent) continue;
         const modListId = modifierOptionToList[sm.id];
         if (modListId && itemModListIds.has(modListId)) {
-          const mod: any = { catalog_object_id: sm.id };
-          if (typeof sm.price === 'number') {
-            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
-          }
-          appliedModifiers.push(mod);
-          catalogModPerUnit += sm.price || 0;
+          // Zero-priced so no price prints on the ticket; the upcharge stays
+          // in the line item base price.
+          appliedModifiers.push({
+            catalog_object_id: sm.id,
+            base_price_money: { amount: 0, currency: 'USD' },
+          });
           if (sm.name && sm.name === modifierOptionToName[sm.id]) alreadyOnTicket.add(sm.name);
         }
         // True ad-hoc extras stay in the name and in base_price_money.
@@ -322,11 +309,10 @@ export default async function(req) {
       const displayMods = formatItemModifiers(item).filter((m: string) => !alreadyOnTicket.has(m));
       const name = displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item');
 
-      // base_price_money = item price minus catalog modifier upcharges (those
-      // are added via the modifiers array). Ad-hoc modifier prices and size
-      // upcharges stay in the base price so the line item total matches what
-      // the customer paid: (base + ad-hoc + size) × qty + catalog_mods × qty.
-      const basePrice = (item.price || 0) - catalogModPerUnit;
+      // All modifiers are pushed at $0, so base_price_money carries the full
+      // item price (including every upcharge) and the line total matches what
+      // the customer paid.
+      const basePrice = item.price || 0;
 
       const lineItem: any = {
         name,
