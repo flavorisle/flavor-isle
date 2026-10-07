@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
-import FlavorPillButton, { flavorAmountNested, getFlavorLevel } from '@/components/FlavorPillButton';
+import FlavorPillButton, { getFlavorLevel } from '@/components/FlavorPillButton';
 import ShakeFlavorControl, { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
 import AllergyNote from '@/components/AllergyNote';
 import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
+import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
@@ -23,8 +24,8 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const [base, setBase] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
   const [coreLevel, setCoreLevel] = useState(null);
-  // Lite / Extra level per added flavor, chosen with the − / + zones on the
-  // flavor pill; regular (no entry) is the default.
+  // Nested Lite / Extra selection per added flavor, chosen with the − / + zones
+  // on the flavor pill; regular (no entry) is the default.
   const [flavorLevels, setFlavorLevels] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -80,20 +81,25 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
   const toggleMulti = (list, setList, opt) => {
     setList((prev) => (prev.some((s) => s.id === opt.id) ? prev.filter((s) => s.id !== opt.id) : [...prev, opt]));
+    // A removed flavor forgets its level so re-adding starts at regular.
+    setFlavorLevels((prev) => ({ ...prev, [opt.id]: {} }));
   };
 
   const unitPrice =
     basePrice +
     (size?.price || 0) +
     (base?.price || 0) +
-    extraFlavors.reduce((s, f) => s + f.price, 0);
+    extraFlavors.reduce((s, f) => s + mergeNestedIntoParent(f, flavorLevels[f.id]).mergedPrice, 0);
 
   const totalPrice = unitPrice * quantity;
 
   // A flavor's Lite/Extra level rides as a name prefix on the flavor's own
   // catalog id — the same way a burger reads "Extra Pickle" — so the flavor
   // stays one permitted catalog modifier for pricing and the kitchen ticket.
-  const levelPrefix = (id) => (flavorLevels[id] === 'lite' ? 'Lite ' : flavorLevels[id] === 'extra' ? 'Extra ' : '');
+  const levelPrefix = (id) => {
+    const lvl = getFlavorLevel(flavorLevels[id]);
+    return lvl === 'lite' ? 'Lite ' : lvl === 'extra' ? 'Extra ' : '';
+  };
   const extraFlavorNames = extraFlavors.map((f) => `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`);
   const allFlavorNames = [withShakeFlavorLevel(flavorName, coreLevel), ...extraFlavorNames];
   // Only call out the base when it differs from the shake's own flavor —
@@ -113,7 +119,16 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
       ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
-      ...extraFlavors.map((f) => ({ id: f.id, name: `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`, price: f.price })),
+      ...extraFlavors.flatMap((f) => {
+        const { mergedPrice, addOns, silentEntries } = mergeNestedIntoParent(f, flavorLevels[f.id]);
+        // The real "- / + Flavors" selection rides as a silent catalog id so
+        // Square receives the Extra modifier; the synthetic fallback has no id.
+        return [
+          { id: f.id, name: `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`, price: mergedPrice },
+          ...addOns,
+          ...silentEntries,
+        ];
+      }),
     ];
 
     const cartItem = {
@@ -227,12 +242,12 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
                   return (
                     <FlavorPillButton
                       key={opt.id}
-                      mod={{ id: opt.id, name, price: opt.price }}
+                      mod={{ id: opt.id, name, price: opt.price, child_modifier_lists: opt.child_modifier_lists }}
                       leading={<span className="text-base leading-none">{emoji}</span>}
                       isSelected={selected}
                       onToggle={() => toggleMulti(extraFlavors, setExtraFlavors, opt)}
-                      nestedSelection={flavorAmountNested(flavorLevels[opt.id])}
-                      onNestedChange={(nested) => setFlavorLevels((prev) => ({ ...prev, [opt.id]: getFlavorLevel(nested) }))}
+                      nestedSelection={flavorLevels[opt.id] || {}}
+                      onNestedChange={(nested) => setFlavorLevels((prev) => ({ ...prev, [opt.id]: nested }))}
                     />
                   );
                 })}
