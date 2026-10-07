@@ -31,7 +31,7 @@ export default function CorvetteCarClubs() {
       {/* Hero */}
       <section className="relative bg-patina-mint text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img src={optimizedImageUrl(BUILDING, 1600, 900)} alt="" width="1600" height="900" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(BUILDING, 1600, 900)} alt="" width="1600" height="900" loading="eager" fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">

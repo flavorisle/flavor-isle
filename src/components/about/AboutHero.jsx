@@ -8,7 +8,17 @@ const SMASHIE_WAVE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f
 
 export default function AboutHero() {
   return (
-    <section className="relative bg-cover bg-center" style={{ backgroundImage: `url('${optimizedImageUrl(HERO_PHOTO, 1600, 900)}')` }}>
+    <section className="relative overflow-hidden">
+      <img
+        src={optimizedImageUrl(HERO_PHOTO, 1600, 900)}
+        alt=""
+        width="1600"
+        height="900"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-24 pb-20 text-white">
         <div className="flex flex-col md:flex-row items-center gap-10">

@@ -18,6 +18,7 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
+import { optimizedImageUrl } from '@/lib/utils';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
@@ -447,7 +448,7 @@ function LoggedInAccount({ user, logout }) {
                   <div key={fav.id} className="card-diner overflow-hidden">
                     {fav.menu_item_image && (
                       <div className="h-40 overflow-hidden bg-gray-100">
-                        <img src={fav.menu_item_image} alt={fav.menu_item_name} className="w-full h-full object-cover" />
+                        <img src={optimizedImageUrl(fav.menu_item_image, 500, 300)} alt={fav.menu_item_name} width="500" height="300" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="p-4">

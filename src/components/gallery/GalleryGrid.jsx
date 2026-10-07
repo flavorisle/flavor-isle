@@ -26,9 +26,9 @@ export default function GalleryGrid({ photos, onSelect }) {
           className={`mb-3 sm:mb-4 block w-full break-inside-avoid overflow-hidden rounded-2xl shadow-float group relative motion-safe:transition-[opacity,transform] motion-safe:duration-500 ${revealed[photo.url] ? 'opacity-100 translate-y-0' : 'motion-safe:opacity-0 motion-safe:translate-y-4'}`}
         >
           <img
-            src={optimizedImageUrl(photo.url, 800, 600)}
+            src={optimizedImageUrl(photo.url, 800, 800)}
             alt={photo.alt}
-            width="800" height="600" loading="lazy" decoding="async"
+            width="800" height="800" loading="lazy" decoding="async"
             className="w-full aspect-[4/3] object-cover motion-safe:transition-transform motion-safe:duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-x-0 bottom-0 p-2.5 pt-8 bg-gradient-to-t from-black/70 to-transparent text-left">
