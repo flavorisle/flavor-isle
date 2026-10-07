@@ -222,7 +222,7 @@ export default function OrderLookup() {
           </div>
 
           {/* Pickup zone map for pickup/curbside orders */}
-          {order.order_type === 'pickup' && (
+          {order.order_type === 'pickup' && order.pickup_method === 'curbside' && (
             <div className="px-6 pb-6">
               <div className="flex items-center gap-2 mb-3">
                 <MapPin size={16} className="text-midnight-cherry" />
@@ -236,7 +236,8 @@ export default function OrderLookup() {
               />
 
               {/* Curbside arrival — tell the kitchen you're here */}
-              {!['cancelled', 'completed', 'delivered'].includes(order.status) && (
+              {!['cancelled', 'completed', 'delivered'].includes(order.status) &&
+                (order.payment_status === 'paid' || order.pay_cash_on_pickup) && (
                 hasArrived || order.arrival_details?.arrived_at ? (
                   <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3">
                     <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />

@@ -37,6 +37,8 @@ export default async function(req) {
       message = `🚗 Your Flavor Isle order #${order.order_number} is ready and on its way! Driver will arrive soon.`;
     } else if (order_type === 'dine_in') {
       message = `🪑 Your Flavor Isle order #${order.order_number} is ready! Head to your table.`;
+    } else if (order_type === 'pickup' && order.pickup_method === 'curbside') {
+      message = `✅ Your Flavor Isle order #${order.order_number} is ready! Park in a pickup zone and tap "I'm Here" on your order status page so we can run it out.`;
     } else {
       // pickup or call_in
       message = `✅ Your Flavor Isle order #${order.order_number} is ready for pickup!`;

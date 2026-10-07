@@ -22,6 +22,12 @@ export default async function(req) {
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Dedupe repeated taps: skip if arrival was already logged in the last 10 min.
+    const prevArrival = order.arrival_details?.arrived_at;
+    if (prevArrival && Date.now() - new Date(prevArrival).getTime() < 10 * 60 * 1000) {
+      return Response.json({ success: true, arrived_at: prevArrival, deduped: true });
+    }
+
     const arrivedAt = new Date().toISOString();
     const cleanNotes = (notes || '').trim().substring(0, 500);
 
