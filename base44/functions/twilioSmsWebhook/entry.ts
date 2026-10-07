@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     if (HELP.includes(upper)) {
-      return xmlReply('Flavor Isle: Text ORDERS for order updates only, OFFERS for order updates + recurring promotional offers, or STOP to cancel all. Msg&data rates may apply. Terms: https://taste-isle-express.base44.app/terms-of-service');
+      return xmlReply('Flavor Isle: Text ORDERS for order updates only, OFFERS for order updates + recurring promotional offers, or STOP to cancel all. Msg&data rates may apply. Terms: https://flavor-isle.com/terms-of-service');
     }
 
     // JOIN — ask the user to pick a category. Do NOT auto-enroll.

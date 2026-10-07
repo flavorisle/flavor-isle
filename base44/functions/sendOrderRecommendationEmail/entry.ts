@@ -5,8 +5,8 @@ import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/de
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
-const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FUNCTION_BASE = 'https://flavor-isle.com';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Internal/test emails that should never receive a recommendation email.
 const SKIP_EMAILS = new Set([
@@ -355,7 +355,7 @@ export default async function (req: Request) {
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:16px 40px;border-radius:999px;font-size:16px;">${ctaLabel}</a>
       </div>
-      <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:smashie@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
+      <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
     `;
 
     const html = brandedEmailHtml(bodyHtml);

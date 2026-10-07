@@ -185,7 +185,7 @@ export default function Rewards() {
     },
     {
       q: 'Can I earn stars by entering my number on someone else\u2019s order?',
-      a: 'No. Stars belong to the rewards account that earned them — the account tied to the phone number used at checkout. Dropping your number onto another customer\u2019s purchase doesn\u2019t transfer their stars to you. If we catch someone claiming stars on a purchase that wasn\u2019t theirs, we may pause or close that rewards account and void its stars. Questions or a dispute? Email hello@order.flavor-isle.com.',
+      a: 'No. Stars belong to the rewards account that earned them — the account tied to the phone number used at checkout. Dropping your number onto another customer\u2019s purchase doesn\u2019t transfer their stars to you. If we catch someone claiming stars on a purchase that wasn\u2019t theirs, we may pause or close that rewards account and void its stars. Questions or a dispute? Email rewards@flavor-isle.com.',
     },
     {
       q: 'Is automatic card recognition at the register the same as signing in online?',

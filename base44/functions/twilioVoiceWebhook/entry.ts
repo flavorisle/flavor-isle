@@ -127,7 +127,7 @@ export default async function(req) {
         twiml.play({}, recorded);
         return;
       }
-      const audioUrl = new URL('https://taste-isle-express.base44.app/functions/smashieTts');
+      const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
       twiml.play({}, audioUrl.toString());
     };

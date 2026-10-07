@@ -106,7 +106,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
   for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
     try {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: order.customer_email,
         subject: `Order locked in — #${order.order_number} 🍔`,
         html,
@@ -195,7 +195,7 @@ export async function sendAdminReceiptEmail(order) {
   for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
     try {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: OWNER_EMAIL,
         subject: `🧾 New online order #${order.order_number || ''} — $${(order.total || 0).toFixed(2)}`,
         html,

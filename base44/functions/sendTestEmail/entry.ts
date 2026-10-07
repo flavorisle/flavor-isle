@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     const { error } = await resend.emails.send({
-      from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+      from: 'Flavor Isle <smashie@flavor-isle.com>',
       to,
       subject: body.preview === 'order_guest' ? 'Preview: guest order email (account + Star Rewards)' : '✅ Flavor Isle test email',
       html: brandedEmailHtml(bodyHtml),

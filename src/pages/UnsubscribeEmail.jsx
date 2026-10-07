@@ -67,7 +67,7 @@ export default function UnsubscribeEmail() {
                 <AlertCircle size={28} className="text-destructive" />
               </div>
               <h1 className="font-heading text-2xl text-obsidian-roast mb-2">This link didn't work</h1>
-              <p className="text-sm text-muted-foreground mb-6">Your unsubscribe link may be invalid. Email hello@order.flavor-isle.com and we'll remove you right away.</p>
+              <p className="text-sm text-muted-foreground mb-6">Your unsubscribe link may be invalid. Email hello@flavor-isle.com and we'll remove you right away.</p>
             </>
           )}
         </div>

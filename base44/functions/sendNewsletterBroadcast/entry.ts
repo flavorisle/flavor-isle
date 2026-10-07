@@ -9,8 +9,8 @@ import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 //   send  — broadcast to every ACTIVE subscriber, with per-recipient
 //           delivery logging and content-hash idempotency so a subscriber
 //           never receives the same newsletter twice.
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
-const APP_BASE = 'https://taste-isle-express.base44.app';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const APP_BASE = 'https://flavor-isle.com';
 
 // Deterministic hash of subject+body. The same newsletter content always
 // maps to the same broadcast_id, so retries or repeated Send clicks skip

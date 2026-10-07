@@ -7,8 +7,8 @@ import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 // link. Nothing is active until the subscriber clicks the confirm link
 // (handled by confirmEmailSubscription). Re-subscribes (pending or
 // previously unsubscribed) re-issue a token and re-send the confirmation.
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
-const APP_BASE = 'https://taste-isle-express.base44.app';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const APP_BASE = 'https://flavor-isle.com';
 
 function normalizeEmail(e) { return (e || '').toLowerCase().trim(); }
 function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
