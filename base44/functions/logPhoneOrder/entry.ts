@@ -4,6 +4,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { withTimeout } from '../../shared/withTimeout.ts';
+
+// The caller is waiting on the line, so link setup is bounded: a stalled
+// processor or SMS gateway falls through to the manual-pay reply with the total.
+const PAY_LINK_SETUP_MS = 6000;
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -151,6 +156,7 @@ export default async function(req) {
     let manualPayRequired = false;
 
     try {
+      await withTimeout(async () => {
       // Stripe PaymentIntent paid on flavor-isle.com/pay/:orderNumber.
       paymentUrl = await createStripePhonePayment(base44, order);
 
@@ -199,11 +205,12 @@ export default async function(req) {
           console.error('Payment link email failed:', e.message);
         }
       }
+      }, PAY_LINK_SETUP_MS, 'pay link setup');
     } catch (linkErr) {
       // Fallback: the order is already saved, so when payment setup fails
       // we flag it for manual payment at the counter instead of sending the
       // customer a link that cannot be paid.
-      console.error('Phone order payment setup error:', linkErr.message);
+      console.error(`Phone order payment setup error for order ${orderNumber}:`, linkErr.message);
       manualPayRequired = true;
       // Record why no link went out so it sits alongside the other customer texts.
       try {

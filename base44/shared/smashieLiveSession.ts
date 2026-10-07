@@ -21,6 +21,7 @@
 // missed function call is silent dead air to the caller.
 import { createCallTranscript } from './callTranscript.ts';
 import { runSmashieTool } from './smashieToolRunner.ts';
+import { withTimeout } from './withTimeout.ts';
 import {
   attachLiveSideband,
   hangupLiveSession,
@@ -36,6 +37,9 @@ const TRANSCRIPT_DONE = /^session\.(input|output)_transcript\.(done|completed)$/
 // instead of leaving the caller in silence. Shorter than one hop, so the
 // fallback is always spoken inside the worker that started the action.
 const TOOL_STALL_MS = 9000;
+// Hard bound on one tool run. Actions are serialized, so a hung one would block
+// every later result and the caller would hear nothing after "checking".
+export const TOOL_TIMEOUT_MS = 10000;
 // How long one hop drives the call before handing the socket over.
 export const HOP_MS = 12000;
 const MAX_HOP_FAILURES = 3;
@@ -156,7 +160,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       const toolStartedAt = Date.now();
       let result;
       try {
-        result = await runSmashieTool(base44, { name: item.name, args, callerPhone, sessionId });
+        result = await withTimeout(() => runSmashieTool(base44, { name: item.name, args, callerPhone, sessionId }), TOOL_TIMEOUT_MS, `tool ${item.name}`);
         recordTool({
           name: item.name,
           ok: true,
@@ -165,9 +169,12 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
         });
       } catch (err) {
         recordTool({ name: item.name, ok: false, ms: Date.now() - toolStartedAt, detail: err.message });
+        const timedOut = err?.name === 'TimeoutError';
         result = {
           output: JSON.stringify({
-            error: 'That action failed on our side. Apologize briefly and offer to take a message for the crew or pass the caller to the counter.',
+            error: timedOut && item.name === 'place_order'
+              ? 'The order system is slow. The order may have been saved, so do not place it again. Tell the caller the crew will confirm it by text, give the total if you already know it, and offer the counter number.'
+              : 'That action failed on our side. Apologize briefly and offer to take a message for the crew or pass the caller to the counter.',
           }),
         };
       }
@@ -187,9 +194,17 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
         }
       }
 
-      sendFunctionCallOutput(sideband, item.call_id, output);
+      try {
+        sendFunctionCallOutput(sideband, item.call_id, output);
+      } catch (err) {
+        recordTool({ name: item.name, ok: false, detail: `result could not be delivered: ${err.message}` });
+      }
       // Always ask for the next turn: a tool result nobody speaks is dead air.
-      requestBackendTurn(sideband);
+      try {
+        requestBackendTurn(sideband);
+      } catch (err) {
+        recordTool({ name: item.name, ok: false, detail: `next turn could not be requested: ${err.message}` });
+      }
       sayInsteadOfSilence();
       await persist();
     });
