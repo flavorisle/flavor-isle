@@ -2,8 +2,8 @@
 
 ## Photo optimization: display-size WebP
 
-**Status:** code changes prepared; publish and live verification pending  
-**BuilderReport key:** `photo_optimization_2026-09-29`  
+**Status:** code changes prepared; publish and live verification pending
+**BuilderReport key:** `photo_optimization_2026-09-29`
 **App entity:** not written from this sandbox
 
 ### Numbered implementation record
