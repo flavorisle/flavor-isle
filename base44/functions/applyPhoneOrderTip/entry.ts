@@ -22,9 +22,6 @@ export default async function (req) {
     if (order.payment_status === 'paid') {
       return Response.json({ error: 'This order is already paid.' }, { status: 409 });
     }
-    if (order.payment_provider === 'square') {
-      return Response.json({ error: 'Add your tip on the secure Square checkout page.' }, { status: 409 });
-    }
     if (!order.stripe_session_id) {
       return Response.json(
         { error: 'This order is set to be paid at the counter, so no tip can be added here.' },

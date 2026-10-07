@@ -2,6 +2,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
 import { updateGroupShareStatus, settleGroupOrderIfComplete } from '../../shared/groupPaymentSettlement.ts';
 
 Deno.serve(async (req) => {
@@ -85,16 +86,21 @@ Deno.serve(async (req) => {
       const orders = await base44.asServiceRole.entities.Order.filter({ stripe_session_id: pi.id });
       if (orders && orders.length > 0) {
         const order = orders[0];
-        // Mark paid if the checkout.session.completed handler hasn't already.
-        if (order.payment_status !== 'paid') {
-          await base44.asServiceRole.entities.Order.update(order.id, { payment_status: 'paid', status: 'confirmed' });
-          console.log(`Order ${order.order_number} marked paid via payment_intent.succeeded`);
+        // Phone orders settle only for the exact USD amount the order says was due.
+        if (isPhoneOrder(order) && !phoneIntentMatchesOrder(order, pi)) {
+          console.error(`Phone order ${order.order_number}: intent ${pi.id} (${pi.amount_received ?? pi.amount} ${pi.currency}) does not match order total ${order.total} — not settling`);
+        } else {
+          // Mark paid if the checkout.session.completed handler hasn't already.
+          if (order.payment_status !== 'paid') {
+            await base44.asServiceRole.entities.Order.update(order.id, { payment_status: 'paid', status: 'confirmed' });
+            console.log(`Order ${order.order_number} marked paid via payment_intent.succeeded`);
+          }
+          // Always call pushOrderToSquareAndKitchen — per-action dedupe inside
+          // handles the Square push (skips if already pushed) and the emails
+          // (independent atomic claims). This ensures emails fire exactly once
+          // even if the first call pushed to Square but failed to send emails.
+          await pushOrderToSquareAndKitchen(base44, { ...order, payment_status: 'paid', status: 'confirmed' });
         }
-        // Always call pushOrderToSquareAndKitchen — per-action dedupe inside
-        // handles the Square push (skips if already pushed) and the emails
-        // (independent atomic claims). This ensures emails fire exactly once
-        // even if the first call pushed to Square but failed to send emails.
-        await pushOrderToSquareAndKitchen(base44, { ...order, payment_status: 'paid', status: 'confirmed' });
       } else {
         console.warn('No Order found for payment_intent id:', pi.id);
       }

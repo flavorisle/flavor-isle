@@ -4,7 +4,10 @@ import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
 export async function settleSquarePhonePayment(base44, order, suppliedSquareOrder = null) {
   if (order.payment_provider !== 'square' || !order.square_checkout_order_id || order.payment_status === 'paid') return order;
   const api = await squarePhoneApi(base44);
-  const squareOrder = suppliedSquareOrder || (await api.request(`orders/${order.square_checkout_order_id}`)).order;
+  // orders/search results can omit tenders, so a supplied order without them is
+  // never trusted as "unpaid" — fetch the full order before deciding.
+  let squareOrder = suppliedSquareOrder;
+  if (!squareOrder?.tenders?.length) squareOrder = (await api.request(`orders/${order.square_checkout_order_id}`)).order;
   const paymentIds = (squareOrder.tenders || []).map(tender => tender.payment_id).filter(Boolean);
   if (!paymentIds.length) return order;
   const payments = await Promise.all(paymentIds.map(async id => (await api.request(`payments/${id}`)).payment));

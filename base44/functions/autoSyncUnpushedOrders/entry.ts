@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
 
 // Self-healing safety net for the order → Square sync.
 //
@@ -78,9 +79,13 @@ export default async function (req: Request) {
       } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('pi_')) {
         // Webhook never fired — verify with Stripe that the payment succeeded
         // before pushing, so a failed/declined payment doesn't become a free order.
+        // This is also what settles a phone order whose customer paid and never
+        // returned to the /pay page.
         try {
           const pi = await stripe.paymentIntents.retrieve(order.stripe_session_id);
-          if (pi.status === 'succeeded') {
+          if (pi.status === 'succeeded' && isPhoneOrder(order) && !phoneIntentMatchesOrder(order, pi)) {
+            results.push({ order_number: order.order_number, skipped: true, reason: 'Phone order payment amount/currency does not match the order total' });
+          } else if (pi.status === 'succeeded') {
             paymentConfirmed = true;
           } else {
             results.push({ order_number: order.order_number, skipped: true, reason: `Stripe PI status: ${pi.status}` });

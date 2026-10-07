@@ -1,4 +1,5 @@
-import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
+import { createStripePhonePayment } from '../../shared/stripePhonePayment.ts';
+import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
@@ -9,9 +10,11 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 // flavor-isle.com/pay page (and emails the same link whenever we have an
 // address). The customer pays on our site and never sees a processor URL.
 //
-// Nothing is cooked until the payment clears: the webhook matches the
-// PaymentIntent back to this order via stripe_session_id, marks it paid, and
-// pushes it to Square + the kitchen — including any tip added on the pay page.
+// Nothing is cooked until the payment clears: the webhook (with the
+// autoSyncUnpushedOrders sweep as backup) matches the PaymentIntent back to this
+// order via stripe_session_id, marks it paid, and pushes it to Square + the
+// kitchen — including any tip added on the pay page, even if the customer never
+// returns to it.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -85,9 +88,31 @@ export default async function(req) {
     // is created for these same numbers, so the charge, the saved order, and the
     // kitchen ticket can never disagree. A caller-supplied total is only a
     // fallback for an item that arrived without a price.
-    const subtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
-    const tax = Math.round(subtotal * 0.06 * 100) / 100;
-    const finalTotal = Math.round((subtotal + tax) * 100) / 100;
+    const baseSubtotal = itemSubtotal > 0 ? itemSubtotal : (Number(total) || 0);
+
+    // Delivery orders pay the delivery fee, resolved server-side exactly like
+    // the website checkout (paused delivery, distance tiers, or the flat fee).
+    let deliveryFee = 0;
+    if (order_type === 'delivery') {
+      const settings = await base44.asServiceRole.entities.MenuSetting.list();
+      const setting = settings?.[0] || {};
+      if (setting.delivery_enabled === false) {
+        return Response.json({ error: 'Delivery is paused right now. Offer pickup or dine-in instead.' }, { status: 400 });
+      }
+      const tiers = (setting.delivery_tiers || []).filter((t) => t && Number(t.max_miles) > 0);
+      if (tiers.length === 0) {
+        deliveryFee = Number(setting.delivery_fee ?? 0) || 0;
+      } else {
+        const quoteRes = await base44.asServiceRole.functions.invoke('getDeliveryQuote', { address: delivery_address });
+        const quote = quoteRes?.data || quoteRes;
+        if (!quote?.ok || quote.out_of_range || quote.fee == null) {
+          return Response.json({ error: 'That delivery address could not be quoted or is outside the delivery range. Offer pickup instead.' }, { status: 400 });
+        }
+        deliveryFee = Number(quote.fee) || 0;
+      }
+    }
+
+    const { subtotal, tax, deliveryFee: orderDeliveryFee, total: finalTotal } = phoneOrderTotals(baseSubtotal, deliveryFee);
     const orderNumber = Date.now().toString().slice(-6);
 
     // Keep the order pending until the customer pays on the payment page.
@@ -100,14 +125,16 @@ export default async function(req) {
       items,
       subtotal,
       tax,
+      delivery_fee: orderDeliveryFee,
       total: finalTotal,
+      order_source: PHONE_ORDER_SOURCE,
       customer_name,
       customer_phone,
       customer_email: orderEmail,
       delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
-      payment_provider: 'square',
+      payment_provider: 'stripe',
       manual_pay_required: true,
     });
 
@@ -124,8 +151,8 @@ export default async function(req) {
     let manualPayRequired = false;
 
     try {
-      // Square is the default. Only staff can explicitly select Stripe later.
-      paymentUrl = await createSquarePhonePayment(base44, order);
+      // Stripe PaymentIntent paid on flavor-isle.com/pay/:orderNumber.
+      paymentUrl = await createStripePhonePayment(base44, order);
 
       // Text it first — the customer is on the phone (or in chat), so it lands
       // instantly. This is the primary delivery channel for the payment link.
@@ -173,7 +200,7 @@ export default async function(req) {
         }
       }
     } catch (linkErr) {
-      // Square fallback: the order is already saved, so when payment setup fails
+      // Fallback: the order is already saved, so when payment setup fails
       // we flag it for manual payment at the counter instead of sending the
       // customer a link that cannot be paid.
       console.error('Phone order payment setup error:', linkErr.message);
@@ -212,6 +239,7 @@ export default async function(req) {
       order_id: order.id,
       subtotal,
       tax,
+      delivery_fee: orderDeliveryFee,
       total: finalTotal,
       delivery_address: delivery_address || null,
       payment_url: paymentUrl,
@@ -219,9 +247,9 @@ export default async function(req) {
       payment_link_emailed: paymentLinkEmailed,
       manual_pay_required: manualPayRequired,
       message: paymentLinkSent
-        ? `Order #${orderNumber} is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
-        : `Order #${orderNumber} was saved, but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
-      payment_provider: 'square',
+        ? `Order #${orderNumber} total is $${finalTotal.toFixed(2)}${orderDeliveryFee > 0 ? ` including a $${orderDeliveryFee.toFixed(2)} delivery fee` : ''}. It is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
+        : `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total), but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
+      payment_provider: 'stripe',
     });
   } catch (error) {
     console.error('logPhoneOrder error:', error.message);
