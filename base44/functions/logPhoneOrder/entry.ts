@@ -4,6 +4,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { withTimeout } from '../../shared/withTimeout.ts';
+
+// The caller is waiting on the line, so link setup is bounded: a stalled
+// processor or SMS gateway falls through to the manual-pay reply with the total.
+const PAY_LINK_SETUP_MS = 6000;
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -16,10 +21,12 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 // kitchen — including any tip added on the pay page, even if the customer never
 // returns to it.
 export default async function(req) {
+  let logPhone = 'unknown';
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { customer_name, customer_phone, customer_email, items, order_type, delivery_address, special_instructions, total, payment_method = 'card' } = body;
+    if (customer_phone) logPhone = String(customer_phone);
     if (!['card', 'cash_on_pickup'].includes(payment_method)) return Response.json({ error: 'Choose card or cash_on_pickup.' }, { status: 400 });
     const cashPickup = payment_method === 'cash_on_pickup';
     if (cashPickup && order_type && order_type !== 'pickup') return Response.json({ error: 'Cash at pickup is available only for pickup orders.' }, { status: 400 });
@@ -149,8 +156,10 @@ export default async function(req) {
     let paymentLinkSent = false;
     let paymentLinkEmailed = false;
     let manualPayRequired = false;
+    let linkTimedOut = false;
 
     try {
+      await withTimeout(async () => {
       // Stripe PaymentIntent paid on flavor-isle.com/pay/:orderNumber.
       paymentUrl = await createStripePhonePayment(base44, order);
 
@@ -196,15 +205,17 @@ export default async function(req) {
           });
           paymentLinkEmailed = true;
         } catch (e) {
-          console.error('Payment link email failed:', e.message);
+          console.error(`Payment link email failed for order ${orderNumber} (${customer_phone}):`, e.message);
         }
       }
+      }, PAY_LINK_SETUP_MS, 'pay link setup');
     } catch (linkErr) {
       // Fallback: the order is already saved, so when payment setup fails
       // we flag it for manual payment at the counter instead of sending the
       // customer a link that cannot be paid.
-      console.error('Phone order payment setup error:', linkErr.message);
+      console.error(`Phone order payment setup error for order ${orderNumber} (${customer_phone}, link ${paymentUrl ? 'created' : 'not created'}, sent ${paymentLinkSent}):`, linkErr.message);
       manualPayRequired = true;
+      linkTimedOut = linkErr?.name === 'TimeoutError';
       // Record why no link went out so it sits alongside the other customer texts.
       try {
         await base44.asServiceRole.entities.SmsDeliveryLog.create({
@@ -219,12 +230,12 @@ export default async function(req) {
           status_at: new Date().toISOString(),
         });
       } catch (logErr) {
-        console.error(`Pay-link delivery log failed for order ${orderNumber}:`, logErr.message);
+        console.error(`Pay-link delivery log failed for order ${orderNumber} (${customer_phone}):`, logErr.message);
       }
       try {
         await base44.asServiceRole.entities.Order.update(order.id, { manual_pay_required: true });
       } catch (flagErr) {
-        console.error(`Manual-pay flag failed for order ${orderNumber}:`, flagErr.message);
+        console.error(`Manual-pay flag failed for order ${orderNumber} (${customer_phone}):`, flagErr.message);
       }
     }
 
@@ -246,13 +257,15 @@ export default async function(req) {
       payment_link_sent: paymentLinkSent,
       payment_link_emailed: paymentLinkEmailed,
       manual_pay_required: manualPayRequired,
-      message: paymentLinkSent
+      message: !paymentLinkSent && paymentUrl && linkTimedOut
+        ? `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total). The payment link text was slow and may still arrive at ${customer_phone}. Tell them to check their texts in a minute, and if nothing comes, the crew can take payment at the counter at (270) 563-4618. Do not say it is paid, and do not place the order again.`
+        : paymentLinkSent
         ? `Order #${orderNumber} total is $${finalTotal.toFixed(2)}${orderDeliveryFee > 0 ? ` including a $${orderDeliveryFee.toFixed(2)} delivery fee` : ''}. It is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
         : `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total), but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
       payment_provider: 'stripe',
     });
   } catch (error) {
-    console.error('logPhoneOrder error:', error.message);
+    console.error(`logPhoneOrder error for ${logPhone}:`, error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
