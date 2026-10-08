@@ -18,13 +18,39 @@ export default function OrderAgainSection({ items = [] }) {
   const [picks, setPicks] = useState([]);
 
   useEffect(() => {
-    if (!user?.email || items.length === 0) { setPicks([]); return; }
+    if (!user?.id || items.length === 0) { setPicks([]); return; }
     let cancelled = false;
-    base44.entities.Order.filter({ customer_email: user.email }, '-created_date', RECENT_ORDERS)
-      .then((orders) => { if (!cancelled) setPicks(recentItemPicks(orders || [], items)); })
-      .catch(() => {});
+
+    // Their own orders, found two ways: the email they ordered with (the usual
+    // case) and the orders they placed themselves while signed in, since the
+    // email typed at checkout can differ from the account's. Both are scoped to
+    // this customer, so nobody sees anyone else's order.
+    const fetchMine = async () => {
+      const [byEmail, byAccount] = await Promise.all([
+        base44.entities.Order.filter({ customer_email: user.email }, '-created_date', RECENT_ORDERS),
+        base44.entities.Order.filter({ created_by_id: user.id }, '-created_date', RECENT_ORDERS),
+      ]);
+      return [...(byEmail || []), ...(byAccount || [])];
+    };
+
+    (async () => {
+      let orders = await fetchMine().catch(() => []);
+      // An empty result can also mean the API was rate limiting rather than a
+      // customer with no history, so ask once more before showing nothing.
+      if (orders.length === 0) {
+        await new Promise((r) => setTimeout(r, 700));
+        if (cancelled) return;
+        orders = await fetchMine().catch(() => []);
+      }
+      if (cancelled) return;
+      const unique = orders
+        .filter((o, i, all) => all.findIndex((x) => x.id === o.id) === i)
+        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      setPicks(recentItemPicks(unique, items));
+    })();
+
     return () => { cancelled = true; };
-  }, [user?.email, items]);
+  }, [user?.email, user?.id, items]);
 
   if (picks.length === 0) return null;
 
@@ -49,14 +75,15 @@ export default function OrderAgainSection({ items = [] }) {
 
 // The customer's most recent distinct items, newest first: each item shows once,
 // carrying the build from the last time they ordered it, and only items still on
-// the menu today are offered.
+// the menu today are offered. Cancelled orders count too — the food was still
+// chosen by the customer, and those are often the only records a new account has.
 function recentItemPicks(orders, items) {
   const orderable = items.filter((i) => i.square_item_id && i.is_available !== false && !i.is_hidden);
   const bySquareId = new Map(orderable.map((i) => [i.square_item_id, i]));
   const seen = new Set();
   const picks = [];
 
-  for (const order of orders.filter((o) => o.status !== 'cancelled')) {
+  for (const order of orders) {
     for (const stored of order.items || []) {
       const item = bySquareId.get(stored.square_item_id)
         || orderable.find((i) => i.name === stored.name);
