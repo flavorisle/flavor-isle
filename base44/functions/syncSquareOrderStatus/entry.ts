@@ -12,6 +12,7 @@ import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 import { mapSquareFulfillmentStatus, advanceOrderStatus } from '../../shared/orderTrackingStatus.ts';
+import { CANCELABLE_STATUSES, mirrorPosCancellation, mirrorPosRefunds, listRecentSquareRefunds } from '../../shared/posOrderCancellation.ts';
 
 // Returns the ordered list of status milestones between (prev, new] so the
 // sync can send catch-up emails for any states the polling interval skipped.
@@ -179,6 +180,20 @@ export default async function(req) {
         }
       }
 
+      // The crew cancelled this ticket at the register. Mirror it here and tell
+      // the customer, so nobody has to come onto the website to cancel it again.
+      if (newStatus === 'cancelled' && CANCELABLE_STATUSES.includes(order.status)) {
+        try {
+          const { notified: told } = await mirrorPosCancellation(base44, order);
+          if (told) notified++;
+          updated++;
+          console.log(`Order ${order.id}: ${order.status} → cancelled (at the register)`);
+        } catch (cancelError) {
+          console.error(`Could not mirror the register cancellation for order ${order.order_number}:`, cancelError.message);
+        }
+        continue;
+      }
+
       // A staff update must not be rolled backwards by stale Square state.
       newStatus = advanceOrderStatus(order.status, newStatus);
       if (newStatus === 'completed' && order.payment_status === 'paid') {
@@ -295,7 +310,19 @@ export default async function(req) {
       }
     }
 
-    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length });
+    // Register refunds. A refund rung up on the POS leaves the Square order
+    // COMPLETED, so it never surfaced here: the money went back, the card still
+    // read paid, and an order still on the board had to be cancelled again on
+    // the website. Read Square's refunds for the same window and settle up.
+    let refunds = { recorded: 0, cancelled: 0, notified: 0 };
+    try {
+      const squareRefunds = await listRecentSquareRefunds(accessToken, locationId, since);
+      refunds = await mirrorPosRefunds(base44, orderBySquareId, squareRefunds);
+    } catch (refundError) {
+      console.error('Refund mirror failed:', refundError.message);
+    }
+
+    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length, refunds });
   } catch (error) {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

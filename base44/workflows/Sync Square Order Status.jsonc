@@ -1,6 +1,6 @@
 {
   "name": "Sync Square Order Status",
-  "description": "Polls Square every 5 minutes for order status changes and sends email/SMS/push notifications to customers when their order is being prepared, ready, or completed. Catch-up logic sends missed milestone emails when states are skipped between polls.",
+  "description": "Polls Square every 5 minutes for order status changes and sends email/SMS/push notifications to customers when their order is being prepared, ready, or completed. Catch-up logic sends missed milestone emails when states are skipped between polls. Also mirrors register-side cancellations and refunds: a ticket the crew cancels or refunds on the POS cancels the order here and tells the customer, so nobody has to re-cancel it on the website.",
   "trigger": {
     "condition": null,
     "config": {

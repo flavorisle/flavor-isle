@@ -263,17 +263,22 @@
     "cancel_reason": {
       "type": "string",
       "maxLength": 300,
-      "description": "Why the crew cancelled this order, typed into the Cancel Order dialog on the Orders page or the Kitchen board. Written only by the cancelOrder backend function, which also cancels the Square order, refunds the card payment and notifies the customer. When set, the cancellation email quotes it back to the customer as 'What happened: ...', so type it for their eyes."
+      "description": "Why the crew cancelled this order, typed into the Cancel Order dialog on the Orders page or the Kitchen board \u2014 or, for a register cancellation, the wording Square records (a refund reason the crew typed at the POS, otherwise 'Cancelled at the register.'). Written by the cancelOrder backend function and by the Square sync's POS-cancellation mirror. When set, the cancellation email quotes it back to the customer as 'What happened: ...', so type it for their eyes."
     },
     "cancellation_email_sent_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the cancellation email actually went out to the customer. Stamped only on a successful send by notifyOrderCancelled (the crew's Cancel Order flow); a refused or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders so the crew can confirm the customer was told."
+      "description": "When the cancellation email actually went out to the customer. Stamped only on a successful send by notifyOrderCancelled (the crew's Cancel Order flow and the Square sync's register-cancellation mirror); a refused or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders so the crew can confirm the customer was told."
     },
     "cancellation_sms_sent_at": {
       "type": "string",
       "format": "date-time",
       "description": "When the cancellation text actually went out to the customer, gated on the same transactional consent as the other order texts. Stamped only on a successful send by notifyOrderCancelled; a skipped or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders."
+    },
+    "square_refund_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Total refunded against this order in Square, in dollars \u2014 a register refund of a single item as well as a full refund. Written only by the Square sync's refund mirror (posOrderCancellation); a Stripe refund never sets it. Shown on the order card in Admin \u2192 Orders. A refund covering the whole order also flips payment_status to refunded, and when it lands while the order is still on the board the order is mirrored as cancelled and the customer is told, exactly as the Cancel Order button would have."
     }
   },
   "required": [
