@@ -111,6 +111,28 @@ export default function PayPhoneOrder() {
               Track your order
             </Link>
           </PayPageState>
+        ) : order.reason === 'payment_closed' ? (
+          <PayPageState
+            Icon={AlertTriangle}
+            tone="warn"
+            title={`Order #${order.order_number} is no longer open`}
+            body={`This order was cancelled or refunded, so this payment link is closed. Call the counter at ${PHONE} and we'll sort it out with you, or start a fresh order online.`}
+          >
+            <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+              <Link
+                to="/menu"
+                className="btn-cherry chrome-hover inline-flex items-center justify-center px-6 py-3 text-sm"
+              >
+                Start a new order
+              </Link>
+              <a
+                href="tel:+12705634618"
+                className="btn-mint chrome-hover inline-flex items-center justify-center px-6 py-3 text-sm"
+              >
+                Call the counter
+              </a>
+            </div>
+          </PayPageState>
         ) : !order.payable ? (
           <PayPageState
             Icon={Store}
