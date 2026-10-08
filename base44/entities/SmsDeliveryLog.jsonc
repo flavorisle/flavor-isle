@@ -21,9 +21,10 @@
         "preparing",
         "ready",
         "completed",
-        "review_request"
+        "review_request",
+        "cancelled"
       ],
-      "description": "Which customer text this is. review_request is the post-order Google review ask (issue #37, step 2) and doubles as its 90-day per-phone frequency cap."
+      "description": "Which customer text this is. review_request is the post-order Google review ask (issue #37, step 2) and doubles as its 90-day per-phone frequency cap. cancelled is the order-cancellation notice sent by the cancelOrder backend function, gated on the same transactional consent as the other order texts."
     },
     "body": {
       "type": "string"

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import AdminNav from '@/components/admin/AdminNav';
-import { RefreshCw, ChefHat, Clock, CheckCircle, AlertCircle, MapPin, Phone, Utensils, Bike, ShoppingBag, Flame } from 'lucide-react';
+import { RefreshCw, ChefHat, Clock, CheckCircle, AlertCircle, MapPin, Phone, Utensils, Bike, ShoppingBag, Flame, XCircle } from 'lucide-react';
+import CancelOrderDialog from '@/components/admin/CancelOrderDialog';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -30,6 +31,7 @@ export default function AdminKitchen() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const refreshTimer = useRef(null);
 
   const loadOrders = async () => {
@@ -190,12 +192,28 @@ export default function AdminKitchen() {
                       </div>
                     )}
                   </div>
+
+                  {/* Cancel is always on the ticket the crew is looking at. */}
+                  <button
+                    onClick={() => setCancelTarget(order)}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-1.5 min-h-11 rounded-full border-2 border-destructive/40 text-destructive font-heading text-sm hover:bg-destructive hover:text-white transition-colors"
+                  >
+                    <XCircle size={15} /> Cancel order
+                  </button>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      <CancelOrderDialog
+        key={cancelTarget?.id || 'none'}
+        order={cancelTarget}
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onCancelled={() => { setCancelTarget(null); loadOrders(); }}
+      />
     </div>
   );
 }

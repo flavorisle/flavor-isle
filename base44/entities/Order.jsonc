@@ -259,6 +259,11 @@
           "type": "string"
         }
       }
+    },
+    "cancel_reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why the crew cancelled this order, typed into the Cancel Order dialog on the Orders page or the Kitchen board. Written only by the cancelOrder backend function, which also cancels the Square order, refunds the card payment and notifies the customer. Never shown to the customer."
     }
   },
   "required": [

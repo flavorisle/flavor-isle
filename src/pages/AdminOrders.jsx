@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, X,
+  ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, XCircle,
   MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -11,6 +11,7 @@ import OccupancyTracker from '@/components/OccupancyTracker';
 import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 import MerchOrdersList from '@/components/admin/MerchOrdersList';
 import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
+import CancelOrderDialog from '@/components/admin/CancelOrderDialog';
 import PhonePaymentActions from '@/components/admin/PhonePaymentActions';
 
 const STATUS_COLORS = {
@@ -77,7 +78,7 @@ function StatCard({ label, value, Icon, tone }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
+function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
   const [expanded, setExpanded] = useState(false);
   const source = getSource(order);
   const badge = SOURCE_BADGE[source];
@@ -125,6 +126,19 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
           {expanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
         </div>
       </button>
+
+      {/* Cancel sits outside the expand toggle so it is always one tap away,
+          and runs the full cancel: Square, refund, customer notice. */}
+      {isActive && (
+        <div className="px-5 pb-4 flex justify-end">
+          <button
+            onClick={() => onRequestCancel(order)}
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-full border-2 border-destructive/40 text-destructive font-heading text-sm hover:bg-destructive hover:text-white transition-colors"
+          >
+            <XCircle size={15} /> Cancel order
+          </button>
+        </div>
+      )}
 
       {expanded && (
         <div className="px-5 pb-5 border-t border-border pt-3">
@@ -177,25 +191,14 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
 
           <PhonePaymentActions order={order} />
 
-          {isActive && (
-            <div className="mt-4 flex gap-3">
-              {canAdvance && (
-                <button
-                  onClick={() => onAdvance(order)}
-                  className="flex-1 btn-cherry py-2.5 text-sm font-heading flex items-center justify-center gap-2"
-                >
-                  <ChefHat size={16} />
-                  Mark as {NEXT_STATUS[order.status]?.charAt(0).toUpperCase() + NEXT_STATUS[order.status]?.slice(1)}
-                </button>
-              )}
-              <button
-                onClick={() => onCancel(order)}
-                className="p-2.5 border border-border rounded-xl text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
-                aria-label="Cancel order"
-              >
-                <X size={16} />
-              </button>
-            </div>
+          {isActive && canAdvance && (
+            <button
+              onClick={() => onAdvance(order)}
+              className="mt-4 w-full btn-cherry py-2.5 text-sm font-heading flex items-center justify-center gap-2"
+            >
+              <ChefHat size={16} />
+              Mark as {NEXT_STATUS[order.status]?.charAt(0).toUpperCase() + NEXT_STATUS[order.status]?.slice(1)}
+            </button>
           )}
         </div>
       )}
@@ -212,6 +215,7 @@ export default function AdminOrders() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [bagTicketOrder, setBagTicketOrder] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -236,11 +240,6 @@ export default function AdminOrders() {
     if (!next) return;
     await base44.entities.Order.update(order.id, { status: next });
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o));
-  };
-
-  const cancel = async (order) => {
-    await base44.entities.Order.update(order.id, { status: 'cancelled' });
-    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
   };
 
   const stats = useMemo(() => {
@@ -434,7 +433,7 @@ export default function AdminOrders() {
           ) : (
             <div className="space-y-3">
               {filtered.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} onPrintBagTicket={setBagTicketOrder} />
+                <OrderCard key={order.id} order={order} onAdvance={advance} onRequestCancel={setCancelTarget} onPrintBagTicket={setBagTicketOrder} />
               ))}
             </div>
           )}
@@ -446,6 +445,13 @@ export default function AdminOrders() {
       )}
 
       <BagTicketPrintModal order={bagTicketOrder} onClose={() => setBagTicketOrder(null)} />
+      <CancelOrderDialog
+        key={cancelTarget?.id || 'none'}
+        order={cancelTarget}
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onCancelled={() => { setCancelTarget(null); load(); }}
+      />
     </div>
   );
 }

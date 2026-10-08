@@ -1,6 +1,6 @@
-import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
+import { refundStripePaymentIntent, stripePaymentIntentId } from '../../shared/stripeRefund.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -25,18 +25,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Order already refunded', order }, { status: 409 });
     }
 
-    const paymentIntentId = order.stripe_session_id;
-    if (!paymentIntentId || !paymentIntentId.startsWith('pi_')) {
+    if (!stripePaymentIntentId(order)) {
       return Response.json({ error: 'No valid Stripe PaymentIntent found on order' }, { status: 400 });
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
-
-    // Issue a full refund of the PaymentIntent.
-    const refund = await stripe.refunds.create({
-      payment_intent: paymentIntentId,
-      reason,
-    });
+    // Issue a full refund of the PaymentIntent — shared with cancelOrder so the
+    // Stripe call lives in one place.
+    const refund = await refundStripePaymentIntent(order, reason);
 
     // Update the order record.
     await base44.asServiceRole.entities.Order.update(order_id, {
