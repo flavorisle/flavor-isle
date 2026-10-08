@@ -200,6 +200,8 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
+      // Includes the admin's 24/7 override window (MenuSetting
+      // open_all_day_date / open_all_day_until), shared with the website.
       const [storeStatus, busynessLevel, convo] = await Promise.all([
         getPhysicalStoreStatus(base44),
         getBusynessLevel(base44),

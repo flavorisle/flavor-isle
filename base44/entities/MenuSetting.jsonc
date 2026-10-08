@@ -82,7 +82,11 @@
     },
     "open_all_day_date": {
       "type": "string",
-      "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, ordering stays open around the clock for that one day \u2014 business hours are ignored (no 8 AM unlock, no closing or delivery cutoffs) on BOTH the website and Smashie's phone line. Use for overnight ordering tests. Auto-expires after the date passes; ordering_enabled and an active closure still take precedence."
+      "description": "YYYY-MM-DD (store local, America/Chicago). The start of the 24/7 ordering override used for overnight tests: ordering stays open around the clock, ignoring business hours (no 8 AM unlock, no closing or delivery cutoffs) on BOTH the website and Smashie's phone line. On its own it covers that one store-local day; set open_all_day_until to stretch the window past midnight. Auto-expires; ordering_enabled and an active closure still take precedence."
+    },
+    "open_all_day_until": {
+      "type": "string",
+      "description": "Optional end of the 24/7 ordering override, as YYYY-MM-DDTHH:MM in store local time (America/Chicago), e.g. 2026-10-08T20:00. Only read together with open_all_day_date: while now is between the start date and this moment, ordering stays open around the clock, then normal business hours resume. Leave blank for the original single-day behavior (the whole day of open_all_day_date)."
     },
     "site_notice": {
       "type": "object",

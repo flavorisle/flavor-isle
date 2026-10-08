@@ -1,3 +1,5 @@
+import { isOpenAllDay } from '@/lib/openAllDay';
+
 const STORE_TZ = 'America/Chicago';
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -38,15 +40,16 @@ export function getCutoffStatus(setting) {
     if (todayStr >= start && todayStr <= end) return allClosed;
   }
 
-  // Date-scoped 24/7 override (MenuSetting.open_all_day_date): when today
-  // matches, ordering stays available around the clock — no morning unlock and
-  // no wind-down cutoffs. Fixed date, so it expires on its own; the admin can
-  // still pause delivery, and a closure above still wins.
-  if (setting?.open_all_day_date === todayStr) {
+  // Date-scoped 24/7 override (MenuSetting.open_all_day_date, optionally
+  // stretched by open_all_day_until): while the window is active, ordering stays
+  // available around the clock — no morning unlock and no wind-down cutoffs. A
+  // fixed window, so it expires on its own; the admin can still pause delivery,
+  // and a closure above still wins.
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
+  if (isOpenAllDay(setting, todayStr, now.getHours() * 60 + now.getMinutes())) {
     return { delivery: deliveryPaused, pickup: false, dine_in: false, deliveryCutoff, pickupCutoff };
   }
 
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
   const dayKey = DAY_KEYS[(now.getDay() + 6) % 7];
   const today = setting?.business_hours?.[dayKey] || {};
   if (today.closed) return allClosed;

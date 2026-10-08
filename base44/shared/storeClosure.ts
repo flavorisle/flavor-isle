@@ -20,6 +20,26 @@ function formatHour(time) {
   return m ? `${hour12}:${String(m).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
 }
 
+// MenuSetting.open_all_day_date / open_all_day_until — the date-scoped 24/7
+// ordering override used for overnight tests. A plain date covers that one
+// store-local day (the original behavior). Setting open_all_day_until
+// ("YYYY-MM-DDTHH:MM", store local) stretches the window so it ends at that
+// moment, which is how "open now through tomorrow 8 PM" is expressed: start
+// date = today, until = tomorrow 20:00. Either way it is fixed and expires on
+// its own, and an active closure still wins.
+function allDayOverrideActive(s, now) {
+  const start = String(s?.open_all_day_date || '').trim();
+  if (!start) return false;
+
+  const until = String(s?.open_all_day_until || '').trim().slice(0, 16);
+  if (!until) return now.dateKey === start;
+
+  const hh = String(now.hour).padStart(2, '0');
+  const mm = String(now.minute).padStart(2, '0');
+  const stamp = `${now.dateKey}T${hh}:${mm}`;
+  return stamp >= `${start}T00:00` && stamp <= until;
+}
+
 const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 function nextOpeningTime(businessHours, now) {
@@ -66,12 +86,13 @@ export async function getStoreStatus(base44) {
       }
     }
 
-    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date): when
-    // today's store-local date matches, online ordering counts as open around
-    // the clock — no 8 AM unlock and no closing time. A fixed date, so it
-    // expires on its own; an active closure above still wins.
+    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date, optionally
+    // stretched by open_all_day_until): while the window is active, online
+    // ordering counts as open around the clock — no 8 AM unlock and no closing
+    // time. A fixed window, so it expires on its own; an active closure above
+    // still wins.
     const now = todayChicago();
-    if (s.open_all_day_date && s.open_all_day_date === now.dateKey) {
+    if (allDayOverrideActive(s, now)) {
       return { open: true, message: '' };
     }
 
@@ -121,12 +142,13 @@ export async function getPhysicalStoreStatus(base44) {
       }
     }
 
-    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date): when
-    // today's store-local date matches, the phone line counts as open around
-    // the clock so Smashie can take orders overnight. A fixed date, so it
-    // expires on its own; an active closure above still wins.
+    // Date-scoped 24/7 test override (MenuSetting.open_all_day_date, optionally
+    // stretched by open_all_day_until): while the window is active, the phone
+    // line counts as open around the clock so Smashie can take orders overnight.
+    // A fixed window, so it expires on its own; an active closure above still
+    // wins.
     const now = todayChicago();
-    if (s.open_all_day_date && s.open_all_day_date === now.dateKey) {
+    if (allDayOverrideActive(s, now)) {
       return { open: true, message: '' };
     }
 

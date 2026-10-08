@@ -147,6 +147,8 @@ Deno.serve(async (req) => {
     // reply the customer reads verbatim.
     let statusLine = '';
     try {
+      // Same shared helper the voice paths use, so the 24/7 override window
+      // (MenuSetting open_all_day_date / open_all_day_until) applies to texts too.
       const storeStatus = await getPhysicalStoreStatus(base44);
       statusLine = storeStatus.open
         ? 'STORE STATUS: OPEN'

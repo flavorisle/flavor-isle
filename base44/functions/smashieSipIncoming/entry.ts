@@ -124,6 +124,9 @@ export default async function (req) {
     }
 
     const callerPhone = extractCallerPhone(data.sip_headers);
+    // Openness — including the admin's 24/7 override window (MenuSetting
+    // open_all_day_date / open_all_day_until) — comes from the shared store
+    // status helper, so the phone line reads exactly what the website does.
     const [storeStatus, busyness, customer] = await Promise.all([
       getPhysicalStoreStatus(base44),
       getLiveBusyness(base44),

@@ -7,6 +7,7 @@ import { fetchBusyness } from '@/lib/busynessCache';
 import { getBusynessStage, BUSYNESS_STAGES } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
+import { isOpenAllDay } from '@/lib/openAllDay';
 
 // Minutes before today's close where the bar switches to the
 // "closing soon — order now" urgency state.
@@ -22,6 +23,7 @@ export default function useLiveStatus() {
   const [data, setData] = useState(null);
   const [orderingEnabled, setOrderingEnabled] = useState(true);
   const [openAllDayDate, setOpenAllDayDate] = useState('');
+  const [openAllDayUntil, setOpenAllDayUntil] = useState('');
   const [now, setNow] = useState(() => chicagoNow());
 
   // Poll the live busyness backend every 60s.
@@ -47,19 +49,24 @@ export default function useLiveStatus() {
     getMenuSetting().then((s) => {
       if (!active) return;
       if (typeof s?.ordering_enabled === 'boolean') setOrderingEnabled(s.ordering_enabled);
-      // Date-scoped 24/7 ordering override (MenuSetting.open_all_day_date) —
-      // today only, so it expires on its own.
+      // Date-scoped 24/7 ordering override (MenuSetting.open_all_day_date, with
+      // its optional open_all_day_until end) — fixed, so it expires on its own.
       setOpenAllDayDate(s?.open_all_day_date || '');
+      setOpenAllDayUntil(s?.open_all_day_until || '');
     });
     const id = setInterval(() => setNow(chicagoNow()), 15000);
     return () => { active = false; clearInterval(id); };
   }, []);
 
-  // MenuSetting.open_all_day_date keeps ordering open around the clock for the
-  // rest of that store-local day — the bar reads open with no closing countdown
-  // instead of "Closed" once the normal closing time has passed.
+  // MenuSetting.open_all_day_date (optionally stretched by open_all_day_until)
+  // keeps ordering open around the clock — the bar reads open with no closing
+  // countdown instead of "Closed" once the normal closing time has passed.
   const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  const openAllDay = !!openAllDayDate && openAllDayDate === todayKey;
+  const openAllDay = isOpenAllDay(
+    { open_all_day_date: openAllDayDate, open_all_day_until: openAllDayUntil },
+    todayKey,
+    now.totalMinutes,
+  );
 
   const todayHours = businessHours?.[now.dayKey] || {};
   const closeMins = (() => {
