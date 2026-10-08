@@ -37,6 +37,9 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     let announceAttached;
     const attached = new Promise((resolve) => { announceAttached = resolve; });
+    // Why this hop could not attach, handed back to the previous hop so a failed
+    // handover lands on the call record with the line's own reason.
+    let attachFailure = '';
 
     const drive = driveLiveHop({
       base44,
@@ -49,6 +52,7 @@ export default async function (req) {
       greeting: state?.hop ? '' : greeting,
       state: state || {},
       onAttached: () => announceAttached(true),
+      onAttachFailure: (message) => { attachFailure = message; },
       handoff: async (nextState) => {
         const res = await base44.asServiceRole.functions.invoke('smashieLiveHop', {
           relayKey,
@@ -59,7 +63,7 @@ export default async function (req) {
           state: nextState,
         });
         const data = res?.data ?? res;
-        return !!(data && data.attached);
+        return { attached: !!(data && data.attached), reason: String(data?.reason || data?.error || '') };
       },
     });
     waitUntil(drive);
@@ -69,7 +73,7 @@ export default async function (req) {
     // forever when the attach failed, and the previous hop's handoff hung with
     // it instead of retrying (issue #81).
     const isAttached = await Promise.race([attached, drive.then(() => false, () => false)]);
-    return Response.json({ attached: isAttached });
+    return Response.json({ attached: isAttached, reason: isAttached ? '' : attachFailure });
   } catch (error) {
     console.error('smashieLiveHop error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

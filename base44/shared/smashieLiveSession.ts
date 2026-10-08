@@ -45,10 +45,11 @@ export const TOOL_TIMEOUT_MS = 10000;
 // being torn down, so the successor never attached. Starting at 6000ms gives
 // the three retries (1.5s apart) room to finish well inside the worker's life.
 export const HOP_MS = 6000;
-const MAX_HOP_FAILURES = 3;
-// One handoff attempt: a fresh worker attaches in about a second; five leaves
-// room for the retries inside this worker's life.
-const HANDOFF_TIMEOUT_MS = 5000;
+const MAX_HOP_FAILURES = 5;
+// One handoff attempt: a fresh worker attaches in about a second, so a healthy
+// handover confirms well inside this. Shorter than the worker's remaining life,
+// so a successor that never answers still leaves room for the retries.
+const HANDOFF_TIMEOUT_MS = 3500;
 // Partial speech is saved at most this long after it arrives; every finished
 // segment is saved the moment it completes.
 const PARTIAL_SAVE_MS = 1000;
@@ -57,9 +58,9 @@ const MAX_CALL_MS = 15 * 60 * 1000;
 // the first real call shows exactly which build answered it (issue #81 deploy
 // audit: the hop build only reached live calls on Oct 6, four days after it was
 // committed).
-const DRIVER_VERSION = 'live-driver-2026-10-08-handoff-unblocked';
+const DRIVER_VERSION = 'live-driver-2026-10-08-handoff-reasons';
 
-export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, handoff }) {
+export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, onAttachFailure, handoff }) {
   const startedAt = state.startedAt || Date.now();
   const hopNumber = (state.hop || 0) + 1;
   const callTranscript = createCallTranscript(state.transcript || []);
@@ -358,7 +359,8 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       try {
         // Bounded so a successor that never answers cannot use up this worker's
         // remaining life before the retries run.
-        if (await withTimeout(() => handoff(hopState()), HANDOFF_TIMEOUT_MS, 'hop handoff')) {
+        const next = await withTimeout(() => handoff(hopState()), HANDOFF_TIMEOUT_MS, 'hop handoff');
+        if (next?.attached) {
           recordTool({ name: 'hop_handoff', ok: true, ms: Date.now() - attemptAt, detail: `hop ${hopNumber} handed the call to a fresh worker; this socket can close now` });
           // Write the record while this worker still owns it (persist() is a
           // no-op once handedOff is set), in order behind any queued saves.
@@ -375,7 +377,13 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
           return;
         }
         failures += 1;
-        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached` });
+        // 2026-10-08 (real call): handovers 1-5 were clean, then three refusals in
+        // a row cut the caller off mid-order — each one back in under 200ms, far
+        // too fast for a real connection attempt. Whatever the line says about
+        // refusing is carried back from the hop and written here, so the next call
+        // records the actual reason instead of only that the handover failed.
+        const why = String(next?.reason || '').trim();
+        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached${why ? ` — ${why}` : ' (no reason reported)'}` });
       } catch (err) {
         failures += 1;
         recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES} failed: ${err.message}` });
@@ -385,7 +393,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       queue(persist);
       await drainQueue();
       if (failures >= MAX_HOP_FAILURES) break;
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 900));
     }
     if (handedOff || finalized) return;
 
@@ -433,6 +441,9 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     return;
   } catch (e) {
     console.error(`Live sideband failed for ${sessionId}:`, e.message);
+    // Handed back to the previous hop so a failed handover is recorded with the
+    // line's own reason for refusing the socket.
+    if (onAttachFailure) onAttachFailure(e.message);
     sideband?.close();
     clearTimeout(hopTimer);
     clearTimeout(saveTimer);
