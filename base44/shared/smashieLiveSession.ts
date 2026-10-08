@@ -46,8 +46,18 @@ export const TOOL_TIMEOUT_MS = 10000;
 // the three retries (1.5s apart) room to finish well inside the worker's life.
 export const HOP_MS = 6000;
 const MAX_HOP_FAILURES = 3;
+// One handoff attempt: a fresh worker attaches in about a second; five leaves
+// room for the retries inside this worker's life.
+const HANDOFF_TIMEOUT_MS = 5000;
+// Partial speech is saved at most this long after it arrives; every finished
+// segment is saved the moment it completes.
+const PARTIAL_SAVE_MS = 1000;
 const MAX_CALL_MS = 15 * 60 * 1000;
-const DRIVER_VERSION = 'live-driver-2026-10-02-hop';
+// Written into every call record's sideband_attached entry, so the record of
+// the first real call shows exactly which build answered it (issue #81 deploy
+// audit: the hop build only reached live calls on Oct 6, four days after it was
+// committed).
+const DRIVER_VERSION = 'live-driver-2026-10-08-handoff-unblocked';
 
 export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, handoff }) {
   const startedAt = state.startedAt || Date.now();
@@ -105,7 +115,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     saveTimer = setTimeout(() => {
       saveTimer = null;
       queue(persist);
-    }, 2000);
+    }, PARTIAL_SAVE_MS);
   };
 
   const clearStall = () => {
@@ -314,60 +324,82 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     finishHop();
   };
 
-  const startHopTimer = () => {
-    hopTimer = setTimeout(() => {
-      queue(async () => {
-        if (finalized || handedOff) return;
-        // Let an in-flight action finish, so its result is actually spoken
-        // before the call changes hands.
-        await chain.catch(() => {});
-        if (finalized || handedOff) return;
+  // Waits for every write and action queued so far. Only ever awaited from
+  // OUTSIDE the queue — see runHandoff.
+  const drainQueue = () => chain.catch(() => {});
 
-        if (Date.now() - startedAt > MAX_CALL_MS) {
-          if (sideband) appendSpeakableNote(sideband, 'I have to let you go here — sorry about that. Give the counter a call and they will take care of you.');
-          await endCall('Call ran past the maximum tracked length; whatever was captured was saved.', true);
+  // Issue #81 root cause: the handoff used to run as a task INSIDE the work
+  // queue and then `await chain` — the promise that only settles once that same
+  // task finishes. It waited on itself forever, so the moment the hop came due
+  // (12s on the build live since Oct 6) the queue froze for good: no handoff, no
+  // transcript saves, no tool runs, no fallback speech, and the worker was later
+  // reclaimed with nothing recorded. The handoff now runs beside the queue, and
+  // actions keep running while it is in progress.
+  const runHandoff = async () => {
+    if (finalized || handedOff) return;
+    // Let actions already queued finish, so their results are spoken before the
+    // call changes hands.
+    await drainQueue();
+    if (finalized || handedOff) return;
+
+    if (Date.now() - startedAt > MAX_CALL_MS) {
+      if (sideband) appendSpeakableNote(sideband, 'I have to let you go here — sorry about that. Give the counter a call and they will take care of you.');
+      await endCall('Call ran past the maximum tracked length; whatever was captured was saved.', true);
+      return;
+    }
+
+    let failures = 0;
+    while (!finalized && !handedOff) {
+      const attemptAt = Date.now();
+      // A1/A2: every handoff attempt is written to the call record with its
+      // exact outcome, so a call that never changes hands is diagnosable
+      // afterwards instead of a silent gap.
+      recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${failures + 1} of ${MAX_HOP_FAILURES} — starting a fresh worker` });
+      try {
+        // Bounded so a successor that never answers cannot use up this worker's
+        // remaining life before the retries run.
+        if (await withTimeout(() => handoff(hopState()), HANDOFF_TIMEOUT_MS, 'hop handoff')) {
+          recordTool({ name: 'hop_handoff', ok: true, ms: Date.now() - attemptAt, detail: `hop ${hopNumber} handed the call to a fresh worker; this socket can close now` });
+          // Write the record while this worker still owns it (persist() is a
+          // no-op once handedOff is set), in order behind any queued saves.
+          queue(persist);
+          await drainQueue();
+          // The successor's socket is live and takes every new event from here.
+          handedOff = true;
+          detached = true;
+          // Anything this worker queued before it let go finishes on its own
+          // still-open socket, so no result is dropped in the changeover.
+          await drainQueue();
+          sideband?.close();
+          finishHop();
           return;
         }
+        failures += 1;
+        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached` });
+      } catch (err) {
+        failures += 1;
+        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES} failed: ${err.message}` });
+        console.error('Live handoff failed:', err.message);
+      }
+      // Write the failure trail before the worker is taken down.
+      queue(persist);
+      await drainQueue();
+      if (failures >= MAX_HOP_FAILURES) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    if (handedOff || finalized) return;
 
-        let failures = 0;
-        while (!finalized && !handedOff) {
-          const attemptAt = Date.now();
-          // A1/A2: every handoff attempt is written to the call record with its
-          // exact outcome, so a call that never changes hands is diagnosable
-          // afterwards instead of a silent gap.
-          recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${failures + 1} of ${MAX_HOP_FAILURES} — starting a fresh worker` });
-          try {
-            if (await handoff(hopState())) {
-              recordTool({ name: 'hop_handoff', ok: true, ms: Date.now() - attemptAt, detail: `hop ${hopNumber} handed the call to a fresh worker; this socket can close now` });
-              // Persist while this worker still owns the record (persist() is a
-              // no-op once handedOff is set).
-              await persist();
-              handedOff = true;
-              detached = true;
-              sideband?.close();
-              finishHop();
-              return;
-            }
-            failures += 1;
-            recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached` });
-          } catch (err) {
-            failures += 1;
-            recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES} failed: ${err.message}` });
-            console.error('Live handoff failed:', err.message);
-          }
-          // Write the failure trail before the worker is taken down.
-          await persist();
-          if (failures >= MAX_HOP_FAILURES) break;
-          await new Promise((r) => setTimeout(r, 1500));
-        }
+    // No successor picked the call up: end it openly rather than letting the
+    // caller talk into a line that has stopped listening.
+    if (sideband) {
+      appendSpeakableNote(sideband, "My bad fam, I'm losing the line here. Give the counter a call and they will take care of you.");
+    }
+    await endCall('The call could not be handed to a fresh worker before this one was shut down.', true);
+  };
 
-        // No successor picked the call up: end it openly rather than letting the
-        // caller talk into a line that has stopped listening.
-        if (sideband && !finalized) {
-          appendSpeakableNote(sideband, "My bad fam, I'm losing the line here. Give the counter a call and they will take care of you.");
-        }
-        await endCall('The call could not be handed to a fresh worker before this one was shut down.', true);
-      });
+  const startHopTimer = () => {
+    hopTimer = setTimeout(() => {
+      runHandoff().catch((err) => console.error('Live handoff crashed:', err.message));
     }, HOP_MS);
   };
 

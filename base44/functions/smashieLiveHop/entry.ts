@@ -38,7 +38,7 @@ export default async function (req) {
     let announceAttached;
     const attached = new Promise((resolve) => { announceAttached = resolve; });
 
-    waitUntil(driveLiveHop({
+    const drive = driveLiveHop({
       base44,
       sessionId,
       apiKey,
@@ -61,10 +61,15 @@ export default async function (req) {
         const data = res?.data ?? res;
         return !!(data && data.attached);
       },
-    }));
+    });
+    waitUntil(drive);
 
-    await attached;
-    return Response.json({ attached: true });
+    // Answer as soon as this hop's socket is live — or as soon as it has given
+    // up attaching. Waiting on the attach alone left this request hanging
+    // forever when the attach failed, and the previous hop's handoff hung with
+    // it instead of retrying (issue #81).
+    const isAttached = await Promise.race([attached, drive.then(() => false, () => false)]);
+    return Response.json({ attached: isAttached });
   } catch (error) {
     console.error('smashieLiveHop error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
