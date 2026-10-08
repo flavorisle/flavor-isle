@@ -97,7 +97,14 @@ export default function ProductDetail() {
   const editingLine = item
     ? cartItems.find(line => line.id === location.state?.editCartLineId && (line.productId || line.id.split('__')[0]) === item.id)
     : null;
-  useEffect(() => { if (editingLine) setQuantity(editingLine.quantity); }, [editingLine?.id]);
+  // A past order line opened from the menu's Order Again cards: the panel comes
+  // up with that build already in place, so the item can be ordered as it was or
+  // changed first.
+  const reorderItem = editingLine ? null : (location.state?.reorderItem || null);
+  useEffect(() => {
+    if (editingLine) setQuantity(editingLine.quantity);
+    else if (reorderItem?.quantity) setQuantity(Math.min(20, Math.max(1, reorderItem.quantity)));
+  }, [editingLine?.id, reorderItem?.quantity]);
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
   const soldOut = item?.is_available === false;
@@ -397,6 +404,11 @@ export default function ProductDetail() {
                   Editing your bag item — change any option on this page, then tap Update Bag to save.
                 </p>
               )}
+              {reorderItem && (
+                <p className="text-xs text-patina-mint bg-patina-mint/10 rounded-lg px-3 py-2">
+                  From your last order — change anything you like, then tap Add to Bag.
+                </p>
+              )}
 
               {/* What will be on the item — the live recap of the choices made,
                   in the words the bag itself will list. */}
@@ -437,7 +449,7 @@ export default function ProductDetail() {
                   item={item}
                   onConfirm={handlePanelConfirm}
                   onStateChange={setPanelState}
-                  initialCartItem={editingLine}
+                  initialCartItem={editingLine || reorderItem}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

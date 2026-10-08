@@ -7,8 +7,12 @@ import ModifierModal from './ModifierModal';
 import { optimizedImageUrl } from '@/lib/utils';
 
 // Sandwich / burger pages suggest sides and drinks for one-tap add.
+// A steak platter is excluded first: a Hamburger Steak is filed in Square's
+// burger category and its name contains "burger" inside "Hamburger", but it is a
+// plate, not a sandwich, so it never asks for a side and a drink.
 export function isSandwichOrBurger(item) {
   if (!item) return false;
+  if (/hamburger steak|steak platter|platter/i.test(item.name || '')) return false;
   const cat = (item.category || item.square_category || item.display_category || '').toLowerCase();
   return cat === 'burgers' || /burger|sandwich/i.test(item.name || '');
 }

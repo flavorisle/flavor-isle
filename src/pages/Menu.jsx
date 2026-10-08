@@ -25,6 +25,7 @@ import HappyHourBanner from '@/components/HappyHourBanner';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
+import OrderAgainSection from '@/components/orderAgain/OrderAgainSection';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
@@ -214,6 +215,11 @@ export default function Menu() {
       {!search && !loading && rows.some((r) => r.isShakeBanner || r.items.length > 0) && (
         <MenuCategoryChips rows={rows} renames={renames} />
       )}
+
+      {/* Returning customers: what they ordered last time, one card per item */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <OrderAgainSection items={items} />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <SignUpNudge variant="compact" />
