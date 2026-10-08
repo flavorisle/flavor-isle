@@ -6,6 +6,14 @@ import { base44 } from '@/api/base44Client';
 // The card step on the pay page. Tapping Pay prices the tip onto the order
 // first — server-side, against the order's real subtotal — and only then
 // confirms, so the amount charged is always the amount the server computed.
+// A step that never answers must never leave the button spinning forever, so
+// every wait on the way to the charge is bounded.
+const withDeadline = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+  ]);
+
 export default function PayOrderForm({ orderNumber, clientSecret, tip, total, onSuccess, onError }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -14,44 +22,59 @@ export default function PayOrderForm({ orderNumber, clientSecret, tip, total, on
 
   const handlePay = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || paying) return;
     setPaying(true);
     onError('');
 
-    const tipRes = await base44.functions.invoke('applyPhoneOrderTip', { order_number: orderNumber, tip });
-    if (tipRes.data?.ok !== true) {
-      onError(tipRes.data?.error || 'We could not price that tip. Please try again.');
-      setPaying(false);
-      return;
-    }
-
-    // Keep the card form's amount in step with the re-priced total.
-    if (typeof elements.fetchUpdates === 'function') {
-      try {
-        await elements.fetchUpdates();
-      } catch (refreshErr) {
-        console.error('Payment form refresh skipped:', refreshErr.message);
+    try {
+      // The tip is priced server-side against the order's real subtotal.
+      const tipRes = await withDeadline(
+        base44.functions.invoke('applyPhoneOrderTip', { order_number: orderNumber, tip }),
+        12000,
+      );
+      if (tipRes.data?.ok !== true) {
+        onError(tipRes.data?.error || 'We could not price that tip. Please try again.');
+        setPaying(false);
+        return;
       }
-    }
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      clientSecret,
-      confirmParams: { return_url: `${window.location.origin}/pay/${orderNumber}` },
-      redirect: 'if_required',
-    });
+      // Keep the card form's amount in step with the re-priced total. The amount
+      // is already set on the payment itself, so a slow refresh here must not
+      // hold up the confirmation.
+      if (typeof elements.fetchUpdates === 'function') {
+        try {
+          await withDeadline(elements.fetchUpdates(), 5000);
+        } catch (refreshErr) {
+          console.error('Payment form refresh skipped:', refreshErr.message);
+        }
+      }
 
-    if (error) {
-      onError(error.message || 'That payment did not go through. Please try again.');
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: { return_url: `${window.location.origin}/pay/${orderNumber}` },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        onError(error.message || 'That payment did not go through. Please try again.');
+        setPaying(false);
+        return;
+      }
+      if (paymentIntent?.status === 'succeeded') {
+        onSuccess();
+        return;
+      }
+      onError('Your payment is still processing. If it does not settle shortly, call us at (270) 563-4618.');
       setPaying(false);
-      return;
+    } catch (err) {
+      console.error('Pay page charge failed to start:', err?.message);
+      onError(
+        err?.response?.data?.error ||
+          "We couldn't start that payment. Check your connection and tap Pay again, or call us at (270) 563-4618.",
+      );
+      setPaying(false);
     }
-    if (paymentIntent?.status === 'succeeded') {
-      onSuccess();
-      return;
-    }
-    onError('Your payment is still processing. If it does not settle shortly, call us at (270) 563-4618.');
-    setPaying(false);
   };
 
   const disabled = !ready || paying;
