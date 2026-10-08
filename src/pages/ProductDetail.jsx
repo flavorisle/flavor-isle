@@ -15,6 +15,7 @@ import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
 import { findMenuItem, productSlug, productPath } from '@/lib/productSlug';
 import ItemBuildSummary from '@/components/ItemBuildSummary';
+import ItemSelectionSummary from '@/components/ItemSelectionSummary';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -383,6 +384,17 @@ export default function ProductDetail() {
                     </button>
                   </div>
                 </div>
+              )}
+
+              {/* What will be on the item — the live recap of the choices made,
+                  sitting right above Add to Bag. */}
+              {orderingEnabled && !soldOut && (
+                <ItemSelectionSummary
+                  item={item}
+                  menuSetting={menuSetting}
+                  selectedIds={panelState.selectedIds}
+                  nestedSelections={panelState.nestedSelections}
+                />
               )}
 
               {/* Add to Bag */}
