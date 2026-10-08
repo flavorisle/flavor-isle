@@ -45,7 +45,15 @@
     "birthday": {
       "type": "string",
       "format": "date",
-      "description": "Customer birthday (YYYY-MM-DD). Used by the birthday email automation to send a free-cone treat each year. Optional \u2014 customers add it from their account page."
+      "description": "Customer birthday (YYYY-MM-DD). Used by the birthday email automation to grant 100 Star Rewards Stars each year. Optional \u2014 customers add it from their account page."
+    },
+    "star_rewards_second_order_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "star_rewards_last_streak_bonus_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "favorite_order": {
       "type": "string"

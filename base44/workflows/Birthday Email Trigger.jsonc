@@ -1,6 +1,6 @@
 {
   "name": "Birthday Email Trigger",
-  "description": "Daily at 10 AM store local: finds customers whose birthday is today, auto-grants 150 loyalty points, and sends a birthday treat email. Capped at 1 birthday email per customer per year.",
+  "description": "Daily at 10 AM store local: finds customers whose birthday is today, grants 100 Stars to an existing phone-linked Square loyalty account, and sends a birthday email. Capped at 1 birthday email per customer per year.",
   "trigger": {
     "condition": null,
     "config": {
@@ -35,7 +35,7 @@
           "then": "end",
           "x-base44": {
             "title": "Send birthday emails",
-            "description": "Find customers with birthdays today, grant 150 points, send birthday treat email"
+            "description": "Find customers with birthdays today, grant 100 Stars to an existing phone-linked Square account, and send birthday email"
           }
         }
       }

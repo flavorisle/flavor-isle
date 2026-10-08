@@ -1,11 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
-import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
+import { grantLoyaltyPointsByPhone, toE164Phone } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
-const BIRTHDAY_POINTS = 150;
+const BIRTHDAY_POINTS = 100;
 
 // Birthday-themed photo block — a big celebratory shake/dessert hero up top
 // (the birthday treat), then a 2-column fan-favorite grid below. Uses only
@@ -43,8 +43,8 @@ async function birthdayPhotosHtml(base44) {
           <img src="${hero.image_url_opt || hero.image_url}" alt="${(hero.name || 'Birthday treat').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
           <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.55) 100%);border-radius:16px;"></div>
           <div style="position:absolute;bottom:16px;left:20px;right:20px;">
-            <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🎂 YOUR BIRTHDAY TREAT</p>
-            <p style="color:#fff;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0;letter-spacing:1px;">${hero.name || 'On the house'}</p>
+            <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🎂 BIRTHDAY CELEBRATION</p>
+            <p style="color:#fff;font-family:'Oswald',Arial,sans-serif;font-size:24px;margin:0;letter-spacing:1px;">${hero.name || 'Celebrate with us'}</p>
           </div>
         </div>
       </a>`;
@@ -161,12 +161,11 @@ export default async function (req: Request) {
       let pointsGranted = 0;
       if (!isTest) {
         try {
-          const result = await grantLoyaltyPointsByEmail({
-            email: profile.email,
+          const result = await grantLoyaltyPointsByPhone({
             phone: profile.phone,
             points: BIRTHDAY_POINTS,
-            reason: 'Birthday treat — free small cone or cup',
-            idempotencyKey: `birthday:${profile.email}:${new Date().getFullYear()}`,
+            reason: 'Birthday bonus',
+            idempotencyKey: `birthday:${toE164Phone(profile.phone)}:${new Date().getFullYear()}`,
           });
           if (result) pointsGranted = BIRTHDAY_POINTS;
         } catch (e) {
@@ -179,10 +178,10 @@ export default async function (req: Request) {
       const ctaLink = trackedLink('/menu', 'birthday_cta');
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
-        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Happy birthday from the whole Flavor Isle family! 🎉 Three generations have been flipping burgers and spinning shakes in Smiths Grove since 1964, and today we're celebrating <em>you</em>. Your birthday treat's already in your account — a free small cone or cup on us. Come celebrate with us.</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Happy birthday from the whole Flavor Isle family! 🎉 Three generations have been flipping burgers and spinning shakes in Smiths Grove since 1964, and today we're celebrating <em>you</em>. ${pointsGranted ? 'We added 100 Stars to your Star Rewards account.' : 'Enjoy your birthday with the Flavor Isle family.'} Come celebrate with us.</p>
         ${await birthdayPhotosHtml(base44)}
         <div style="text-align:center;margin:24px 0 8px;">
-          <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Claim your birthday treat →</a>
+          <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Celebrate with us →</a>
         </div>
         <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you told us your birthday in your Flavor Isle account. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
       `;

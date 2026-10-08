@@ -89,7 +89,7 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
                   applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20'
                 }`}
               >
-                {applied ? `✓ ${discountLabel(r)} applied` : `Redeem ${discountLabel(r)}`}
+                {applied ? `✓ ${r.name || discountLabel(r)} applied` : `Redeem ${r.name || discountLabel(r)}`}
               </button>
             );
           })}

@@ -263,8 +263,8 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
                   }`}
                 >
                   <div>
-                    <p className="font-heading text-sm text-obsidian-roast">{r.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{r.points} stars</p>
+                    <p className="font-heading text-sm text-obsidian-roast">{r.name || r.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{r.description} · {r.points} stars</p>
                   </div>
                   <span className={`flex items-center gap-1.5 flex-shrink-0 text-sm font-heading px-3 py-1.5 rounded-lg ${
                     applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/15 text-patina-mint'

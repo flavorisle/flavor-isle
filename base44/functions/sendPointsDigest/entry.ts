@@ -1,21 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
+import { getLoyaltyProgram, searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
+const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
 
-const TIERS = [
-  { points: 150, label: 'a free small cone or cup of ice cream' },
-  { points: 300, label: 'a free small shake or float' },
-  { points: 500, label: '15% off your next order' },
-  { points: 1000, label: 'Gold status' },
-];
-
-function nextTier(balance) {
-  for (const tier of TIERS) {
-    if (balance < tier.points) return tier;
-  }
-  return null; // Already at top tier
+function nextTier(balance, tiers) {
+  return [...tiers].sort((a, b) => a.points - b.points).find(tier => balance < tier.points) || null;
 }
 
 const SKIP_EMAILS = new Set([
@@ -42,72 +34,113 @@ export default async function (req: Request) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
     }
 
-    // ── Find loyalty members with points_balance > 0 ──
-    const members = await base44.asServiceRole.entities.Loyalty.list('-updated_date', 500);
-    let targets = (members || []).filter(m => (m.points_balance || 0) > 0 && !isSkipEmail(m.email));
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(now);
+    const [profiles, orders, program] = await Promise.all([
+      base44.asServiceRole.entities.CustomerProfile.list('-updated_date', 500),
+      base44.asServiceRole.entities.Order.list('-created_date', 1000),
+      getLoyaltyProgram(),
+    ]);
+    const completedOrders = (orders || []).filter(order =>
+      ['completed', 'delivered'].includes(order.status) &&
+      order.payment_status === 'paid'
+    );
+    const monthOrders = completedOrders.filter(order => new Date(order.created_date) >= monthStart);
+    const uniqueProfiles = [...new Map((profiles || [])
+      .filter(profile => profile.email && profile.phone)
+      .map(profile => [profile.email.toLowerCase(), profile])).values()];
+
+    let targets = [];
+    for (let i = 0; i < uniqueProfiles.length; i += 10) {
+      const batch = await Promise.all(uniqueProfiles.slice(i, i + 10).map(async profile => ({
+        profile,
+        account: await searchLoyaltyAccountByPhone(profile.phone).catch(error => {
+          console.error(`Square loyalty lookup failed for ${profile.email}:`, error.message);
+          return null;
+        }),
+      })));
+      targets.push(...batch.filter(({ profile, account }) => account && !isSkipEmail(profile.email)));
+    }
 
     if (isTest) {
-      if (customer_email) {
-        const m = (members || []).find(m => m.email === customer_email);
-        targets = [m || { email: customer_email, points_balance: 200 }];
-      } else if (targets.length > 0) {
-        targets = [targets[0]];
-      } else {
-        targets = [{ email: 'test@example.com', points_balance: 200 }];
-      }
+      const selected = customer_email
+        ? (uniqueProfiles.find(profile => profile.email.toLowerCase() === customer_email.toLowerCase()) || { email: customer_email, name: 'friend', phone: '' })
+        : (targets[0]?.profile || uniqueProfiles[0] || { email: 'test@example.com', name: 'friend', phone: '' });
+      const account = targets.find(target => target.profile.email === selected.email)?.account || { balance: 0, created_at: null };
+      targets = [{ profile: selected, account }];
     }
 
-    if (targets.length === 0) {
-      return Response.json({ ok: true, skipped: true, reason: 'no eligible loyalty members' });
-    }
+    const rewardTiers = program?.reward_tiers || [];
+    const tierById = new Map(rewardTiers.map((tier: any) => [tier.id, tier]));
+    const redeemedOrders = monthOrders.filter(order => order.redemption_id && tierById.has(order.redemption_id));
+    const redeemedStars = redeemedOrders.reduce((sum, order) => sum + Number((tierById.get(order.redemption_id) as any)?.points || 0), 0);
+    const redeemedValue = redeemedOrders.reduce((sum, order) => sum + Math.max(0, Number(order.discount) || 0), 0);
+    const grossSales = monthOrders.reduce((sum, order) => sum + Math.max(0, Number(order.subtotal) || 0), 0);
+    const redeemedPercent = grossSales > 0 ? (redeemedValue / grossSales) * 100 : 0;
+
+    const directOrders = monthOrders.filter(order => order.direct_web_rewards_v2 === true).length;
+    const otherChannelOrders = monthOrders.length - directOrders;
+    const winbackEmails = await base44.asServiceRole.entities.LoyaltyEmail.filter({ email_type: 'winback' }).catch(() => []);
+    const monthlyWinbacks = (winbackEmails || []).filter(email => email.sent_at && new Date(email.sent_at) >= monthStart);
+    const redeemedWinbacks = monthlyWinbacks.filter(email => completedOrders.some(order =>
+      order.customer_email?.toLowerCase() === email.customer_email?.toLowerCase() &&
+      order.loyalty_welcome_back_bonus_granted_at &&
+      new Date(order.created_date) > new Date(email.sent_at)
+    )).length;
+    const winbackRate = monthlyWinbacks.length ? (redeemedWinbacks / monthlyWinbacks.length) * 100 : 0;
 
     let processed = 0;
     let skipped = 0;
-    for (const member of targets) {
-      const balance = member.points_balance || 0;
-      const tier = nextTier(balance);
+    const memberFrequency = [];
+    for (const { profile, account } of targets) {
+      const balance = Number(account?.balance || 0);
+      const tier = nextTier(balance, rewardTiers);
+      const email = profile.email;
+      const memberOrders = completedOrders.filter(order => order.customer_email?.toLowerCase() === email.toLowerCase());
+      const enrollmentDate = account?.created_at ? new Date(account.created_at) : null;
+      const preEnrollmentOrders = enrollmentDate
+        ? memberOrders.filter(order => new Date(order.created_date) < enrollmentDate)
+        : [];
+      const firstOrderDate = preEnrollmentOrders.length
+        ? Math.min(...preEnrollmentOrders.map(order => new Date(order.created_date).getTime()))
+        : null;
+      const baselineMonths = firstOrderDate && enrollmentDate
+        ? Math.max(1, (enrollmentDate.getTime() - firstOrderDate) / (30.4375 * 24 * 60 * 60 * 1000))
+        : 1;
+      const baselineFrequency = preEnrollmentOrders.length / baselineMonths;
+      const currentFrequency = monthOrders.filter(order => order.customer_email?.toLowerCase() === email.toLowerCase()).length;
+      memberFrequency.push({ currentFrequency, baselineFrequency });
 
-      let nudgeLine;
-      if (tier) {
-        const gap = tier.points - balance;
-        nudgeLine = `You're just <strong>${gap} point${gap === 1 ? '' : 's'}</strong> from ${tier.label}.`;
-      } else {
-        nudgeLine = `You've hit Gold status — you're part of the Flavor Isle family inner circle. 🏆`;
-      }
-
-      // Look up name from CustomerProfile
-      let name = 'friend';
-      try {
-        const profiles = await base44.asServiceRole.entities.CustomerProfile.filter({ email: member.email });
-        name = profiles?.[0]?.name || 'friend';
-      } catch (e) { /* ignore */ }
+      const name = profile.name || 'friend';
       const firstName = name.split(' ')[0] || 'friend';
-
-      const subject = `Your Star Rewards update ⭐`;
+      const nudgeLine = tier
+        ? `You're just <strong>${Math.max(0, tier.points - balance)} Stars</strong> from ${tier.name}.`
+        : 'You have reached every reward tier currently in the Square program.';
+      const subject = 'Your Star Rewards update ⭐';
       const ctaLink = trackedLink('/menu', 'digest_cta');
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
-        <p style="color:#141414;font-size:16px;margin:0 0 20px;line-height:1.6;">Here's your monthly Star Rewards update:</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 20px;line-height:1.6;">Here's your ${monthLabel} Star Rewards update:</p>
         <div style="background:#FFF8E7;border:2px dashed #F5A623;border-radius:14px;padding:20px;margin:0 0 24px;text-align:center;">
           <p style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:32px;margin:0 0 4px;letter-spacing:2px;">${balance} ⭐</p>
-          <p style="color:#141414;font-size:14px;margin:0 0 12px;">Your current star balance</p>
-          ${tier ? `<p style="color:#141414;font-size:15px;margin:0 0 8px;">Next reward at ${tier.points} stars: <strong>${tier.label}</strong></p><p style="color:#141414;font-size:15px;margin:0;">${nudgeLine}</p>` : `<p style="color:#141414;font-size:15px;margin:0;">${nudgeLine}</p>`}
+          <p style="color:#141414;font-size:14px;margin:0 0 12px;">Your current Star balance</p>
+          <p style="color:#141414;font-size:15px;margin:0;">${nudgeLine}</p>
         </div>
-        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Come earn more stars on your next order — every $10 spent earns 4 stars.</p>
+        <p style="color:#141414;font-size:15px;margin:0 0 8px;line-height:1.6;">Your completed orders this month: <strong>${currentFrequency}</strong>. Your average before joining Star Rewards: <strong>${baselineFrequency.toFixed(1)} per month</strong>.</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Earn 1 Star per $1 spent. Every flavor-isle.com order earns +10% bonus Stars, and 3 web orders in 30 days earn a 50-Star streak bonus.</p>
         <div style="text-align:center;margin:28px 0 8px;">
           <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Order ahead →</a>
         </div>
         <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you're a Flavor Isle Star Rewards member. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
       `;
-      const html = brandedEmailHtml(bodyHtml);
-
-      const recipient = isTest ? test_recipient_email : member.email;
+      const recipient = isTest ? test_recipient_email : email;
       const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
       const { error } = await resend.emails.send({
         from: FROM,
         to: recipient,
         subject: isTest ? `[TEST] ${subject}` : subject,
-        html,
+        html: brandedEmailHtml(bodyHtml),
       });
       if (error) {
         console.error('Points digest email send error:', error);
@@ -118,17 +151,56 @@ export default async function (req: Request) {
       if (!isTest) {
         await base44.asServiceRole.entities.LoyaltyEmail.create({
           email_type: 'digest',
-          customer_email: member.email,
+          customer_email: email,
           points_granted: 0,
           sent_at: new Date().toISOString(),
         });
       }
-
       processed++;
       console.log(`Points digest email sent to ${recipient}${isTest ? ' [TEST]' : ''}`);
     }
 
-    return Response.json({ ok: true, found: targets.length, processed, skipped, test: isTest });
+    let metricsEmailSent = false;
+    if (!isTest) {
+      const averageCurrentFrequency = memberFrequency.length
+        ? memberFrequency.reduce((sum, member) => sum + member.currentFrequency, 0) / memberFrequency.length
+        : 0;
+      const averageBaselineFrequency = memberFrequency.length
+        ? memberFrequency.reduce((sum, member) => sum + member.baselineFrequency, 0) / memberFrequency.length
+        : 0;
+      const directShare = monthOrders.length ? (directOrders / monthOrders.length) * 100 : 0;
+      const otherShare = monthOrders.length ? (otherChannelOrders / monthOrders.length) * 100 : 0;
+      const metricsHtml = brandedEmailHtml(`
+        <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;">Star Rewards monthly metrics — ${monthLabel}</h2>
+        <p>Enrolled members: average ${averageCurrentFrequency.toFixed(2)} completed orders this month vs. ${averageBaselineFrequency.toFixed(2)} orders/month before enrollment.</p>
+        <p>Direct flavor-isle.com orders: ${directOrders} (${directShare.toFixed(1)}%); other recorded channels: ${otherChannelOrders} (${otherShare.toFixed(1)}%).</p>
+        <p>Welcome-back bonus redemption: ${redeemedWinbacks}/${monthlyWinbacks.length} sent win-back offers (${winbackRate.toFixed(1)}%).</p>
+        <p>Stars redeemed: ${redeemedStars}. Reward discount value: $${redeemedValue.toFixed(2)} / gross sales $${grossSales.toFixed(2)} (${redeemedPercent.toFixed(2)}%; 3% cap ${redeemedPercent <= 3 ? 'within' : 'exceeded'}).</p>
+        <p style="color:#666;font-size:12px;">Order/channel calculations use completed, paid orders available in app records. Non-direct orders are grouped as other because the Order entity does not distinguish third-party from in-store/phone sources.</p>
+      `);
+      try {
+        const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+        const { error } = await resend.emails.send({
+          from: FROM,
+          to: OWNER_EMAIL,
+          subject: `Star Rewards monthly metrics — ${monthLabel}`,
+          html: metricsHtml,
+        });
+        if (error) console.error('Points digest metrics email send error:', error);
+        else metricsEmailSent = true;
+      } catch (metricsErr) {
+        console.error('Points digest metrics email failed:', metricsErr.message);
+      }
+    }
+
+    return Response.json({
+      ok: true,
+      found: targets.length,
+      processed,
+      skipped,
+      metrics_email_sent: metricsEmailSent,
+      test: isTest,
+    });
   } catch (error) {
     console.error('sendPointsDigest error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
