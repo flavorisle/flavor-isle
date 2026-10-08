@@ -264,6 +264,16 @@
       "type": "string",
       "maxLength": 300,
       "description": "Why the crew cancelled this order, typed into the Cancel Order dialog on the Orders page or the Kitchen board. Written only by the cancelOrder backend function, which also cancels the Square order, refunds the card payment and notifies the customer. When set, the cancellation email quotes it back to the customer as 'What happened: ...', so type it for their eyes."
+    },
+    "cancellation_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the cancellation email actually went out to the customer. Stamped only on a successful send by notifyOrderCancelled (the crew's Cancel Order flow); a refused or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders so the crew can confirm the customer was told."
+    },
+    "cancellation_sms_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the cancellation text actually went out to the customer, gated on the same transactional consent as the other order texts. Stamped only on a successful send by notifyOrderCancelled; a skipped or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders."
     }
   },
   "required": [

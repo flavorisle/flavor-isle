@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, XCircle,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer, Mail, MessageSquare
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
@@ -137,6 +137,23 @@ function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
           >
             <XCircle size={15} /> Cancel order
           </button>
+        </div>
+      )}
+
+      {/* What actually reached the customer after a cancel. This is the only
+          place the crew can confirm the notice went out, short of asking them. */}
+      {(order.cancellation_email_sent_at || order.cancellation_sms_sent_at) && (
+        <div className="px-5 pb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-body">
+          {order.cancellation_email_sent_at && (
+            <span className="inline-flex items-center gap-1 text-green-700">
+              <Mail size={12} /> Cancellation email sent {formatChicagoDateTime(order.cancellation_email_sent_at)}
+            </span>
+          )}
+          {order.cancellation_sms_sent_at && (
+            <span className="inline-flex items-center gap-1 text-green-700">
+              <MessageSquare size={12} /> Cancellation text sent {formatChicagoDateTime(order.cancellation_sms_sent_at)}
+            </span>
+          )}
         </div>
       )}
 

@@ -153,5 +153,19 @@ export async function notifyOrderCancelled(base44: any, order: any, { refunded }
     sms = result.sent ? 'sent' : result.skipped ? `skipped (${result.reason})` : `failed (${result.reason || 'send failed'})`;
   }
 
+  // Stamp what actually reached the customer. The order card shows these, so the
+  // crew can confirm the notice went out instead of taking it on faith. A refused
+  // or failed send leaves no stamp — there is nothing to claim.
+  const stamps: Record<string, string> = {};
+  if (email === 'sent') stamps.cancellation_email_sent_at = new Date().toISOString();
+  if (sms === 'sent') stamps.cancellation_sms_sent_at = new Date().toISOString();
+  if (order.id && Object.keys(stamps).length) {
+    try {
+      await base44.asServiceRole.entities.Order.update(order.id, stamps);
+    } catch (error) {
+      console.error(`Could not record the cancellation notice on order ${order.order_number}:`, (error as Error).message);
+    }
+  }
+
   return { email, sms };
 }
