@@ -8,7 +8,6 @@ import CartDessertUpsell from './CartDessertUpsell';
 import CartFallingLeaves from './CartFallingLeaves';
 import { optimizedImageUrl } from '@/lib/utils';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
-import { getIceContext } from '@/components/classicDrinkIce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
@@ -195,13 +194,17 @@ export default function CartDrawer() {
                         const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
                         if (pid && !pid.startsWith('combo-')) {
                           setIsCartOpen(false);
-                          navigate(`/product/${pid}`, getIceContext(item.modifiers || []) ? { state: { editCartLineId: item.id } } : undefined);
+                          // Every line opens for editing with its own choices in
+                          // place, so a wrong topping is unselected here instead
+                          // of the whole line being deleted and redone.
+                          navigate(`/product/${pid}`, { state: { editCartLineId: item.id } });
                         }
                       }}
-                      className="ml-auto p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-heading bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20 transition-colors"
                       aria-label={`Edit ${item.name}`}
+                      title={`Edit ${item.name}`}
                     >
-                      <Pencil size={14} />
+                      <Pencil size={12} /> Edit
                     </button>
                     <button
                       onClick={() => removeItem(item.id)}

@@ -19,7 +19,6 @@ import ItemSelectionSummary from '@/components/ItemSelectionSummary';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import { getIceContext } from '@/components/classicDrinkIce';
 import { optimizedImageUrl } from '@/lib/utils';
 
 const PLACEHOLDER_EMOJI = {
@@ -91,7 +90,11 @@ export default function ProductDetail() {
     return () => { cancelled = true; };
   }, [item]);
 
-  const editingLine = item && getIceContext(item.modifiers || [])
+  // The bag line being edited, when the cart's Edit button opened this page.
+  // Every item opens this way — the modifier panel restores the choices the
+  // line already carries, so a wrong topping is unselected here instead of the
+  // line being deleted and ordered again.
+  const editingLine = item
     ? cartItems.find(line => line.id === location.state?.editCartLineId && (line.productId || line.id.split('__')[0]) === item.id)
     : null;
   useEffect(() => { if (editingLine) setQuantity(editingLine.quantity); }, [editingLine?.id]);
@@ -210,6 +213,9 @@ export default function ProductDetail() {
       }
     } else {
       trackSelectItem(foodItemToGa4(item));
+      // An edited line with nothing to customize is replaced, not added again —
+      // the two would otherwise merge and double the quantity.
+      if (editingLine) removeItem(editingLine.id);
       for (let i = 0; i < quantity; i++) addItem({ ...item, productId: item.id });
       flashAdded();
     }
@@ -222,9 +228,9 @@ export default function ProductDetail() {
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
-        ? 'Added to Bag!'
+        ? editingLine ? 'Bag Updated!' : 'Added to Bag!'
         : comboSideReady
-          ? 'Add to Bag'
+          ? editingLine ? 'Update Bag' : 'Add to Bag'
           : 'Pick a side & drink';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
@@ -386,8 +392,14 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {editingLine && (
+                <p className="text-xs text-patina-mint bg-patina-mint/10 rounded-lg px-3 py-2">
+                  Editing your bag item — change any option on this page, then tap Update Bag to save.
+                </p>
+              )}
+
               {/* What will be on the item — the live recap of the choices made,
-                  sitting right above Add to Bag. */}
+                  in the words the bag itself will list. */}
               {orderingEnabled && !soldOut && (
                 <ItemSelectionSummary
                   item={item}

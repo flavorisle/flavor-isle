@@ -7,7 +7,8 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
-import { getIceContext, iceLevelFor, iceOption, withIceSelection, restoreDrinkSelections } from './classicDrinkIce';
+import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './classicDrinkIce';
+import { restorePanelSelection } from '@/lib/restorePanelSelection';
 import { isShakeItem } from './AllergyNote';
 import ShakeFlavorControl from './ShakeFlavorControl';
 
@@ -41,8 +42,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     }, {});
   };
 
-  const [selections, setSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).selections : initSelections());
-  const [nestedSelections, setNestedSelections] = useState(() => initialCartItem ? restoreDrinkSelections(groups, initialCartItem).nested : {});
+  // A bag line being edited reopens with its own choices already in place —
+  // options and their follow-up picks alike — so the customer unselects what
+  // they got wrong instead of deleting the line and ordering it again.
+  const restored = initialCartItem ? restorePanelSelection(groups, initialCartItem) : null;
+  const [selections, setSelections] = useState(() => restored ? restored.selections : initSelections());
+  const [nestedSelections, setNestedSelections] = useState(() => restored?.nested || {});
   const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];

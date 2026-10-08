@@ -29,24 +29,3 @@ export function withIceSelection(previous, soda, level) {
   if (!list || !option) return previous;
   return { ...previous, [soda.id]: { ...previous[soda.id], [list.name]: option } };
 }
-
-// Rebuild the selected soda's catalog choices from the cart's flattened modifiers.
-export function restoreDrinkSelections(groups, cartItem) {
-  const saved = cartItem?.selectedModifiers || [];
-  const selections = Object.fromEntries(groups.map(group => [group.name,
-    group.selection_type === 'MULTIPLE' ? [] :
-      group.name === 'Size' ? group.modifiers.find(m => !m.sold_out) || group.modifiers[0] : null]));
-  for (const group of groups) {
-    const selected = group.modifiers.filter(mod => saved.some(entry => entry.id === mod.id));
-    if (selected.length) selections[group.name] = group.selection_type === 'MULTIPLE' ? selected : selected[0];
-  }
-  const context = getIceContext(groups);
-  const soda = context && selections[context.sodaGroup.name];
-  if (!soda) return { selections, nested: {} };
-  const nested = {};
-  for (const list of soda.child_modifier_lists || []) {
-    const choices = list.modifiers.filter(mod => saved.some(entry => entry.id === mod.id));
-    if (choices.length) nested[list.name] = list.selection_type === 'MULTIPLE' ? choices : choices[0];
-  }
-  return { selections, nested: { [soda.id]: nested } };
-}
