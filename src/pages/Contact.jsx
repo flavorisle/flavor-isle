@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
-import FaqSection from '@/components/FaqSection';
 import NearbyAreas from '@/components/NearbyAreas';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
 import ParkingGuide from '@/components/ParkingGuide';
@@ -138,11 +137,6 @@ export default function Contact() {
         {/* Nearby areas / I-65 wayfinding */}
         <div className="mb-12">
           <NearbyAreas />
-        </div>
-
-        {/* FAQ */}
-        <div className="mb-12">
-          <FaqSection />
         </div>
 
         {/* Contact form */}
