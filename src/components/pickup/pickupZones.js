@@ -5,5 +5,5 @@
 export const ZONES = [
   { id: 'a', letter: 'A', label: 'Zone A — Behind Flavor Isle', description: 'The parking area directly behind Flavor Isle.', pos: { top: '37%', left: '30%' } },
   { id: 'b', letter: 'B', label: 'Zone B — By the Post Office', description: 'Across from the back parking lot, beside the Post Office and behind Psycho Grannies.', pos: { top: '61%', left: '7%' } },
-  { id: 'c', letter: 'C', label: 'Zone C — Across N Main St', description: "Across from Flavor Isle in the O'Reilly parking lot.", pos: { top: '25%', left: '53%' } },
+  { id: 'c', letter: 'C', label: 'Zone C — Across N Main St', description: "Across from Flavor Isle in the Oreid Insurance parking lot.", pos: { top: '25%', left: '53%' } },
 ];

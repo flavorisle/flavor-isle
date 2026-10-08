@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: 'Park in Zone A, B or C',
-    body: "Use the map above. Zone A is behind Flavor Isle, Zone B is by the Post Office, Zone C is across N Main St in the O'Reilly lot — and please never park on 1st St.",
+    body: "Use the map above. Zone A is behind Flavor Isle, Zone B is by the Post Office, Zone C is across N Main St in the Oreid Insurance lot — and please never park on 1st St.",
   },
   {
     title: 'Open your order status page',
