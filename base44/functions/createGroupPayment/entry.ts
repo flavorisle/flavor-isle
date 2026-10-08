@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { normalizeReferralCode } from '../../shared/referral.ts';
 
 // Group / split payment:
 // Creates ONE order record for the whole group (so the kitchen sees a single
@@ -21,6 +22,7 @@ Deno.serve(async (req) => {
       groupName,
       happyHourDiscount, bundleDiscount, loyaltyOptIn,
       smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion,
+      referralCode,
     } = body;
 
     if (!items || items.length === 0) {
@@ -100,6 +102,7 @@ Deno.serve(async (req) => {
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
         loyalty_opt_in: loyaltyOptIn === true,
+        referral_code: normalizeReferralCode(referralCode),
         direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,

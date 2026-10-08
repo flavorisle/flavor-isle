@@ -226,6 +226,16 @@
       "type": "string",
       "format": "date-time"
     },
+    "referral_code": {
+      "type": "string",
+      "maxLength": 16,
+      "description": "Star Rewards referral code this order arrived with (issue #83, Part A), captured from a ?ref= link. The referrer's phone number is decoded from it server-side once the order completes; it is never printed on a ticket."
+    },
+    "referral_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the 50-Star referral bonus was granted to this order's referrer (issue #83, Part A). Once set, the bonus never grants again for this order."
+    },
     "arrival_details": {
       "type": "object",
       "properties": {

@@ -1,7 +1,8 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { sendOrderStatusSms } from './sendOrderStatusSms.ts';
 import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
-import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
+import { accrueForOrder, redeemReward, toE164Phone } from './squareLoyalty.ts';
+import { referralCodeForPhone } from './referral.ts';
 import { sendPushToEmail } from './sendPush.ts';
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
@@ -32,6 +33,18 @@ async function logSquareSyncAttempt(base44, order, status, squareOrderId = null,
 // customer/staff notifications identically — so orders reach the kitchen even
 // when the Stripe webhook stops delivering events.
 
+// Referral share block for the paid-order confirmation email (issue #83, Part
+// A). Sits between the order summary and the closing lines. Only orders whose
+// phone normalizes to E.164 get one — with no phone there is no code to share.
+function referralBlockHtml(code: string) {
+  return `<div style="background:#f5edd6;border-radius:12px;padding:22px 20px;margin:0 0 24px;text-align:center;">
+    <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png" alt="Smashie" width="72" height="72" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
+    <h3 style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:19px;letter-spacing:1px;margin:0 0 8px;">SHARE THE ISLE, EARN 50 STARS</h3>
+    <p style="color:#141414;font-size:15px;line-height:1.5;margin:0 0 16px;">Send your link to a friend. When they place their first order, 50 bonus Stars land in your Star Rewards account.</p>
+    <a href="https://flavor-isle.com/?ref=${code}" style="display:inline-block;background:#C0392B;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-family:'Oswald',Arial,sans-serif;font-size:15px;letter-spacing:1px;">SEND YOUR LINK</a>
+  </div>`;
+}
+
 export async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -58,6 +71,9 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
       ? `Dine-In · Table ${order.table_number}`
       : orderTypeLabel;
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
+
+  const referrerPhone = toE164Phone(order.customer_phone);
+  const referralCode = referrerPhone ? await referralCodeForPhone(referrerPhone) : null;
 
   const html = brandedEmailHtml(`
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
@@ -91,6 +107,8 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
           <p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Order Time:</strong> ~${estTime}</p>
           ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
         </div>
+
+        ${referralCode ? referralBlockHtml(referralCode) : ''}
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>

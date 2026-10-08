@@ -83,6 +83,7 @@ import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 import RestaurantSchema from './components/RestaurantSchema';
 import CanonicalLink from './components/CanonicalLink';
+import ReferralCapture from './components/ReferralCapture';
 
 // Suspense fallback — matches the app's initial loading screen so lazy
 // page loads feel seamless rather than flashing a blank white page.
@@ -261,6 +262,7 @@ function AppShell() {
               <ScrollToTop />
               <RestaurantSchema />
               <CanonicalLink />
+              <ReferralCapture />
               <AuthenticatedApp />
               <BottomTabBar />
               <MobileHeader />

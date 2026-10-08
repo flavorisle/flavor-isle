@@ -27,6 +27,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
+import { getActiveReferralCode } from '@/lib/referral';
 import { useToast } from '@/components/ui/use-toast';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
@@ -187,6 +188,9 @@ export default function Checkout() {
   const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
+  // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
+  // carried on the order payload so the referrer earns their 50 Stars.
+  const [referralCode] = useState(() => getActiveReferralCode());
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".
   const [hasAllergy, setHasAllergy] = useState(false);
@@ -491,6 +495,7 @@ export default function Checkout() {
           happyHourDiscount,
           bundleDiscount,
           loyaltyOptIn,
+          referralCode: referralCode || undefined,
           smsTransactionalConsent: smsConsent,
           smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
           smsConsentVersion: SMS_CONSENT_VERSION,
@@ -523,6 +528,7 @@ export default function Checkout() {
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
           discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
           loyaltyOptIn,
+          referralCode: referralCode || undefined,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
@@ -661,6 +667,7 @@ export default function Checkout() {
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
       discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
       loyaltyOptIn,
+      referralCode: referralCode || undefined,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
@@ -1141,6 +1148,14 @@ export default function Checkout() {
                   ))
                 )}
               </div>
+
+              {/* Referred by a friend — the referrer gets 50 bonus Stars once
+                  this order completes (issue #83). Never required. */}
+              {referralCode && (
+                <p className="text-xs text-patina-mint mb-3">
+                  Referred by a friend — they'll get 50 bonus Stars when this order completes.
+                </p>
+              )}
 
               {/* Star Rewards — compact balance + redeemable rewards */}
               {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
