@@ -1,5 +1,5 @@
 // Curbside zones for the revised parking map (issue #85).
-// A, B and C only — Zone D was removed with the old map.
+// A, B and C only — the old fourth zone was retired with the old map.
 // pos = centre of that zone's letter badge on the map image, as a percentage
 // of the map's width/height.
 export const ZONES = [
