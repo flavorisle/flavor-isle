@@ -41,6 +41,11 @@
       ],
       "default": "active"
     },
+    "needs_reattach": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #82: true while a Live (SIP) call is still up but the app has no worker driving it \u2014 the worker that could not start a successor handed the call to the re-attach probe chain instead of hanging up. Cleared by the next worker that attaches successfully. The watchdog re-attaches these calls."
+    },
     "message_mode": {
       "type": "boolean",
       "default": false,

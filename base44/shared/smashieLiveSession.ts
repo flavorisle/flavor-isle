@@ -41,11 +41,23 @@ const TOOL_STALL_MS = 9000;
 // every later result and the caller would hear nothing after "checking".
 export const TOOL_TIMEOUT_MS = 10000;
 // How long one hop drives the call before handing the socket over.
-// A2 (2026-10-07): 12000ms left the handoff starting as the worker was already
-// being torn down, so the successor never attached. Starting at 6000ms gives
-// the three retries (1.5s apart) room to finish well inside the worker's life.
-export const HOP_MS = 6000;
-const MAX_HOP_FAILURES = 5;
+// A3 (2026-10-08, issue #82): 15000ms. The successor is started fifteen seconds
+// into this worker's slice, which leaves five to fifteen seconds of margin before
+// the platform reclaims the worker (measured at twenty to thirty seconds) and
+// cuts attach volume to a quarter of the 6000ms cadence — the volume the
+// forty-one-second calls of Oct 7 were running when handovers started failing.
+export const HOP_MS = 15000;
+// Issue #82: a handover that fails must NEVER end the call, so there is no cap on
+// handover attempts — this worker keeps starting successors for as long as it
+// lives. Retries are spaced 2s, 4s, 8s, 8s… and stop only when the next one would
+// not fit in the worker's remaining life (WORKER_RETRY_BUDGET_MS below), where the
+// re-attach probe chain and the watchdog take the call over instead of ending it.
+const RETRY_BACKOFF_MS = [2000, 4000, 8000];
+// How long a worker keeps trying to hand over. The platform reclaims a worker
+// twenty to thirty seconds after it answers, so past this point the recovery
+// record and the re-attach probe must be scheduled while this worker can still
+// write them; the probe chain (and the watchdog behind it) carry the call on.
+const WORKER_RETRY_BUDGET_MS = 21000;
 // One handoff attempt: a fresh worker attaches in about a second, so a healthy
 // handover confirms well inside this. Shorter than the worker's remaining life,
 // so a successor that never answers still leaves room for the retries.
@@ -53,14 +65,15 @@ const HANDOFF_TIMEOUT_MS = 3500;
 // Partial speech is saved at most this long after it arrives; every finished
 // segment is saved the moment it completes.
 const PARTIAL_SAVE_MS = 1000;
-const MAX_CALL_MS = 15 * 60 * 1000;
+export const MAX_CALL_MS = 15 * 60 * 1000;
 // Written into every call record's sideband_attached entry, so the record of
 // the first real call shows exactly which build answered it (issue #81 deploy
 // audit: the hop build only reached live calls on Oct 6, four days after it was
-// committed).
-const DRIVER_VERSION = 'live-driver-2026-10-08-handoff-reasons';
+// committed). The hop also hands it back on an unauthorized request, which is
+// how a deploy is verified without placing a call (issue #82, 7.3).
+export const DRIVER_VERSION = 'live-driver-2026-10-08-never-hang-up';
 
-export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, onAttachFailure, handoff }) {
+export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, onAttachFailure, onNoSuccessor, onProbeFailure, handoff }) {
   const startedAt = state.startedAt || Date.now();
   const hopNumber = (state.hop || 0) + 1;
   const callTranscript = createCallTranscript(state.transcript || []);
@@ -80,6 +93,10 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
   let hopTimer = null;
   let finalized = false;
   let handedOff = false;
+  // Issue #82: set when this worker let go of the call and handed it to the
+  // re-attach probe chain. The call is still up, so the socket closing later must
+  // not record it as finished.
+  let recoveryHandedOver = false;
   let detached = false;
   let sessionClosed = false;
   let sideband = null;
@@ -329,6 +346,30 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
   // OUTSIDE the queue — see runHandoff.
   const drainQueue = () => chain.catch(() => {});
 
+  // Issue #82 (1.5): this worker cannot hold the call any longer and no successor
+  // picked it up. The caller STAYS ON THE LINE — nothing here hangs up. The call
+  // record is left active and marked needs_reattach, the reason trail is written
+  // while this worker can still write it, and one re-attach probe is scheduled to
+  // attach a fresh socket a few seconds from now. The probe chain, then the
+  // watchdog, carry the call on from there.
+  const handOverToProbes = async (toolName, failures) => {
+    const detail = failures.length ? failures.join(' | ').slice(0, 900) : 'no reason reported';
+    recordTool({ name: toolName, ok: false, detail });
+    recoveryHandedOver = true;
+    detached = true;
+    queue(persist({ needs_reattach: true }));
+    await drainQueue();
+    if (onNoSuccessor) {
+      try {
+        onNoSuccessor(hopState());
+      } catch (err) {
+        console.error('Live re-attach probe could not be scheduled:', err.message);
+      }
+    }
+    sideband?.close();
+    finishHop();
+  };
+
   // Issue #81 root cause: the handoff used to run as a task INSIDE the work
   // queue and then `await chain` — the promise that only settles once that same
   // task finishes. It waited on itself forever, so the moment the hop came due
@@ -349,13 +390,16 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       return;
     }
 
-    let failures = 0;
-    while (!finalized && !handedOff) {
+    // Issue #82: no cap. Every attempt is written to the call record with its
+    // exact outcome — including the line's own refusal reason, carried back from
+    // the hop — so a call that struggles to change hands is diagnosable
+    // afterwards. A failed handover never ends the call.
+    const failures = [];
+    let attempt = 0;
+    while (!finalized && !handedOff && !recoveryHandedOver) {
+      attempt += 1;
       const attemptAt = Date.now();
-      // A1/A2: every handoff attempt is written to the call record with its
-      // exact outcome, so a call that never changes hands is diagnosable
-      // afterwards instead of a silent gap.
-      recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${failures + 1} of ${MAX_HOP_FAILURES} — starting a fresh worker` });
+      recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${attempt} — starting a fresh worker` });
       try {
         // Bounded so a successor that never answers cannot use up this worker's
         // remaining life before the retries run.
@@ -376,33 +420,33 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
           finishHop();
           return;
         }
-        failures += 1;
         // 2026-10-08 (real call): handovers 1-5 were clean, then three refusals in
         // a row cut the caller off mid-order — each one back in under 200ms, far
         // too fast for a real connection attempt. Whatever the line says about
         // refusing is carried back from the hop and written here, so the next call
         // records the actual reason instead of only that the handover failed.
         const why = String(next?.reason || '').trim();
-        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached${why ? ` — ${why}` : ' (no reason reported)'}` });
+        failures.push(`attempt ${attempt}: ${why || 'the fresh worker did not confirm its socket attached, and reported no reason'}`);
       } catch (err) {
-        failures += 1;
-        recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES} failed: ${err.message}` });
+        failures.push(`attempt ${attempt} failed: ${err.message}`);
         console.error('Live handoff failed:', err.message);
       }
+      recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: failures[failures.length - 1] });
       // Write the failure trail before the worker is taken down.
       queue(persist);
       await drainQueue();
-      if (failures >= MAX_HOP_FAILURES) break;
-      await new Promise((r) => setTimeout(r, 900));
+      if (finalized || handedOff || recoveryHandedOver) break;
+      // Another attempt only when it fits in what is left of this worker's life:
+      // past that point the probe chain owns the recovery, not this worker.
+      const waitMs = RETRY_BACKOFF_MS[Math.min(attempt - 1, RETRY_BACKOFF_MS.length - 1)];
+      if (WORKER_RETRY_BUDGET_MS - (Date.now() - startedAt) < waitMs) break;
+      await new Promise((r) => setTimeout(r, waitMs));
     }
-    if (handedOff || finalized) return;
+    if (handedOff || finalized || recoveryHandedOver) return;
 
-    // No successor picked the call up: end it openly rather than letting the
-    // caller talk into a line that has stopped listening.
-    if (sideband) {
-      appendSpeakableNote(sideband, "My bad fam, I'm losing the line here. Give the counter a call and they will take care of you.");
-    }
-    await endCall('The call could not be handed to a fresh worker before this one was shut down.', true);
+    // Out of chances to start a successor: hand the call to the probe chain
+    // rather than hanging the caller up mid-order.
+    await handOverToProbes('worker_lifetime_no_successor', failures);
   };
 
   const startHopTimer = () => {
@@ -419,6 +463,12 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
         recordTool({ name: 'sideband_closed', ok: true, detail: `the line dropped this worker's socket (code ${code ?? 'none'}): ${reason || 'no reason supplied'}` });
         // A handover closes this socket on purpose; the next hop owns the call.
         if (handedOff) return;
+        // Issue #82: this socket was closed on the way out to the probe chain and
+        // the call is still up, so the record must not be closed as finished.
+        if (recoveryHandedOver) {
+          finishHop();
+          return;
+        }
         queue(async () => {
           // OpenAI sends session.closed just before the socket drops; give that
           // event a moment so a normal ending is not recorded as a fault.
@@ -432,7 +482,10 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     console.log(`Live sideband attached for session ${sessionId} (hop ${hopNumber})`);
     if (greeting) appendInstruction(sideband, greeting);
     recordTool({ name: 'sideband_attached', ok: true, detail: `call connected to the app (${DRIVER_VERSION}, hop ${hopNumber})` });
-    scheduleSave();
+    // A live worker owns the call again, so the record no longer needs one; the
+    // same write refreshes last_message_at, which is what tells the watchdog the
+    // call is still being heard (issue #82).
+    queue(persist({ needs_reattach: false }));
     if (onAttached) onAttached();
     startHopTimer();
     // Hold on until this hop is done: the handler's response has already gone
@@ -448,14 +501,44 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     clearTimeout(hopTimer);
     clearTimeout(saveTimer);
     await chain.catch(() => {});
-    // A later hop that cannot attach must leave the call alone: the previous hop
-    // is still holding it and will retry the handover.
-    if (!state.hop) {
-      await finalize(`The app could not connect to the call, so no menu answers or orders could run: ${e.message}`);
-      await hangupLiveSession(sessionId, apiKey).catch(() => {});
+    // Issue #82: a worker that cannot attach must NEVER hang up. The caller keeps
+    // the line — the call is marked for re-attach and the probe chain (for a probe
+    // itself, the next probe in it) picks the call up again. A later hop that
+    // cannot attach likewise leaves the call alone: the previous hop still holds
+    // it and retries the handover under the same rule.
+    recordTool({ name: 'attach_failed', ok: false, detail: `this worker could not attach: ${e.message}` });
+    if (onProbeFailure) {
+      recordTool({ name: 'reattach_probe', ok: false, detail: `a re-attach probe could not attach: ${e.message}` });
+      queue(persist({ needs_reattach: true }));
+      await drainQueue();
+      onProbeFailure(e.message);
+    } else {
+      await handOverToProbes('worker_lifetime_no_successor', [`this worker could not attach: ${e.message}`]);
     }
     finishHop();
   }
+}
+
+// Issue #82 (STEP 3.2): a re-attach probe drives the call from what the record
+// already holds, so a probed call keeps one continuous transcript, the actions
+// already run, and the introduction state. The hop count comes from the record's
+// own attach markers, which is what stops a probe re-introducing Smashie.
+export function probeStateFromRecord(record, fallback = {}) {
+  const startedAt = Date.parse(record?.call_started_at || record?.created_date || '');
+  const log = Array.isArray(record?.tool_log) ? record.tool_log : [];
+  const attaches = log.filter((entry) => entry?.name === 'sideband_attached').length;
+  return {
+    ...fallback,
+    transcript: Array.isArray(record?.transcript) && record.transcript.length
+      ? record.transcript
+      : (fallback.transcript || []),
+    toolLog: log,
+    startedAt: Number.isFinite(startedAt) ? startedAt : (fallback.startedAt || Date.now()),
+    hop: Math.max(attaches, Number(fallback.hop) || 0),
+    introPlaying: false,
+    introHandedOver: true,
+    firstCallerSaved: true,
+  };
 }
 
 // Finished function calls can be reported as a nested or top-level

@@ -1,0 +1,44 @@
+{
+  "name": "Smashie Live Watchdog",
+  "description": "Re-attaches the app to live phone calls that lost their worker, and closes call records past the 15-minute cap. It never hangs up a call (issue #82).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "smashie_live_watchdog",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "watch_live_calls": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "smashieLiveWatchdog"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Re-attach live calls",
+            "description": "Probes calls that lost their worker"
+          }
+        }
+      }
+    ]
+  }
+}

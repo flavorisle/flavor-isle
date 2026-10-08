@@ -88,8 +88,11 @@ export async function attachLiveSideband(sessionId: string, apiKey: string, hand
   });
   const socket = response.webSocket;
   if (!socket) {
+    // The exact HTTP status and error body are carried in the message: issue #82
+    // needs the line's own refusal reason on the call record, so the very next
+    // real call names why a socket was turned away instead of only that it was.
     const detail = (await response.text()).slice(0, 400);
-    throw new Error(`Live sideband upgrade failed (${response.status}): ${detail}`);
+    throw new Error(`Live sideband upgrade failed — HTTP ${response.status}: ${detail}`);
   }
   socket.addEventListener('message', (event) => {
     try {
