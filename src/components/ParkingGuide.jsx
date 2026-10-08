@@ -1,6 +1,7 @@
 import React from 'react';
 import { Car } from 'lucide-react';
 import PickupZoneMap from '@/components/PickupZoneMap';
+import CurbsidePickupSteps from '@/components/pickup/CurbsidePickupSteps';
 
 export default function ParkingGuide() {
   return (
@@ -20,6 +21,7 @@ export default function ParkingGuide() {
         </div>
       </div>
       <PickupZoneMap />
+      <CurbsidePickupSteps />
     </section>
   );
 }
