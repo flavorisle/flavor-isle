@@ -192,19 +192,22 @@ export default async function (req) {
       customer_email: customer?.email || undefined,
     });
 
-    // Answer OpenAI immediately, then start the first hop. One worker cannot
-    // hold the call's socket for a whole conversation — the platform takes a
-    // function down about twenty seconds after it answers — so the hop drives
-    // the call for a short window and passes it to the next one.
-    waitUntil(base44.asServiceRole.functions.invoke('smashieLiveHop', {
-      relayKey: webhookSecret,
-      sessionId,
-      conversationId: conversation.id,
-      callerPhone,
-      counterPhone: Deno.env.get('COUNTER_PHONE_NUMBER') || '',
-      greeting: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
-      state: {},
-    }));
+    // Answer OpenAI immediately, then start the first hop. Issue #86 (3.1): the
+    // invoke only needs to START the hop and is deliberately
+    // not awaited — the hop now holds its own request open for a 150-second slice,
+    // far past this webhook's post-response lifetime, so waiting on its body would
+    // never be useful. The waitUntil wrapper is kept so the launch is not cut off.
+    waitUntil(
+      base44.asServiceRole.functions.invoke('smashieLiveHop', {
+        relayKey: webhookSecret,
+        sessionId,
+        conversationId: conversation.id,
+        callerPhone,
+        counterPhone: Deno.env.get('COUNTER_PHONE_NUMBER') || '',
+        greeting: 'Greet the caller now in English. Follow the opening wording, STORE STATUS and admin ability switches in your voice instructions exactly. If open, use only the configured introduction; do not offer disabled abilities. Begin immediately, then pause and listen.',
+        state: {},
+      }).catch((err) => console.error('The first live hop could not be launched:', err.message)),
+    );
 
     console.log(`Accepted Live call ${sessionId} from ${callerPhone || 'unknown caller'}`);
     return Response.json({ accepted: true, session_id: sessionId });

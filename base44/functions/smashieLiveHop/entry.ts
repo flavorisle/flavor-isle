@@ -1,31 +1,38 @@
-// One slice of a Live (SIP) phone call.
+// One slice of a Live (SIP) phone call — issue #86 (2026-10-08): the worker HOLDS
+// its request open for the whole slice.
 //
 // The platform takes a backend function down about twenty seconds after it has
-// answered, so a single invocation cannot hold the call's sideband socket for a
-// whole conversation — the earlier one-worker version went silent around the
-// twenty-second mark of every call. Each hop therefore drives the call for a
-// short window and, before its own worker is taken down, starts the next hop and
-// waits for it to confirm its socket is live. The next socket is up before this
-// one closes, so the caller never hears a gap.
+// answered, which is why the earlier build answered as soon as its socket
+// attached and then lived on as a zombie — and why it had to change hands every
+// fifteen seconds. At that cadence a call needed ~4 sideband attaches a minute,
+// and OpenAI's edge refuses a call's 7th attach in a rolling window (HTTP 403,
+// error code 1000, in under 300ms). Every call therefore went silent at about
+// ninety seconds, mid-order.
 //
-// Issue #82 (2026-10-08): a handover that cannot be completed NEVER ends the
-// call. When a worker cannot start a successor it hands the call to the
-// re-attach probe chain (probe:true) instead of hanging up, the chain keeps
-// trying for about thirty seconds, and the watchdog picks the call up from
-// there — the caller stays on the line the whole way. This entry also answers an
-// unauthorized caller with the driver version, which is how a deploy is verified
-// without placing a call.
+// A request can instead stay open for its whole life (measured: at least 180
+// seconds, and the ~20-30s reaper only applies to post-response work), so this
+// entry attaches, then does NOT answer until the slice's drive promise completes
+// — SLICE_MS, minus the ten-second lead in which the successor attaches. The held
+// request is what keeps the worker, and with it the sideband socket, alive.
+//
+// Issue #82's never-hang-up recovery chain is kept as the safety net: a worker
+// that cannot start a successor hands the call to the re-attach probe chain
+// (probe:true) instead of hanging up, the chain keeps trying, and the watchdog
+// picks the call up from there — the caller stays on the line the whole way. This
+// entry also answers an unauthorized caller with the driver version, which is how
+// a deploy is verified without placing a call.
 //
 // Called by smashieSipIncoming (first hop), by the previous hop, by its own probe
-// chain, and by smashieLiveWatchdog. The relay key in the payload is what proves
-// the call came from inside the app.
+// chain, and by smashieLiveWatchdog — never awaited by any of them. The relay key
+// in the payload is what proves the call came from inside the app.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
 import { driveLiveHop, probeStateFromRecord, DRIVER_VERSION } from '../../shared/smashieLiveSession.ts';
 
-// Safety net for a call that never ends: 75 hops is about fifteen minutes at the
-// fifteen-second hop cadence.
-const MAX_HOPS = 75;
+// Safety net for a call that never ends. Issue #86 (2.4): a fifteen-minute call is
+// six 150-second slices, so 20 hops leaves headroom for retries and probes (was
+// 75, sized for the fifteen-second hop cadence).
+const MAX_HOPS = 20;
 // Issue #82 (3.2): the probe chain is at most six attempts, five seconds apart —
 // about thirty seconds of coverage after a worker handed the call over. When they
 // are all refused the chain stops probing and leaves the record marked for the
@@ -37,12 +44,15 @@ const PROBE_DELAY_MS = 5000;
 const FRESH_ATTACH_MS = 6000;
 
 // One probe, five seconds out: the worker that scheduled it has already gone, so
-// the sleep and the invoke are kept alive by the runtime's post-response window.
+// the sleep and the launch are kept alive by the runtime's post-response window.
 function scheduleProbe({ base44, relayKey, sessionId, conversationId, callerPhone, counterPhone, state, probeCount }) {
   return (async () => {
     await new Promise((resolve) => setTimeout(resolve, PROBE_DELAY_MS));
     try {
-      await base44.asServiceRole.functions.invoke('smashieLiveHop', {
+      // Issue #86 (3.2): the probe is only STARTED, never awaited. It answers at
+      // the end of its own 150-second slice, far beyond this chain's post-response
+      // lifetime, so waiting for that body would never be useful.
+      base44.asServiceRole.functions.invoke('smashieLiveHop', {
         relayKey,
         sessionId,
         conversationId,
@@ -51,7 +61,7 @@ function scheduleProbe({ base44, relayKey, sessionId, conversationId, callerPhon
         state,
         probe: true,
         probeCount,
-      });
+      }).catch((err) => console.error(`Re-attach probe ${probeCount} could not be launched for ${conversationId}:`, err.message));
       console.log(`Re-attach probe ${probeCount} launched for conversation ${conversationId}`);
     } catch (err) {
       console.error(`Re-attach probe ${probeCount} could not be launched for ${conversationId}:`, err.message);
@@ -91,21 +101,28 @@ export default async function (req) {
     const attempt = Math.max(1, Number(probeCount) || 1);
     let state = body.state || {};
 
-    // Issue #82 (3.2/3.3): a probe drives the call from what the record already
-    // holds, and stands down when the call is over or another worker is already
-    // driving it — one socket owns the tools at a time.
-    if (probe) {
+    // Issue #82 (3.2/3.3), extended by issue #86 (3.3) to EVERY non-first hop: a
+    // successor or a probe drives the call from what the record already holds, and
+    // stands down when the call is over or when another worker attached moments
+    // ago — one socket owns the tools at a time. A late duplicate from a handoff
+    // retry lands here and skips instead of putting a second socket on the call.
+    // A probe is never the first hop, so it is always inside this guard.
+    if (probe || (state.hop || 0) >= 1) {
       const record = await base44.asServiceRole.entities.SmsConversation.get(conversationId).catch(() => null);
       if (!record || record.status !== 'active') {
         return Response.json({ attached: false, skipped: 'the call is no longer active' });
       }
       const log = Array.isArray(record.tool_log) ? record.tool_log : [];
       const lastAttach = [...log].reverse().find((entry) => entry?.name === 'sideband_attached');
+      const attachHop = Number(lastAttach?.hop);
       const attachedAt = lastAttach ? Date.parse(lastAttach.at || '') : NaN;
-      if (Number.isFinite(attachedAt) && Date.now() - attachedAt < FRESH_ATTACH_MS) {
+      const fresh = Number.isFinite(attachedAt) && Date.now() - attachedAt < FRESH_ATTACH_MS;
+      // An attach entry written before this build carries no hop, so freshness
+      // alone decides then — exactly the guard the probe chain always had.
+      if (fresh && (!Number.isFinite(attachHop) || attachHop >= (state.hop || 0))) {
         return Response.json({ attached: false, skipped: 'a worker attached moments ago and is already driving this call' });
       }
-      state = probeStateFromRecord(record, state);
+      if (probe) state = probeStateFromRecord(record, state);
     }
 
     if ((state.hop || 0) >= MAX_HOPS) {
@@ -171,26 +188,44 @@ export default async function (req) {
         }));
       },
       handoff: async (nextState) => {
-        const res = await base44.asServiceRole.functions.invoke('smashieLiveHop', {
+        // Issue #86 (2.1): the successor is STARTED and not awaited — it holds its
+        // own request open for a whole slice, so its body arrives long after this
+        // worker is gone. The confirmation is the successor's own attach marker,
+        // which the driver polls off the call record.
+        base44.asServiceRole.functions.invoke('smashieLiveHop', {
           relayKey,
           sessionId,
           conversationId,
           callerPhone,
           counterPhone,
           state: nextState,
-        });
-        const data = res?.data ?? res;
-        return { attached: !!(data && data.attached), reason: String(data?.reason || data?.error || '') };
+        }).catch((err) => console.error(`The successor to hop ${state.hop || 0} could not be started:`, err.message));
       },
     });
     waitUntil(drive);
 
-    // Answer as soon as this hop's socket is live — or as soon as it has given up
-    // attaching. Waiting on the attach alone left this request hanging forever
-    // when the attach failed, and the previous hop's handoff hung with it instead
-    // of retrying (issue #81).
+    // Answer immediately when this worker never got the socket — or as soon as it
+    // has given up attaching. Waiting on the attach alone left this request
+    // hanging forever when the attach failed, and the previous hop's handoff hung
+    // with it instead of retrying (issue #81).
     const isAttached = await Promise.race([attached, drive.then(() => false, () => false)]);
-    return Response.json({ attached: isAttached, reason: isAttached ? '' : attachFailure, probe: !!probe, attempt });
+    if (!isAttached) {
+      return Response.json({ attached: false, reason: attachFailure, probe: !!probe, attempt });
+    }
+
+    // Issue #86 (1.2): the request stays OPEN for the rest of the slice. This
+    // unanswered request is what keeps the worker — and with it the sideband
+    // socket — alive for SLICE_MS, which is what took the attach cadence from ~4 a
+    // minute down to well under one.
+    const slice = await drive.catch(() => null);
+    return Response.json({
+      attached: true,
+      slice_completed: true,
+      hop: slice?.hop || (Number(state.hop) || 0) + 1,
+      duration_ms: slice?.durationMs || 0,
+      probe: !!probe,
+      attempt,
+    });
   } catch (error) {
     console.error('smashieLiveHop error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

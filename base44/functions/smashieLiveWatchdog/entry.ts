@@ -103,22 +103,22 @@ export default async function (req) {
 
       probed.push(call.id);
       if (dryRun) continue;
-      waitUntil((async () => {
-        try {
-          await base44.asServiceRole.functions.invoke('smashieLiveHop', {
-            relayKey,
-            sessionId,
-            conversationId: call.id,
-            callerPhone: call.phone_number || '',
-            counterPhone,
-            state: {},
-            probe: true,
-            probeCount: 1,
-          });
-        } catch (err) {
-          console.error(`Watchdog probe could not be launched for ${call.id}:`, err.message);
-        }
-      })());
+      // Issue #86 (3.4): the probe is only STARTED, never awaited — it now holds
+      // its own request open for a 150-second slice, far beyond this sweep's
+      // post-response lifetime. This sweep remains the net for a worker that dies
+      // hard mid-slice with no successor scheduled.
+      waitUntil(
+        base44.asServiceRole.functions.invoke('smashieLiveHop', {
+          relayKey,
+          sessionId,
+          conversationId: call.id,
+          callerPhone: call.phone_number || '',
+          counterPhone,
+          state: {},
+          probe: true,
+          probeCount: 1,
+        }).catch((err) => console.error(`Watchdog probe could not be launched for ${call.id}:`, err.message)),
+      );
     }
 
     console.log(`Smashie live watchdog${dryRun ? ' (dry run)' : ''}: ${probed.length} re-attach probe(s), ${finalized.length} closed at the cap, ${skipped.length} skipped.`);

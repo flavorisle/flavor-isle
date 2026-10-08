@@ -2,6 +2,16 @@
 // `initialEntries` seeds a transcript carried over from an earlier worker, so a
 // call that changes hands mid-conversation keeps one continuous transcript
 // instead of restarting with each handover.
+//
+// Issue #86 (4.1): every sideband attach makes OpenAI replay recent
+// transcript.delta events, and appending them again duplicated the greeting and
+// read-back fragments in the Oct 8 call records (the 3:08 PM transcript shows the
+// same words twice). A fragment whose normalized text already sits at the tail of
+// the last entry for the same speaker is a replay, not new speech.
+function normalizeSpeech(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 export function createCallTranscript(initialEntries = []) {
   const entries = [];
   const active = {};
@@ -40,7 +50,13 @@ export function createCallTranscript(initialEntries = []) {
       if (fragment) entry.content = fragment;
       entry.completed = true;
     } else {
-      entry.content += fragment;
+      // Consecutive-duplicate suppression (issue #86, 4.1): replayed deltas arrive
+      // contiguously, so a fragment already ending this speaker's last entry is
+      // dropped instead of being spoken into the record twice.
+      const replayed = normalizeSpeech(fragment);
+      if (!replayed || !normalizeSpeech(entry.content).endsWith(replayed)) {
+        entry.content += fragment;
+      }
     }
     active[role] = entry;
     lastRole = role;

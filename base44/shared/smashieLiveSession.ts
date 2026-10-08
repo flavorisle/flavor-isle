@@ -3,15 +3,17 @@
 // what happened on the call record, then hands the call to a fresh invocation.
 //
 // Why hops: the platform takes a backend function down about twenty seconds
-// after it has answered, so no single invocation can hold this socket for a
-// whole conversation. The first version of this pipeline held it from the
-// webhook and every call went silent around the twenty-second mark — measured
-// again on 2026-10-02 with a probe: background writes stopped between twenty and
-// thirty seconds. Each hop here drives the call for a short window and starts
-// the next hop before its own worker is taken down, and the next socket is
-// attached before this one closes so the caller never hears a gap. The few
-// hundred milliseconds where both sockets are attached are why every action that
-// costs money is guarded against running twice.
+// after it has ANSWERED, so the earlier version of this pipeline — which answered
+// at attach and kept running as a zombie — went silent around the twenty-second
+// mark (measured 2026-10-02, and again as a probe: background writes stopped
+// between twenty and thirty seconds). Issue #86 (2026-10-08) turned that around:
+// a worker can hold its OWN request open, so it answers at the END of its slice
+// instead (SLICE_MS below, proven against a request lifetime of at least 180s).
+// Each hop therefore drives the call for a long slice and starts the next hop
+// before its own slice ends, and the next socket is attached before this one
+// closes so the caller never hears a gap. The few hundred milliseconds where both
+// sockets are attached are why every action that costs money is guarded against
+// running twice.
 //
 // Event shapes follow OpenAI's GPT-Live guides. Delegated work arrives inside a
 // `response.event` envelope, a finished function call is a nested
@@ -40,28 +42,42 @@ const TOOL_STALL_MS = 9000;
 // Hard bound on one tool run. Actions are serialized, so a hung one would block
 // every later result and the caller would hear nothing after "checking".
 export const TOOL_TIMEOUT_MS = 10000;
-// How long one hop drives the call before handing the socket over.
-// A3 (2026-10-08, issue #82): 15000ms. The successor is started fifteen seconds
-// into this worker's slice, which leaves five to fifteen seconds of margin before
-// the platform reclaims the worker (measured at twenty to thirty seconds) and
-// cuts attach volume to a quarter of the 6000ms cadence — the volume the
-// forty-one-second calls of Oct 7 were running when handovers started failing.
-export const HOP_MS = 15000;
+// How long one hop HOLDS the call — issue #86 (2026-10-08).
+//
+// #82's 15000ms hop needed ~4 sideband attaches per minute, and OpenAI's edge
+// refuses a call's 7th attach (HTTP 403, error code 1000, returned in under
+// 300ms — not a real connection attempt) inside a rolling window. Every failed
+// call hit that wall at about ninety seconds, mid-order. Holding the request
+// instead: measured on this runtime a function request stays open at least 180
+// seconds, and the ~20-30s reaper only applies to post-response work. 150000ms
+// therefore keeps the sideband socket alive for the whole slice and takes a
+// fifteen-minute call from ~60 attaches to ~7, so the wall is never approached.
+export const SLICE_MS = 150000;
+// The successor is started this long before the slice ends, so its socket is live
+// before this one closes and the caller never hears a gap.
+export const HANDOFF_LEAD_MS = 10000;
 // Issue #82: a handover that fails must NEVER end the call, so there is no cap on
 // handover attempts — this worker keeps starting successors for as long as it
 // lives. Retries are spaced 2s, 4s, 8s, 8s… and stop only when the next one would
 // not fit in the worker's remaining life (WORKER_RETRY_BUDGET_MS below), where the
 // re-attach probe chain and the watchdog take the call over instead of ending it.
 const RETRY_BACKOFF_MS = [2000, 4000, 8000];
-// How long a worker keeps trying to hand over. The platform reclaims a worker
-// twenty to thirty seconds after it answers, so past this point the recovery
-// record and the re-attach probe must be scheduled while this worker can still
-// write them; the probe chain (and the watchdog behind it) carry the call on.
-const WORKER_RETRY_BUDGET_MS = 21000;
+// How long a worker keeps trying to hand over — measured against the worker's own
+// life, which issue #86 made the slice itself. (Held over from #82's 21000ms,
+// sized for workers that died soon after answering: the handover now comes due at
+// SLICE_MS - HANDOFF_LEAD_MS, so an absolute 21000ms would skip every retry and
+// drop the call onto the probe chain after a single attempt.) Past this point the
+// recovery record and the re-attach probe are scheduled while this worker can
+// still write them; the probe chain (and the watchdog behind it) carry the call on.
+const WORKER_RETRY_BUDGET_MS = SLICE_MS;
 // One handoff attempt: a fresh worker attaches in about a second, so a healthy
 // handover confirms well inside this. Shorter than the worker's remaining life,
 // so a successor that never answers still leaves room for the retries.
 const HANDOFF_TIMEOUT_MS = 3500;
+// Issue #86 (2.1): a successor is started fire-and-forget, so it cannot report its
+// own attach back. Its arrival is read off the call record's sideband_attached
+// marker instead — this is how often that record is polled inside the window.
+const SUCCESSOR_POLL_MS = 300;
 // Partial speech is saved at most this long after it arrives; every finished
 // segment is saved the moment it completes.
 const PARTIAL_SAVE_MS = 1000;
@@ -71,7 +87,7 @@ export const MAX_CALL_MS = 15 * 60 * 1000;
 // audit: the hop build only reached live calls on Oct 6, four days after it was
 // committed). The hop also hands it back on an unauthorized request, which is
 // how a deploy is verified without placing a call (issue #82, 7.3).
-export const DRIVER_VERSION = 'live-driver-2026-10-08-never-hang-up';
+export const DRIVER_VERSION = 'live-driver-2026-10-08-long-slice';
 
 export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, callerPhone, counterPhone, greeting, state = {}, onAttached, onAttachFailure, onNoSuccessor, onProbeFailure, handoff }) {
   const startedAt = state.startedAt || Date.now();
@@ -346,6 +362,40 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
   // OUTSIDE the queue — see runHandoff.
   const drainQueue = () => chain.catch(() => {});
 
+  // Issue #86 (2.1/2.2/2.3): the successor is started and NOT awaited — it now
+  // holds its own request open for a whole slice, so waiting on that body would
+  // tie this worker up for minutes. Its arrival is read off the call record
+  // instead: a freshly attached worker writes a sideband_attached entry carrying
+  // its own hop number, and anything strictly greater than this worker's own is
+  // the successor. Nothing else writes one inside this window, and a late
+  // duplicate from a retry stands itself down in the hop entry (3.3), so a retry
+  // can never double-attach on top of a live socket.
+  const confirmSuccessorAttached = async () => {
+    const deadline = Date.now() + HANDOFF_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const record = await base44.asServiceRole.entities.SmsConversation.get(conversationId).catch(() => null);
+      const log = Array.isArray(record?.tool_log) ? record.tool_log : [];
+      const latest = [...log].reverse().find((entry) => entry?.name === 'sideband_attached');
+      if (Number(latest?.hop) > hopNumber) return { attached: true, reason: '' };
+      await new Promise((resolve) => setTimeout(resolve, SUCCESSOR_POLL_MS));
+    }
+    return { attached: false, reason: 'the successor did not attach inside the handoff window' };
+  };
+
+  // By the time the handover is confirmed the successor has already written its
+  // own attach marker, so this worker's last write merges the record's log rather
+  // than overwriting it — a log collected before the successor attached would
+  // otherwise erase the marker (and anything the new socket has written).
+  const mergeToolLogFromRecord = async () => {
+    const record = await base44.asServiceRole.entities.SmsConversation.get(conversationId).catch(() => null);
+    const saved = Array.isArray(record?.tool_log) ? record.tool_log : [];
+    if (!saved.length) return;
+    const seen = new Set(saved.map((entry) => `${entry?.at || ''}|${entry?.name || ''}`));
+    const mine = toolLog.filter((entry) => !seen.has(`${entry?.at || ''}|${entry?.name || ''}`));
+    toolLog.length = 0;
+    toolLog.push(...saved, ...mine);
+  };
+
   // Issue #82 (1.5): this worker cannot hold the call any longer and no successor
   // picked it up. The caller STAYS ON THE LINE — nothing here hangs up. The call
   // record is left active and marked needs_reattach, the reason trail is written
@@ -391,9 +441,10 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     }
 
     // Issue #82: no cap. Every attempt is written to the call record with its
-    // exact outcome — including the line's own refusal reason, carried back from
-    // the hop — so a call that struggles to change hands is diagnosable
-    // afterwards. A failed handover never ends the call.
+    // exact outcome so a call that struggles to change hands is diagnosable
+    // afterwards. Issue #86 replaced the hop's own refusal text — which a
+    // fire-and-forget successor can no longer return — with the record's own
+    // attach marker as the thing that confirms a handover. Never ends the call.
     const failures = [];
     let attempt = 0;
     while (!finalized && !handedOff && !recoveryHandedOver) {
@@ -401,13 +452,19 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       const attemptAt = Date.now();
       recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${attempt} — starting a fresh worker` });
       try {
-        // Bounded so a successor that never answers cannot use up this worker's
-        // remaining life before the retries run.
-        const next = await withTimeout(() => handoff(hopState()), HANDOFF_TIMEOUT_MS, 'hop handoff');
+        // Bounded so a successor that never confirms cannot use up this worker's
+        // remaining life before the retries run. The launch itself is instant and
+        // fire-and-forget (2.1); the window is spent polling the call record.
+        const next = await withTimeout(async () => {
+          await handoff(hopState());
+          return confirmSuccessorAttached();
+        }, HANDOFF_TIMEOUT_MS + 1000, 'hop handoff');
         if (next?.attached) {
           recordTool({ name: 'hop_handoff', ok: true, ms: Date.now() - attemptAt, detail: `hop ${hopNumber} handed the call to a fresh worker; this socket can close now` });
           // Write the record while this worker still owns it (persist() is a
-          // no-op once handedOff is set), in order behind any queued saves.
+          // no-op once handedOff is set), in order behind any queued saves — and
+          // from the record's own log, which already holds the successor's attach.
+          await mergeToolLogFromRecord();
           queue(persist);
           await drainQueue();
           // The successor's socket is live and takes every new event from here.
@@ -422,9 +479,9 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
         }
         // 2026-10-08 (real call): handovers 1-5 were clean, then three refusals in
         // a row cut the caller off mid-order — each one back in under 200ms, far
-        // too fast for a real connection attempt. Whatever the line says about
-        // refusing is carried back from the hop and written here, so the next call
-        // records the actual reason instead of only that the handover failed.
+        // too fast for a real connection attempt. That is the attach wall issue #86
+        // removes by cutting the attach cadence; whatever the attempt costs is
+        // written here, so the next call records the actual outcome.
         const why = String(next?.reason || '').trim();
         failures.push(`attempt ${attempt}: ${why || 'the fresh worker did not confirm its socket attached, and reported no reason'}`);
       } catch (err) {
@@ -452,7 +509,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
   const startHopTimer = () => {
     hopTimer = setTimeout(() => {
       runHandoff().catch((err) => console.error('Live handoff crashed:', err.message));
-    }, HOP_MS);
+    }, SLICE_MS - HANDOFF_LEAD_MS);
   };
 
   try {
@@ -481,17 +538,21 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     });
     console.log(`Live sideband attached for session ${sessionId} (hop ${hopNumber})`);
     if (greeting) appendInstruction(sideband, greeting);
-    recordTool({ name: 'sideband_attached', ok: true, detail: `call connected to the app (${DRIVER_VERSION}, hop ${hopNumber})` });
+    // The structured hop field (issue #86, 2.2) is what the previous hop's handoff
+    // poll and every later worker's stand-down guard read; the detail keeps the
+    // wording Admin shows.
+    recordTool({ name: 'sideband_attached', ok: true, hop: hopNumber, detail: `call connected to the app (${DRIVER_VERSION}, hop ${hopNumber})` });
     // A live worker owns the call again, so the record no longer needs one; the
     // same write refreshes last_message_at, which is what tells the watchdog the
     // call is still being heard (issue #82).
     queue(persist({ needs_reattach: false }));
     if (onAttached) onAttached();
     startHopTimer();
-    // Hold on until this hop is done: the handler's response has already gone
-    // out, and this pending promise is what keeps the socket alive this long.
+    // Hold on until this slice is done. Issue #86 (1.2): the hop entry keeps its
+    // own request open on this promise, and that unanswered request is what keeps
+    // this worker — and therefore this socket — alive for the whole slice.
     await hopFinished;
-    return;
+    return { hop: hopNumber, durationMs: Date.now() - startedAt };
   } catch (e) {
     console.error(`Live sideband failed for ${sessionId}:`, e.message);
     // Handed back to the previous hop so a failed handover is recorded with the
@@ -516,6 +577,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       await handOverToProbes('worker_lifetime_no_successor', [`this worker could not attach: ${e.message}`]);
     }
     finishHop();
+    return { hop: hopNumber, durationMs: Date.now() - startedAt };
   }
 }
 
