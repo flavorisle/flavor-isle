@@ -9,7 +9,7 @@ export default function PickupParkingPhoto({ selectedZone, onSelectZone }) {
     <figure>
       <div className="relative max-w-3xl mx-auto">
         <a href={issue23Photos.parking} target="_blank" rel="noopener noreferrer" aria-label="Open full-size Flavor Isle parking map">
-          <img src={issue23Photos.parking} alt="Flavor Isle at N Main St and 1st St. Blue P markers indicate allowed parking; red crossed-out P markers indicate prohibited parking. Curbside zone locations are labeled A through D." loading="lazy" className="block w-full h-auto" />
+          <img src={issue23Photos.parking} alt="Flavor Isle at N Main St and 1st St. Curbside zone locations are labeled A through C." loading="lazy" className="block w-full h-auto" />
         </a>
         {ZONES.map(zone => (
           <Marker key={zone.id} {...(onSelectZone ? { type: 'button', onClick: () => onSelectZone(zone.id), 'aria-pressed': selectedZone === zone.id } : {})}

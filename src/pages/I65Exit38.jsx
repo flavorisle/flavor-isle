@@ -12,6 +12,7 @@ import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
 import { issue23Photos } from '@/lib/issue23Photos';
 import { optimizedImageUrl } from '@/lib/utils';
+import ParkingRules from '@/components/parking/ParkingRules';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
@@ -103,6 +104,7 @@ export default function I65Exit38() {
       <figure className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <img src={optimizedImageUrl(issue23Photos.parking, 800, 600, 'fit')} alt="Parking map for Flavor Isle at I-65 Exit 38" width="800" height="600" loading="lazy" decoding="async" className="w-full rounded-xl" />
         <figcaption className="mt-2 text-sm text-muted-foreground">Where to park when you visit Flavor Isle</figcaption>
+        <ParkingRules className="mt-2" />
       </figure>
       <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
       <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />

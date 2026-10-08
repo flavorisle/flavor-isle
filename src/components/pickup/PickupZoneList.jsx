@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { ZONES } from '@/components/pickup/pickupZones';
+import ParkingRules from '@/components/parking/ParkingRules';
 
 export default function PickupZoneList({ selectedZone, onSelectZone }) {
   const Row = onSelectZone ? 'button' : 'div';
@@ -20,6 +21,7 @@ export default function PickupZoneList({ selectedZone, onSelectZone }) {
           </Row>
         );
       })}
+      <ParkingRules />
     </div>
   );
 }

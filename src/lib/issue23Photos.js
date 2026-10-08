@@ -6,7 +6,8 @@ export const issue23Photos = {
   ecto: root + 'd13d86ac1_0884.jpg',
   corvette: root + 'e7cb5aebb_Original.jpg',
   anniversary: root + '2b5b8cd73_Flavor20Isle2050th20Anniversary205-3-1420A.jpg',
-  parking: root + '4107c0388_Parking.jpg',
+  // Revised curbside map (issue #85) — the only map file site-wide.
+  parking: root + 'b6c8476d5_Parking.jpg',
   food1045: root + 'e13a2f0c9_1045.jpg',
   food1046: root + '08da079a5_1046.jpg',
   diner1240: root + 'aa0b84a0c_1240.jpg',

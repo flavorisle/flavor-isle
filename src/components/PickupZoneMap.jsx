@@ -12,8 +12,9 @@ export default function PickupZoneMap({ selectedZone, onSelectZone }) {
           <MapPin size={18} className="text-primary" aria-hidden="true" /> Curbside Pickup Zones
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {onSelectZone ? 'Tap a letter or zone below to tell the crew where you parked.' : 'Find your curbside zone below, then select it on your Order Status page when you arrive.'}
-          {' '}Park only at blue P markers. No parking at red crossed-out markers or along the restaurant’s 1st St frontage.
+          {onSelectZone
+            ? 'Tap a letter or zone below to tell the crew where you parked.'
+            : 'Find your curbside zone below, then select it on your Order Status page when you arrive. Please do not park on 1st St at all — along the building or along the street.'}
         </p>
       </div>
       <PickupParkingPhoto selectedZone={selectedZone} onSelectZone={onSelectZone} />
