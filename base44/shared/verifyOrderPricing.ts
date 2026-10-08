@@ -33,6 +33,7 @@
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
 import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
+import { isBundleLine, bundleDiscountForLines, FAMILY_BUNDLE_INCLUDED_OPTION_IDS } from './familyBundle.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
@@ -121,6 +122,7 @@ export interface PricingResult {
   error?: string;
   subtotal?: number;
   happyHourDiscount?: number;
+  bundleDiscount?: number;
   tax?: number;
   deliveryFee?: number;
   discount?: number;
@@ -143,11 +145,12 @@ export async function verifyOrderPricing(base44: any, opts: {
   clientTip?: number;
   clientDiscount?: number;
   clientHappyHourDiscount?: number;
+  clientBundleDiscount?: number;
 }): Promise<PricingResult> {
   const {
     items, orderType, deliveryAddress,
     clientSubtotal, clientDeliveryFee, clientTax, clientTotal,
-    clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0,
+    clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0, clientBundleDiscount = 0,
   } = opts;
 
   if (!items || items.length === 0) return { ok: false, error: 'No items provided' };
@@ -173,15 +176,19 @@ export async function verifyOrderPricing(base44: any, opts: {
     if (mi.square_item_id) menuBySquareId.set(mi.square_item_id, mi);
   }
 
-  // ── Recompute line prices + Happy Hour ──
+  // ── Recompute line prices + Happy Hour + family bundle ──
   let serverSubtotal = 0;
   let serverHappyHour = 0;
+  // Per bundle-line included money, grouped so each added bundle pays its fixed
+  // price once. The discount is recomputed from the catalog below.
+  const bundleLines: Array<{ bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
     const sqId = item.square_item_id || item.catalog_object_id;
     const menuItem = sqId ? menuBySquareId.get(sqId) : null;
 
     let lineUnitPrice: number;
+    let bundleExtras = 0;
     if (menuItem) {
       // Authoritative base + authoritative catalog modifier prices. A catalog
       // item's modifiers MUST reference a real catalog option id — Deluxe
@@ -198,6 +205,16 @@ export async function verifyOrderPricing(base44: any, opts: {
         } else {
           return { ok: false, error: `Modifier "${sm.name || sm.id || 'unknown'}" is not a permitted selection for ${item.name || 'this item'}. Please refresh the menu and try again.` };
         }
+      }
+      // Family bundle line: the priced options the bundle does NOT already
+      // include (jalapeños, extra-level lettuce/tomato, drink flavor shots,
+      // cake toppings) are the customer's paid extras and stay on top.
+      if (isBundleLine(item)) {
+        bundleExtras = (item.selectedModifiers || []).reduce((sum: number, sm: any) => {
+          if (!sm) return sum;
+          if (FAMILY_BUNDLE_INCLUDED_OPTION_IDS.has(sm.id)) return sum;
+          return sum + (sm.id && sm.id in modPriceMap ? modPriceMap[sm.id] : 0);
+        }, 0);
       }
     } else if (sqId) {
       // square_item_id present but not in our catalog — reject (unknown item).
@@ -229,14 +246,21 @@ export async function verifyOrderPricing(base44: any, opts: {
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
 
-    if (hhActive && pct > 0 && sqId && hhIds.has(sqId)) {
+    if (isBundleLine(item)) {
+      bundleLines.push({ bundleGroup: item.bundleGroup, includedUnitPrice: round2(lineUnitPrice - bundleExtras), quantity: qty });
+    }
+
+    // A bundle line is never also Happy-Hour discounted — the bundle price is
+    // the whole deal and stacking both would undercut its fixed price.
+    if (hhActive && pct > 0 && sqId && hhIds.has(sqId) && !isBundleLine(item)) {
       serverHappyHour += lineTotal * pct;
     }
   }
 
   serverSubtotal = round2(serverSubtotal);
   serverHappyHour = round2(serverHappyHour);
-  const adjustedSubtotal = round2(serverSubtotal - serverHappyHour);
+  const serverBundleDiscount = bundleDiscountForLines(bundleLines);
+  const adjustedSubtotal = round2(serverSubtotal - serverHappyHour - serverBundleDiscount);
 
   // ── Tax ──
   // Whole cents, rounded half up — the identical rule the client cart/checkout
@@ -285,6 +309,7 @@ export async function verifyOrderPricing(base44: any, opts: {
   const checks: Array<[number, number, string]> = [
     [serverSubtotal, clientSubtotal, 'subtotal'],
     [serverHappyHour, clientHappyHourDiscount, 'happy hour discount'],
+    [serverBundleDiscount, clientBundleDiscount, 'bundle discount'],
     [serverTax, clientTax, 'tax'],
     [serverDeliveryFee, clientDeliveryFee, 'delivery fee'],
     [serverTotal, clientTotal, 'total'],
@@ -306,6 +331,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     ok: true,
     subtotal: serverSubtotal,
     happyHourDiscount: serverHappyHour,
+    bundleDiscount: serverBundleDiscount,
     tax: serverTax,
     deliveryFee: serverDeliveryFee,
     discount: serverDiscount,

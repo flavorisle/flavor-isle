@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       scheduledFor, estimatedTime,
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
-      happyHourDiscount, loyaltyOptIn,
+      happyHourDiscount, bundleDiscount, loyaltyOptIn,
       smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion,
     } = body;
 
@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
       clientTip: tip,
       clientDiscount: 0, // group/separate flow does not apply a reward
       clientHappyHourDiscount: happyHourDiscount,
+      clientBundleDiscount: bundleDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -96,6 +97,8 @@ Deno.serve(async (req) => {
         tip: pricing.tip,
         discount: 0,
         happy_hour_discount: pricing.happyHourDiscount,
+        bundle_discount: pricing.bundleDiscount || 0,
+        bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
         loyalty_opt_in: loyaltyOptIn === true,
         direct_web_rewards_v2: true,
         total: pricing.total,

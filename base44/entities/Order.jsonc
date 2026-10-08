@@ -79,6 +79,15 @@
       "default": 0,
       "description": "Happy Hour discount, separate from loyalty discount."
     },
+    "bundle_id": {
+      "type": "string",
+      "description": "Family bundle id when this order came from a bundle (e.g. school-night-lifesaver). Informational only: the bundle's items are normal line items and the saving rides on bundle_discount."
+    },
+    "bundle_discount": {
+      "type": "number",
+      "default": 0,
+      "description": "Fixed family-bundle discount that brings the bundle's included items down to the bundle price ($37.74 for the School Night Lifesaver); paid extras the customer chose stay outside it. POS-only: never printed on a kitchen ticket."
+    },
     "redemption_id": {
       "type": "string"
     },

@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
       clientTip: tip,
       clientDiscount: authoritativeDiscount,
       clientHappyHourDiscount: happyHourDiscount,
+      clientBundleDiscount: bundleDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -145,6 +146,8 @@ Deno.serve(async (req) => {
         tip: pricing.tip,
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
+        bundle_discount: pricing.bundleDiscount || 0,
+        bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
         redemption_id: redemptionId || '',
         loyalty_opt_in: loyaltyOptIn === true,
         direct_web_rewards_v2: true,

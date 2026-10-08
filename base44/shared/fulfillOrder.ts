@@ -396,6 +396,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
         tip: order.tip || 0,
         discount: order.discount || 0,
         happyHourDiscount: order.happy_hour_discount || 0,
+        bundleDiscount: order.bundle_discount || 0,
       });
       squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
       const alreadySynced = squareRes?.data?.already_synced || squareRes?.already_synced;

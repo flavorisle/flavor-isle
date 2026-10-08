@@ -6,7 +6,7 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, pickupMethod, vehicle } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, pickupMethod, vehicle } = body;
     const storedOrder = orderId ? await base44.asServiceRole.entities.Order.get(orderId) : null;
     const cashPickup = storedOrder?.pay_cash_on_pickup === true && storedOrder.order_type === 'pickup';
 
@@ -382,9 +382,21 @@ export default async function(req) {
         scope: 'ORDER',
       });
     }
+    // Family bundle discount as its own order-level fixed discount. It reaches
+    // Square only — the kitchen ticket stays items and modifiers, with no
+    // discount, savings or bundle pricing text anywhere on it.
+    if (bundleDiscount > 0) {
+      orderDiscounts.push({
+        uid: 'family-bundle',
+        name: 'School Night Lifesaver Bundle',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(bundleDiscount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
     // Square applies the ADDITIVE tax to the post-discount amount, so base the
     // percentage on the discounted subtotal to keep the applied tax equal to ours.
-    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0);
+    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0) - (bundleDiscount || 0);
     const orderTaxes = [];
     if (tax > 0 && taxBase > 0) {
       const pct = ((tax / taxBase) * 100).toFixed(2);

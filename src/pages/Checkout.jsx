@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
+import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 
 import { base44 } from '@/api/base44Client';
 
@@ -159,7 +160,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, addItem } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, addItem } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const businessHours = useBusinessHours();
@@ -465,7 +466,11 @@ export default function Checkout() {
         const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
         const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
         const splits = withItems.map((p, idx) => {
-          const pSub = +(p.subtotal - (p.happyHourDiscount || 0)).toFixed(2);
+          // A bundle's lines are always tagged to whoever was ordering when it
+          // was added, so each person's own share of the bundle discount comes
+          // off their own subtotal and the shares still sum to the order total.
+          const pBundle = getFamilyBundleDiscount(cartItems.filter(i => i.person_id === p.id));
+          const pSub = +(p.subtotal - (p.happyHourDiscount || 0) - pBundle).toFixed(2);
           const pTax = salesTaxFor(pSub);
           const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
           const pTotal = fromCents(toCents(pSub) + toCents(pTax) + toCents(feeTip));
@@ -484,6 +489,7 @@ export default function Checkout() {
           splits,
           groupName: people.map(p => p.name).join(', '),
           happyHourDiscount,
+          bundleDiscount,
           loyaltyOptIn,
           smsTransactionalConsent: smsConsent,
           smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
@@ -515,7 +521,7 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
           loyaltyOptIn,
           scheduledFor,
           estimatedTime,
@@ -653,7 +659,7 @@ export default function Checkout() {
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
       loyaltyOptIn,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
@@ -1218,6 +1224,11 @@ export default function Checkout() {
                 {happyHourDiscount > 0 && (
                   <div className="flex justify-between text-midnight-cherry font-semibold">
                     <span>Happy Hour — Unbeatable Value (online)</span><span>−${happyHourDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {bundleDiscount > 0 && (
+                  <div className="flex justify-between text-midnight-cherry font-semibold">
+                    <span>School Night Lifesaver bundle</span><span>−${bundleDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {rewardDiscount > 0 && (
