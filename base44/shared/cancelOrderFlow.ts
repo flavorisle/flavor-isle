@@ -83,7 +83,17 @@ function itemsHtml(order: any): string {
     .join('');
 }
 
+// Crew-typed text lands in an HTML email, so keep stray < & > from breaking it.
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function cancellationEmailBody(order: any, { refunded, amountText }: { refunded: boolean; amountText: string }): string {
+  // The reason the crew typed in the Cancel Order dialog, quoted so the customer
+  // knows why their order came off the board.
+  const reasonLine = order.cancel_reason
+    ? `<p style="font-size:15px;line-height:1.6;">What happened: ${escapeHtml(order.cancel_reason)}</p>`
+    : '';
   const moneyLine = refunded
     ? `<p style="font-size:15px;line-height:1.6;">We've also refunded <strong style="color:#C0392B;">${amountText}</strong> to your original payment method — it should appear on your statement within 5–10 business days.</p>`
     : `<p style="font-size:15px;line-height:1.6;">Nothing was charged for this order.</p>`;
@@ -95,6 +105,7 @@ export function cancellationEmailBody(order: any, { refunded, amountText }: { re
         </div>
         <h2 style="font-family:Oswald,Arial,sans-serif;color:#141414;font-size:20px;">Hi ${order.customer_name},</h2>
         <p style="font-size:15px;line-height:1.6;">Your order <strong>${order.order_number}</strong> has been cancelled, so we're not making it.</p>
+        ${reasonLine}
         ${moneyLine}
         <table style="width:100%;font-size:14px;margin:18px 0;color:#141414;border-top:1px solid #eee;border-bottom:1px solid #eee;">
           ${itemsHtml(order)}
