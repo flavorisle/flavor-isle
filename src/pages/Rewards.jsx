@@ -291,7 +291,7 @@ export default function Rewards() {
               </div>
               <h1 className="font-heading text-4xl sm:text-5xl leading-none mt-4">Earn stars on every online order</h1>
               <p className="text-sm text-white/70 mt-3 max-w-md leading-relaxed">
-                Earn 1 Star per $1 and redeem your Stars for rewards set by the live Square program. +10% bonus Stars on every flavor-isle.com order, with your member phone number.
+                Earn 1 Star per $1 and redeem your Stars for rewards set by the live Square program. +10% bonus Stars on every flavor-isle.com order and 50 streak Stars after 3 web orders in 30 days.
               </p>
               {earnText && (
                 <div className="mt-4 inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
@@ -359,7 +359,7 @@ export default function Rewards() {
             <p className="text-sm text-white/70 mt-2 max-w-md">
               Earn 1 Star per $1 with your member phone number. Your balance is synced with Square.
             </p>
-            <p className="mt-4 text-sm text-white/80">+10% bonus Stars on every flavor-isle.com order.</p>
+            <p className="mt-4 text-sm text-white/80">+10% bonus Stars on every flavor-isle.com order. 3 web orders in 30 days earn a 50-Star streak bonus.</p>
             </div>
 
             {earnText && (

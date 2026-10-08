@@ -1,6 +1,6 @@
 {
   "name": "Points Digest Trigger",
-  "description": "1st of each month at 10 AM store local: sends every loyalty member with a positive balance a points digest email showing their current balance, next reward tier, and how close they are to unlocking it.",
+  "description": "1st of each month at 10 AM store local: sends live Square Star Rewards member digests and an owner metrics email covering order frequency, channel mix, welcome-back redemption, and reward value against gross sales.",
   "trigger": {
     "condition": null,
     "config": {
@@ -35,7 +35,7 @@
           "then": "end",
           "x-base44": {
             "title": "Send monthly points digest",
-            "description": "Email every loyalty member their balance and next reward tier"
+            "description": "Send current Square Star Rewards balances and monthly member/profit metrics"
           }
         }
       }
