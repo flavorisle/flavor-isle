@@ -2,16 +2,17 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ArrowRight } from 'lucide-react';
 import FavoritePhotoCard from './FavoritePhotoCard';
+import ShakeFavoriteTile from '@/components/ShakeFavoriteTile';
 import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 
-// Horizontal rail of the top 10 best-sellers (online + in-store). Only items
-// actually stamped is_fan_favorite === true are shown, ranked by
-// fan_favorite_rank, each card carrying the item's own photo. The rank comes
-// straight from the entity — no storage snapshot or cached copy is read.
-export default function FanFavoritesSection({ items }) {
+// Horizontal rail of the top 10 best-sellers (online + in-store).
+// Items are pre-stamped with is_fan_favorite + fan_favorite_rank by the
+// refreshFanFavorites backend function / workflow.
+export default function FanFavoritesSection({ items, shakeRank }) {
   const favorites = items
     .filter((i) => i.is_fan_favorite === true && !i.is_hidden && !isExcludedFromMarketing(i))
     .map((item) => ({ ...item, rank: item.fan_favorite_rank }))
+    .concat(shakeRank ? [{ id: 'shake-isle', rank: shakeRank, shake: true }] : [])
     .sort((a, b) => a.rank - b.rank)
     .slice(0, 10);
 
@@ -36,7 +37,7 @@ export default function FanFavoritesSection({ items }) {
             <span className={`absolute top-2 left-2 z-20 pointer-events-none rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
               TOP #{item.rank}
             </span>
-            <FavoritePhotoCard item={item} />
+            {item.shake ? <ShakeFavoriteTile /> : <FavoritePhotoCard item={item} />}
           </div>
         ))}
       </div>
