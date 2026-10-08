@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
         rewardTierId: redemptionId,
         claimedDiscount: Number(discount) || 0,
         subtotal: Number(subtotal) || 0,
+        // Item-scoped rewards price against a qualifying line, so the server
+        // needs the same cart lines the checkout used.
+        cartItems: items,
       });
       if (!reward.ok) {
         return Response.json({ error: reward.error || 'Reward could not be verified.' }, { status: 400 });

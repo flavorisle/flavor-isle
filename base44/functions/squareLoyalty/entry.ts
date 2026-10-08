@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildLoyaltyStatus, accrueForOrder, hasAccrualEventForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier } from '../../shared/squareLoyalty.ts';
+import { buildLoyaltyStatus, accrueForOrder, hasAccrualEventForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier, getRewardTierDiscounts, type ResolvedTierDiscount } from '../../shared/squareLoyalty.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -35,13 +35,22 @@ Deno.serve(async (req) => {
     if (action === 'program') {
       try {
         const program = await getLoyaltyProgram();
-        const rewardTiers = (program?.reward_tiers || []).map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          points: t.points,
-          description: describeRewardTier(t),
-          scope: t.definition?.scope || 'ORDER',
-        }));
+        // Tiers carry a pricing-rule reference rather than an inline discount,
+        // so resolve the rules before describing them.
+        const tierDiscounts = await getRewardTierDiscounts(program).catch((e: Error) => {
+          console.error('Program tier resolution failed:', e.message);
+          return new Map<string, ResolvedTierDiscount>();
+        });
+        const rewardTiers = (program?.reward_tiers || []).map((t: any) => {
+          const resolved = tierDiscounts.get(t.id) || null;
+          return {
+            id: t.id,
+            name: t.name,
+            points: t.points,
+            description: describeRewardTier(t, resolved),
+            scope: resolved?.scope || 'ORDER',
+          };
+        });
         return Response.json({
           programName: program?.name || 'Flavor Isle Star Rewards',
           programStatus: program?.status || 'UNKNOWN',

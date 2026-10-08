@@ -2,23 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { computeDiscount, tierNeedsCartItem } from '@/lib/rewardDiscount';
 
-function computeDiscount(tier, subtotal) {
-  if (!tier) return null;
-  if (tier.scope && tier.scope !== 'ORDER') return null;
-  if (tier.discountType === 'FIXED_AMOUNT') {
-    const v = (tier.fixedAmountCents || 0) / 100;
-    return v > 0 ? Math.min(subtotal, +v.toFixed(2)) : null;
-  }
-  if (tier.discountType === 'FIXED_PERCENTAGE') {
-    const pct = tier.percentage || 0;
-    if (pct <= 0 || pct >= 100) return null;
-    return +(subtotal * pct / 100).toFixed(2);
-  }
-  return null;
-}
-
-export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onApply }) {
+export default function CheckoutLoyaltyBox({ subtotal, phone, cartItems, appliedReward, onApply }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,11 +32,11 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
     if (!appliedReward || !status || !onApply) return;
     const tier = (status.rewardTiers || []).find(t => t.id === appliedReward.tierId);
     if (!tier) return;
-    const dv = computeDiscount(tier, subtotal);
+    const dv = computeDiscount(tier, subtotal, cartItems);
     if (dv != null && dv !== appliedReward.discountValue) {
       onApply({ tierId: tier.id, discountValue: dv, description: tier.description });
     }
-  }, [subtotal, status]);
+  }, [subtotal, status, cartItems]);
 
   if (!hasPhone || loading) return null;
 
@@ -58,10 +44,15 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
   const balance = Number(s.balance || 0);
   if (!s.hasAccount) return null;
 
-  const redeemable = (s.rewardTiers || [])
-    .filter(t => balance >= t.points)
-    .map(t => ({ ...t, discountValue: computeDiscount(t, subtotal) }))
+  const affordable = (s.rewardTiers || []).filter(t => balance >= t.points);
+  const redeemable = affordable
+    .map(t => ({ ...t, discountValue: computeDiscount(t, subtotal, cartItems) }))
     .filter(t => t.discountValue != null && t.discountValue > 0)
+    .sort((a, b) => a.points - b.points);
+  // Item-scoped rewards whose qualifying item isn't in the bag yet: shown, but
+  // not selectable.
+  const needsItem = affordable
+    .filter(t => tierNeedsCartItem(t, cartItems))
     .sort((a, b) => a.points - b.points);
 
   const discountLabel = (t) => {
@@ -77,7 +68,7 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
         <span className="text-xs text-muted-foreground font-body ml-1">· {balance.toLocaleString()} stars</span>
         <Link to="/rewards" className="ml-auto text-xs text-patina-mint hover:text-midnight-cherry transition-colors font-body">Learn more</Link>
       </h3>
-      {redeemable.length > 0 && (
+      {(redeemable.length > 0 || needsItem.length > 0) && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
           {redeemable.map(r => {
             const applied = appliedReward?.tierId === r.id;
@@ -93,6 +84,15 @@ export default function CheckoutLoyaltyBox({ subtotal, phone, appliedReward, onA
               </button>
             );
           })}
+          {needsItem.map(t => (
+            <span
+              key={t.id}
+              className="px-2 py-0.5 rounded-full text-xs font-heading bg-muted text-muted-foreground"
+              title={`${t.name || discountLabel(t)} — ${t.points} stars`}
+            >
+              {t.name || discountLabel(t)} · Add a qualifying item to use
+            </span>
+          ))}
         </div>
       )}
     </div>

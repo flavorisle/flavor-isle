@@ -1161,6 +1161,7 @@ export default function Checkout() {
               {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
                 subtotal={subtotal}
                 phone={form.phone}
+                cartItems={cartItems}
                 appliedReward={appliedReward}
                 onApply={setAppliedReward}
               />}
