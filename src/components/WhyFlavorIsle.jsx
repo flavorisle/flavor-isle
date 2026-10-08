@@ -12,7 +12,7 @@ const CARDS = [
 
 export default function WhyFlavorIsle() {
   return (
-    <section className="pt-8 pb-20 px-4 sm:px-6 bg-background fall26-section">
+    <section className="pt-2 pb-20 px-4 sm:px-6 bg-background fall26-section">
       <div className="text-center mb-12">
         <p className="font-heading uppercase tracking-widest text-sm mb-3" style={{ color: '#d36a44' }}>
           Why Flavor Isle?
@@ -25,14 +25,16 @@ export default function WhyFlavorIsle() {
         </p>
       </div>
       <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {CARDS.map((c) => (
-            <div key={c.title} className="bg-card rounded-2xl p-7 shadow-float">
-              <div className="text-3xl mb-3">{c.icon}</div>
-              <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">
-                {c.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+            <div key={c.title} className="bg-card rounded-2xl p-5 shadow-float flex items-start gap-3 sm:gap-4">
+              <div className="text-3xl leading-none flex-shrink-0" aria-hidden="true">{c.icon}</div>
+              <div className="min-w-0">
+                <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">
+                  {c.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+              </div>
             </div>
           ))}
         </div>

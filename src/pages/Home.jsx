@@ -8,11 +8,7 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import CinematicHero from '@/components/cinematic/CinematicHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
-import { optimizedImageUrl } from '@/lib/utils';
-import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
+import HeroSection from '@/components/HeroSection';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -36,6 +32,8 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
+import { FallDivider } from '@/components/RetroFallTheme';
+import GalleryPhotoStrip from '@/components/GalleryPhotoStrip';
 
 
 const SPECIALS_TICKER = [
@@ -57,17 +55,7 @@ const FEATURES = [
 { icon: '🍗', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
 
-const HOME_DINING_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
-  alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
-  caption: 'Pull up a seat. Stay a while.',
-};
 
-const HOME_AWARDS_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cfc62ca68_IMG_1046.jpeg',
-  alt: 'Flavor Isle dining room wall with framed local history and awards',
-  caption: 'Best Restaurant in Smiths Grove 2025. Come check the wall yourself.',
-};
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -77,29 +65,22 @@ export default function Home() {
   const [menuItems, setMenuItems] = useState([]);
   const [menuSchemaRows, setMenuSchemaRows] = useState([]);
   const [menuRenames, setMenuRenames] = useState({});
-  const [shakeRank, setShakeRank] = useState(null);
 
   // Load visible menu items so the Fan Favorites rail can show the real
   // top-10 best-sellers stamped by the refreshFanFavorites backend function.
+  // A transient read failure is logged and retried once instead of failing
+  // silently and dropping the whole rail.
   useEffect(() => {
     let active = true;
     const load = async () => {
-      for (let attempt = 0; attempt < 3 && active; attempt++) {
+      for (let attempt = 0; attempt < 2 && active; attempt++) {
         try {
-          const [data, snapshots] = await Promise.all([
-            base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10),
-            base44.entities.FanFavoriteSnapshot.list('-computed_at', 1),
-          ]);
-          const visible = (data || []).filter((i) => !i.is_hidden);
-          if (!visible.length && attempt < 2) throw new Error('Fan Favorites read returned empty');
-          if (active) {
-            setMenuItems(visible);
-            setShakeRank(snapshots?.[0]?.shake_rank || null);
-          }
+          const data = await base44.entities.MenuItem.list();
+          if (active) setMenuItems((data || []).filter((i) => !i.is_hidden));
           return;
         } catch (error) {
-          console.error(`Fan Favorites load failed (attempt ${attempt + 1}/3):`, error);
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+          console.error(`Fan Favorites menu load failed (attempt ${attempt + 1}/2):`, error);
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 400));
         }
       }
     };
@@ -107,6 +88,8 @@ export default function Home() {
     return () => { active = false; };
   }, []);
 
+  // Menu rows for the page's Menu JSON-LD (the Restaurant block lives in
+  // index.html and is kept fresh by the global RestaurantSchema component).
   useEffect(() => {
     let active = true;
     Promise.all([
@@ -156,39 +139,48 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero cityLine />
-      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
-      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
-      <HomeOrderOptions />
+      {/* ── HERO ── */}
+      <HeroSection />
 
       <ExpressPickupStrip />
 
-      {(menuItems.length > 0 || shakeRank) && (
+      {/* ── FAN FAVORITES (dynamic top-10 best-sellers rail) ── */}
+      {menuItems.some((i) => i.is_fan_favorite) && (
         <section className="py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
-            <FanFavoritesSection items={menuItems} shakeRank={shakeRank} />
+            <FanFavoritesSection items={menuItems} />
+            <div className="mt-6">
+              <MilkshakePromoBanner variant="strip" />
+            </div>
           </div>
         </section>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <MilkshakePromoBanner variant="strip" />
-      </div>
+
+      {/* ── PROMO BANNERS ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
+
+      {/* ── REVIEWS (What people are saying) ── */}
       <ReviewSection />
+
+      {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
       <WhyFlavorIsle />
 
       <HeritageBadges />
 
+      <FallDivider />
+
+      {/* ── DAILY SPECIALS (raised above the merch block) ── */}
+      <DailySpecialsSection />
+
+      <FallDivider />
+
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
 
-      {/* ── DAILY SPECIALS ── */}
-      <DailySpecialsSection />
+      <FallDivider />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
@@ -225,12 +217,9 @@ export default function Home() {
             {/* Storefront photo */}
             <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80 group">
               <img
-                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
                 alt="Flavor Isle storefront in Smiths Grove, KY"
-                width="800"
-                height="600"
                 loading="lazy"
-                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -250,18 +239,18 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── FRESH OFF THE FLATTOP (two food photos → /gallery) ── */}
+      <GalleryPhotoStrip />
+
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
         <div className="max-w-4xl mx-auto">
           <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
             <div className="sm:col-span-2 relative min-h-[180px]">
               <img
-                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 800, 600)}
+                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
                 alt="Flavor Isle roadside stand off I-65 Exit 38"
-                width="800"
-                height="600"
                 loading="lazy"
-                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -293,7 +282,7 @@ export default function Home() {
                 <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
                 <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
               </div>
-              <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+              <Link to="/contact#faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
                 View FAQs <ArrowRight size={16} />
               </Link>
             </div>

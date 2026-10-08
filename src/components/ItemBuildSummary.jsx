@@ -113,9 +113,14 @@ export default function ItemBuildSummary({
                       if (iceContext && group.name === iceContext.sizeGroup.name) {
                         return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={onIceSizeChange} />;
                       }
-                      if (getPreferenceList(mod)) {
+                      // Shake flavors carry the same − / + pill as the sauces:
+                      // − is Lite, + is Extra. Checked BEFORE the preference
+                      // check so a flavor that carries Square's own "- / + Flavors"
+                      // child list still renders (and prices) as the flavor pill —
+                      // matching the customization modal exactly.
+                      if (isFlavorGroup(group)) {
                         return (
-                          <PreferencePillButton
+                          <FlavorPillButton
                             key={mod.id}
                             mod={mod}
                             isSelected={isSelected}
@@ -126,11 +131,9 @@ export default function ItemBuildSummary({
                         );
                       }
 
-                      // Shake flavors carry the same − / + pill as the sauces:
-                      // − is Lite, + is Extra.
-                      if (isFlavorGroup(group)) {
+                      if (getPreferenceList(mod)) {
                         return (
-                          <FlavorPillButton
+                          <PreferencePillButton
                             key={mod.id}
                             mod={mod}
                             isSelected={isSelected}

@@ -41,7 +41,10 @@ const TOOL_STALL_MS = 9000;
 // every later result and the caller would hear nothing after "checking".
 export const TOOL_TIMEOUT_MS = 10000;
 // How long one hop drives the call before handing the socket over.
-export const HOP_MS = 12000;
+// A2 (2026-10-07): 12000ms left the handoff starting as the worker was already
+// being torn down, so the successor never attached. Starting at 6000ms gives
+// the three retries (1.5s apart) room to finish well inside the worker's life.
+export const HOP_MS = 6000;
 const MAX_HOP_FAILURES = 3;
 const MAX_CALL_MS = 15 * 60 * 1000;
 const DRIVER_VERSION = 'live-driver-2026-10-02-hop';
@@ -56,6 +59,10 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
   const handledCalls = new Set(state.handledCallIds || []);
   let introPlaying = state.introPlaying !== false;
   let introHandedOver = !!state.introHandedOver;
+  // A4: the caller's first words are flushed to the record the moment they
+  // arrive instead of waiting on the two-second save debounce — an early worker
+  // death must never lose the reason the caller rang.
+  let firstCallerSaved = !!state.firstCallerSaved;
 
   let saveTimer = null;
   let stallTimer = null;
@@ -129,6 +136,11 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     finishHop();
     if (finalized) return;
     finalized = true;
+    recordTool({
+      name: 'worker_stopped',
+      ok: !failure,
+      detail: failure || `this worker's turn on the call ended normally after ${Math.round((Date.now() - startedAt) / 1000)}s`,
+    });
     const transcript = callTranscript.snapshot();
     await base44.asServiceRole.entities.SmsConversation.update(conversationId, {
       transcript,
@@ -231,8 +243,16 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
 
     if (type === 'session.input_transcript.delta' || type === 'session.output_transcript.delta') {
       // Capture synchronously; queued writes must never clear newer speech.
-      callTranscript.capture(type.includes('input') ? 'user' : 'assistant', event);
-      scheduleSave();
+      const fromCaller = type.includes('input');
+      callTranscript.capture(fromCaller ? 'user' : 'assistant', event);
+      if (fromCaller && !firstCallerSaved) {
+        // A4: save the caller's opening request immediately — do not risk it to
+        // the debounce if this worker is taken down moments later.
+        firstCallerSaved = true;
+        queue(persist);
+      } else {
+        scheduleSave();
+      }
       return;
     }
 
@@ -280,6 +300,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
     handledCallIds: [...handledCalls],
     introPlaying,
     introHandedOver,
+    firstCallerSaved,
     startedAt,
     hop: hopNumber,
   });
@@ -310,8 +331,17 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
 
         let failures = 0;
         while (!finalized && !handedOff) {
+          const attemptAt = Date.now();
+          // A1/A2: every handoff attempt is written to the call record with its
+          // exact outcome, so a call that never changes hands is diagnosable
+          // afterwards instead of a silent gap.
+          recordTool({ name: 'hop_handoff', ok: true, detail: `handoff attempt ${failures + 1} of ${MAX_HOP_FAILURES} — starting a fresh worker` });
           try {
             if (await handoff(hopState())) {
+              recordTool({ name: 'hop_handoff', ok: true, ms: Date.now() - attemptAt, detail: `hop ${hopNumber} handed the call to a fresh worker; this socket can close now` });
+              // Persist while this worker still owns the record (persist() is a
+              // no-op once handedOff is set).
+              await persist();
               handedOff = true;
               detached = true;
               sideband?.close();
@@ -319,10 +349,14 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
               return;
             }
             failures += 1;
+            recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES}: the fresh worker did not confirm its socket attached` });
           } catch (err) {
             failures += 1;
+            recordTool({ name: 'hop_handoff', ok: false, ms: Date.now() - attemptAt, detail: `attempt ${failures} of ${MAX_HOP_FAILURES} failed: ${err.message}` });
             console.error('Live handoff failed:', err.message);
           }
+          // Write the failure trail before the worker is taken down.
+          await persist();
           if (failures >= MAX_HOP_FAILURES) break;
           await new Promise((r) => setTimeout(r, 1500));
         }
@@ -342,6 +376,7 @@ export async function driveLiveHop({ base44, sessionId, apiKey, conversationId, 
       onEvent,
       onClose: (code, reason) => {
         console.log(`Live sideband closed (${code}) for session ${sessionId}: ${reason || ''}`);
+        recordTool({ name: 'sideband_closed', ok: true, detail: `the line dropped this worker's socket (code ${code ?? 'none'}): ${reason || 'no reason supplied'}` });
         // A handover closes this socket on purpose; the next hop owns the call.
         if (handedOff) return;
         queue(async () => {

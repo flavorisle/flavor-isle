@@ -1,16 +1,28 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { GALLERY_PHOTOS } from '@/lib/galleryPhotos';
 import { issue23Photos } from '@/lib/issue23Photos';
 import { optimizedImageUrl } from '@/lib/utils';
 
+// Compact three-photo strip on the homepage — real food shots pulled from the
+// app's photo library (the same set the /gallery page shows), linking through
+// to the full gallery. The two picks below are not used by any other homepage
+// placement, so no photo appears twice across the page.
+const MEDIA = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/';
+const STRIP_URLS = [
+  `${MEDIA}ff12a1c2b_IMG_0375.png`,
+  `${MEDIA}34f1bfc0b_IMG_5541_Original.jpg`,
+];
 
-// Compact two-photo strip on the homepage — real food shots pulled from the
-// gallery data, linking through to the full /gallery page.
-export default function GalleryPhotoStrip({ items = [] }) {
-  const photos = [...items.filter((item) => item.image_url_opt || item.image_url).slice(0, 2).map((item) => ({
-    url: item.image_url_opt || item.image_url, alt: item.name, caption: item.name,
-  })), { url: issue23Photos.flattop, alt: 'Fresh Off the Flattop at Flavor Isle', caption: 'Fresh off the flattop' }];
+export default function GalleryPhotoStrip() {
+  const photos = [
+    ...STRIP_URLS.map((url) => {
+      const match = GALLERY_PHOTOS.find((photo) => photo.url === url);
+      return { url, alt: match?.alt || 'Flavor Isle food', caption: match?.caption || 'From our kitchen' };
+    }),
+    { url: issue23Photos.flattop, alt: 'Fresh Off the Flattop at Flavor Isle', caption: 'Fresh off the flattop' },
+  ];
 
   return (
     <section className="py-10 px-4 sm:px-6 bg-vanilla-malt">
