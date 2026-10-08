@@ -27,6 +27,7 @@ import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
 import OrderAgainSection from '@/components/orderAgain/OrderAgainSection';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
+import FamilyBundleCard from '@/components/family/FamilyBundleCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
@@ -264,6 +265,11 @@ export default function Menu() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         {!search && !loading && items.length > 0 && (
           <>
+            {/* Family bundle banner — pinned above every category section. It is
+                a standalone card: no category is moved, renamed, reordered or
+                hidden, and no MenuSetting field is touched. Renders nothing
+                while FAMILY_BUNDLE_ENABLED is false. */}
+            <FamilyBundleCard items={items} />
             <CravingsBox items={items} />
           </>
         )}

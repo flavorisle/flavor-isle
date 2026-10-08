@@ -19,31 +19,70 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 
-export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
+export default function ModifierModal({ item, onClose, onConfirm, autoCombo, optionFilter, preset, confirmLabel }) {
   const { menuSetting } = useCart();
 
   // Admin modifier controls (Menu Manager → Modifiers) applied to the parent
   // groups and their nested child lists before anything renders or prices, so
   // the modal always matches what the admin set — hidden options are gone,
   // sold-out ones can't be picked, and overridden prices are shown and charged.
-  const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
+  const allGroups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
+  // An optional optionFilter trims the groups to what a caller offers (used by
+  // the family bundle, where some catalog options are not offered at all).
+  const groups = optionFilter
+    ? allGroups
+      .map((group) => ({ ...group, modifiers: (group.modifiers || []).filter((mod) => optionFilter(group, mod)) }))
+      .filter((group) => group.modifiers.length > 0)
+    : allGroups;
   const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
+
+  // Options a caller wants pre-selected (the bundle's approved defaults).
+  const presetOptionIds = new Set(preset?.selectionIds || []);
 
   // Initialize selections: SINGLE → null, MULTIPLE → []
   const initSelections = () => {
     if (!hasModifiers) return {};
-    return groups.reduce((acc, group) => {
+    const base = groups.reduce((acc, group) => {
       // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
         : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
       return acc;
     }, {});
+    if (presetOptionIds.size > 0) {
+      for (const group of groups) {
+        const presetOptions = (group.modifiers || []).filter(m => presetOptionIds.has(m.id) && !m.sold_out);
+        if (presetOptions.length === 0) continue;
+        base[group.name] = group.selection_type === 'MULTIPLE' ? presetOptions : presetOptions[0];
+      }
+    }
+    return base;
+  };
+
+  // Nested selections a caller wants pre-selected, keyed by parent option id.
+  const initNested = () => {
+    const wanted = preset?.nested;
+    if (!wanted) return {};
+    const out = {};
+    for (const group of groups) {
+      for (const mod of (group.modifiers || [])) {
+        const picks = wanted[mod.id];
+        if (!picks) continue;
+        const chosen = {};
+        for (const [listName, optionId] of Object.entries(picks)) {
+          const list = (mod.child_modifier_lists || []).find(l => l.name === listName);
+          const option = list?.modifiers?.find(m => m.id === optionId && !m.sold_out);
+          if (option) chosen[listName] = option;
+        }
+        if (Object.keys(chosen).length > 0) out[mod.id] = chosen;
+      }
+    }
+    return out;
   };
 
   const [selections, setSelections] = useState(initSelections);
-  const [nestedSelections, setNestedSelections] = useState({});
+  const [nestedSelections, setNestedSelections] = useState(initNested);
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const iceLevel = iceLevelFor(soda, nestedSelections);
@@ -382,7 +421,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo }) {
             }`}
           >
             <Plus size={16} />
-            {soldOut ? 'Sold Out' : `Add to Order — $${footerTotal.toFixed(2)}`}
+            {soldOut ? 'Sold Out' : confirmLabel ? `${confirmLabel} · $${footerTotal.toFixed(2)}` : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>

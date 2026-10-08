@@ -4,6 +4,7 @@ import { getMenuSetting } from '@/lib/menuSettings';
 import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
+import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 import { toCents, fromCents, salesTaxCents } from '@/lib/tax';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -241,7 +242,13 @@ export function CartProvider({ children }) {
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const happyHourDiscount = getHappyHourDiscount(cartItems, menuSetting);
-  const adjustedSubtotal = subtotal - happyHourDiscount;
+  // The family bundle's lines carry the full a-la-carte prices and the fixed
+  // bundle discount comes off here, so the discounted subtotal is exactly the
+  // bundle price plus any paid extras the customer chose. Recomputed from the
+  // cart lines, so editing or removing a bundle line can never leave a stale
+  // discount behind.
+  const bundleDiscount = getFamilyBundleDiscount(cartItems);
+  const adjustedSubtotal = subtotal - happyHourDiscount - bundleDiscount;
   const deliveryFee = orderType === 'delivery'
     ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
     : 0;
@@ -277,6 +284,7 @@ export function CartProvider({ children }) {
       cutoffStatus,
       menuSetting,
       happyHourDiscount,
+      bundleDiscount,
       groupMode, people, activePersonId, activePerson,
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,
