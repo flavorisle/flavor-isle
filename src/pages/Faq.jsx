@@ -35,8 +35,22 @@ export default function Faq() {
   const deliveryEnabled = storeSetting ? storeSetting.delivery_enabled !== false : true;
   const deliveryCutoff = storeSetting?.delivery_cutoff_minutes ?? 30;
   const deliveryFee = Number(storeSetting?.delivery_fee || 0);
+  // One delivery answer covers "do you deliver" and "is there a fee". The fee
+  // wording follows the live distance tiers when they're configured, and falls
+  // back to the flat fee when they aren't.
+  const deliveryTiers = Array.isArray(storeSetting?.delivery_tiers)
+    ? storeSetting.delivery_tiers.filter((t) => Number(t?.max_miles) > 0)
+    : [];
+  const deliveryRange = deliveryTiers.length ? Number(deliveryTiers[deliveryTiers.length - 1].max_miles) : null;
+  const deliveryFeeText = deliveryTiers.length
+    ? `${deliveryTiers
+        .map((t, i) => `${Number(t.fee || 0) > 0 ? `$${Number(t.fee).toFixed(2)}` : 'free'} ${i === 0 ? 'within' : 'up to'} ${Number(t.max_miles)} miles`)
+        .join(', then ')}${deliveryRange ? ', which is the edge of our delivery range' : ''}`
+    : deliveryFee > 0
+    ? `a $${deliveryFee.toFixed(2)} delivery fee`
+    : 'no delivery fee';
   const deliveryAnswer = deliveryEnabled
-    ? `Yes — we deliver locally through flavor-isle.com. Delivery orders need about ${deliveryCutoff} minutes of notice${deliveryFee > 0 ? `, with a $${deliveryFee.toFixed(2)} delivery fee` : ' at no delivery fee'}. For catering and large orders, call (270) 563-7230.`
+    ? `Yes — we deliver locally through flavor-isle.com. Choose Delivery at checkout and enter your address; delivery orders need about ${deliveryCutoff} minutes of notice. Delivery is ${deliveryFeeText}. For catering and large orders, call (270) 563-7230.`
     : 'Delivery is paused right now, so ordering is pickup only through flavor-isle.com. For catering and large orders, call (270) 563-7230.';
 
   const FAQS = [
@@ -130,10 +144,6 @@ export default function Faq() {
         {
           q: 'How do I track my order?',
           a: 'Head to the Account page and use the “Track Order” tab — drop in your order number to see live status updates from the moment we confirm your order until it’s ready.',
-        },
-        {
-          q: 'Do you deliver? Is there a fee?',
-          a: 'Yes, we deliver locally for a flat $3.99 delivery fee. Just choose Delivery at checkout and enter your address.',
         },
         {
           q: 'Can I order by phone?',
