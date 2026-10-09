@@ -298,7 +298,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     onSelect={(mod) => toggleSingle(group.name, mod)}
                   />
                 ) : (
-                <div className="space-y-2">
+                /* Phones show the option chips two per line; the wide
+                   full-width rows below keep their own full-width span. */
+                <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-2">
                   {group.modifiers.map(mod => {
                     const isMultiple = group.selection_type === 'MULTIPLE';
                     const isSelected = isMultiple
@@ -316,7 +318,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     // product summary exactly.
                     if (!mod.sold_out && isFlavorGroup(group)) {
                       return (
-                        <div key={mod.id} className="py-1">
+                        <div key={mod.id} className="min-w-0 py-1">
                           <FlavorPillButton
                             mod={mod}
                             isSelected={isSelected}
@@ -330,7 +332,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
 
                     if (!mod.sold_out && getPreferenceList(mod)) {
                       return (
-                        <div key={mod.id} className="py-1">
+                        <div key={mod.id} className="min-w-0 py-1">
                           <PreferencePillButton
                             mod={mod}
                             isSelected={isSelected}
@@ -348,7 +350,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                         type="button"
                         disabled={mod.sold_out}
                         onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                        className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
+                        className={`col-span-2 w-full min-h-[44px] flex items-center justify-between px-3 py-3 rounded-xl border-2 transition-all text-left sm:px-4 ${
                           mod.sold_out
                             ? 'border-border bg-muted opacity-50 cursor-not-allowed'
                             : isSelected

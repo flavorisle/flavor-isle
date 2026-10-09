@@ -51,7 +51,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
               {list.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {(list.modifiers || []).map(mod => {
               const isMultiple = list.selection_type === 'MULTIPLE';
               const sel = nestedSelections?.[list.name];

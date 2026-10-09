@@ -97,7 +97,9 @@ export default function ItemBuildSummary({
                       {multiple ? 'Pick any' : 'Pick one'}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  {/* Two options per line on phones so the list stays tidy;
+                      back to a natural flowing row from tablet width up. */}
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     {getPreferenceTriplet(group) ? (
                       <PreferenceGroupPill
                         group={group}
@@ -151,7 +153,7 @@ export default function ItemBuildSummary({
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => onToggle?.(group.name, mod)}
-                          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 font-body text-sm font-semibold transition-all ${
+                          className={`inline-flex min-w-0 items-center justify-center gap-1.5 px-3 py-2.5 rounded-full border-2 font-body text-sm font-semibold transition-all sm:px-4 ${
                             isSelected
                               ? 'border-midnight-cherry bg-midnight-cherry/10 text-midnight-cherry'
                               : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
@@ -162,7 +164,7 @@ export default function ItemBuildSummary({
                           ) : (
                             <Plus size={13} className="text-midnight-cherry flex-shrink-0" />
                           )}
-                          <span>{mod.name}</span>
+                          <span className="min-w-0 break-words">{mod.name}</span>
                           {extra && (
                             <span className={`text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
                               +${Number(mod.price).toFixed(2)}

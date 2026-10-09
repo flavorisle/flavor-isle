@@ -54,7 +54,7 @@ export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
   };
 
   return (
-    <div className={`inline-flex items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold ${
+    <div className={`inline-flex w-full min-w-0 items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold sm:w-auto ${
       isSelected
         ? 'border-midnight-cherry bg-midnight-cherry/5'
         : 'border-gray-300 bg-white hover:border-midnight-cherry/50'
@@ -63,26 +63,26 @@ export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
         type="button"
         onClick={() => pick(light)}
         aria-label={`Lite — ${light.name}`}
-        className={`flex items-center justify-center px-3 transition-colors ${
+        className={`flex min-w-[36px] items-center justify-center px-1 transition-colors sm:min-w-0 sm:px-3 ${
           isLight
             ? 'bg-midnight-cherry text-white'
             : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <span className="text-xs font-heading uppercase tracking-wide">Lite</span>
+        <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Lite</span>
       </button>
 
       <button
         type="button"
         onClick={() => pick(regular)}
-        className={`flex items-center gap-1.5 px-4 py-2.5 transition-colors ${
+        className={`flex min-w-0 flex-1 items-center justify-center gap-1 px-1.5 py-2.5 transition-colors sm:px-4 ${
           isSelected ? 'text-midnight-cherry' : 'text-obsidian-roast'
         }`}
       >
         {isSelected && <Check size={13} className="inline flex-shrink-0" />}
-        <span>{current.name}</span>
+        <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">{current.name}</span>
         {current.price > 0 && (
-          <span className={`text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
+          <span className={`whitespace-nowrap text-[11px] sm:text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
             +${current.price.toFixed(2)}
           </span>
         )}
@@ -92,13 +92,13 @@ export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
         type="button"
         onClick={() => pick(extra)}
         aria-label={`Extra — ${extra.name}`}
-        className={`flex items-center justify-center px-3 transition-colors ${
+        className={`flex min-w-[36px] items-center justify-center px-1 transition-colors sm:min-w-0 sm:px-3 ${
           isExtra
             ? 'bg-midnight-cherry text-white'
             : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <span className="text-xs font-heading uppercase tracking-wide">Extra</span>
+        <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Extra</span>
       </button>
     </div>
   );
