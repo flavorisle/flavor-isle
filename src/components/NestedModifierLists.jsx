@@ -51,7 +51,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
               {list.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <div className="flex flex-wrap gap-2">
             {(list.modifiers || []).map(mod => {
               const isMultiple = list.selection_type === 'MULTIPLE';
               const sel = nestedSelections?.[list.name];
@@ -64,7 +64,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
                   type="button"
                   disabled={mod.sold_out}
                   onClick={() => isMultiple ? toggleMultiple(list.name, mod) : toggleSingle(list.name, mod)}
-                  className={`px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold ${
+                  className={`max-w-[47%] px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold sm:max-w-none ${
                     mod.sold_out
                       ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
                       : isSelected

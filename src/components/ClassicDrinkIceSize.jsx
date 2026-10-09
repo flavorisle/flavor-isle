@@ -5,7 +5,7 @@ export default function ClassicDrinkIceSize({ mod, selected, level = 'regular', 
   const disabled = !!mod.sold_out;
   const state = selected ? level : 'regular';
   return (
-    <div className={`inline-flex w-full min-w-0 items-stretch rounded-full border-2 overflow-hidden font-body text-sm font-semibold sm:w-auto ${selected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-gray-300 bg-white'}`}>
+    <div className={`inline-flex max-w-full min-w-0 flex-1 basis-[47%] items-stretch rounded-full border-2 overflow-hidden font-body text-sm font-semibold sm:flex-none ${selected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-gray-300 bg-white'}`}>
       <button type="button" disabled={disabled} onClick={() => onSelect(mod, 'light')}
         aria-label={`Light Ice, ${mod.name}`} aria-pressed={selected && state === 'light'}
         className={`min-w-[36px] min-h-11 px-1 flex items-center justify-center disabled:opacity-50 sm:min-w-11 sm:px-3 ${selected && state === 'light' ? 'bg-midnight-cherry text-white' : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20'}`}>

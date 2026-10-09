@@ -77,7 +77,7 @@ export default function PreferencePillButton({
   };
 
   return (
-    <div className={`inline-flex w-full min-w-0 items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold sm:w-auto ${
+    <div className={`inline-flex max-w-full min-w-0 flex-1 basis-[47%] items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold sm:flex-none ${
       isSelected
         ? 'border-midnight-cherry bg-midnight-cherry/5'
         : 'border-gray-300 bg-white hover:border-midnight-cherry/50'
