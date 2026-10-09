@@ -1,0 +1,42 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "MenuSetting"
+    }
+  },
+  "description": "When a store settings record is updated, logs what changed and emails the owner a before/after diff, so no switch can move silently.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "settings_change_notice_store",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_settings_changed": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifySettingsChanged",
+            "args": {
+              "entity_name": "${ .trigger.entity_name }",
+              "entity_id": "${ .trigger.entity_id }",
+              "event_type": "${ .trigger.event_type }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Log the change and email the owner",
+            "description": "Diff against the last snapshot"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Settings Change Notice - Store"
+}

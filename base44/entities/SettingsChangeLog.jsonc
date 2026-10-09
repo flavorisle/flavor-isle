@@ -1,0 +1,85 @@
+{
+  "name": "SettingsChangeLog",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "entity": {
+      "type": "string",
+      "description": "Which settings record changed: MenuSetting (Store Settings) or SmashieSettings (Communications)."
+    },
+    "field_changes": {
+      "type": "array",
+      "description": "One entry per top-level field whose value really changed, with readable before/after text and which systems that switch drives.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "old": {
+            "type": "string",
+            "description": "Readable rendering of the previous value, e.g. OFF, 30, or compact JSON for objects."
+          },
+          "new": {
+            "type": "string",
+            "description": "Readable rendering of the new value."
+          },
+          "reach": {
+            "type": "string",
+            "description": "What this switch drives, e.g. 'Both - website checkout and Smashie's phone line'."
+          }
+        },
+        "required": [
+          "field"
+        ]
+      },
+      "default": []
+    },
+    "changed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the change was recorded."
+    },
+    "affected": {
+      "type": "string",
+      "description": "'both', 'website', 'phone', or 'baseline' for the first stored snapshot."
+    },
+    "snapshot": {
+      "type": "object",
+      "description": "The full settings record as of this change. Doubles as the baseline: the newest snapshot is what the next change is diffed against, and the very first snapshot for an entity is stored without sending an email."
+    },
+    "emailed": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only when the change notice actually reached the owner. False for the baseline row and for a refused or failed send."
+    }
+  },
+  "required": [
+    "entity"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

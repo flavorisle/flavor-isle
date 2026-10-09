@@ -38,11 +38,11 @@ export default function AdminStoreSettings() {
       <StoreStatusCard />
       <StoreClosurePanel />
       <OrderCutoffSettings />
-      <EarlyClosePanel />
       <HappyHourPanel />
       <ExtraCookPanel />
       <BusinessHoursSettings />
       <DeliveryPricingTiers />
+      <EarlyClosePanel />
     </div>
   );
 }
