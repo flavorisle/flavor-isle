@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import {
   getHuntSpot, getHuntPhase, minutesOfDay, todayStr,
-  inDateRange, VAMPIRE_SWITCH_TIME, INSTAGRAM_URL, INSTAGRAM_HANDLE,
+  inDateRange, VAMPIRE_SWITCH_TIME, INSTAGRAM_URL, INSTAGRAM_HANDLE, SMASHIE_IMAGES,
 } from '@/lib/findSmashie';
 
 const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
@@ -119,7 +119,7 @@ export default function SmashieHunt() {
           page: { path: location.pathname, name: 'Preview' },
           topPct: 46,
           leftPct: 62,
-          image: '/find-smashie/smashie-pumpkin.png',
+          image: SMASHIE_IMAGES.pumpkin,
           alt: 'Smashie in his pumpkin costume (preview)',
         }
       : null,

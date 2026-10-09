@@ -23,7 +23,7 @@ export default function FindSmashie() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
       <div className="text-center mb-8">
         <img
-          src="/find-smashie/smashie-pumpkin.png"
+          src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/923d1a767_pumpkin.png"
           alt="Smashie in his pumpkin costume"
           className="w-28 mx-auto mb-4"
         />

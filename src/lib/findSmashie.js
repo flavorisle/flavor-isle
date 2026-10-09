@@ -14,6 +14,12 @@ export const VAMPIRE_SWITCH_TIME = '17:00'; // 5:00 PM store-local
 export const INSTAGRAM_HANDLE = '@flavor_isle';
 export const INSTAGRAM_URL = 'https://www.instagram.com/flavor_isle/';
 
+// Smashie's Halloween costumes — uploaded art hosted on the app's media CDN.
+export const SMASHIE_IMAGES = {
+  pumpkin: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/923d1a767_pumpkin.png',
+  vampire: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/2c9646fde_vampire.png',
+};
+
 // Pages Smashie can hide on. Every page has several coordinate
 // presets so the same page can host different spots on different
 // days. Coordinates are % of page height (top) and % of viewport
@@ -90,7 +96,7 @@ export function getHuntSpot({ dateStr, phase, nowMinutes }) {
     page,
     topPct: spot.top,
     leftPct: spot.left,
-    image: `/find-smashie/smashie-${phase}.png`,
+    image: SMASHIE_IMAGES[phase],
     alt: phase === 'pumpkin' ? 'Smashie in his pumpkin costume' : 'Smashie dressed as a vampire',
   };
 }
