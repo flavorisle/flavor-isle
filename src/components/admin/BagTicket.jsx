@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatChicagoTime } from '@/lib/chicagoTime';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -54,7 +55,7 @@ export default function BagTicket({ order }) {
     }}>
       {/* Header — logo + branding */}
       <div style={{ textAlign: 'center', borderBottom: '3px solid #000', paddingBottom: '6px', marginBottom: '8px' }}>
-        <img src={LOGO} alt="Flavor Isle" style={{ width: '44px', height: '44px', borderRadius: '50%', margin: '0 auto 2px', display: 'block' }} />
+        <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle" width="200" height="200" style={{ width: '44px', height: '44px', borderRadius: '50%', margin: '0 auto 2px', display: 'block' }} />
         <div style={{ fontFamily: '"Bebas Neue", Arial, sans-serif', fontSize: '22px', letterSpacing: '2px', lineHeight: 1 }}>FLAVOR ISLE</div>
         <div style={{ fontSize: '8px', letterSpacing: '1px', color: '#666' }}>EST. 1964 &middot; BOWLING GREEN, KY</div>
       </div>
@@ -86,13 +87,13 @@ export default function BagTicket({ order }) {
         ) : items.map((item, i) => {
           const qty = item.quantity || 1;
           const mods = item.selectedModifiers || item.modifiers || [];
-          const modNames = mods.map(m => m.name || m).filter(Boolean);
+          const modNames = mods.map(m => typeof m === 'string' ? m : m?.name).filter(Boolean);
           return (
             <div key={i} style={{ marginBottom: '3px', fontSize: '12px' }}>
               <div style={{ fontWeight: 'bold' }}>{qty}&times; {item.name}</div>
               {modNames.length > 0 && (
                 <div style={{ fontSize: '10px', paddingLeft: '10px', color: '#333' }}>
-                  {modNames.join(', ')}
+                  {modNames.map((name, index) => <div key={index}>{name}</div>)}
                 </div>
               )}
             </div>

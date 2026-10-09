@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
 
 // Self-healing safety net for the order → Square sync.
 //
@@ -44,13 +45,19 @@ export default async function (req: Request) {
     // 2. Has square_order_id but missing confirmation_email_sent_at or
     //    staff_alert_sent_at — Square push done but emails failed; retry emails
     //    only (pushOrderToSquareAndKitchen skips the push, tries emails).
+    // Phone/chat orders taken without an email carry a placeholder address —
+    // there is no confirmation email to retry, so they must not stay in this
+    // list forever (that re-processed them every few minutes).
+    const hasRealEmail = (o: any) => !!o.customer_email && o.customer_email !== 'phone-order@flavorisle.com';
+
     const candidates = (orders || []).filter((o) =>
       o.status !== 'cancelled' &&
+      !o.pay_cash_on_pickup &&
       o.order_source !== 'in_store' &&
       o.created_date && new Date(o.created_date).getTime() > twoHoursAgo &&
       (
         !o.square_order_id ||
-        (o.square_order_id && (!o.confirmation_email_sent_at || !o.staff_alert_sent_at))
+        (o.square_order_id && (!o.staff_alert_sent_at || (hasRealEmail(o) && !o.confirmation_email_sent_at)))
       )
     );
 
@@ -72,15 +79,33 @@ export default async function (req: Request) {
       } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('pi_')) {
         // Webhook never fired — verify with Stripe that the payment succeeded
         // before pushing, so a failed/declined payment doesn't become a free order.
+        // This is also what settles a phone order whose customer paid and never
+        // returned to the /pay page.
         try {
           const pi = await stripe.paymentIntents.retrieve(order.stripe_session_id);
-          if (pi.status === 'succeeded') {
+          if (pi.status === 'succeeded' && isPhoneOrder(order) && !phoneIntentMatchesOrder(order, pi)) {
+            results.push({ order_number: order.order_number, skipped: true, reason: 'Phone order payment amount/currency does not match the order total' });
+          } else if (pi.status === 'succeeded') {
             paymentConfirmed = true;
           } else {
             results.push({ order_number: order.order_number, skipped: true, reason: `Stripe PI status: ${pi.status}` });
           }
         } catch (err) {
           results.push({ order_number: order.order_number, skipped: true, reason: `Stripe lookup failed: ${err.message}` });
+        }
+      } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('cs_')) {
+        // Phone/chat orders pay through a Stripe Checkout Session. If the
+        // checkout.session.completed webhook never arrived, verify the session
+        // with Stripe before pushing so an unpaid order never reaches the kitchen.
+        try {
+          const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+          if (session.payment_status === 'paid') {
+            paymentConfirmed = true;
+          } else {
+            results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session payment_status: ${session.payment_status}` });
+          }
+        } catch (err) {
+          results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session lookup failed: ${err.message}` });
         }
       }
 

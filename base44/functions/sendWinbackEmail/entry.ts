@@ -1,11 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
-import { grantLoyaltyPointsByEmail } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
-const WINBACK_POINTS = 150;
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Win-back themed photo block — a big "We miss you" hero overlay on a
 // premium dessert photo, then a 2-column grid of what they've been missing.
@@ -50,7 +48,7 @@ async function winbackPhotosHtml(base44) {
       heroHtml = `
       <a href="${heroLink}" style="text-decoration:none;color:#141414;display:block;margin:0 0 20px;">
         <div style="position:relative;border-radius:16px;overflow:hidden;">
-          <img src="${hero.image_url}" alt="${(hero.name || 'Flavor Isle favorite').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
+          <img src="${hero.image_url_opt || hero.image_url}" alt="${(hero.name || 'Flavor Isle favorite').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:16px;display:block;object-fit:cover;aspect-ratio:5/3;background:#f5edd6;" />
           <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.55) 100%);border-radius:16px;"></div>
           <div style="position:absolute;bottom:16px;left:20px;right:20px;">
             <p style="color:#F5A623;font-family:'Oswald',Arial,sans-serif;font-size:13px;margin:0 0 4px;letter-spacing:3px;">🍦 A SWEET TREAT IS WAITING</p>
@@ -67,7 +65,7 @@ async function winbackPhotosHtml(base44) {
         const price = typeof p.price === 'number' ? `$${p.price.toFixed(2)}` : '';
         return `<td style="width:50%;vertical-align:top;padding:0 5px;">
           <a href="${link}" style="text-decoration:none;color:#141414;display:block;">
-            <img src="${p.image_url}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:12px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />
+            <img src="${p.image_url_opt || p.image_url}" alt="${(p.name || '').replace(/"/g, '&quot;')}" width="100%" style="width:100%;border-radius:12px;display:block;object-fit:cover;aspect-ratio:1/1;background:#f5edd6;" />
             <div style="font-family:'Oswald',Arial,sans-serif;font-size:15px;line-height:1.3;margin-top:8px;color:#141414;">${p.name || 'Flavor Isle Favorite'}</div>
             ${price ? `<div style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:13px;font-weight:bold;margin-top:2px;">${price}</div>` : ''}
           </a>
@@ -184,42 +182,18 @@ export default async function (req: Request) {
     let processed = 0;
     let skipped = 0;
     for (const target of targets) {
-      // Look up phone from CustomerProfile for loyalty grant
-      let phone = null;
-      try {
-        const profiles = await base44.asServiceRole.entities.CustomerProfile.filter({ email: target.email });
-        phone = profiles?.[0]?.phone || null;
-      } catch (e) { /* ignore */ }
-
-      // Grant loyalty points (skip in test mode)
-      let pointsGranted = 0;
-      if (!isTest) {
-        try {
-          const result = await grantLoyaltyPointsByEmail({
-            email: target.email,
-            phone,
-            points: WINBACK_POINTS,
-            reason: 'Win-back email bonus — free small cone or cup',
-            idempotencyKey: `winback:${target.email}:${target.order.id || Date.now()}`,
-          });
-          if (result) pointsGranted = WINBACK_POINTS;
-        } catch (e) {
-          console.error(`Win-back points grant failed for ${target.email}:`, e.message);
-        }
-      }
-
       // Build email
       const firstName = (target.order.customer_name || 'friend').split(' ')[0] || 'friend';
       const subject = `We miss you, ${firstName} 🍦`;
       const ctaLink = trackedLink('/menu', 'winback_cta');
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
-        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the desserts are still decadent, and the family's still here. We just dropped <strong>150 points</strong> in your Flavor Isle account — that's a free small cone or cup of ice cream, waiting on you. No strings attached. And while you're here, treat yourself to a banana split, a hot fudge cake, or one of our other premium desserts. Just come see us.</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the desserts are still decadent, and the family's still here. Place your next order on flavor-isle.com after 30 days away and <strong>100 Stars</strong> will land in your Star Rewards account. We would love to see you again.</p>
         ${await winbackPhotosHtml(base44)}
         <div style="text-align:center;margin:24px 0 8px;">
-          <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Claim your cone →</a>
+          <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Order online →</a>
         </div>
-        <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you've ordered from Flavor Isle before. Don't want these emails? <a href="mailto:smashie@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
+        <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you've ordered from Flavor Isle before. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
       `;
       const html = brandedEmailHtml(bodyHtml);
 
@@ -242,7 +216,7 @@ export default async function (req: Request) {
           email_type: 'winback',
           customer_email: target.email,
           order_id: target.order.id || null,
-          points_granted: pointsGranted,
+          points_granted: 0,
           sent_at: new Date().toISOString(),
         });
       }

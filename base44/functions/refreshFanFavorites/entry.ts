@@ -22,7 +22,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 //    user session and proceed as the service role; manual invocations still
 //    require an admin.
 
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 const LOOKBACK_DAYS = 60;
 const TOP_N = 10;
 const MAX_ORDERS = 20000;
@@ -160,17 +160,48 @@ export default async function (req) {
     }
   }
 
-  // Rank visible, sold items by total quantity sold (desc). Only items that
-  // both sold AND are visible get a rank — no fabricated rankings.
-  const rankedVisible = Object.entries(parentCounts)
-    .map(([sqId, qty]) => ({ item: visibleBySquareId.get(sqId), sqId, qty }))
-    .filter((r) => r.item)
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, TOP_N);
+  // Resolve the parent catalog item names, including sold items without a
+  // matching public MenuItem, before grouping the two approved buckets.
+  const names = {};
+  const parentIds = Object.keys(parentCounts);
+  for (let i = 0; i < parentIds.length; i += CATALOG_BATCH) {
+    const response = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+      method: 'POST', headers,
+      body: JSON.stringify({ object_ids: parentIds.slice(i, i + CATALOG_BATCH) }),
+    });
+    const result = await response.json();
+    if (!response.ok) return Response.json({ error: 'Square item lookup failed; previous ranking retained', details: result }, { status: 502 });
+    for (const obj of (result.objects || [])) if (obj.type === 'ITEM') names[obj.id] = obj.item_data?.name || '';
+  }
+  const drinkNames = new Set(['l 20oz drink', 's 14oz drink', 'coke product', 'sweet tea', 'classic drinks']);
+  const regular = [];
+  let shakeQty = 0;
+  let drinkQty = 0;
+  for (const [sqId, qty] of Object.entries(parentCounts)) {
+    const name = (names[sqId] || visibleBySquareId.get(sqId)?.name || '').trim();
+    const normalized = name.toLowerCase();
+    if (/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(name)) continue;
+    if (/\bmalts?\b|\bsundaes?\b/i.test(name)) continue;
+    if (normalized.includes('add deluxe')) continue;
+    if (normalized.includes('milkshake')) { shakeQty += qty; continue; }
+    if (drinkNames.has(normalized)) { drinkQty += qty; continue; }
+    const item = visibleBySquareId.get(sqId);
+    if (item) regular.push({ item, sqId, qty, name });
+  }
+  const classic = (allItems || []).find((item) => !item.is_hidden && item.name?.trim().toLowerCase() === 'classic drinks');
+  if (drinkQty && classic) regular.push({ item: classic, sqId: classic.square_item_id, qty: drinkQty, name: 'Classic Drinks' });
+  if (shakeQty) regular.push({ item: null, sqId: null, qty: shakeQty, name: 'Shake Isle — 22 Flavors', bucket: 'shake' });
+  const rankedVisible = regular.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)).slice(0, TOP_N);
+  const ranked = rankedVisible.map((r, i) => ({
+    rank: i + 1, name: r.name, qty: r.qty, bucket: r.bucket || null,
+    menu_item_id: r.item?.id || null, square_item_id: r.sqId,
+  }));
+  const dryRun = (await req.clone().json().catch(() => ({}))).dryRun === true;
+  if (dryRun) return Response.json({ success: true, preview: true, ordersPulled, completedPaidOrders, ranked });
 
-  const newFavIds = new Set(rankedVisible.map((r) => r.item.id));
+  const newFavIds = new Set(rankedVisible.filter((r) => r.item).map((r) => r.item.id));
   const rankById = {};
-  rankedVisible.forEach((r, i) => { rankById[r.item.id] = i + 1; });
+  rankedVisible.forEach((r, i) => { if (r.item) rankById[r.item.id] = i + 1; });
 
   // Stamp fan-favorite flags. Previously-favorite items that no longer qualify
   // are cleared; new qualifiers are set; unchanged items are skipped.
@@ -187,6 +218,10 @@ export default async function (req) {
   if (toUpdate.length > 0) {
     await base44.asServiceRole.entities.MenuItem.bulkUpdate(toUpdate);
   }
+  const snapshots = await base44.asServiceRole.entities.FanFavoriteSnapshot.list();
+  const snapshot = { shake_rank: ranked.find((r) => r.bucket === 'shake')?.rank || null, ranked, lookback_days: LOOKBACK_DAYS, computed_at: new Date().toISOString() };
+  if (snapshots[0]) await base44.asServiceRole.entities.FanFavoriteSnapshot.update(snapshots[0].id, snapshot);
+  else await base44.asServiceRole.entities.FanFavoriteSnapshot.create(snapshot);
 
   return Response.json({
     success: true,
@@ -195,13 +230,7 @@ export default async function (req) {
     uniqueLineItemObjects: catIds.length,
     uniqueParentItems: Object.keys(parentCounts).length,
     eligibleRankedItems: rankedVisible.length,
-    ranked: rankedVisible.map((r) => ({
-      rank: rankById[r.item.id],
-      menu_item_id: r.item.id,
-      name: r.item.name,
-      square_item_id: r.sqId,
-      qty: r.qty,
-    })),
+    ranked,
     menuItemsUpdated: toUpdate.length,
     cleared,
   });

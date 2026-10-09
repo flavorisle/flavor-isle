@@ -1,0 +1,44 @@
+{
+  "name": "Review Request SMS Trigger",
+  "description": "Every 10 minutes, sends one post-order Google review request text per completed order inside the 10 AM\u20138 PM store-local window, only when both transactional and marketing SMS consent are on. The owner can pause with googleReviewSmsEnabled.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/10 * * * *",
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null,
+      "one_time_date": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "review_request_sms_trigger",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "processPendingReviewSms"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send pending review-request texts",
+            "description": "Find completed orders whose two-hour review-text mark has passed and dispatch one text each"
+          }
+        }
+      }
+    ]
+  }
+}

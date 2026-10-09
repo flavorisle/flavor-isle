@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Phone, MessageCircle } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SMASHIE_PEACE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c08ec5331_IMG_9970.png';
 
@@ -9,8 +10,10 @@ export default function AboutSmashie() {
     <section className="py-20 px-4 sm:px-6 bg-background">
       <div className="max-w-5xl mx-auto card-diner p-8 sm:p-12 flex flex-col md:flex-row items-center gap-10">
         <img
-          src={SMASHIE_PEACE}
+          src={optimizedImageUrl(SMASHIE_PEACE, 500, 600, 'fit')}
           alt="Smashie, the Flavor Isle mascot, flashing a peace sign"
+          width="500"
+          height="600"
           className="w-40 sm:w-52 object-contain drop-shadow-xl flex-shrink-0"
         />
         <div className="text-center md:text-left">
@@ -23,11 +26,11 @@ export default function AboutSmashie() {
             <Link to="/meet-smashie" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
               Meet Smashie <ArrowRight size={16} />
             </Link>
-            <a href="tel:+12705634618" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
-              <Phone size={16} /> Call
+            <a href="tel:+12705637230" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
+              <Phone size={16} /> Call <span className="text-xs font-body normal-case">· Try now</span>
             </a>
-            <a href="sms:+12705634618" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
-              <MessageCircle size={16} /> Text
+            <a href="sms:+12705637230" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-border text-obsidian-roast font-heading text-sm hover:border-patina-mint transition-colors">
+              <MessageCircle size={16} /> Text <span className="text-xs font-body normal-case">· Try now</span>
             </a>
           </div>
         </div>

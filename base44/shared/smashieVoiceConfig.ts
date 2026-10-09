@@ -1,0 +1,2 @@
+export const SMASHIE_VOICE = 'verse';
+export const SMASHIE_VOICE_STYLE = 'Speak as a young adult American man in his early twenties, with a clearly masculine, youthful voice. Sound warm, relaxed, upbeat and natural, with crisp pronunciation and steady phone-friendly pacing. Avoid a deep older-sounding voice, a feminine voice, exaggerated slang, or a cartoon character voice.';

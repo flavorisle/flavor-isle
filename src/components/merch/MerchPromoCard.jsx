@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function MerchPromoCard() {
   const [previews, setPreviews] = useState([]);
@@ -30,9 +31,12 @@ export default function MerchPromoCard() {
     <div className="bg-midnight-cherry rounded-2xl p-5 text-left">
       {/* Tasty Threads brand logo */}
       <img
-        src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+        src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png', 400, 300, 'fit')}
         alt="Tasty Threads — Flavor Isle Apparel"
+        width="400"
+        height="300"
         loading="lazy"
+        decoding="async"
         className="w-40 h-auto bg-white rounded-xl p-2 mb-3"
       />
       <p className="text-red-200 text-sm mb-4">

@@ -1,5 +1,5 @@
 const SQUARE_API = 'https://connect.squareup.com/v2';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 // Build several normalized variants of a phone number so Square's exact-match
 // customer search is more likely to hit regardless of how the POS stored it.
@@ -12,6 +12,11 @@ function phoneVariants(raw) {
     if (digits.length >= 10) variants.add(digits.slice(-10));
     if (digits.length === 10) variants.add('+1' + digits);
     if (digits.length === 11 && digits.startsWith('1')) variants.add('+' + digits);
+    if (digits.length === 10 || (digits.length === 11 && digits.startsWith('1'))) {
+      const local = digits.slice(-10);
+      variants.add(`(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`);
+      variants.add(`${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6)}`);
+    }
   }
   return [...variants];
 }

@@ -193,7 +193,7 @@ export default function ProductDetailModal({ product, onClose, onAdd }) {
             {selectedVariant?.in_stock === false ? (
               'Out of Stock'
             ) : (
-              <><Plus size={16} /> Add to Cart</>
+              <><Plus size={16} /> Add to Bag</>
             )}
           </button>
         </div>

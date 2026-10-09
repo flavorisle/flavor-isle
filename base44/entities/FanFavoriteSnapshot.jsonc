@@ -1,0 +1,25 @@
+{
+  "name": "FanFavoriteSnapshot",
+  "type": "object",
+  "properties": {
+    "shake_rank": {
+      "type": "number"
+    },
+    "ranked": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "lookback_days": {
+      "type": "number"
+    },
+    "computed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "computed_at"
+  ]
+}

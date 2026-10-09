@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         ${await foodHeroHtml(base44)}
         ${await merchPromoHtml()}`;
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to,
         subject: '🎉 Order #PH999999 confirmed!',
         html: brandedEmailHtml(confirmBody),
@@ -141,9 +141,9 @@ Deno.serve(async (req) => {
         { name: '14 oz Chocolate Shake', quantity: 1, price: 5.99, image_url: '' },
       ], 18.47);
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to,
-        subject: "🔥 Your cart's getting cold, Jordan — the grill's still hot!",
+        subject: "🔥 Your bag's getting cold, Jordan — the grill's still hot!",
         html,
       });
       results.push({ email: '6. Cart Abandonment Reminder', success: !error, error: error?.message });

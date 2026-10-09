@@ -1,12 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, pickupMethod, vehicle } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, pickupMethod, vehicle } = body;
+    const storedOrder = orderId ? await base44.asServiceRole.entities.Order.get(orderId) : null;
+    const cashPickup = storedOrder?.pay_cash_on_pickup === true && storedOrder.order_type === 'pickup';
 
     // Atomic claim: try to set square_sync_claimed_at only if it's currently
     // null/empty. If another concurrent call already claimed or pushed the
@@ -66,7 +68,7 @@ Deno.serve(async (req) => {
     let locationId = connection.connectionConfig?.locationId;
     if (!locationId) {
       const locRes = await fetch('https://connect.squareup.com/v2/locations', {
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2026-09-16' }
       });
       const locData = await locRes.json();
       locationId = locData.locations?.[0]?.id;
@@ -75,7 +77,7 @@ Deno.serve(async (req) => {
 
     const sqHeaders = {
       'Authorization': `Bearer ${accessToken}`,
-      'Square-Version': '2024-01-18',
+      'Square-Version': '2026-09-16',
       'Content-Type': 'application/json',
     };
 
@@ -84,7 +86,11 @@ Deno.serve(async (req) => {
     let customerId = null;
     const digits = (customer.phone || '').replace(/\D/g, '');
     const e164Phone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : null;
-    const normalizedEmail = (customer.email || '').toLowerCase().trim();
+    // Phone/chat orders taken without an email carry a placeholder so the
+    // required field is satisfied — never match or create a Square customer
+    // with it as if it were a real address. The phone still links the customer.
+    const rawEmail = (customer.email || '').toLowerCase().trim();
+    const normalizedEmail = rawEmail === 'phone-order@flavorisle.com' ? '' : rawEmail;
 
     const searchCustomer = async (filter) => {
       const res = await fetch('https://connect.squareup.com/v2/customers/search', {
@@ -172,25 +178,72 @@ Deno.serve(async (req) => {
     // Batch-retrieve modifier lists so we can reference modifier options by
     // their catalog IDs (line item modifiers) instead of ad-hoc text. This
     // makes modifier-level sales and pricing report correctly in Square.
+    // Nested (child) modifier lists are retrieved recursively up to 3 levels
+    // so selections from child lists (e.g., sauce preference, ice level, drink
+    // flavor) are also catalog-referenced instead of ad-hoc text.
     const modifierOptionToList: Record<string, string> = {};
+    const modifierOptionToName: Record<string, string> = {};
+    const childListMap: Record<string, string[]> = {};
+    const retrievedListIds = new Set<string>();
+
+    async function retrieveModifierLists(ids: string[]) {
+      if (ids.length === 0) return [];
+      const res = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
+        method: 'POST',
+        headers: sqHeaders,
+        body: JSON.stringify({ object_ids: ids }),
+      });
+      const data = await res.json();
+      return data.objects || [];
+    }
+
     if (allModifierListIds.size > 0) {
       try {
-        const modRes = await fetch('https://connect.squareup.com/v2/catalog/batch-retrieve', {
-          method: 'POST',
-          headers: sqHeaders,
-          body: JSON.stringify({ object_ids: [...allModifierListIds] }),
-        });
-        const modData = await modRes.json();
-        for (const obj of (modData.objects || [])) {
-          if (obj.type === 'MODIFIER_LIST' && obj.modifier_list_data) {
+        let toRetrieve = [...allModifierListIds];
+        let depth = 0;
+        while (toRetrieve.length > 0 && depth < 4) {
+          const objs = await retrieveModifierLists(toRetrieve);
+          const nextBatch: string[] = [];
+          for (const obj of objs) {
+            if (obj.type !== 'MODIFIER_LIST' || !obj.modifier_list_data) continue;
+            retrievedListIds.add(obj.id);
+            const childIds: string[] = [];
             for (const mod of (obj.modifier_list_data.modifiers || [])) {
               modifierOptionToList[mod.id] = obj.id;
+              modifierOptionToName[mod.id] = mod.modifier_data?.name || '';
+              for (const cid of (mod.modifier_data?.child_modifier_list_ids || [])) {
+                childIds.push(cid);
+                if (!retrievedListIds.has(cid)) nextBatch.push(cid);
+              }
             }
+            if (childIds.length > 0) childListMap[obj.id] = childIds;
           }
+          toRetrieve = [...new Set(nextBatch)];
+          depth++;
         }
       } catch (modErr) {
         console.warn('Modifier list batch-retrieve failed:', modErr.message);
       }
+    }
+
+    // Compute the transitive closure of all modifier list IDs reachable from
+    // a given set of direct list IDs (including nested child lists) so nested
+    // selections are treated as catalog-referenced, not ad-hoc.
+    function getAllReachableListIds(directIds: string[]): Set<string> {
+      const result = new Set<string>(directIds);
+      const queue = [...directIds];
+      while (queue.length > 0) {
+        const id = queue.shift()!;
+        const childIds = childListMap[id];
+        if (!childIds) continue;
+        for (const cid of childIds) {
+          if (!result.has(cid)) {
+            result.add(cid);
+            queue.push(cid);
+          }
+        }
+      }
+      return result;
     }
 
     const lineItems = items.map(item => {
@@ -204,7 +257,7 @@ Deno.serve(async (req) => {
       const catEntry = squareItemId ? catalogMap[squareItemId] : null;
       const variations = catEntry?.variations || [];
       const variationIds = new Set(variations.map((v: any) => v.id));
-      const itemModListIds = new Set(catEntry?.modifierListIds || []);
+      const itemModListIds = getAllReachableListIds(catEntry?.modifierListIds || []);
 
       if (variations.length > 0) {
         const modIds = (item.selectedModifiers || []).map((m: any) => m.id);
@@ -222,31 +275,55 @@ Deno.serve(async (req) => {
       // Square computes each modifier's total as base_price_money × line item
       // quantity, so we set the per-unit price and let Square scale it.
       const appliedModifiers: any[] = [];
-      let catalogModPerUnit = 0;
       // Names of modifiers already shown on the POS ticket as a variation
       // (size) line or a catalog modifier sub-line. These are excluded from
       // the line item name's parenthetical so the kitchen ticket never prints
       // a modifier twice (once in the name, once as a sub-line). The Deluxe
       // preset label and true ad-hoc modifiers stay in the name.
       const alreadyOnTicket = new Set<string>();
-      for (const sm of (item.selectedModifiers || [])) {
+      const selections = item.selectedModifiers || [];
+      for (let index = 0; index < selections.length; index++) {
+        const sm = selections[index];
         if (!sm?.id) continue;
         if (variationIds.has(sm.id)) {
           if (sm.name) alreadyOnTicket.add(sm.name); // Size selection
           continue;
         }
         const modListId = modifierOptionToList[sm.id];
-        if (modListId && itemModListIds.has(modListId)) {
-          const mod: any = { catalog_object_id: sm.id };
-          if (typeof sm.price === 'number' && sm.price !== 0) {
-            mod.base_price_money = { amount: Math.round(sm.price * 100), currency: 'USD' };
+        const catalogReferenced = !!(modListId && itemModListIds.has(modListId));
+
+        // Silent Lite/Regular/Extra rows and the nested flavor "Extra" option
+        // are catalog-referenced again, at $0 — the ticket still prints them
+        // (MAYO / EXTRA), only the price is gone from the row.
+        if (sm.silent) {
+          if (catalogReferenced) {
+            appliedModifiers.push({ catalog_object_id: sm.id, base_price_money: { amount: 0, currency: 'USD' } });
+            if (sm.name) alreadyOnTicket.add(sm.name);
           }
-          appliedModifiers.push(mod);
-          catalogModPerUnit += (sm.price || 0);
-          if (sm.name) alreadyOnTicket.add(sm.name);
+          continue;
         }
-        // Ad-hoc modifiers (not in the item's modifier lists) stay in the name
-        // and their prices stay in base_price_money.
+
+        if (catalogReferenced) {
+          const next = selections[index + 1];
+          const nextListId = next?.silent && next.id ? modifierOptionToList[next.id] : null;
+          const childRowPrints = !!(next?.silent && nextListId && itemModListIds.has(nextListId) && next.id);
+          if (childRowPrints) {
+            // The parent prints under its own catalog name and the silent child
+            // (EXTRA / LITE / REGULAR) prints as the next row — do not skip the
+            // child here; the silent branch above pushes it as a catalog row.
+            appliedModifiers.push({ catalog_object_id: sm.id, base_price_money: { amount: 0, currency: 'USD' } });
+            if (sm.name) alreadyOnTicket.add(sm.name);
+          } else if (sm.name && sm.name !== modifierOptionToName[sm.id]) {
+            // A level prefix was merged into the cart name but no child row will
+            // print (a flavor with no nested list) — keep the readable name.
+            appliedModifiers.push({ name: sm.name, base_price_money: { amount: 0, currency: 'USD' } });
+            alreadyOnTicket.add(sm.name);
+          } else {
+            appliedModifiers.push({ catalog_object_id: sm.id, base_price_money: { amount: 0, currency: 'USD' } });
+            if (sm.name) alreadyOnTicket.add(sm.name);
+          }
+        }
+        // True ad-hoc extras stay in the name and in base_price_money.
       }
 
       // Deluxe preset toppings print as the preset label ("Deluxe" / "Deluxe,
@@ -256,11 +333,11 @@ Deno.serve(async (req) => {
       const displayMods = formatItemModifiers(item).filter((m: string) => !alreadyOnTicket.has(m));
       const name = displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item');
 
-      // base_price_money = item price minus catalog modifier upcharges (those
-      // are added via the modifiers array). Ad-hoc modifier prices and size
-      // upcharges stay in the base price so the line item total matches what
-      // the customer paid: (base + ad-hoc + size) × qty + catalog_mods × qty.
-      const basePrice = (item.price || 0) - catalogModPerUnit;
+      // base_price_money carries the FULL item price — every modifier upcharge
+      // is already folded into it. Catalog modifiers are sent at $0 so the
+      // kitchen ticket still prints MAYO / EXTRA but no price fragment, and the
+      // line total still equals what the customer paid.
+      const basePrice = item.price || 0;
 
       const lineItem: any = {
         name,
@@ -305,9 +382,21 @@ Deno.serve(async (req) => {
         scope: 'ORDER',
       });
     }
+    // Family bundle discount as its own order-level fixed discount. It reaches
+    // Square only — the kitchen ticket stays items and modifiers, with no
+    // discount, savings or bundle pricing text anywhere on it.
+    if (bundleDiscount > 0) {
+      orderDiscounts.push({
+        uid: 'family-bundle',
+        name: 'School Night Lifesaver Bundle',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(bundleDiscount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
     // Square applies the ADDITIVE tax to the post-discount amount, so base the
     // percentage on the discounted subtotal to keep the applied tax equal to ours.
-    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0);
+    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0) - (bundleDiscount || 0);
     const orderTaxes = [];
     if (tax > 0 && taxBase > 0) {
       const pct = ((tax / taxBase) * 100).toFixed(2);
@@ -343,6 +432,8 @@ Deno.serve(async (req) => {
     } else if (orderType === 'dine_in') {
       pickupNote = `DINE IN\nTable: ${customer.table || 'N/A'}\n${customer.name}`;
     }
+
+    if (cashPickup) pickupNote += `\nCASH AT PICKUP — COLLECT $${Number(storedOrder.total).toFixed(2)}`;
 
     const squareOrder = {
       idempotency_key: idempotencyKey,
@@ -393,7 +484,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Square-Version': '2024-01-18',
+        'Square-Version': '2026-09-16',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(squareOrder),
@@ -435,12 +526,12 @@ Deno.serve(async (req) => {
     // Square POS only surfaces PAID orders as active tickets, so without this
     // step the order never appears on the register.
     const netDue = data.order?.net_amount_due_money?.amount || 0;
-    if (netDue > 0) {
+    if (netDue > 0 && !cashPickup) {
       const payRes = await fetch('https://connect.squareup.com/v2/payments', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Square-Version': '2024-01-18',
+          'Square-Version': '2026-09-16',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -467,4 +558,4 @@ Deno.serve(async (req) => {
     console.error('Square order error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

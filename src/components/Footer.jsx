@@ -4,6 +4,8 @@ import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
+import FooterEmailSignup from '@/components/FooterEmailSignup';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
@@ -14,9 +16,12 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+            src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 600, 400, 'fit')}
             alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
+            width="600"
+            height="400"
             loading="lazy"
+            decoding="async"
             className="w-full max-w-[260px] object-contain mb-4"
           />
           <p className="text-gray-300 text-sm leading-relaxed">
@@ -55,6 +60,7 @@ export default function Footer() {
             <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
             <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
             <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
+            <Link to="/faq" className="hover:text-white transition-colors">FAQ</Link>
             <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Stop</Link>
             <Link to="/mammoth-cave-dining" className="hover:text-white transition-colors">Mammoth Cave Dining</Link>
             <Link to="/corvette-car-clubs" className="hover:text-white transition-colors">Corvette Car Clubs</Link>
@@ -62,6 +68,8 @@ export default function Footer() {
             <Link to="/what-to-expect" className="hover:text-white transition-colors">What to Expect</Link>
             <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
             <Link to="/reviews" className="hover:text-white transition-colors">What People Are Saying</Link>
+            <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Guide</Link>
+            <Link to="/newsletter" className="hover:text-white transition-colors">Newsletter</Link>
             <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
           </div>
         </div>
@@ -86,8 +94,18 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Email newsletter signup */}
+      <FooterEmailSignup />
+
       {/* SMS opt-in + A2P disclosure */}
       <FooterSmsOptIn />
+
+      {/* Traveler tips link — shown on every page */}
+      <div className="border-t border-white/10 px-4 sm:px-6 py-3 text-center">
+        <Link to="/about#traveler-tips" className="text-sm text-gray-300 hover:text-white transition-colors">
+          Just passing through? See traveler tips.
+        </Link>
+      </div>
 
       {/* Bottom bar */}
       <div className="border-t border-white/10 px-4 sm:px-6 py-5">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Gift, Phone, TrendingUp, Award, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
+import { computeDiscount, tierNeedsCartItem } from '@/lib/rewardDiscount';
 
 // Parses the Square accrual rule text (e.g. "Earn 1 star per $1 spent") to
 // estimate how many stars this order will earn based on the subtotal.
@@ -34,29 +35,11 @@ function computeTier(rewardTiers, balance) {
   return { current, next, progress };
 }
 
-// Compute a dollar discount for a Square reward tier against the order subtotal.
-// Only order-level FIXED_AMOUNT and FIXED_PERCENTAGE (<100%) tiers are redeemable
-// online; item-scoped / free-item / fixed-price tiers are skipped.
-function computeDiscount(tier, subtotal) {
-  if (!tier) return null;
-  if (tier.scope && tier.scope !== 'ORDER') return null;
-  if (tier.discountType === 'FIXED_AMOUNT') {
-    const v = (tier.fixedAmountCents || 0) / 100;
-    return v > 0 ? Math.min(subtotal, +v.toFixed(2)) : null;
-  }
-  if (tier.discountType === 'FIXED_PERCENTAGE') {
-    const pct = tier.percentage || 0;
-    if (pct <= 0 || pct >= 100) return null;
-    return +(subtotal * pct / 100).toFixed(2);
-  }
-  return null;
-}
-
 // Merged Star Rewards panel for checkout. Does a single live Square loyalty
 // lookup by phone (works for guests and signed-in members) and shows the
 // balance, tier progress, stars-earned estimate, and — when showRewards is
 // true — the redeemable rewards the customer can apply to this order.
-export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, onApply, showRewards = true }) {
+export default function CheckoutRewardsPanel({ subtotal, phone, cartItems, appliedReward, onApply, showRewards = true }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(true);
@@ -107,11 +90,11 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
     if (!appliedReward || !status || !onApply) return;
     const tier = (status.rewardTiers || []).find(t => t.id === appliedReward.tierId);
     if (!tier) return;
-    const dv = computeDiscount(tier, subtotal);
+    const dv = computeDiscount(tier, subtotal, cartItems);
     if (dv != null && dv !== appliedReward.discountValue) {
       onApply({ tierId: tier.id, discountValue: dv, description: tier.description });
     }
-  }, [subtotal, status]);
+  }, [subtotal, status, cartItems]);
 
   if (loading) {
     return (
@@ -129,12 +112,15 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
   const estStars = estimateStars(s.earnText, subtotal);
   const { current, next, progress } = computeTier(s.rewardTiers, balance);
 
-  // Redeemable order-level rewards the customer has unlocked.
-  const rewards = showRewards && s.hasAccount
-    ? (s.rewardTiers || [])
-        .map(t => ({ ...t, discountValue: computeDiscount(t, subtotal) }))
-        .filter(t => t.discountValue != null && t.discountValue > 0 && balance >= t.points)
+  // Rewards the customer has unlocked and can actually apply to this bag.
+  const affordable = showRewards && s.hasAccount
+    ? (s.rewardTiers || []).filter(t => balance >= t.points)
     : [];
+  const rewards = affordable
+    .map(t => ({ ...t, discountValue: computeDiscount(t, subtotal, cartItems) }))
+    .filter(t => t.discountValue != null && t.discountValue > 0);
+  // Item-scoped rewards whose qualifying item isn't in the bag yet.
+  const needsItem = affordable.filter(t => tierNeedsCartItem(t, cartItems));
 
   // ── Nudge states: no account to show rewards for ──────────────────────
   // Phone entered but no rewards account found for that number.
@@ -241,7 +227,7 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
       <p className="text-xs text-midnight-cherry font-heading mb-4">This order earns ~{estStars} stars ⭐</p>
 
       {/* Redeemable rewards (details step only) */}
-      {showRewards && rewards.length > 0 && (
+      {showRewards && (rewards.length > 0 || needsItem.length > 0) && (
         <>
           <div className="flex items-center gap-2 mb-1 pt-3 border-t border-patina-mint/15">
             <Gift size={16} className="text-patina-mint" />
@@ -263,8 +249,8 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
                   }`}
                 >
                   <div>
-                    <p className="font-heading text-sm text-obsidian-roast">{r.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{r.points} stars</p>
+                    <p className="font-heading text-sm text-obsidian-roast">{r.name || r.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{r.description} · {r.points} stars</p>
                   </div>
                   <span className={`flex items-center gap-1.5 flex-shrink-0 text-sm font-heading px-3 py-1.5 rounded-lg ${
                     applied ? 'bg-patina-mint text-white' : 'bg-patina-mint/15 text-patina-mint'
@@ -274,6 +260,17 @@ export default function CheckoutRewardsPanel({ subtotal, phone, appliedReward, o
                 </button>
               );
             })}
+            {needsItem.map(t => (
+              <div
+                key={t.id}
+                className="w-full p-3 rounded-2xl border-2 border-dashed border-border flex items-center justify-between gap-3 opacity-70"
+              >
+                <div>
+                  <p className="font-heading text-sm text-obsidian-roast">{t.name || t.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Add a qualifying item to use · {t.points} stars</p>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}

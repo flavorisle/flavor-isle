@@ -6,9 +6,12 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import { optimizedImageUrl } from '@/lib/utils';
 import { hoursGroups } from '@/lib/businessHours';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 
-const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b75912a_FlavorIsleBuilding.png';
+const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 
 export default function CorvetteCarClubs() {
   const businessHours = useBusinessHours();
@@ -16,22 +19,26 @@ export default function CorvetteCarClubs() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Flavor Isle | Classic Diner Stop for Corvette Museum Visitors & Car Clubs"
+        title="Corvette Car Club Dining near Bowling Green — Flavor Isle"
         description="A nostalgic roadside burger stop minutes from the National Corvette Museum in Bowling Green, KY. Group seating, hand-patted burgers, thick shakes, and free parking right off I-65 Exit 38."
+        ogTitle="Corvette Museum & Car Club Dining — Flavor Isle | Smiths Grove, KY"
+        ogDescription="Rolling into Bowling Green for the Corvette Museum or a car club run? Flavor Isle is 15 minutes up I-65 — big burgers, group-friendly, easy parking."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/6a698f419_card-corvette.png"
+        ogImageAlt="Flavor Isle Corvette car club dining share card"
       />
       <Navbar />
 
       {/* Hero */}
       <section className="relative bg-patina-mint text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img src={BUILDING} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(BUILDING, 1600, 900)} alt="" width="1600" height="900" loading="eager" fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">
             <Gauge size={16} /> CORVETTE MUSEUM & CAR CLUBS
           </div>
           <h1 className="font-heading text-4xl sm:text-6xl leading-tight">
-            The Classic Diner Stop for Car Clubs
+            The Burgers &amp; Shakes Stop for Car Clubs
           </h1>
           <p className="font-body text-lg sm:text-xl text-white/90 mt-4">
             Nostalgic roadside burgers & shakes · Minutes from the Corvette Museum
@@ -49,6 +56,9 @@ export default function CorvetteCarClubs() {
           </div>
         </div>
       </section>
+
+      <PhotoChapter photo={islePhotos.burgerTots} heading="Add Flavor Isle to your route." action="Order Now" />
+      <PhotoChapter photo={islePhotos.chicken} heading="A stop worth the drive." action="Get Directions" to="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" />
 
       {/* Group seating + scenic route */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">

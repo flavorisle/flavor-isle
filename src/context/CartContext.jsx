@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
+import { getFamilyBundleDiscount } from '@/lib/familyBundle';
+import { toCents, fromCents, salesTaxCents } from '@/lib/tax';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const CartContext = createContext(null);
@@ -20,8 +23,17 @@ const readSession = (key, fallback) => {
   }
 };
 
+// A cart line carrying combo data (comboConfigId / comboComponents) was priced
+// with the combo discount baked into its price. Combos are switched OFF, so the
+// server can no longer reprice such a line and checkout rejects the stale total
+// ("Price verification failed: server X vs client Y"). Drop those lines when the
+// cart loads — from sessionStorage and from the saved profile cart — so a stale
+// combo line can never be carried into checkout. Every other line is untouched.
+const dropComboLines = (items) =>
+  (items || []).filter(i => !i?.comboConfigId && !i?.comboComponents);
+
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(() => readSession('cartItems', []));
+  const [cartItems, setCartItems] = useState(() => dropComboLines(readSession('cartItems', [])));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
   const [pickupMethod, setPickupMethod] = useState(() => readSession('pickupMethod', 'counter')); // counter | curbside (pickup only)
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -77,7 +89,7 @@ export function CartProvider({ children }) {
         // cart in progress, so we never clobber an order the user is actively building.
         const localHasItems = (readSession('cartItems', []) || []).length > 0;
         if (saved && Array.isArray(saved.cartItems) && saved.cartItems.length > 0 && !localHasItems) {
-          setCartItems(saved.cartItems);
+          setCartItems(dropComboLines(saved.cartItems));
           setOrderType(saved.orderType || 'pickup');
           setGroupMode(!!saved.groupMode);
           setPeople(saved.people || []);
@@ -113,6 +125,7 @@ export function CartProvider({ children }) {
   useEffect(() => {
     getMenuSetting()
       .then(s => {
+        hydrateDeluxeConfig(s.deluxe);
         setMenuSetting(s);
         setOrderingEnabledState(s.ordering_enabled !== false);
         if (s.ordering_closed_message) setOrderingClosedMessage(s.ordering_closed_message);
@@ -144,7 +157,11 @@ export function CartProvider({ children }) {
       .sort()
       .join('|');
     const personKey = item.person_id ? `p${item.person_id}` : '';
-    return mods || personKey ? `${item.id}__${personKey}${mods ? '|' : ''}${mods}` : item.id;
+    // A customer's per-item allergy note joins the line key, so two of the same
+    // shake with different allergies stay separate lines instead of merging.
+    const noteKey = item.allergyNote ? `a${item.allergyNote}` : '';
+    const flavorKey = item.flavorLevel ? `|f${item.flavorLevel}` : '';
+    return mods || personKey || noteKey || flavorKey ? `${item.id}__${personKey}${noteKey}${flavorKey}${mods ? '|' : ''}${mods}` : item.id;
   };
 
   const activePerson = people.find(p => p.id === activePersonId) || null;
@@ -225,12 +242,24 @@ export function CartProvider({ children }) {
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const happyHourDiscount = getHappyHourDiscount(cartItems, menuSetting);
-  const adjustedSubtotal = subtotal - happyHourDiscount;
+  // The family bundle's lines carry the full a-la-carte prices and the fixed
+  // bundle discount comes off here, so the discounted subtotal is exactly the
+  // bundle price plus any paid extras the customer chose. Recomputed from the
+  // cart lines, so editing or removing a bundle line can never leave a stale
+  // discount behind.
+  const bundleDiscount = getFamilyBundleDiscount(cartItems);
+  const adjustedSubtotal = subtotal - happyHourDiscount - bundleDiscount;
   const deliveryFee = orderType === 'delivery'
     ? Number(deliveryQuote?.fee ?? menuSetting?.delivery_fee ?? 0)
     : 0;
-  const tax = adjustedSubtotal * 0.06;
-  const total = adjustedSubtotal + deliveryFee + tax;
+  // Tax and total in WHOLE CENTS, rounded half up (see @/lib/tax) — the same
+  // rule the server verifies with. Float math here used to round the half-cent
+  // down in the total while the tax line displayed it rounded up, so a single
+  // $3.25 item ($3.25 × 6% = $0.195) showed $0.20 tax on a $3.44 total and was
+  // rejected as a mismatch against the server's $3.45.
+  const taxCentsValue = salesTaxCents(toCents(adjustedSubtotal));
+  const tax = fromCents(taxCentsValue);
+  const total = fromCents(toCents(adjustedSubtotal) + toCents(deliveryFee) + taxCentsValue);
 
   // Per-person subtotal (group mode breakdown)
   const personSubtotals = people.map(p => {
@@ -255,6 +284,7 @@ export function CartProvider({ children }) {
       cutoffStatus,
       menuSetting,
       happyHourDiscount,
+      bundleDiscount,
       groupMode, people, activePersonId, activePerson,
       startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
       personSubtotals, unassignedSubtotal,

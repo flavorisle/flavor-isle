@@ -1,10 +1,12 @@
 import { Resend } from 'npm:resend@3.2.0';
-import { sendSmashieSms, smashieSmsTemplates } from './sendSmashieSms.ts';
+import { sendOrderStatusSms } from './sendOrderStatusSms.ts';
 import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
-import { accrueForOrder, redeemReward } from './squareLoyalty.ts';
+import { accrueForOrder, redeemReward, toE164Phone } from './squareLoyalty.ts';
+import { referralCodeForPhone } from './referral.ts';
 import { sendPushToEmail } from './sendPush.ts';
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
+import { formatItemModifiers } from './ticketFormat.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -31,17 +33,36 @@ async function logSquareSyncAttempt(base44, order, status, squareOrderId = null,
 // customer/staff notifications identically — so orders reach the kitchen even
 // when the Stripe webhook stops delivering events.
 
+// Referral share block for the paid-order confirmation email (issue #83, Part
+// A). Sits between the order summary and the closing lines. Only orders whose
+// phone normalizes to E.164 get one — with no phone there is no code to share.
+function referralBlockHtml(code: string) {
+  return `<div style="background:#f5edd6;border-radius:12px;padding:22px 20px;margin:0 0 24px;text-align:center;">
+    <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png" alt="Smashie" width="72" height="72" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
+    <h3 style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:19px;letter-spacing:1px;margin:0 0 8px;">SHARE THE ISLE, EARN 50 STARS</h3>
+    <p style="color:#141414;font-size:15px;line-height:1.5;margin:0 0 16px;">Send your link to a friend. When they place their first order, 50 bonus Stars land in your Star Rewards account.</p>
+    <a href="https://flavor-isle.com/?ref=${code}" style="display:inline-block;background:#C0392B;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-family:'Oswald',Arial,sans-serif;font-size:15px;letter-spacing:1px;">SEND YOUR LINK</a>
+  </div>`;
+}
+
 export async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
   const hasAccount = await isRegisteredUser(base44, order.customer_email);
 
-  const itemsHtml = (order.items || []).map(item =>
-    `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;">$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
-    </tr>`
-  ).join('');
+  const itemsHtml = (order.items || []).map(item => {
+    const mods = formatItemModifiers(item);
+    const modsHtml = mods.length > 0
+      ? `<div style="font-size:13px;color:#888;padding-left:10px;line-height:1.5;padding-top:2px;">${mods.map(m => `<div>• ${m}</div>`).join('')}</div>`
+      : '';
+    return `<tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;vertical-align:top;">
+        ${item.name}${(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}
+        ${modsHtml}
+      </td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;vertical-align:top;">$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
+    </tr>`;
+  }).join('');
 
   const orderTypeLabel = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' }[order.order_type] || order.order_type;
   const fulfillmentLine = order.order_type === 'delivery' && order.delivery_address
@@ -50,6 +71,9 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
       ? `Dine-In · Table ${order.table_number}`
       : orderTypeLabel;
   const estTime = order.estimated_time ? `${order.estimated_time} min` : '—';
+
+  const referrerPhone = toE164Phone(order.customer_phone);
+  const referralCode = referrerPhone ? await referralCodeForPhone(referrerPhone) : null;
 
   const html = brandedEmailHtml(`
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
@@ -79,9 +103,12 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
         <div style="background:#f5edd6;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
           <p style="margin:0;font-size:14px;color:#1A3A5C;"><strong>Pickup/Delivery:</strong> ${fulfillmentLine}</p>
+          ${order.pay_cash_on_pickup && order.payment_status !== 'paid' ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Payment:</strong> Pay $${Number(order.total).toFixed(2)} in cash at the counter at pickup.</p>` : ''}
           <p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Order Time:</strong> ~${estTime}</p>
           ${order.special_instructions ? `<p style="margin:6px 0 0;font-size:14px;color:#1A3A5C;"><strong>Notes:</strong> ${order.special_instructions}</p>` : ''}
         </div>
+
+        ${referralCode ? referralBlockHtml(referralCode) : ''}
 
         <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
@@ -97,7 +124,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
   for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
     try {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: order.customer_email,
         subject: `Order locked in — #${order.order_number} 🍔`,
         html,
@@ -123,8 +150,8 @@ export async function sendAdminReceiptEmail(order) {
 
   const itemsHtml = (order.items || []).map(item => {
     const qty = item.quantity || 1;
-    const mods = (item.selectedModifiers || []).map(m => m.name || m).join(', ');
-    const modLine = mods ? `<div style="font-size:12px;color:#666;margin:2px 0 0;">+ ${mods}</div>` : '';
+    const mods = formatItemModifiers(item);
+    const modLine = mods.map(m => `<div style="font-size:12px;color:#666;margin:2px 0 0;">+ ${m}</div>`).join('');
     return `<tr>
       <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;">${item.name}${qty > 1 ? ` x${qty}` : ''}${modLine}</td>
       <td style="padding:8px 0;border-bottom:1px solid #f0e8d0;text-align:right;">$${(item.price * qty).toFixed(2)}</td>
@@ -142,7 +169,7 @@ export async function sendAdminReceiptEmail(order) {
 
   const html = brandedEmailHtml(`
         <h2 style="color:#C0392B;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">🧾 New Online Order</h2>
-        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 20px;">A web order just came in and was paid online.</p>
+        <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 20px;">${order.pay_cash_on_pickup ? 'A phone pickup order is confirmed. Collect $' + Number(order.total).toFixed(2) + ' in cash at pickup — NOT PAID yet.' : 'A web order just came in and was paid online.'}</p>
 
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:20px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER #${order.order_number || ''}
@@ -186,7 +213,7 @@ export async function sendAdminReceiptEmail(order) {
   for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
     try {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: OWNER_EMAIL,
         subject: `🧾 New online order #${order.order_number || ''} — $${(order.total || 0).toFixed(2)}`,
         html,
@@ -232,7 +259,7 @@ async function processLoyalty(base44, order, squareOrderId) {
     for (let attempt = 1; attempt <= 3 && !accrued; attempt++) {
       try {
         if (attempt > 1) await sleep(3000);
-        loyaltyResult = await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone });
+        loyaltyResult = await accrueForOrder({ squareOrderId, email: order.customer_email, phone: order.customer_phone, enroll: order.loyalty_opt_in === true, directWebOrderId: order.direct_web_rewards_v2 === true ? order.id : undefined });
         accrued = true;
         console.log(`Square Star Rewards points accrued for order ${order.order_number} (attempt ${attempt})`);
       } catch (accrueErr) {
@@ -387,6 +414,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
         tip: order.tip || 0,
         discount: order.discount || 0,
         happyHourDiscount: order.happy_hour_discount || 0,
+        bundleDiscount: order.bundle_discount || 0,
       });
       squareOrderId = squareRes?.data?.order_id || squareRes?.order_id;
       const alreadySynced = squareRes?.data?.already_synced || squareRes?.already_synced;
@@ -429,26 +457,11 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   // transactional consent (checkSmsConsent), fail-closed: no proof, STOP'd,
   // invalid number, or toggle disabled → no SMS. A suppressed or failed SMS
   // never blocks the checkout order flow (errors are caught + logged).
-  if (squarePushed && order.customer_phone) {
+  if (squarePushed) {
     try {
-      const settings = await getSmashieSettings(base44);
-      if (settings.sms_status_updates_enabled !== true) {
-        console.log(`Order ${order.order_number} confirmed SMS skipped — status updates disabled in SmashieSettings`);
-      } else {
-        const consent = await checkSmsConsent(base44, order.customer_phone, 'transactional');
-        if (!consent.ok) {
-          console.log(`Order ${order.order_number} confirmed SMS skipped — no transactional consent (${consent.reason})`);
-        } else {
-          const sent = await sendSmashieSms(order.customer_phone, smashieSmsTemplates.confirmed(order));
-          if (sent) {
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          } else {
-            console.warn(`Order ${order.order_number} confirmed SMS send failed — not marking sent`);
-          }
-        }
-      }
+      await sendOrderStatusSms(base44, order, 'confirmed');
     } catch (smsErr) {
-      console.error(`Order ${order.order_number} confirmed SMS path error (non-blocking):`, smsErr.message);
+      console.error(`Order ${order.order_number} confirmed SMS log failed:`, smsErr.message);
     }
   }
 
@@ -467,7 +480,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   }
 
   // Loyalty — only for new pushes (tied to the Square push)
-  const loyalty = squarePushed ? await processLoyalty(base44, order, squareOrderId) : null;
+  const loyalty = squarePushed && (!order.pay_cash_on_pickup || order.payment_status === 'paid') ? await processLoyalty(base44, order, squareOrderId) : null;
 
   // Customer confirmation email — INDEPENDENT dedupe via confirmation_email_sent_at.
   // Fires exactly once regardless of whether this call did the Square push.

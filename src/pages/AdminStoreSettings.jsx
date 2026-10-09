@@ -7,9 +7,11 @@ import SiteNoticePanel from '@/components/admin/SiteNoticePanel';
 import StoreStatusCard from '@/components/StoreStatusCard';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
+import EarlyClosePanel from '@/components/admin/EarlyClosePanel';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import DeliveryPricingTiers from '@/components/admin/DeliveryPricingTiers';
 import HappyHourPanel from '@/components/admin/HappyHourPanel';
+import ExtraCookPanel from '@/components/admin/ExtraCookPanel';
 
 // Consolidated store operations page: customer notice banner, online ordering
 // toggle, emergency closures, order cutoffs + delivery pause, and business
@@ -37,8 +39,10 @@ export default function AdminStoreSettings() {
       <StoreClosurePanel />
       <OrderCutoffSettings />
       <HappyHourPanel />
+      <ExtraCookPanel />
       <BusinessHoursSettings />
       <DeliveryPricingTiers />
+      <EarlyClosePanel />
     </div>
   );
 }

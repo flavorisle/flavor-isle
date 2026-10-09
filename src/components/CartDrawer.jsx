@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, Users } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ArrowRight, Users, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
 import CartDessertUpsell from './CartDessertUpsell';
 import CartFallingLeaves from './CartFallingLeaves';
+import { optimizedImageUrl } from '@/lib/utils';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
@@ -62,8 +63,10 @@ export default function CartDrawer() {
         <div className="flex items-center justify-between p-6 border-b border-border bg-white">
           <div className="flex items-center gap-3">
             <img
-              src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-              alt="Your cart"
+              src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png', 200, 200, 'fit')}
+              alt="Your bag"
+              width="200"
+              height="200"
               className="w-10 h-10 object-contain"
             />
             <div>
@@ -116,11 +119,13 @@ export default function CartDrawer() {
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-                alt="Your cart"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png', 400, 400, 'fit')}
+                alt="Your bag"
+                width="400"
+                height="400"
                 className="w-28 h-28 object-contain animate-float-up"
               />
-              <p className="font-body">Your cart is empty</p>
+              <p className="font-body">Your bag is empty</p>
               <button
                 onClick={() => setIsCartOpen(false)}
                 className="btn-cherry px-6 py-2.5 text-sm"
@@ -138,12 +143,12 @@ export default function CartDrawer() {
             <>
             {cartItems.map(item => (
               <div key={item.id} className="card-diner p-3 flex gap-3">
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
+                {(item.image_url_opt || item.image_url) && (
+                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
-                  <CartItemModifiers modifiers={item.selectedModifiers} />
+                  <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                   <p className="text-patina-mint font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
 
                   {groupMode && (
@@ -185,8 +190,25 @@ export default function CartDrawer() {
                       <Plus size={12} />
                     </button>
                     <button
+                      onClick={() => {
+                        const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                        if (pid && !pid.startsWith('combo-')) {
+                          setIsCartOpen(false);
+                          // Every line opens for editing with its own choices in
+                          // place, so a wrong topping is unselected here instead
+                          // of the whole line being deleted and redone.
+                          navigate(`/product/${pid}`, { state: { editCartLineId: item.id } });
+                        }
+                      }}
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-heading bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20 transition-colors"
+                      aria-label={`Edit ${item.name}`}
+                      title={`Edit ${item.name}`}
+                    >
+                      <Pencil size={12} /> Edit
+                    </button>
+                    <button
                       onClick={() => removeItem(item.id)}
-                      className="ml-auto p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>

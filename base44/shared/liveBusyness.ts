@@ -16,6 +16,7 @@ import {
   computeRegressedWait,
 } from './busynessStages.ts';
 import { getStoreStatus } from './storeClosure.ts';
+import { getMenuSettingRecord } from './storeState.ts';
 
 export interface LiveBusyness {
   isClosed: boolean;
@@ -80,8 +81,8 @@ export async function getLiveBusyness(base44): Promise<LiveBusyness> {
   // more volume to hit each busyness stage. Auto-expires after the set date.
   let speedFactor = 1;
   try {
-    const settings = await base44.asServiceRole.entities.MenuSetting.list();
-    if (settings?.[0]?.extra_cook_date === today.dateKey) speedFactor = 2;
+    const setting = await getMenuSettingRecord(base44);
+    if (setting?.extra_cook_date === today.dateKey) speedFactor = 2;
   } catch { /* default to normal speed */ }
 
   // Quiet kitchen: with no new order for QUIET_WINDOW_MINUTES, the crew is

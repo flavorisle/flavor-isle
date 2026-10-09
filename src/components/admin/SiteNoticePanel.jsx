@@ -91,7 +91,7 @@ export default function SiteNoticePanel() {
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Show a banner at the top of every page to let customers know about delivery pauses, staffing shortages, driver availability, or special hours.
+          Show a banner at the top of every page to let customers know about delivery pauses, staffing shortages, driver availability, or special hours. Shows as the website banner AND Smashie tells callers the same message on the phone.
         </p>
 
         {/* Tone selector */}

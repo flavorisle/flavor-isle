@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildLoyaltyStatus, accrueForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier } from '../../shared/squareLoyalty.ts';
+import { buildLoyaltyStatus, accrueForOrder, hasAccrualEventForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier, getRewardTierDiscounts, type ResolvedTierDiscount } from '../../shared/squareLoyalty.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -11,12 +11,17 @@ Deno.serve(async (req) => {
     // Primarily driven from the Stripe webhook via the shared module, but
     // exposed for testing / re-runs.
     if (action === 'accrue') {
+      const user = await base44.auth.me().catch(() => null);
+      if (user?.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
       const { square_order_id, email, phone } = body || {};
       if (!square_order_id || (!email && !phone)) {
         return Response.json({ error: 'square_order_id and either email or phone are required' }, { status: 400 });
       }
       try {
-        await accrueForOrder({ squareOrderId: square_order_id, email, phone });
+        const orders = await base44.asServiceRole.entities.Order.filter({ square_order_id });
+        const order = orders?.[0];
+        if (!order || order.payment_status !== 'paid') return Response.json({ error: 'Paid website order not found' }, { status: 404 });
+        await accrueForOrder({ squareOrderId: square_order_id, email: order.customer_email, phone: order.customer_phone, enroll: order.loyalty_opt_in === true, directWebOrderId: order.direct_web_rewards_v2 === true ? order.id : undefined, skipAccrual: await hasAccrualEventForOrder(square_order_id) });
         return Response.json({ success: true });
       } catch (accrueErr) {
         console.error('accrueForOrder failed:', accrueErr.message);
@@ -30,13 +35,22 @@ Deno.serve(async (req) => {
     if (action === 'program') {
       try {
         const program = await getLoyaltyProgram();
-        const rewardTiers = (program?.reward_tiers || []).map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          points: t.points,
-          description: describeRewardTier(t),
-          scope: t.definition?.scope || 'ORDER',
-        }));
+        // Tiers carry a pricing-rule reference rather than an inline discount,
+        // so resolve the rules before describing them.
+        const tierDiscounts = await getRewardTierDiscounts(program).catch((e: Error) => {
+          console.error('Program tier resolution failed:', e.message);
+          return new Map<string, ResolvedTierDiscount>();
+        });
+        const rewardTiers = (program?.reward_tiers || []).map((t: any) => {
+          const resolved = tierDiscounts.get(t.id) || null;
+          return {
+            id: t.id,
+            name: t.name,
+            points: t.points,
+            description: describeRewardTier(t, resolved),
+            scope: resolved?.scope || 'ORDER',
+          };
+        });
         return Response.json({
           programName: program?.name || 'Flavor Isle Star Rewards',
           programStatus: program?.status || 'UNKNOWN',

@@ -4,10 +4,15 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderLookup from '@/components/OrderLookup';
+import Seo from '@/components/Seo';
 
 export default function OrderStatus() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Order Status — Track Your Flavor Isle Order"
+        description="Track your Flavor Isle order from grill to bag. Enter your order number to see live status updates for pickup, delivery, and dine-in."
+      />
       <Navbar />
 
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-3xl mx-auto text-center">

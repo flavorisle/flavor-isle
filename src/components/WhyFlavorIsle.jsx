@@ -12,7 +12,7 @@ const CARDS = [
 
 export default function WhyFlavorIsle() {
   return (
-    <section className="py-20 px-4 sm:px-6 bg-background fall26-section">
+    <section className="pt-8 pb-20 px-4 sm:px-6 bg-background fall26-section">
       <div className="text-center mb-12">
         <p className="font-heading uppercase tracking-widest text-sm mb-3" style={{ color: '#d36a44' }}>
           Why Flavor Isle?
@@ -54,11 +54,11 @@ export default function WhyFlavorIsle() {
                 </h3>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground mb-5 max-w-md">
-                Every direct order earns Flavor Isle loyalty points toward free food — and your first order starts earning right away. Create a free account, order your favorites, and cash points in for shakes, sides, and more. Orders placed through delivery apps don't earn you a thing.
+                Every direct order earns Star Rewards — 1 Star per $1, plus a 10% Star bonus for ordering on flavor-isle.com. Your second online order drops 50 bonus Stars into your account. Create a free account, order your favorites, and cash Stars in for drinks, sides, shakes, and more. Orders placed through delivery apps don't earn you a thing.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
-                  Start Your First Order <ArrowRight size={16} />
+                  Start Your Order <ArrowRight size={16} />
                 </Link>
                 <Link to="/rewards" className="btn-mint inline-flex items-center px-6 py-3 text-sm font-heading">
                   See How Rewards Work

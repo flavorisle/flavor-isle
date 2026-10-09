@@ -8,9 +8,18 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ReviewSection from '@/components/ReviewSection';
-import HeroSection from '@/components/HeroSection';
+import CinematicHero from '@/components/cinematic/CinematicHero';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
+import { optimizedImageUrl } from '@/lib/utils';
+import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
+import Seo from '@/components/Seo';
+import HomeStructuredData from '@/components/schema/HomeStructuredData';
+import MenuStructuredData from '@/components/schema/MenuStructuredData';
+import { getMenuSetting } from '@/lib/menuSettings';
+import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 
 import SocialProofStrip from '@/components/SocialProofStrip';
@@ -27,7 +36,6 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
-import { FallDivider } from '@/components/RetroFallTheme';
 
 
 const SPECIALS_TICKER = [
@@ -49,7 +57,17 @@ const FEATURES = [
 { icon: '🍗', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
 { icon: '🥧', label: 'Homemade Pies', desc: 'Baked fresh every morning' }];
 
+const HOME_DINING_PHOTO = {
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
+  alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
+  caption: 'Pull up a seat. Stay a while.',
+};
 
+const HOME_AWARDS_PHOTO = {
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cfc62ca68_IMG_1046.jpeg',
+  alt: 'Flavor Isle dining room wall with framed local history and awards',
+  caption: 'Best Restaurant in Smiths Grove 2025. Come check the wall yourself.',
+};
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -57,13 +75,63 @@ export default function Home() {
   const businessHours = useBusinessHours();
   const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
   const [menuItems, setMenuItems] = useState([]);
+  const [menuSchemaRows, setMenuSchemaRows] = useState([]);
+  const [menuRenames, setMenuRenames] = useState({});
+  const [shakeRank, setShakeRank] = useState(null);
 
   // Load visible menu items so the Fan Favorites rail can show the real
   // top-10 best-sellers stamped by the refreshFanFavorites backend function.
   useEffect(() => {
-    base44.entities.MenuItem.list()
-      .then((data) => setMenuItems((data || []).filter((i) => !i.is_hidden)))
-      .catch(() => {});
+    let active = true;
+    const load = async () => {
+      for (let attempt = 0; attempt < 3 && active; attempt++) {
+        try {
+          const [data, snapshots] = await Promise.all([
+            base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10),
+            base44.entities.FanFavoriteSnapshot.list('-computed_at', 1),
+          ]);
+          const visible = (data || []).filter((i) => !i.is_hidden);
+          if (!visible.length && attempt < 2) throw new Error('Fan Favorites read returned empty');
+          if (active) {
+            setMenuItems(visible);
+            setShakeRank(snapshots?.[0]?.shake_rank || null);
+          }
+          return;
+        } catch (error) {
+          console.error(`Fan Favorites load failed (attempt ${attempt + 1}/3):`, error);
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+        }
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, []);
+
+  // Menu rows for the page's Menu JSON-LD (the Restaurant block lives in
+  // index.html and is kept fresh by the global RestaurantSchema component).
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      base44.entities.MenuItem.list(),
+      getMenuSetting().catch(() => ({})),
+    ]).then(([allItems, setting]) => {
+      if (!active) return;
+      const hidden = new Set(setting?.hidden_categories || []);
+      const grouped = new Map();
+      for (const item of (allItems || []).filter((entry) => !entry.is_hidden)) {
+        const key = itemCategoryKey(item);
+        if (hidden.has(key)) continue;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(item);
+      }
+      setMenuSchemaRows(sortCategories([...grouped.keys()], setting?.category_sort_order || [])
+        .map((key) => ({
+          key,
+          items: sortItemsInCategory(grouped.get(key), setting?.category_item_order?.[key] || []),
+        })));
+      setMenuRenames(setting?.category_renames || {});
+    }).catch(() => {});
+    return () => { active = false; };
   }, []);
 
   const handleOrder = (type) => {
@@ -73,30 +141,42 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        path="/"
+        title="Flavor Isle | Burgers & Shakes off I-65 Exit 38, Smiths Grove KY"
+        description="Family-owned burgers & shakes spot since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
+        ogTitle="Flavor Isle | Burgers & Shakes off I-65 Exit 38, Smiths Grove KY"
+        ogDescription="Family-owned burgers & shakes spot since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
+        ogImage="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg"
+        ogImageAlt="Flavor Isle burgers & shakes storefront in Smiths Grove, KY"
+      />
+      <HomeStructuredData hours={businessHours} />
+      <MenuStructuredData rows={menuSchemaRows} renames={menuRenames} />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
       <CartDrawer />
 
       <EarlyCloseNotice />
 
-      {/* ── HERO ── */}
-      <HeroSection />
+      {/* ── EXIT 38 PHOTO STORY ── */}
+      <CinematicHero cityLine />
+      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
+      <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
+      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
+      <HomeOrderOptions />
 
       <ExpressPickupStrip />
 
-      {/* ── FAN FAVORITES (dynamic top-10 best-sellers rail) ── */}
-      {menuItems.some((i) => i.is_fan_favorite) && (
+      {(menuItems.length > 0 || shakeRank) && (
         <section className="py-10 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
-            <FanFavoritesSection items={menuItems} />
-            <div className="mt-6">
-              <MilkshakePromoBanner variant="strip" />
-            </div>
+            <FanFavoritesSection items={menuItems} shakeRank={shakeRank} />
           </div>
         </section>
       )}
-
-      {/* ── PROMO BANNERS ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <MilkshakePromoBanner variant="strip" />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <HappyHourBanner />
       </div>
@@ -110,17 +190,11 @@ export default function Home() {
 
       <HeritageBadges />
 
-      <FallDivider />
-
       {/* ── TASTY THREADS MERCH ── */}
       <MerchPromo />
 
-      <FallDivider />
-
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
-
-      <FallDivider />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
@@ -157,9 +231,12 @@ export default function Home() {
             {/* Storefront photo */}
             <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80 group">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
                 alt="Flavor Isle storefront in Smiths Grove, KY"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -185,9 +262,12 @@ export default function Home() {
           <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
             <div className="sm:col-span-2 relative min-h-[180px]">
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 800, 600)}
                 alt="Flavor Isle roadside stand off I-65 Exit 38"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -219,7 +299,7 @@ export default function Home() {
                 <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
                 <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
               </div>
-              <Link to="/contact#faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+              <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
                 View FAQs <ArrowRight size={16} />
               </Link>
             </div>

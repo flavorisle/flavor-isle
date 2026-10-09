@@ -2,6 +2,8 @@ import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
+import { normalizeReferralCode } from '../../shared/referral.ts';
 
 // Group / split payment:
 // Creates ONE order record for the whole group (so the kitchen sees a single
@@ -18,15 +20,24 @@ Deno.serve(async (req) => {
       scheduledFor, estimatedTime,
       splits, // [{ person_name, subtotal, tax, deliveryFee, tip, total }]
       groupName,
-      happyHourDiscount,
+      happyHourDiscount, bundleDiscount, loyaltyOptIn,
       smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion,
+      referralCode,
     } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
     }
+
+    // Blocked customers cannot complete an online checkout.
+    if (await findBlock(base44, { phone: customer?.phone, email: customer?.email })) {
+      return Response.json({ error: 'We are not able to take this order online. Please call the store at (270) 563-4618.' }, { status: 403 });
+    }
     if (!splits || splits.length === 0) {
       return Response.json({ error: 'No payment splits provided' }, { status: 400 });
+    }
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(String(customer?.phone || '').replace(/[\s().-]/g, ''))) {
+      return Response.json({ error: 'Enter a valid phone number to join Star Rewards, or uncheck the optional box.' }, { status: 400 });
     }
 
     // ── Trusted pricing: recompute the GROUP total authoritatively ──
@@ -41,6 +52,7 @@ Deno.serve(async (req) => {
       clientTip: tip,
       clientDiscount: 0, // group/separate flow does not apply a reward
       clientHappyHourDiscount: happyHourDiscount,
+      clientBundleDiscount: bundleDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -79,7 +91,7 @@ Deno.serve(async (req) => {
           name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '',
           selectedModifiers: i.selectedModifiers || [], person_name: i.person_name || '',
           catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '',
-          isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [],
+          isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [], allergyNote: i.allergyNote || '',
         })),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
@@ -87,6 +99,11 @@ Deno.serve(async (req) => {
         tip: pricing.tip,
         discount: 0,
         happy_hour_discount: pricing.happyHourDiscount,
+        bundle_discount: pricing.bundleDiscount || 0,
+        bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
+        loyalty_opt_in: loyaltyOptIn === true,
+        referral_code: normalizeReferralCode(referralCode),
+        direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,

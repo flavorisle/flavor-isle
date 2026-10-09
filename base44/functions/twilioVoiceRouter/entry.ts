@@ -1,4 +1,5 @@
 import { secrets } from 'base44:runtime';
+import { fastGreetingResponse } from '../../shared/smashieFastGreeting.ts';
 
 export default async function(req) {
   try {
@@ -8,6 +9,11 @@ export default async function(req) {
     incomingUrl.searchParams.forEach((value, key) => upstreamUrl.searchParams.set(key, value));
 
     const body = await req.text();
+    const params = req.headers.get('content-type')?.includes('application/json')
+      ? new URLSearchParams(JSON.parse(body || '{}'))
+      : new URLSearchParams(body);
+    const greeting = fastGreetingResponse(incomingUrl, params);
+    if (greeting) return greeting;
     const upstream = await fetch(upstreamUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

@@ -5,8 +5,8 @@ import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/de
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
-const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FUNCTION_BASE = 'https://flavor-isle.com';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Internal/test emails that should never receive a recommendation email.
 const SKIP_EMAILS = new Set([
@@ -86,7 +86,7 @@ function trackedLink(path, linkId, orderId) {
 
 function heroCardHtml(item, orderId) {
   const link = trackedLink('/menu', 'recommendation_item', orderId);
-  const img = item.image_url || '';
+  const img = item.image_url_opt || item.image_url || '';
   const price = typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : '';
   const copy = itemCopy(item);
   return `
@@ -214,6 +214,19 @@ export default async function (req: Request) {
     const orderedMainCats = buckets.MAIN.map((b) => b.menuItem?.category || '').filter(Boolean);
     const orderedNamesLower = new Set((order.items || []).map((i) => (i.name || '').toLowerCase()));
 
+    // A MAIN counts as a burger if its category is 'burgers' or its name
+    // matches /burger|melt|hamburger/ (consistent with bucketItem). The
+    // MAIN-only branch uses this to send a combo-builder savings email
+    // instead of a side + dessert pairing when the customer ordered a
+    // burger solo — non-burger mains (chicken, hot dogs, etc.) keep the
+    // existing pairing email.
+    const orderedBurger = buckets.MAIN.find((b) => {
+      const cat = (b.menuItem?.category || '').toLowerCase();
+      const name = (b.menuItem?.name || b.orderItem?.name || '').toLowerCase();
+      return cat === 'burgers' || /burger|melt|hamburger/.test(name);
+    });
+    const orderedBurgerName = orderedBurger?.menuItem?.name || orderedBurger?.orderItem?.name || 'Your burger';
+
     // Load the customer's past suggestions so we avoid repeating the same items
     // where fresh alternatives exist (the 7-day send suppression above is
     // preserved separately and unaffected by this selection preference).
@@ -264,16 +277,31 @@ export default async function (req: Request) {
       if (subject.length > 45) subject = 'Next time, try something new 🍔';
       bodyLine = `You've got great taste — the ${orderedMain} is a classic. But the ${suggested} is the one the regulars whisper about.`;
     } else if (hasMain && !hasSide && !hasDessert) {
-      // (c) MAIN only → fan-favorite side + dessert pairing
-      emailType = 'pairing';
-      const dessertPool = available('DESSERT');
-      if (dessertPool.length === 0) {
-        return markRecSkippedAndRelease(base44, order, 'no non-malt/sundae dessert for pairing');
+      // (c) MAIN only → burger? combo-builder savings email : side + dessert pairing.
+      // Burgers ordered solo get a combo-builder nudge (no side rec — the combo
+      // already includes one). Non-burger mains keep the existing pairing email.
+      if (orderedBurger) {
+        emailType = 'combo_builder';
+        // No item cards — this is a savings nudge, not an item recommendation.
+        recommendations = [];
+        const burgerName = orderedBurgerName;
+        subject = `Your ${burgerName} costs less as a combo 🍔`;
+        if (subject.length > 45) subject = 'Combo it next time 🍔';
+        // /combos renders a "Coming Soon" teaser on the public website and the
+        // live builder only inside the native app/PWA, so frame the copy as
+        // "in the app" so web recipients aren't sent to a dead end.
+        bodyLine = `Your ${burgerName} was great solo — but the regulars build theirs as a combo. Next time, grab the app to build your combo: pair a main, a side, and a drink and pay less than ordering them separately.`;
+      } else {
+        emailType = 'pairing';
+        const dessertPool = available('DESSERT');
+        if (dessertPool.length === 0) {
+          return markRecSkippedAndRelease(base44, order, 'no non-malt/sundae dessert for pairing');
+        }
+        recommendations = [pick(available('SIDE'), 1)[0], pick(dessertPool, 1)[0]].filter(Boolean);
+        const mainName = orderedMainNames[0] || 'your burger';
+        subject = 'Complete the combo 🍟';
+        bodyLine = `${mainName} is a great start — but the regulars know it's the side + sweet pairing that makes a meal. Next time, round it out.`;
       }
-      recommendations = [pick(available('SIDE'), 1)[0], pick(dessertPool, 1)[0]].filter(Boolean);
-      const mainName = orderedMainNames[0] || 'your burger';
-      subject = 'Complete the combo 🍟';
-      bodyLine = `${mainName} is a great start — but the regulars know it's the side + sweet pairing that makes a meal. Next time, round it out.`;
     } else if (!hasMain && hasDessert && !hasSide) {
       // (d) DESSERT only → fan-favorite main
       emailType = 'pairing';
@@ -295,10 +323,14 @@ export default async function (req: Request) {
       bodyLine = `Next time you're craving Flavor Isle, save room for something sweet — the regulars swear by it.`;
     }
 
-    // Photos are mandatory — drop any without one
-    recommendations = recommendations.filter((r) => r && r.image_url);
-    if (recommendations.length === 0) {
-      return markRecSkippedAndRelease(base44, order, 'no recommended items with photos');
+    // Photos are mandatory — drop any without one. The combo_builder email
+    // carries no item recommendations (it's a savings nudge), so it skips
+    // this filter — an empty recommendations list there is expected.
+    if (emailType !== 'combo_builder') {
+      recommendations = recommendations.filter((r) => r && r.image_url);
+      if (recommendations.length === 0) {
+        return markRecSkippedAndRelease(base44, order, 'no recommended items with photos');
+      }
     }
 
     // Tag buckets for copy generation
@@ -308,7 +340,12 @@ export default async function (req: Request) {
     const customerName = (order.customer_name || 'friend').split(' ')[0];
     const heading = subject.replace(/[🍦🍔🍟]/gu, '').trim();
     const heroCards = recommendations.map((r) => heroCardHtml(r, order.id)).join('');
-    const ctaLink = trackedLink('/menu', 'recommendation_cta', order.id);
+    // Combo-builder emails CTA to /combos (tracked as recommendation_combo_builder);
+    // all other types CTA to the menu.
+    const ctaLink = emailType === 'combo_builder'
+      ? trackedLink('/combos', 'recommendation_combo_builder', order.id)
+      : trackedLink('/menu', 'recommendation_cta', order.id);
+    const ctaLabel = emailType === 'combo_builder' ? 'BUILD YOUR COMBO →' : 'ORDER AHEAD AT FLAVOR ISLE →';
 
     const bodyHtml = `
       <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${customerName},</p>
@@ -316,9 +353,9 @@ export default async function (req: Request) {
       <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">${bodyLine}</p>
       ${heroCards}
       <div style="text-align:center;margin:28px 0 8px;">
-        <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:16px 40px;border-radius:999px;font-size:16px;">ORDER AHEAD AT FLAVOR ISLE →</a>
+        <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:16px 40px;border-radius:999px;font-size:16px;">${ctaLabel}</a>
       </div>
-      <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:smashie@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
+      <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
     `;
 
     const html = brandedEmailHtml(bodyHtml);

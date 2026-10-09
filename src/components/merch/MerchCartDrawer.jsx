@@ -34,7 +34,7 @@ export default function MerchCartDrawer() {
               <ShoppingBag size={20} className="text-midnight-cherry" />
             </div>
             <div>
-              <h2 className="font-heading text-lg text-obsidian-roast">Tasty Threads Cart</h2>
+              <h2 className="font-heading text-lg text-obsidian-roast">Tasty Threads Bag</h2>
               <p className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
             </div>
           </div>
@@ -48,7 +48,7 @@ export default function MerchCartDrawer() {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <ShoppingBag size={56} className="opacity-30" />
-              <p className="font-body">Your merch cart is empty</p>
+              <p className="font-body">Your merch bag is empty</p>
               <button onClick={() => setIsCartOpen(false)} className="btn-cherry px-6 py-2.5 text-sm">
                 Browse Tasty Threads
               </button>

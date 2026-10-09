@@ -9,7 +9,9 @@
 //  - Catalog modifier price: MenuItem.modifiers[].modifiers[].price matched by id (authoritative)
 //  - Ad-hoc modifier price:  client selectedModifier.price (trusted — see BLOCKER note)
 //  - Happy Hour:             MenuSetting.happy_hour (authoritative, online-only 2–6 PM Chicago)
-//  - Tax:                    6% of (subtotal − discount − happyHour) (derived)
+//  - Tax:                    6% of (subtotal − discount − happyHour), in whole
+//                            cents rounded half up (derived — see taxMath.ts,
+//                            mirrored by src/lib/tax.js on the client)
 //  - Delivery fee:           getDeliveryQuote (tiers) or MenuSetting.delivery_fee (flat) (authoritative)
 //  - Reward discount:        client value, capped at adjusted subtotal (trusted — see BLOCKER note)
 //  - Tip:                    client value, clamped ≥ 0 (customer choice, not validated)
@@ -29,9 +31,12 @@
 //    clientDiscount, so the total check below confirms it.
 
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
+import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
+import { isBundleLine, bundleDiscountForLines, FAMILY_BUNDLE_INCLUDED_OPTION_IDS } from './familyBundle.ts';
+import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
+import { getMenuSettingRecord } from './storeState.ts';
 
-const TAX_RATE = 0.06;
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
 
 function round2(n: number): number {
@@ -39,13 +44,31 @@ function round2(n: number): number {
 }
 
 // Build a modifier-option id → authoritative price map from a MenuItem record.
-function buildModifierPriceMap(menuItem: any): Record<string, number> {
+function buildModifierPriceMap(
+  menuItem: any,
+  optionPriceOverrides: Record<string, number> = {},
+): Record<string, number> {
   const map: Record<string, number> = {};
-  for (const group of (menuItem?.modifiers || [])) {
-    for (const opt of (group?.modifiers || [])) {
-      if (opt?.id) map[opt.id] = Number(opt.price) || 0;
+  // Nested modifier lists (Square child_modifier_lists — sauce Lite/Extra
+  // preferences, soda ice/flavor follow-ups) are chosen by the customer and
+  // carried on the line, so their authoritative prices belong in this map too.
+  // Without them any order containing a nested choice was rejected as an
+  // unknown modifier. Prices still come from the catalog, never the client.
+  const walk = (groups: any[]) => {
+    for (const group of (groups || [])) {
+      for (const opt of (group?.modifiers || [])) {
+        if (!opt?.id) continue;
+        // An admin price override (Menu Manager → Modifiers) wins over the
+        // Square catalog price, so the server charges exactly what the customer
+        // was shown. Mirrored client-side by src/lib/modifierOverrides.js.
+        map[opt.id] = optionPriceOverrides[opt.id] != null
+          ? Number(optionPriceOverrides[opt.id]) || 0
+          : Number(opt.price) || 0;
+        walk(opt.child_modifier_lists);
+      }
     }
-  }
+  };
+  walk(menuItem?.modifiers);
   return map;
 }
 
@@ -57,6 +80,7 @@ async function validateComboItem(
   base44: any,
   item: any,
   menuBySquareId: Map<string, any>,
+  optionPriceOverrides: Record<string, number> = {},
 ): Promise<{ ok: boolean; error?: string; lineUnitPrice?: number }> {
   const components = item.comboComponents as any[];
   let originalTotal = 0;
@@ -66,7 +90,7 @@ async function validateComboItem(
     const mi = menuBySquareId.get(sqId);
     if (!mi) return { ok: false, error: `Combo component "${comp.name || sqId}" is no longer available. Please rebuild the combo and try again.` };
     let compTotal = Number(mi.price) || 0;
-    const modPriceMap = buildModifierPriceMap(mi);
+    const modPriceMap = buildModifierPriceMap(mi, optionPriceOverrides);
     for (const sm of (comp.selectedModifiers || [])) {
       if (!sm) continue;
       if (sm.id && sm.id in modPriceMap) {
@@ -99,6 +123,7 @@ export interface PricingResult {
   error?: string;
   subtotal?: number;
   happyHourDiscount?: number;
+  bundleDiscount?: number;
   tax?: number;
   deliveryFee?: number;
   discount?: number;
@@ -121,11 +146,12 @@ export async function verifyOrderPricing(base44: any, opts: {
   clientTip?: number;
   clientDiscount?: number;
   clientHappyHourDiscount?: number;
+  clientBundleDiscount?: number;
 }): Promise<PricingResult> {
   const {
     items, orderType, deliveryAddress,
     clientSubtotal, clientDeliveryFee, clientTax, clientTotal,
-    clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0,
+    clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0, clientBundleDiscount = 0,
   } = opts;
 
   if (!items || items.length === 0) return { ok: false, error: 'No items provided' };
@@ -133,12 +159,17 @@ export async function verifyOrderPricing(base44: any, opts: {
   const warnings: string[] = [];
 
   // ── Load MenuSetting + MenuItems ──
-  const settings = await base44.asServiceRole.entities.MenuSetting.list();
-  const setting = settings?.[0] || {};
+  // The single pinned settings record — the same one the website and Smashie read.
+  const setting = await getMenuSettingRecord(base44);
   const hh = getHappyHourConfig(setting);
   const hhActive = isHappyHourActive(setting);
   const pct = (hh.discount_percent || 0) / 100;
   const hhIds = new Set(hh.square_item_ids || []);
+  // Admin modifier price overrides. MenuItem.modifiers keeps the full Square
+  // catalog (so the admin panel can always list and un-hide everything) and the
+  // overrides live on MenuSetting — applied here so the charge matches the price
+  // the customer was shown.
+  const optionPrices = getOptionPriceOverrides(setting);
 
   const allMenuItems = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 500);
   const menuBySquareId = new Map<string, any>();
@@ -146,15 +177,19 @@ export async function verifyOrderPricing(base44: any, opts: {
     if (mi.square_item_id) menuBySquareId.set(mi.square_item_id, mi);
   }
 
-  // ── Recompute line prices + Happy Hour ──
+  // ── Recompute line prices + Happy Hour + family bundle ──
   let serverSubtotal = 0;
   let serverHappyHour = 0;
+  // Per bundle-line included money, grouped so each added bundle pays its fixed
+  // price once. The discount is recomputed from the catalog below.
+  const bundleLines: Array<{ bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
     const sqId = item.square_item_id || item.catalog_object_id;
     const menuItem = sqId ? menuBySquareId.get(sqId) : null;
 
     let lineUnitPrice: number;
+    let bundleExtras = 0;
     if (menuItem) {
       // Authoritative base + authoritative catalog modifier prices. A catalog
       // item's modifiers MUST reference a real catalog option id — Deluxe
@@ -163,7 +198,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       // trusting the client-supplied price (closes the ad-hoc modifier trust
       // gap and enforces permitted selections).
       lineUnitPrice = Number(menuItem.price) || 0;
-      const modPriceMap = buildModifierPriceMap(menuItem);
+      const modPriceMap = buildModifierPriceMap(menuItem, optionPrices);
       for (const sm of (item.selectedModifiers || [])) {
         if (!sm) continue;
         if (sm.id && sm.id in modPriceMap) {
@@ -171,6 +206,16 @@ export async function verifyOrderPricing(base44: any, opts: {
         } else {
           return { ok: false, error: `Modifier "${sm.name || sm.id || 'unknown'}" is not a permitted selection for ${item.name || 'this item'}. Please refresh the menu and try again.` };
         }
+      }
+      // Family bundle line: the priced options the bundle does NOT already
+      // include (jalapeños, extra-level lettuce/tomato, drink flavor shots,
+      // cake toppings) are the customer's paid extras and stay on top.
+      if (isBundleLine(item)) {
+        bundleExtras = (item.selectedModifiers || []).reduce((sum: number, sm: any) => {
+          if (!sm) return sum;
+          if (FAMILY_BUNDLE_INCLUDED_OPTION_IDS.has(sm.id)) return sum;
+          return sum + (sm.id && sm.id in modPriceMap ? modPriceMap[sm.id] : 0);
+        }, 0);
       }
     } else if (sqId) {
       // square_item_id present but not in our catalog — reject (unknown item).
@@ -182,7 +227,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       // comboConfigId). Each component must reference a real square_item_id with
       // id'd modifiers (same enforcement as a catalog item).
       if (Array.isArray(item.comboComponents) && item.comboComponents.length > 0) {
-        const comboResult = await validateComboItem(base44, item, menuBySquareId);
+        const comboResult = await validateComboItem(base44, item, menuBySquareId, optionPrices);
         if (!comboResult.ok) return comboResult;
         lineUnitPrice = comboResult.lineUnitPrice!;
       } else {
@@ -202,17 +247,30 @@ export async function verifyOrderPricing(base44: any, opts: {
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
 
-    if (hhActive && pct > 0 && sqId && hhIds.has(sqId)) {
+    if (isBundleLine(item)) {
+      bundleLines.push({ bundleGroup: item.bundleGroup, includedUnitPrice: round2(lineUnitPrice - bundleExtras), quantity: qty });
+    }
+
+    // A bundle line is never also Happy-Hour discounted — the bundle price is
+    // the whole deal and stacking both would undercut its fixed price.
+    if (hhActive && pct > 0 && sqId && hhIds.has(sqId) && !isBundleLine(item)) {
       serverHappyHour += lineTotal * pct;
     }
   }
 
   serverSubtotal = round2(serverSubtotal);
   serverHappyHour = round2(serverHappyHour);
-  const adjustedSubtotal = round2(serverSubtotal - serverHappyHour);
+  const serverBundleDiscount = bundleDiscountForLines(bundleLines);
+  const adjustedSubtotal = round2(serverSubtotal - serverHappyHour - serverBundleDiscount);
 
   // ── Tax ──
-  const serverTax = round2(adjustedSubtotal * TAX_RATE);
+  // Whole cents, rounded half up — the identical rule the client cart/checkout
+  // uses (taxMath.ts ↔ src/lib/tax.js). Float tax on an odd-cent subtotal
+  // rounded the half-cent the other way ($3.25 × 6% = $0.195) and rejected
+  // genuinely correct carts with a total mismatch.
+  const adjustedCents = toCents(adjustedSubtotal);
+  const taxCents = salesTaxCents(adjustedCents);
+  const serverTax = fromCents(taxCents);
 
   // ── Delivery fee (authoritative) ──
   let serverDeliveryFee = 0;
@@ -243,12 +301,16 @@ export async function verifyOrderPricing(base44: any, opts: {
   // ── Reward discount (capped, trusted) + tip (trusted) ──
   const serverDiscount = round2(Math.min(Math.max(0, clientDiscount), adjustedSubtotal));
   const serverTip = Math.max(0, Number(clientTip) || 0);
-  const serverTotal = round2(Math.max(0, adjustedSubtotal + serverDeliveryFee + serverTax - serverDiscount) + serverTip);
+  // Total assembled in whole cents so it is exactly the sum the client shows.
+  const serverTotal = fromCents(
+    Math.max(0, adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount)) + toCents(serverTip),
+  );
 
   // ── Validate each authoritative component against the client ──
   const checks: Array<[number, number, string]> = [
     [serverSubtotal, clientSubtotal, 'subtotal'],
     [serverHappyHour, clientHappyHourDiscount, 'happy hour discount'],
+    [serverBundleDiscount, clientBundleDiscount, 'bundle discount'],
     [serverTax, clientTax, 'tax'],
     [serverDeliveryFee, clientDeliveryFee, 'delivery fee'],
     [serverTotal, clientTotal, 'total'],
@@ -270,6 +332,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     ok: true,
     subtotal: serverSubtotal,
     happyHourDiscount: serverHappyHour,
+    bundleDiscount: serverBundleDiscount,
     tax: serverTax,
     deliveryFee: serverDeliveryFee,
     discount: serverDiscount,

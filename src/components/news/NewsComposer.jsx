@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 
 const CATEGORIES = [
   { value: 'community_event', label: 'Community Event' },
-  { value: 'diner_update', label: 'Diner Update' },
+  { value: 'diner_update', label: 'Restaurant Update' },
   { value: 'local_partnership', label: 'Local Partnership' },
 ];
 

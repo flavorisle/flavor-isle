@@ -13,6 +13,7 @@ import {
 import useSmsConsentStatus from '@/hooks/useSmsConsentStatus';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 
 export default function SMSSignup() {
   const { status, phone: cachedPhone, loading } = useSmsConsentStatus(true);
@@ -62,6 +63,10 @@ export default function SMSSignup() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="SMS Sign-Up — Order Updates & Offers | Flavor Isle, Smiths Grove KY"
+        description="Sign up for Flavor Isle text alerts. Get order status updates (confirmed, preparing, ready) and optional promotional offers. Reply STOP to cancel anytime."
+      />
       <Navbar />
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-8">

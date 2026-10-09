@@ -38,6 +38,7 @@ const GROUPS = [
       { label: 'Gallery', to: '/gallery' },
       { label: 'Community News', to: '/community-news' },
       { label: 'Reviews', to: '/reviews' },
+      { label: 'I-65 Exit 38 Guide', to: '/i65-exit-38' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },
@@ -47,8 +48,10 @@ const GROUPS = [
     links: [
       { label: 'About Us', to: '/about' },
       { label: 'Contact & Location', to: '/contact' },
+      { label: 'FAQ', to: '/faq' },
       { label: 'What to Expect', to: '/what-to-expect' },
       { label: 'Get the App', to: '/download' },
+      { label: 'Newsletter', to: '/newsletter' },
     ],
   },
 ];

@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, UtensilsCrossed, User, ShoppingBag, Shirt, Bot } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Routes where the persistent bottom tab bar would conflict with a
 // full-screen flow (e.g. the sticky checkout CTA), so we hide it.
@@ -18,7 +19,7 @@ export default function BottomTabBar() {
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
     { to: '/merch', label: 'Merch', icon: Shirt },
-    { cart: true, label: 'Cart', icon: ShoppingBag },
+    { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
   ];
@@ -56,14 +57,18 @@ export default function BottomTabBar() {
               <span className="relative">
                 {tab.cart ? (
                   <img
-                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png"
-                    alt="Cart"
+                    src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png', 160, 160, 'fit')}
+                    alt="Your bag"
+                    width="160"
+                    height="160"
                     className="w-8 h-8 object-contain"
                   />
                 ) : tab.smashie ? (
                   <img
-                    src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png"
+                    src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png', 160, 160)}
                     alt="Smashie"
+                    width="160"
+                    height="160"
                     className={`w-8 h-8 object-cover rounded-full ${active ? 'ring-2 ring-midnight-cherry' : ''}`}
                   />
                 ) : (
@@ -91,7 +96,7 @@ export default function BottomTabBar() {
                 key="cart"
                 onClick={() => setIsCartOpen(true)}
                 className="tap-44 flex-1 flex items-center justify-center select-none"
-                aria-label={`Cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
+                aria-label={`Bag, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
               >
                 {content}
               </button>

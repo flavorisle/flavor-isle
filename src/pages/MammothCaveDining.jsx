@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain, IceCream2 } from 'lucide-react';
+import { Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import { optimizedImageUrl } from '@/lib/utils';
 import { hoursGroups } from '@/lib/businessHours';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
+import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 
@@ -16,15 +19,19 @@ export default function MammothCaveDining() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Flavor Isle | Kid-Friendly Burger & Shake Stop Near Mammoth Cave National Park"
+        title="Mammoth Cave Dining — Flavor Isle, Smiths Grove KY"
         description="15 minutes from Mammoth Cave on I-65 Exit 38 — hand-patted burgers, thick shakes, and crinkle fries the kids will love. Order ahead online and eat on your way to or from the caves."
+        ogTitle="Mammoth Cave Restaurants — Eat at Flavor Isle | Smiths Grove, KY"
+        ogDescription="Visiting Mammoth Cave National Park? Flavor Isle is about 30 minutes away in Smiths Grove — burgers, shakes and quick pickup for cave-bound travelers."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e14074219_card-mammoth.png"
+        ogImageAlt="Flavor Isle Mammoth Cave dining share card"
       />
       <Navbar />
 
       {/* Hero */}
       <section className="relative bg-patina-mint text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <img src={BUILDING} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(BUILDING, 1600, 900)} alt="" width="1600" height="900" loading="eager" fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
         </div>
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full font-heading text-sm tracking-wide mb-6">
@@ -50,32 +57,10 @@ export default function MammothCaveDining() {
         </div>
       </section>
 
-      {/* Cave Explorer Combo callout */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
-        <div className="card-diner overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 items-stretch">
-            <div className="p-6 sm:p-8 flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
-                <IceCream2 size={14} /> CAVE EXPLORER COMBO
-              </div>
-              <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">Burger + Crinkle Fries + Shake</h2>
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Open any burger on our menu and tap <strong>“Make it an Isle Combo”</strong> to add Crinkle Fries and a hand-spun shake — and save $1.50. The perfect fuel for little explorers (and hungry grown-ups too).
-              </p>
-              <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
-                Build Your Combo <ArrowRight size={16} />
-              </Link>
-            </div>
-            <div className="relative min-h-[200px] bg-patina-mint/10 flex items-center justify-center p-6">
-              <div className="text-center">
-                <div className="font-heading text-5xl text-midnight-cherry">Save $1.50</div>
-                <p className="text-sm text-muted-foreground mt-2">on every Isle Combo</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
+
+      <PhotoChapter photo={islePhotos.burger} heading="Add Flavor Isle to your route." action="Order Now" />
+      <PhotoChapter photo={islePhotos.chickenFries} heading="Fuel up before the caves." action="Get Directions" to="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" />
       {/* Directions */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
         <div className="text-center mb-6">

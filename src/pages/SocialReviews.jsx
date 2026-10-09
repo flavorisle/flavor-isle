@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import InstagramReviewForm from '@/components/social/InstagramReviewForm';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
+import Seo from '@/components/Seo';
 import { useAuth } from '@/lib/AuthContext';
 
 const STEPS = [
@@ -18,6 +19,10 @@ export default function SocialReviews() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Instagram Reviews & Rewards — Flavor Isle | Smiths Grove, KY"
+        description="Share your Flavor Isle visit on Instagram and earn 100 loyalty points. Post a photo or video, drop the link, and get rewarded."
+      />
       <Navbar />
 
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-3xl mx-auto text-center">

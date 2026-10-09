@@ -4,7 +4,9 @@ import { ShoppingBag, AlertCircle, Shirt, Clock, Truck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 import ProductCard from '@/components/merch/ProductCard';
+import { optimizedImageUrl } from '@/lib/utils';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ProductDetailModal from '@/components/merch/ProductDetailModal';
@@ -105,7 +107,7 @@ export default function Merch() {
   const handleAdd = (item) => {
     addItem(item);
     setActiveProduct(null);
-    toast({ title: 'Added to cart', description: `${item.name} — ${item.variantName}` });
+    toast({ title: 'Added to bag', description: `${item.name} — ${item.variantName}` });
     setIsCartOpen(true);
   };
 
@@ -136,6 +138,15 @@ export default function Merch() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        path="/merch"
+        title="Tasty Threads — Flavor Isle Merch & Apparel"
+        description="Flavor Isle tees, cups, and gear printed on demand and shipped to your door. Show your love for the Isle's hand-patted burgers and thick shakes."
+        ogTitle="Tasty Threads — Flavor Isle Merch"
+        ogDescription="Flavor Isle tees and merch. Show your love for the Isle's hand-patted burgers and thick shakes."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e599b55ba_card-merch.png"
+        ogImageAlt="Flavor Isle Tasty Threads merch share card"
+      />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <Navbar />
 
@@ -162,9 +173,12 @@ export default function Merch() {
                 <Shirt size={12} /> Est. 1964 · Flavor Isle
               </div>
               <img
-                src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png"
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png', 800, 600, 'fit')}
                 alt="Tasty Threads — Flavor Isle Apparel, est. 1964"
+                width="800"
+                height="600"
                 loading="lazy"
+                decoding="async"
                 className="w-full max-w-sm h-auto bg-white rounded-2xl p-4 mb-6 shadow-float"
               />
               <p className="text-gray-200 max-w-xl text-lg leading-relaxed">

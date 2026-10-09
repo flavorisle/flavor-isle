@@ -1,5 +1,5 @@
 {
-  "description": "Weekly refresh of the top 10 best-selling menu items (online + in-store) for the Fan Favorites rail on the Menu page.",
+  "description": "Daily refresh of the top 10 best-selling menu items (online + in-store) for the Fan Favorites rail on the Menu page.",
   "definition": {
     "document": {
       "dsl": "1.0.0",
@@ -31,7 +31,7 @@
       "trigger_type": "scheduled",
       "events": [],
       "schedule_mode": "recurring",
-      "cron_expression": "0 3 * * 1",
+      "cron_expression": "0 3 * * *",
       "one_time_date": null,
       "timezone": "America/Chicago",
       "interval_value": null,

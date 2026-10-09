@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Bot, Save, Loader2, Check, Facebook } from 'lucide-react';
+import SmashieAbilities from './SmashieAbilities';
+import SmashieKnowledge, { INITIAL_TOPICS } from './SmashieKnowledge';
+import SmashieToolInventory from './SmashieToolInventory';
+import SmashieStoreMirror from './SmashieStoreMirror';
+
+// The one live SmashieSettings record. Reads and writes are pinned to it, and
+// this panel never creates a second record.
+const SMASHIE_SETTINGS_ID = '6a7fd236b64dc1a4c8de4ae0';
 
 // Edits the single SmashieSettings record. These values are read at runtime by
 // the Twilio webhooks (greeting + toggles) and the order-status sync (SMS
@@ -9,22 +17,37 @@ export default function SmashieSettingsPanel() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   const load = async () => {
+    setError('');
     try {
-      const all = await base44.entities.SmashieSettings.list();
+      // Pinned to the single live record; the first record is only a fallback for
+      // the case where that id is gone. Nothing here creates a record.
+      const pinned = await base44.entities.SmashieSettings.get(SMASHIE_SETTINGS_ID).catch(() => null);
+      const all = pinned ? [pinned] : await base44.entities.SmashieSettings.list();
       if (all && all.length > 0) {
-        setSettings(all[0]);
+        setSettings({ ...all[0], knowledge_topics: all[0].knowledge_topics ?? INITIAL_TOPICS });
       } else {
         setSettings({
           greeting: "Hey there, welcome to Flavor Isle! This is Smashie. What can I get started for you today?",
           sms_status_updates_enabled: true,
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
+          phone_cash_enabled: true,
+          phone_payment_provider: 'stripe',
+          realtime_sip_enabled: false,
+          googleReviewSmsEnabled: true,
+          day14ShowcaseEmailEnabled: false,
+          day45NudgeEmailEnabled: false,
+          sip_transfer_target: "",
           personality_notes: "",
+          phone_intro: "",
+          capabilities: {},
+          knowledge_topics: INITIAL_TOPICS,
         });
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setError('Could not load Smashie’s settings.'); }
   };
 
   useEffect(() => { load(); }, []);
@@ -32,38 +55,41 @@ export default function SmashieSettingsPanel() {
   const update = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
     setSaved(false);
+    setError('');
   };
 
   const save = async () => {
     setSaving(true);
     try {
-      if (settings.id) {
-        await base44.entities.SmashieSettings.update(settings.id, {
-          greeting: settings.greeting,
-          sms_status_updates_enabled: settings.sms_status_updates_enabled,
-          sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
-          voice_ordering_enabled: settings.voice_ordering_enabled,
-          personality_notes: settings.personality_notes,
-          facebook_access_token: settings.facebook_access_token,
-        });
-      } else {
-        const created = await base44.entities.SmashieSettings.create({
-          greeting: settings.greeting,
-          sms_status_updates_enabled: settings.sms_status_updates_enabled,
-          sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
-          voice_ordering_enabled: settings.voice_ordering_enabled,
-          personality_notes: settings.personality_notes,
-          facebook_access_token: settings.facebook_access_token,
-        });
-        setSettings(created);
-      }
+      // The single pinned record. There is no create path any more: a missing
+      // record fails the save instead of forking the settings into a duplicate.
+      if (!settings.id) throw new Error('The Smashie settings record could not be found, so nothing was saved. Reload the page and try again.');
+      await base44.entities.SmashieSettings.update(settings.id, {
+        greeting: settings.greeting,
+        sms_status_updates_enabled: settings.sms_status_updates_enabled,
+        sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
+        voice_ordering_enabled: settings.voice_ordering_enabled,
+        phone_cash_enabled: settings.phone_cash_enabled !== false,
+        phone_payment_provider: settings.phone_payment_provider === 'square' ? 'square' : 'stripe',
+        realtime_sip_enabled: settings.realtime_sip_enabled,
+        googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
+        day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
+        day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
+        personality_notes: settings.personality_notes,
+        facebook_access_token: settings.facebook_access_token,
+        sip_transfer_target: settings.sip_transfer_target,
+        phone_intro: settings.phone_intro || '',
+        capabilities: settings.capabilities || {},
+        knowledge_topics: settings.knowledge_topics || [],
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setError('Could not save Smashie’s settings. Please try again.'); }
     setSaving(false);
   };
 
   if (!settings) {
+    if (error) return <div role="alert" className="card-diner p-5"><p>{error}</p><button onClick={load} className="btn-cherry px-5 py-3 mt-3">Try again</button></div>;
     return (
       <div className="flex justify-center py-12">
         <div className="w-8 h-8 border-4 border-gray-200 border-t-midnight-cherry rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
@@ -73,13 +99,15 @@ export default function SmashieSettingsPanel() {
 
   return (
     <div className="space-y-6">
+      <SmashieStoreMirror />
+
       {/* Greeting */}
       <div className="card-diner p-5">
         <div className="flex items-center gap-2 mb-3">
           <Bot size={18} className="text-midnight-cherry" />
           <h3 className="font-heading text-obsidian-roast">Smashie's Greeting</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">The first thing Smashie says on a phone call or when replying to an SMS.</p>
+        <p className="text-xs text-muted-foreground mb-3">Fallback reply if Smashie can't answer a text. The separate phone introduction below is spoken on calls.</p>
         <textarea
           value={settings.greeting || ''}
           onChange={e => update('greeting', e.target.value)}
@@ -87,6 +115,17 @@ export default function SmashieSettingsPanel() {
           className="w-full px-4 py-3 bg-white rounded-xl text-sm border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 resize-none"
         />
       </div>
+
+      <div className="card-diner p-5">
+        <label htmlFor="smashie-phone-intro" className="font-heading text-obsidian-roast">Phone introduction</label>
+        <p className="text-sm text-muted-foreground mb-3">Spoken after Smashie's name and current wait when the restaurant is open. Leave blank for the standard introduction. If you switch off an ability, Smashie uses an introduction listing only enabled abilities. Keep custom wording under 450 characters.</p>
+        <textarea id="smashie-phone-intro" value={settings.phone_intro || ''} maxLength={450} onChange={e => update('phone_intro', e.target.value)} rows={5}
+          placeholder="Use the standard introduction" className="w-full px-4 py-3 bg-background rounded-xl border border-border" />
+      </div>
+
+      <SmashieAbilities value={settings.capabilities} onChange={value => update('capabilities', value)} />
+      <SmashieKnowledge topics={settings.knowledge_topics} onChange={value => update('knowledge_topics', value)} />
+      <SmashieToolInventory />
 
       {/* Toggles */}
       <div className="card-diner p-5 space-y-4">
@@ -106,16 +145,81 @@ export default function SmashieSettingsPanel() {
         />
         <Toggle
           label="Voice Call Ordering"
-          description="Let Smashie answer inbound phone calls and take orders by voice."
+          description="Let Smashie answer inbound phone calls and take orders by voice. Subordinate to All ordering in Store Settings — when that master switch is off, the phone cannot take orders regardless of this toggle."
           checked={settings.voice_ordering_enabled}
           onChange={v => update('voice_ordering_enabled', v)}
+        />
+        <Toggle
+          label="Accept cash on phone pickup orders"
+          description="OFF = Smashie offers the card link only; cash orders are refused server-side too."
+          checked={settings.phone_cash_enabled !== false}
+          onChange={v => update('phone_cash_enabled', v)}
+        />
+        <div className="py-2">
+          <p className="font-heading text-sm text-obsidian-roast">Card payment links: Stripe | Square</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Both hosted on flavor-isle.com/pay. Customers never see a processor name.</p>
+          <div className="flex gap-2 mt-2">
+            {['stripe', 'square'].map((provider) => {
+              const active = (settings.phone_payment_provider || 'stripe') === provider;
+              return (
+                <button
+                  key={provider}
+                  onClick={() => update('phone_payment_provider', provider)}
+                  className={`px-4 py-2 rounded-full text-xs font-heading capitalize transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
+                >
+                  {provider}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <Toggle
+          label="Live Phone Pipeline (OpenAI SIP)"
+          description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."
+          checked={settings.realtime_sip_enabled}
+          onChange={v => update('realtime_sip_enabled', v)}
+        />
+        <Toggle
+          label="Google Review Text After an Order"
+          description="Send one Google review text per completed order about two hours later, only when the customer has both transactional and marketing SMS consent. The owner can pause this automation."
+          checked={settings.googleReviewSmsEnabled}
+          onChange={v => update('googleReviewSmsEnabled', v)}
+        />
+        <Toggle
+          label="Day 14 Loyalty Email"
+          description="Two weeks after a customer's first order, email three things they haven't tried yet. Subscribed customers only. Leave off until the copy is approved."
+          checked={settings.day14ShowcaseEmailEnabled}
+          onChange={v => update('day14ShowcaseEmailEnabled', v)}
+        />
+        <Toggle
+          label="Day 45 Loyalty Nudge"
+          description="45 days after a first order with no repeat order since, send one 'come back' email. Subscribed customers only. Leave off until the copy is approved."
+          checked={settings.day45NudgeEmailEnabled}
+          onChange={v => update('day45NudgeEmailEnabled', v)}
+        />
+      </div>
+
+      {/* Counter transfer address — the REFER target Smashie hands a caller to */}
+      <div className="card-diner p-5">
+        <h3 className="font-heading text-obsidian-roast mb-2">Counter Transfer Address</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Where Smashie sends a call when he hands it to the counter on the Live phone pipeline. This is the Twilio SIP address, not a phone number. Leave it blank to fall back to the saved transfer secret.
+        </p>
+        <input
+          type="text"
+          value={settings.sip_transfer_target || ''}
+          onChange={e => update('sip_transfer_target', e.target.value)}
+          placeholder="sip:counter@flavorisle-counter.sip.twilio.com"
+          spellCheck={false}
+          autoComplete="off"
+          className="w-full px-4 py-3 bg-white rounded-xl text-sm font-mono border border-border focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
         />
       </div>
 
       {/* Personality notes */}
       <div className="card-diner p-5">
         <h3 className="font-heading text-obsidian-roast mb-2">Personality Notes</h3>
-        <p className="text-xs text-muted-foreground mb-3">Quick reference notes about Smashie's tone and persona for your team.</p>
+        <p className="text-xs text-muted-foreground mb-3">Notes that guide Smashie's tone and persona on phone calls.</p>
         <textarea
           value={settings.personality_notes || ''}
           onChange={e => update('personality_notes', e.target.value)}
@@ -153,7 +257,8 @@ export default function SmashieSettingsPanel() {
           {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
           {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Settings'}
         </button>
-        {saved && <span className="text-sm text-patina-mint font-heading">Changes are live.</span>}
+        {saved && <span className="text-sm text-patina-mint font-heading">Changes are live on phone calls.</span>}
+        {error && <span role="alert" className="text-sm text-destructive">{error}</span>}
       </div>
     </div>
   );

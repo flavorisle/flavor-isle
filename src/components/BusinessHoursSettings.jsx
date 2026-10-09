@@ -38,7 +38,7 @@ export default function BusinessHoursSettings() {
           </div>
           <h2 className="font-heading text-lg text-obsidian-roast">Business Hours</h2>
         </div>
-        <p className="text-sm text-muted-foreground mb-5">These hours are displayed across the website — header, footer, contact, and store locator pages.</p>
+        <p className="text-sm text-muted-foreground mb-5">These hours are displayed across the website — header, footer, contact, and store locator pages. The same hours drive website ordering and Smashie's phone line.</p>
 
         {loading ? (
           <div className="py-8 flex justify-center">

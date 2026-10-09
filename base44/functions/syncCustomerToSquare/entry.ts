@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
 const SQUARE_API = 'https://connect.squareup.com/v2';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 // Pushes the signed-in customer's profile (name + phone) to their Square
 // customer directory record so the online account and the in-store POS

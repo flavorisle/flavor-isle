@@ -1,0 +1,53 @@
+{
+  "name": "VisitorHometown",
+  "type": "object",
+  "properties": {
+    "city": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "region": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "country": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "visitor_name": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Optional publicly accessible visitor photo for the map pin"
+    }
+  },
+  "required": [
+    "city",
+    "region",
+    "country",
+    "latitude",
+    "longitude"
+  ],
+  "rls": {
+    "create": null,
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

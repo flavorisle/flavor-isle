@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -9,6 +10,11 @@ Deno.serve(async (req) => {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // Blocked customers cannot complete an online checkout.
+    if (await findBlock(base44, { phone: customer?.phone, email: customer?.email })) {
+      return Response.json({ error: 'We are not able to take this order online. Please call the store at (270) 563-4618.' }, { status: 403 });
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));

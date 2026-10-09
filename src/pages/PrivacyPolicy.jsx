@@ -3,6 +3,7 @@ import { ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import Seo from '@/components/Seo';
 
 const SECTIONS = [
   {
@@ -10,7 +11,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Payment Information',
-        text: 'Payment is processed securely through our payment partners. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order.',
+        text: 'Payment is processed securely through our payment partners, Square and Stripe. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order. If you save a payment method for faster checkout, the card details are held by our payment processor, not by us.',
       },
       {
         heading: 'Order History & Preferences',
@@ -19,6 +20,10 @@ const SECTIONS = [
       {
         heading: 'Order & Account Information',
         text: 'When you place an order or create an account, we collect your name, email address, phone number, and — for delivery orders — your delivery address. For dine-in orders we may also store your table number.',
+      },
+      {
+        heading: 'Email Newsletter Subscriptions',
+        text: 'If you subscribe to our email newsletter, we store your email address, subscription status, and opt-in confirmation records so we can send you occasional news, offers, and updates. Newsletter subscriptions use confirmed (double) opt-in. When you unsubscribe, we keep a record of it so we do not email you again.',
       },
       {
         heading: 'Photos & Your Likeness',
@@ -39,7 +44,7 @@ const SECTIONS = [
       },
       {
         heading: 'Loyalty & Rewards',
-        text: 'Your Star Rewards loyalty account is managed through Square, our point-of-sale system. When you join, Square stores your loyalty membership, points, and reward history; we use your phone number to look up your account so your rewards stay available in-store and online. Flavor Isle does not keep a separate copy of your loyalty points or balances.',
+        text: 'Your Star Rewards loyalty account is managed through Square, our point-of-sale system. When you join, Square stores your loyalty membership, points, and reward history; we use your phone number to look up your account so your rewards stay available in-store and online. If you add your birthday (month and day) to your account profile, we use it to send your birthday bonus and birthday email. Flavor Isle does not keep a separate copy of your loyalty points or balances.',
       },
       {
         heading: 'Marketing & Promotions',
@@ -97,7 +102,7 @@ const SECTIONS = [
       },
       {
         heading: 'Data Sync',
-        text: 'When you sign in, your account, orders, rewards, and cart sync across the website and the app. If you use the app without signing in, your order and cart data stays on that device and is not shared with other devices.',
+        text: 'When you sign in, your account, orders, rewards, and bag sync across the website and the app. If you use the app without signing in, your order and bag data stays on that device and is not shared with other devices.',
       },
     ],
   },
@@ -123,7 +128,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
-        text: 'Providing your phone number does not by itself consent to text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately and independently by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and consent is never bundled — checking the order-updates box does not sign you up for offers, and vice versa. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing. Full terms: https://taste-isle-express.base44.app/terms-of-service.',
+        text: 'Providing your phone number does not by itself consent to text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately and independently by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and consent is never bundled — checking the order-updates box does not sign you up for offers, and vice versa. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. Full terms: https://flavor-isle.com/terms-of-service.',
       },
       {
         heading: 'Receiving Phone Calls',
@@ -161,7 +166,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Cookies',
-        text: 'We use essential cookies to keep your cart, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.',
+        text: 'We use essential cookies to keep your bag, remember your order type, and keep you signed in. We do not use cookies to sell your data to third parties.',
       },
       {
         heading: 'Analytics',
@@ -196,6 +201,10 @@ export default function PrivacyPolicy() {
   const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Privacy Policy — Flavor Isle | Smiths Grove, KY"
+        description="How Flavor Isle collects, uses, and protects your personal information, including order data, payment processing, SMS consent, and loyalty rewards."
+      />
       <Navbar />
       <CartDrawer />
 
@@ -244,7 +253,7 @@ export default function PrivacyPolicy() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@flavorisle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>

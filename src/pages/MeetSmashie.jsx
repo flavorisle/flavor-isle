@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MessageCircle, Sparkles, Zap, Heart } from 'lucide-react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SMASHIE_POSES = [
   'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png', // waving
@@ -11,6 +12,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
+import Seo from '@/components/Seo';
 
 const SMASHIE_TRAITS = [
   { emoji: '🔥', label: 'Always Hyped', desc: 'Smashie loves this food more than anyone. Every item slaps and he will tell you exactly why.' },
@@ -22,7 +24,7 @@ const SMASHIE_TRAITS = [
 ];
 
 const FAQS = [
-  { q: "Can Smashie actually take my order?", a: "Yep! Text or call the restaurant number and Smashie will take your order, confirm it, and route it straight to the kitchen. He's legit." },
+  { q: "Can Smashie actually take my order?", a: "Yep! Text or call Smashie at (270) 563-7230 and he'll take your order, confirm it, and route it straight to the kitchen. He's legit." },
   { q: "What if I have allergies or dietary needs?", a: "Smashie knows the menu inside out. Ask him about ingredients, substitutions, or what's safe for your dietary needs and he'll give you the real answer." },
   { q: "Is Smashie a robot?", a: "He's AI — but he's built specifically for Flavor Isle. He knows our menu and our vibe. He's basically one of us at this point." },
   { q: "What's Smashie's favorite order?", a: "Double Cheeseburger, loaded fries, and a Chocolate Fudge Shake. Hot Fudge Cake for dessert, obviously. No cap." },
@@ -47,6 +49,10 @@ export default function MeetSmashie() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Meet Smashie — Flavor Isle's AI Assistant | Smiths Grove, KY"
+        description="Meet Smashie, Flavor Isle's AI-powered assistant. He knows the menu, takes orders by phone and text, and helps you plan your visit 24/7."
+      />
       <Navbar />
       <CartDrawer />
 
@@ -61,8 +67,10 @@ export default function MeetSmashie() {
             {SMASHIE_POSES.map((src, i) => (
               <img
                 key={src}
-                src={src}
+                src={optimizedImageUrl(src, 600, 800, 'fit')}
                 alt="Smashie mascot"
+                width="600"
+                height="800"
                 className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl transition-opacity duration-300"
                 style={{ opacity: i === poseIndex ? (fading ? 0 : 1) : 0 }}
               />
@@ -121,8 +129,12 @@ export default function MeetSmashie() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12 flex flex-col items-center">
             <img
-              src={SMASHIE_POSES[0]}
+              src={optimizedImageUrl(SMASHIE_POSES[0], 400, 500, 'fit')}
               alt="Smashie waving"
+              width="400"
+              height="500"
+              loading="lazy"
+              decoding="async"
               className="w-28 mb-2 drop-shadow-lg"
             />
             <h2 className="font-heading text-4xl text-white mb-3">How to Reach Smashie</h2>
@@ -138,16 +150,16 @@ export default function MeetSmashie() {
               <div className="text-5xl mb-4">📱</div>
               <h3 className="font-heading text-white text-lg mb-2">Text Us</h3>
               <p className="text-teal-200 text-sm mb-3">Text your order to our number and Smashie takes it from there.</p>
-              <a href="sms:+12705634618" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
-                Text (270) 563-4618
+              <a href="sms:+12705637230" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
+                Text (270) 563-7230
               </a>
             </div>
             <div className="bg-white/10 border border-white/20 rounded-3xl p-7 text-center">
               <div className="text-5xl mb-4">📞</div>
               <h3 className="font-heading text-white text-lg mb-2">Call In</h3>
               <p className="text-teal-200 text-sm mb-3">Call and Smashie answers. He'll take your order over the phone like a pro.</p>
-              <a href="tel:+12705634618" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
-                Call (270) 563-4618
+              <a href="tel:+12705637230" className="bg-white text-patina-mint font-heading text-sm px-5 py-2 rounded-full hover:bg-vanilla-malt transition-colors">
+                Call (270) 563-7230
               </a>
             </div>
           </div>
@@ -156,7 +168,7 @@ export default function MeetSmashie() {
 
       {/* His faves */}
       <section className="py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <img src={SMASHIE_POSES[2]} alt="Smashie peace sign" className="w-24 mx-auto mb-2 drop-shadow-lg" />
+        <img src={optimizedImageUrl(SMASHIE_POSES[2], 400, 500, 'fit')} alt="Smashie peace sign" width="400" height="500" loading="lazy" decoding="async" className="w-24 mx-auto mb-2 drop-shadow-lg" />
         <h2 className="font-heading text-4xl text-obsidian-roast mb-4">Smashie's Personal Top Picks</h2>
         <p className="text-muted-foreground mb-10">Ask him for a recommendation. This is usually where he starts.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

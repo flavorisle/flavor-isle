@@ -11,7 +11,7 @@ const CATEGORY_META = {
 export default function NewsPostCard({ post }) {
   const meta = CATEGORY_META[post.category] || CATEGORY_META.isle_update;
   const { Icon } = meta;
-  const date = new Date(post.created_date).toLocaleDateString('en-US', {
+  const date = new Date(post.post_date || post.created_date).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 

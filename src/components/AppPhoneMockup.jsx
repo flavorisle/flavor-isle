@@ -1,7 +1,9 @@
 import React from 'react';
 import { Wifi, BatteryFull, Search, Receipt, User, ShoppingBag, Star, Plus, ChevronLeft, Home } from 'lucide-react';
 
-const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
+import { optimizedImageUrl } from '@/lib/utils';
+
+const LOGO = optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png', 160, 160, 'fit');
 const HERO_BURGER = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png';
 
 // Real Flavor Isle food photos provided by the owner.
@@ -69,7 +71,7 @@ export default function AppPhoneMockup() {
         <div className="h-[520px] overflow-y-auto scrollbar-hide px-3 pb-3">
           {/* Hero */}
           <div className="rounded-2xl overflow-hidden relative h-36 mb-3">
-            <img src={HERO_BURGER} alt="Flavor Isle double cheeseburger" className="w-full h-full object-cover" style={{ objectPosition: 'center 78%' }} />
+            <img src={optimizedImageUrl(HERO_BURGER, 500, 500)} alt="Flavor Isle double cheeseburger" width="500" height="500" className="w-full h-full object-cover" style={{ objectPosition: 'center 78%' }} />
             <div className="absolute inset-0 flex flex-col items-center justify-end pb-2" style={{ background: 'linear-gradient(to top, rgba(0,51,102,0.78) 0%, rgba(0,51,102,0) 55%)' }}>
               <img src={LOGO} alt="Flavor Isle" className="w-9 h-9 rounded-lg object-contain mb-0.5 bg-white/90 p-0.5" />
               <div className="font-heading text-white text-base leading-none">FLAVOR ISLE</div>
@@ -101,7 +103,7 @@ export default function AppPhoneMockup() {
             {BEST_SELLERS.map(item => (
               <div key={item.name} className="rounded-2xl bg-white overflow-hidden shadow-sm">
                 <div className="h-20 w-full overflow-hidden">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={optimizedImageUrl(item.image, 200, 200)} alt={item.name} width="200" height="200" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-2">
                   <div className="flex items-center gap-1 mb-0.5">
@@ -145,7 +147,7 @@ export default function AppPhoneMockup() {
           </div>
           <div className="flex flex-col items-center gap-0.5 relative">
             <ShoppingBag size={16} style={{ color: '#7a8fa6' }} />
-            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>CART</span>
+            <span className="text-[14px] font-heading" style={{ color: '#7a8fa6' }}>BAG</span>
             <span className="absolute -top-1 right-1 w-3 h-3 rounded-full text-[14px] text-white flex items-center justify-center" style={{ backgroundColor: '#C23126' }}>2</span>
           </div>
         </div>

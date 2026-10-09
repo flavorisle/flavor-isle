@@ -1,0 +1,44 @@
+{
+  "description": "Every night after the store closes, closes abandoned checkout attempts \u2014 online orders that were never paid, never reached Square, and never alerted the kitchen.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "end_of_night_order_cleanup",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "cleanup_stale_orders": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "cleanupStaleOrders"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Close abandoned checkouts",
+            "description": "Only orders Stripe confirms were never paid"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 21 * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "name": "End of Night Order Cleanup"
+}

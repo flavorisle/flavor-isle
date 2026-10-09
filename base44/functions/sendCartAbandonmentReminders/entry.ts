@@ -21,7 +21,7 @@ import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 // After sending, cart_reminder_sent_at is stamped so the same idle cart can't
 // trigger a second reminder.
 const ONE_HOUR_MS = 60 * 60 * 1000;
-const FROM = 'Flavor Isle <smashie@order.flavor-isle.com>';
+const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 export default async function (req) {
   try {
@@ -57,7 +57,7 @@ export default async function (req) {
         const { error } = await resend.emails.send({
           from: FROM,
           to: p.email,
-          subject: `🔥 Your cart's getting cold, ${p.name?.split(/\s+/)[0] || 'friend'} — the grill's still hot!`,
+          subject: `🔥 Your bag's getting cold, ${p.name?.split(/\s+/)[0] || 'friend'} — the grill's still hot!`,
           html,
         });
         if (error) throw new Error(error.message || 'send failed');

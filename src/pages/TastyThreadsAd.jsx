@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { MapPin, ThumbsUp, Share, MessageCircle, ExternalLink } from 'lucide-react';
 import CopyTextButton from '@/components/marketing/CopyTextButton';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const SHOP_URL = 'https://flavor-isle.com/merch';
 
@@ -71,8 +72,10 @@ export default function TastyThreadsAd() {
             <div className="bg-white rounded-2xl shadow-float overflow-hidden max-w-md mx-auto">
               <div className="flex items-center gap-3 p-4">
                 <img
-                  src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png"
+                  src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png', 200, 200, 'fit')}
                   alt="Flavor Isle"
+                  width="200"
+                  height="200"
                   className="w-12 h-12 rounded-xl object-contain bg-vanilla-malt flex-shrink-0"
                 />
                 <div className="min-w-0">
@@ -91,7 +94,7 @@ export default function TastyThreadsAd() {
               <div className="grid grid-cols-2 gap-0.5 bg-muted">
                 {SHIRTS.map(s => (
                   <div key={s.id} className="aspect-square bg-white">
-                    <img src={s.image} alt={`${s.name} tee`} className="w-full h-full object-cover" />
+                    <img src={s.image} alt={`${s.name} tee`} width="500" height="500" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>

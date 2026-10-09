@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 import SavedCardsPanel from '@/components/account/SavedCardsPanel';
+import CommunicationPreferences from '@/components/account/CommunicationPreferences';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
 import {
@@ -17,6 +18,7 @@ import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
+import { optimizedImageUrl } from '@/lib/utils';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
@@ -326,7 +328,7 @@ function LoggedInAccount({ user, logout }) {
             <User size={28} className="text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="font-heading text-3xl text-white">{profile?.name || user.full_name || 'Welcome!'}</h1>
+            <h2 className="font-heading text-3xl text-white">{profile?.name || user.full_name || 'Welcome!'}</h2>
             <p className="text-gray-400 text-sm">{user.email}</p>
           </div>
           <div className="flex items-center gap-6">
@@ -446,7 +448,7 @@ function LoggedInAccount({ user, logout }) {
                   <div key={fav.id} className="card-diner overflow-hidden">
                     {fav.menu_item_image && (
                       <div className="h-40 overflow-hidden bg-gray-100">
-                        <img src={fav.menu_item_image} alt={fav.menu_item_name} className="w-full h-full object-cover" />
+                        <img src={optimizedImageUrl(fav.menu_item_image, 500, 300)} alt={fav.menu_item_name} width="500" height="300" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="p-4">
@@ -643,6 +645,7 @@ function LoggedInAccount({ user, logout }) {
                   </div>
                 </div>
               )}
+              <CommunicationPreferences phone={profile?.phone} />
             </div>
 
             <PushNotificationPrompt />
@@ -719,7 +722,7 @@ function GuestAuth({ onSuccess }) {
     try {
       if (mode === 'login') {
         await base44.auth.loginViaEmailPassword(email, password);
-        window.location.href = '/account';
+        window.location.href = window.location.pathname + window.location.search;
       } else {
         await base44.auth.register({ email, password, full_name: name });
         setStep('otp');
@@ -738,7 +741,7 @@ function GuestAuth({ onSuccess }) {
     try {
       const { access_token } = await base44.auth.verifyOtp({ email, otpCode });
       base44.auth.setToken(access_token);
-      window.location.href = '/account';
+      window.location.href = window.location.pathname + window.location.search;
     } catch (err) {
       setError(err.message || 'Invalid code. Please try again.');
     } finally {

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
 
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 async function squareFetch(accessToken, path) {
   const res = await fetch(`https://connect.squareup.com/v2${path}`, {
@@ -53,6 +54,7 @@ Deno.serve(async (req) => {
     const modifierListMap = {};
     for (const obj of modifierObjects) {
       modifierListMap[obj.id] = {
+        id: obj.id,
         name: obj.modifier_list_data?.name || '',
         selection_type: obj.modifier_list_data?.selection_type || 'SINGLE',
         modifiers: (obj.modifier_list_data?.modifiers || []).map(m => ({
@@ -60,7 +62,37 @@ Deno.serve(async (req) => {
           name: m.modifier_data?.name || '',
           price: m.modifier_data?.price_money ? m.modifier_data.price_money.amount / 100 : 0,
           sold_out: (m.modifier_data?.location_overrides || []).some(o => o.sold_out === true),
+          child_modifier_list_ids: m.modifier_data?.child_modifier_list_ids || [],
         })),
+      };
+    }
+
+    // Recursively resolve child modifier lists (Square nested modifiers).
+    // A modifier with child_modifier_list_ids reveals follow-up modifier lists
+    // when selected (e.g., picking a soda reveals ice level + flavor choices,
+    // picking a sauce reveals lite/regular/extra). Square supports up to 3
+    // levels of nesting depth. All modifier lists were fetched above, so child
+    // lists are resolved from the same map without extra API calls.
+    function resolveList(listId, depth = 0) {
+      if (depth > 3) return null;
+      const list = modifierListMap[listId];
+      if (!list) return null;
+      return {
+        id: list.id,
+        name: list.name,
+        selection_type: list.selection_type,
+        modifiers: list.modifiers.map(m => {
+          const childLists = (m.child_modifier_list_ids || [])
+            .map(cid => resolveList(cid, depth + 1))
+            .filter(Boolean);
+          return {
+            id: m.id,
+            name: m.name,
+            price: m.price,
+            sold_out: m.sold_out,
+            ...(childLists.length > 0 ? { child_modifier_lists: childLists } : {}),
+          };
+        }),
       };
     }
 
@@ -90,15 +122,18 @@ Deno.serve(async (req) => {
         image_url = imageMap[itemData.image_ids[0]] || null;
       }
 
-      // Modifiers: only enabled, non-hidden modifier lists
+      // Modifiers: only enabled, non-hidden modifier lists. Nested modifier
+      // lists (child lists revealed when a parent modifier is selected) are
+      // resolved recursively by resolveList so they're stored on each modifier
+      // option and rendered by the UI when the parent is selected.
       const modifiers = [];
       if (itemData.modifier_list_info) {
         for (const mli of itemData.modifier_list_info) {
           if (!mli.enabled) continue;
           if (mli.hidden_from_customer) continue;
-          const modList = modifierListMap[mli.modifier_list_id];
-          if (modList && modList.modifiers.length > 0) {
-            modifiers.push(modList);
+          const resolved = resolveList(mli.modifier_list_id);
+          if (resolved && resolved.modifiers.length > 0) {
+            modifiers.push(resolved);
           }
         }
       }
@@ -166,15 +201,31 @@ Deno.serve(async (req) => {
 
     for (const item of menuItems) {
       const existingItem = existingBySquareId[item.square_item_id];
+      let image_url_opt = existingItem?.image_url_opt || null;
+      if (!existingItem || existingItem.image_url !== item.image_url) {
+        image_url_opt = null;
+        if (item.image_url) {
+          try {
+            image_url_opt = await optimizeItemImage(
+              base44,
+              item.image_url,
+              `menu-item-${item.square_item_id || item.name}`,
+            );
+          } catch (error) {
+            console.error(`Square catalog image optimization failed for ${item.name}:`, error.message);
+          }
+        }
+      }
+      const itemWithOptimizedImage = { ...item, image_url_opt };
       if (existingItem) {
         toUpdate.push({
           id: existingItem.id,
-          ...item,
+          ...itemWithOptimizedImage,
           is_hidden: existingItem.is_hidden ?? false,
           is_featured: existingItem.is_featured ?? false,
         });
       } else {
-        toCreate.push(item);
+        toCreate.push(itemWithOptimizedImage);
       }
     }
 

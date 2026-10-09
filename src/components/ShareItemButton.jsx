@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Share2, Check } from 'lucide-react';
 
-// Share action for a menu item. Builds the permanent direct URL
-// (/menu?item=<stable id>), uses the native share sheet when available, and
-// falls back to copy-to-clipboard with visible feedback. The URL is keyed by
-// the item's stable id so it keeps working if the item's name or category
-// changes.
-export default function ShareItemButton({ itemId, variant = 'icon', className = '', ariaLabel }) {
+// Share action for a menu item. Defaults to the permanent direct URL
+// (/menu?item=<stable id>) keyed by the item's stable id so it keeps working if
+// the item's name or category changes, uses the native share sheet when
+// available, and falls back to copy-to-clipboard with visible feedback. The
+// product page passes its own name-based URL via `url` instead.
+export default function ShareItemButton({ itemId, url: sharedUrl, variant = 'icon', className = '', ariaLabel }) {
   const [copied, setCopied] = useState(false);
   if (!itemId) return null;
 
-  const url = `${window.location.origin}/menu?item=${itemId}`;
+  const url = sharedUrl || `${window.location.origin}/menu?item=${itemId}`;
 
   const handleShare = async (e) => {
     e?.stopPropagation();

@@ -5,7 +5,7 @@ import { MapPin, Smartphone, Camera, Newspaper, ArrowRight } from 'lucide-react'
 const LINKS = [
   { to: '/contact', icon: MapPin, title: 'Contact & Location', desc: 'Directions, hours, and how to reach us.' },
   { to: '/download', icon: Smartphone, title: 'Get the App', desc: 'Order faster and earn rewards from your phone.' },
-  { to: '/gallery', icon: Camera, title: 'Gallery', desc: 'Real photos of the food, the diner, and our people.' },
+  { to: '/gallery', icon: Camera, title: 'Gallery', desc: 'Real photos of our burgers and shakes, our restaurant, and our people.' },
   { to: '/community-news', icon: Newspaper, title: 'Community News', desc: 'Events, updates, and local partnerships.' },
 ];
 

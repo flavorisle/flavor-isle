@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, ShoppingBag, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
+import AllergyNote from '@/components/AllergyNote';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { base44 } from '@/api/base44Client';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
@@ -16,7 +20,7 @@ import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 // "Whirl & Twirl" category as its own card. Tapping a card opens the
 // ShakeCustomizer where the customer picks size, base, and extra flavors.
 export default function Milkshakes() {
-  const { setIsCartOpen } = useCart();
+  const { setIsCartOpen, menuSetting } = useCart();
   const [searchParams] = useSearchParams();
   const blissId = searchParams.get('bliss');
   const [shakes, setShakes] = useState([]);
@@ -41,7 +45,11 @@ export default function Milkshakes() {
 
   // "From" price = item base + cheapest size option (if any).
   const getFromPrice = (item) => {
-    const sizeGroup = (item.modifiers || []).find((g) => (g.name || '').toLowerCase().includes('size'));
+    // Admin modifier controls apply here too (hidden or sold-out sizes, site
+    // price overrides), so the "from" price reflects the sizes customers can
+    // actually pick.
+    const sizeGroup = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides)
+      .find((g) => (g.name || '').toLowerCase().includes('size'));
     const sizeOpts = (sizeGroup?.modifiers || []).filter((m) => !m.sold_out);
     const minSizePrice = sizeOpts.length ? Math.min(...sizeOpts.map((o) => o.price || 0)) : 0;
     return ((item.price || 0) + minSizePrice).toFixed(2);
@@ -57,7 +65,7 @@ export default function Milkshakes() {
 
   // Total shake count includes the 5 premium Bliss shakes (shown in their own
   // section) and the malt, so the hero reflects every shake we offer.
-  const PREMIUM_COUNT = 5;
+  const PREMIUM_COUNT = 6;
   const totalFlavors = regularShakes.length + maltShakes.length + PREMIUM_COUNT;
   const heroBreakdown = [
     regularShakes.length > 0 && `${regularShakes.length} originals`,
@@ -67,6 +75,14 @@ export default function Milkshakes() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Milkshakes & Ice Cream — Flavor Isle, Smiths Grove KY"
+        description="Thick, hand-spun milkshakes with real fruit — 16 flavors from chocolate and peanut butter to real-fruit strawberry and cherry. Order online or swing by I-65 Exit 38."
+        ogTitle="Real-Fruit Milkshakes — Flavor Isle | Smiths Grove, KY"
+        ogDescription="Thick, hand-spun milkshakes with real fruit — 16 flavors from chocolate and peanut butter to real-fruit strawberry and cherry. Order online or swing by Exit 38."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e26ad9c1c_card-milkshakes.png"
+        ogImageAlt="Flavor Isle milkshake share card with real-fruit shake"
+      />
       <Navbar />
       <CartDrawer />
 
@@ -104,12 +120,19 @@ export default function Milkshakes() {
         </div>
       </section>
 
+      {/* Allergy note — sits above the flavors so the shared-equipment warning
+          is read before a shake is ever built. */}
+      <AllergyNote />
+
       {/* Flavor grid */}
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-patina-mint font-heading text-xs uppercase tracking-widest mb-2">Pick Your Flavor</p>
             <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">EVERY SHAKE WE MAKE</h2>
+            {/* Flavor pills carry − / + zones — spell out what they do before
+                the customer starts tapping, on every device. */}
+            <FlavorAmountLegend className="mt-4" />
           </div>
 
           {loading ? (
@@ -192,7 +215,7 @@ export default function Milkshakes() {
               onClick={() => setIsCartOpen(true)}
               className="btn-cherry chrome-hover inline-flex items-center gap-2 px-8 py-4 font-heading text-sm"
             >
-              <ShoppingBag size={16} /> View Cart
+              <ShoppingBag size={16} /> View Bag
             </button>
             <Link
               to="/menu"

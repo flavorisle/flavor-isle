@@ -3,6 +3,7 @@ import { FileText, MapPin, Phone, Mail } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
+import Seo from '@/components/Seo';
 
 const SECTIONS = [
   {
@@ -27,7 +28,7 @@ const SECTIONS = [
       },
       {
         heading: 'Payment',
-        text: 'Payment is processed securely through our payment partner, Square. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order.',
+        text: 'Payment is processed securely through our payment partners, Square and Stripe. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers. If you use group (split-the-bill) checkout, each participant authorizes only their own share.',
       },
       {
         heading: 'Order Times & Availability',
@@ -40,7 +41,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'SMS Consent (Split — Order Updates vs. Promotional Offers)',
-        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing. See our Privacy Policy at https://taste-isle-express.base44.app/privacy-policy.',
+        text: 'Providing your phone number does not by itself enroll you in text messages. Flavor Isle offers two separate, optional text programs you can choose independently: (1) Order Updates — transactional texts about your order (confirmed, preparing, ready, completed) and a secure pay-by-text link; and (2) Promotional Offers — recurring marketing texts about specials and deals. You opt in to each separately by checking the matching box at checkout, on our sign-up page, in your account, or by texting ORDERS (order updates only) or OFFERS (order updates + offers) to our number. Neither is required to place an order, and the two choices are never bundled — checking one does not sign you up for the other. Message and data rates may apply. Reply STOP to cancel all texts, HELP for help, ORDERS for order updates only, or OFFERS for order updates + offers. Message frequency: order-related texts are sent only around orders you place (typically 1–4 per order); promotional texts are sent only if you separately opted in to offers (typically a few per month). We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes. See our Privacy Policy at https://flavor-isle.com/privacy-policy.',
       },
       {
         heading: 'Receiving Phone Calls From Us',
@@ -49,6 +50,10 @@ const SECTIONS = [
       {
         heading: 'Twilio',
         text: 'SMS and phone calls are delivered through Twilio. When you consent, Twilio processes your phone number and message content to deliver these communications on our behalf.',
+      },
+      {
+        heading: 'Email Newsletters',
+        text: 'If you subscribe to our email newsletter, your subscription starts when you confirm it through the link we send you. We may send occasional news, offers, and updates from Flavor Isle. You can unsubscribe at any time using the link in any newsletter email. Order confirmations and other emails about your active orders are transactional and are not affected by unsubscribing.',
       },
     ],
   },
@@ -103,7 +108,7 @@ const SECTIONS = [
       },
       {
         heading: 'Account Sync',
-        text: 'Your account, orders, rewards, and cart sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.',
+        text: 'Your account, orders, rewards, and bag sync across the website and the mobile app when you sign in. If you use the app without signing in, your data stays on that device only.',
       },
     ],
   },
@@ -141,11 +146,11 @@ const SECTIONS = [
       },
       {
         heading: 'Earning Stars',
-        text: 'Stars are earned on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. The number of Stars awarded may vary based on purchase amount, promotional activity, or program adjustments. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.',
+        text: 'Stars are earned at a rate of 1 Star per $1 on eligible in-store and online purchases when your phone number is provided at checkout or linked to your online account. Orders placed directly on flavor-isle.com earn an additional 10% Star bonus. Flavor Isle may also award one-time bonus Stars under promotional rules, such as a second-order bonus, birthday bonus, welcome-back bonus, or order streak bonus; each bonus is granted once under its stated rules. Flavor Isle may change earning rates, qualifying items, or promotional bonuses at any time without notice. Stars have no cash value, are non-transferable, and may expire or change according to program rules.',
       },
       {
         heading: 'Redeeming Stars',
-        text: 'Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice. Rewards cannot be transferred, combined across accounts, or exchanged for cash.',
+        text: 'Stars may be redeemed for available rewards at the register or during online checkout when eligible. Reward availability may vary based on inventory, seasonal offerings, or program updates. Flavor Isle may modify, suspend, or discontinue any reward, tier, or benefit at any time without notice. Rewards cannot be transferred, combined across accounts, or exchanged for cash. Only one reward may be applied per order, and rewards cannot be combined with other offers, promotions, or discounts.',
       },
       {
         heading: 'Account & Phone Number Responsibility',
@@ -158,6 +163,15 @@ const SECTIONS = [
       {
         heading: 'Program Changes & Limitations',
         text: 'Flavor Isle may modify, suspend, or discontinue the Star Rewards program — including earning rules, reward tiers, expiration policies, and promotional bonuses — at any time without notice. Continued participation after changes means you accept the updated terms. Participation in Star Rewards does not guarantee the availability of any specific reward, earning rate, or benefit. Flavor Isle may limit reward quantities, restrict eligibility, or adjust program mechanics as needed.',
+      },
+    ],
+  },
+  {
+    title: 'Star Rewards',
+    body: [
+      {
+        heading: 'Points & Phone Number Ownership',
+        text: 'Flavor Isle Star Rewards is our free rewards program. Points accrue only to the rewards account matching the phone number provided at checkout. Entering a phone number on another customer\u2019s purchase does not transfer that purchase\u2019s points to the person entering the number; points belong to the account that earned them. If we reasonably suspect that someone has claimed points on another customer\u2019s purchase, we may suspend or terminate the rewards account used and void its points. Automatic card recognition at the register is a convenience feature and is not the same as signing in to your account on this website. Rewards questions or disputes: rewards@flavor-isle.com.',
       },
     ],
   },
@@ -193,6 +207,10 @@ export default function TermsOfService() {
   const lastUpdated = 'August 28, 2026';
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Terms of Service — Flavor Isle | Smiths Grove, KY"
+        description="The rules and terms for using Flavor Isle's website, online ordering, loyalty program, and AI assistant Smashie."
+      />
       <Navbar />
       <CartDrawer />
 
@@ -242,7 +260,7 @@ export default function TermsOfService() {
             <a href="tel:+12705634618" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Phone size={16} /> (270) 563-4618
             </a>
-            <a href="mailto:hello@flavorisle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
+            <a href="mailto:hello@flavor-isle.com" className="btn-mint chrome-hover px-8 py-4 text-sm font-heading inline-flex items-center justify-center gap-2">
               <Mail size={16} /> Email Us
             </a>
           </div>

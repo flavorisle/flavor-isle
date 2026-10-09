@@ -1,6 +1,6 @@
 {
   "name": "Winback Email Trigger",
-  "description": "Daily at 10 AM store local: finds customers whose most recent completed order was 30-35 days ago, auto-grants 150 loyalty points, and sends a 'we miss you' win-back email. 90-day frequency cap per customer.",
+  "description": "Daily at 10 AM store local: finds customers whose most recent completed order was 30-35 days ago and sends a win-back email. The next completed direct web order after a 30+ day gap grants 100 Stars. 90-day frequency cap per customer.",
   "trigger": {
     "condition": null,
     "config": {
@@ -35,7 +35,7 @@
           "then": "end",
           "x-base44": {
             "title": "Send win-back emails",
-            "description": "Find 30-35 day lapsed customers, grant 150 points, send win-back email"
+            "description": "Find 30-35 day lapsed customers and send win-back email; the next completed direct web order grants 100 Stars"
           }
         }
       }

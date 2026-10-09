@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { mapSquareStatus, mapSquarePaymentStatus } from '../../shared/squareOrderStatus.ts';
 
 const SQUARE_API = 'https://connect.squareup.com/v2';
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 
 Deno.serve(async (req) => {
   try {

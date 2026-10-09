@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
+import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 
 import { base44 } from '@/api/base44Client';
 
@@ -25,6 +27,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
+import { getActiveReferralCode } from '@/lib/referral';
 import { useToast } from '@/components/ui/use-toast';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
@@ -47,6 +50,16 @@ const CARD_STYLE = {
   hidePostalCode: true,
 };
 
+// Stable fingerprint of the cart being ordered — recognises "the same cart" so a
+// retry reopens the Order + PaymentIntent already created for it instead of
+// creating a second, duplicate pending order.
+function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, reward, scheduledFor, loyaltyOptIn, phone }) {
+  return JSON.stringify({
+    items: items.map(i => [i.name, i.quantity, i.price, (i.selectedModifiers || []).map(m => m.name).join(',')]),
+    orderType, pickupMethod, total, tip, reward: reward || '', scheduledFor, loyaltyOptIn, phone,
+  });
+}
+
 // Inner payment form — must be rendered inside <Elements>
 function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
   const stripe = useStripe();
@@ -66,7 +79,13 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
         payment_method: savedCard.stripe_payment_method_id,
       });
     } else {
-      if (!elements) { setPaying(false); return; }
+      // The card field never became ready (script blocked or still loading) —
+      // say so instead of silently doing nothing when the customer taps Pay.
+      if (!elements || !elements.getElement(CardElement)) {
+        setPaying(false);
+        onError("The card form isn't ready yet. Turn off any ad blocker and tap Pay again — if it still won't open, reload the page.");
+        return;
+      }
       result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement) },
       });
@@ -142,7 +161,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, addItem } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, addItem } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const businessHours = useBusinessHours();
@@ -165,9 +184,16 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
   const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
+  const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
+  // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
+  // carried on the order payload so the referrer earns their 50 Stars.
+  const [referralCode] = useState(() => getActiveReferralCode());
+  // Allergy notification — when ticked, the allergy text is required and goes to
+  // the top of the order notes prefixed "ALLERGY:".
+  const [hasAllergy, setHasAllergy] = useState(false);
   const [vehicle, setVehicle] = useState({ color: '', make: '', model: '' });
   const isCurbside = orderType === 'pickup' && pickupMethod === 'curbside';
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
@@ -219,10 +245,19 @@ export default function Checkout() {
 
   // Payment step state
   const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
-  const [stripePromise, setStripePromise] = useState(null);
+  // Resolved Stripe.js instance for the payment step, plus a visible load error
+  // so a failed or blocked script shows a reason and a retry instead of a dead
+  // card form the customer cannot use.
+  const [stripe, setStripe] = useState(null);
+  const [stripeLoadError, setStripeLoadError] = useState('');
+  const [publishableKey, setPublishableKey] = useState('');
   const [expressStripePromise, setExpressStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  // The Order + PaymentIntent already created for the current cart. Reusing it
+  // stops a Back-then-Continue tap (or a failed wallet attempt) from creating a
+  // second, never-paid Order for the same cart.
+  const [pendingOrder, setPendingOrder] = useState(null);
   // Whether the device actually supports a wallet (Apple Pay / Google Pay).
   // The express card stays hidden until the Stripe Payment Request confirms support.
   const [walletReady, setWalletReady] = useState(null);
@@ -306,20 +341,27 @@ export default function Checkout() {
     : tipPreset === '0' ? 0
     : (tipPresets.find(p => p.key === tipPreset)?.amount ?? 0);
 
-  // Compose the kitchen-facing notes: customer instructions + requested extras.
+  // Compose the kitchen-facing notes: the allergy alert first so it is the very
+  // first thing the kitchen reads on the ticket, then the customer's own
+  // instructions, then requested extras.
   const extrasList = Object.entries(extras)
     .filter(([, v]) => v)
     .map(([k]) => ({
       forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
     }[k]));
   const instructionsWithExtras = [
+    hasAllergy && form.allergy.trim() ? `ALLERGY: ${form.allergy.trim()}` : '',
     form.instructions.trim(),
     extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
   ].filter(Boolean).join('\n');
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
-  const rewardDiscount = appliedReward?.discountValue || 0;
-  const totalWithTip = +(Math.max(0, total - rewardDiscount) + tipAmount).toFixed(2);
+  const rewardDiscount = happyHourDiscount > 0 ? 0 : appliedReward?.discountValue || 0;
+  useEffect(() => { if (happyHourDiscount > 0 && appliedReward) setAppliedReward(null); }, [happyHourDiscount, appliedReward, setAppliedReward]);
+  // Composed in whole cents with the shared half-up rule, exactly like the
+  // cart total and the server's verification — never a float sum re-rounded by
+  // toFixed (which is what produced the $3.44 / $3.45 mismatch).
+  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount)) + toCents(tipAmount));
 
   // Single combined ready-by label: "~N min · clock time". For ASAP the clock
   // time is order time + prep minutes; for a scheduled order it's the chosen slot.
@@ -332,6 +374,16 @@ export default function Checkout() {
   const updateForm = (field, val) => {
     setForm(prev => ({ ...prev, [field]: val }));
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
+  };
+
+  // Load Stripe.js for the payment step. A missing or blocked script used to
+  // leave the customer on a payment step with no card form and no explanation —
+  // now it shows a reason plus a retry that reuses the same order.
+  const initStripe = (pk) => {
+    setStripeLoadError('');
+    setStripe(null);
+    const fail = () => setStripeLoadError("We couldn't load the secure card form. Check your connection, turn off any ad blocker, then tap Retry.");
+    loadStripe(pk).then(instance => (instance ? setStripe(instance) : fail())).catch(fail);
   };
 
   // Scroll to top when moving to the payment or split step so the card form
@@ -368,6 +420,9 @@ export default function Checkout() {
       if (!vehicle.make.trim()) errors.carMake = 'Car make is required.';
     }
     if (schedule.mode === 'schedule' && !schedule.scheduledFor) errors.schedule = 'Please choose a time for your order.';
+    // Allergy alert ticked — the kitchen needs to know what the allergy is.
+    if (hasAllergy && !form.allergy.trim()) errors.allergy = 'Tell us what the allergy is.';
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(form.phone.replace(/[\s().-]/g, ''))) errors.phone = 'Enter a valid phone to join, or uncheck Star Rewards.';
 
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -393,7 +448,15 @@ export default function Checkout() {
       deluxeToppings: i.deluxeToppings || [],
       comboConfigId: i.comboConfigId || '',
       comboComponents: i.comboComponents || [],
+      allergyNote: i.allergyNote || '',
     }));
+
+    // Fingerprint of exactly what is being ordered, so a retry for the same cart
+    // reopens the intent we already created instead of creating another one.
+    const cartFingerprint = buildCartFingerprint(mappedItems, {
+      orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
+      reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: form.phone,
+    });
 
     setLoading(true);
     try {
@@ -407,10 +470,14 @@ export default function Checkout() {
         const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
         const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
         const splits = withItems.map((p, idx) => {
-          const pSub = +(p.subtotal - (p.happyHourDiscount || 0)).toFixed(2);
-          const pTax = +(pSub * 0.06).toFixed(2);
+          // A bundle's lines are always tagged to whoever was ordering when it
+          // was added, so each person's own share of the bundle discount comes
+          // off their own subtotal and the shares still sum to the order total.
+          const pBundle = getFamilyBundleDiscount(cartItems.filter(i => i.person_id === p.id));
+          const pSub = +(p.subtotal - (p.happyHourDiscount || 0) - pBundle).toFixed(2);
+          const pTax = salesTaxFor(pSub);
           const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
-          const pTotal = +(pSub + pTax + feeTip).toFixed(2);
+          const pTotal = fromCents(toCents(pSub) + toCents(pTax) + toCents(feeTip));
           return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
         });
 
@@ -426,19 +493,31 @@ export default function Checkout() {
           splits,
           groupName: people.map(p => p.name).join(', '),
           happyHourDiscount,
+          bundleDiscount,
+          loyaltyOptIn,
+          referralCode: referralCode || undefined,
           smsTransactionalConsent: smsConsent,
           smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored } = res.data;
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
         setSplitIntents(intents);
-        setSplitPublishable(publishableKey);
+        setSplitPublishable(splitPk);
         setOrderNumber(on);
         setStep('split');
+      } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
+        // Same cart as an order we already created (the customer tapped Back, or
+        // a wallet attempt failed) — reopen that same intent instead of creating
+        // a second Order that would sit unpaid forever.
+        setClientSecret(pendingOrder.clientSecret);
+        setPublishableKey(pendingOrder.publishableKey);
+        setOrderNumber(pendingOrder.orderNumber);
+        initStripe(pendingOrder.publishableKey);
+        setStep('payment');
       } else {
         const res = await base44.functions.invoke('createPaymentIntent', {
           items: mappedItems,
@@ -447,7 +526,9 @@ export default function Checkout() {
           customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
           instructions: instructionsWithExtras,
           subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+          loyaltyOptIn,
+          referralCode: referralCode || undefined,
           scheduledFor,
           estimatedTime,
           vehicle: isCurbside ? vehicle : null,
@@ -457,17 +538,29 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { clientSecret: cs, publishableKey, orderNumber: on, smsConsentStored } = res.data;
+        const { clientSecret: cs, publishableKey: pk, orderNumber: on, smsConsentStored } = res.data;
+        // Never advance to a payment step that cannot be paid — a missing secret
+        // or key used to leave the customer there with no card form, holding an
+        // order that was never charged.
+        if (!cs || !pk) {
+          setError('We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
+          return;
+        }
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
         setClientSecret(cs);
+        setPublishableKey(pk);
         setOrderNumber(on);
-        setStripePromise(loadStripe(publishableKey));
+        setPendingOrder({ orderNumber: on, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
+        initStripe(pk);
         setStep('payment');
       }
     } catch (err) {
-      setError('Could not initialize payment. Please try again.');
+      // Surface the server's own explanation (price check, order save) — those
+      // are written for customers — instead of a generic message.
+      const apiError = err?.response?.data?.error || err?.data?.error || '';
+      setError(apiError || 'Could not initialize payment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -535,6 +628,11 @@ export default function Checkout() {
   // Build a single-pay intent from the current cart + wallet-provided contact
   // details. Used by the express Apple Pay / Google Pay button.
   const createIntent = async (walletCustomer) => {
+    // One-tap checkout skips the details form, so it must not skip the required
+    // allergy text — otherwise the kitchen would never see the alert.
+    if (hasAllergy && !form.allergy.trim()) {
+      throw new Error('Tell us what the allergy is, then tap again — or pay with the card form below.');
+    }
     const scheduledFor = schedule.scheduledFor;
     const estimatedTime = schedule.estimatedTime;
     const mappedItems = cartItems.map(i => ({
@@ -551,6 +649,7 @@ export default function Checkout() {
       deluxeToppings: i.deluxeToppings || [],
       comboConfigId: i.comboConfigId || '',
       comboComponents: i.comboComponents || [],
+      allergyNote: i.allergyNote || '',
     }));
     const customer = {
       name: walletCustomer.name || fullName,
@@ -566,10 +665,25 @@ export default function Checkout() {
       customer,
       instructions: instructionsWithExtras,
       subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount,
+      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+      loyaltyOptIn,
+      referralCode: referralCode || undefined,
       scheduledFor, estimatedTime,
       vehicle: isCurbside ? vehicle : null,
     });
+    // Remember this order + intent: if the wallet sheet fails, the card form
+    // below completes the SAME order instead of creating a second pending one.
+    if (res.data?.clientSecret && res.data?.orderNumber) {
+      setPendingOrder({
+        orderNumber: res.data.orderNumber,
+        clientSecret: res.data.clientSecret,
+        publishableKey: res.data.publishableKey,
+        fingerprint: buildCartFingerprint(mappedItems, {
+          orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
+          reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: customer.phone,
+        }),
+      });
+    }
     return res.data;
   };
 
@@ -601,7 +715,7 @@ export default function Checkout() {
         <CartDrawer />
         <div className="max-w-lg mx-auto py-24 px-4 text-center">
           <div className="text-6xl mb-6">🛒</div>
-          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your cart is empty</h2>
+          <h2 className="font-heading text-2xl text-obsidian-roast mb-3">Your bag is empty</h2>
           <p className="text-muted-foreground mb-8">Add some delicious items from our menu first!</p>
           <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-sm font-heading inline-block">Browse Menu</Link>
         </div>
@@ -712,6 +826,7 @@ export default function Checkout() {
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
                       <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="(270) 555-0000"
                         className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                      {fieldErrors.phone && <p className="text-xs text-destructive mt-1">{fieldErrors.phone}</p>}
                     </div>
                     {orderType === 'dine_in' && (
                       <div>
@@ -758,6 +873,11 @@ export default function Checkout() {
                   {isCurbside && (
                     <CurbsideVehicleFields vehicle={vehicle} onChange={setVehicle} errors={fieldErrors} />
                   )}
+
+                  <label className="flex items-center gap-3 mt-4 min-h-11 cursor-pointer select-none">
+                    <input type="checkbox" checked={loyaltyOptIn} onChange={e => setLoyaltyOptIn(e.target.checked)} className="w-5 h-5 flex-shrink-0 accent-primary" />
+                    <span className="text-sm text-obsidian-roast">Join Star Rewards — earn 1 Star per $1 <span className="text-muted-foreground">(optional; uses the phone number above)</span></span>
+                  </label>
 
                   {/* SMS opt-in for order status updates — transactional only, optional,
                       unchecked, and persisted through order creation (createPaymentIntent /
@@ -813,6 +933,29 @@ export default function Checkout() {
                       placeholder="Allergies, extra sauce, no pickles…" rows={3}
                       className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none" />
                   </div>
+
+                  {/* Allergy alert — ticking it opens a required text box, and the
+                      text is placed at the top of the order notes as "ALLERGY: …". */}
+                  <div className="mt-4">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={hasAllergy}
+                        onChange={e => { setHasAllergy(e.target.checked); if (!e.target.checked) updateForm('allergy', ''); }}
+                        className="mt-0.5 w-5 h-5 rounded border-border text-midnight-cherry focus:ring-midnight-cherry/30 flex-shrink-0"
+                      />
+                      <span className="text-sm text-obsidian-roast leading-relaxed">Someone in my party has a food allergy</span>
+                    </label>
+                    {hasAllergy && (
+                      <div className="mt-3 pl-8">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Tell us what the allergy is *</label>
+                        <textarea value={form.allergy} onChange={e => updateForm('allergy', e.target.value)}
+                          placeholder="e.g. Severe peanut allergy…" rows={2}
+                          className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none ${fieldErrors.allergy ? 'border-destructive' : 'border-border'}`} />
+                        {fieldErrors.allergy && <p className="text-xs text-destructive mt-1">{fieldErrors.allergy}</p>}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Group payment mode — the whole group pays one fee; choose
@@ -849,7 +992,7 @@ export default function Checkout() {
               />
             )}
 
-            {step === 'payment' && stripePromise && clientSecret && (
+            {step === 'payment' && clientSecret && (
               <div className="card-diner p-4">
                 <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
                 <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
@@ -879,19 +1022,37 @@ export default function Checkout() {
                     onSelect={setSelectedCardId}
                   />
                 )}
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <PaymentForm
-                    clientSecret={clientSecret}
-                    orderNumber={orderNumber}
-                    onSuccess={handleSuccess}
-                    onError={setError}
-                    total={totalWithTip}
-                    savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
-                    saveNewCard={saveNewCard}
-                    setSaveNewCard={setSaveNewCard}
-                    canSaveCard={canSaveCard}
-                  />
-                </Elements>
+                {stripeLoadError ? (
+                  <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 text-center">
+                    <p className="text-sm text-destructive mb-3">{stripeLoadError}</p>
+                    <button
+                      type="button"
+                      onClick={() => initStripe(publishableKey)}
+                      className="btn-cherry px-6 py-2.5 text-xs font-heading"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : !stripe ? (
+                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                    <div className="w-5 h-5 border-2 border-midnight-cherry border-t-transparent rounded-full animate-spin" />
+                    Loading the secure card form…
+                  </div>
+                ) : (
+                  <Elements stripe={stripe} options={{ clientSecret }}>
+                    <PaymentForm
+                      clientSecret={clientSecret}
+                      orderNumber={orderNumber}
+                      onSuccess={handleSuccess}
+                      onError={setError}
+                      total={totalWithTip}
+                      savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
+                      saveNewCard={saveNewCard}
+                      setSaveNewCard={setSaveNewCard}
+                      canSaveCard={canSaveCard}
+                    />
+                  </Elements>
+                )}
                 <div className="mt-5">
                   <CheckoutTrustBadges variant="full" />
                 </div>
@@ -937,11 +1098,23 @@ export default function Checkout() {
                       <div className="space-y-2">
                         {cartItems.filter(i => i.person_id === p.id).map(item => (
                           <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                              <CartItemModifiers modifiers={item.selectedModifiers} />
+                              <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                             </div>
-                            <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => {
+                                  const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                                  if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                                }}
+                                className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                                aria-label={`Edit ${item.name}`}
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -954,23 +1127,44 @@ export default function Checkout() {
                 ) : (
                   cartItems.map(item => (
                     <div key={item.id} className="flex justify-between items-start gap-3">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                        <CartItemModifiers modifiers={item.selectedModifiers} />
+                        <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                       </div>
-                      <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                            if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                          }}
+                          className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                          aria-label={`Edit ${item.name}`}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
 
+              {/* Referred by a friend — the referrer gets 50 bonus Stars once
+                  this order completes (issue #83). Never required. */}
+              {referralCode && (
+                <p className="text-xs text-patina-mint mb-3">
+                  Referred by a friend — they'll get 50 bonus Stars when this order completes.
+                </p>
+              )}
+
               {/* Star Rewards — compact balance + redeemable rewards */}
-              <CheckoutLoyaltyBox
+              {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
                 subtotal={subtotal}
                 phone={form.phone}
+                cartItems={cartItems}
                 appliedReward={appliedReward}
                 onApply={setAppliedReward}
-              />
+              />}
 
               {/* Add a Tip — lives in the summary so the running total reflects it live */}
               <div className="border-t border-border pt-3 mb-3">
@@ -1046,6 +1240,11 @@ export default function Checkout() {
                 {happyHourDiscount > 0 && (
                   <div className="flex justify-between text-midnight-cherry font-semibold">
                     <span>Happy Hour — Unbeatable Value (online)</span><span>−${happyHourDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {bundleDiscount > 0 && (
+                  <div className="flex justify-between text-midnight-cherry font-semibold">
+                    <span>School Night Lifesaver bundle</span><span>−${bundleDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {rewardDiscount > 0 && (

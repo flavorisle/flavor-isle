@@ -1,26 +1,21 @@
 // Discretionary promotional item selection (approved Sep 22 correction).
 //
-// Malts and sundaes are EXCLUDED from all promotional selections and every
-// fallback pool — they are never suggested, never used as a fallback, and
-// never appear in promotional picks. Remaining eligible items are sorted by
-// fan-favorite rank, then rotated by the America/Chicago calendar date so the
-// top pick varies across days while staying stable within a day.
-//
-// This does NOT affect the units-sold homepage Fan Favorites rankings
-// (Sundae stays eligible at its real rank); it only changes discretionary
-// promo selection. Transactional receipt line items are never altered.
+// Malts, sundaes and discontinued items are excluded from promotional picks.
 
 // True for everyday malt or sundae products (excluded from all promo
 // selections). Shakes/milkshakes are NOT excluded — only malts and sundaes.
 export function isMaltOrSundae(item: any): boolean {
   const name = (item?.name || '').toLowerCase();
-  return /\bmalt\b/.test(name) || /\bsundae\b/.test(name);
+  return /\bmalts?\b/.test(name) || /\bsundaes?\b/.test(name);
 }
 
-// Remove all malt/sundae products from a pool. Apply to every promotional
-// selector and every fallback pool.
+function isDiscontinued(item: any): boolean {
+  return /pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(item?.name || '');
+}
+
+// Remove restricted products from every promotional selector and fallback.
 export function excludeMaltSundae(items: any[]): any[] {
-  return (items || []).filter((m) => !isMaltOrSundae(m));
+  return (items || []).filter((m) => !isMaltOrSundae(m) && !isDiscontinued(m));
 }
 
 // Fan-favorite first, then fan_favorite_rank ascending.

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Flavor Isle "Diner Deals" showcase accordion.
 // Adapted from the Accordion 2 mockup — recolored to the brand
@@ -293,8 +294,10 @@ export default function DealsAccordion() {
                       <div className="dsa-photo-wrap">
                         <img
                           className={`dsa-photo ${deal.nudge ? 'dsa-photo-drinks' : ''}`}
-                          src={deal.image}
+                          src={optimizedImageUrl(deal.image, 500, 500)}
                           alt={deal.alt}
+                          width="500"
+                          height="500"
                           loading="lazy"
                           decoding="async"
                         />

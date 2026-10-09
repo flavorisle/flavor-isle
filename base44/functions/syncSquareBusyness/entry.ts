@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { chicagoParts, todayChicago } from '../../shared/busynessTime.ts';
 
-const SQUARE_VERSION = '2024-01-18';
+const SQUARE_VERSION = '2026-09-16';
 const FULL_LOOKBACK_DAYS = 90;
 const MAX_ORDERS = 20000;
 

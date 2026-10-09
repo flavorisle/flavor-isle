@@ -6,7 +6,9 @@ import AdminCategoriesManager from '@/components/admin/AdminCategoriesManager';
 import AdminPromosManager from '@/components/admin/AdminPromosManager';
 import AdminDeluxeManager from '@/components/admin/AdminDeluxeManager';
 import AdminShakeManager from '@/components/admin/AdminShakeManager';
+import AdminModifierManager from '@/components/admin/AdminModifierManager';
 import { base44 } from '@/api/base44Client';
+import { optimizedImageUrl } from '@/lib/utils';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 
 import Navbar from '@/components/Navbar';
@@ -79,7 +81,7 @@ export default function AdminMenu() {
       ...specialForm,
       menu_item_name: item.name,
       menu_item_price: item.price,
-      menu_item_image: item.image_url || ''
+      menu_item_image: item.image_url_opt || item.image_url || ''
     });
     setSpecialForm({ title: '', description: '', menu_item_id: '', day_of_week: 'Daily', is_active: true });
     await loadSpecials();
@@ -207,7 +209,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6 overflow-x-auto scrollbar-hide">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'modifiers', label: 'Modifiers', Icon: SlidersHorizontal }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
           <button key={t.id} onClick={() => setTab(t.id)}
           className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all flex-shrink-0 whitespace-nowrap ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}
@@ -269,7 +271,7 @@ export default function AdminMenu() {
             <p className="text-muted-foreground text-center py-8">No specials yet. Add one above.</p> :
             specials.map((s) =>
             <div key={s.id} className={`card-diner p-4 flex items-center gap-4 ${!s.is_active ? 'opacity-50' : ''}`}>
-                  {s.menu_item_image && <img src={s.menu_item_image} alt={s.menu_item_name} className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />}
+                  {s.menu_item_image && <img src={optimizedImageUrl(s.menu_item_image, 200, 200)} alt={s.menu_item_name} width="200" height="200" loading="lazy" decoding="async" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <p className="font-heading text-sm text-obsidian-roast">{s.title}</p>
                     <p className="text-xs text-muted-foreground">{s.menu_item_name} · ${s.menu_item_price?.toFixed(2)} · {s.day_of_week}</p>
@@ -383,6 +385,9 @@ export default function AdminMenu() {
         {/* ── MILKSHAKES TAB ── */}
         {tab === 'shakes' && <AdminShakeManager />}
 
+        {/* ── MODIFIERS TAB ── */}
+        {tab === 'modifiers' && <AdminModifierManager items={items} />}
+
         {/* ── PROMOS TAB ── */}
         {tab === 'promos' && <AdminPromosManager />}
 
@@ -411,8 +416,8 @@ export default function AdminMenu() {
                 {catItems.map((item) =>
               <div key={item.id} className={`card-diner overflow-hidden transition-all ${item.is_hidden ? 'opacity-50' : ''}`}>
                     <div className="flex items-center gap-4 p-4">
-                      {item.image_url ?
-                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" /> :
+                      {(item.image_url_opt || item.image_url) ?
+                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-16 h-16 object-cover rounded-xl flex-shrink-0" /> :
 
                   <div className="w-16 h-16 bg-muted rounded-xl flex-shrink-0 flex items-center justify-center text-2xl">
                           {item.category === 'Burgers' ? '🍔' : item.category === 'Shakes' ? '🥤' : item.category === 'Sides' ? '🍟' : '🍽️'}

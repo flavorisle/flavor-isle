@@ -4,9 +4,14 @@ import { base44 } from '@/api/base44Client';
 import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Seo from '@/components/Seo';
+import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
+import { optimizedImageUrl } from '@/lib/utils';
 import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
+import MenuShakeCard from '@/components/MenuShakeCard';
+import ShakeCustomizer from '@/components/ShakeCustomizer';
 import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
@@ -20,7 +25,9 @@ import HappyHourBanner from '@/components/HappyHourBanner';
 import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
 import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
+import OrderAgainSection from '@/components/orderAgain/OrderAgainSection';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
+import FamilyBundleCard from '@/components/family/FamilyBundleCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
@@ -42,7 +49,8 @@ export default function Menu() {
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [renames, setRenames] = useState({});
   const [itemOrder, setItemOrder] = useState({});
-  const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage } = useCart();
+  const [activeShake, setActiveShake] = useState(null);
+  const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { level } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
   const location = useLocation();
@@ -57,6 +65,10 @@ export default function Menu() {
 
   const focusedItem = focusItemId ? items.find((i) => i.id === focusItemId) : null;
   const focusMissing = !!focusItemId && !loading && !focusedItem;
+
+  useEffect(() => {
+    if (focusedItem && itemCategoryKey(focusedItem) === 'Whirl & Twirl') setActiveShake(focusedItem);
+  }, [focusedItem?.id]);
 
   // Scroll the focused card into view once the items have loaded.
   useEffect(() => {
@@ -97,15 +109,13 @@ export default function Menu() {
   useEffect(() => { reload(); }, []);
   const { pull, refreshing } = usePullToRefresh(reload);
 
-  // Milkshakes live on their own page — pull them out of the menu and promote
-  // the Shake Isle page in their place.
+  // Keep the Shake Isle page intact while showing its orderable shakes and malt on the menu.
   const SHAKE_KEY = 'Whirl & Twirl';
 
-  // Items matching the search, excluding hidden categories and the shake category.
+  // Items matching the search, excluding hidden categories.
   const visibleItems = items.filter((item) => {
     const key = itemCategoryKey(item);
     if (hiddenCats.includes(key)) return false;
-    if (key === SHAKE_KEY) return false;
     const matchSearch = !search ||
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     (item.description || '').toLowerCase().includes(search.toLowerCase());
@@ -113,7 +123,6 @@ export default function Menu() {
   });
 
   // Group items by effective category; one row per category (items scroll left→right).
-  // The shake category is replaced by a promo banner row linking to Shake Isle.
   const rows = (() => {
     if (search) {
       return [{ key: 'Results', items: visibleItems, isShakeBanner: false }];
@@ -124,16 +133,26 @@ export default function Menu() {
       if (!map[key]) map[key] = [];
       map[key].push(item);
     }
-    const keys = [...Object.keys(map), SHAKE_KEY];
+    const keys = Object.keys(map);
     return sortCategories(keys, categoryOrder).map((key) => ({
       key,
-      items: key === SHAKE_KEY ? [] : sortItemsInCategory(map[key], itemOrder[key] || []),
+      items: sortItemsInCategory(map[key], itemOrder[key] || []),
       isShakeBanner: key === SHAKE_KEY,
     }));
   })();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        path="/menu"
+        title="Menu | Burgers, Shakes & More — Flavor Isle"
+        description="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
+        ogTitle="Flavor Isle Menu — Burgers, Shakes & More | Smiths Grove, KY"
+        ogDescription="The full Flavor Isle menu: hand-patted burgers, real-fruit milkshakes, curly fries and more — order online for pickup or delivery, 0.7 miles off I-65 Exit 38."
+        ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/8bd9c4f84_card-menu.png"
+        ogImageAlt="Flavor Isle menu preview card with hand-patted burger and milkshake"
+      />
+      <MenuStructuredData rows={rows} renames={renames} />
       <Navbar />
       <CartDrawer />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
@@ -142,7 +161,7 @@ export default function Menu() {
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">ORDER ONLINE</p>
-          <h1 className="font-heading text-5xl text-white mb-6">The Menu</h1>
+          <h1 className="font-heading text-5xl text-white mb-6">The Flavor Isle Menu</h1>
           <div className="mb-6">
             <SocialProofStrip tone="light" />
           </div>
@@ -159,19 +178,22 @@ export default function Menu() {
                 }`}
               >
                 <img
-                  src={t.img}
+                  src={optimizedImageUrl(t.img, 400, 400)}
                   alt={t.label}
+                  width="400"
+                  height="400"
                   loading="lazy"
+                  decoding="async"
                   className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${t.isActive ? '' : 'opacity-90 group-hover:opacity-100'}`}
                 />
                 {/* Item-card style: gradient overlay so the label/time overlap
                     the artwork instead of sitting on a solid plate. */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 px-1.5 py-2 text-center">
-                  <span className={`block font-heading text-sm leading-none ${t.isActive ? 'text-smashie-yellow' : 'text-white'}`}>
+                  <span className={`block font-heading text-base leading-none ${t.isActive ? 'text-smashie-yellow' : 'text-white'}`}>
                     {t.label}
                   </span>
-                  <span className="text-[11px] font-body font-semibold text-white/90">{t.time}</span>
+                  <span className="text-xs font-body font-semibold text-white">{t.time}</span>
                 </div>
               </button>
             ))}
@@ -194,6 +216,11 @@ export default function Menu() {
       {!search && !loading && rows.some((r) => r.isShakeBanner || r.items.length > 0) && (
         <MenuCategoryChips rows={rows} renames={renames} />
       )}
+
+      {/* Returning customers: what they ordered last time, one card per item */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <OrderAgainSection items={items} />
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <SignUpNudge variant="compact" />
@@ -238,6 +265,11 @@ export default function Menu() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         {!search && !loading && items.length > 0 && (
           <>
+            {/* Family bundle banner — pinned above every category section. It is
+                a standalone card: no category is moved, renamed, reordered or
+                hidden, and no MenuSetting field is touched. Renders nothing
+                while FAMILY_BUNDLE_ENABLED is false. */}
+            <FamilyBundleCard items={items} />
             <CravingsBox items={items} />
           </>
         )}
@@ -262,6 +294,13 @@ export default function Menu() {
                 <div className="flex-1 h-px bg-border" />
               </div>
               <MilkshakePromoBanner variant="strip" />
+              <div className="flex gap-6 overflow-x-auto scrollbar-hide pt-5 pb-2 snap-x">
+                {rowItems.map((item) => (
+                  <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0">
+                    <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
           <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
@@ -272,10 +311,17 @@ export default function Menu() {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-sm text-muted-foreground">{rowItems.length} item{rowItems.length !== 1 ? 's' : ''}</span>
                 </div>
+                {!search && /crunch\s*&\s*munch/i.test(key) && (
+                  <p className="text-sm text-muted-foreground -mt-3 mb-4">
+                    Our sides aren’t salted — add salt packets at checkout if you’d like them.
+                  </p>
+                )}
                 <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
                   {rowItems.map((item) =>
               <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0 w-72">
-                      <MenuItemCard item={item} autoOpen={item.id === focusItemId} />
+                      {itemCategoryKey(item) === SHAKE_KEY
+                        ? <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
+                        : <MenuItemCard item={item} autoOpen={item.id === focusItemId} />}
                     </div>
               )}
                 </div>
@@ -306,6 +352,7 @@ export default function Menu() {
       }
 
       <Footer />
+      <ShakeCustomizer open={!!activeShake} onClose={() => setActiveShake(null)} shakeItem={activeShake} />
     </div>);
 
 }

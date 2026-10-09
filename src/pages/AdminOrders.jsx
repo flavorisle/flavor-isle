@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, X,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer
+  ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, XCircle,
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer, Mail, MessageSquare, RotateCcw
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
@@ -11,6 +11,8 @@ import OccupancyTracker from '@/components/OccupancyTracker';
 import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 import MerchOrdersList from '@/components/admin/MerchOrdersList';
 import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
+import CancelOrderDialog from '@/components/admin/CancelOrderDialog';
+import PhonePaymentActions from '@/components/admin/PhonePaymentActions';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -41,7 +43,7 @@ const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 // Detect where an order came from.
 function getSource(order) {
   if (order.order_source === 'in_store') return 'pos';
-  if (order.order_number?.startsWith('PH')) return 'phone';
+  if (order.payment_provider || order.payment_url || order.manual_pay_required || order.order_number?.startsWith('PH')) return 'phone';
   return 'online';
 }
 
@@ -76,7 +78,7 @@ function StatCard({ label, value, Icon, tone }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
+function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
   const [expanded, setExpanded] = useState(false);
   const source = getSource(order);
   const badge = SOURCE_BADGE[source];
@@ -125,6 +127,41 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
         </div>
       </button>
 
+      {/* Cancel sits outside the expand toggle so it is always one tap away,
+          and runs the full cancel: Square, refund, customer notice. */}
+      {isActive && (
+        <div className="px-5 pb-4 flex justify-end">
+          <button
+            onClick={() => onRequestCancel(order)}
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-full border-2 border-destructive/40 text-destructive font-heading text-sm hover:bg-destructive hover:text-white transition-colors"
+          >
+            <XCircle size={15} /> Cancel order
+          </button>
+        </div>
+      )}
+
+      {/* What happened at the register: money refunded there, and the notice we
+          sent about it. Nothing else in the app shows either one. */}
+      {(order.square_refund_amount > 0 || order.cancellation_email_sent_at || order.cancellation_sms_sent_at) && (
+        <div className="px-5 pb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-body">
+          {order.square_refund_amount > 0 && (
+            <span className="inline-flex items-center gap-1 text-purple-700">
+              <RotateCcw size={12} /> Refunded in Square ${Number(order.square_refund_amount).toFixed(2)}
+            </span>
+          )}
+          {order.cancellation_email_sent_at && (
+            <span className="inline-flex items-center gap-1 text-green-700">
+              <Mail size={12} /> Cancellation email sent {formatChicagoDateTime(order.cancellation_email_sent_at)}
+            </span>
+          )}
+          {order.cancellation_sms_sent_at && (
+            <span className="inline-flex items-center gap-1 text-green-700">
+              <MessageSquare size={12} /> Cancellation text sent {formatChicagoDateTime(order.cancellation_sms_sent_at)}
+            </span>
+          )}
+        </div>
+      )}
+
       {expanded && (
         <div className="px-5 pb-5 border-t border-border pt-3">
           {order.special_instructions && (
@@ -165,7 +202,7 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
             </div>
           )}
 
-          {isOnline && (
+          {(isOnline || order.pay_cash_on_pickup) && (
             <button
               onClick={() => onPrintBagTicket(order)}
               className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-heading rounded-full border-2 border-patina-mint text-patina-mint hover:bg-patina-mint hover:text-white transition-colors"
@@ -174,25 +211,16 @@ function OrderCard({ order, onAdvance, onCancel, onPrintBagTicket }) {
             </button>
           )}
 
-          {isActive && (
-            <div className="mt-4 flex gap-3">
-              {canAdvance && (
-                <button
-                  onClick={() => onAdvance(order)}
-                  className="flex-1 btn-cherry py-2.5 text-sm font-heading flex items-center justify-center gap-2"
-                >
-                  <ChefHat size={16} />
-                  Mark as {NEXT_STATUS[order.status]?.charAt(0).toUpperCase() + NEXT_STATUS[order.status]?.slice(1)}
-                </button>
-              )}
-              <button
-                onClick={() => onCancel(order)}
-                className="p-2.5 border border-border rounded-xl text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
-                aria-label="Cancel order"
-              >
-                <X size={16} />
-              </button>
-            </div>
+          <PhonePaymentActions order={order} />
+
+          {isActive && canAdvance && (
+            <button
+              onClick={() => onAdvance(order)}
+              className="mt-4 w-full btn-cherry py-2.5 text-sm font-heading flex items-center justify-center gap-2"
+            >
+              <ChefHat size={16} />
+              Mark as {NEXT_STATUS[order.status]?.charAt(0).toUpperCase() + NEXT_STATUS[order.status]?.slice(1)}
+            </button>
           )}
         </div>
       )}
@@ -209,6 +237,7 @@ export default function AdminOrders() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [bagTicketOrder, setBagTicketOrder] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -233,11 +262,6 @@ export default function AdminOrders() {
     if (!next) return;
     await base44.entities.Order.update(order.id, { status: next });
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o));
-  };
-
-  const cancel = async (order) => {
-    await base44.entities.Order.update(order.id, { status: 'cancelled' });
-    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
   };
 
   const stats = useMemo(() => {
@@ -431,7 +455,7 @@ export default function AdminOrders() {
           ) : (
             <div className="space-y-3">
               {filtered.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={advance} onCancel={cancel} onPrintBagTicket={setBagTicketOrder} />
+                <OrderCard key={order.id} order={order} onAdvance={advance} onRequestCancel={setCancelTarget} onPrintBagTicket={setBagTicketOrder} />
               ))}
             </div>
           )}
@@ -443,6 +467,13 @@ export default function AdminOrders() {
       )}
 
       <BagTicketPrintModal order={bagTicketOrder} onClose={() => setBagTicketOrder(null)} />
+      <CancelOrderDialog
+        key={cancelTarget?.id || 'none'}
+        order={cancelTarget}
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onCancelled={() => { setCancelTarget(null); load(); }}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // The actual print sheet. Rendered on screen as a paper preview and printed
 // as-is (everything else on the page is hidden by the print stylesheet).
 import React from 'react';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -48,7 +49,7 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
         {/* Header */}
         <div className="text-center border-b-4 border-black pb-4 mb-6">
           {showLogo && (
-            <img src={LOGO} alt="Flavor Isle" className="w-16 h-16 mx-auto mb-2" style={{ borderRadius: '50%', display: 'block' }} />
+            <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle" width="200" height="200" className="w-16 h-16 mx-auto mb-2" style={{ borderRadius: '50%', display: 'block' }} />
           )}
           <h1 className="font-heading text-4xl tracking-widest leading-none">{title}</h1>
           {subtitle && <p className="text-[11px] tracking-[0.3em] mt-2 uppercase">{subtitle}</p>}

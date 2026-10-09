@@ -5,12 +5,18 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ReviewForm from '@/components/ReviewForm';
+import Seo from '@/components/Seo';
+import { optimizedImageUrl } from '@/lib/utils';
 
 export default function Feedback() {
   const location = useLocation();
   const orderId = new URLSearchParams(location.search).get('order');
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Share Feedback — Flavor Isle | Smiths Grove, KY"
+        description="Tell us how we did. Share your Flavor Isle feedback, rate your experience, and help us serve you better off I-65 Exit 38."
+      />
       <Navbar />
       <CartDrawer />
 
@@ -18,8 +24,10 @@ export default function Feedback() {
       <section className="bg-patina-mint/10 px-4 sm:px-6 py-14">
         <div className="max-w-3xl mx-auto text-center">
           <img
-            src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8684a938f_Shareyourexperience.png"
+            src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8684a938f_Shareyourexperience.png', 200, 200, 'fit')}
             alt="Share your Flavor Isle experience"
+            width="200"
+            height="200"
             className="w-24 h-24 object-contain mx-auto mb-5 drop-shadow-md"
           />
           <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">We'd Love to Hear From You</p>

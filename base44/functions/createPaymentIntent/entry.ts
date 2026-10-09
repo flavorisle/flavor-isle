@@ -1,17 +1,34 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { secrets } from 'base44:runtime';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
+import { normalizeReferralCode } from '../../shared/referral.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, stripeCustomerId, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // Blocked customers cannot complete an online checkout.
+    if (await findBlock(base44, { phone: customer?.phone, email: customer?.email })) {
+      return Response.json({ error: 'We are not able to take this order online. Please call the store at (270) 563-4618.' }, { status: 403 });
+    }
+    if (loyaltyOptIn && !/^\+?1?\d{10}$/.test(String(customer?.phone || '').replace(/[\s().-]/g, ''))) {
+      return Response.json({ error: 'Enter a valid phone number to join Star Rewards, or uncheck the optional box.' }, { status: 400 });
+    }
+    if (redemptionId && Number(happyHourDiscount) > 0) {
+      return Response.json({ error: 'Star Rewards cannot be combined with Happy Hour or another discount.' }, { status: 400 });
+    }
+    if (!redemptionId && Number(discount) > 0) {
+      return Response.json({ error: 'Choose a valid Star Reward for this discount.' }, { status: 400 });
     }
 
     // ── Reward validation: verify the claimed reward tier, exact discount,
@@ -30,6 +47,9 @@ Deno.serve(async (req) => {
         rewardTierId: redemptionId,
         claimedDiscount: Number(discount) || 0,
         subtotal: Number(subtotal) || 0,
+        // Item-scoped rewards price against a qualifying line, so the server
+        // needs the same cart lines the checkout used.
+        cartItems: items,
       });
       if (!reward.ok) {
         return Response.json({ error: reward.error || 'Reward could not be verified.' }, { status: 400 });
@@ -53,13 +73,28 @@ Deno.serve(async (req) => {
       clientTip: tip,
       clientDiscount: authoritativeDiscount,
       clientHappyHourDiscount: happyHourDiscount,
+      clientBundleDiscount: bundleDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
-    const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+
+    // The publishable key is handed to the browser to initialize Stripe.js. Read
+    // it the same way getStripePublishableKey does (runtime secrets, falling back
+    // to the env var) and fail BEFORE creating the intent or the order: a missing
+    // key used to leave the customer on a payment step they could not use, while
+    // an unpaid Order sat stranded on the register.
+    let publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+    try {
+      publishableKey = secrets.get('STRIPE_PUBLISHABLE_KEY') || publishableKey;
+    } catch (keyErr) {
+      console.error('Publishable key unavailable via runtime secrets:', keyErr.message);
+    }
+    if (!publishableKey) {
+      return Response.json({ error: 'Payment is temporarily unavailable — nothing was charged. Please try again in a moment.' }, { status: 503 });
+    }
 
     const orderNumber = Date.now().toString().slice(-6);
     const amountCents = Math.round(pricing.total * 100);
@@ -108,14 +143,19 @@ Deno.serve(async (req) => {
         } : {}),
         status: 'pending',
         payment_status: 'pending',
-        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [] })),
+        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [], allergyNote: i.allergyNote || '' })),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery_fee: pricing.deliveryFee,
         tip: pricing.tip,
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
+        bundle_discount: pricing.bundleDiscount || 0,
+        bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
         redemption_id: redemptionId || '',
+        loyalty_opt_in: loyaltyOptIn === true,
+        referral_code: normalizeReferralCode(referralCode),
+        direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,

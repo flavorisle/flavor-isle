@@ -1,39 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { sendSmashieSms, smashieSmsTemplates } from '../../shared/sendSmashieSms.ts';
+import { sendOrderStatusSms } from '../../shared/sendOrderStatusSms.ts';
+import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
-import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
+import { grantCompletedWebOrderBonuses } from '../../shared/webOrderLoyaltyBonuses.ts';
 
-// Maps Square fulfillment/order states to our app's order statuses.
-// Fulfillment is checked FIRST so that "staff marked it ready" (fulfillment
-// COMPLETED) maps to `ready` even if the order-level state already flipped to
-// COMPLETED in the same Square update — otherwise the `ready` email is skipped.
-function mapSquareStateToStatus(squareOrder) {
-  const fulfillment = squareOrder.fulfillments?.[0];
-  const fulfillmentState = fulfillment?.state;
-  const orderState = squareOrder.state;
+import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 
-  if (orderState === 'CANCELED') return 'cancelled';
-
-  switch (fulfillmentState) {
-    case 'PROPOSED': return 'confirmed';
-    case 'RESERVED': return 'confirmed';
-    case 'PREPARED': return 'preparing';
-    case 'COMPLETED':
-      // Fulfillment done = ready for pickup/delivery. Only escalate to
-      // `completed` when the ORDER itself is also closed out.
-      return orderState === 'COMPLETED' ? 'completed' : 'ready';
-    default: break;
-  }
-
-  // Fallback on order-level state
-  if (orderState === 'COMPLETED') return 'completed';
-  if (orderState === 'OPEN') return 'confirmed';
-  return null;
-}
+import { mapSquareFulfillmentStatus, advanceOrderStatus } from '../../shared/orderTrackingStatus.ts';
+import { CANCELABLE_STATUSES, mirrorPosCancellation, mirrorPosRefunds, listRecentSquareRefunds } from '../../shared/posOrderCancellation.ts';
 
 // Returns the ordered list of status milestones between (prev, new] so the
 // sync can send catch-up emails for any states the polling interval skipped.
@@ -42,13 +21,15 @@ function missedMilestones(prevStatus, newStatus) {
   const order = ['confirmed', 'preparing', 'ready', 'completed'];
   const startIdx = order.indexOf(prevStatus);
   const endIdx = order.indexOf(newStatus);
-  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return [];
+  if ((startIdx === -1 && prevStatus !== 'pending') || endIdx === -1 || endIdx <= startIdx) return [];
   return order.slice(startIdx + 1, endIdx + 1);
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
+    const auth = await requireAdmin(base44);
+    if (auth.error) return auth.error;
 
     // Get Square connection
     const connection = await base44.asServiceRole.connectors.getConnection('square');
@@ -57,7 +38,7 @@ Deno.serve(async (req) => {
     let locationId = connection.connectionConfig?.locationId;
     if (!locationId) {
       const locRes = await fetch('https://connect.squareup.com/v2/locations', {
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2024-01-18' }
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': '2026-09-16' }
       });
       const locData = await locRes.json();
       locationId = locData.locations?.[0]?.id;
@@ -70,7 +51,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Square-Version': '2024-01-18',
+        'Square-Version': '2026-09-16',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -106,7 +87,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Square-Version': '2024-01-18',
+          'Square-Version': '2026-09-16',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -139,11 +120,11 @@ Deno.serve(async (req) => {
     const orderBySquareId = new Map();
     (recentOrders || []).forEach(o => {
       if (o.square_order_id) orderBySquareId.set(o.square_order_id, o);
+      if (o.payment_provider === 'square' && o.square_checkout_order_id) orderBySquareId.set(o.square_checkout_order_id, o);
     });
 
     let updated = 0;
     let notified = 0;
-    const pendingUpdates = [];
     const completedThisRun = [];
     // Cap loyalty accrual retries per run — each needs a Square loyalty ledger
     // lookup, and bursting through dozens at once trips Square's rate limit.
@@ -152,12 +133,19 @@ Deno.serve(async (req) => {
     const LOYALTY_RETRY_CAP = 3;
 
     for (const sqOrder of squareOrders) {
-      const newStatus = mapSquareStateToStatus(sqOrder);
+      let newStatus = mapSquareFulfillmentStatus(sqOrder);
       if (!newStatus) continue;
 
       // Look up the matching Order entity from the in-memory index
-      const order = orderBySquareId.get(sqOrder.id);
+      let order = orderBySquareId.get(sqOrder.id);
       if (!order) continue;
+      if (order.pay_cash_on_pickup) {
+        order = await settleCashPickupPayment(base44, order, false, sqOrder);
+      } else if (order.payment_provider === 'square' && order.payment_status !== 'paid') {
+        order = await settleSquarePhonePayment(base44, order, sqOrder);
+        // Checkout creation is not confirmation: wait for an actual completed payment.
+        if (order.payment_status !== 'paid') continue;
+      }
 
       // Loyalty accrual retry — online orders paid via Stripe sometimes miss
       // Star Rewards points because the Square order isn't in a computed state
@@ -179,10 +167,11 @@ Deno.serve(async (req) => {
         try {
           const alreadyAccrued = await hasAccrualEventForOrder(order.square_order_id);
           if (alreadyAccrued) {
+            if (order.direct_web_rewards_v2 === true) await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone, directWebOrderId: order.id, skipAccrual: true });
             await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
             console.log(`Loyalty already accrued for order ${order.order_number} — marked`);
           } else {
-            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone });
+            await accrueForOrder({ squareOrderId: order.square_order_id, email: order.customer_email, phone: order.customer_phone, enroll: order.loyalty_opt_in === true, directWebOrderId: order.direct_web_rewards_v2 === true ? order.id : undefined });
             await base44.asServiceRole.entities.Order.update(order.id, { loyalty_accrued: true });
             console.log(`Loyalty accrual retry succeeded for order ${order.order_number}`);
           }
@@ -191,13 +180,38 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Only update if status actually changed
+      // The crew cancelled this ticket at the register. Mirror it here and tell
+      // the customer, so nobody has to come onto the website to cancel it again.
+      if (newStatus === 'cancelled' && CANCELABLE_STATUSES.includes(order.status)) {
+        try {
+          const { notified: told, alreadyCancelled } = await mirrorPosCancellation(base44, order);
+          if (told) notified++;
+          if (!alreadyCancelled) {
+            updated++;
+            console.log(`Order ${order.id}: ${order.status} → cancelled (at the register)`);
+          }
+        } catch (cancelError) {
+          console.error(`Could not mirror the register cancellation for order ${order.order_number}:`, cancelError.message);
+        }
+        continue;
+      }
+
+      // A staff update must not be rolled backwards by stale Square state.
+      newStatus = advanceOrderStatus(order.status, newStatus);
+      if (newStatus === 'completed' && order.payment_status === 'paid') {
+        try {
+          await grantCompletedWebOrderBonuses(base44, { ...order, status: newStatus }, recentOrders);
+        } catch (bonusErr) {
+          console.error(`Web Star Rewards bonus failed for order ${order.order_number}:`, bonusErr.message);
+        }
+      }
       if (order.status === newStatus) continue;
 
       const prevStatus = order.status;
 
-      // Stage the status update; applied in a single bulkUpdate after the loop
-      pendingUpdates.push({ id: order.id, status: newStatus });
+      // Persist before notifications: an email/SMS failure must never hide Ready.
+      // Keep bulk semantics so unrelated entity triggers do not fire here.
+      await base44.asServiceRole.entities.Order.bulkUpdate([{ id: order.id, status: newStatus }]);
       updated++;
       console.log(`Order ${order.id}: ${prevStatus} → ${newStatus}`);
 
@@ -216,22 +230,21 @@ Deno.serve(async (req) => {
       const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
-      // Never notify placeholder addresses used for in-store POS / walk-in
-      // orders — those aren't real customers and just burn email credits.
-      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
-      if (!customerEmail || isPlaceholderEmail) continue;
-
       const milestones = missedMilestones(prevStatus, newStatus);
-      // Transactional SMS requires explicit active transactional consent for
-      // this order's phone AND the global admin toggle. STOP suppresses all.
-      let canTxSms = false;
-      if (smashieSettings.sms_status_updates_enabled && order.customer_phone) {
-        try {
-          canTxSms = (await checkSmsConsent(base44, order.customer_phone, 'transactional')).ok;
-        } catch (e) {
-          canTxSms = false;
+      // Record each text outcome independently of email/push success.
+      if (order.order_source !== 'in_store') {
+        for (const milestone of milestones) {
+          try {
+            await sendOrderStatusSms(base44, order, milestone, { settings: smashieSettings });
+          } catch (smsError) {
+            console.error(`Order ${order.order_number} ${milestone} SMS log failed:`, smsError.message);
+          }
         }
       }
+      // Placeholder email addresses do not suppress a customer's text history.
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      if (!customerEmail || isPlaceholderEmail) continue;
+      try {
       for (const milestone of milestones) {
         if (milestone === 'preparing') {
           await sendOrderPreparingEmail(order, base44);
@@ -246,10 +259,7 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error('live wait for push failed:', e.message);
           }
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.preparing(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: '🍔 Order on the grill',
             body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
@@ -261,10 +271,7 @@ Deno.serve(async (req) => {
         if (milestone === 'ready') {
           await sendOrderReadyEmail(order, base44);
           notified++;
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.ready(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: '✅ Order ready!',
             body: order.order_type === 'delivery'
@@ -278,10 +285,7 @@ Deno.serve(async (req) => {
         if (milestone === 'completed') {
           await sendOrderCompletedEmail(order, base44);
           notified++;
-          if (canTxSms) {
-            await sendSmashieSms(order.customer_phone, smashieSmsTemplates.completed(order));
-            await markSmsSent(base44, order.customer_phone, 'transactional');
-          }
+
           await sendPushToEmail(base44, customerEmail, {
             title: 'Thanks for rolling with us! 🙌',
             body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
@@ -290,10 +294,9 @@ Deno.serve(async (req) => {
           });
         }
       }
-    }
-
-    if (pendingUpdates.length > 0) {
-      await base44.asServiceRole.entities.Order.bulkUpdate(pendingUpdates);
+      } catch (notificationError) {
+        console.error(`Status saved for order ${order.order_number}, but notification failed:`, notificationError.message);
+      }
     }
 
     // Sync customer profile stats for orders that just completed. The entity
@@ -309,9 +312,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length });
+    // Register refunds. A refund rung up on the POS leaves the Square order
+    // COMPLETED, so it never surfaced here: the money went back, the card still
+    // read paid, and an order still on the board had to be cancelled again on
+    // the website. Read Square's refunds for the same window and settle up.
+    let refunds = { recorded: 0, cancelled: 0, notified: 0 };
+    try {
+      const squareRefunds = await listRecentSquareRefunds(accessToken, locationId, since);
+      refunds = await mirrorPosRefunds(base44, orderBySquareId, squareRefunds);
+    } catch (refundError) {
+      console.error('Refund mirror failed:', refundError.message);
+    }
+
+    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length, refunds });
   } catch (error) {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

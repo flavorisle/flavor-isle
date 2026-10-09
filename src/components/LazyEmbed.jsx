@@ -70,7 +70,7 @@ export default function LazyEmbed({ type, url, title, subtitle, creator }) {
           rel="noopener noreferrer"
           className="mt-3 text-xs text-muted-foreground hover:text-obsidian-roast inline-flex items-center gap-1"
         >
-          <ExternalLink size={11} /> Open on {type === 'tiktok' ? 'TikTok' : 'Instagram'}
+          <ExternalLink size={11} /> Open on {type === 'tiktok' ? 'TikTok' : type === 'instagram' ? 'Instagram' : 'Facebook'}
         </a>
       </div>
     );
@@ -103,6 +103,25 @@ export default function LazyEmbed({ type, url, title, subtitle, creator }) {
           frameBorder="0"
           scrolling="no"
           allowFullScreen
+          title={title}
+          style={{ border: 'none', borderRadius: '0.75rem' }}
+        />
+      </div>
+    );
+  }
+
+  if (type === 'facebook') {
+    const pluginUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=true`;
+    return (
+      <div ref={ref} className="card-diner overflow-hidden">
+        <iframe
+          src={pluginUrl}
+          width="100%"
+          height="580"
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen
+          allow="autoplay; encrypted-media; picture-in-picture"
           title={title}
           style={{ border: 'none', borderRadius: '0.75rem' }}
         />

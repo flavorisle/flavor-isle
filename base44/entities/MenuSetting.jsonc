@@ -32,16 +32,18 @@
     },
     "ordering_enabled": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Master ordering switch for BOTH systems. When false the website locks checkout and Smashie stops taking phone orders, both with ordering_closed_message."
     },
     "ordering_closed_message": {
       "type": "string",
-      "default": "Ordering is temporarily closed"
+      "default": "Ordering is temporarily closed",
+      "description": "What customers are told while ordering_enabled is false \u2014 shown on the website and spoken by Smashie on the phone."
     },
     "delivery_enabled": {
       "type": "boolean",
       "default": true,
-      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours."
+      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours. Applies to the website AND Smashie's phone orders."
     },
     "closing_time": {
       "type": "string",
@@ -62,7 +64,7 @@
     },
     "delivery_tiers": {
       "type": "array",
-      "description": "Distance-based delivery pricing tiers, sorted by max_miles ascending. Each tier charges `fee` for addresses up to `max_miles` (straight-line) from the store. The last tier's max_miles is the delivery range limit \u2014 addresses beyond it are out of range. When empty, the flat delivery_fee applies instead.",
+      "description": "Distance-based delivery pricing tiers, sorted by max_miles ascending. Each tier charges `fee` for addresses up to `max_miles` (straight-line) from the store. The last tier's max_miles is the delivery range limit \u2014 addresses beyond it are out of range. When empty, the flat delivery_fee applies instead. The same fees are charged online and quoted by Smashie on the phone.",
       "items": {
         "type": "object",
         "properties": {
@@ -80,9 +82,17 @@
       "type": "string",
       "description": "YYYY-MM-DD (store local, America/Chicago). When today matches, the kitchen runs with an extra cook: order completion rate doubles, so quoted wait times shrink and busyness thresholds stretch. Auto-expires after the date passes."
     },
+    "open_all_day_date": {
+      "type": "string",
+      "description": "YYYY-MM-DD (store local, America/Chicago). The start of the 24/7 ordering override used for overnight tests: ordering stays open around the clock, ignoring business hours (no 8 AM unlock, no closing or delivery cutoffs) on BOTH the website and Smashie's phone line. On its own it covers that one store-local day; set open_all_day_until to stretch the window past midnight. Auto-expires; ordering_enabled and an active closure still take precedence."
+    },
+    "open_all_day_until": {
+      "type": "string",
+      "description": "Optional end of the 24/7 ordering override, as YYYY-MM-DDTHH:MM in store local time (America/Chicago), e.g. 2026-10-08T20:00. Only read together with open_all_day_date: while now is between the start date and this moment, ordering stays open around the clock, then normal business hours resume. Leave blank for the original single-day behavior (the whole day of open_all_day_date)."
+    },
     "site_notice": {
       "type": "object",
-      "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden.",
+      "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden. Smashie tells callers the same message on the phone.",
       "properties": {
         "active": {
           "type": "boolean",
@@ -144,6 +154,24 @@
         }
       }
     },
+    "early_close": {
+      "type": "object",
+      "description": "One-day early close, set from Admin \u2192 Store Settings. Honored ONLY when date equals today (store local, America/Chicago): ordering stops at close_time instead of the usual weekly hours, the wind-down cutoffs shift with it, the website shows an early-close banner, and Smashie tells callers we close at that time. Self-expires at midnight \u2014 the weekly hours are never touched.",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM-DD, store local (America/Chicago). Only that day is affected."
+        },
+        "close_time": {
+          "type": "string",
+          "description": "24h HH:MM, store local \u2014 the last moment orders are accepted that day."
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional note shown on the website early-close banner and spoken by Smashie after the closing time."
+        }
+      }
+    },
     "happy_hour": {
       "type": "object",
       "description": "Daily Happy Hour discount on drinks. When active and the current store-local time (America/Chicago) falls within the start_time\u2013end_time window, eligible drink line items get discount_percent off. The discount is auto-applied at checkout (no code needed) and shown as a line item. Orders PLACED inside the window get it; scheduled orders placed outside the window do not.",
@@ -181,6 +209,82 @@
           "type": "string",
           "default": "Happy Hour \u2014 50% off drinks",
           "description": "Display label shown on the menu badge and checkout discount line."
+        }
+      }
+    },
+    "deluxe": {
+      "type": "object",
+      "description": "Deluxe preset button configuration, controlled from Admin \u2192 Menu Manager \u2192 Deluxe Preset. When enabled is false the 'Make it Deluxe' button is hidden everywhere. Each preset defines a button (name), the toppings it selects, the silent toppings it never calls out, and appliesTo \u2014 the MenuItem ids that show that button (empty = all items with modifiers).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "presets": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "toppings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "silentToppings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "appliesTo": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "modifier_overrides": {
+      "type": "object",
+      "description": "Admin modifier controls from Admin \u2192 Menu Manager \u2192 Modifiers, applied to the Square modifier catalog at render time (and to prices at checkout). Square stays the source of truth, so these survive every catalog sync. hidden_groups holds group keys (a Square modifier list id, or 'name:<list name>' for the synthetic Size group), hidden_options/sold_out_options hold modifier option ids, and option_prices maps an option id to the site price in USD.",
+      "default": {},
+      "properties": {
+        "hidden_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "hidden_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "sold_out_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "option_prices": {
+          "type": "object",
+          "default": {},
+          "description": "Map of modifier option id -> site price in USD. Overrides the Square catalog price in the menu, the cart, and checkout."
         }
       }
     }

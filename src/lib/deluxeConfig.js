@@ -8,26 +8,35 @@
 // selects but never calls out as missing (e.g. Mayo is part of a Deluxe but
 // shouldn't show "no Mayo").
 //
-// Storage lives in localStorage so it works on the current frontend branch.
-// The read/write surface below is the only place that touches storage, so it
-// can be swapped for a server-side entity later without touching components.
-
-// Master switch — set to false to hide all deluxe preset buttons and badges
-// from the customer-facing UI. Admin can still manage presets; flipping this
-// back to true re-enables the feature everywhere.
-export const DELUXE_ENABLED = false;
+// The configuration is an admin setting stored on the MenuSetting record
+// (`deluxe: { enabled, presets }`) so it applies to every visitor, not just the
+// admin's browser. It's hydrated into a module-level cache once the setting
+// loads (see CartContext) so the many synchronous callers below stay simple.
 
 import { matchScore } from '@/lib/deluxeLabel';
 
-const STORAGE_KEY = 'flavor_isle_deluxe_presets';
-const LEGACY_KEY = 'flavor_isle_deluxe_config';
+// Flavor Isle's Deluxe: pickles, onions, tomatoes, and lettuce, plus exactly ONE
+// condiment — mustard or mayo, never both. The condiment is an admin setting
+// (`condiment` on the stored deluxe config, default mayo) so Pulse can flip the
+// whole site to mustard without touching code. See normalizeDeluxeConfig.
+export const DELUXE_BASE_TOPPINGS = ['Pickle', 'Onion', 'Tomato', 'Lettuce'];
+export const DEFAULT_DELUXE_CONDIMENT = 'mayo';
+export const DELUXE_CONDIMENT_OPTIONS = [
+  { key: 'mayo', label: 'Mayo' },
+  { key: 'mustard', label: 'Mustard' },
+];
+const CONDIMENT_LABEL = { mayo: 'Mayo', mustard: 'Mustard' };
 
+export const condimentLabel = (key) => CONDIMENT_LABEL[key] || CONDIMENT_LABEL[DEFAULT_DELUXE_CONDIMENT];
+
+// Built-in preset used out of the box and whenever the admin hasn't configured
+// any presets yet, so the Deluxe button keeps working before setup.
 export const DEFAULT_DELUXE_PRESETS = [
   {
     id: 'deluxe',
     name: 'Deluxe',
-    toppings: ['Mustard', 'Mayo', 'Pickles', 'Onions', 'Tomatoes', 'Lettuce'],
-    silentToppings: ['Mayo'],
+    toppings: [...DELUXE_BASE_TOPPINGS, condimentLabel(DEFAULT_DELUXE_CONDIMENT)],
+    silentToppings: [],
     appliesTo: [],
   },
 ];
@@ -42,7 +51,7 @@ export function makeBlankPreset(name = 'New Deluxe') {
   return { id: genId(), name, toppings: [], silentToppings: [], appliesTo: [] };
 }
 
-function cleanPreset(p) {
+export function cleanPreset(p) {
   return {
     id: (p && p.id) || genId(),
     name: (p && p.name && p.name.trim()) || 'Deluxe',
@@ -52,39 +61,74 @@ function cleanPreset(p) {
   };
 }
 
-// Read all presets, migrating the legacy single-preset config on first load.
-export function getDeluxePresets() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      // An empty saved list would silently hide every Deluxe button, so fall
-      // through to the defaults instead of returning [].
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(cleanPreset);
-    }
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      const lp = JSON.parse(legacy);
-      const migrated = [cleanPreset({
-        id: 'deluxe',
-        name: lp.name || 'Deluxe',
-        toppings: lp.toppings || DEFAULT_DELUXE_PRESETS[0].toppings,
-        silentToppings: ['Mayo'],
-        appliesTo: lp.appliesTo || [],
-      })];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-      return migrated;
-    }
-  } catch {
-    // fall through
-  }
-  return DEFAULT_DELUXE_PRESETS.map(cleanPreset);
+// A Deluxe preset must carry exactly ONE condiment. Whatever a stored topping
+// list says, every condiment is stripped and a single one is appended, so a
+// preset can never select mustard and mayo together.
+//
+// The condiment lives in the preset's own topping list — storage the deluxe
+// config already has — so Pulse's condiment choice is a plain server-side
+// setting with no extra field to migrate.
+const isCondiment = (name) => /^(mayo|mayonnaise|mustard|honey mustard)$/i.test((name || '').trim());
+
+// Rewrite every preset so its only condiment is `condiment` (mayo by default).
+export function applyCondimentToPresets(presets, condiment) {
+  const chosen = DELUXE_CONDIMENT_OPTIONS.some((o) => o.key === condiment)
+    ? condiment
+    : DEFAULT_DELUXE_CONDIMENT;
+  return (presets || []).map((p) => ({
+    ...p,
+    toppings: [...(p.toppings || []).filter((t) => !isCondiment(t)), condimentLabel(chosen)],
+  }));
 }
 
-export function saveDeluxePresets(presets) {
-  const clean = (presets || []).map(cleanPreset);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-  return clean;
+// The condiment the stored presets currently use — mustard only when a preset
+// actually carries mustard and no mayo.
+export function condimentFromPresets(presets) {
+  const names = (presets || []).flatMap((p) => p.toppings || []).map((t) => (t || '').toLowerCase());
+  const hasMayo = names.some((t) => /^mayo/.test(t));
+  const hasMustard = names.some((t) => /mustard/.test(t));
+  if (hasMustard && !hasMayo) return 'mustard';
+  return DEFAULT_DELUXE_CONDIMENT;
+}
+
+// Normalize a stored deluxe config into { enabled, condiment, presets }. An
+// empty preset list falls back to the built-in Deluxe preset rather than hiding
+// the button.
+export function normalizeDeluxeConfig(cfg) {
+  const raw = cfg || {};
+  const presets = Array.isArray(raw.presets) && raw.presets.length > 0
+    ? raw.presets.map(cleanPreset)
+    : DEFAULT_DELUXE_PRESETS.map(cleanPreset);
+  const condiment = condimentFromPresets(presets);
+  return {
+    enabled: raw.enabled === true,
+    condiment,
+    presets: applyCondimentToPresets(presets, condiment),
+  };
+}
+
+// In-memory cache hydrated from the MenuSetting record. It starts OFF: the
+// stored setting must explicitly enable the feature, so a failed or delayed
+// settings load can never make a "Make it Deluxe" button appear.
+let _config = normalizeDeluxeConfig(null);
+
+export function hydrateDeluxeConfig(cfg) {
+  _config = normalizeDeluxeConfig(cfg);
+  return _config;
+}
+
+// Master switch — when false the "Make it Deluxe" button is hidden everywhere.
+export function isDeluxeEnabled() {
+  return _config.enabled;
+}
+
+// The active condiment ('mayo' | 'mustard') for the Deluxe preset.
+export function getDeluxeCondiment() {
+  return _config.condiment;
+}
+
+export function getDeluxePresets() {
+  return _config.presets;
 }
 
 // The topping names a preset's label should track: its toppings minus the
@@ -107,7 +151,7 @@ export function presetTrackedToppings(preset, availableNames) {
 // concrete modifier entries (group + id + name + price) found on the item
 // matching the preset's topping names.
 export function getDeluxePresetsForItem(item) {
-  if (!DELUXE_ENABLED) return [];
+  if (!isDeluxeEnabled()) return [];
   if (!item || !Array.isArray(item.modifiers) || item.modifiers.length === 0) return [];
   const presets = getDeluxePresets();
   const resolved = [];
@@ -159,7 +203,10 @@ export function applyDeluxePreset(selections, preset, active) {
     const current = next[group];
     if (Array.isArray(current)) {
       if (active) {
-        if (!current.some((s) => s.id === m.id)) next[group] = [...current, { id: m.id, name: m.name, price: m.price }];
+        // Remove Plain/No Sauce when adding preset toppings
+        const filtered = current.filter((s) => !/plain/i.test(s.name) && !/no\s*sauce/i.test(s.name));
+        if (!filtered.some((s) => s.id === m.id)) filtered.push({ id: m.id, name: m.name, price: m.price });
+        next[group] = filtered;
       } else {
         next[group] = current.filter((s) => s.id !== m.id);
       }

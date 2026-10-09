@@ -14,20 +14,24 @@ export default async function (req: Request): Promise<Response> {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { conversation_id, phone } = body || {};
-    if (!conversation_id || !phone) {
-      return Response.json({ error: 'conversation_id and phone are required' }, { status: 400 });
+    const { conversation_id, conversation_ids } = body || {};
+    const ids = conversation_ids || (conversation_id ? [conversation_id] : []);
+    if (!Array.isArray(ids) || !ids.length || ids.length > 20 || ids.some(id => typeof id !== 'string')) {
+      return Response.json({ error: 'Provide 1–20 conversation IDs' }, { status: 400 });
     }
-
-    const cust = await lookupCustomerByPhone(base44, phone);
-    if (cust) {
-      await base44.asServiceRole.entities.SmsConversation.update(conversation_id, {
-        customer_name: cust.name,
-        square_customer_id: cust.id,
-      });
+    const records = await base44.asServiceRole.entities.SmsConversation.filter({ id: { $in: ids }, channel: 'voice' });
+    const customers = new Map();
+    const results = [];
+    for (const record of records) {
+      const phone = record.phone_number;
+      if (!customers.has(phone)) customers.set(phone, await lookupCustomerByPhone(base44, phone));
+      const cust = customers.get(phone);
+      const details = cust ? { customer_name: cust.name, square_customer_id: cust.id, customer_email: cust.email } : {};
+      if (cust) await base44.asServiceRole.entities.SmsConversation.update(record.id, details);
+      results.push({ id: record.id, found: !!cust, ...details });
     }
-
-    return Response.json({ found: !!cust, name: cust?.name || null });
+    const first = results[0];
+    return Response.json({ found: first?.found || false, name: first?.customer_name || null, customer_email: first?.customer_email || null, square_customer_id: first?.square_customer_id || null, results });
   } catch (error) {
     console.error('lookupCaller error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

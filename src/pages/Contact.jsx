@@ -5,9 +5,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import AdBannerStrip from '@/components/AdBannerStrip';
-import FaqSection from '@/components/FaqSection';
 import NearbyAreas from '@/components/NearbyAreas';
 import GoogleReviewsCard from '@/components/GoogleReviewsCard';
+import ParkingGuide from '@/components/ParkingGuide';
+import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, DAY_LABELS, dayHoursLabel } from '@/lib/businessHours';
 
@@ -46,6 +47,10 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
+      <Seo
+        title="Contact & Directions — Flavor Isle, Smiths Grove KY"
+        description="Find Flavor Isle at 103 N Main St, Smiths Grove, KY 42171 — 0.7 miles off I-65 Exit 38. Call (270) 563-4618, get directions, or send us a message."
+      />
       <Navbar />
       <CartDrawer />
 
@@ -122,6 +127,8 @@ export default function Contact() {
           </div>
         </div>
 
+        <ParkingGuide />
+
         {/* Google reviews */}
         <div className="max-w-3xl mx-auto mb-12">
           <GoogleReviewsCard />
@@ -130,11 +137,6 @@ export default function Contact() {
         {/* Nearby areas / I-65 wayfinding */}
         <div className="mb-12">
           <NearbyAreas />
-        </div>
-
-        {/* FAQ */}
-        <div className="mb-12">
-          <FaqSection />
         </div>
 
         {/* Contact form */}

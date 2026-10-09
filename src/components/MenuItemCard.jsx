@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
@@ -6,8 +7,12 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import ItemRatings from './ItemRatings';
 import ModifierModal from './ModifierModal';
+import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { productPath } from '@/lib/productSlug';
+import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
+import { optimizedImageUrl } from '@/lib/utils';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -19,6 +24,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -33,6 +39,9 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const hasModifiers = item.modifiers && item.modifiers.length > 0;
   const soldOut = item.is_available === false;
   const position = item.image_position || 'background';
+  const imageUrl = item.image_url_opt || item.image_url;
+  const showPhoto = imageUrl && !isDiscontinuedMenuItem(item);
+  const showMarketingBadge = !isExcludedFromMarketing(item);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -60,7 +69,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           menu_item_id: item.id,
           menu_item_name: item.name,
           menu_item_price: item.price,
-          menu_item_image: item.image_url,
+          menu_item_image: imageUrl,
           menu_item_category: item.category,
         });
       }
@@ -71,6 +80,16 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     } finally {
       setSavingFavorite(false);
     }
+  };
+
+  // Photo click opens the item's full product detail page — a real page with
+  // the hero image, description, reviews, and add-to-cart — rather than the
+  // quick customize modal. Fires the same GA4 select-item event used by the
+  // add/combo actions. Sold-out items still open the page (viewing allowed).
+  const handlePhotoClick = (e) => {
+    e?.stopPropagation();
+    trackSelectItem(foodItemToGa4(item));
+    navigate(productPath(item));
   };
 
   const handleAdd = (e) => {
@@ -86,13 +105,16 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel) => {
     addItem({
       ...item,
+      name: withShakeFlavorLevel(item.name, coreLevel),
+      flavorLevel: coreLevel || undefined,
       price: item.price + extraCost,
       selectedModifiers: selectedMods,
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
+      allergyNote: allergyNote || undefined,
     });
     if (comboItems && comboItems.length > 0) {
       comboItems.forEach(ci => addItem(ci));
@@ -128,12 +150,12 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   const badges = (
     <>
-      {item.is_fan_favorite && !soldOut && (
+      {showMarketingBadge && item.is_fan_favorite && !soldOut && (
         <div className="absolute top-3 left-3 bg-smashie-yellow text-[#003366] text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 shadow-float z-10">
           <Star size={10} className="fill-obsidian-roast" /> Fan Favorite
         </div>
       )}
-      {!item.is_fan_favorite && item.is_featured && !soldOut && (
+      {showMarketingBadge && !item.is_fan_favorite && item.is_featured && !soldOut && (
         <div className="absolute top-3 left-3 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full flex items-center gap-1 z-10">
           <Zap size={10} /> Special
         </div>
@@ -154,10 +176,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     </>
   );
 
-  const photo = item.image_url ? (
+  const photo = showPhoto ? (
     <img
-      src={item.image_url}
+      src={optimizedImageUrl(imageUrl, 500, 500)}
       alt={item.name}
+      width="500"
+      height="500"
+      loading="lazy"
+      decoding="async"
       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
     />
   ) : (
@@ -183,7 +209,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   // Text content block. `light` flips colors for the background layout.
   const renderContent = (light = false, { showRatings = true } = {}) => {
-    const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Cart!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
+    const addLabel = soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Bag!' : hasModifiers ? 'Customize & Add' : 'Add to Order';
     const addBtnClass = (soldOut || !orderingEnabled)
       ? 'bg-muted text-muted-foreground cursor-not-allowed'
       : added
@@ -205,7 +231,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           )}
         </div>
         {item.description && (
-          <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/80' : 'text-muted-foreground'}`}>{item.description}</p>
+          <p className={`text-sm leading-relaxed line-clamp-2 mb-3 ${light ? 'text-white/90' : 'text-muted-foreground'}`}>{item.description}</p>
         )}
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
@@ -215,28 +241,38 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           </div>
         )}
         {item.calories && (
-          <p className={`text-xs mb-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>{item.calories} cal</p>
+          <p className={`text-xs mb-3 ${light ? 'text-white/85' : 'text-muted-foreground'}`}>{item.calories} cal</p>
         )}
         {showRatings && <ItemRatings item={item} />}
         {hasModifiers && (
-          <p className={`text-xs mb-2 mt-3 ${light ? 'text-white/70' : 'text-muted-foreground'}`}>
+          <p className={`text-xs mb-2 mt-3 ${light ? 'text-white/85' : 'text-muted-foreground'}`}>
             {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
           </p>
         )}
         <button
           onClick={handleAdd}
           disabled={soldOut || !orderingEnabled}
-          className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 ${addBtnClass}`}
+          className={`w-full py-3 text-sm font-heading rounded-xl transition-all flex items-center justify-center gap-2 pointer-events-auto ${addBtnClass}`}
         >
           <Plus size={16} />
           {addLabel}
+          {!soldOut && orderingEnabled && !added && (
+            <span className="ml-1 opacity-90 font-body">
+              · ${(isHappyHour && happyHourPrice !== null ? happyHourPrice : item.price).toFixed(2)}
+            </span>
+          )}
         </button>
       </div>
     );
   };
 
   const modal = showModal && (
-    <ModifierModal item={item} onClose={() => setShowModal(false)} onConfirm={handleModalConfirm} />
+    <ModifierModal
+      item={item}
+      autoCombo={false}
+      onClose={() => { setShowModal(false); }}
+      onConfirm={handleModalConfirm}
+    />
   );
 
   // ── Layouts ──
@@ -248,6 +284,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         <div className="group relative card-diner">
           {favoriteBtn}
           {shareBtn}
+          {badges}
           {renderContent(false)}
         </div>
       </>
@@ -260,17 +297,26 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
         {modal}
         <div className="group relative card-diner overflow-hidden min-h-[240px] flex flex-col justify-end">
           <div className="absolute inset-0">
-            {item.image_url ? (
-              <img src={item.image_url} alt={item.name} className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
+            {showPhoto ? (
+              <img src={optimizedImageUrl(imageUrl, 500, 500)} alt={item.name} width="500" height="500" loading="lazy" decoding="async" className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-obsidian-roast to-midnight-cherry" />
             )}
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10 pointer-events-none" />
+          {/* Clickable photo layer — sits above the image/gradient but below
+              badges (z-10) and the content block so only the photo area opens
+              the product page, not the title or action buttons. */}
+          <button
+            type="button"
+            onClick={handlePhotoClick}
+            aria-label={`View ${item.name}`}
+            className="absolute inset-0 z-0 cursor-pointer"
+          />
           {favoriteBtn}
           {shareBtn}
           {badges}
-          <div className="relative">
+          <div className="relative z-10 pointer-events-none">
             {renderContent(true, { showRatings: false })}
           </div>
         </div>
@@ -280,7 +326,13 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
 
   if (position === 'left' || position === 'right') {
     const imageBlock = (
-      <div className="relative w-full h-40 sm:w-40 sm:h-auto overflow-hidden bg-gray-100 flex-shrink-0">
+      <div
+        onClick={handlePhotoClick}
+        role="button"
+        tabIndex={0}
+        aria-label={`View ${item.name}`}
+        className="relative w-full h-40 sm:w-40 sm:h-auto overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer"
+      >
         {photo}
         {badges}
         {hoverAdd}
@@ -309,7 +361,13 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
       <div className="group relative card-diner overflow-hidden">
         {favoriteBtn}
         {shareBtn}
-        <div className="relative h-48 overflow-hidden bg-gray-100">
+        <div
+          onClick={handlePhotoClick}
+          role="button"
+          tabIndex={0}
+          aria-label={`View ${item.name}`}
+          className="relative h-48 overflow-hidden bg-gray-100 cursor-pointer"
+        >
           {photo}
           {badges}
           {hoverAdd}

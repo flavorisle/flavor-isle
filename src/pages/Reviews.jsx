@@ -2,18 +2,24 @@
 // Matches the site design (navy/cream/orange palette, Bebas Neue / Nunito fonts,
 // same Navbar/Footer) and the BusynessGuide page's centered, generous layout.
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Star, MessageCircle, Facebook, ExternalLink, Instagram } from 'lucide-react';
+import ReviewsHero from '@/components/reviews/ReviewsHero';
+import ReviewWordWall from '@/components/reviews/ReviewWordWall';
+import HometownMap from '@/components/reviews/HometownMap';
+import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import LazyEmbed from '@/components/LazyEmbed';
 import ReviewsCarousel from '@/components/ReviewsCarousel';
-
-const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
+import ReviewPlatformLinks from '@/components/ReviewPlatformLinks';
 
 const TIKTOK_VIDEOS = [
+  {
+    url: 'https://www.tiktok.com/@ashtonsjokes/video/7534173940646726942',
+    creator: 'ashtonsjokes',
+    title: 'Some of the best mozzarella sticks in the game!',
+  },
   {
     url: 'https://www.tiktok.com/@lukefoods/video/7505174404419046686',
     creator: 'lukefoods',
@@ -29,6 +35,22 @@ const TIKTOK_VIDEOS = [
     url: 'https://www.tiktok.com/@livingwithdes/video/7649829094653234446',
     creator: 'livingwithdes',
     title: '10/10 dining experience review',
+  },
+];
+
+const FACEBOOK_REELS = [
+  {
+    type: 'facebook',
+    url: 'https://www.facebook.com/reel/1611434090062222/',
+    title: 'Update on the amazing local restaurant that deserves all the love and support',
+    creator: 'Luke Collins',
+    subtitle: '37K views · 830 reactions',
+  },
+  {
+    type: 'facebook',
+    url: 'https://www.facebook.com/reel/2480054055733414/',
+    title: 'Real hand-pattied burgers at Flavor Isle | Smiths Grove, Ky',
+    creator: 'Brandon Jarrett',
   },
 ];
 
@@ -145,78 +167,43 @@ export default function Reviews() {
       />
       <Navbar />
 
-      {/* Hero */}
-      <section className="bg-patina-mint/10 px-4 sm:px-6 py-14">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-midnight-cherry text-sm font-heading uppercase tracking-widest mb-2">Flavor Isle</p>
-          <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-4 leading-tight">
-            Real people, real reactions.
-          </h1>
-          <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Food lovers from all over Kentucky (and beyond) stopped by the Isle — here's what they found.
-          </p>
-
-          {/* Rating badges */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-            <div className="card-diner px-5 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Facebook size={20} className="text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-heading text-lg text-obsidian-roast leading-none">90%</p>
-                <p className="text-xs text-muted-foreground">249 reviews</p>
-              </div>
-            </div>
-
-            <div className="card-diner px-5 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="font-heading text-xs text-green-700">TA</span>
-              </div>
-              <div className="text-left">
-                <p className="font-heading text-lg text-obsidian-roast leading-none">4.5/5</p>
-                <p className="text-xs text-muted-foreground">Tripadvisor</p>
-              </div>
-            </div>
-
-            <a
-              href={GOOGLE_REVIEW_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card-diner px-5 py-3 flex items-center gap-3 hover:shadow-float-lg transition-all"
-            >
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Star size={20} className="text-amber-600 fill-amber-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-heading text-lg text-obsidian-roast leading-none">4.7</p>
-                <p className="text-xs text-muted-foreground">445 reviews · Google</p>
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
+      <ReviewsHero />
 
       {/* As Seen on TikTok & Instagram */}
-      <section className="px-4 sm:px-6 py-14">
+      <section className="px-4 sm:px-6 py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="font-heading text-3xl text-obsidian-roast mb-2">As Seen on TikTok & Instagram</h2>
+            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-2">As Seen on TikTok, Instagram & Facebook</h2>
             <p className="text-muted-foreground">Food creators stopped by the Isle — here's what they captured.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {TIKTOK_VIDEOS.map((v, i) => (
               <LazyEmbed key={i} type="tiktok" {...v} />
             ))}
+            {FACEBOOK_REELS.map((v, i) => (
+              <LazyEmbed key={`fb-${i}`} {...v} />
+            ))}
             <LazyEmbed {...INSTAGRAM_REEL} />
           </div>
         </div>
       </section>
 
+      <PhotoChapter
+        photo={{
+          url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a0b6bcef9_NorthWarrenCommunityWalk.jpg',
+          alt: 'Community walk group holding milkshakes under the Flavor Isle sign',
+          caption: 'The people who make the Isle',
+        }}
+        heading="Good food brings people together."
+      />
+
+      <ReviewWordWall />
+
       {/* Wall of Love */}
-      <section className="bg-patina-mint/5 px-4 sm:px-6 py-14">
+      <section className="bg-patina-mint/5 px-4 sm:px-6 py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="font-heading text-3xl text-obsidian-roast mb-2">Wall of Love</h2>
+            <h2 className="font-heading text-4xl sm:text-5xl text-obsidian-roast mb-2">Wall of Love</h2>
             <p className="text-muted-foreground">What our neighbors are saying about Flavor Isle.</p>
           </div>
           {loading ? (
@@ -234,35 +221,10 @@ export default function Reviews() {
         </div>
       </section>
 
-      {/* CTA band */}
-      <section className="bg-obsidian-roast px-4 sm:px-6 py-14">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-heading text-3xl text-white mb-2">Tried us lately? Tell the world.</h2>
-          <p className="text-gray-300 mb-6">Your review helps other food lovers find the Isle.</p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <a
-              href={GOOGLE_REVIEW_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-cherry chrome-hover px-6 py-3 text-sm font-heading flex items-center gap-2"
-            >
-              <Star size={16} /> Review us on Google
-            </a>
-            <Link
-              to="/feedback"
-              className="btn-yellow px-6 py-3 text-sm font-heading flex items-center gap-2"
-            >
-              <MessageCircle size={16} /> Share Feedback
-            </Link>
-            <Link
-              to="/social-reviews"
-              className="bg-white/10 text-white px-6 py-3 text-sm font-heading flex items-center gap-2 rounded-full hover:bg-white/20 transition-colors"
-            >
-              <Instagram size={16} /> Post & Earn Points
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HometownMap />
+
+      {/* Review platforms and ways to share a visit */}
+      <ReviewPlatformLinks />
 
       <Footer />
     </div>

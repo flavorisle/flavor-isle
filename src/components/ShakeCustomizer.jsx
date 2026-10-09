@@ -3,6 +3,12 @@ import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
+import FlavorPillButton, { getFlavorLevel, getFlavorNestedPrice } from '@/components/FlavorPillButton';
+import ShakeFlavorControl, { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
+import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
+import AllergyNote from '@/components/AllergyNote';
+import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
+import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -17,16 +23,29 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const [size, setSize] = useState(null);
   const [base, setBase] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
+  const [coreLevel, setCoreLevel] = useState(null);
+  // Nested "- / + Flavors" selection per added flavor, chosen with the − / +
+  // zones on the flavor pill; empty means Regular. The real nested option
+  // (catalog id + price) is kept so Square receives it as a catalog modifier.
+  const [flavorNesteds, setFlavorNesteds] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  // This shake's allergy flag + note — carried on the shake's own cart line so
+  // the kitchen ticket names the shake that's allergic, not just the order.
+  const [allergy, setAllergy] = useState({ flag: false, note: '' });
+  const [allergyError, setAllergyError] = useState('');
 
   useEffect(() => {
     if (open) {
       setSize(null);
       setBase(null);
       setExtraFlavors([]);
+      setCoreLevel(null);
+      setFlavorNesteds({});
       setQuantity(1);
       setAdded(false);
+      setAllergy({ flag: false, note: '' });
+      setAllergyError('');
     }
   }, [open, shakeItem?.id]);
 
@@ -65,16 +84,24 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
     setList((prev) => (prev.some((s) => s.id === opt.id) ? prev.filter((s) => s.id !== opt.id) : [...prev, opt]));
   };
 
+  const nestedPriceFor = (id) => getFlavorNestedPrice(flavorNesteds[id]);
   const unitPrice =
     basePrice +
     (size?.price || 0) +
     (base?.price || 0) +
-    extraFlavors.reduce((s, f) => s + f.price, 0);
+    extraFlavors.reduce((s, f) => s + f.price + nestedPriceFor(f.id), 0);
 
   const totalPrice = unitPrice * quantity;
 
-  const extraFlavorNames = extraFlavors.map((f) => resolveFlavorName(f.id, f.name, config));
-  const allFlavorNames = [flavorName, ...extraFlavorNames];
+  // A flavor's Lite/Extra level rides as a name prefix on the flavor's own
+  // catalog id — the same way a burger reads "Extra Pickle" — so the flavor
+  // stays one permitted catalog modifier for pricing and the kitchen ticket.
+  const levelPrefix = (id) => {
+    const level = getFlavorLevel(flavorNesteds[id]);
+    return level === 'lite' ? 'Lite ' : level === 'extra' ? 'Extra ' : '';
+  };
+  const extraFlavorNames = extraFlavors.map((f) => `${levelPrefix(f.id)}${resolveFlavorName(f.id, f.name, config)}`);
+  const allFlavorNames = [withShakeFlavorLevel(flavorName, coreLevel), ...extraFlavorNames];
   // Only call out the base when it differs from the shake's own flavor —
   // otherwise it reads "Vanilla Milkshake (Vanilla)" and confuses the crew.
   // The ice cream base already prints in the modifier line, so it never goes in
@@ -83,10 +110,28 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const cartName = `${allFlavorNames.join(' + ')} Milkshake`;
 
   const handleAddToCart = () => {
+    // Flagged allergy with no explanation — ask for the details first, otherwise
+    // the kitchen gets an alert with nothing to act on.
+    if (allergy.flag && !allergy.note.trim()) {
+      setAllergyError('Tell us what the allergy is.');
+      return;
+    }
     const selectedModifiers = [
       ...(size ? [{ id: size.id, name: size.name, price: size.price }] : []),
       ...(base ? [{ id: base.id, name: resolveFlavorName(base.id, base.name, config), price: base.price }] : []),
-      ...extraFlavors.map((f) => ({ id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price })),
+      // Each extra flavor keeps its Lite/Extra level as a readable name prefix
+      // and, when the flavor carries a real "- / + Flavors" child list, the
+      // nested option's catalog id as a silent row so Square receives it.
+      ...extraFlavors.flatMap((f) => {
+        const merged = mergeNestedIntoParent(
+          { id: f.id, name: resolveFlavorName(f.id, f.name, config), price: f.price },
+          flavorNesteds[f.id] || {}
+        );
+        return [
+          { id: f.id, name: merged.mergedName, price: merged.mergedPrice },
+          ...merged.silentEntries,
+        ];
+      }),
     ];
 
     const cartItem = {
@@ -96,8 +141,10 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
       name: cartName,
       price: unitPrice,
       category: 'Shakes',
+      flavorLevel: coreLevel || undefined,
       image_url: shakeItem.image_url || '',
       selectedModifiers,
+      allergyNote: allergy.flag ? allergy.note.trim() : undefined,
     };
     for (let i = 0; i < quantity; i++) addItem(cartItem);
 
@@ -156,6 +203,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
             </div>
           </div>
 
+          {/* The included flavor has its own no-upcharge amount control. */}
+          <ShakeFlavorControl item={shakeItem} level={coreLevel} onChange={setCoreLevel} />
+
           {/* Ice Cream Base */}
           {baseOpts.length > 0 && (
             <div>
@@ -185,24 +235,27 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
           {allExtraOpts.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add Another Flavor</p>
+              {/* − is Lite, + is Extra on each flavor pill. */}
+              <FlavorAmountLegend align="left" className="mb-2.5" />
               <div className="flex flex-wrap gap-2">
                 {allExtraOpts.map((opt) => {
                   const selected = extraFlavors.some((s) => s.id === opt.id);
                   const name = resolveFlavorName(opt.id, opt.name, config);
                   const emoji = resolveFlavorEmoji(opt.id, config);
                   return (
-                    <button
+                    <FlavorPillButton
                       key={opt.id}
-                      onClick={() => toggleMulti(extraFlavors, setExtraFlavors, opt)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border-2 transition-all font-body text-sm font-semibold ${
-                        selected ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                      }`}
-                    >
-                      <span className="text-base leading-none">{emoji}</span>
-                      {name}
-                      <span className={`text-xs ${selected ? 'text-red-200' : 'text-muted-foreground'}`}>+${opt.price.toFixed(2)}</span>
-                      {selected && <Check size={13} className="ml-0.5" />}
-                    </button>
+                      mod={{ id: opt.id, name, price: opt.price, child_modifier_lists: opt.child_modifier_lists }}
+                      leading={<span className="text-base leading-none">{emoji}</span>}
+                      isSelected={selected}
+                      onToggle={() => {
+                        // Toggling the flavor off clears its Lite/Extra level too.
+                        if (selected) setFlavorNesteds((prev) => { const next = { ...prev }; delete next[opt.id]; return next; });
+                        toggleMulti(extraFlavors, setExtraFlavors, opt);
+                      }}
+                      nestedSelection={flavorNesteds[opt.id] || {}}
+                      onNestedChange={(nested) => setFlavorNesteds((prev) => ({ ...prev, [opt.id]: nested }))}
+                    />
                   );
                 })}
               </div>
@@ -233,6 +286,13 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
               <p className="text-xs text-muted-foreground mt-0.5">{cartName}</p>
             </div>
           </div>
+          <AllergyNote compact />
+          <ShakeAllergyCheckbox
+            checked={allergy.flag}
+            note={allergy.note}
+            error={allergyError}
+            onChange={(next) => { setAllergy(next); setAllergyError(''); }}
+          />
           <button
             onClick={handleAddToCart}
             disabled={!size}

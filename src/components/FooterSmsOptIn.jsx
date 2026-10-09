@@ -75,11 +75,7 @@ export default function FooterSmsOptIn() {
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Loader2 size={16} className="animate-spin" /> Checking your text preferences…
           </div>
-        ) : bothAlready ? (
-          <div className="flex items-center gap-2 text-sm text-gray-200">
-            <CheckCircle2 size={18} className="text-[hsl(var(--primary))]" /> You're already signed up for order updates and offers. Reply STOP anytime to cancel.
-          </div>
-        ) : done ? (
+        ) : bothAlready ? null : done ? (
           <div className="flex items-center gap-2 text-sm text-gray-200">
             <CheckCircle2 size={18} className="text-[hsl(var(--primary))]" /> You're signed up! Reply STOP anytime to cancel, HELP for help.
           </div>

@@ -24,6 +24,11 @@
       "type": "string",
       "description": "Optional photo for the post"
     },
+    "post_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional published-on date shown on the card and used for sort order. When set, the card displays this instead of the record's created_date so historical/backdated posts can appear on their intended day. Falls back to created_date when unset."
+    },
     "is_published": {
       "type": "boolean",
       "default": true,

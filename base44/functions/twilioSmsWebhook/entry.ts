@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import twilio from 'npm:twilio@5.3.3';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { getPhoneStoreStatus } from '../../shared/storeState.ts';
+import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
 import {
   upsertSmsConsent,
   stopSubscriber,
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     if (HELP.includes(upper)) {
-      return xmlReply('Flavor Isle: Text ORDERS for order updates only, OFFERS for order updates + recurring promotional offers, or STOP to cancel all. Msg&data rates may apply. Terms: https://taste-isle-express.base44.app/terms-of-service');
+      return xmlReply('Flavor Isle: Text ORDERS for order updates only, OFFERS for order updates + recurring promotional offers, or STOP to cancel all. Msg&data rates may apply. Terms: https://flavor-isle.com/terms-of-service');
     }
 
     // JOIN — ask the user to pick a category. Do NOT auto-enroll.
@@ -139,27 +140,87 @@ Deno.serve(async (req) => {
       });
     }
 
-    const updatedConversation = await base44.asServiceRole.agents.addMessage(conversation, {
+    // Attach the same STORE STATUS + CHANNEL context the phone and web-chat
+    // channels attach, so Smashie knows this is a TEXT (not a call), already
+    // knows the customer's number (that's how the secure pay link gets texted
+    // back to the right person), and never attempts a call-only action in a
+    // reply the customer reads verbatim.
+    let statusLine = '';
+    try {
+      // Same shared helper the voice paths use, so the 24/7 override window
+      // (MenuSetting open_all_day_date / open_all_day_until) applies to texts too.
+      const storeStatus = await getPhoneStoreStatus(base44);
+      statusLine = storeStatus.open
+        ? 'STORE STATUS: OPEN'
+        : `STORE STATUS: CLOSED${storeStatus.message ? ` — ${storeStatus.message}` : ''}`;
+    } catch (statusErr) {
+      // Never let the status lookup break the reply — the chat channel fails
+      // open the same way.
+      console.warn('SMS store status lookup failed:', statusErr.message);
+    }
+    const channelLine = `CHANNEL: SMS text message — this is a TEXT, not a phone call. The customer's phone number is ${from}: pass this exact number to logPhoneOrder as customer_phone. Counter transfers are NOT possible by text and the customer sees every character you send, so never offer a transfer, never use the [[TRANSFER]] token, and never use the [[PHONE_MESSAGE:...]] token — offer (270) 563-4618 or take the details and say management will follow up.`;
+    // Blocked numbers get a polite refusal instead of an order. They can still
+    // ask us to pass a note to management — it stays in this thread for the crew.
+    const block = await findBlock(base44, { phone: from });
+    const blockedLine = block ? `\n${blockedCallerInstruction({ channel: 'sms', reason: block.reason })}` : '';
+    const smsContext = `[[CTX]]${statusLine}\n${channelLine}${blockedLine}[[/CTX]]\n`;
+
+    // Smashie's reply lands on the conversation asynchronously, so wait for it
+    // the same way the voice webhook does (up to 10s). Reading the conversation
+    // straight after addMessage returned no messages and the customer got the
+    // canned greeting instead of an answer.
+    const conversationId = smsRecord.conversation_id;
+    const before = await base44.asServiceRole.agents.getConversation(conversationId);
+    const priorAssistantCount = (before.messages || []).filter(m => m.role === 'assistant').length;
+
+    await base44.asServiceRole.agents.addMessage(conversation, {
       role: 'user',
-      content: body,
+      content: `${smsContext}${body}`,
     });
 
-    const messages = updatedConversation.messages || [];
+    let messages = [];
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const refreshed = await base44.asServiceRole.agents.getConversation(conversationId);
+      messages = refreshed.messages || [];
+      if (messages.filter(m => m.role === 'assistant').length > priorAssistantCount) break;
+    }
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     const lastReply = assistantMessages[assistantMessages.length - 1];
-    const replyText = lastReply?.content || settings.greeting;
+    // Strip any structured token Smashie may have emitted for another channel
+    // (call transfers, phone messages) — raw tokens must never reach a
+    // customer's phone.
+    const rawReply = lastReply?.content || settings.greeting;
+    const replyText = rawReply.replace(/\[\[[\s\S]*?\]\]/g, '').trim() || settings.greeting;
 
     await base44.asServiceRole.entities.SmsConversation.update(smsRecord.id, {
       last_message_at: new Date().toISOString(),
       message_count: (smsRecord.message_count || 0) + 1,
     });
 
-    const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
-    await twilioClient.messages.create({
-      body: replyText,
-      from: twilioPhoneNumber,
-      to: from,
+    // Send the reply via the Twilio REST API directly. The Twilio npm SDK
+    // throws "Unsupported cache mode: default" under Deno, so we call the REST
+    // endpoint with fetch + Basic auth instead — same pattern as
+    // sendOrderReadyAlert. StatusCallback records delivery failures.
+    const smsUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+    const smsParams = new URLSearchParams({
+      From: twilioPhoneNumber,
+      To: from,
+      Body: replyText,
+      StatusCallback: 'https://flavor-isle.com/functions/twilioSmsStatus',
     });
+    const smsRes = await fetch(smsUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: smsParams.toString(),
+    });
+    if (!smsRes.ok) {
+      const smsErr = await smsRes.text();
+      throw new Error(`Twilio SMS failed (${smsRes.status}): ${smsErr}`);
+    }
 
     console.log(`Replied to ${from}: ${replyText.substring(0, 100)}`);
 

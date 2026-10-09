@@ -9,6 +9,10 @@
     "order_number": {
       "type": "string"
     },
+    "source_call_sid": {
+      "type": "string",
+      "description": "For phone orders, the id of the call that placed the order. While the phone pipeline hands a call between workers, both can briefly observe the same confirmation; logPhoneOrder returns the existing order for a repeated call id instead of creating a second one."
+    },
     "order_type": {
       "type": "string",
       "enum": [
@@ -23,7 +27,7 @@
         "counter",
         "curbside"
       ],
-      "description": "For pickup orders: 'counter' = walk in and pick up at the counter, 'curbside' = we bring it to the car. Chosen by the customer in the cart."
+      "description": "For pickup orders: counter or curbside."
     },
     "order_source": {
       "type": "string",
@@ -32,7 +36,7 @@
         "in_store"
       ],
       "default": "online",
-      "description": "Where the order originated. 'online' for web/app orders placed through the site; 'in_store' for Square POS orders synced from the register."
+      "description": "Where the order originated."
     },
     "status": {
       "type": "string",
@@ -73,7 +77,16 @@
     "happy_hour_discount": {
       "type": "number",
       "default": 0,
-      "description": "Happy Hour drink discount amount auto-applied when the order was placed during the active happy hour window. Separate from the loyalty reward `discount` field so reporting can track each independently. Carried to Square as its own order-level discount line."
+      "description": "Happy Hour discount, separate from loyalty discount."
+    },
+    "bundle_id": {
+      "type": "string",
+      "description": "Family bundle id when this order came from a bundle (e.g. school-night-lifesaver). Informational only: the bundle's items are normal line items and the saving rides on bundle_discount."
+    },
+    "bundle_discount": {
+      "type": "number",
+      "default": 0,
+      "description": "Fixed family-bundle discount that brings the bundle's included items down to the bundle price ($37.74 for the School Night Lifesaver); paid extras the customer chose stay outside it. POS-only: never printed on a kitchen ticket."
     },
     "redemption_id": {
       "type": "string"
@@ -100,13 +113,11 @@
       "type": "string"
     },
     "estimated_time": {
-      "type": "number",
-      "description": "Minutes from order placement until the order is ready"
+      "type": "number"
     },
     "scheduled_for": {
       "type": "string",
-      "format": "date-time",
-      "description": "When the customer wants the order ready. For ASAP orders this is order time + 20 min; for scheduled orders it is the chosen time slot."
+      "format": "date-time"
     },
     "stripe_session_id": {
       "type": "string"
@@ -116,37 +127,68 @@
     },
     "square_sync_claimed_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Atomic claim timestamp used by createSquareOrder to prevent duplicate Square order creation when the Stripe webhook fires both checkout.session.completed and payment_intent.succeeded ~1s apart. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on failure or when the real square_order_id is persisted. Stale claims (>5 min old) are cleared by autoSyncUnpushedOrders so crashed syncs can be retried."
+      "format": "date-time"
     },
     "confirmation_email_sent_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate customer confirmation emails ('Order locked in'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the email fires exactly once even if the Square push was handled by a concurrent call."
+      "format": "date-time"
     },
     "staff_alert_sent_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Atomic claim timestamp used by pushOrderToSquareAndKitchen to prevent duplicate staff alert emails ('New online order'). Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so a retry can send it. Independent from the Square push dedupe so the alert fires exactly once even if the Square push was handled by a concurrent call."
+      "format": "date-time"
     },
     "rec_email_sent_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Atomic claim timestamp used by sendOrderRecommendationEmail to prevent duplicate recommendation emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry. Also cleared (and rec_email_skipped_at set instead) when the order is permanently ineligible for a recommendation, so a skip never leaves a sent timestamp that falsely claims delivery."
+      "format": "date-time"
     },
     "rec_email_skipped_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Terminal skip marker set by sendOrderRecommendationEmail when a paid order is permanently ineligible for a recommendation email (no eligible non-malt/sundae dessert, no recommendations, or no items with photos) \u2014 set INSTEAD of rec_email_sent_at so a skip does not falsely claim delivery. The processPendingRecommendationEmails processor skips orders with this set, so permanently ineligible orders are not re-enqueued. Distinct from queued (no marker, no RecommendationEmail record), accepted/delivered (RecommendationEmail record with sent_at + rec_email_sent_at set), and the 7-day customer cooldown (no order marker, just a RecommendationEmail record)."
+      "format": "date-time"
     },
     "review_email_sent_at": {
       "type": "string",
+      "format": "date-time"
+    },
+    "review_sms_due_at": {
+      "type": "string",
       "format": "date-time",
-      "description": "Atomic claim timestamp used by sendReviewRequestEmail to prevent duplicate review-request emails. Set via updateMany with a null-condition so only one concurrent call can proceed. Cleared on send failure so the next workflow run can retry."
+      "description": "When the post-order Google review text for this order becomes due (completion + 2 hours, moved into the 10 AM\u20138 PM store-local window). Stamped once by processPendingReviewSms so later writes to the order cannot move the send time. Issue #37, step 2."
+    },
+    "review_sms_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the Google review request text was dispatched for this order. Doubles as the atomic claim that stops two overlapping scanner runs from texting the same order twice. Issue #37, step 2."
     },
     "payment_url": {
+      "type": "string"
+    },
+    "manual_pay_required": {
+      "type": "boolean",
+      "default": false
+    },
+    "pay_cash_on_pickup": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phone pickup order confirmed for preparation; collect cash at pickup. This flag is not proof of payment."
+    },
+    "cash_payment_id": {
       "type": "string",
-      "description": "Square-hosted checkout link generated for orders that are paid after the fact (phone orders taken by Smashie). Stored so staff can re-send or look up the link later."
+      "description": "Verified Square cash payment recorded when staff collect cash."
+    },
+    "payment_provider": {
+      "type": "string",
+      "enum": [
+        "square",
+        "stripe"
+      ],
+      "description": "Processor behind a phone/chat payment link; Stripe (paid on flavor-isle.com/pay) is the default, square is legacy."
+    },
+    "square_payment_link_id": {
+      "type": "string"
+    },
+    "square_checkout_order_id": {
+      "type": "string",
+      "description": "Square hosted-checkout order; only copied to square_order_id after verified payment."
     },
     "payment_status": {
       "type": "string",
@@ -160,12 +202,42 @@
     },
     "loyalty_accrued": {
       "type": "boolean",
+      "default": false
+    },
+    "loyalty_opt_in": {
+      "type": "boolean",
       "default": false,
-      "description": "Whether Square Star Rewards points have been successfully accrued for this order. Set true by the Stripe webhook after a successful accrual, and by the Square order-status sync's self-healing retry (which first checks the Square loyalty ledger for an existing ACCUMULATE_POINTS event so already-credited orders are never re-accrued)."
+      "description": "Customer explicitly opted into Star Rewards during this checkout."
+    },
+    "direct_web_rewards_v2": {
+      "type": "boolean",
+      "default": false,
+      "description": "Created through web checkout after Star Rewards v2; excludes phone, POS and historical orders from direct-order bonuses."
+    },
+    "loyalty_second_order_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "loyalty_streak_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "loyalty_welcome_back_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "referral_code": {
+      "type": "string",
+      "maxLength": 16,
+      "description": "Star Rewards referral code this order arrived with (issue #83, Part A), captured from a ?ref= link. The referrer's phone number is decoded from it server-side once the order completes; it is never printed on a ticket."
+    },
+    "referral_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the 50-Star referral bonus was granted to this order's referrer (issue #83, Part A). Once set, the bonus never grants again for this order."
     },
     "arrival_details": {
       "type": "object",
-      "description": "Curbside arrival info logged when the customer taps 'I'm Here' on the order status page: vehicle, parking zone, special notes (extra ketchup, napkins, etc.), and arrival timestamp.",
       "properties": {
         "arrived_at": {
           "type": "string",
@@ -184,10 +256,29 @@
           "type": "string"
         },
         "notes": {
-          "type": "string",
-          "description": "Customer's special requests at arrival, e.g. extra ketchup packets or napkins."
+          "type": "string"
         }
       }
+    },
+    "cancel_reason": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "Why the crew cancelled this order, typed into the Cancel Order dialog on the Orders page or the Kitchen board \u2014 or, for a register cancellation, the wording Square records (a refund reason the crew typed at the POS, otherwise 'Cancelled at the register.'). Written by the cancelOrder backend function and by the Square sync's POS-cancellation mirror. When set, the cancellation email quotes it back to the customer as 'What happened: ...', so type it for their eyes."
+    },
+    "cancellation_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the cancellation email actually went out to the customer. Stamped only on a successful send by notifyOrderCancelled (the crew's Cancel Order flow and the Square sync's register-cancellation mirror); a refused or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders so the crew can confirm the customer was told."
+    },
+    "cancellation_sms_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the cancellation text actually went out to the customer, gated on the same transactional consent as the other order texts. Stamped only on a successful send by notifyOrderCancelled; a skipped or failed send leaves it empty. Shown on the order card in Admin \u2192 Orders."
+    },
+    "square_refund_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Total refunded against this order in Square, in dollars \u2014 a register refund of a single item as well as a full refund. Written only by the Square sync's refund mirror (posOrderCancellation); a Stripe refund never sets it. Shown on the order card in Admin \u2192 Orders. A refund covering the whole order also flips payment_status to refunded, and when it lands while the order is still on the board the order is mirrored as cancelled and the customer is told, exactly as the Cancel Order button would have."
     }
   },
   "required": [

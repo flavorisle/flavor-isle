@@ -40,6 +40,7 @@ const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
 const Milkshakes = lazy(() => import('./pages/Milkshakes'));
 const MeetSmashie = lazy(() => import('./pages/MeetSmashie'));
+const Faq = lazy(() => import('./pages/Faq'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Login = lazy(() => import('./pages/Login'));
@@ -62,8 +63,10 @@ const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const CommunityNews = lazy(() => import('./pages/CommunityNews'));
 const Rewards = lazy(() => import('./pages/Rewards'));
 const Order = lazy(() => import('./pages/Order'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const MerchCheckout = lazy(() => import('./pages/MerchCheckout'));
 const MerchConfirmation = lazy(() => import('./pages/MerchConfirmation'));
+const PayPhoneOrder = lazy(() => import('./pages/PayPhoneOrder'));
 const AdminMerchCategories = lazy(() => import('./pages/AdminMerchCategories'));
 const AdminReviews = lazy(() => import('./pages/AdminReviews'));
 const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
@@ -76,10 +79,14 @@ const Flyer = lazy(() => import('./pages/Flyer'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
+const Newsletter = lazy(() => import('./pages/Newsletter'));
+const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
+const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
 import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
 import RestaurantSchema from './components/RestaurantSchema';
 import CanonicalLink from './components/CanonicalLink';
+import ReferralCapture from './components/ReferralCapture';
 
 // Suspense fallback — matches the app's initial loading screen so lazy
 // page loads feel seamless rather than flashing a blank white page.
@@ -183,6 +190,7 @@ const AuthenticatedApp = () => {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/find-smashie" element={<FindSmashie />} />
+      <Route path="/faq" element={<Faq />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/facebook-ad" element={<FacebookAd />} />
@@ -202,10 +210,15 @@ const AuthenticatedApp = () => {
       <Route path="/i65-exit-38" element={<I65Exit38 />} />
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
+      <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
+      <Route path="/newsletter" element={<Newsletter />} />
+      <Route path="/confirm-subscription" element={<ConfirmSubscription />} />
+      <Route path="/unsubscribe" element={<UnsubscribeEmail />} />
 
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
       <Route path="/order" element={<Order />} />
+      <Route path="/product/:slug" element={<ProductDetail />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
       <Route path="/merch" element={<Merch />} />
@@ -213,6 +226,7 @@ const AuthenticatedApp = () => {
       <Route path="/merch-confirmation" element={<MerchConfirmation />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
+      <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
 
@@ -254,6 +268,7 @@ function AppShell() {
               <ScrollToTop />
               <RestaurantSchema />
               <CanonicalLink />
+              <ReferralCapture />
               <AuthenticatedApp />
               <BottomTabBar />
               <MobileHeader />

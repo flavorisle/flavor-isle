@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '@/lib/dessertPromo';
 import ModifierModal from './ModifierModal';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Inline (non-blocking) dessert upsell rail for the cart drawer. Mirrors the
 // post-order recommendation email's "MAIN + SIDE, no DESSERT" rule: when the
@@ -42,7 +43,7 @@ export default function CartDessertUpsell() {
         const desserts = dailyRotate(
           excludeMaltSundae(
             items
-              .filter(m => bucketItem(m) === 'DESSERT' && m.is_available !== false && m.is_hidden !== true && m.image_url)
+              .filter(m => bucketItem(m) === 'DESSERT' && m.is_available !== false && m.is_hidden !== true && (m.image_url_opt || m.image_url))
               .sort(fanFavoriteSort)
           )
         ).slice(0, 3);
@@ -67,7 +68,7 @@ export default function CartDessertUpsell() {
       id: item.id,
       name: item.name,
       price: item.price,
-      image_url: item.image_url,
+      image_url: item.image_url_opt || item.image_url,
       category: item.category,
       catalog_object_id: item.square_item_id || '',
     });
@@ -80,7 +81,7 @@ export default function CartDessertUpsell() {
         id: modalItem.id,
         name: modalItem.name,
         price: modalItem.price + extraCost,
-        image_url: modalItem.image_url,
+        image_url: modalItem.image_url_opt || modalItem.image_url,
         category: modalItem.category,
         catalog_object_id: modalItem.square_item_id || '',
         selectedModifiers: selectedMods,
@@ -103,7 +104,7 @@ export default function CartDessertUpsell() {
       <div className="space-y-2">
         {suggestions.map(item => (
           <div key={item.id} className="flex items-center gap-2.5">
-            <img src={item.image_url} alt={item.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+            <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-heading text-sm text-obsidian-roast truncate leading-tight">{item.name}</p>
               <p className="text-xs text-patina-mint font-semibold">${item.price.toFixed(2)}</p>

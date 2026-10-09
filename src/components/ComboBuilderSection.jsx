@@ -3,11 +3,18 @@ import { Package, Check, X, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { itemCategoryKey } from '@/lib/menuCategory';
+import { resolveCombos } from '@/lib/comboConfig';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { optimizedImageUrl } from '@/lib/utils';
 
-function ModifierModal({ item, onClose, onConfirm }) {
+function ModifierModal({ item, onClose, onConfirm, overrides }) {
+  // Admin modifier controls apply to combo components too, so a combo's main,
+  // side, and drink respect the same hidden groups/options and site prices.
+  const groups = applyModifierOverrides(item.modifiers, overrides);
+
   const initSelections = () => {
-    if (!item.modifiers?.length) return {};
-    return item.modifiers.reduce((acc, group) => {
+    if (!groups.length) return {};
+    return groups.reduce((acc, group) => {
       // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
@@ -59,7 +66,7 @@ function ModifierModal({ item, onClose, onConfirm }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {item.modifiers.map(group => (
+          {groups.map(group => (
             <div key={group.name}>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
@@ -114,16 +121,22 @@ export default function ComboBuilderSection() {
   const [picks, setPicks] = useState({ main: null, side: null, drink: null });
   const [added, setAdded] = useState(false);
   const [modifierModal, setModifierModal] = useState(null); // { item, slot }
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem, setIsCartOpen, menuSetting } = useCart();
+  const overrides = menuSetting?.modifier_overrides;
 
   useEffect(() => {
     Promise.all([
       base44.entities.ComboConfig.filter({ is_active: true }),
       base44.entities.MenuItem.filter({ is_available: true, is_hidden: false }),
     ]).then(([c, m]) => {
-      setCombos(c || []);
-      setMenuItems(m || []);
-      if (c && c.length > 0) setSelectedCombo(c[0]);
+      // Only catalog-backed items can be combo components (the server reprices
+      // each one), and a combo whose side or drink slot resolves to nothing is
+      // hidden rather than rendered with an empty column.
+      const catalog = (m || []).filter((i) => i.square_item_id);
+      const { usable } = resolveCombos(c || [], catalog);
+      setCombos(usable);
+      setMenuItems(catalog);
+      if (usable.length > 0) setSelectedCombo(usable[0]);
     });
   }, []);
 
@@ -142,7 +155,7 @@ export default function ComboBuilderSection() {
   const allPicked = picks.main && picks.side && picks.drink;
 
   const handleSelectItem = (item, slot) => {
-    if (item.modifiers && item.modifiers.length > 0) {
+    if (applyModifierOverrides(item.modifiers, overrides).length > 0) {
       setModifierModal({ item, slot });
     } else {
       setPicks(p => ({ ...p, [slot]: { ...item, selectedModifiers: [] } }));
@@ -160,7 +173,7 @@ export default function ComboBuilderSection() {
     const name = `${selectedCombo.name}: ${picks.main.name} + ${picks.side.name} + ${picks.drink.name}`;
     const modSummary = [picks.main, picks.side, picks.drink]
       .flatMap(p => p.selectedModifiers || [])
-      .map(m => m.name).join(', ');
+      .filter(m => m.name && !m.silent).map(m => m.name).join(', ');
     addItem({
       id: `combo-${Date.now()}`,
       name,
@@ -194,7 +207,7 @@ export default function ComboBuilderSection() {
         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {items.map(item => {
             const isSelected = selected?.id === item.id;
-            const hasModifiers = item.modifiers && item.modifiers.length > 0;
+            const hasModifiers = applyModifierOverrides(item.modifiers, overrides).length > 0;
             return (
               <button
                 key={item.id}
@@ -203,8 +216,8 @@ export default function ComboBuilderSection() {
                   isSelected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40 bg-white'
                 }`}
               >
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                {(item.image_url_opt || item.image_url) && (
+                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-xs text-obsidian-roast truncate">{item.name}</p>
@@ -213,7 +226,7 @@ export default function ComboBuilderSection() {
                     <p className="text-xs text-patina-mint mt-0.5">Customizable</p>
                   )}
                   {isSelected && selected.selectedModifiers?.length > 0 && (
-                    <p className="text-xs text-patina-mint mt-0.5 truncate">{selected.selectedModifiers.map(m => m.name).join(', ')}</p>
+                    <p className="text-xs text-patina-mint mt-0.5 truncate">{selected.selectedModifiers.filter(m => m.name && !m.silent).map(m => m.name).join(', ')}</p>
                   )}
                 </div>
                 {isSelected ? (
@@ -234,6 +247,7 @@ export default function ComboBuilderSection() {
       {modifierModal && (
         <ModifierModal
           item={modifierModal.item}
+          overrides={overrides}
           onClose={() => setModifierModal(null)}
           onConfirm={handleModifierConfirm}
         />

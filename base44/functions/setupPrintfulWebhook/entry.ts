@@ -4,7 +4,7 @@ import { requireAdmin } from "../../shared/requireAdmin.ts";
 
 // The published app endpoint that Printful should POST fulfillment events to.
 // The printfulWebhook function lives at /functions/printfulWebhook.
-const WEBHOOK_URL = "https://taste-isle-express.base44.app/functions/printfulWebhook";
+const WEBHOOK_URL = "https://flavor-isle.com/functions/printfulWebhook";
 
 // Events we care about for merch order status emails + tracking. order_updated
 // covers status transitions (in production, fulfilled); package_shipped carries

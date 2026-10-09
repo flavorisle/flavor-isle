@@ -1,11 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import twilio from 'npm:twilio@5.3.3';
+import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
+import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
+import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
+import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
+import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
+import { greetingAudio } from '../../shared/smashieGreetingAudio.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -99,6 +104,9 @@ export default async function(req) {
     const from = params.get('From') || '';
     const speechResult = params.get('SpeechResult') || '';
     const url = new URL(req.url);
+    const greeting = fastGreetingResponse(url, params);
+    if (greeting) return greeting;
+    const greetingStarted = url.searchParams.get('greetingStarted') === '1' || params.get('greetingStarted') === '1';
     const isCallback = url.searchParams.get('callback') === '1' || params.get('callback') === '1';
     const isTransferCallback = url.searchParams.get('transfer') === '1' || params.get('transfer') === '1';
     const buildCallbackUrl = (caller, conversationId, turn) => {
@@ -114,6 +122,11 @@ export default async function(req) {
     // instead of waiting here for generation plus a second file upload.
     const speak = async (twiml, text) => {
       const cleanText = forTTS(text);
+      const recorded = greetingAudio(cleanText);
+      if (recorded) {
+        twiml.play({}, recorded);
+        return;
+      }
       const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
       twiml.play({}, audioUrl.toString());
@@ -187,9 +200,23 @@ export default async function(req) {
 
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      const storeStatus = await getPhysicalStoreStatus(base44);
+      // Includes the admin's 24/7 override window (MenuSetting
+      // open_all_day_date / open_all_day_until), shared with the website.
+      const [storeStatus, busynessLevel, convo] = await Promise.all([
+        getPhoneStoreStatus(base44),
+        getBusynessLevel(base44),
+        base44.asServiceRole.agents.createConversation({
+          agent_name: 'smashie',
+          metadata: {
+            name: `Voice Call - ${from}`,
+            description: `Voice call from ${from}`,
+            channel: 'voice',
+            phone: from,
+            call_sid: callSid,
+          },
+        }),
+      ]);
       const closedToday = !storeStatus.open;
-      const busynessLevel = await getBusynessLevel(base44);
       const busynessLine = busynessLevel === 'Slammed — Expect a Wait'
         ? "Heads up fam, we're slammed right now — expect up to an hour wait!"
         : busynessLevel === 'Busy'
@@ -201,20 +228,10 @@ export default async function(req) {
         ? `Just a heads up — ${storeStatus.message}.`
         : `Just a heads up — we're ${storeStatus.message}.`;
       const voiceGreeting = closedToday
-        ? `Hey fam, Smashie here at Flavor Isle! ${headsUp} We'll be back to normal soon! I can still help with menu questions, hours, or take a message for the crew. What can I do for you?`
-        : `Hey fam, Smashie here at Flavor Isle! ${busynessLine} I can help with menu questions, hours, take a message for the crew, or I can get you over to a real person at the counter. What can I do for you?`;
-      const convo = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'smashie',
-        metadata: {
-          name: `Voice Call - ${from}`,
-          description: `Voice call from ${from}`,
-          channel: 'voice',
-          phone: from,
-          call_sid: callSid,
-        },
-      });
+        ? `${SMASHIE_HELLO} ${headsUp} ${abilityEnabled(settings, 'hours') ? 'I can tell you when we open next. ' : ''}${abilityEnabled(settings, 'messages') ? 'I can take a message for the crew. ' : ''}What do you need today?`
+        : `${SMASHIE_HELLO} ${abilityEnabled(settings, 'wait') ? `${busynessLine} ` : ''}${phoneIntro(settings)}`;
       const conversationId = convo.id;
-      await base44.asServiceRole.entities.SmsConversation.create({
+      const callRecordPromise = base44.asServiceRole.entities.SmsConversation.create({
         phone_number: from,
         conversation_id: conversationId,
         call_sid: callSid,
@@ -225,30 +242,44 @@ export default async function(req) {
         transcript: [{ role: 'assistant', content: voiceGreeting, timestamp: startedAt }],
       });
 
-      // Resolve the caller's Square customer so Smashie knows their name + email
-      // without asking. Powers email-based payment link delivery.
-      try {
-        const squareCust = await lookupCustomerByPhone(base44, from);
-        if (squareCust) {
-          await base44.asServiceRole.entities.SmsConversation.update(convo.id, {
-            customer_name: squareCust.name,
-            square_customer_id: squareCust.id,
-            customer_email: squareCust.email,
-          });
+      // Caller lookup is useful for later turns, but must never hold up the greeting.
+      waitUntil((async () => {
+        try {
+          const callRecord = await callRecordPromise;
+          const squareCust = await lookupCustomerByPhone(base44, from);
+          if (squareCust) {
+            await base44.asServiceRole.entities.SmsConversation.update(callRecord.id, {
+              customer_name: squareCust.name,
+              square_customer_id: squareCust.id,
+              customer_email: squareCust.email,
+            });
+          }
+        } catch (e) {
+          console.error('Caller Square lookup failed:', e.message);
         }
-      } catch (e) {
-        console.error('Caller Square lookup failed:', e.message);
-      }
+      })());
 
       const twiml = new VoiceResponse();
-      await speak(twiml, voiceGreeting);
-      twiml.gather({
+      const greetingGather = twiml.gather({
         input: 'speech',
         action: buildCallbackUrl(from, conversationId, 1),
         speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });
+      // The fixed hello has already played while this request prepared the call.
+      // Keep the full greeting in the transcript, without saying his name twice.
+      const remainingGreeting = greetingStarted && voiceGreeting.startsWith(SMASHIE_HELLO)
+        ? voiceGreeting.slice(SMASHIE_HELLO.length).trim()
+        : voiceGreeting;
+      // Keep live wait information, but play each fixed greeting segment directly.
+      // Changing the admin intro or ability switches still uses its exact live text.
+      if (greetingStarted && !closedToday) {
+        if (abilityEnabled(settings, 'wait')) await speak(greetingGather, busynessLine);
+        await speak(greetingGather, phoneIntro(settings));
+      } else {
+        await speak(greetingGather, remainingGreeting);
+      }
       await speak(twiml, "My bad fam, I didn't catch that. Run it back when you're ready!");
       twiml.hangup();
 
@@ -270,14 +301,14 @@ export default async function(req) {
     if (!speechResult) {
       const twiml = new VoiceResponse();
       if (turn <= 2) {
-        await speak(twiml, "Yo, I didn't catch that — run that back for me?");
-        twiml.gather({
+        const retryGather = twiml.gather({
           input: 'speech',
           action: callbackUrl(turn + 1),
           speechTimeout: '1',
           language: 'en-US',
           timeout: 8,
         });
+        await speak(retryGather, "Yo, I didn't catch that — run that back for me?");
       }
       await speak(twiml, "No worries fam — hit us back when you're ready. Bet!");
       twiml.hangup();
@@ -291,32 +322,39 @@ export default async function(req) {
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    // Phone ordering is intentionally available at all hours for testing.
-    const callRecords = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
+    const [callRecords, liveBusyness, storeStatus, settings] = await Promise.all([
+      base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId }),
+      getBusynessLevel(base44),
+      getPhoneStoreStatus(base44),
+      getSmashieSettings(base44),
+    ]);
 
-    // Inject the caller's resolved Square info so Smashie knows their name and
-    // email without asking. Powers email-based payment link delivery.
+    // Inject the caller's phone (and their resolved Square name/email) so
+    // Smashie can take an order and text the payment link without asking.
     const callerRecord = callRecords[0] || {};
-    const callerInfo = callerRecord.customer_email
-      ? `[CALLER INFO: Name: ${callerRecord.customer_name || 'Unknown'}, Email: ${callerRecord.customer_email}, SquareCustomerId: ${callerRecord.square_customer_id || 'none'}. Resolved automatically from the caller's phone via Square. When confirming a phone order, pass this email to logPhoneOrder as customer_email — do NOT ask the caller for their email.]`
+    const callerInfo = `[CALLER INFO: Caller phone number: ${callerFrom}. Pass this exact number to logPhoneOrder as customer_phone — the payment link is texted there. ${callerRecord.customer_email
+      ? `Name: ${callerRecord.customer_name || 'Unknown'}, Email: ${callerRecord.customer_email} (resolved automatically from the caller's phone via Square). Pass the email to logPhoneOrder as customer_email too — do NOT ask the caller for it.`
       : callerRecord.customer_name
-        ? `[CALLER INFO: Name: ${callerRecord.customer_name}. No email on file in Square. When confirming a phone order, ask the caller for their email so the payment link can be emailed, and pass it to logPhoneOrder as customer_email.]`
-        : `[CALLER INFO: Caller not found in Square. When confirming a phone order, ask for the caller's name and email, and pass both to logPhoneOrder.]`;
-    const liveBusyness = await getBusynessLevel(base44);
-    const storeStatus = await getPhysicalStoreStatus(base44);
+        ? `Name: ${callerRecord.customer_name}. No email on file in Square. The link is texted to the number above, so the email is optional — ask for one only if the caller wants it emailed as well.`
+        : `Caller not found in Square. Ask for the caller's name. The link is texted to the number above, so an email is optional.`}]`;
+    // Blocked numbers can't order on the phone: Smashie declines and may still
+    // take a message for the crew.
+    const block = await findBlock(base44, { phone: callerFrom, email: callerRecord.customer_email });
+    const blockedLine = block ? `\n${blockedCallerInstruction({ channel: 'voice', reason: block.reason })}` : '';
+
     const closedToday = !storeStatus.open;
     const statusContext = closedToday
-      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said. When CLOSED: you may ONLY share Flavor Isle history, tell the caller we're closed right now and back to normal soon, or take and save a message for management. Do NOT tell the caller the store is open. Do NOT mention closing time or today's hours. Do NOT say "we're open until 8" or anything similar. Do not discuss the menu, recommend food, take or build an order, provide directions, or offer a counter transfer. Do not mention busyness or wait times — we are closed.]\n${callerInfo}`
-      : `[STORE STATUS: OPEN FOR PHONE TESTING. All open-hours capabilities are allowed regardless of the current time. The caller already heard Smashie's full introduction at the start of this call. Do not introduce yourself or repeat the greeting; respond directly to what they said.]\n[BUSYNESS: ${liveBusyness}. If the caller asks how busy you are, tell them this.]\n${callerInfo}`;
+      ? `[STORE STATUS: CLOSED. Flavor Isle is completely closed right now (${storeStatus.message}). The caller already heard Smashie's introduction. Do not introduce yourself again. When CLOSED: only share history if enabled, opening information if enabled, or save a message if enabled. Never discuss the menu, recommend food, take or build an order, give directions, offer a counter transfer, or quote busyness or wait times. Never say we are open.]\n${callerInfo}${blockedLine}`
+      : `[STORE STATUS: OPEN. Follow the admin ability switches. The caller already heard Smashie's introduction. Respond directly without repeating it.]\n[BUSYNESS: ${abilityEnabled(settings, 'wait') ? `${liveBusyness}. If the caller asks how busy you are, tell them this.` : 'Do not quote busyness or wait times.'}]\n${callerInfo}${blockedLine}`;
 
-    const messageTurn = await processPhoneMessageTurn(
+    const messageTurn = abilityEnabled(settings, 'messages') ? await processPhoneMessageTurn(
       base44,
       callRecords[0],
       speechResult,
       callerFrom,
       callSid,
       conversationId,
-    );
+    ) : null;
 
     let replyText;
     if (messageTurn) {
@@ -326,7 +364,7 @@ export default async function(req) {
       const priorAssistantCount = (conversation.messages || []).filter(m => m.role === 'assistant').length;
       await base44.asServiceRole.agents.addMessage(conversation, {
         role: 'user',
-        content: `${statusContext}\nCaller said: ${speechResult}`,
+        content: `${statusContext}\n${smashieAdminContext(settings)}\nCaller said: ${speechResult}`,
       });
 
       let messages = conversation.messages || [];
@@ -344,7 +382,7 @@ export default async function(req) {
 
     // Smashie emits a structured token only after collecting all message details.
     const messageMatch = replyText.match(/\[\[PHONE_MESSAGE:(\{[\s\S]*?\})\]\]/i);
-    if (messageMatch) {
+    if (messageMatch && abilityEnabled(settings, 'messages')) {
       try {
         const messageData = JSON.parse(messageMatch[1]);
         if (!messageData.caller_name || !messageData.recipient || !messageData.message) {
@@ -367,20 +405,22 @@ export default async function(req) {
       }
     }
 
+    // Never read a disabled message action token aloud or show it in the transcript.
+    spokenReply = spokenReply.replace(/\[\[PHONE_MESSAGE:\{[\s\S]*?\}\]\]/gi, '').trim() || (abilityEnabled(settings, 'messages') ? "I couldn't save that message. Please try again." : "I can't take a message right now.");
+
     // Persist a clean, admin-readable transcript independent of agent ownership.
-    const existing = await base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId });
-    if (existing[0]) {
+    if (callRecords[0]) {
       const timestamp = new Date().toISOString();
       const transcript = [
-        ...(existing[0].transcript || []),
+        ...(callRecords[0].transcript || []),
         { role: 'user', content: speechResult, timestamp },
         { role: 'assistant', content: spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim(), timestamp },
       ];
-      await base44.asServiceRole.entities.SmsConversation.update(existing[0].id, {
+      waitUntil(base44.asServiceRole.entities.SmsConversation.update(callRecords[0].id, {
         last_message_at: timestamp,
-        message_count: (existing[0].message_count || 0) + 2,
+        message_count: (callRecords[0].message_count || 0) + 2,
         transcript,
-      });
+      }).catch(e => console.error('Voice transcript update failed:', e.message)));
     }
 
     // Check if order was completed (Smashie says goodbye/confirmed)
@@ -394,10 +434,13 @@ export default async function(req) {
     // take a message instead.
     const wantsTransfer = /\[\[TRANSFER\]\]/i.test(spokenReply);
     const counterNumber = Deno.env.get('COUNTER_PHONE_NUMBER');
-    if (wantsTransfer && counterNumber) {
+    if (wantsTransfer && counterNumber && abilityEnabled(settings, 'transfer') && !closedToday) {
       const cleanReply = spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim();
       const transferTwiml = new VoiceResponse();
-      await speak(transferTwiml, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
+      // A failed audio download aborts Twilio's entire response before <Dial>.
+      // Use Twilio's built-in voice for this announcement so transfers do not
+      // depend on the separate TTS endpoint being available.
+      transferTwiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, cleanReply || "Bet — let me get you over to the counter, hold tight fam!");
       const transferCallback = new URL(`https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/twilioVoiceWebhook`);
       transferCallback.searchParams.set('transfer', '1');
       transferCallback.searchParams.set('from', callerFrom);
@@ -408,22 +451,22 @@ export default async function(req) {
     }
 
     const twiml = new VoiceResponse();
-    await speak(twiml, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
-
     if (isOrderComplete || atTurnCap) {
+      await speak(twiml, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
       if (atTurnCap && !isOrderComplete) {
         await speak(twiml, "Aight fam, let's wrap this up — hit us back if you need anything else. We got you!");
       }
       twiml.hangup();
     } else {
-      // Keep listening
-      twiml.gather({
+      // Keep listening while speaking, so callers can cut in mid-sentence.
+      const replyGather = twiml.gather({
         input: 'speech',
         action: callbackUrl(turn + 1),
         speechTimeout: '1',
         language: 'en-US',
         timeout: 8,
       });
+      await speak(replyGather, spokenReply.replace(/\[\[TRANSFER\]\]/gi, '').trim());
       await speak(twiml, "You still there fam? Hit us back if we got disconnected!");
       twiml.hangup();
     }

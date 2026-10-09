@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Check, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
+import { withShakeFlavorLevel } from './ShakeFlavorControl';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // The five specialty "Bliss" shakes — standalone Square items with their own
 // pricing and a Size modifier. Displayed below the build-your-own flavor grid.
@@ -12,12 +15,14 @@ const PREMIUM_SHAKE_IDS = [
   '6a3e3805ff57925d93d080ba', // Southern Peach Crumble Bliss
   '6a3e37fee8d7ba1372e2072f', // Banana Split Bliss
   '6a7b92470796edccdb26af34', // Caramel Apple Bliss
+  '6ab2d3f6dfddfc7740e92cde', // Strawberry Crunch Bliss
 ];
 
 // Special availability badges keyed by MenuItem id.
 const AVAILABILITY_BADGES = {
   '6a3e3807f128347090f2090d': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
   '6a7b92470796edccdb26af34': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
+  '6ab2d3f6dfddfc7740e92cde': { label: 'New', className: 'bg-patina-mint text-white' },
 };
 
 // Short display names (strip the "Milkshake" suffix for the card title).
@@ -27,10 +32,11 @@ const SHORT_NAMES = {
   '6a3e3805ff57925d93d080ba': 'Peach Crumble Bliss',
   '6a3e37fee8d7ba1372e2072f': 'Banana Split Bliss',
   '6a7b92470796edccdb26af34': 'Caramel Apple Bliss',
+  '6ab2d3f6dfddfc7740e92cde': 'Strawberry Crunch Bliss',
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {
-  const { addItem, setIsCartOpen, orderingEnabled } = useCart();
+  const { addItem, setIsCartOpen, orderingEnabled, menuSetting } = useCart();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState(null);
@@ -57,7 +63,9 @@ export default function PremiumShakesSection({ autoOpenId }) {
 
   const handleCardClick = (item) => {
     if (!orderingEnabled) return;
-    const hasModifiers = item.modifiers && item.modifiers.length > 0;
+    // Only open the customizer when the item still has choices after the admin's
+    // modifier controls (hidden groups/options) are applied.
+    const hasModifiers = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides).length > 0;
     if (hasModifiers) {
       setActiveItem(item);
     } else {
@@ -67,8 +75,8 @@ export default function PremiumShakesSection({ autoOpenId }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost) => {
-    addItem({ ...activeItem, price: activeItem.price + extraCost, selectedModifiers: selectedMods });
+  const handleModalConfirm = (selectedMods, extraCost, _label, _allToppings, _comboItems, allergyNote, coreLevel) => {
+    addItem({ ...activeItem, name: withShakeFlavorLevel(activeItem.name, coreLevel), flavorLevel: coreLevel || undefined, price: activeItem.price + extraCost, selectedModifiers: selectedMods, allergyNote: allergyNote || undefined });
     setAddedId(activeItem.id);
     setActiveItem(null);
     setTimeout(() => setAddedId(null), 1200);
@@ -120,10 +128,14 @@ export default function PremiumShakesSection({ autoOpenId }) {
               >
                 {/* Image */}
                 <div className="relative h-32 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100">
-                  {item.image_url ? (
+                  {item.image_url_opt || item.image_url ? (
                     <img
-                      src={item.image_url}
+                      src={optimizedImageUrl(item.image_url_opt || item.image_url, 500, 500)}
                       alt={item.name}
+                      width="500"
+                      height="500"
+                      loading="lazy"
+                      decoding="async"
                       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                         soldOut ? 'grayscale opacity-60' : ''
                       }`}

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import Stripe from 'npm:stripe@14.25.0';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.ts';
+import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
 
 // Client-side payment confirmation fallback.
 //
@@ -21,7 +22,7 @@ import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.t
 // square_order_id is already set, so it's safe when both this fallback and the
 // webhook fire for the same order — only the first one pushes, the second is a
 // no-op.
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const { orderNumber } = await req.json();
@@ -34,6 +35,7 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'order not found' });
     }
     const order = orders[0];
+    if (order.pay_cash_on_pickup) return Response.json({ skipped: true, reason: 'Cash must be collected and recorded by staff at pickup.' });
 
     // Group/split orders: never settle on the client's word. Verify every
     // share succeeded at the correct amount via Stripe, then settle the parent
@@ -54,6 +56,16 @@ Deno.serve(async (req) => {
         }, { status: 400 });
       }
       return Response.json({ ok: true, order_number: order.order_number, group: true });
+    }
+
+    // Phone orders are public-link orders: never mark one paid on the caller's
+    // word. Stripe must show a succeeded USD payment for the stored total.
+    if (isPhoneOrder(order) && order.payment_status !== 'paid') {
+      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+      const intent = order.stripe_session_id?.startsWith('pi_') ? await stripe.paymentIntents.retrieve(order.stripe_session_id) : null;
+      if (!intent || !phoneIntentMatchesOrder(order, intent)) {
+        return Response.json({ skipped: true, reason: 'payment not confirmed' });
+      }
     }
 
     // Mark paid + confirmed if the webhook hasn't already.
@@ -77,4 +89,4 @@ Deno.serve(async (req) => {
     console.error('confirmOnlinePayment error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

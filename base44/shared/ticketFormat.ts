@@ -6,8 +6,8 @@
 // to see. Any modifiers the customer added beyond the preset are still listed
 // individually so extras (Bacon, extra sauce, a Size choice) are not lost.
 //
-// Used by createSquareOrder (Square POS line item name) and printKitchenOrder
-// (kitchen SMS ticket) so both surfaces stay in sync.
+// Used by createSquareOrder (Square POS line item name) and staff order
+// notifications so modifier names stay consistent across these surfaces.
 
 const norm = (s: string): string => (s || '').toString().toLowerCase();
 const stem = (s: string): string => norm(s).replace(/(es|s)$/, '');
@@ -16,8 +16,13 @@ const stem = (s: string): string => norm(s).replace(/(es|s)$/, '');
 export function formatItemModifiers(item: any): string[] {
   const mods: any[] = Array.isArray(item?.selectedModifiers) ? item.selectedModifiers : [];
   const label: string | undefined = item?.deluxeLabel;
+  // A customer-flagged allergy on this one line (e.g. one shake in a family
+  // order) prints with the line so the crew knows exactly which item it is.
+  const allergyNote = (item?.allergyNote || '').toString().trim();
+  const withAllergy = (list: string[]): string[] =>
+    allergyNote ? [...list, `ALLERGY: ${allergyNote}`] : list;
   if (!label) {
-    return mods.map((m: any) => m?.name).filter(Boolean);
+    return withAllergy(mods.map((m: any) => m?.name).filter(Boolean));
   }
   // Deluxe preset active — summarize its toppings with the label, then append
   // any extras the customer added on top. `deluxeToppings` carries the full
@@ -28,11 +33,14 @@ export function formatItemModifiers(item: any): string[] {
     .filter((m: any) => {
       const name = m?.name;
       if (!name) return false;
+      // An adjusted preset topping (e.g. Extra Pickle) is an instruction,
+      // not the plain topping already represented by the Deluxe label.
+      if (/^(extra|lite|light)\s/i.test(name)) return true;
       return !tracked.some((t) => {
         const ms = stem(name);
         return ms === t || ms.includes(t) || t.includes(ms);
       });
     })
     .map((m: any) => m.name);
-  return [label, ...extras];
+  return withAllergy([label, ...extras]);
 }

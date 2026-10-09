@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import NewsPostCard from '@/components/news/NewsPostCard';
 import NewsComposer from '@/components/news/NewsComposer';
+import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -15,7 +16,7 @@ export default function CommunityNews() {
   const isAdmin = user?.role === 'admin';
 
   const loadPosts = async () => {
-    const all = await base44.entities.NewsPost.filter({ is_published: true }, '-created_date', 50);
+    const all = await base44.entities.NewsPost.filter({ is_published: true }, '-post_date', 50);
     setPosts(all || []);
     setLoading(false);
   };
@@ -24,6 +25,10 @@ export default function CommunityNews() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
+      <Seo
+        title="Community News — Flavor Isle | Smiths Grove, KY"
+        description="Latest updates from Flavor Isle: community events, restaurant news, and local partnerships in Smiths Grove, KY. See what's happening at the Isle."
+      />
       <Navbar />
 
       <section className="px-4 sm:px-6 pt-8 pb-6 max-w-3xl mx-auto text-center">
@@ -34,7 +39,7 @@ export default function CommunityNews() {
           WHAT'S HAPPENING AT THE ISLE
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground font-body mt-3 max-w-xl mx-auto">
-          Community events, diner updates, and local partnerships — straight from Smiths Grove.
+          Community events, restaurant updates, and local partnerships — straight from Smiths Grove.
         </p>
         {isAdmin && (
           <div className="mt-5">
@@ -51,7 +56,7 @@ export default function CommunityNews() {
         ) : posts.length === 0 ? (
           <div className="card-diner p-8 text-center">
             <p className="font-heading text-lg text-obsidian-roast mb-1">Nothing posted yet</p>
-            <p className="text-sm text-muted-foreground font-body">Check back soon — news from the diner lands here first.</p>
+            <p className="text-sm text-muted-foreground font-body">Check back soon — news from Flavor Isle lands here first.</p>
           </div>
         ) : (
           posts.map((post) => <NewsPostCard key={post.id} post={post} />)

@@ -3,6 +3,8 @@
 // User data (email, phone, name, etc.) is SHA-256 hashed per Meta's spec.
 // Client IP address and User Agent are NOT hashed (sent raw).
 
+import { getSmashieSettings } from './smashieSettings.ts';
+
 const API_VERSION = 'v21.0';
 const GRAPH_ENDPOINT = `https://graph.facebook.com/${API_VERSION}`;
 
@@ -16,8 +18,9 @@ const _TOKEN_TTL = 5 * 60 * 1000; // 5 minutes
 export async function getFacebookAccessToken(base44: any): Promise<string | null> {
   if (_cachedToken !== null && Date.now() - _cachedAt < _TOKEN_TTL) return _cachedToken;
   try {
-    const settings = await base44.asServiceRole.entities.SmashieSettings.list();
-    _cachedToken = settings?.[0]?.facebook_access_token || null;
+    // The one pinned SmashieSettings record (never a duplicate).
+    const settings = await getSmashieSettings(base44);
+    _cachedToken = settings?.facebook_access_token || null;
     _cachedAt = Date.now();
   } catch (e) {
     console.error('Facebook CAPI: failed to fetch access token from SmashieSettings:', e.message);

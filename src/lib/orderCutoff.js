@@ -1,3 +1,6 @@
+import { isOpenAllDay } from '@/lib/openAllDay';
+import { earlyCloseToday } from '@/lib/storeState';
+
 const STORE_TZ = 'America/Chicago';
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -18,17 +21,6 @@ export function getCutoffStatus(setting) {
   // Admin can pause delivery entirely — it stays unavailable regardless of hours.
   const deliveryPaused = setting?.delivery_enabled === false;
 
-  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
-  // When active and today falls within the inclusive date range, every order
-  // type is cut off — same as a closed weekday.
-  const closure = setting?.closure;
-  if (closure?.active) {
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
-    const start = closure.start_date || todayStr;
-    const end = closure.end_date || start;
-    if (todayStr >= start && todayStr <= end) return allClosed;
-  }
-
   const allClosed = {
     delivery: true,
     pickup: true,
@@ -37,7 +29,28 @@ export function getCutoffStatus(setting) {
     pickupCutoff,
   };
 
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
+
+  // Admin-configured temporary full-day closure (e.g. maintenance, weather).
+  // When active and today falls within the inclusive date range, every order
+  // type is cut off — same as a closed weekday.
+  const closure = setting?.closure;
+  if (closure?.active) {
+    const start = closure.start_date || todayStr;
+    const end = closure.end_date || start;
+    if (todayStr >= start && todayStr <= end) return allClosed;
+  }
+
+  // Date-scoped 24/7 override (MenuSetting.open_all_day_date, optionally
+  // stretched by open_all_day_until): while the window is active, ordering stays
+  // available around the clock — no morning unlock and no wind-down cutoffs. A
+  // fixed window, so it expires on its own; the admin can still pause delivery,
+  // and a closure above still wins.
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
+  if (isOpenAllDay(setting, todayStr, now.getHours() * 60 + now.getMinutes())) {
+    return { delivery: deliveryPaused, pickup: false, dine_in: false, deliveryCutoff, pickupCutoff };
+  }
+
   const dayKey = DAY_KEYS[(now.getDay() + 6) % 7];
   const today = setting?.business_hours?.[dayKey] || {};
   if (today.closed) return allClosed;
@@ -49,7 +62,10 @@ export function getCutoffStatus(setting) {
   const ORDER_OPEN_MINS = 8 * 60;
   const openMins = toMins(today.open) ?? ORDER_OPEN_MINS;
   const unlockMins = Math.min(ORDER_OPEN_MINS, openMins);
-  const closeMins = toMins(today.close) ?? closedFallback;
+  // A one-day early close (MenuSetting.early_close, honored only on its own
+  // date) moves today's closing time — and every wind-down cutoff with it.
+  const earlyClose = earlyCloseToday(setting, todayStr);
+  const closeMins = (earlyClose ? toMins(earlyClose.closeTime) : toMins(today.close)) ?? closedFallback;
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
   if (nowMins < unlockMins) return allClosed;   // before ordering unlocks — locked

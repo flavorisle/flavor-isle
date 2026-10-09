@@ -2,6 +2,8 @@ import { Resend } from 'npm:resend@3.2.0';
 import { getLiveBusyness } from './liveBusyness.ts';
 import { fetchStoreProducts } from './printful.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from './dessertPriority.ts';
+import { formatItemModifiers } from './ticketFormat.ts';
+import { GOOGLE_REVIEW_URL } from './googleReviewUrl.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -12,7 +14,7 @@ const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain
 // (they return "unauthorized" there). Email clients must hit the base44.app
 // function URL; the function then 302-redirects to the custom domain.
-const FUNCTION_BASE = 'https://taste-isle-express.base44.app';
+const FUNCTION_BASE = 'https://flavor-isle.com';
 
 // Build a click-tracked link. Routes the email CTA through the trackEmailClick
 // endpoint so each click is counted, then redirects to `path`. `linkId` labels
@@ -90,6 +92,7 @@ export async function foodHeroHtml(base44?: any) {
       m.is_available !== false &&
       m.is_hidden !== true &&
       m.image_url &&
+      !/pulled\s*pork|loaded\s*bbq\s*waffle|waffle\s*fries\s*with\s*jalape/i.test(m.name || '') &&
       (m.is_fan_favorite || m.is_featured)
     );
     const allowed = excludeMaltSundae(withPhotos);
@@ -99,10 +102,11 @@ export async function foodHeroHtml(base44?: any) {
     allowed.sort(fanFavoriteSort);
     const pick = dailyRotate(allowed)[0];
     const price = typeof pick.price === 'number' ? `$${pick.price.toFixed(2)}` : '';
+    const photo = pick.image_url_opt || pick.image_url;
     const link = trackedLink('/menu', 'food_hero');
     return `
     <a href="${link}" style="text-decoration:none;color:#141414;display:block;margin:20px 0 8px;">
-      <img src="${pick.image_url}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
+      <img src="${photo}" alt="${(pick.name || '').replace(/"/g, '&quot;')}" width="500" style="width:100%;max-width:500px;border-radius:14px;display:block;object-fit:cover;aspect-ratio:4/3;background:#f5edd6;" />
       <div style="padding:12px 4px 0;">
         <div style="font-family:'Oswald',Arial,sans-serif;font-size:20px;color:#C0392B;letter-spacing:1px;">${pick.name || 'Flavor Isle Favorite'}</div>
         ${price ? `<div style="font-family:'Oswald',Arial,sans-serif;font-size:16px;color:#141414;margin-top:2px;">${price}</div>` : ''}
@@ -242,7 +246,7 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
     const { error } = await resend.emails.send({
-      from: `${fromName} <smashie@order.flavor-isle.com>`,
+      from: `${fromName} <smashie@flavor-isle.com>`,
       to,
       subject,
       html: brandedEmailHtml(body.replace(/\n/g, '<br>')),
@@ -259,6 +263,47 @@ export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor
   }
 }
 
+// Show the birthday ask only when the order's phone-linked profile has no
+// birthday. If no phone profile exists, use the order email as a fallback.
+// A failed lookup omits the ask rather than risking a repeat to someone who
+// has already saved their birthday.
+async function birthdayAskForReadyOrder(order: any, base44?: any) {
+  if (!base44) return '';
+  try {
+    const digits = String(order.customer_phone || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+    const phones = digits.length === 10
+      ? [...new Set([order.customer_phone, digits, `+1${digits}`, `1${digits}`, `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`, `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`].filter(Boolean))]
+      : (order.customer_phone ? [order.customer_phone] : []);
+    let profile: any = null;
+    for (const phone of phones) {
+      const matches = await base44.asServiceRole.entities.CustomerProfile.filter({ phone });
+      if (matches?.length) { profile = matches.find(p => p.birthday) || matches[0]; break; }
+    }
+    if (!profile && order.customer_email) {
+      profile = (await base44.asServiceRole.entities.CustomerProfile.filter({ email: order.customer_email }))?.[0];
+    }
+    if (profile?.birthday) return '';
+    return `<div style="margin:12px 0 14px;">
+      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">P.S. When's your birthday? Tell us once and we'll drop 100 Stars on your Star Rewards account as your gift.</p>
+      <a href="${APP_URL}/account?tab=profile" style="display:inline-block;background:#1A3A5C;color:#fff;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:14px;font-weight:bold;">Add your birthday</a>
+    </div>`;
+  } catch (error) {
+    console.error('Birthday lookup for ready email failed:', error.message);
+    return '';
+  }
+}
+
+// Google-review P.S. for the order-ready email (issue #37, step 1). Rendered
+// only when the GOOGLE_REVIEW_URL app secret holds a real link — an unset
+// secret omits the P.S. entirely so a broken link can never reach a customer.
+// Sits directly after the birthday P.S. and reuses its typography.
+function googleReviewPsHtml() {
+  const url = String(Deno.env.get('GOOGLE_REVIEW_URL') || GOOGLE_REVIEW_URL).trim();
+  return `<div style="margin:12px 0 14px;">
+      <p style="color:#141414;font-size:14px;line-height:1.5;margin:0 0 10px;">How'd we do? Smashie would love 10 seconds of your time on Google: <a href="${url}" style="color:#1A3A5C;">leave a review</a>.</p>
+    </div>`;
+}
+
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
 export async function sendOrderReadyEmail(order, base44?) {
@@ -267,7 +312,11 @@ export async function sendOrderReadyEmail(order, base44?) {
   const customerName = order.customer_name || 'friend';
   const orderType = order.order_type;
   const items = (order.items || [])
-    .map(i => `${i.name || 'Item'}${(i.quantity || 1) > 1 ? ` x${i.quantity}` : ''}`)
+    .map(i => {
+      const mods = formatItemModifiers(i);
+      const modStr = mods.length > 0 ? ` (${mods.join(', ')})` : '';
+      return `${i.name || 'Item'}${(i.quantity || 1) > 1 ? ` x${i.quantity}` : ''}${modStr}`;
+    })
     .join(', ');
   const totalStr = `$${(order.total || 0).toFixed(2)}`;
   const locationLine = orderType === 'delivery'
@@ -294,6 +343,8 @@ export async function sendOrderReadyEmail(order, base44?) {
     <p style="color:#141414;font-size:15px;margin:0 0 4px;"><strong>Total:</strong> ${totalStr}</p>
     <p style="color:#141414;font-size:15px;margin:0 0 14px;"><strong>${locationLine}</strong></p>
     <p style="color:#141414;font-size:16px;margin:0 0 6px;">${closingLine}</p>
+    ${await birthdayAskForReadyOrder(order, base44)}
+    ${googleReviewPsHtml()}
     <p style="color:#666;margin:0 0 4px;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
     ${await foodHeroHtml(base44)}
     ${await merchPromoHtml()}`;
@@ -303,7 +354,7 @@ export async function sendOrderReadyEmail(order, base44?) {
     let sent = false;
     for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
       const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@order.flavor-isle.com>',
+        from: 'Flavor Isle <smashie@flavor-isle.com>',
         to: order.customer_email,
         subject: `✅ Order #${orderNum} is ready!`,
         html: brandedEmailHtml(body),
@@ -331,7 +382,7 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
     let sent = false;
     for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
       const { error } = await resend.emails.send({
-        from: `${fromName} <smashie@order.flavor-isle.com>`,
+        from: `${fromName} <smashie@flavor-isle.com>`,
         to,
         subject,
         html: brandedEmailHtml(bodyHtml),
