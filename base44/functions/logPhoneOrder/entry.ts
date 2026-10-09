@@ -6,6 +6,7 @@ import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPri
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { withTimeout } from '../../shared/withTimeout.ts';
 
@@ -158,9 +159,25 @@ export default async function(req) {
 
     if (cashPickup) {
       await pushOrderToSquareAndKitchen(base44, order);
+      // Cash auto-settle at placement (issue #88). Square keeps the order in
+      // PROPOSED state and neither prints it nor surfaces it to staff until a
+      // tender is recorded, so the crew can't be expected to watch the admin
+      // panel to light up a ticket. The settle reads the fresh order row
+      // because pushOrderToSquareAndKitchen writes square_order_id on the
+      // record, not on our local copy. A settle failure must NEVER fail the
+      // placement: the order stays pending payment and the admin
+      // "Record cash received" button remains the fallback.
+      let cashSettleOk = false;
+      try {
+        const settledOrder = await base44.asServiceRole.entities.Order.get(order.id);
+        const settled = await settleCashPickupPayment(base44, settledOrder, true);
+        cashSettleOk = settled?.payment_status === 'paid';
+      } catch (settleErr) {
+        console.error(`Cash auto-settle failed for order ${orderNumber} (${customer_phone}):`, settleErr.message);
+      }
       return Response.json({ success: true, order_number: orderNumber, order_id: order.id, subtotal, tax, total: finalTotal,
-        payment_method: 'cash_on_pickup', payment_status: 'pending', payment_url: null, payment_link_sent: false,
-        manual_pay_required: true, message: `Order #${orderNumber} is confirmed for pickup. Pay $${finalTotal.toFixed(2)} in cash at the counter when you pick it up. No payment link is needed; cash has not yet been collected.` });
+        payment_method: 'cash_on_pickup', payment_status: cashSettleOk ? 'paid' : 'pending', payment_url: null, payment_link_sent: false,
+        manual_pay_required: true, message: `Order #${orderNumber} is confirmed for pickup. Pay $${finalTotal.toFixed(2)} in cash at the counter when you pick it up. Cash only — a card cannot be accepted at pickup. No payment link is needed.` });
     }
 
     let paymentUrl = null;

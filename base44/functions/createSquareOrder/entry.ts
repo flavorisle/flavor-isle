@@ -433,7 +433,7 @@ export default async function(req) {
       pickupNote = `DINE IN\nTable: ${customer.table || 'N/A'}\n${customer.name}`;
     }
 
-    if (cashPickup) pickupNote += `\nCASH AT PICKUP — ${storedOrder.payment_status === 'paid' ? 'PAID' : 'COLLECT $' + Number(storedOrder.total).toFixed(2)}`;
+    if (cashPickup) pickupNote += `\nCASH AT PICKUP — COLLECT $${Number(storedOrder.total).toFixed(2)}`;
 
     const squareOrder = {
       idempotency_key: idempotencyKey,
