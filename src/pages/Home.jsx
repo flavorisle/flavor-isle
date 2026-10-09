@@ -161,6 +161,10 @@ export default function Home() {
 
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero cityLine />
+
+      {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
+      <FindSmashiePromo />
+
       <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
       <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
@@ -182,9 +186,6 @@ export default function Home() {
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
-
-      {/* ── FIND SMASHIE (Oct 15 – Nov 1 hide & seek) ── */}
-      <FindSmashiePromo />
 
       {/* ── REVIEWS (What people are saying) ── */}
       <ReviewSection />

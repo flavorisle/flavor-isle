@@ -36,8 +36,8 @@ export default function useSmashieHunt() {
     let cancelled = false;
     const load = async () => {
       try {
-        const s = await base44.functions.invoke('getSmashieHuntState', {});
-        if (!cancelled) setState(s);
+        const { data } = await base44.functions.invoke('getSmashieHuntState', {});
+        if (!cancelled) setState(data);
       } catch (e) {
         // Branch-preview fallback: if the backend function isn't deployed on
         // this branch, assume the game is on so the promo can be reviewed.

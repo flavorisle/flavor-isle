@@ -17,13 +17,13 @@ export default function FindSmashieBanner() {
     let cancelled = false;
     const load = async () => {
       try {
-        const s = await base44.functions.invoke('getSmashieHuntState', {});
-        if (!cancelled) setState(s);
+        const { data } = await base44.functions.invoke('getSmashieHuntState', {});
+        if (!cancelled) setState(data);
       } catch (e) {
-        // Preview fallback: show the banner during October even
-        // if the backend function isn't deployed on this branch.
+        // Preview fallback: show the banner even if the backend function
+        // isn't deployed on this branch.
         if (!cancelled) setState({
-          active: true, start_date: '2026-09-23', end_date: '2026-10-31',
+          active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
           preview_mode: true, today_winner: null,
         });
       }

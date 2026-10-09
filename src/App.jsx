@@ -17,6 +17,8 @@ import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
 import SmashieHunt from './components/findSmashie/SmashieHunt';
 import FindSmashieBanner from './components/findSmashie/FindSmashieBanner';
+import HalloweenTheme from '@/components/halloween/HalloweenTheme';
+import { isHalloweenSeason } from '@/lib/halloweenSeason';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -273,6 +275,7 @@ function AppShell() {
               <BottomTabBar />
               <MobileHeader />
               <ConsentBanner />
+              <HalloweenTheme />
               <SmashieHunt />
               <SmashieChat />
               <MerchCartDrawer />
@@ -287,7 +290,13 @@ function AppShell() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      forcedTheme={isHalloweenSeason() ? 'dark' : undefined}
+    >
       <AppShell />
     </ThemeProvider>
   );

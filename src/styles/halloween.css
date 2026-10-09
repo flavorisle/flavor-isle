@@ -1,0 +1,259 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Halloween 2026 seasonal theme — colors and spooky touches only, no layout.
+   Every rule is gated on html.halloween, which HalloweenTheme adds only while
+   the season is on (through Nov 1), so the regular theme returns by itself.
+   The site is also switched to its dark mode for the season (App.jsx); these
+   rules re-tint that dark mode in pumpkin orange, witch purple and bone white.
+   High-contrast mode always wins over the seasonal palette.
+
+   Palette:
+     night      #0F0818   page background
+     crypt      #1A0B2B   footer / deepest surfaces
+     witch      #4A1F70   navy replacement (sections, buttons)
+     pumpkin    #E85D04   cherry replacement (primary buttons)
+     candy      #FF9F1C   yellow replacement
+     bone       #F7ECDD   main text
+     ghost      #C9A3FF   secondary text accent
+   ───────────────────────────────────────────────────────────────────── */
+
+html.halloween:not(.high-contrast) {
+  --background: 270 50% 6%;
+  --foreground: 32 60% 92%;
+  --card: 268 40% 13%;
+  --card-foreground: 32 60% 92%;
+  --popover: 268 40% 13%;
+  --popover-foreground: 32 60% 92%;
+  --primary: 24 97% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 275 55% 52%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 268 30% 19%;
+  --muted-foreground: 30 25% 74%;
+  --accent: 34 100% 56%;
+  --accent-foreground: 270 45% 10%;
+  --border: 270 30% 26%;
+  --input: 270 30% 26%;
+  --ring: 24 97% 50%;
+  --vanilla-malt: #0F0818;
+  --cream-white: #1B1028;
+  --midnight-cherry: #E85D04;
+  --patina-mint: #4A1F70;
+  --obsidian-roast: #4A1F70;
+  --smashie-yellow: #FF9F1C;
+  --sidebar-background: 270 50% 5%;
+  --sidebar-foreground: 32 60% 92%;
+  --sidebar-primary: 24 97% 46%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 268 30% 19%;
+  --sidebar-accent-foreground: 32 60% 92%;
+  --sidebar-border: 270 30% 26%;
+  --sidebar-ring: 24 97% 50%;
+}
+
+/* ── Brand colors (these classes also exist with fixed hex values) ── */
+html.halloween:not(.high-contrast) .text-obsidian-roast { color: #F7ECDD; }
+html.halloween:not(.high-contrast) .text-patina-mint { color: #C9A3FF; }
+html.halloween:not(.high-contrast) .text-midnight-cherry { color: #FF7B1C; }
+html.halloween:not(.high-contrast) .text-smashie-yellow { color: #FFB347; }
+html.halloween:not(.high-contrast) .bg-midnight-cherry { background-color: #E85D04; }
+html.halloween:not(.high-contrast) .bg-patina-mint,
+html.halloween:not(.high-contrast) .bg-navy { background-color: #4A1F70; }
+html.halloween:not(.high-contrast) .bg-obsidian-roast { background-color: #1A0B2B; }
+html.halloween:not(.high-contrast) .bg-smashie-yellow { background-color: #FF9F1C; }
+html.halloween:not(.high-contrast) .bg-vanilla-malt { background-color: #0F0818; }
+html.halloween:not(.high-contrast) .border-midnight-cherry { border-color: #E85D04; }
+html.halloween:not(.high-contrast) .border-patina-mint { border-color: #7B3FB0; }
+html.halloween:not(.high-contrast) .border-smashie-yellow { border-color: #FF9F1C; }
+
+/* Dark text stays dark on the bright candy-orange surfaces */
+html.halloween:not(.high-contrast) .bg-smashie-yellow.text-obsidian-roast,
+html.halloween:not(.high-contrast) .bg-smashie-yellow .text-obsidian-roast,
+html.halloween:not(.high-contrast) .btn-yellow { color: #1A0B2B; }
+
+/* ── Neutral text + surfaces readable on the dark night background ── */
+html.halloween:not(.high-contrast) .text-gray-400 { color: #A496B8; }
+html.halloween:not(.high-contrast) .text-gray-500 { color: #B8ABCA; }
+html.halloween:not(.high-contrast) .text-gray-600,
+html.halloween:not(.high-contrast) .text-slate-600 { color: #CBC0DA; }
+html.halloween:not(.high-contrast) .text-gray-700,
+html.halloween:not(.high-contrast) .text-gray-800,
+html.halloween:not(.high-contrast) .text-gray-900,
+html.halloween:not(.high-contrast) .text-slate-700,
+html.halloween:not(.high-contrast) .text-slate-800,
+html.halloween:not(.high-contrast) .text-slate-900,
+html.halloween:not(.high-contrast) .text-black { color: #EDE4F6; }
+html.halloween:not(.high-contrast) .bg-gray-50,
+html.halloween:not(.high-contrast) .bg-gray-100,
+html.halloween:not(.high-contrast) .bg-slate-50,
+html.halloween:not(.high-contrast) .bg-slate-100 { background-color: hsl(var(--muted)); }
+html.halloween:not(.high-contrast) .bg-gray-200,
+html.halloween:not(.high-contrast) .bg-slate-200 { background-color: hsl(268 28% 25%); }
+html.halloween:not(.high-contrast) .bg-amber-50 { background-color: rgba(255, 159, 28, 0.12); }
+html.halloween:not(.high-contrast) .border-gray-200,
+html.halloween:not(.high-contrast) .border-gray-300,
+html.halloween:not(.high-contrast) .border-slate-200,
+html.halloween:not(.high-contrast) .border-slate-300 { border-color: hsl(var(--border)); }
+html.halloween:not(.high-contrast) .border-amber-200 { border-color: rgba(255, 159, 28, 0.45); }
+
+/* ── Checkout keeps its light, high-readability forms ── */
+html.halloween:not(.high-contrast) .force-light .text-obsidian-roast,
+html.halloween:not(.high-contrast) .force-light.text-obsidian-roast,
+html.halloween:not(.high-contrast) .force-light .text-patina-mint { color: var(--patina-mint); }
+html.halloween:not(.high-contrast) .force-light .text-midnight-cherry { color: var(--midnight-cherry); }
+html.halloween:not(.high-contrast) .force-light .text-gray-400 { color: #9CA3AF; }
+html.halloween:not(.high-contrast) .force-light .text-gray-500 { color: #6B7280; }
+html.halloween:not(.high-contrast) .force-light .text-gray-600 { color: #4B5563; }
+html.halloween:not(.high-contrast) .force-light .text-slate-600 { color: #475569; }
+html.halloween:not(.high-contrast) .force-light .text-gray-700 { color: #374151; }
+html.halloween:not(.high-contrast) .force-light .text-gray-800 { color: #1F2937; }
+html.halloween:not(.high-contrast) .force-light .text-gray-900 { color: #111827; }
+html.halloween:not(.high-contrast) .force-light .text-slate-700 { color: #334155; }
+html.halloween:not(.high-contrast) .force-light .text-slate-800 { color: #1E293B; }
+html.halloween:not(.high-contrast) .force-light .text-slate-900 { color: #0F172A; }
+html.halloween:not(.high-contrast) .force-light .text-black { color: #000000; }
+html.halloween:not(.high-contrast) .force-light .bg-gray-50 { background-color: #F9FAFB; }
+html.halloween:not(.high-contrast) .force-light .bg-gray-100 { background-color: #F3F4F6; }
+html.halloween:not(.high-contrast) .force-light .bg-gray-200 { background-color: #E5E7EB; }
+html.halloween:not(.high-contrast) .force-light .bg-slate-50 { background-color: #F8FAFC; }
+html.halloween:not(.high-contrast) .force-light .bg-slate-100 { background-color: #F1F5F9; }
+html.halloween:not(.high-contrast) .force-light .bg-slate-200 { background-color: #E2E8F0; }
+html.halloween:not(.high-contrast) .force-light .bg-amber-50 { background-color: #FFFBEB; }
+html.halloween:not(.high-contrast) .force-light .border-gray-200 { border-color: #E5E7EB; }
+html.halloween:not(.high-contrast) .force-light .border-gray-300 { border-color: #D1D5DB; }
+html.halloween:not(.high-contrast) .force-light .border-slate-200 { border-color: #E2E8F0; }
+html.halloween:not(.high-contrast) .force-light .border-slate-300 { border-color: #CBD5E1; }
+html.halloween:not(.high-contrast) .force-light .border-amber-200 { border-color: #FDE68A; }
+
+/* High-contrast mode stays on its light palette, so keep its text dark */
+html.halloween.high-contrast .text-obsidian-roast,
+html.halloween.high-contrast .text-patina-mint { color: var(--patina-mint); }
+
+/* ── Spooky finishing touches ── */
+html.halloween:not(.high-contrast) body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139, 63, 217, 0.22), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(232, 93, 4, 0.12), transparent 70%);
+  background-attachment: fixed;
+}
+html.halloween:not(.high-contrast) h1,
+html.halloween:not(.high-contrast) h2 { text-shadow: 0 0 22px rgba(255, 123, 28, 0.35); }
+html.halloween:not(.high-contrast) ::selection { background: #E85D04; color: #ffffff; }
+
+html.halloween:not(.high-contrast) .card-diner {
+  border: 1px solid rgba(139, 63, 217, 0.28);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+}
+html.halloween:not(.high-contrast) .card-diner:hover {
+  box-shadow: 0 12px 40px rgba(232, 93, 4, 0.22), 0 0 24px rgba(139, 63, 217, 0.25);
+}
+html.halloween:not(.high-contrast) .shadow-float { box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 18px rgba(139, 63, 217, 0.15); }
+html.halloween:not(.high-contrast) .shadow-float-lg { box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55), 0 0 28px rgba(232, 93, 4, 0.18); }
+html.halloween:not(.high-contrast) .btn-cherry:hover { background-color: #C24E03; box-shadow: 0 6px 22px rgba(232, 93, 4, 0.5); }
+html.halloween:not(.high-contrast) .btn-mint:hover { background-color: #3A165A; box-shadow: 0 6px 22px rgba(139, 63, 217, 0.5); }
+html.halloween:not(.high-contrast) .btn-yellow:hover { background-color: #F08A00; box-shadow: 0 6px 20px rgba(255, 159, 28, 0.5); }
+
+html.halloween:not(.high-contrast) .glass-tab,
+html.halloween:not(.high-contrast) .glass-back {
+  background: rgba(20, 9, 32, 0.84);
+  border-color: rgba(232, 93, 4, 0.3);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Near-opaque white panels (cookie notice, floating cards) go dark with the theme */
+html.halloween:not(.high-contrast) .bg-white\/60,
+html.halloween:not(.high-contrast) .bg-white\/70,
+html.halloween:not(.high-contrast) .bg-white\/80,
+html.halloween:not(.high-contrast) .bg-white\/90,
+html.halloween:not(.high-contrast) .bg-white\/95 { background-color: rgba(27, 16, 40, 0.94); }
+html.halloween:not(.high-contrast) .force-light .bg-white\/90,
+html.halloween:not(.high-contrast) .force-light .bg-white\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+/* Thin pumpkin-to-purple stripe under the header and above the footer */
+html.halloween:not(.high-contrast) .fall26-nav-accent {
+  background-image: linear-gradient(90deg, transparent 0%, #E85D04 18%, #8B3FD9 50%, #E85D04 82%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 3px;
+  background-position: bottom;
+}
+html.halloween:not(.high-contrast) .fall26-footer-accent {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, transparent 0%, #E85D04 18%, #8B3FD9 50%, #E85D04 82%, transparent 100%) 1;
+}
+
+/* ── Decorations (HalloweenDecor) ── */
+.halloween-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+.halloween-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(8, 2, 14, 0.3) 100%);
+}
+.halloween-bat {
+  position: absolute;
+  left: 0;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(255, 123, 28, 0.55));
+  animation-name: hw-bat;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes hw-bat {
+  0% { transform: translate3d(110vw, 0, 0); opacity: 0; }
+  3% { opacity: 0.9; }
+  15% { transform: translate3d(72vw, -22px, 0); }
+  30% { transform: translate3d(34vw, 18px, 0); }
+  42% { opacity: 0.9; }
+  45% { transform: translate3d(-12vw, -10px, 0); opacity: 0; }
+  100% { transform: translate3d(-12vw, -10px, 0); opacity: 0; }
+}
+.halloween-ghost {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 18%;
+  font-size: 2.25rem;
+  opacity: 0.5;
+  filter: drop-shadow(0 0 10px rgba(201, 163, 255, 0.6));
+  animation: hw-ghost 5.5s ease-in-out infinite;
+}
+@keyframes hw-ghost {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-18px) rotate(5deg); }
+}
+.halloween-spider {
+  position: absolute;
+  top: 0;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.4rem;
+  animation: hw-spider 8s ease-in-out infinite;
+}
+.halloween-thread {
+  width: 1px;
+  height: 9rem;
+  background: linear-gradient(rgba(240, 230, 255, 0), rgba(240, 230, 255, 0.5));
+}
+@keyframes hw-spider {
+  0%, 100% { transform: translateY(-1rem); }
+  50% { transform: translateY(2.5rem); }
+}
+
+@media (max-width: 767px) {
+  .halloween-ghost,
+  .halloween-spider { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .halloween-bat { display: none; }
+  .halloween-ghost,
+  .halloween-spider { animation: none; }
+}
+@media print {
+  .halloween-decor { display: none !important; }
+  html.halloween body { background-image: none !important; }
+}

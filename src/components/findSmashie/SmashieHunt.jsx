@@ -21,7 +21,8 @@ function useMinuteTick() {
 
 async function fetchHuntState() {
   try {
-    return await base44.functions.invoke('getSmashieHuntState', {});
+    const { data } = await base44.functions.invoke('getSmashieHuntState', {});
+    return data;
   } catch (e) {
     // Branch-preview fallback: if the backend function isn't
     // deployed on this branch, assume the game is ON in preview
@@ -143,7 +144,7 @@ export default function SmashieHunt() {
     }
     setClaiming(true);
     try {
-      const res = await base44.functions.invoke('claimSmashieFind', { phase: activeSpot?.phase });
+      const { data: res } = await base44.functions.invoke('claimSmashieFind', { phase: activeSpot?.phase });
       if (res?.you_won) {
         setModal('won');
         window.dispatchEvent(new Event(HUNT_REFRESH_EVENT));
