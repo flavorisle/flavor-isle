@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { getMenuSettingRecord } from '../../shared/storeState.ts';
 
 // Flavor Isle — 103 N Main St, Smiths Grove, KY 42171
 const STORE = { lat: 37.0532, lon: -86.2061 };
@@ -52,9 +53,9 @@ export default async function(req) {
     }
     const query = String(address).trim();
 
-    // Load pricing tiers from the menu settings (service role — guests order too).
-    const settings = await base44.asServiceRole.entities.MenuSetting.list();
-    const s = settings?.[0] || {};
+    // Load pricing tiers from the one pinned settings record (service role —
+    // guests order too). Same record the website and Smashie's phone line read.
+    const s = await getMenuSettingRecord(base44);
     const tiers = (s.delivery_tiers || [])
       .filter((t) => t && Number(t.max_miles) > 0)
       .sort((a, b) => Number(a.max_miles) - Number(b.max_miles));

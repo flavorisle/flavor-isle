@@ -55,9 +55,12 @@ export default function StoreStatusCard() {
               <Power size={22} className={orderingEnabled ? 'text-green-700' : 'text-red-600'} />
             </div>
             <div>
-              <h2 className="font-heading text-lg text-obsidian-roast">Online Ordering</h2>
+              <h2 className="font-heading text-lg text-obsidian-roast">All ordering — website + Smashie's phone</h2>
               <p className="text-sm text-muted-foreground">
-                {loading ? 'Loading…' : orderingEnabled ? 'Open — accepting orders' : 'Closed — checkout disabled for customers'}
+                Toggling this locks website checkout AND stops Smashie from taking phone orders.
+              </p>
+              <p className={`text-xs font-semibold mt-0.5 ${orderingEnabled ? 'text-green-700' : 'text-red-600'}`}>
+                {loading ? 'Loading…' : orderingEnabled ? 'Open — accepting orders' : 'Closed — no orders on either system'}
               </p>
             </div>
           </div>
@@ -89,7 +92,7 @@ export default function StoreStatusCard() {
               {savedFlash ? 'Saved' : 'Save Message'}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Customers see this when ordering is turned off.</p>
+          <p className="text-xs text-muted-foreground mt-2">The website shows this message AND Smashie says it on the phone while ordering is off.</p>
         </div>
       </div>
     </div>

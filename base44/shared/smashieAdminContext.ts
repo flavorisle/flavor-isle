@@ -1,4 +1,4 @@
-import { OPEN_PHONE_INTRO } from './smashieLivePrompt.ts';
+import { OPEN_PHONE_INTRO, CASH_OFF_PHONE_INTRO } from './smashieLivePrompt.ts';
 
 const CAPABILITIES = {
   orders: 'take or place orders', menu: 'answer menu questions or recommend food', hours: 'answer hours questions',
@@ -11,11 +11,17 @@ export function abilityEnabled(settings, key) {
 }
 
 export function phoneIntro(settings) {
+  // Cash off (SmashieSettings.phone_cash_enabled): the standard introduction is
+  // replaced with the card-only one, and the partial-abilities wording below
+  // never offers cash either. An admin-saved custom intro is always used as-is.
+  const cashEnabled = settings?.phone_cash_enabled !== false;
   if (Object.keys(CAPABILITIES).every(key => abilityEnabled(settings, key))) {
-    return settings?.phone_intro?.trim() || OPEN_PHONE_INTRO;
+    return settings?.phone_intro?.trim() || (cashEnabled ? OPEN_PHONE_INTRO : CASH_OFF_PHONE_INTRO);
   }
   const offers = [];
-  if (abilityEnabled(settings, 'orders')) offers.push("take your pickup order for cash payment at pickup, or text a secure card payment link for pickup, delivery, or dine-in");
+  if (abilityEnabled(settings, 'orders')) offers.push(cashEnabled
+    ? "take your pickup order for cash payment at pickup, or text a secure card payment link for pickup, delivery, or dine-in"
+    : 'take your pickup, delivery, or dine-in order with a secure card payment link');
   if (abilityEnabled(settings, 'menu')) offers.push('answer live menu questions');
   if (abilityEnabled(settings, 'hours')) offers.push('share our hours');
   if (abilityEnabled(settings, 'wait')) offers.push('check the current wait');

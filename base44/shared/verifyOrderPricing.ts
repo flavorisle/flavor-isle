@@ -35,6 +35,7 @@ import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 import { isBundleLine, bundleDiscountForLines, FAMILY_BUNDLE_INCLUDED_OPTION_IDS } from './familyBundle.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
+import { getMenuSettingRecord } from './storeState.ts';
 
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
 
@@ -158,8 +159,8 @@ export async function verifyOrderPricing(base44: any, opts: {
   const warnings: string[] = [];
 
   // ── Load MenuSetting + MenuItems ──
-  const settings = await base44.asServiceRole.entities.MenuSetting.list();
-  const setting = settings?.[0] || {};
+  // The single pinned settings record — the same one the website and Smashie read.
+  const setting = await getMenuSettingRecord(base44);
   const hh = getHappyHourConfig(setting);
   const hhActive = isHappyHourActive(setting);
   const pct = (hh.discount_percent || 0) / 100;

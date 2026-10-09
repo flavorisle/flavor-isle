@@ -100,7 +100,7 @@ export default function DeliveryPricingTiers() {
             {savedFlash ? 'Saved' : 'Save Pricing'}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-3">Distances are measured straight-line from the store. Addresses past the last tier are told they're outside the delivery range.</p>
+        <p className="text-xs text-muted-foreground mt-3">Distances are measured straight-line from the store. The same fees are charged online and quoted by Smashie on the phone. Addresses past the last tier are out of range on both.</p>
       </div>
     </div>
   );

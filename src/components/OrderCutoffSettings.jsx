@@ -59,7 +59,7 @@ export default function OrderCutoffSettings() {
           </div>
           <div>
             <h2 className="font-heading text-lg text-obsidian-roast">Order Settings</h2>
-            <p className="text-sm text-muted-foreground">Cutoff times and delivery fees for online orders.</p>
+            <p className="text-sm text-muted-foreground">Cutoff times and delivery fees. Applies to website checkout and Smashie's phone orders.</p>
           </div>
         </div>
 

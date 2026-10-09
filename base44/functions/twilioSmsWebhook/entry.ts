@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
+import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
 import {
   upsertSmsConsent,
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     try {
       // Same shared helper the voice paths use, so the 24/7 override window
       // (MenuSetting open_all_day_date / open_all_day_until) applies to texts too.
-      const storeStatus = await getPhysicalStoreStatus(base44);
+      const storeStatus = await getPhoneStoreStatus(base44);
       statusLine = storeStatus.open
         ? 'STORE STATUS: OPEN'
         : `STORE STATUS: CLOSED${storeStatus.message ? ` — ${storeStatus.message}` : ''}`;

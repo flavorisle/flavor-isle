@@ -1,4 +1,5 @@
 import { isOpenAllDay } from '@/lib/openAllDay';
+import { earlyCloseToday } from '@/lib/storeState';
 
 const STORE_TZ = 'America/Chicago';
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -61,7 +62,10 @@ export function getCutoffStatus(setting) {
   const ORDER_OPEN_MINS = 8 * 60;
   const openMins = toMins(today.open) ?? ORDER_OPEN_MINS;
   const unlockMins = Math.min(ORDER_OPEN_MINS, openMins);
-  const closeMins = toMins(today.close) ?? closedFallback;
+  // A one-day early close (MenuSetting.early_close, honored only on its own
+  // date) moves today's closing time — and every wind-down cutoff with it.
+  const earlyClose = earlyCloseToday(setting, todayStr);
+  const closeMins = (earlyClose ? toMins(earlyClose.closeTime) : toMins(today.close)) ?? closedFallback;
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
   if (nowMins < unlockMins) return allClosed;   // before ordering unlocks — locked

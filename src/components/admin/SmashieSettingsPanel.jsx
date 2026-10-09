@@ -4,6 +4,11 @@ import { Bot, Save, Loader2, Check, Facebook } from 'lucide-react';
 import SmashieAbilities from './SmashieAbilities';
 import SmashieKnowledge, { INITIAL_TOPICS } from './SmashieKnowledge';
 import SmashieToolInventory from './SmashieToolInventory';
+import SmashieStoreMirror from './SmashieStoreMirror';
+
+// The one live SmashieSettings record. Reads and writes are pinned to it, and
+// this panel never creates a second record.
+const SMASHIE_SETTINGS_ID = '6a7fd236b64dc1a4c8de4ae0';
 
 // Edits the single SmashieSettings record. These values are read at runtime by
 // the Twilio webhooks (greeting + toggles) and the order-status sync (SMS
@@ -17,7 +22,10 @@ export default function SmashieSettingsPanel() {
   const load = async () => {
     setError('');
     try {
-      const all = await base44.entities.SmashieSettings.list();
+      // Pinned to the single live record; the first record is only a fallback for
+      // the case where that id is gone. Nothing here creates a record.
+      const pinned = await base44.entities.SmashieSettings.get(SMASHIE_SETTINGS_ID).catch(() => null);
+      const all = pinned ? [pinned] : await base44.entities.SmashieSettings.list();
       if (all && all.length > 0) {
         setSettings({ ...all[0], knowledge_topics: all[0].knowledge_topics ?? INITIAL_TOPICS });
       } else {
@@ -26,6 +34,8 @@ export default function SmashieSettingsPanel() {
           sms_status_updates_enabled: true,
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
+          phone_cash_enabled: true,
+          phone_payment_provider: 'stripe',
           realtime_sip_enabled: false,
           googleReviewSmsEnabled: true,
           day14ShowcaseEmailEnabled: false,
@@ -51,42 +61,27 @@ export default function SmashieSettingsPanel() {
   const save = async () => {
     setSaving(true);
     try {
-      if (settings.id) {
-        await base44.entities.SmashieSettings.update(settings.id, {
-          greeting: settings.greeting,
-          sms_status_updates_enabled: settings.sms_status_updates_enabled,
-          sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
-          voice_ordering_enabled: settings.voice_ordering_enabled,
-          realtime_sip_enabled: settings.realtime_sip_enabled,
-          googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
-          day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
-          day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
-          personality_notes: settings.personality_notes,
-          facebook_access_token: settings.facebook_access_token,
-          sip_transfer_target: settings.sip_transfer_target,
-          phone_intro: settings.phone_intro || '',
-          capabilities: settings.capabilities || {},
-          knowledge_topics: settings.knowledge_topics || [],
-        });
-      } else {
-        const created = await base44.entities.SmashieSettings.create({
-          greeting: settings.greeting,
-          sms_status_updates_enabled: settings.sms_status_updates_enabled,
-          sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
-          voice_ordering_enabled: settings.voice_ordering_enabled,
-          realtime_sip_enabled: settings.realtime_sip_enabled,
-          googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
-          day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
-          day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
-          personality_notes: settings.personality_notes,
-          facebook_access_token: settings.facebook_access_token,
-          sip_transfer_target: settings.sip_transfer_target,
-          phone_intro: settings.phone_intro || '',
-          capabilities: settings.capabilities || {},
-          knowledge_topics: settings.knowledge_topics || [],
-        });
-        setSettings(created);
-      }
+      // The single pinned record. There is no create path any more: a missing
+      // record fails the save instead of forking the settings into a duplicate.
+      if (!settings.id) throw new Error('The Smashie settings record could not be found, so nothing was saved. Reload the page and try again.');
+      await base44.entities.SmashieSettings.update(settings.id, {
+        greeting: settings.greeting,
+        sms_status_updates_enabled: settings.sms_status_updates_enabled,
+        sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
+        voice_ordering_enabled: settings.voice_ordering_enabled,
+        phone_cash_enabled: settings.phone_cash_enabled !== false,
+        phone_payment_provider: settings.phone_payment_provider === 'square' ? 'square' : 'stripe',
+        realtime_sip_enabled: settings.realtime_sip_enabled,
+        googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
+        day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
+        day45NudgeEmailEnabled: settings.day45NudgeEmailEnabled === true,
+        personality_notes: settings.personality_notes,
+        facebook_access_token: settings.facebook_access_token,
+        sip_transfer_target: settings.sip_transfer_target,
+        phone_intro: settings.phone_intro || '',
+        capabilities: settings.capabilities || {},
+        knowledge_topics: settings.knowledge_topics || [],
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) { console.error(e); setError('Could not save Smashie’s settings. Please try again.'); }
@@ -104,6 +99,8 @@ export default function SmashieSettingsPanel() {
 
   return (
     <div className="space-y-6">
+      <SmashieStoreMirror />
+
       {/* Greeting */}
       <div className="card-diner p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -148,10 +145,34 @@ export default function SmashieSettingsPanel() {
         />
         <Toggle
           label="Voice Call Ordering"
-          description="Let Smashie answer inbound phone calls and take orders by voice."
+          description="Let Smashie answer inbound phone calls and take orders by voice. Subordinate to All ordering in Store Settings — when that master switch is off, the phone cannot take orders regardless of this toggle."
           checked={settings.voice_ordering_enabled}
           onChange={v => update('voice_ordering_enabled', v)}
         />
+        <Toggle
+          label="Accept cash on phone pickup orders"
+          description="OFF = Smashie offers the card link only; cash orders are refused server-side too."
+          checked={settings.phone_cash_enabled !== false}
+          onChange={v => update('phone_cash_enabled', v)}
+        />
+        <div className="py-2">
+          <p className="font-heading text-sm text-obsidian-roast">Card payment links: Stripe | Square</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Both hosted on flavor-isle.com/pay. Customers never see a processor name.</p>
+          <div className="flex gap-2 mt-2">
+            {['stripe', 'square'].map((provider) => {
+              const active = (settings.phone_payment_provider || 'stripe') === provider;
+              return (
+                <button
+                  key={provider}
+                  onClick={() => update('phone_payment_provider', provider)}
+                  className={`px-4 py-2 rounded-full text-xs font-heading capitalize transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
+                >
+                  {provider}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <Toggle
           label="Live Phone Pipeline (OpenAI SIP)"
           description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."

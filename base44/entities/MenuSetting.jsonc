@@ -32,16 +32,18 @@
     },
     "ordering_enabled": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Master ordering switch for BOTH systems. When false the website locks checkout and Smashie stops taking phone orders, both with ordering_closed_message."
     },
     "ordering_closed_message": {
       "type": "string",
-      "default": "Ordering is temporarily closed"
+      "default": "Ordering is temporarily closed",
+      "description": "What customers are told while ordering_enabled is false \u2014 shown on the website and spoken by Smashie on the phone."
     },
     "delivery_enabled": {
       "type": "boolean",
       "default": true,
-      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours."
+      "description": "When false, delivery ordering is paused: the Delivery order type is unavailable to customers regardless of hours. Applies to the website AND Smashie's phone orders."
     },
     "closing_time": {
       "type": "string",
@@ -62,7 +64,7 @@
     },
     "delivery_tiers": {
       "type": "array",
-      "description": "Distance-based delivery pricing tiers, sorted by max_miles ascending. Each tier charges `fee` for addresses up to `max_miles` (straight-line) from the store. The last tier's max_miles is the delivery range limit \u2014 addresses beyond it are out of range. When empty, the flat delivery_fee applies instead.",
+      "description": "Distance-based delivery pricing tiers, sorted by max_miles ascending. Each tier charges `fee` for addresses up to `max_miles` (straight-line) from the store. The last tier's max_miles is the delivery range limit \u2014 addresses beyond it are out of range. When empty, the flat delivery_fee applies instead. The same fees are charged online and quoted by Smashie on the phone.",
       "items": {
         "type": "object",
         "properties": {
@@ -90,7 +92,7 @@
     },
     "site_notice": {
       "type": "object",
-      "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden.",
+      "description": "Toggleable site-wide notice banner shown to every visitor at the top of every page. Use to announce things like delivery pauses due to driver availability, limited staffing, or special holiday hours. When active is false the banner is hidden. Smashie tells callers the same message on the phone.",
       "properties": {
         "active": {
           "type": "boolean",
@@ -149,6 +151,24 @@
         "message": {
           "type": "string",
           "description": "Reason shown to customers in the website banner and spoken by Smashie, e.g. 'closed for maintenance and the heat'."
+        }
+      }
+    },
+    "early_close": {
+      "type": "object",
+      "description": "One-day early close, set from Admin \u2192 Store Settings. Honored ONLY when date equals today (store local, America/Chicago): ordering stops at close_time instead of the usual weekly hours, the wind-down cutoffs shift with it, the website shows an early-close banner, and Smashie tells callers we close at that time. Self-expires at midnight \u2014 the weekly hours are never touched.",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM-DD, store local (America/Chicago). Only that day is affected."
+        },
+        "close_time": {
+          "type": "string",
+          "description": "24h HH:MM, store local \u2014 the last moment orders are accepted that day."
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional note shown on the website early-close banner and spoken by Smashie after the closing time."
         }
       }
     },

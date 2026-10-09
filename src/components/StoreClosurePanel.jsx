@@ -75,7 +75,7 @@ export default function StoreClosurePanel() {
         </div>
 
         <p className="text-sm text-muted-foreground mb-5">
-          Schedule a full-day closure for maintenance, weather, or emergencies. This closes the website (banner + ordering) and tells Smashie to announce the closure on the phone. Use a single date or a date range.
+          Schedule a full-day closure for maintenance, weather, or emergencies. This closes the website (banner + ordering) and tells Smashie to announce the closure on the phone. Use a single date or a date range. Applies to both systems: website checkout and Smashie's phone orders.
         </p>
 
         <div className="flex items-center justify-between gap-4 flex-wrap mb-5 pb-5 border-b border-border">

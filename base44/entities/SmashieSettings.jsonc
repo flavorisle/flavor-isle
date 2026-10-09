@@ -90,7 +90,21 @@
     "voice_ordering_enabled": {
       "type": "boolean",
       "default": true,
-      "description": "When true, inbound voice calls are handled by the Smashie AI voice agent"
+      "description": "When true, inbound voice calls are handled by the Smashie AI voice agent. Subordinate to MenuSetting.ordering_enabled: when that master switch is off, the phone cannot take orders regardless of this toggle."
+    },
+    "phone_cash_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, Smashie does not take cash-on-pickup phone orders: the phone context says cash is not accepted, the intro offers the card link or the counter only, and logPhoneOrder refuses cash_on_pickup server-side."
+    },
+    "phone_payment_provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "square"
+      ],
+      "default": "stripe",
+      "description": "Which processor backs the secure payment link Smashie texts for card phone orders. Both are hosted on flavor-isle.com/pay and the customer never sees a processor name; only where the link is created differs."
     },
     "realtime_sip_enabled": {
       "type": "boolean",

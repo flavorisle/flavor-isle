@@ -7,6 +7,7 @@ import SiteNoticePanel from '@/components/admin/SiteNoticePanel';
 import StoreStatusCard from '@/components/StoreStatusCard';
 import StoreClosurePanel from '@/components/StoreClosurePanel';
 import OrderCutoffSettings from '@/components/OrderCutoffSettings';
+import EarlyClosePanel from '@/components/admin/EarlyClosePanel';
 import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import DeliveryPricingTiers from '@/components/admin/DeliveryPricingTiers';
 import HappyHourPanel from '@/components/admin/HappyHourPanel';
@@ -37,6 +38,7 @@ export default function AdminStoreSettings() {
       <StoreStatusCard />
       <StoreClosurePanel />
       <OrderCutoffSettings />
+      <EarlyClosePanel />
       <HappyHourPanel />
       <ExtraCookPanel />
       <BusinessHoursSettings />

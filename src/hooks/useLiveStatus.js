@@ -8,6 +8,7 @@ import { getBusynessStage, BUSYNESS_STAGES } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
 import { isOpenAllDay } from '@/lib/openAllDay';
+import { computeUnifiedStoreState } from '@/lib/storeState';
 
 // Minutes before today's close where the bar switches to the
 // "closing soon — order now" urgency state.
@@ -22,6 +23,7 @@ export default function useLiveStatus() {
   const closure = useStoreClosure();
   const [data, setData] = useState(null);
   const [orderingEnabled, setOrderingEnabled] = useState(true);
+  const [effectiveClose, setEffectiveClose] = useState(null);
   const [openAllDayDate, setOpenAllDayDate] = useState('');
   const [openAllDayUntil, setOpenAllDayUntil] = useState('');
   const [now, setNow] = useState(() => chicagoNow());
@@ -48,7 +50,11 @@ export default function useLiveStatus() {
     let active = true;
     getMenuSetting().then((s) => {
       if (!active) return;
-      if (typeof s?.ordering_enabled === 'boolean') setOrderingEnabled(s.ordering_enabled);
+      // Unified store state: ordering on/off and today's effective closing time
+      // (a one-day early close moves it for today only).
+      const unified = computeUnifiedStoreState(s);
+      setOrderingEnabled(unified.orderingEnabled);
+      setEffectiveClose(unified.effectiveCloseToday);
       // Date-scoped 24/7 ordering override (MenuSetting.open_all_day_date, with
       // its optional open_all_day_until end) — fixed, so it expires on its own.
       setOpenAllDayDate(s?.open_all_day_date || '');
@@ -70,8 +76,9 @@ export default function useLiveStatus() {
 
   const todayHours = businessHours?.[now.dayKey] || {};
   const closeMins = (() => {
-    if (!todayHours.close) return null;
-    const [h, m] = todayHours.close.split(':').map(Number);
+    const closingTime = effectiveClose || todayHours.close;
+    if (!closingTime) return null;
+    const [h, m] = closingTime.split(':').map(Number);
     return h * 60 + (m || 0);
   })();
   const minutesUntilClose =
@@ -131,7 +138,7 @@ export default function useLiveStatus() {
     activeCount: data?.activeCount ?? 0,
     orderingEnabled,
     minutesUntilClose,
-    closeTime: openAllDay || !todayHours.close ? null : formatTime12(todayHours.close),
+    closeTime: openAllDay || !(effectiveClose || todayHours.close) ? null : formatTime12(effectiveClose || todayHours.close),
     closureMessage: closure.message || data?.closure_message || '',
   };
 }

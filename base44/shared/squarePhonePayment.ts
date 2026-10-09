@@ -17,6 +17,19 @@ export async function createSquarePhonePayment(base44, order) {
         base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' },
       })),
       taxes: [{ uid: 'sales-tax', name: 'Sales Tax', percentage: '6', type: 'ADDITIVE', scope: 'ORDER' }],
+      // The delivery fee rides as a fixed, non-taxable service charge — the same
+      // shape the website's Square orders use — so the checkout total matches the
+      // phone order total to the cent. The check below deletes any link that
+      // doesn't, which is what an untaxed-fee mismatch used to trigger.
+      ...(Number(order.delivery_fee) > 0 ? {
+        service_charges: [{
+          uid: 'delivery-fee',
+          name: 'Delivery Fee',
+          amount_money: { amount: Math.round(Number(order.delivery_fee) * 100), currency: 'USD' },
+          calculation_phase: 'TOTAL_PHASE',
+          taxable: false,
+        }],
+      } : {}),
       fulfillments: [{ type: 'PICKUP', state: 'PROPOSED', pickup_details: {
         recipient, schedule_type: 'ASAP',
         note: `${order.order_type.toUpperCase()}\n${order.delivery_address || ''}\n${order.special_instructions || ''}`.trim(),

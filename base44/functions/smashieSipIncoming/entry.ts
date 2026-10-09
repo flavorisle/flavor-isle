@@ -17,8 +17,8 @@
 // the call record.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
-import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
+import { getSmashieSettings, phoneCashEnabled } from '../../shared/smashieSettings.ts';
+import { getPhoneStoreStatus, getUnifiedStoreState } from '../../shared/storeState.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { verifyOpenAIWebhookSignature } from '../../shared/openaiWebhookSignature.ts';
@@ -124,11 +124,13 @@ export default async function (req) {
     }
 
     const callerPhone = extractCallerPhone(data.sip_headers);
-    // Openness — including the admin's 24/7 override window (MenuSetting
-    // open_all_day_date / open_all_day_until) — comes from the shared store
-    // status helper, so the phone line reads exactly what the website does.
-    const [storeStatus, busyness, customer] = await Promise.all([
-      getPhysicalStoreStatus(base44),
+    // Store state — closure, ordering on/off, the 24/7 override, today's early
+    // close — comes from the shared module, so the phone line reads exactly what
+    // the website does. The unified state also feeds the delivery range and fee,
+    // the site notice, and the cash line into the call context below.
+    const [storeStatus, storeState, busyness, customer] = await Promise.all([
+      getPhoneStoreStatus(base44),
+      getUnifiedStoreState(base44),
       getLiveBusyness(base44),
       callerPhone ? lookupCustomerByPhone(base44, callerPhone).catch(() => null) : Promise.resolve(null),
     ]);
@@ -140,7 +142,7 @@ export default async function (req) {
       console.error('Blocked-contact lookup failed, answering anyway:', e.message);
       return null;
     });
-    const context = buildCallContext({ storeStatus, busyness, callerPhone, customer, blockedContact: block });
+    const context = buildCallContext({ storeStatus, storeState, cashEnabled: phoneCashEnabled(settings), busyness, callerPhone, customer, blockedContact: block });
 
     const enabledTools = SMASHIE_LIVE_TOOLS.filter((tool) => {
       const ability = TOOL_ABILITIES[tool.name];

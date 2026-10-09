@@ -7,7 +7,7 @@ import { findBlock, blockedCallerInstruction } from '../../shared/blockedContact
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
-import { getPhysicalStoreStatus } from '../../shared/storeClosure.ts';
+import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
 import { greetingAudio } from '../../shared/smashieGreetingAudio.ts';
@@ -203,7 +203,7 @@ export default async function(req) {
       // Includes the admin's 24/7 override window (MenuSetting
       // open_all_day_date / open_all_day_until), shared with the website.
       const [storeStatus, busynessLevel, convo] = await Promise.all([
-        getPhysicalStoreStatus(base44),
+        getPhoneStoreStatus(base44),
         getBusynessLevel(base44),
         base44.asServiceRole.agents.createConversation({
           agent_name: 'smashie',
@@ -325,7 +325,7 @@ export default async function(req) {
     const [callRecords, liveBusyness, storeStatus, settings] = await Promise.all([
       base44.asServiceRole.entities.SmsConversation.filter({ conversation_id: conversationId }),
       getBusynessLevel(base44),
-      getPhysicalStoreStatus(base44),
+      getPhoneStoreStatus(base44),
       getSmashieSettings(base44),
     ]);
 

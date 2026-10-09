@@ -1,4 +1,7 @@
 import { createStripePhonePayment } from '../../shared/stripePhonePayment.ts';
+import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
+import { getSmashieSettings, phoneCashEnabled, phonePaymentProvider } from '../../shared/smashieSettings.ts';
+import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
@@ -30,6 +33,15 @@ export default async function(req) {
     if (!['card', 'cash_on_pickup'].includes(payment_method)) return Response.json({ error: 'Choose card or cash_on_pickup.' }, { status: 400 });
     const cashPickup = payment_method === 'cash_on_pickup';
     if (cashPickup && order_type && order_type !== 'pickup') return Response.json({ error: 'Cash at pickup is available only for pickup orders.' }, { status: 400 });
+
+    // Owner switches (Admin → Communications): cash can be paused, and the card
+    // link can be created by either processor. Both are enforced HERE too, so a
+    // caller who insists cannot get something the settings page says is off.
+    const smashieSettings = await getSmashieSettings(base44);
+    if (cashPickup && !phoneCashEnabled(smashieSettings)) {
+      return Response.json({ error: 'Cash orders are paused right now. Offer the secure card payment link or the counter.' }, { status: 400 });
+    }
+    const paymentProvider = phonePaymentProvider(smashieSettings);
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_phone, items' }, { status: 400 });
@@ -101,8 +113,7 @@ export default async function(req) {
     // the website checkout (paused delivery, distance tiers, or the flat fee).
     let deliveryFee = 0;
     if (order_type === 'delivery') {
-      const settings = await base44.asServiceRole.entities.MenuSetting.list();
-      const setting = settings?.[0] || {};
+      const setting = await getMenuSettingRecord(base44);
       if (setting.delivery_enabled === false) {
         return Response.json({ error: 'Delivery is paused right now. Offer pickup or dine-in instead.' }, { status: 400 });
       }
@@ -141,7 +152,7 @@ export default async function(req) {
       delivery_address: delivery_address || '',
       special_instructions: special_instructions || '',
       payment_status: 'pending',
-      payment_provider: 'stripe',
+      payment_provider: paymentProvider,
       manual_pay_required: true,
     });
 
@@ -160,8 +171,12 @@ export default async function(req) {
 
     try {
       await withTimeout(async () => {
-      // Stripe PaymentIntent paid on flavor-isle.com/pay/:orderNumber.
-      paymentUrl = await createStripePhonePayment(base44, order);
+      // Secure payment link paid on flavor-isle.com/pay/:orderNumber. The owner
+      // picks which processor backs it in Admin → Communications; the customer
+      // only ever sees our own pay page.
+      paymentUrl = paymentProvider === 'square'
+        ? await createSquarePhonePayment(base44, order)
+        : await createStripePhonePayment(base44, order);
 
       // Text it first — the customer is on the phone (or in chat), so it lands
       // instantly. This is the primary delivery channel for the payment link.
@@ -262,7 +277,7 @@ export default async function(req) {
         : paymentLinkSent
         ? `Order #${orderNumber} total is $${finalTotal.toFixed(2)}${orderDeliveryFee > 0 ? ` including a $${orderDeliveryFee.toFixed(2)} delivery fee` : ''}. It is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`
         : `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total), but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
-      payment_provider: 'stripe',
+      payment_provider: paymentProvider,
     });
   } catch (error) {
     console.error(`logPhoneOrder error for ${logPhone}:`, error.message);
