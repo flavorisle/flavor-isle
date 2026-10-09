@@ -298,8 +298,8 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     onSelect={(mod) => toggleSingle(group.name, mod)}
                   />
                 ) : (
-                /* Options pack onto each line as they fit, so nothing wastes
-                   a phone line; the sheet stacks them from tablet width up. */
+                /* Lite/Extra pills sit two to a phone line; the wide name +
+                   price rows keep a full line of their own, as before. */
                 <div className="flex flex-wrap gap-2 sm:block sm:space-y-2">
                   {group.modifiers.map(mod => {
                     const isMultiple = group.selection_type === 'MULTIPLE';
@@ -348,7 +348,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                         type="button"
                         disabled={mod.sold_out}
                         onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                        className={`max-w-[47%] min-w-0 min-h-[44px] flex items-center justify-between px-3 py-3 rounded-xl border-2 transition-all text-left sm:px-4 sm:max-w-none ${
+                        className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
                           mod.sold_out
                             ? 'border-border bg-muted opacity-50 cursor-not-allowed'
                             : isSelected

@@ -64,7 +64,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
                   type="button"
                   disabled={mod.sold_out}
                   onClick={() => isMultiple ? toggleMultiple(list.name, mod) : toggleSingle(list.name, mod)}
-                  className={`max-w-[47%] px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold sm:max-w-none ${
+                  className={`px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold ${
                     mod.sold_out
                       ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
                       : isSelected

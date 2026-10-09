@@ -97,8 +97,8 @@ export default function ItemBuildSummary({
                       {multiple ? 'Pick any' : 'Pick one'}
                     </span>
                   </div>
-                  {/* Pack as many options onto each line as fit; the wider
-                      Lite/Extra pills drop to the next line when needed. */}
+                  {/* Plain option chips read as before; the wider Lite/Extra
+                      pills sit two to a line on phones. */}
                   <div className="flex flex-wrap gap-2">
                     {getPreferenceTriplet(group) ? (
                       <PreferenceGroupPill
@@ -153,7 +153,7 @@ export default function ItemBuildSummary({
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => onToggle?.(group.name, mod)}
-                          className={`inline-flex max-w-[47%] min-w-0 items-center justify-center gap-1.5 px-3 py-2.5 rounded-full border-2 font-body text-sm font-semibold transition-all sm:max-w-none sm:px-4 ${
+                          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 font-body text-sm font-semibold transition-all ${
                             isSelected
                               ? 'border-midnight-cherry bg-midnight-cherry/10 text-midnight-cherry'
                               : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
@@ -164,7 +164,7 @@ export default function ItemBuildSummary({
                           ) : (
                             <Plus size={13} className="text-midnight-cherry flex-shrink-0" />
                           )}
-                          <span className="min-w-0 break-words">{mod.name}</span>
+                          <span>{mod.name}</span>
                           {extra && (
                             <span className={`text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
                               +${Number(mod.price).toFixed(2)}
