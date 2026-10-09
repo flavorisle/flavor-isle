@@ -27,6 +27,7 @@ import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
 import OrderAgainSection from '@/components/orderAgain/OrderAgainSection';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import FamilyBundleCard from '@/components/family/FamilyBundleCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
@@ -239,6 +240,9 @@ export default function Menu() {
           
         </div>
       </div>
+
+      {/* Find Smashie — Oct 15 to Nov 1 hide & seek promo */}
+      <FindSmashiePromo />
 
       {/* Share-link unavailable state — the item id is hidden, deleted, or invalid */}
       {focusMissing && (

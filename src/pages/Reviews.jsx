@@ -13,6 +13,7 @@ import Seo from '@/components/Seo';
 import LazyEmbed from '@/components/LazyEmbed';
 import ReviewsCarousel from '@/components/ReviewsCarousel';
 import ReviewPlatformLinks from '@/components/ReviewPlatformLinks';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 const TIKTOK_VIDEOS = [
   {
@@ -225,6 +226,8 @@ export default function Reviews() {
 
       {/* Review platforms and ways to share a visit */}
       <ReviewPlatformLinks />
+
+      <FindSmashiePromo />
 
       <Footer />
     </div>

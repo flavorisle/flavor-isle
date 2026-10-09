@@ -36,6 +36,7 @@ import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import StickyOrderBar from '@/components/StickyOrderBar';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 
 const SPECIALS_TICKER = [
@@ -181,6 +182,9 @@ export default function Home() {
         <HappyHourBanner />
       </div>
       <AdBannerStrip placement="home" />
+
+      {/* ── FIND SMASHIE (Oct 15 – Nov 1 hide & seek) ── */}
+      <FindSmashiePromo />
 
       {/* ── REVIEWS (What people are saying) ── */}
       <ReviewSection />

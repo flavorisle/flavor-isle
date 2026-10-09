@@ -1,15 +1,16 @@
 // ─────────────────────────────────────────────────────────────
 // Find Smashie — Halloween Hide & Seek (October game)
 //
-// Every day Smashie hides somewhere on the site. Pumpkin Smashie
+// Runs Oct 15 through Nov 1. Every day Smashie hides somewhere on
+// the site. Pumpkin Smashie
 // hides from open until 5:00 PM; if nobody has found him by 5 PM,
 // he moves to a NEW hiding spot as Vampire Smashie until close.
 // First signed-in player to click him wins their choice of
 // 100 Star Rewards points or an instant free milkshake.
 // ─────────────────────────────────────────────────────────────
 
-export const HUNT_START_DATE = '2026-10-01';
-export const HUNT_END_DATE = '2026-10-31';
+export const HUNT_START_DATE = '2026-10-15';
+export const HUNT_END_DATE = '2026-11-01';
 export const VAMPIRE_SWITCH_TIME = '17:00'; // 5:00 PM store-local
 export const INSTAGRAM_HANDLE = '@flavor_isle';
 export const INSTAGRAM_URL = 'https://www.instagram.com/flavor_isle/';
@@ -108,6 +109,31 @@ export function getHuntSpot({ dateStr, phase, nowMinutes }) {
 export function getHuntPhase({ nowMinutes, openMinutes, closeMinutes }) {
   if (nowMinutes < openMinutes || nowMinutes >= closeMinutes) return null;
   return nowMinutes < minutesOfDay(VAMPIRE_SWITCH_TIME) ? 'pumpkin' : 'vampire';
+}
+
+const HINT_ROWS = [
+  [0, 25, 'near the top'],
+  [25, 55, 'in the upper-middle'],
+  [55, 80, 'in the lower-middle'],
+  [80, 101, 'near the bottom'],
+];
+const HINT_COLS = [
+  [0, 34, 'on the left side'],
+  [34, 67, 'in the middle'],
+  [67, 101, 'on the right side'],
+];
+
+/**
+ * Plain-language hint for a hiding spot: which page he's on plus a rough
+ * area, so players know where to look without it being handed to them.
+ */
+export function getHuntHint({ spot, phase }) {
+  if (!spot) return '';
+  const row = HINT_ROWS.find(([lo, hi]) => spot.topPct >= lo && spot.topPct < hi)?.[2];
+  const col = HINT_COLS.find(([lo, hi]) => spot.leftPct >= lo && spot.leftPct < hi)?.[2];
+  const who = phase === 'vampire' ? 'Vampire Smashie' : 'Pumpkin Smashie';
+  const area = [row, col].filter(Boolean).join(', ');
+  return `${who} is hiding on the ${spot.page.name} page, ${area}.`;
 }
 
 export function phaseLabel(phase) {

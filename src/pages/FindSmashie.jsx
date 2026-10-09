@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { INSTAGRAM_URL, INSTAGRAM_HANDLE, phaseLabel } from '@/lib/findSmashie';
+import { INSTAGRAM_URL, INSTAGRAM_HANDLE } from '@/lib/findSmashie';
+import useSmashieHint from '@/hooks/useSmashieHint';
 
 // Public rules + winner board for the Find Smashie game.
 export default function FindSmashie() {
   const [winners, setWinners] = useState(null);
+  const hunt = useSmashieHint();
 
   useEffect(() => {
     let cancelled = false;
@@ -31,10 +33,23 @@ export default function FindSmashie() {
           🎃 Find Smashie: Halloween Hide &amp; Seek
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Every day in October, Smashie hides somewhere on flavor-isle.com — dressed
-          for Halloween and trying his best not to be spotted.
+          From October 15 through November 1, Smashie hides somewhere on
+          flavor-isle.com — dressed for Halloween and trying his best not to be
+          spotted.
         </p>
       </div>
+
+      {hunt?.hint && (
+        <div className="rounded-xl border border-smashie-yellow bg-smashie-yellow/15 p-5 mb-10 text-center">
+          <p className="font-heading uppercase text-sm tracking-widest text-midnight-cherry mb-1">
+            🔎 Today's Hint
+          </p>
+          <p className="font-semibold text-obsidian-roast">{hunt.hint}</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            He moves to a brand-new spot at 5 PM if nobody has found him yet — check back for the new hint.
+          </p>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-4 mb-10">
         <RuleCard step="1" title="Watch for Smashie">
@@ -69,7 +84,7 @@ export default function FindSmashie() {
         )}
         {winners && winners.length === 0 && (
           <p className="p-6 text-center text-muted-foreground">
-            No winners yet — the hunt begins October 1. Could you be first?
+            No winners yet — the hunt begins October 15. Could you be first?
           </p>
         )}
         {winners && winners.length > 0 && (
