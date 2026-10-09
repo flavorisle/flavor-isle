@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, Plus, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const norm = (s) => (s || '').toString().trim().toLowerCase();
 const LIGHT_RE = /^(lite|light)\b/i;
@@ -33,9 +33,9 @@ export function getPreferenceTriplet(group) {
   return { light, regular, extra };
 }
 
-// Left zone = − (Lite · Light Milk), center = the chosen level, right zone = +
-// (Extra · Extra Milk) — the same three-zone pill the burger sauces use, with
-// the same hover/active word reveal on the two side zones.
+// Left zone = Lite, center = the chosen level, right zone = Extra — the same
+// three-zone pill the burger sauces use, with the word always visible on the
+// two filled side zones.
 export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
   const triplet = getPreferenceTriplet(group);
   if (!triplet) return null;
@@ -63,14 +63,13 @@ export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
         type="button"
         onClick={() => pick(light)}
         aria-label={`Lite — ${light.name}`}
-        className={`group/lite flex items-center justify-center px-3 transition-colors ${
+        className={`flex items-center justify-center px-3 transition-colors ${
           isLight
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Minus size={14} className="group-hover/lite:hidden group-active/lite:hidden" />
-        <span className="hidden group-hover/lite:inline group-active/lite:inline text-xs font-heading uppercase tracking-wide">Lite</span>
+        <span className="text-xs font-heading uppercase tracking-wide">Lite</span>
       </button>
 
       <button
@@ -93,14 +92,13 @@ export default function PreferenceGroupPill({ group, selectedId, onSelect }) {
         type="button"
         onClick={() => pick(extra)}
         aria-label={`Extra — ${extra.name}`}
-        className={`group/extra flex items-center justify-center px-3 transition-colors ${
+        className={`flex items-center justify-center px-3 transition-colors ${
           isExtra
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Plus size={14} className="group-hover/extra:hidden group-active/extra:hidden" />
-        <span className="hidden group-hover/extra:inline group-active/extra:inline text-xs font-heading uppercase tracking-wide">Extra</span>
+        <span className="text-xs font-heading uppercase tracking-wide">Extra</span>
       </button>
     </div>
   );

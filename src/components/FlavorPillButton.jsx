@@ -1,7 +1,7 @@
 import React from 'react';
-import { Minus, Plus, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
-// Flavors get the same three zones the burger sauces use: − is Lite, + is Extra.
+// Flavors get the same three zones the burger sauces use: Lite left, Extra right.
 // When Square attaches its own "- / + Flavors" child list to the flavor, the
 // real nested option (catalog id + price) is recorded so Square receives it as a
 // catalog modifier; otherwise the level rides as a name prefix on the flavor's
@@ -62,9 +62,10 @@ export function getFlavorNestedPrice(nestedSelection) {
   return Object.values(nestedSelection).reduce((sum, entry) => sum + (Number(entry?.price) || 0), 0);
 }
 
-// Left zone = Lite (−), center = the flavor (tap to add/remove), right zone =
-// Extra (+). Picking a level selects the flavor if it isn't picked yet and
-// never deselects it; tapping the center adds/removes the parent and clears its level.
+// Left zone = Lite, center = the flavor (tap to add/remove), right zone = Extra.
+// Both side zones are filled chips with their word always visible. Picking a
+// level selects the flavor if it isn't picked yet and never deselects it;
+// tapping the center adds/removes the parent and clears its level.
 export default function FlavorPillButton({
   mod,
   isSelected,
@@ -110,14 +111,13 @@ export default function FlavorPillButton({
         aria-pressed={isLite}
         aria-label={`Lite ${mod.name}`}
         title={`Lite ${mod.name}`}
-        className={`group/lite flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
+        className={`flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
           isLite
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Minus size={14} className="group-hover/lite:hidden group-active/lite:hidden" />
-        <span className="hidden group-hover/lite:inline group-active/lite:inline text-xs font-heading uppercase tracking-wide">Lite</span>
+        <span className="text-xs font-heading uppercase tracking-wide">Lite</span>
       </button>
 
       <button
@@ -144,14 +144,13 @@ export default function FlavorPillButton({
         aria-pressed={isExtra}
         aria-label={`Extra ${mod.name}`}
         title={`Extra ${mod.name}`}
-        className={`group/extra flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
+        className={`flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
           isExtra
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Plus size={14} className="group-hover/extra:hidden group-active/extra:hidden" />
-        <span className="hidden group-hover/extra:inline group-active/extra:inline text-xs font-heading uppercase tracking-wide">Extra</span>
+        <span className="text-xs font-heading uppercase tracking-wide">Extra</span>
       </button>
     </div>
   );

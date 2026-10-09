@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, Plus, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const norm = (s) => (s || '').toString().toLowerCase().trim();
 const PREFERENCE_WORDS = new Set(['lite', 'light', 'regular', 'normal', 'extra']);
@@ -32,12 +32,12 @@ function getPreferenceOptions(list) {
 // zones. Replaces the separate nested preference pills with a compact 3-zone
 // pill so the customer doesn't see a confusing standalone "Extra" entry below.
 //
-// Left zone = Lite (− icon, "Lite" on hover/hold)
+// Left zone = Lite (word, filled tint)
 // Center    = Regular (modifier name, tap toggles selection)
-// Right zone = Extra (+ icon, "Extra" on hover/hold)
+// Right zone = Extra (word, filled tint)
 //
-// On desktop, hovering over a side zone reveals the word. On mobile, the − / +
-// icons are always visible and pressing (active) reveals the word.
+// The side zones always show their word on a filled tint so they read as
+// buttons; the center keeps the pill's unfilled background.
 export default function PreferencePillButton({
   mod,
   isSelected,
@@ -87,14 +87,13 @@ export default function PreferencePillButton({
           type="button"
           onClick={handleLite}
           aria-label={`Lite ${mod.name}`}
-          className={`group/lite flex items-center justify-center px-3 transition-colors ${
+          className={`flex items-center justify-center px-3 transition-colors ${
             isLite
               ? 'bg-midnight-cherry text-white'
-              : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+              : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
           }`}
         >
-          <Minus size={14} className="group-hover/lite:hidden group-active/lite:hidden" />
-          <span className="hidden group-hover/lite:inline group-active/lite:inline text-xs font-heading uppercase tracking-wide">Lite</span>
+          <span className="text-xs font-heading uppercase tracking-wide">Lite</span>
         </button>
       )}
 
@@ -119,14 +118,13 @@ export default function PreferencePillButton({
           type="button"
           onClick={handleExtra}
           aria-label={`Extra ${mod.name}`}
-          className={`group/extra flex items-center justify-center px-3 transition-colors ${
+          className={`flex items-center justify-center px-3 transition-colors ${
             isExtra
               ? 'bg-midnight-cherry text-white'
-              : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+              : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
           }`}
         >
-          <Plus size={14} className="group-hover/extra:hidden group-active/extra:hidden" />
-          <span className="hidden group-hover/extra:inline group-active/extra:inline text-xs font-heading uppercase tracking-wide">Extra</span>
+          <span className="text-xs font-heading uppercase tracking-wide">Extra</span>
         </button>
       )}
     </div>

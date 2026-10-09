@@ -309,8 +309,8 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                       return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={selectIceSize} />;
                     }
 
-                    // Flavors get the same − / + pill the burger sauces use:
-                    // − is Lite, + is Extra. Checked BEFORE the preference check
+                    // Flavors get the same Lite / Extra pill the burgers use.
+                    // Checked BEFORE the preference check
                     // so a flavor carrying Square's own "- / + Flavors" child list
                     // still renders (and prices) as the flavor pill — matching the
                     // product summary exactly.
