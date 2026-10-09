@@ -145,7 +145,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 }
 
 export async function sendAdminReceiptEmail(order) {
-  const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
+  const ADMIN_ALERT_EMAILS = ['wesleyrbooker1@gmail.com', 'ashleybooker29@gmail.com'];
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
   const itemsHtml = (order.items || []).map(item => {
@@ -208,27 +208,32 @@ export async function sendAdminReceiptEmail(order) {
   `);
 
   // Retry the Resend send up to 3 times so a transient API failure
-  // doesn't silently drop the staff alert.
+  // doesn't silently drop the staff alert. Each recipient is tracked on its
+  // own, so one address failing never blocks the other.
   let sent = false;
-  for (let attempt = 1; attempt <= 3 && !sent; attempt++) {
-    try {
-      const { error } = await resend.emails.send({
-        from: 'Flavor Isle <smashie@flavor-isle.com>',
-        to: OWNER_EMAIL,
-        subject: `🧾 New online order #${order.order_number || ''} — $${(order.total || 0).toFixed(2)}`,
-        html,
-      });
-      if (error) {
-        console.error(`Admin receipt email error (attempt ${attempt}):`, error);
+  for (const recipient of ADMIN_ALERT_EMAILS) {
+    let delivered = false;
+    for (let attempt = 1; attempt <= 3 && !delivered; attempt++) {
+      try {
+        const { error } = await resend.emails.send({
+          from: 'Flavor Isle <smashie@flavor-isle.com>',
+          to: recipient,
+          subject: `🧾 New online order #${order.order_number || ''} — $${(order.total || 0).toFixed(2)}`,
+          html,
+        });
+        if (error) {
+          console.error(`Admin receipt email error for ${recipient} (attempt ${attempt}):`, error);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+        } else {
+          console.log(`Admin receipt sent to ${recipient} for order ${order.order_number} (attempt ${attempt})`);
+          delivered = true;
+        }
+      } catch (sendErr) {
+        console.error(`Admin receipt send exception for ${recipient} (attempt ${attempt}):`, sendErr.message);
         if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
-      } else {
-        console.log(`Admin receipt sent to ${OWNER_EMAIL} for order ${order.order_number} (attempt ${attempt})`);
-        sent = true;
       }
-    } catch (sendErr) {
-      console.error(`Admin receipt send exception (attempt ${attempt}):`, sendErr.message);
-      if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
     }
+    if (delivered) sent = true;
   }
   return sent;
 }
