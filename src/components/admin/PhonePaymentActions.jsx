@@ -19,7 +19,7 @@ export default function PhonePaymentActions({ order }) {
     } finally { setBusy(false); }
   };
   return <div className="mt-3 space-y-2">
-    <p className="text-xs text-muted-foreground">Phone payment: {order.payment_provider || 'stripe'}</p>
+    <p className="text-xs text-muted-foreground">Card payment link</p>
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" className="min-h-11" disabled={busy} onClick={send}>{busy ? 'Please wait…' : order.payment_url ? 'Resend payment link' : 'Send payment link'}</Button>
       {order.payment_url && <a href={order.payment_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm underline text-foreground">Open payment link</a>}
