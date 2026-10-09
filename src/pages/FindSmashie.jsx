@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { INSTAGRAM_URL, INSTAGRAM_HANDLE } from '@/lib/findSmashie';
-import useSmashieHint from '@/hooks/useSmashieHint';
+import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate } from '@/lib/findSmashie';
+import useSmashieHunt from '@/hooks/useSmashieHunt';
 
 // Public rules + winner board for the Find Smashie game.
 export default function FindSmashie() {
   const [winners, setWinners] = useState(null);
-  const hunt = useSmashieHint();
+  const hunt = useSmashieHunt();
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +38,18 @@ export default function FindSmashie() {
           spotted.
         </p>
       </div>
+
+      {hunt?.show && !hunt.started && (
+        <div className="rounded-xl border border-smashie-yellow bg-smashie-yellow/15 p-5 mb-10 text-center">
+          <p className="font-heading uppercase text-sm tracking-widest text-midnight-cherry mb-1">
+            🎃 Starts {formatHuntDate(hunt.startDate)}
+          </p>
+          <p className="font-semibold text-obsidian-roast">
+            The hunt hasn't started yet — come back on {formatHuntDate(hunt.startDate)} to see where
+            Smashie is hiding each day.
+          </p>
+        </div>
+      )}
 
       {hunt?.hint && (
         <div className="rounded-xl border border-smashie-yellow bg-smashie-yellow/15 p-5 mb-10 text-center">

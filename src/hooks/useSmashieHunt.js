@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
-  todayStr, inDateRange, getHuntPhase, getHuntSpot, getHuntHint,
-  minutesOfDay, VAMPIRE_SWITCH_TIME,
+  todayStr, getHuntPhase, getHuntSpot, getHuntHint, minutesOfDay, VAMPIRE_SWITCH_TIME,
+  HUNT_START_DATE, HUNT_END_DATE, HUNT_PROMO_START_DATE,
 } from '@/lib/findSmashie';
 
 const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
@@ -18,12 +18,17 @@ function storeMinutes(date = new Date()) {
 }
 
 /**
- * Live "where is he right now" view of the Find Smashie hunt: the current
- * phase (pumpkin before 5 PM, vampire after), his hiding spot, today's hint
- * and today's winner. Recomputes every minute so the hint follows him when
- * he moves to his vampire spot at 5 PM. Returns null until state has loaded.
+ * What the site should show for Find Smashie right now.
+ *
+ * Returns null until the hunt state has loaded, then:
+ *   { show: false }                                nothing to show
+ *   { show: true, started: false, startDate }      advertising window, hunt not open yet
+ *   { show: true, started: true, phase, spot, hint, winner }
+ *
+ * Recomputes every minute so the hint follows Smashie when he switches to his
+ * vampire spot at 5 PM.
  */
-export default function useSmashieHint() {
+export default function useSmashieHunt() {
   const [state, setState] = useState(null);
   const [nowMinutes, setNowMinutes] = useState(() => storeMinutes());
 
@@ -38,7 +43,7 @@ export default function useSmashieHint() {
         // this branch, assume the game is on so the promo can be reviewed.
         if (!cancelled) {
           setState({
-            active: true, start_date: '2026-10-15', end_date: '2026-11-01',
+            active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
             preview_mode: true, today_winner: null, hours: null,
           });
         }
@@ -57,10 +62,18 @@ export default function useSmashieHint() {
 
   if (!state) return null;
 
-  const dateStr = todayStr();
+  const today = todayStr();
   const winner = state.today_winner || null;
-  if (!state.active || !inDateRange(dateStr, state.start_date, state.end_date)) {
-    return { active: false, phase: null, spot: null, hint: null, winner };
+  const startDate = state.start_date || HUNT_START_DATE;
+  const endDate = state.end_date || HUNT_END_DATE;
+
+  // Advertising runs from the promo start date through the last hunt day.
+  if (!state.active || today < HUNT_PROMO_START_DATE || today > endDate) {
+    return { show: false, started: false, startDate, phase: null, spot: null, hint: null, winner };
+  }
+
+  if (today < startDate) {
+    return { show: true, started: false, startDate, phase: null, spot: null, hint: null, winner };
   }
 
   const hours = state.hours;
@@ -72,8 +85,8 @@ export default function useSmashieHint() {
         closeMinutes: hours ? minutesOfDay(hours.close) : DEFAULT_CLOSE,
       });
 
-  if (!phase) return { active: true, phase: null, spot: null, hint: null, winner };
+  if (!phase) return { show: true, started: true, startDate, phase: null, spot: null, hint: null, winner };
 
-  const spot = getHuntSpot({ dateStr, phase, nowMinutes });
-  return { active: true, phase, spot, hint: getHuntHint({ spot, phase }), winner };
+  const spot = getHuntSpot({ dateStr: today, phase, nowMinutes });
+  return { show: true, started: true, startDate, phase, spot, hint: getHuntHint({ spot, phase }), winner };
 }

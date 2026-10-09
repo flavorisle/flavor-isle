@@ -11,6 +11,9 @@
 
 export const HUNT_START_DATE = '2026-10-15';
 export const HUNT_END_DATE = '2026-11-01';
+// The site starts advertising the game before the hunt opens: the site-wide
+// banner and the promo band tease it from this date.
+export const HUNT_PROMO_START_DATE = '2026-10-09';
 export const VAMPIRE_SWITCH_TIME = '17:00'; // 5:00 PM store-local
 export const INSTAGRAM_HANDLE = '@flavor_isle';
 export const INSTAGRAM_URL = 'https://www.instagram.com/flavor_isle/';
@@ -74,6 +77,12 @@ function minutesOfDay(timeStr) {
 export function todayStr(now) {
   const d = now instanceof Date ? now : new Date();
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); // YYYY-MM-DD
+}
+
+/** 'YYYY-MM-DD' -> 'October 15', for promo copy. */
+export function formatHuntDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 }
 
 export function inDateRange(dateStr, start, end) {

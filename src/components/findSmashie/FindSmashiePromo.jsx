@@ -1,19 +1,24 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import useSmashieHint from '@/hooks/useSmashieHint';
-import { SMASHIE_IMAGES, INSTAGRAM_URL, INSTAGRAM_HANDLE } from '@/lib/findSmashie';
+import useSmashieHunt from '@/hooks/useSmashieHunt';
+import {
+  SMASHIE_IMAGES, INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, HUNT_END_DATE,
+} from '@/lib/findSmashie';
 
 /**
- * Promo band for the Find Smashie hide & seek game (Oct 15 – Nov 1). Drops
- * onto any page via <FindSmashiePromo />; it renders nothing once the game's
- * date window has passed, so no cleanup is needed after it ends.
+ * Promo band for the Find Smashie hide & seek game. Drops onto any page via
+ * <FindSmashiePromo />. It teases the game during the advertising window,
+ * switches to the live hunt (with today's hint) once it opens, and renders
+ * nothing after the last hunt day — so no cleanup is needed afterwards.
  */
 export default function FindSmashiePromo() {
-  const hunt = useSmashieHint();
+  const hunt = useSmashieHunt();
 
-  if (!hunt || !hunt.active) return null;
+  if (!hunt || !hunt.show) return null;
 
-  const { winner, hint, phase } = hunt;
+  const { winner, hint, phase, started, startDate } = hunt;
+  const startLabel = formatHuntDate(startDate);
+  const endLabel = formatHuntDate(HUNT_END_DATE);
 
   return (
     <section className="px-4 sm:px-6 py-12">
@@ -32,14 +37,16 @@ export default function FindSmashiePromo() {
               Halloween Hide &amp; Seek
             </p>
             <h2 className="font-heading text-3xl sm:text-4xl leading-none mt-1">
-              Find Smashie!
+              {started ? 'Find Smashie!' : `Find Smashie Starts ${startLabel}!`}
             </h2>
             <p className="text-sm sm:text-base text-white/85 mt-3 leading-relaxed">
-              {winner
-                ? `Smashie was found by ${winner.name || 'a lucky finder'} today. A brand-new hiding spot appears tomorrow at open.`
-                : "He's hiding somewhere on the site right now. The first signed-in player to spot him wins a free milkshake or 100 Star Rewards points."}
+              {!started
+                ? `Every day from ${startLabel} through ${endLabel}, Smashie hides somewhere on the site in his Halloween costume. The first signed-in player to spot him wins a free milkshake or 100 Star Rewards points.`
+                : winner
+                  ? `Smashie was found by ${winner.name || 'a lucky finder'} today. A brand-new hiding spot appears tomorrow at open.`
+                  : "He's hiding somewhere on the site right now. The first signed-in player to spot him wins a free milkshake or 100 Star Rewards points."}
             </p>
-            {!winner && hint && (
+            {started && !winner && hint && (
               <p className="text-sm font-semibold text-smashie-yellow mt-2">
                 🔎 Today's hint: {hint}
               </p>
@@ -49,7 +56,7 @@ export default function FindSmashiePromo() {
                 to="/find-smashie"
                 className="btn-yellow chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm"
               >
-                Start Hunting <ArrowRight size={16} />
+                {started ? 'Start Hunting' : 'See How It Works'} <ArrowRight size={16} />
               </Link>
               <a
                 href={INSTAGRAM_URL}
