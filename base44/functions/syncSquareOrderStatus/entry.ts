@@ -184,10 +184,12 @@ export default async function(req) {
       // the customer, so nobody has to come onto the website to cancel it again.
       if (newStatus === 'cancelled' && CANCELABLE_STATUSES.includes(order.status)) {
         try {
-          const { notified: told } = await mirrorPosCancellation(base44, order);
+          const { notified: told, alreadyCancelled } = await mirrorPosCancellation(base44, order);
           if (told) notified++;
-          updated++;
-          console.log(`Order ${order.id}: ${order.status} → cancelled (at the register)`);
+          if (!alreadyCancelled) {
+            updated++;
+            console.log(`Order ${order.id}: ${order.status} → cancelled (at the register)`);
+          }
         } catch (cancelError) {
           console.error(`Could not mirror the register cancellation for order ${order.order_number}:`, cancelError.message);
         }

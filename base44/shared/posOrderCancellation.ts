@@ -75,13 +75,23 @@ export async function mirrorPosCancellation(
   order: any,
   { reason = POS_CANCEL_REASON, refunded = false, extra = {} }: { reason?: string; refunded?: boolean; extra?: Record<string, unknown> } = {},
 ) {
+  // Runs can overlap (the five-minute schedule plus a manual one) and the crew
+  // can cancel on the website at the same moment. Whoever gets there first owns
+  // the customer's notice, so nobody is told twice. A failed read must not stop
+  // the cancellation itself, so it falls through.
+  const fresh = await base44.asServiceRole.entities.Order.get(order.id).catch(() => null);
+  if (fresh?.status === 'cancelled') {
+    if (Object.keys(extra).length) await base44.asServiceRole.entities.Order.update(order.id, extra);
+    return { notified: false, alreadyCancelled: true, email: null, sms: null };
+  }
+
   const patch: Record<string, unknown> = { status: 'cancelled', cancel_reason: reason, ...extra };
   if (refunded) patch.payment_status = 'refunded';
   await base44.asServiceRole.entities.Order.update(order.id, patch);
 
-  if (!customerReachable(order)) return { notified: false, email: null, sms: null };
+  if (!customerReachable(order)) return { notified: false, alreadyCancelled: false, email: null, sms: null };
   const result = await notifyOrderCancelled(base44, { ...order, ...patch }, { refunded });
-  return { notified: true, ...result };
+  return { notified: true, alreadyCancelled: false, ...result };
 }
 
 // Settle every order Square has refunded since the last run: record the money,
@@ -108,8 +118,8 @@ export async function mirrorPosRefunds(base44: any, orderBySquareId: Map<string,
 
     try {
       if (full && CANCELABLE_STATUSES.includes(order.status)) {
-        const { notified: told } = await mirrorPosCancellation(base44, order, { reason, refunded: true, extra: patch });
-        cancelled++;
+        const { notified: told, alreadyCancelled } = await mirrorPosCancellation(base44, order, { reason, refunded: true, extra: patch });
+        if (!alreadyCancelled) cancelled++;
         if (told) notified++;
       } else {
         if (full && order.payment_status !== 'refunded') patch.payment_status = 'refunded';
