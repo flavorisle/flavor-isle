@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import {
   getHuntSpot, getHuntPhase, minutesOfDay, todayStr,
   inDateRange, VAMPIRE_SWITCH_TIME, INSTAGRAM_URL, INSTAGRAM_HANDLE, SMASHIE_IMAGES,
+  HUNT_START_DATE, HUNT_END_DATE,
 } from '@/lib/findSmashie';
 
 const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
@@ -29,8 +30,8 @@ async function fetchHuntState() {
     // mode (hours ignored) so the game can be tested anytime.
     return {
       active: true,
-      start_date: '2026-09-23',
-      end_date: '2026-10-31',
+      start_date: HUNT_START_DATE,
+      end_date: HUNT_END_DATE,
       preview_mode: true,
       today_winner: null,
       hours: null,

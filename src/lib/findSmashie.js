@@ -85,9 +85,20 @@ export function formatHuntDate(dateStr) {
   return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 }
 
+/**
+ * The official window is the outer bound of the hunt: whatever the saved
+ * settings say, the game never opens before Oct 15 and never runs past Nov 1.
+ * A blank or inverted pair falls back to the whole official window.
+ */
+export function resolveHuntWindow(start, end) {
+  const s = start && start > HUNT_START_DATE ? start : HUNT_START_DATE;
+  const e = end && end < HUNT_END_DATE ? end : HUNT_END_DATE;
+  if (s > e) return { start: HUNT_START_DATE, end: HUNT_END_DATE };
+  return { start: s, end: e };
+}
+
 export function inDateRange(dateStr, start, end) {
-  const s = start || HUNT_START_DATE;
-  const e = end || HUNT_END_DATE;
+  const { start: s, end: e } = resolveHuntWindow(start, end);
   return dateStr >= s && dateStr <= e;
 }
 

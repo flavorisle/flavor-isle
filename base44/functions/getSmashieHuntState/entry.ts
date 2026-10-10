@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { resolveHuntWindow, HUNT_START_DATE, HUNT_END_DATE } from '../../shared/smashieHuntWindow.ts';
 
 // Find Smashie — public state for the hunt banner + sprite.
 // Returns whether the game is active, today's open/close hours,
@@ -22,9 +23,13 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
-      active: true, start_date: '2026-10-15', end_date: '2026-11-01', preview_mode: true,
+      active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE, preview_mode: true,
     };
     const { dateStr, minutes } = storeNow();
+
+    // The official window (Oct 15 – Nov 1) bounds whatever the saved settings
+    // say, so the site only ever shows the game inside those dates.
+    const huntWindow = resolveHuntWindow(settings.start_date, settings.end_date);
 
     // Today's business hours from the store settings.
     let hours = null;
@@ -53,8 +58,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       active: !!settings.active,
-      start_date: settings.start_date || '2026-10-15',
-      end_date: settings.end_date || '2026-11-01',
+      start_date: huntWindow.start,
+      end_date: huntWindow.end,
       preview_mode: !!settings.preview_mode,
       in_hours: settings.preview_mode
         ? true

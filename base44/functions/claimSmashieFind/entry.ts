@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { inHuntWindow, HUNT_START_DATE, HUNT_END_DATE } from '../../shared/smashieHuntWindow.ts';
 
 // Find Smashie — claim the daily win. The FIRST signed-in caller
 // of the day becomes the winner. Repeat calls by the same winner
@@ -44,11 +45,13 @@ Deno.serve(async (req) => {
     const { dateStr, month, minutes } = storeNow();
 
     const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
-      active: true, start_date: '2026-09-23', end_date: '2026-10-31',
+      active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
       win_limit_per_customer: 1, preview_mode: true,
     };
     if (!settings.active) return Response.json({ off: true });
-    if (dateStr < (settings.start_date || '2026-09-23') || dateStr > (settings.end_date || '2026-10-31')) {
+    // Wins only count inside the locked official window (Oct 15 – Nov 1), so a
+    // stale saved date range can never open the game early or run it late.
+    if (!inHuntWindow(dateStr, settings.start_date, settings.end_date)) {
       return Response.json({ off: true });
     }
 
