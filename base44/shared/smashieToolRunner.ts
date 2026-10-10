@@ -15,7 +15,7 @@ async function lookupMenu(base44, args) {
 async function invokeFunction(base44, name, payload) {
   // The tools these wrap are keyed to this app's own backend, so a caller from
   // outside cannot drive them directly.
-  const res = await base44.asServiceRole.functions.invoke(name, { relay_key: relayKeyValue(), ...payload });
+  const res = await base44.asServiceRole.functions.invoke(name, payload);
   const data = res?.data ?? res;
   return { output: JSON.stringify(data) };
 }

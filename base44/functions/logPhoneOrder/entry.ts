@@ -9,7 +9,6 @@ import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { withTimeout } from '../../shared/withTimeout.ts';
-import { hasValidRelayKey } from '../../shared/internalRelay.ts';
 
 // The caller is waiting on the line, so link setup is bounded: a stalled
 // processor or SMS gateway falls through to the manual-pay reply with the total.
