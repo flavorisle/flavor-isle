@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { getLoyaltyProgram, searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
@@ -33,6 +34,12 @@ export default async function (req: Request) {
     const isTest = !!test_mode;
     if (isTest && !test_recipient_email) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
+    }
+    // A test send goes to an operator-chosen address, so it is admin-only. The
+    // scheduled monthly run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
     }
 
     const now = new Date();

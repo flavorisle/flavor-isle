@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
 
 // Twilio voice call status callback handler. Twilio POSTs URL-encoded form
 // params here as a call moves through its lifecycle (ringing → in-progress →
@@ -15,6 +16,13 @@ export default async function(req) {
 
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
+
+    // Status callbacks are only accepted from Twilio (forged ones could close
+    // live conversations and corrupt the call log).
+    if (!await validTwilioSignature(req, params, 'twilioVoiceStatus')) {
+      console.warn('twilioVoiceStatus: rejected unsigned request');
+      return new Response('Invalid signature', { status: 403 });
+    }
 
     const callSid = params.get('CallSid') || '';
     const callStatus = params.get('CallStatus') || '';

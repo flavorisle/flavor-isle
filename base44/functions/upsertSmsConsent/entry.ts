@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.ts';
+import { normalizePhone } from '../../shared/blockedContacts.ts';
 
 // Public client-callable consent upsert. Used by the post-order, footer, and
 // signup surfaces to record explicit, separate transactional and/or marketing
@@ -23,6 +24,28 @@ export default async function(req) {
       return Response.json({ error: 'consent flags required' }, { status: 400 });
     }
 
+    // Marketing consent is only recorded as proven for a number its owner
+    // controls — a signed-in customer whose profile carries this number. Anyone
+    // can type a stranger's number into a web form, so that submission records
+    // the request while the customer's own reply (text OFFERS) makes it proven.
+    const user = await base44.auth.me().catch(() => null);
+    let ownsNumber = false;
+    if (user?.email) {
+      const profiles = await base44.asServiceRole.entities.CustomerProfile.filter({ email: user.email });
+      const ownPhone = normalizePhone(profiles?.[0]?.phone);
+      ownsNumber = !!ownPhone && ownPhone === normalizePhone(phone);
+    }
+
+    // A number that texted STOP stays stopped until its owner opts back in by
+    // text; an anonymous web form may not resurrect it.
+    const existing = await base44.asServiceRole.entities.SMSSubscriber.filter({ phone: normalizePhone(phone) });
+    if (!ownsNumber && existing?.[0]?.status === 'unsubscribed') {
+      return Response.json({
+        ok: false,
+        error: 'This number was unsubscribed. Text ORDERS for order updates or OFFERS for updates and offers to opt back in.',
+      }, { status: 409 });
+    }
+
     const result = await upsertSmsConsent(base44, {
       phone,
       name: name || undefined,
@@ -32,6 +55,7 @@ export default async function(req) {
       sourcePage,
       disclosureVersion: disclosureVersion || SMS_CONSENT_VERSION,
       disclosureText: disclosureText || undefined,
+      provenMarketing: ownsNumber,
     });
 
     if (!result.ok) return Response.json({ error: result.error || 'upsert failed' }, { status: 400 });

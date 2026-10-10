@@ -45,8 +45,13 @@ export default async function(req) {
 
     const firstName = (sub.name || '').trim().split(' ')[0];
     const hasMarketing = !!sub.marketing_consent && !!sub.proven_marketing_consent;
+    // Offers were requested on a website form: the owner confirms by replying,
+    // so marketing texts only ever go to someone who answered for that number.
+    const wantsMarketing = !!sub.marketing_consent && !sub.proven_marketing_consent;
     const body = hasMarketing
       ? `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up for order updates AND recurring offers. 🍔 Msg&data rates may apply. Reply STOP to opt out, HELP for help. Terms: https://flavor-isle.com/terms-of-service`
+      : wantsMarketing
+      ? `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up for order status updates & pay-by-text links. 🍔 Reply OFFERS to also get recurring promotional offers. Msg&data rates may apply. Reply STOP to opt out, HELP for help. Terms: https://flavor-isle.com/terms-of-service`
       : `Flavor Isle: ${firstName ? `Hey ${firstName}! ` : ''}You're signed up for order status updates (confirmed, preparing, ready) & pay-by-text links. 🍔 Msg&data rates may apply. Reply STOP to opt out, HELP for help. Terms: https://flavor-isle.com/terms-of-service`;
 
     const sent = await sendSmashieSms(sub.phone, body);

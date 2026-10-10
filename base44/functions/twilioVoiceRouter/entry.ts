@@ -1,5 +1,7 @@
 import { secrets } from 'base44:runtime';
 import { fastGreetingResponse } from '../../shared/smashieFastGreeting.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
+import { relayKeyValue } from '../../shared/internalRelay.ts';
 
 export default async function(req) {
   try {
@@ -12,8 +14,17 @@ export default async function(req) {
     const params = req.headers.get('content-type')?.includes('application/json')
       ? new URLSearchParams(JSON.parse(body || '{}'))
       : new URLSearchParams(body);
+    // This is Twilio's public entry point, so the signature check belongs here:
+    // the forwarded request carries no signature of its own.
+    if (!await validTwilioSignature(req, params, 'twilioVoiceRouter')) {
+      console.warn('twilioVoiceRouter: rejected unsigned request');
+      return new Response('Invalid signature', { status: 403 });
+    }
+
     const greeting = fastGreetingResponse(incomingUrl, params);
     if (greeting) return greeting;
+    // Mark the forward as coming from our own verified router.
+    if (relayKeyValue()) upstreamUrl.searchParams.set('key', relayKeyValue());
     const upstream = await fetch(upstreamUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

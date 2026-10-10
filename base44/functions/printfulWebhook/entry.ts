@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
+import { hasValidPrintfulKey } from "../../shared/internalRelay.ts";
 import {
   sendMerchInProductionEmail,
   sendMerchFulfilledEmail,
@@ -30,6 +31,20 @@ export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
+
+    // Authenticity: only the URL registered with Printful carries our derived
+    // key. Printful echoes configured params either in the URL or in the body,
+    // so both are accepted. A forged event can otherwise flip a paid order's
+    // fulfillment status and email the customer a tracking link of the sender's
+    // choosing.
+    const urlKey = new URL(req.url).searchParams.get("key");
+    const bodyParams = body?.params;
+    const bodyKey = bodyParams && !Array.isArray(bodyParams) ? bodyParams.key : null;
+    if (!await hasValidPrintfulKey(urlKey || bodyKey)) {
+      console.warn("printfulWebhook: rejected unverified event");
+      return new Response("Forbidden", { status: 403 });
+    }
+
     const type = body.type || body.event || "";
     const data = body.data || {};
     const order = data.order || data;

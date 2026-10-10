@@ -8,11 +8,18 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { email, full_name } = body || {};
+    const { full_name: bodyFullName } = body || {};
 
-    if (!email) {
-      return Response.json({ error: 'Email is required' }, { status: 400 });
+    // Only the account owner may import a Square history, and the signed-in
+    // account decides whose history it is — never the request body. Previously
+    // anyone could name an arbitrary email, pull that Square customer's orders
+    // into the app and have the welcome email sent to it.
+    const user = await base44.auth.me().catch(() => null);
+    if (!user?.email) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const email = user.email;
+    const full_name = user.full_name || bodyFullName || '';
 
     const connection = await base44.asServiceRole.connectors.getConnection('square');
     if (!connection?.accessToken) {

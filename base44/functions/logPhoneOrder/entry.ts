@@ -9,6 +9,7 @@ import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { withTimeout } from '../../shared/withTimeout.ts';
+import { hasValidRelayKey } from '../../shared/internalRelay.ts';
 
 // The caller is waiting on the line, so link setup is bounded: a stalled
 // processor or SMS gateway falls through to the manual-pay reply with the total.
@@ -46,6 +47,21 @@ export default async function(req) {
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_phone, items' }, { status: 400 });
+    }
+    if (items.length > 40) {
+      return Response.json({ error: 'That is more lines than one order can hold — please split it or call the counter.' }, { status: 400 });
+    }
+
+    // The payment link is texted to the number the order carries, so a number
+    // cannot be used to spray links: at most three link-bearing orders an hour.
+    const linkWindowStart = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const recentForPhone = await base44.asServiceRole.entities.Order.filter({
+      customer_phone,
+      created_date: { $gte: linkWindowStart },
+    });
+    const recentLinks = (recentForPhone || []).filter((o) => o.payment_url).length;
+    if (recentLinks >= 3) {
+      return Response.json({ error: 'That number already has several recent orders with payment links. Remind the customer to use the link they were texted, or offer the counter.' }, { status: 429 });
     }
     // The payment link is TEXTED to the customer's number, so a usable phone is
     // the one hard requirement. Email is optional — when we have one, the same
@@ -100,7 +116,29 @@ export default async function(req) {
     // placeholder is already treated as "no email" by the order emails.
     const orderEmail = emailOk ? customer_email : 'phone-order@flavorisle.com';
 
-    const itemSubtotal = items.reduce(
+    // Smashie quotes live prices, but the lines still arrive from the agent, so
+    // every plainly named line is matched against the menu and can never be
+    // priced below its menu price. A mis-heard — or talked-into — "one cent
+    // burger" therefore cannot be charged.
+    const menuItems = await base44.asServiceRole.entities.MenuItem.filter({ is_available: true });
+    const menuPriceByName = new Map();
+    for (const menuItem of menuItems || []) {
+      const menuKey = String(menuItem?.name || '').trim().toLowerCase();
+      const menuPrice = Number(menuItem?.price);
+      if (menuKey && Number.isFinite(menuPrice) && menuPrice > 0) menuPriceByName.set(menuKey, menuPrice);
+    }
+
+    const pricedItems = items.map((item) => {
+      const claimed = Number(item.price) || 0;
+      const catalogPrice = menuPriceByName.get(String(item.name || '').trim().toLowerCase());
+      return {
+        ...item,
+        price: catalogPrice != null && catalogPrice > claimed ? catalogPrice : claimed,
+        quantity: Math.max(1, Math.min(50, Number(item.quantity) || 1)),
+      };
+    });
+
+    const itemSubtotal = pricedItems.reduce(
       (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
       0,
     );
@@ -141,7 +179,7 @@ export default async function(req) {
       order_type: order_type || 'pickup',
       status: cashPickup ? 'confirmed' : 'pending',
       pay_cash_on_pickup: cashPickup,
-      items,
+      items: pricedItems,
       subtotal,
       tax,
       delivery_fee: orderDeliveryFee,

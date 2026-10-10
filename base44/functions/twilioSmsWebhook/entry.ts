@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
 import {
   upsertSmsConsent,
   stopSubscriber,
@@ -18,6 +19,14 @@ Deno.serve(async (req) => {
 
     const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
+
+    // Only Twilio may drive this webhook. Without the signature check anyone
+    // could text STOP on a real customer's behalf or opt a stranger into
+    // marketing texts (a consent-fraud and harassment path).
+    if (!await validTwilioSignature(req, params, 'twilioSmsWebhook')) {
+      console.warn('twilioSmsWebhook: rejected unsigned request');
+      return new Response('Invalid signature', { status: 403 });
+    }
 
     const from = params.get('From') || '';
     const body = params.get('Body') || '';

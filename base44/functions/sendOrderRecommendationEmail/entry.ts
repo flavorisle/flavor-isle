@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
@@ -133,6 +134,12 @@ export default async function (req: Request) {
     const testEmail = test_recipient_email || test_email;
     if (isTest && !testEmail) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
+    }
+    // A test send goes to an operator-chosen address (and this one carries real
+    // order details), so it is admin-only. The scheduled run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
     }
 
     // ── Load the order ──

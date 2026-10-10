@@ -1,12 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { validTwilioSmsSignature } from '../../shared/twilioSmsSignature.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
 import { normalizePhone } from '../../shared/sendSmashieSms.ts';
 
 export default async function(req) {
   try {
     if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
     const params = new URLSearchParams(await req.text());
-    if (!await validTwilioSmsSignature(req, params)) return new Response('Invalid signature', { status: 403 });
+    if (!await validTwilioSignature(req, params, 'twilioSmsStatus')) return new Response('Invalid signature', { status: 403 });
     const base44 = createClientFromRequest(req);
     const sid = params.get('MessageSid') || '';
     const status = params.get('MessageStatus') || '';

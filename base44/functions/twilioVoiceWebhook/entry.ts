@@ -12,6 +12,8 @@ import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
 import { greetingAudio } from '../../shared/smashieGreetingAudio.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
+import { hasValidRelayKey, withRelayKey } from '../../shared/internalRelay.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -101,6 +103,15 @@ export default async function(req) {
     const body = isJson ? JSON.parse(bodyText || '{}') : Object.fromEntries(new URLSearchParams(bodyText));
     const params = new URLSearchParams(body);
 
+    // Authenticity: Twilio signs the webhook it calls directly, and our own
+    // router (which verifies Twilio's signature first) forwards with the app
+    // relay key. Anything else is a forged call and is refused.
+    const signatureOk = await validTwilioSignature(req, params, 'twilioVoiceWebhook');
+    if (!signatureOk && !hasValidRelayKey(new URL(req.url).searchParams.get('key'))) {
+      console.warn('twilioVoiceWebhook: rejected unauthorised request');
+      return new Response('Forbidden', { status: 403 });
+    }
+
     const callSid = params.get('CallSid') || '';
     const from = params.get('From') || '';
     const speechResult = params.get('SpeechResult') || '';
@@ -130,6 +141,7 @@ export default async function(req) {
       }
       const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
+      withRelayKey(audioUrl);
       twiml.play({}, audioUrl.toString());
     };
 
