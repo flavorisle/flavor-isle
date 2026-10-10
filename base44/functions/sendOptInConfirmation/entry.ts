@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 // Sends a category-aware welcome/confirmation text the moment someone opts in
 // to SMS via a website surface (checkout post-order, footer, sms_signup).
@@ -30,6 +31,16 @@ export default async function(req) {
     // Only text when a consent was actually granted (not a STOP / no-consent record).
     if (!sub.opted_in || sub.status !== 'active' || (sub.consent_category || 'none') === 'none') {
       return Response.json({ sent: false, skipped: 'no active consent' });
+    }
+
+    // Issue #93 (A14): a blocked contact is never texted, opt-in or not.
+    const block = await findBlock(base44, { phone: sub.phone, email: sub.email }).catch((e) => {
+      console.error('Blocked-contact lookup failed, sending anyway:', e.message);
+      return null;
+    });
+    if (block) {
+      console.log(`Opt-in confirmation skipped for ${sub.phone}: contact is on the block list.`);
+      return Response.json({ sent: false, skipped: 'contact is blocked' });
     }
 
     const firstName = (sub.name || '').trim().split(' ')[0];

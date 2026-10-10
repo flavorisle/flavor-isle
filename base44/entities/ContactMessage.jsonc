@@ -19,10 +19,11 @@
       "enum": [
         "pending",
         "sent",
-        "failed"
+        "failed",
+        "flagged"
       ],
       "default": "pending",
-      "description": "Delivery state of the inbox email. pending = record created, email not yet attempted; sent = SendEmail accepted; failed = SendEmail rejected (retryable)."
+      "description": "Delivery state of the inbox email. pending = record created, email not yet attempted; sent = SendEmail accepted; failed = SendEmail rejected (retryable); flagged = the sender is on the block list (issue #93) - the record is kept as evidence and the crew is emailed a copy whose subject starts with [FLAGGED - blocked sender]."
     },
     "sent_at": {
       "type": "string",

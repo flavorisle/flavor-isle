@@ -4,6 +4,7 @@ import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
 import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
+import { isPassThrough } from '../../shared/counterPassThrough.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
@@ -198,12 +199,39 @@ export default async function(req) {
         return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
       }
 
+      // Store state first: the counter pass-through check below needs to know
+      // whether we are open before any Smashie conversation is created. Includes
+      // the admin's 24/7 override window (MenuSetting open_all_day_date /
+      // open_all_day_until), shared with the website.
+      const storeStatus = await getPhoneStoreStatus(base44);
+
+      // Issue #93 (C2): counter pass-through on the Twilio pipeline, so the
+      // list holds whichever pipeline answers. The block list wins over
+      // pass-through, and pass-through applies only while the store is OPEN — a
+      // closed store runs the normal closed flow below. A listed caller is
+      // routed into the counterTransferTwiml flow instead of Smashie's script;
+      // if that route cannot be built the call simply continues as normal.
+      if (storeStatus.open && from) {
+        const passThroughBlock = await findBlock(base44, { phone: from }).catch((e) => {
+          console.error('Blocked-contact lookup failed, continuing as a normal call:', e.message);
+          return null;
+        });
+        const passThrough = !passThroughBlock && (await isPassThrough(base44, from));
+        if (passThrough) {
+          try {
+            const passTwiml = new VoiceResponse();
+            passTwiml.redirect({ method: 'POST' }, 'https://flavor-isle.com/functions/counterTransferTwiml');
+            console.log(`Counter pass-through: routing call ${callSid} from ${from} straight to the counter.`);
+            return new Response(passTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+          } catch (e) {
+            console.error('Counter pass-through routing failed, continuing as a normal call:', e.message);
+          }
+        }
+      }
+
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      // Includes the admin's 24/7 override window (MenuSetting
-      // open_all_day_date / open_all_day_until), shared with the website.
-      const [storeStatus, busynessLevel, convo] = await Promise.all([
-        getPhoneStoreStatus(base44),
+      const [busynessLevel, convo] = await Promise.all([
         getBusynessLevel(base44),
         base44.asServiceRole.agents.createConversation({
           agent_name: 'smashie',

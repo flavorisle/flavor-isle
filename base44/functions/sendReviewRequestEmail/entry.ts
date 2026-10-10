@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 // Backend function links use the custom domain.
 const FUNCTION_BASE = 'https://flavor-isle.com';
@@ -48,6 +49,26 @@ export default async function (req: Request) {
     }
     if (!isTest && isSkipEmail(order.customer_email)) {
       return Response.json({ skipped: true, reason: 'skip email (POS/test/internal)' });
+    }
+
+    // Issue #93 (A6): a blocked customer gets no review request. The record is
+    // still written, without sent_at, so the order is marked handled and never
+    // retried (the queue dedups on existing records) — and the 30-day frequency
+    // cap stays untouched because it only counts records that were sent.
+    if (!isTest) {
+      const block = await findBlock(base44, { email: order.customer_email, phone: order.customer_phone }).catch((e) => {
+        console.error('Blocked-contact lookup failed, sending anyway:', e.message);
+        return null;
+      });
+      if (block) {
+        await base44.asServiceRole.entities.ReviewRequestEmail.create({
+          order_id: order.id,
+          customer_email: order.customer_email,
+          description: 'Skipped — the customer is on the block list (issue #93).',
+        });
+        console.log(`Review request email skipped for order ${order.order_number || order.id}: customer is on the block list.`);
+        return Response.json({ skipped: true, reason: 'customer is blocked' });
+      }
     }
 
     // Already sent for THIS order, or customer received one in the last 30 days

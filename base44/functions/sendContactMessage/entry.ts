@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 // Public Contact form handler. Creates a DURABLE ContactMessage record (the
 // admin inbox) BEFORE attempting the inbox email, so a failed send is never
@@ -14,6 +15,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 //  - Retryable: a failed send leaves the record as `failed` (not deleted) so an
 //    admin can re-send; the client shows a genuine retryable error.
 const INBOX = 'hello@flavor-isle.com';
+// Issue #93 (A16): a message from a blocked sender goes to the crew's flagged
+// inbox with a visibly flagged subject instead of arriving as normal customer mail.
+const FLAGGED_INBOX = 'hello@order.flavor-isle.com';
 const RATE_LIMIT_PER_HOUR = 5;
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 
@@ -66,6 +70,33 @@ export default async function(req: Request) {
     if (dupe && dupe.status === 'sent') {
       // Already accepted and emailed — return success without a duplicate send.
       return Response.json({ ok: true, accepted: true, duplicate: true });
+    }
+
+    // Issue #93 (A16): a blocked sender's message is never lost — the record is
+    // still created, marked 'flagged', and the crew is emailed a copy whose
+    // subject says so. The normal path below is untouched for everyone else.
+    const block = await findBlock(base44, { email }).catch((e) => {
+      console.error('Blocked-contact lookup failed, treating the message as normal:', e.message);
+      return null;
+    });
+    if (block) {
+      await base44.asServiceRole.entities.ContactMessage.create({
+        name, email, message,
+        status: 'flagged',
+        client_ip: ip,
+        content_hash: contentHash,
+      });
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: FLAGGED_INBOX,
+          subject: `[FLAGGED - blocked sender] Website Message from ${name}`,
+          body: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}\n\nThis sender is on the Flavor Isle block list, so this message was flagged rather than treated as normal customer mail.`,
+        });
+        return Response.json({ ok: true, accepted: true, flagged: true });
+      } catch (mailErr) {
+        console.error('Flagged ContactMessage send failed:', mailErr?.message || mailErr);
+        return Response.json({ error: 'We recorded your message but the inbox delivery failed. Please try again.' }, { status: 502 });
+      }
     }
 
     // ── Create the durable inbox record (pending) ──
