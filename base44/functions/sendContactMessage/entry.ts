@@ -87,7 +87,7 @@ export default async function(req: Request) {
         content_hash: contentHash,
       });
       try {
-        await base44.integrations.Core.SendEmail({
+        await base44.asServiceRole.integrations.Core.SendEmail({
           to: FLAGGED_INBOX,
           subject: `[FLAGGED - blocked sender] Website Message from ${name}`,
           body: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}\n\nThis sender is on the Flavor Isle block list, so this message was flagged rather than treated as normal customer mail.`,
@@ -109,7 +109,7 @@ export default async function(req: Request) {
 
     // ── Best-effort inbox email ──
     try {
-      await base44.integrations.Core.SendEmail({
+      await base44.asServiceRole.integrations.Core.SendEmail({
         to: INBOX,
         subject: `Website Message from ${name}`,
         body: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
