@@ -13,6 +13,7 @@ import PopupClickStats from '@/components/admin/PopupClickStats';
 import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
 import AutoPrintToggle from '@/components/admin/AutoPrintToggle';
 import FailedOrderAlert from '@/components/admin/FailedOrderAlert';
+import AdminActivityPanel from '@/components/admin/AdminActivityPanel';
 
 const orderPages = [
 {
@@ -97,6 +98,9 @@ export default function AdminDashboard() {
       {/* Failed-order alert — paid orders that never reached Square, failed
           payments, and missed customer/staff emails. Silent when all clear. */}
       <FailedOrderAlert />
+
+      {/* Last admin sign-in and what each admin is working on right now */}
+      <AdminActivityPanel />
 
       <BroadcastPushCard />
       <PushLogList />

@@ -1,0 +1,58 @@
+{
+  "name": "AdminActivity",
+  "type": "object",
+  "properties": {
+    "admin_email": {
+      "type": "string",
+      "description": "Email of the admin account this row is about \u2014 one row per admin."
+    },
+    "admin_name": {
+      "type": "string",
+      "description": "Display name of the admin, refreshed on each sign-in."
+    },
+    "last_login_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this admin most recently signed in. Written by the Admin Login Tracking workflow."
+    },
+    "login_count": {
+      "type": "number",
+      "default": 0,
+      "description": "How many sign-ins have been recorded for this admin since tracking started."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last moment this admin had an admin page open. Refreshed while they work, so the dashboard can show who is on right now."
+    },
+    "last_view": {
+      "type": "string",
+      "description": "What they were doing: the admin page they were last on (e.g. 'Orders'), or 'Just signed in'."
+    }
+  },
+  "required": [
+    "admin_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
