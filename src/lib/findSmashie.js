@@ -86,20 +86,12 @@ export function formatHuntDate(dateStr) {
 }
 
 /**
- * The official window is the outer bound of the hunt: whatever the saved
- * settings say, the game never opens before Oct 15 and never runs past Nov 1.
- * A blank or inverted pair falls back to the whole official window.
+ * Is this YYYY-MM-DD one of the hunt's days? The window is locked for this
+ * season — Oct 15 through Nov 1 inclusive — so the game starts and stops on
+ * the right days whatever the saved settings record holds.
  */
-export function resolveHuntWindow(start, end) {
-  const s = start && start > HUNT_START_DATE ? start : HUNT_START_DATE;
-  const e = end && end < HUNT_END_DATE ? end : HUNT_END_DATE;
-  if (s > e) return { start: HUNT_START_DATE, end: HUNT_END_DATE };
-  return { start: s, end: e };
-}
-
-export function inDateRange(dateStr, start, end) {
-  const { start: s, end: e } = resolveHuntWindow(start, end);
-  return dateStr >= s && dateStr <= e;
+export function inDateRange(dateStr) {
+  return dateStr >= HUNT_START_DATE && dateStr <= HUNT_END_DATE;
 }
 
 /**

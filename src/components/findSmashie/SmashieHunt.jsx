@@ -106,7 +106,7 @@ export default function SmashieHunt() {
     ? (nowMinutes < minutesOfDay(VAMPIRE_SWITCH_TIME) ? 'pumpkin' : 'vampire')
     : getHuntPhase({ nowMinutes, openMinutes: openM, closeMinutes: closeM });
 
-  const active = !!state?.active && inDateRange(dateStr, state?.start_date, state?.end_date);
+  const active = !!state?.active && inDateRange(dateStr);
   const foundToday = !!state?.today_winner;
   const spot = useMemo(
     () => (phase ? getHuntSpot({ dateStr, phase, nowMinutes }) : null),

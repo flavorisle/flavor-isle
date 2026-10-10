@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   getHuntSpot, phaseLabel, todayStr, inDateRange, formatHuntDate,
-  resolveHuntWindow, HUNT_START_DATE, HUNT_END_DATE,
+  HUNT_START_DATE, HUNT_END_DATE,
 } from '@/lib/findSmashie';
 
 // Admin panel for the Find Smashie Halloween Hide & Seek game:
@@ -39,14 +39,13 @@ export default function FindSmashiePanel() {
   async function save() {
     setSaving(true);
     try {
-      // Dates are saved clamped to the official window, so what's stored always
-      // matches what the hunt actually uses (Oct 15 – Nov 1 at the widest).
-      const { start, end } = resolveHuntWindow(settings.start_date, settings.end_date);
+      // Saving stamps the locked official window onto the record, so a stale
+      // stored date range can never disagree with what the hunt uses.
       const payload = {
         active: settings.active,
         preview_mode: !!settings.preview_mode,
-        start_date: start,
-        end_date: end,
+        start_date: HUNT_START_DATE,
+        end_date: HUNT_END_DATE,
         win_limit_per_customer: Number(settings.win_limit_per_customer),
       };
       let id = settings.id;
@@ -56,7 +55,7 @@ export default function FindSmashiePanel() {
         const created = await base44.entities.FindSmashieSettings.create(payload);
         id = created.id;
       }
-      setSettings((s) => ({ ...s, id, start_date: start, end_date: end }));
+      setSettings((s) => ({ ...s, id, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE }));
       setSavedAt(new Date());
     } finally {
       setSaving(false);
@@ -65,8 +64,8 @@ export default function FindSmashiePanel() {
 
   if (!settings) return <p className="text-muted-foreground">Loading game settings…</p>;
 
-  // Saved dates that sit outside the official window — the game ignores them,
-  // so the stored record should be brought back in line.
+  // A stored date range that doesn't match the locked window — the game ignores
+  // it, so saving brings the record back in line.
   const datesOffOfficial =
     settings.start_date !== HUNT_START_DATE || settings.end_date !== HUNT_END_DATE;
 
@@ -83,22 +82,17 @@ export default function FindSmashiePanel() {
           </p>
           <p className="text-xs text-muted-foreground">
             The hunt opens {formatHuntDate(HUNT_START_DATE)} and stops after {formatHuntDate(HUNT_END_DATE)} (that last day is
-            included). Smashie never hides outside these dates, whatever the date fields below say.
+            included). The dates are locked for this season — nothing shows outside them.
           </p>
         </div>
 
         {datesOffOfficial && (
-          <div className="rounded-lg border border-smashie-yellow bg-smashie-yellow/10 p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-lg border border-smashie-yellow bg-smashie-yellow/10 p-3 mb-4">
             <p className="text-sm">
-              Saved dates are <strong>{settings.start_date}</strong> → <strong>{settings.end_date}</strong>, outside the
-              official window. The game is locked to {HUNT_START_DATE} → {HUNT_END_DATE}.
+              The saved record still says <strong>{settings.start_date}</strong> → <strong>{settings.end_date}</strong>.
+              The game is locked to {HUNT_START_DATE} → {HUNT_END_DATE} regardless — press <strong>Save game settings</strong> to
+              bring the record in line.
             </p>
-            <button
-              className="rounded-md border bg-background px-3 py-1.5 text-sm font-semibold hover:bg-muted"
-              onClick={() => setSettings((s) => ({ ...s, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE }))}
-            >
-              Use official dates
-            </button>
           </div>
         )}
 
@@ -135,34 +129,14 @@ export default function FindSmashiePanel() {
             </select>
             <span className="text-xs text-muted-foreground">Turn OFF before the live October launch.</span>
           </label>
-          <label className="text-sm space-y-1">
-            <span className="font-semibold">Game opens — first hunt day</span>
-            <input
-              type="date"
-              min={HUNT_START_DATE}
-              max={HUNT_END_DATE}
-              className="w-full rounded-md border bg-background p-2"
-              value={settings.start_date}
-              onChange={(e) => setSettings({ ...settings, start_date: e.target.value })}
-            />
-            <span className="text-xs text-muted-foreground">
-              Locked to the official window: the game can't open before {HUNT_START_DATE}.
-            </span>
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="font-semibold">Game closes — last hunt day (included)</span>
-            <input
-              type="date"
-              min={HUNT_START_DATE}
-              max={HUNT_END_DATE}
-              className="w-full rounded-md border bg-background p-2"
-              value={settings.end_date}
-              onChange={(e) => setSettings({ ...settings, end_date: e.target.value })}
-            />
-            <span className="text-xs text-muted-foreground">
-              Can't run past {HUNT_END_DATE}. Narrowing inside the window is fine — dates save clamped to it.
-            </span>
-          </label>
+          <div className="sm:col-span-2 rounded-lg bg-muted p-3 text-sm">
+            <p className="font-semibold">Game dates — locked</p>
+            <p className="text-muted-foreground">
+              {formatHuntDate(HUNT_START_DATE)} – {formatHuntDate(HUNT_END_DATE)}, {HUNT_END_DATE.slice(0, 4)} ({HUNT_START_DATE} →{' '}
+              {HUNT_END_DATE}). The hunt opens on the first date and the last date is included. Use the Game switch above to
+              pause the whole hunt.
+            </p>
+          </div>
         </div>
 
         <button
@@ -176,7 +150,7 @@ export default function FindSmashiePanel() {
 
       <div className="rounded-xl border bg-card p-5">
         <h4 className="font-semibold mb-3">Today's hiding spots ({todayStr()})</h4>
-        {!inDateRange(todayStr(), settings.start_date, settings.end_date) && (
+        {!inDateRange(todayStr()) && (
           <p className="text-xs text-muted-foreground mb-3">
             Preview only — the hunt runs {formatHuntDate(HUNT_START_DATE)} – {formatHuntDate(HUNT_END_DATE)}, so Smashie is
             not hidden on the site today.
