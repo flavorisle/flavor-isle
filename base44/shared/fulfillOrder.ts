@@ -146,7 +146,7 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 }
 
 export async function sendAdminReceiptEmail(order) {
-  const ADMIN_ALERT_EMAILS = ['wesleyrbooker1@gmail.com', 'ashleybooker29@gmail.com'];
+  const ADMIN_ALERT_EMAILS = ['wesleyrbooker1@gmail.com'];
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
   const itemsHtml = (order.items || []).map(item => {

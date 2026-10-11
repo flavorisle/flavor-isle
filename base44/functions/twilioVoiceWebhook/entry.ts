@@ -74,9 +74,7 @@ async function sendAdminPhoneOffHookAlert(base44, callerFrom, conversationId, di
   try {
     const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
     const emails = (admins || []).map(a => a.email).filter(Boolean);
-    // Extra alert recipients who aren't admin users in the app.
-    const extraAlertEmails = ['ashleybooker29@gmail.com'];
-    for (const email of [...emails, ...extraAlertEmails]) {
+    for (const email of emails) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: email,
         from_name: 'Smashie',
