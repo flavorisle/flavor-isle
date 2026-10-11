@@ -35,6 +35,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
+import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 
 
@@ -282,6 +283,7 @@ export default function Home() {
               <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
                 Plan Your Stop <ArrowRight size={16} />
               </Link>
+              <div className="mt-5"><KentuckyTourismBadge /></div>
             </div>
           </div>
         </div>
