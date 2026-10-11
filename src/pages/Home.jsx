@@ -269,8 +269,11 @@ export default function Home() {
                 height="600"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-cover"
+                className="w-full object-cover"
               />
+              <div className="p-6">
+                <KentuckyTourismBadge />
+              </div>
             </div>
             <div className="sm:col-span-3 p-6 sm:p-8 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
@@ -283,7 +286,6 @@ export default function Home() {
               <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
                 Plan Your Stop <ArrowRight size={16} />
               </Link>
-              <div className="mt-5"><KentuckyTourismBadge /></div>
             </div>
           </div>
         </div>
