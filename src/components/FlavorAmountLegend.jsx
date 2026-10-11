@@ -1,9 +1,7 @@
 import React from 'react';
-import { Minus, Plus } from 'lucide-react';
-
-// Legend for the − / + zones on a flavor pill. The pill swaps its icons for the
-// words "Lite" / "Extra" only on hover, which a phone never shows — so this
-// spells the amounts out right where the flavors are picked.
+// Legend for the Lite / Extra zones on a flavor pill. The pill's side zones
+// carry their word on a filled tint, so this just spells the two amounts out
+// right where the flavors are picked.
 export default function FlavorAmountLegend({ align = 'center', tone = 'light', className = '' }) {
   const onDark = tone === 'dark';
   const chip = onDark ? 'bg-white/10 text-white' : 'bg-muted text-patina-mint';
@@ -14,16 +12,10 @@ export default function FlavorAmountLegend({ align = 'center', tone = 'light', c
         align === 'left' ? 'justify-start' : 'justify-center'
       } ${onDark ? 'text-gray-300' : 'text-muted-foreground'} ${className}`}
     >
-      <span className="inline-flex items-center gap-1.5">
-        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${chip}`}>
-          <Minus size={12} />
-        </span>
+      <span className={`inline-flex items-center justify-center h-5 px-2 rounded-full font-heading text-[10px] uppercase tracking-wide ${chip}`}>
         Lite
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${chip}`}>
-          <Plus size={12} />
-        </span>
+      <span className={`inline-flex items-center justify-center h-5 px-2 rounded-full font-heading text-[10px] uppercase tracking-wide ${chip}`}>
         Extra
       </span>
       <span>Tap the name for regular.</span>

@@ -60,6 +60,7 @@ export async function upsertSmsConsent(base44: any, opts: {
   disclosureVersion?: string;
   disclosureText?: string;
   revokeMarketingConsent?: boolean;
+  provenMarketing?: boolean;
 }) {
   const {
     phone, name, email,
@@ -69,6 +70,7 @@ export async function upsertSmsConsent(base44: any, opts: {
     disclosureVersion = SMS_CONSENT_VERSION,
     disclosureText,
     revokeMarketingConsent = false,
+    provenMarketing = true,
   } = opts;
 
   const normalized = normalizePhone(phone);
@@ -82,7 +84,10 @@ export async function upsertSmsConsent(base44: any, opts: {
     phone: normalized,
     transactional_consent: !!transactionalConsent,
     marketing_consent: !!marketingConsent,
-    proven_marketing_consent: !!marketingConsent,
+    // Marketing is only "proven" when the number's owner demonstrated control of
+    // it (the verified keyword path, or a signed-in owner). An anonymous web
+    // form records the request but cannot stand as proof for that number.
+    proven_marketing_consent: !!marketingConsent && provenMarketing,
     consent_category: category,
     consent_timestamp: now,
     consent_source_page: sourcePage,

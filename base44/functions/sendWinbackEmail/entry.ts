@@ -1,7 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -108,6 +110,12 @@ export default async function (req: Request) {
     if (isTest && !test_recipient_email) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
     }
+    // A test send goes to an operator-chosen address, so it is admin-only. The
+    // scheduled loyalty run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
+    }
 
     const now = Date.now();
     const lowerBound = new Date(now - 30 * 24 * 60 * 60 * 1000);  // 30 days ago
@@ -178,10 +186,26 @@ export default async function (req: Request) {
       return Response.json({ ok: true, skipped: true, reason: 'no qualifying customers' });
     }
 
+    // Issue #93 (A11): blocked customers never receive a win-back email. The
+    // block list is read once per run; a failed read is logged and the run
+    // continues.
+    const blockFilter = await loadBlockFilter(base44).catch((e) => {
+      console.error('Block-list lookup failed, sending unfiltered:', e.message);
+      return null;
+    });
+
     // Process each target
     let processed = 0;
     let skipped = 0;
     for (const target of targets) {
+      // Issue #93 (A11): a blocked customer is skipped, and no LoyaltyEmail
+      // claim is written, so lifting the block later makes them eligible again.
+      if (!isTest && blockFilter && (blockFilter.hasEmail(target.email) || blockFilter.hasPhone(target.order?.customer_phone))) {
+        console.log(`Win-back email skipped for ${target.email}: contact is on the block list.`);
+        skipped++;
+        continue;
+      }
+
       // Build email
       const firstName = (target.order.customer_name || 'friend').split(' ')[0] || 'friend';
       const subject = `We miss you, ${firstName} 🍦`;

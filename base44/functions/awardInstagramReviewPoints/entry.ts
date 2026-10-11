@@ -6,16 +6,30 @@ export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { customer_email, instagram_post_url, customer_name } = body || {};
+    const { instagram_post_url, customer_name } = body || {};
 
-    if (!customer_email || !instagram_post_url) {
+    // Sign-in is required, and the rewards email comes from the SESSION — never
+    // from the request. Points can therefore only ever be credited to the account
+    // of the person submitting. Before this, anyone could post any address and
+    // credit that account 100 points a week (enough to farm free food), and the
+    // "no loyalty account" reply doubled as a way to probe which emails have
+    // rewards accounts.
+    const user = await base44.auth.me().catch(() => null);
+    if (!user?.email) {
       return Response.json({
         success: false,
-        message: 'Customer email and Instagram post URL are required.',
+        message: 'Sign in to your Flavor Isle rewards account to claim Instagram review points.',
+      }, { status: 401 });
+    }
+    const email = String(user.email).toLowerCase().trim();
+
+    if (!instagram_post_url) {
+      return Response.json({
+        success: false,
+        message: 'Your Instagram post URL is required.',
       }, { status: 400 });
     }
 
-    const email = String(customer_email).toLowerCase().trim();
     const postUrl = String(instagram_post_url).trim();
 
     // 1. Same post can't be claimed twice.

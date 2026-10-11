@@ -1,0 +1,43 @@
+{
+  "name": "Admin Login Tracking",
+  "description": "Records the last sign-in time and sign-in count for admin accounts, so the Admin Dashboard can show when each admin was last in.",
+  "trigger": {
+    "config": {
+      "trigger_type": "app_user_auth",
+      "events": [
+        "signup",
+        "login"
+      ]
+    },
+    "condition": "${ .trigger.role == \"admin\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "admin_login_tracking",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "record_login": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "trackAdminActivity",
+            "args": {
+              "source": "login",
+              "email": "${ .trigger.email }",
+              "full_name": "${ .trigger.full_name }",
+              "at": "${ .trigger.occurred_at }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Record admin sign-in",
+            "description": "Last login time and count"
+          }
+        }
+      }
+    ]
+  }
+}

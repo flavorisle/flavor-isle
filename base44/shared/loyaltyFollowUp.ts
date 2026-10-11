@@ -167,7 +167,10 @@ async function sendEmail({ to, subject, html }) {
 
 // Runs one of the two follow-ups. Returns counts so the workflow run log shows
 // exactly what happened.
-export async function runLoyaltyFollowUp(base44, kind) {
+// `blockFilter` is the optional loadBlockFilter(base44) result from the caller
+// (issue #93, A9/A10): blocked customers are skipped so they never receive a
+// follow-up email. Omitting it sends to everyone eligible, as before.
+export async function runLoyaltyFollowUp(base44, kind, blockFilter = null) {
   const settings = await getSmashieSettings(base44);
   if (settings[TOGGLE[kind]] !== true) {
     return { ok: true, skipped: true, reason: `${TOGGLE[kind]} is off` };
@@ -179,6 +182,13 @@ export async function runLoyaltyFollowUp(base44, kind) {
   let skipped = 0;
 
   for (const { email, firstOrder } of candidates) {
+    // Issue #93 (A9/A10): a blocked customer never gets a follow-up email.
+    if (blockFilter && (blockFilter.hasEmail(email) || blockFilter.hasPhone(firstOrder.customer_phone))) {
+      console.log(`${EMAIL_TYPE[kind]} skipped for ${email}: contact is on the block list.`);
+      skipped++;
+      continue;
+    }
+
     const subscriber = await activeSubscriber(base44, email);
     if (!subscriber) { skipped++; continue; }
 

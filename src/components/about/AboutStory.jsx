@@ -1,5 +1,6 @@
 import React from 'react';
 import { optimizedImageUrl } from '@/lib/utils';
+import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 
 const PHOTO_1964 = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0dfcdf627_1CCAA2A1-AA3C-4C56-9922-CB1452069518.JPG';
 const PHOTO_GUESTBOOK = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/49f86bd0c_IMG_1445_Original.jpeg';
@@ -24,6 +25,7 @@ export default function AboutStory() {
               The sign has been repainted, the grill has gotten busier, and Smashie showed up to answer the phones. But the promise hasn't moved an inch: fresh ingredients, made to order, served to neighbors like family.
             </p>
           </div>
+          <div className="mt-6"><KentuckyTourismBadge /></div>
         </div>
         <div className="order-1 md:order-2">
           <div className="relative">

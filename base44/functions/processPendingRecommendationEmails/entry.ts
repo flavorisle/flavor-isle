@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Scheduled-job companion to sendOrderRecommendationEmail. Finds paid online
 // orders created ~30 minutes ago that haven't received a recommendation email
@@ -28,10 +29,21 @@ export default async function (req: Request) {
     // Keep only orders created between 30 min and 2 hours ago, and exclude
     // cancelled / failed / refunded orders up front so we don't waste a send
     // attempt on them.
+    // Issue #93 (A5): blocked customers are filtered out at selection time so
+    // their orders never re-enter the queue. A failed block read is not fatal
+    // here — sendOrderRecommendationEmail re-checks every order before sending.
+    let blockFilter = null;
+    try {
+      blockFilter = await loadBlockFilter(base44);
+    } catch (e) {
+      console.error('Block-list lookup failed, selecting candidates unfiltered:', e.message);
+    }
+
     const qualifying = (orders || []).filter((o) => {
       if (!o.created_date) return false;
       if (o.status === 'cancelled') return false;
       if (o.payment_status === 'failed' || o.payment_status === 'refunded') return false;
+      if (blockFilter && (blockFilter.hasEmail(o.customer_email) || blockFilter.hasPhone(o.customer_phone))) return false;
       // Permanently skipped by sendOrderRecommendationEmail (no eligible
       // non-malt/sundae dessert / no photos) — don't re-enqueue.
       if (o.rec_email_skipped_at) return false;

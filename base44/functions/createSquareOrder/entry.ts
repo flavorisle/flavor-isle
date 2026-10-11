@@ -1,11 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
+import { isInternalCaller } from '../../shared/internalRelay.ts';
 
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
 
     const body = await req.json();
+
+    // Server-to-server only. This creates a real Square POS ticket and can record
+    // a card payment against it, and it is reached only through
+    // pushOrderToSquareAndKitchen (the fulfilment path for an order that has been
+    // paid), which presents the app relay key. Without the key the request is
+    // refused: an anonymous caller could otherwise create kitchen tickets and
+    // record fake card payments in the store's Square account.
+    if (!isInternalCaller(req, body)) {
+      console.warn('createSquareOrder: refused a caller without the app relay key');
+      return Response.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, pickupMethod, vehicle } = body;
     const storedOrder = orderId ? await base44.asServiceRole.entities.Order.get(orderId) : null;
     const cashPickup = storedOrder?.pay_cash_on_pickup === true && storedOrder.order_type === 'pickup';

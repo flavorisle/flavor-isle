@@ -21,9 +21,12 @@
 //    authoritative via MenuItem.modifiers matched by id. Unknown-id / no-id
 //    modifiers are REJECTED (permitted-selections enforcement — closes the
 //    ad-hoc modifier trust gap).
-//  - Noncatalog items (no square_item_id): validated against NONCATALOG_PRICES
-//    when an approved price is recorded (souvenir mug). Build-Your-Combo line
-//    items are validated by recomputing from authoritative component MenuItems
+//  - Lines with no square_item_id: priced from the catalog by NAME when the name
+//    matches a live MenuItem (same authoritative price and modifier rules as a
+//    line that carried the id), then from NONCATALOG_PRICES when an approved price
+//    is recorded (souvenir mug), and otherwise REJECTED — fail closed, because a
+//    client-supplied price is never authoritative. Build-Your-Combo line items are
+//    validated by recomputing from authoritative component MenuItems
 //    + the authoritative ComboConfig discount (comboComponents + comboConfigId).
 //  - Reward discount: validated exactly against the Square Loyalty reward tier
 //    + account balance by validateRewardDiscount (called by createPaymentIntent
@@ -41,6 +44,11 @@ const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
 
 function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+// Menu items are matched by name for lines that arrive without a catalog id.
+function normalizeItemName(value: any): string {
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 // Build a modifier-option id → authoritative price map from a MenuItem record.
@@ -173,8 +181,14 @@ export async function verifyOrderPricing(base44: any, opts: {
 
   const allMenuItems = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 500);
   const menuBySquareId = new Map<string, any>();
+  // Name index: a line that arrives without a catalog id is still priced from the
+  // catalog when its name matches a live menu item, so a cart can never be charged
+  // a client-supplied price for real food.
+  const menuByName = new Map<string, any>();
   for (const mi of (allMenuItems || [])) {
     if (mi.square_item_id) menuBySquareId.set(mi.square_item_id, mi);
+    const nameKey = normalizeItemName(mi?.name);
+    if (nameKey && !menuByName.has(nameKey)) menuByName.set(nameKey, mi);
   }
 
   // ── Recompute line prices + Happy Hour + family bundle ──
@@ -186,7 +200,14 @@ export async function verifyOrderPricing(base44: any, opts: {
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
     const sqId = item.square_item_id || item.catalog_object_id;
-    const menuItem = sqId ? menuBySquareId.get(sqId) : null;
+    // Catalog id first. Without one, resolve by name so the line is still priced
+    // from the menu rather than from the client's number.
+    const nameKey = normalizeItemName(item?.name);
+    const menuItem = sqId
+      ? menuBySquareId.get(sqId)
+      : nameKey
+        ? menuByName.get(nameKey)
+        : null;
 
     let lineUnitPrice: number;
     let bundleExtras = 0;
@@ -231,15 +252,21 @@ export async function verifyOrderPricing(base44: any, opts: {
         if (!comboResult.ok) return comboResult;
         lineUnitPrice = comboResult.lineUnitPrice!;
       } else {
-        const canonical = NONCATALOG_PRICES[(item.name || '').toLowerCase().trim()];
+        const canonical = NONCATALOG_PRICES[normalizeItemName(item.name)];
         if (canonical != null) {
           if (Math.abs((Number(item.price) || 0) - canonical) > 0.01) {
             return { ok: false, error: `Price mismatch for ${item.name || 'this item'}: expected $${canonical.toFixed(2)}. Please refresh and try again.` };
           }
           lineUnitPrice = canonical;
         } else {
-          lineUnitPrice = Math.max(0, Number(item.price) || 0);
-          warnings.push(`Unvalidated noncatalog item (no square_item_id, no canonical price): ${item.name || item.id || 'unknown'}`);
+          // Fail closed. The name did not match a live menu item and there is no
+          // approved non-catalog price for it, so there is no authoritative price
+          // to charge. Trusting the client here is what let a crafted cart buy real
+          // food for a cent, so the line is rejected instead.
+          return {
+            ok: false,
+            error: `${item.name || 'An item in your cart'} could not be verified on the current menu. Please refresh the menu and try again.`,
+          };
         }
       }
     }
@@ -252,8 +279,11 @@ export async function verifyOrderPricing(base44: any, opts: {
     }
 
     // A bundle line is never also Happy-Hour discounted — the bundle price is
-    // the whole deal and stacking both would undercut its fixed price.
-    if (hhActive && pct > 0 && sqId && hhIds.has(sqId) && !isBundleLine(item)) {
+    // the whole deal and stacking both would undercut its fixed price. A line
+    // resolved by name uses the catalog item's own id here, so an eligible drink
+    // still gets the discount the customer was shown.
+    const effectiveSqId = sqId || menuItem?.square_item_id || '';
+    if (hhActive && pct > 0 && effectiveSqId && hhIds.has(effectiveSqId) && !isBundleLine(item)) {
       serverHappyHour += lineTotal * pct;
     }
   }

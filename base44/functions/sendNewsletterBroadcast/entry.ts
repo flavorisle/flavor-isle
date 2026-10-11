@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { Resend } from 'npm:resend@3.2.0';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Admin-only newsletter broadcast. Three actions:
 //   stats — live active/pending/unsubscribed counts for the composer.
@@ -76,15 +77,28 @@ export default async function (req: Request): Promise<Response> {
       page++;
     }
 
+    // Issue #93 (A2): blocked customers never receive a broadcast. The block
+    // list is read ONCE per run, and a failed read aborts the whole send — a
+    // newsletter is never delivered unfiltered (fail-closed, retryable).
+    let blockFilter;
+    try {
+      blockFilter = await loadBlockFilter(base44);
+    } catch (e) {
+      console.error('Newsletter broadcast aborted — block-list lookup failed:', e.message);
+      return Response.json({ ok: false, error: 'Block-list lookup failed; the broadcast was aborted before sending anything. Please retry.' }, { status: 503 });
+    }
+
     // Load any prior sends for this broadcast so we can skip already-sent
     // subscribers in one pass (idempotency) instead of a query per recipient.
     const priorSends = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: bid }, '-created_date', 500);
     const alreadySent = new Set(priorSends.map((s) => s.subscriber_id));
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
-    let sent = 0, skipped = 0, failed = 0;
+    let sent = 0, skipped = 0, failed = 0, blocked = 0;
     for (const sub of active) {
       if (alreadySent.has(sub.id)) { skipped++; continue; }
+      // Issue #93 (A2): a blocked customer is skipped, never emailed.
+      if (blockFilter.hasEmail(sub.email)) { blocked++; skipped++; continue; }
       const html = brandedEmailHtml(htmlBody + unsubscribeFooter(sub.unsubscribe_token));
       const { error } = await resend.emails.send({ from: FROM, to: sub.email, subject, html });
       const now = new Date().toISOString();
@@ -96,8 +110,8 @@ export default async function (req: Request): Promise<Response> {
         try { await base44.asServiceRole.entities.NewsletterSend.create({ broadcast_id: bid, subscriber_id: sub.id, email: sub.email, status: 'sent', sent_at: now }); } catch {}
       }
     }
-    console.log(`Newsletter broadcast ${bid}: ${sent} sent, ${skipped} skipped, ${failed} failed of ${active.length} active`);
-    return Response.json({ ok: true, sent, skipped, failed, total: active.length, broadcast_id: bid });
+    console.log(`Newsletter broadcast ${bid}: ${sent} sent, ${skipped} skipped (${blocked} blocked), ${failed} failed of ${active.length} active`);
+    return Response.json({ ok: true, sent, skipped, blocked, failed, total: active.length, broadcast_id: bid });
   } catch (error) {
     console.error('sendNewsletterBroadcast error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

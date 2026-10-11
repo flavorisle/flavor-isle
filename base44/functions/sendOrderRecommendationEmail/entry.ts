@@ -1,7 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
+import { findBlock } from '../../shared/blockedContacts.ts';
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
@@ -133,6 +135,12 @@ export default async function (req: Request) {
     if (isTest && !testEmail) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
     }
+    // A test send goes to an operator-chosen address (and this one carries real
+    // order details), so it is admin-only. The scheduled run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
+    }
 
     // ── Load the order ──
     const order = await base44.asServiceRole.entities.Order.get(order_id);
@@ -147,6 +155,30 @@ export default async function (req: Request) {
     }
     if (!isTest && isSkipEmail(order.customer_email)) {
       return Response.json({ skipped: true, reason: 'skip email (POS/test/internal)' });
+    }
+
+    // Issue #93 (A4): a blocked customer gets no recommendation email. The
+    // order is stamped with the existing permanent-skip field (rec_email_skipped_at)
+    // so it never re-enters the queue, and any stale claim is released so no
+    // "sent" timestamp falsely claims delivery. Test sends go to the admin's own
+    // address and are not filtered.
+    if (!isTest) {
+      const block = await findBlock(base44, { email: order.customer_email, phone: order.customer_phone }).catch((e) => {
+        console.error('Blocked-contact lookup failed, sending anyway:', e.message);
+        return null;
+      });
+      if (block) {
+        try {
+          await base44.asServiceRole.entities.Order.updateMany(
+            { id: order.id },
+            { $set: { rec_email_skipped_at: new Date().toISOString() }, $unset: { rec_email_sent_at: "" } }
+          );
+        } catch (e) {
+          console.warn(`Failed to mark blocked recommendation skip for order ${order.id}:`, e.message);
+        }
+        console.log(`Recommendation email skipped for order ${order.order_number || order.id}: ${block.customer_name || block.email || block.phone || 'customer'} is on the block list.`);
+        return Response.json({ skipped: true, reason: 'customer is blocked' });
+      }
     }
 
     // Already sent for THIS order (skip dedup in test mode)

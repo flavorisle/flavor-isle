@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Scheduled companion to sendReviewRequestEmail. Finds online orders ~3 hours
 // old that haven't received a review-request email yet and dispatches one
@@ -41,10 +42,21 @@ export default async function (req: Request) {
       200,
     );
 
+    // Issue #93 (A7): blocked customers are filtered out at selection time so
+    // their orders never re-enter the queue. A failed block read is not fatal
+    // here — sendReviewRequestEmail re-checks every order before sending.
+    let blockFilter = null;
+    try {
+      blockFilter = await loadBlockFilter(base44);
+    } catch (e) {
+      console.error('Block-list lookup failed, selecting candidates unfiltered:', e.message);
+    }
+
     const qualifying = (orders || []).filter((o) => {
       if (!o.created_date) return false;
       if (o.status === 'cancelled') return false;
       if (o.payment_status === 'failed' || o.payment_status === 'refunded') return false;
+      if (blockFilter && (blockFilter.hasEmail(o.customer_email) || blockFilter.hasPhone(o.customer_phone))) return false;
       const created = new Date(o.created_date);
       return created <= lowerBound && created >= upperBound;
     });

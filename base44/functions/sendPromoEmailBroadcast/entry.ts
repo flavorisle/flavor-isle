@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -79,10 +80,25 @@ export default async function (req: Request) {
 
     // ── Broadcast to all customers ──
     const emails = await gatherCustomerEmails(base44);
+
+    // Issue #93 (A3): blocked customers never receive a promo. The block list is
+    // read ONCE per run, and a failed read aborts the whole send — a promo is
+    // never delivered unfiltered (fail-closed, retryable).
+    let blockFilter;
+    try {
+      blockFilter = await loadBlockFilter(base44);
+    } catch (e) {
+      console.error('Promo broadcast aborted — block-list lookup failed:', e.message);
+      return Response.json({ ok: false, error: 'Block-list lookup failed; the broadcast was aborted before sending anything. Please retry.' }, { status: 503 });
+    }
+
     let sent = 0;
+    let blocked = 0;
     const errors = [];
 
     for (const email of emails) {
+      // Issue #93 (A3): a blocked customer is skipped, never emailed.
+      if (blockFilter.hasEmail(email)) { blocked++; continue; }
       const { error } = await resend.emails.send({
         from: FROM,
         to: email,
@@ -97,10 +113,11 @@ export default async function (req: Request) {
     }
 
     const status = sent > 0 ? (errors.length > 0 ? 'partial' : 'sent') : 'failed';
-    console.log(`Promo broadcast: ${sent}/${emails.length} sent, ${errors.length} errors`);
+    console.log(`Promo broadcast: ${sent}/${emails.length} sent, ${blocked} blocked, ${errors.length} errors`);
     return Response.json({
       ok: sent > 0,
       sent,
+      blocked,
       recipientCount: emails.length,
       errorCount: errors.length,
       status,

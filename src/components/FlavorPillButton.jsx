@@ -1,7 +1,7 @@
 import React from 'react';
-import { Minus, Plus, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
-// Flavors get the same three zones the burger sauces use: − is Lite, + is Extra.
+// Flavors get the same three zones the burger sauces use: Lite left, Extra right.
 // When Square attaches its own "- / + Flavors" child list to the flavor, the
 // real nested option (catalog id + price) is recorded so Square receives it as a
 // catalog modifier; otherwise the level rides as a name prefix on the flavor's
@@ -62,9 +62,10 @@ export function getFlavorNestedPrice(nestedSelection) {
   return Object.values(nestedSelection).reduce((sum, entry) => sum + (Number(entry?.price) || 0), 0);
 }
 
-// Left zone = Lite (−), center = the flavor (tap to add/remove), right zone =
-// Extra (+). Picking a level selects the flavor if it isn't picked yet and
-// never deselects it; tapping the center adds/removes the parent and clears its level.
+// Left zone = Lite, center = the flavor (tap to add/remove), right zone = Extra.
+// Both side zones are filled chips with their word always visible. Picking a
+// level selects the flavor if it isn't picked yet and never deselects it;
+// tapping the center adds/removes the parent and clears its level.
 export default function FlavorPillButton({
   mod,
   isSelected,
@@ -99,7 +100,7 @@ export default function FlavorPillButton({
   };
 
   return (
-    <div className={`inline-flex items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold ${
+    <div className={`inline-flex max-w-full min-w-0 flex-1 basis-[47%] items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold sm:flex-none ${
       isSelected
         ? 'border-midnight-cherry bg-midnight-cherry/5'
         : 'border-gray-300 bg-white hover:border-midnight-cherry/50'
@@ -110,29 +111,32 @@ export default function FlavorPillButton({
         aria-pressed={isLite}
         aria-label={`Lite ${mod.name}`}
         title={`Lite ${mod.name}`}
-        className={`group/lite flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
+        className={`flex min-w-[36px] min-h-[44px] items-center justify-center px-1 transition-colors sm:min-w-[44px] sm:px-3 ${
           isLite
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Minus size={14} className="group-hover/lite:hidden group-active/lite:hidden" />
-        <span className="hidden group-hover/lite:inline group-active/lite:inline text-xs font-heading uppercase tracking-wide">Lite</span>
+        <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Lite</span>
       </button>
 
       <button
         type="button"
         onClick={handleCenter}
         aria-pressed={isSelected}
-        className={`flex items-center gap-1.5 px-4 py-2.5 transition-colors ${
+        className={`flex min-w-0 flex-1 items-center justify-center gap-1 px-1.5 py-2.5 transition-colors sm:px-4 ${
           isSelected ? 'text-midnight-cherry' : 'text-obsidian-roast'
         }`}
       >
         {isSelected && <Check size={13} className="inline flex-shrink-0" />}
-        {leading}
-        <span>{isLite ? `Lite ${mod.name}` : isExtra ? `Extra ${mod.name}` : mod.name}</span>
+        {/* The emoji rides inside the label so the name wraps at its own space
+            in a narrow phone cell instead of being squeezed beside it. */}
+        <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">
+          {leading ? <span className="mr-1 inline-block">{leading}</span> : null}
+          {isLite ? `Lite ${mod.name}` : isExtra ? `Extra ${mod.name}` : mod.name}
+        </span>
         {totalPrice > 0 && (
-          <span className={`text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
+          <span className={`whitespace-nowrap text-[11px] sm:text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
             +${totalPrice.toFixed(2)}
           </span>
         )}
@@ -144,14 +148,13 @@ export default function FlavorPillButton({
         aria-pressed={isExtra}
         aria-label={`Extra ${mod.name}`}
         title={`Extra ${mod.name}`}
-        className={`group/extra flex items-center justify-center min-w-[44px] min-h-[44px] px-3 transition-colors ${
+        className={`flex min-w-[36px] min-h-[44px] items-center justify-center px-1 transition-colors sm:min-w-[44px] sm:px-3 ${
           isExtra
             ? 'bg-midnight-cherry text-white'
-            : 'text-midnight-cherry hover:bg-midnight-cherry/10 active:bg-midnight-cherry/15'
+            : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
         }`}
       >
-        <Plus size={14} className="group-hover/extra:hidden group-active/extra:hidden" />
-        <span className="hidden group-hover/extra:inline group-active/extra:inline text-xs font-heading uppercase tracking-wide">Extra</span>
+        <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Extra</span>
       </button>
     </div>
   );

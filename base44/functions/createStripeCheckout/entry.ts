@@ -8,6 +8,14 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { items, orderType, customer, instructions, subtotal, deliveryFee, tax, total } = body;
 
+    // Retired. This legacy endpoint charged the prices the caller sent (item
+    // price, delivery fee, tax and total were all request-supplied) with no
+    // catalog check, so a cart of one-cent line items could be checked out for
+    // real. The live checkout pays through createPaymentIntent, which re-prices
+    // the whole order from the catalog first.
+    console.warn('createStripeCheckout: refused — endpoint retired');
+    return Response.json({ error: 'This checkout is no longer available. Please refresh and order again.' }, { status: 410 });
+
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
     }

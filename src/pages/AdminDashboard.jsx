@@ -13,7 +13,7 @@ import PopupClickStats from '@/components/admin/PopupClickStats';
 import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
 import AutoPrintToggle from '@/components/admin/AutoPrintToggle';
 import FailedOrderAlert from '@/components/admin/FailedOrderAlert';
-import OrderDiagnostics from '@/components/admin/OrderDiagnostics';
+import AdminActivityPanel from '@/components/admin/AdminActivityPanel';
 
 const orderPages = [
 {
@@ -99,8 +99,8 @@ export default function AdminDashboard() {
           payments, and missed customer/staff emails. Silent when all clear. */}
       <FailedOrderAlert />
 
-      {/* Order pipeline diagnostics — where orders are stuck right now */}
-      <OrderDiagnostics />
+      {/* Last admin sign-in and what each admin is working on right now */}
+      <AdminActivityPanel />
 
       <BroadcastPushCard />
       <PushLogList />

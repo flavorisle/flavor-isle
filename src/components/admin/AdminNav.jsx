@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3 } from 'lucide-react';
+import AdminPresenceTracker from '@/components/admin/AdminPresenceTracker';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
@@ -21,6 +22,8 @@ export default function AdminNav() {
   const { pathname } = useLocation();
   return (
     <div className="bg-obsidian-roast border-b border-white/10">
+      {/* Records which admin screen this admin is on, for the dashboard's activity panel */}
+      <AdminPresenceTracker />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto py-3 scrollbar-hide">
         {LINKS.map(({ label, to, Icon }) => {
           const active = pathname === to;

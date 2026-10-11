@@ -1,7 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { getLoyaltyProgram, searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
@@ -32,6 +34,12 @@ export default async function (req: Request) {
     const isTest = !!test_mode;
     if (isTest && !test_recipient_email) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
+    }
+    // A test send goes to an operator-chosen address, so it is admin-only. The
+    // scheduled monthly run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
     }
 
     const now = new Date();
@@ -90,10 +98,25 @@ export default async function (req: Request) {
     )).length;
     const winbackRate = monthlyWinbacks.length ? (redeemedWinbacks / monthlyWinbacks.length) * 100 : 0;
 
+    // Issue #93 (A12): blocked members never receive the digest. The block list
+    // is read once per run; a failed read is logged and the run continues.
+    const blockFilter = await loadBlockFilter(base44).catch((e) => {
+      console.error('Block-list lookup failed, sending unfiltered:', e.message);
+      return null;
+    });
+
     let processed = 0;
     let skipped = 0;
     const memberFrequency = [];
     for (const { profile, account } of targets) {
+      // Issue #93 (A12): a blocked member is skipped, and no digest record is
+      // written. Test sends go to the admin's own address and are not filtered.
+      if (!isTest && blockFilter && (blockFilter.hasEmail(profile.email) || blockFilter.hasPhone(profile.phone))) {
+        console.log(`Points digest skipped for ${profile.email}: contact is on the block list.`);
+        skipped++;
+        continue;
+      }
+
       const balance = Number(account?.balance || 0);
       const tier = nextTier(balance, rewardTiers);
       const email = profile.email;

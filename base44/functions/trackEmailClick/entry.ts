@@ -3,7 +3,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // Public click-tracker for links inside customer emails. Email clients hit
 // this URL (a GET), we log the click, then 302-redirect to the real destination.
 // This lets us count how often each email CTA is actually clicked.
-Deno.serve(async (req: Request) => {
+//
+// Redirect targets are strictly allowlisted: a same-site path, or an absolute URL
+// on flavor-isle.com. A protocol-relative target ("//evil.example") used to pass
+// the old startsWith('/') test and then resolve against the base's scheme, turning
+// this into an open redirect on the very domain customers already trust.
+const ALLOWED_HOST = 'flavor-isle.com';
+// A single leading slash, not two: "//host" is protocol-relative, not a path.
+const SAFE_PATH = /^\/(?!\/)/;
+
+export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
@@ -11,19 +20,19 @@ Deno.serve(async (req: Request) => {
     const to = url.searchParams.get('to') || '/';
     const orderId = url.searchParams.get('order_id') || null;
 
-    // Only allow redirects to our own app (relative path or our domain) so this
-    // endpoint can't be abused as an open redirect to arbitrary sites.
     let safeTarget = '/';
-    if (to.startsWith('/')) {
+    if (SAFE_PATH.test(to) && !to.includes('\\')) {
       safeTarget = to;
     } else {
       try {
         const parsed = new URL(to);
-        if (parsed.hostname.endsWith('flavor-isle.com')) {
+        // Exact host, or a subdomain of it — never a suffix match, which would
+        // accept "evil-flavor-isle.com".
+        if (parsed.hostname === ALLOWED_HOST || parsed.hostname.endsWith(`.${ALLOWED_HOST}`)) {
           safeTarget = parsed.pathname + parsed.search;
         }
       } catch {
-        /* ignore malformed */
+        /* not a same-site path and not a URL — fall back to the homepage */
       }
     }
 
@@ -48,4 +57,4 @@ Deno.serve(async (req: Request) => {
     // Never dead-end a click — fall back to the homepage.
     return Response.redirect('https://flavor-isle.com/', 302);
   }
-});
+}

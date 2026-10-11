@@ -4,6 +4,7 @@ import { waitUntil } from 'base44:runtime';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { phoneIntro, abilityEnabled, smashieAdminContext } from '../../shared/smashieAdminContext.ts';
 import { findBlock, blockedCallerInstruction } from '../../shared/blockedContacts.ts';
+import { isPassThrough } from '../../shared/counterPassThrough.ts';
 import { processPhoneMessageTurn } from '../../shared/phoneMessage.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { todayChicago } from '../../shared/busynessTime.ts';
@@ -11,6 +12,8 @@ import { getPhoneStoreStatus } from '../../shared/storeState.ts';
 import { getBusynessStage, COOK_WINDOW_MINUTES } from '../../shared/busynessStages.ts';
 import { fastGreetingResponse, SMASHIE_HELLO } from '../../shared/smashieFastGreeting.ts';
 import { greetingAudio } from '../../shared/smashieGreetingAudio.ts';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
+import { hasValidRelayKey, withRelayKey } from '../../shared/internalRelay.ts';
 
 // Helper: strip markdown for TTS
 function stripMarkdown(text) {
@@ -71,9 +74,7 @@ async function sendAdminPhoneOffHookAlert(base44, callerFrom, conversationId, di
   try {
     const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
     const emails = (admins || []).map(a => a.email).filter(Boolean);
-    // Extra alert recipients who aren't admin users in the app.
-    const extraAlertEmails = ['ashleybooker29@gmail.com'];
-    for (const email of [...emails, ...extraAlertEmails]) {
+    for (const email of emails) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: email,
         from_name: 'Smashie',
@@ -99,6 +100,15 @@ export default async function(req) {
     const isJson = req.headers.get('content-type')?.includes('application/json');
     const body = isJson ? JSON.parse(bodyText || '{}') : Object.fromEntries(new URLSearchParams(bodyText));
     const params = new URLSearchParams(body);
+
+    // Authenticity: Twilio signs the webhook it calls directly, and our own
+    // router (which verifies Twilio's signature first) forwards with the app
+    // relay key. Anything else is a forged call and is refused.
+    const signatureOk = await validTwilioSignature(req, params, 'twilioVoiceWebhook');
+    if (!signatureOk && !hasValidRelayKey(new URL(req.url).searchParams.get('key'))) {
+      console.warn('twilioVoiceWebhook: rejected unauthorised request');
+      return new Response('Forbidden', { status: 403 });
+    }
 
     const callSid = params.get('CallSid') || '';
     const from = params.get('From') || '';
@@ -129,6 +139,7 @@ export default async function(req) {
       }
       const audioUrl = new URL('https://flavor-isle.com/functions/smashieTts');
       audioUrl.searchParams.set('text', cleanText);
+      withRelayKey(audioUrl);
       twiml.play({}, audioUrl.toString());
     };
 
@@ -198,12 +209,39 @@ export default async function(req) {
         return new Response(offTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
       }
 
+      // Store state first: the counter pass-through check below needs to know
+      // whether we are open before any Smashie conversation is created. Includes
+      // the admin's 24/7 override window (MenuSetting open_all_day_date /
+      // open_all_day_until), shared with the website.
+      const storeStatus = await getPhoneStoreStatus(base44);
+
+      // Issue #93 (C2): counter pass-through on the Twilio pipeline, so the
+      // list holds whichever pipeline answers. The block list wins over
+      // pass-through, and pass-through applies only while the store is OPEN — a
+      // closed store runs the normal closed flow below. A listed caller is
+      // routed into the counterTransferTwiml flow instead of Smashie's script;
+      // if that route cannot be built the call simply continues as normal.
+      if (storeStatus.open && from) {
+        const passThroughBlock = await findBlock(base44, { phone: from }).catch((e) => {
+          console.error('Blocked-contact lookup failed, continuing as a normal call:', e.message);
+          return null;
+        });
+        const passThrough = !passThroughBlock && (await isPassThrough(base44, from));
+        if (passThrough) {
+          try {
+            const passTwiml = new VoiceResponse();
+            passTwiml.redirect({ method: 'POST' }, 'https://flavor-isle.com/functions/counterTransferTwiml');
+            console.log(`Counter pass-through: routing call ${callSid} from ${from} straight to the counter.`);
+            return new Response(passTwiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+          } catch (e) {
+            console.error('Counter pass-through routing failed, continuing as a normal call:', e.message);
+          }
+        }
+      }
+
       // Every phone call gets its own conversation and complete transcript.
       const startedAt = new Date().toISOString();
-      // Includes the admin's 24/7 override window (MenuSetting
-      // open_all_day_date / open_all_day_until), shared with the website.
-      const [storeStatus, busynessLevel, convo] = await Promise.all([
-        getPhoneStoreStatus(base44),
+      const [busynessLevel, convo] = await Promise.all([
         getBusynessLevel(base44),
         base44.asServiceRole.agents.createConversation({
           agent_name: 'smashie',

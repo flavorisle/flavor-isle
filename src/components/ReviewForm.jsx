@@ -37,7 +37,7 @@ export default function ReviewForm({ onSuccess, submitLabel = 'Submit Feedback',
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
       setForm(f => ({ ...f, photo_url: file_url }));
     } catch {
       setError('Photo upload failed. Try again.');

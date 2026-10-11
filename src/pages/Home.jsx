@@ -35,6 +35,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
+import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
@@ -273,8 +274,11 @@ export default function Home() {
                 height="600"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-cover"
+                className="w-full object-cover"
               />
+              <div className="p-6">
+                <KentuckyTourismBadge />
+              </div>
             </div>
             <div className="sm:col-span-3 p-6 sm:p-8 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">

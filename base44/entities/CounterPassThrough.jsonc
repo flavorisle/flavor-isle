@@ -1,0 +1,49 @@
+{
+  "name": "CounterPassThrough",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Who the number belongs to, so the crew can recognize the entry (e.g. 'Wesley', 'Napkin supplier')."
+    },
+    "phone": {
+      "type": "string",
+      "description": "Numbers that skip Smashie and ring the counter directly. Matched on the last 10 digits, so any formatting ((270) 555-1234 or +12705551234) works."
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note for the crew - why this number ring-routes to the counter."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true the number skips Smashie and rings the counter phone on every call while the store is open. Set false to lift it without losing the record."
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

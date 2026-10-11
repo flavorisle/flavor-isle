@@ -1,6 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { buildLoyaltyStatus, accrueForOrder, hasAccrualEventForOrder, getLoyaltyProgram, earnTextForProgram, describeRewardTier, getRewardTierDiscounts, type ResolvedTierDiscount } from '../../shared/squareLoyalty.ts';
 
+// A phone number is guessable, so the guest lookup is throttled per caller: the
+// endpoint must not be usable to walk the phone book and learn who is a Star
+// Rewards member and what they have spent.
+const LOOKUP_WINDOW_MS = 60 * 60 * 1000;
+const LOOKUP_MAX_PER_WINDOW = 20;
+const phoneLookups = new Map<string, number[]>();
+
+function allowPhoneLookup(req: Request): boolean {
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const recent = (phoneLookups.get(ip) || []).filter((at) => now - at < LOOKUP_WINDOW_MS);
+  if (recent.length >= LOOKUP_MAX_PER_WINDOW) {
+    phoneLookups.set(ip, recent);
+    return false;
+  }
+  recent.push(now);
+  phoneLookups.set(ip, recent);
+  if (phoneLookups.size > 1000) {
+    for (const [key, hits] of phoneLookups) {
+      if (!hits.some((at) => now - at < LOOKUP_WINDOW_MS)) phoneLookups.delete(key);
+    }
+  }
+  return true;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -72,7 +97,15 @@ Deno.serve(async (req) => {
     // from a guest at checkout) drives a phone-first lookup — Square Star
     // Rewards are keyed by phone, so this works without a signed-in account.
     if (body?.phone) {
-      const phoneStatus = await buildLoyaltyStatus({ email: '', phone: body.phone });
+      if (!allowPhoneLookup(req)) {
+        return Response.json({ error: 'Too many reward lookups — please try again a little later.' }, { status: 429 });
+      }
+      const phoneStatus: any = await buildLoyaltyStatus({ email: '', phone: body.phone });
+      // The signed-in path below reports the full picture; a lookup driven by a
+      // typed-in number reports only what checkout needs, never the account id
+      // or lifetime spend of whoever owns that number.
+      delete phoneStatus.accountId;
+      delete phoneStatus.lifetimePoints;
       return Response.json(phoneStatus);
     }
 

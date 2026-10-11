@@ -20,7 +20,7 @@
     },
     "message": {
       "type": "string",
-      "description": "The message the caller asked Smashie to pass along"
+      "description": "The message the caller asked Smashie to pass along, or the recording URL when channel=voicemail"
     },
     "conversation_id": {
       "type": "string",
@@ -34,10 +34,11 @@
       "type": "string",
       "enum": [
         "voice",
-        "sms"
+        "sms",
+        "voicemail"
       ],
       "default": "voice",
-      "description": "Whether the message came in via a voice call or an SMS text"
+      "description": "Whether the message came in via a voice call, an SMS text, or the counter voicemail fallback (issue #93) where the caller recorded a message after nobody picked up at the counter."
     },
     "status": {
       "type": "string",

@@ -156,18 +156,19 @@ export default function SmashieSettingsPanel() {
           onChange={v => update('phone_cash_enabled', v)}
         />
         <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Card payment links: Stripe | Square</p>
+          <p className="font-heading text-sm text-obsidian-roast">Card payment links</p>
           <p className="text-xs text-muted-foreground mt-0.5">Both hosted on flavor-isle.com/pay. Customers never see a processor name.</p>
           <div className="flex gap-2 mt-2">
             {['stripe', 'square'].map((provider) => {
               const active = (settings.phone_payment_provider || 'stripe') === provider;
+              const label = provider === 'stripe' ? 'Primary' : 'Alternate';
               return (
                 <button
                   key={provider}
                   onClick={() => update('phone_payment_provider', provider)}
-                  className={`px-4 py-2 rounded-full text-xs font-heading capitalize transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
+                  className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
                 >
-                  {provider}
+                  {label}
                 </button>
               );
             })}

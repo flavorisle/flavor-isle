@@ -3,6 +3,7 @@ import Stripe from 'npm:stripe@14.25.0';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { verifyAndSettleGroupOrder } from '../../shared/groupPaymentSettlement.ts';
 import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
+import { toCents } from '../../shared/taxMath.ts';
 
 // Client-side payment confirmation fallback.
 //
@@ -22,6 +23,33 @@ import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPr
 // square_order_id is already set, so it's safe when both this fallback and the
 // webhook fire for the same order — only the first one pushes, the second is a
 // no-op.
+// The id stored on a web order is a PaymentIntent (pi_...) for the Payment
+// Element flow or a Checkout Session (cs_...) for hosted/embedded checkout.
+// Either way Stripe must show a succeeded USD payment for exactly this total.
+async function webPaymentMatchesOrder(stripe, order) {
+  const id = String(order?.stripe_session_id || '');
+  const expected = toCents(order?.total);
+  if (!id || !expected) return false;
+  try {
+    if (id.startsWith('pi_')) {
+      const intent = await stripe.paymentIntents.retrieve(id);
+      if (intent.status !== 'succeeded') return false;
+      if (String(intent.currency || '').toLowerCase() !== 'usd') return false;
+      return Number(intent.amount_received ?? intent.amount) === expected;
+    }
+    if (id.startsWith('cs_')) {
+      const session = await stripe.checkout.sessions.retrieve(id);
+      if (session.payment_status !== 'paid') return false;
+      if (String(session.currency || '').toLowerCase() !== 'usd') return false;
+      return Number(session.amount_total) === expected;
+    }
+  } catch (e) {
+    console.error('Payment verification failed:', e.message);
+    return false;
+  }
+  return false;
+}
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -65,6 +93,19 @@ export default async function(req) {
       const intent = order.stripe_session_id?.startsWith('pi_') ? await stripe.paymentIntents.retrieve(order.stripe_session_id) : null;
       if (!intent || !phoneIntentMatchesOrder(order, intent)) {
         return Response.json({ skipped: true, reason: 'payment not confirmed' });
+      }
+    }
+
+    // Every remaining order (the live web checkout) must prove its payment as
+    // well: look up the charge Stripe recorded for this order and require a
+    // succeeded USD payment for exactly the stored total. Previously this
+    // endpoint marked any order paid on the caller's word, which let anyone
+    // confirm an unpaid order into Square + the kitchen for free.
+    if (order.payment_status !== 'paid') {
+      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
+      if (!await webPaymentMatchesOrder(stripe, order)) {
+        console.warn(`confirmOnlinePayment: no verified payment for order ${order.order_number}`);
+        return Response.json({ skipped: true, reason: 'payment not confirmed' }, { status: 400 });
       }
     }
 

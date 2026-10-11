@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 import { checkSmsConsent, markSmsSent } from '../../shared/smsConsent.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Send a MARKETING SMS to every active, proven marketing opt-in, or to a
 // single test number when `testPhone` is supplied. Marketing is NEVER sent to
@@ -43,6 +44,21 @@ export default async function(req) {
       });
     }
 
+    // Issue #93 (A15): blocked numbers are never texted. The block list is read
+    // ONCE per run and a failed read aborts the broadcast (fail-closed,
+    // retryable) — a broadcast is never sent unfiltered.
+    let blockFilter;
+    try {
+      blockFilter = await loadBlockFilter(base44);
+    } catch (e) {
+      console.error('SMS broadcast aborted — block-list lookup failed:', e.message);
+      return Response.json({
+        success: false,
+        sent: 0,
+        error: 'Block-list lookup failed; the broadcast was aborted before sending anything. Please retry.',
+      }, { status: 503 });
+    }
+
     // Broadcast to all active, proven marketing opt-ins only.
     const subs = await base44.asServiceRole.entities.SMSSubscriber.filter({
       status: 'active',
@@ -52,9 +68,12 @@ export default async function(req) {
 
     const errors = [];
     let sent = 0;
+    let blocked = 0;
     for (const sub of subs) {
       // Re-check per-subscriber in case state changed since the filter (defense in depth).
       if (sub.status !== 'active' || !sub.marketing_consent || !sub.proven_marketing_consent) continue;
+      // Issue #93 (A15): a blocked number is skipped, never texted.
+      if (blockFilter.hasPhone(sub.phone)) { blocked++; continue; }
       const ok = await sendSmashieSms(sub.phone, message);
       if (ok) {
         sent++;
@@ -65,9 +84,11 @@ export default async function(req) {
     }
 
     const status = sent > 0 ? (errors.length > 0 ? 'partial' : 'sent') : 'failed';
+    console.log(`SMS broadcast: ${sent}/${subs.length} sent, ${blocked} blocked, ${errors.length} errors`);
     return Response.json({
       success: sent > 0,
       sent,
+      blocked,
       recipientCount: subs.length,
       errorCount: errors.length,
       status,

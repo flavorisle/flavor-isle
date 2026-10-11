@@ -1,8 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByPhone, toE164Phone } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const BIRTHDAY_POINTS = 100;
@@ -100,6 +102,12 @@ export default async function (req: Request) {
     if (isTest && !test_recipient_email) {
       return Response.json({ error: 'test_recipient_email is required when test_mode is true' }, { status: 400 });
     }
+    // A test send goes to an operator-chosen address, so it is admin-only. The
+    // scheduled loyalty run never passes test_mode.
+    if (isTest) {
+      const { error: authError } = await requireAdmin(base44);
+      if (authError) return authError;
+    }
 
     // ── Find customers with birthday today (store local time) ──
     const now = new Date();
@@ -112,6 +120,15 @@ export default async function (req: Request) {
     const todayMonthDay = `${month}-${day}`; // "09-14"
 
     const profiles = await base44.asServiceRole.entities.CustomerProfile.list('-updated_date', 500);
+
+    // Issue #93 (A8): blocked customers never get a birthday email (and never
+    // have points granted for one). The block list is read once per run; a
+    // failed read is logged and the run continues, since the other senders
+    // re-check their own recipients.
+    const blockFilter = await loadBlockFilter(base44).catch((e) => {
+      console.error('Block-list lookup failed, sending unfiltered:', e.message);
+      return null;
+    });
 
     // Filter profiles with birthday today (compare MM-DD, ignore year)
     const birthdayProfiles = (profiles || []).filter(p => {
@@ -157,6 +174,14 @@ export default async function (req: Request) {
     let processed = 0;
     let skipped = 0;
     for (const profile of targets) {
+      // Issue #93 (A8): a blocked customer is skipped silently, with no points
+      // granted. Test sends go to the admin's own address and are not filtered.
+      if (!isTest && blockFilter && (blockFilter.hasEmail(profile.email) || blockFilter.hasPhone(profile.phone))) {
+        console.log(`Birthday email skipped for ${profile.email}: contact is on the block list.`);
+        skipped++;
+        continue;
+      }
+
       // Grant loyalty points (skip in test mode)
       let pointsGranted = 0;
       if (!isTest) {

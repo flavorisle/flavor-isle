@@ -25,7 +25,7 @@ export async function generateSmashieVoice(base44, text) {
   const audio = await response.arrayBuffer();
   const blob = new Blob([audio], { type: 'audio/mpeg' });
   const file = new File([blob], `smashie-${crypto.randomUUID()}.mp3`, { type: 'audio/mpeg' });
-  const uploaded = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+  const uploaded = await base44.asServiceRole.integrations.Core.UploadPublicFile({ file });
 
   if (!uploaded?.file_url) {
     throw new Error('OpenAI speech upload did not return a public URL');

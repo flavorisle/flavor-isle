@@ -22,7 +22,7 @@ import { getPhoneStoreStatus, getUnifiedStoreState } from '../../shared/storeSta
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
 import { verifyOpenAIWebhookSignature } from '../../shared/openaiWebhookSignature.ts';
-import { acceptLiveSession, rejectLiveSession } from '../../shared/openaiLiveApi.ts';
+import { acceptLiveSession, rejectLiveSession, referLiveSession } from '../../shared/openaiLiveApi.ts';
 import { closeAbandonedVoiceCalls } from '../../shared/smashieLiveSession.ts';
 import {
   VOICE_INSTRUCTIONS,
@@ -32,6 +32,7 @@ import {
 } from '../../shared/smashieLivePrompt.ts';
 import { phoneIntro, smashieAdminContext, abilityEnabled } from '../../shared/smashieAdminContext.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { isPassThrough } from '../../shared/counterPassThrough.ts';
 
 const LIVE_MODEL = 'gpt-live-1';
 const BACKEND_MODEL = 'gpt-6-luna';
@@ -73,6 +74,18 @@ function extractCallerPhone(sipHeaders) {
     if (digits.length >= 10) return `+1${digits.slice(-10)}`;
   }
   return '';
+}
+
+// Issue #93 (C1): the counter hand-off address, resolved exactly the way
+// Smashie's transfer_to_counter tool resolves it — the admin-visible
+// SmashieSettings field first, the SIP_TRANSFER_TARGET secret as the fallback.
+// A plain phone number cannot receive a REFER, so it counts as no target at all
+// rather than a hand-off that could never connect.
+function resolveCounterTarget(settings) {
+  const configured = String(settings?.sip_transfer_target || Deno.env.get('SIP_TRANSFER_TARGET') || '').trim();
+  if (!configured) return '';
+  if (/^tel:/i.test(configured) || /^\+?[\d\s().-]{7,}$/.test(configured)) return '';
+  return /^sips?:/i.test(configured) ? configured : `sip:${configured}`;
 }
 
 export default async function (req) {
@@ -142,6 +155,21 @@ export default async function (req) {
       console.error('Blocked-contact lookup failed, answering anyway:', e.message);
       return null;
     });
+    // Issue #93 (C1): counter pass-through, checked in this exact order —
+    // (1) the block lookup above always wins, so a number on BOTH lists stays
+    // blocked; (2) pass-through applies only while the store is OPEN, so a
+    // closed store runs the normal closed flow below. A listed caller is never
+    // handed to Smashie's model: the session is accepted and handed to the
+    // counter below, and if that hand-off fails the call falls through to a
+    // normal Smashie call — a caller is never dropped.
+    const counterPassThrough = !block && storeStatus.open && callerPhone
+      ? await isPassThrough(base44, callerPhone)
+      : false;
+    const counterTarget = resolveCounterTarget(settings);
+    if (counterPassThrough) {
+      console.log(`Counter pass-through caller ${callerPhone}${counterTarget ? '' : ' — no counter routing address configured'}`);
+    }
+
     const context = buildCallContext({ storeStatus, storeState, cashEnabled: phoneCashEnabled(settings), busyness, callerPhone, customer, blockedContact: block });
 
     const enabledTools = SMASHIE_LIVE_TOOLS.filter((tool) => {
@@ -171,6 +199,36 @@ export default async function (req) {
     if (!accepted.ok) {
       console.error(`Accept failed for ${sessionId} (${accepted.status}): ${accepted.body}`);
       return Response.json({ error: 'Accept failed', status: accepted.status, detail: accepted.body }, { status: 502 });
+    }
+
+    // Issue #93 (C1): the pass-through hand-off. The session is accepted above
+    // (so the call is never rejected), then immediately REFERred to the counter
+    // — no Smashie conversation, no greeting, no model turn. If the REFER fails,
+    // the code below continues as a normal Smashie call so the caller is never
+    // dropped. The call record carries a `counter pass-through` note so the
+    // Phone Log shows the route.
+    if (counterPassThrough && counterTarget) {
+      const refer = await referLiveSession(sessionId, apiKey, counterTarget);
+      console.log(`Counter pass-through refer for ${callerPhone}: ${refer.ok ? 'accepted' : `failed (${refer.status})`}`);
+      if (refer.ok) {
+        await base44.asServiceRole.entities.SmsConversation.create({
+          phone_number: callerPhone,
+          conversation_id: sessionId,
+          call_sid: sessionId,
+          channel: 'voice',
+          call_direction: 'inbound',
+          call_started_at: new Date().toISOString(),
+          last_message_at: new Date().toISOString(),
+          message_count: 0,
+          status: 'active',
+          transcript: [],
+          tool_log: [{ at: new Date().toISOString(), name: 'counter_pass_through', ok: true, detail: `counter pass-through — REFER ${counterTarget}` }],
+          customer_name: customer?.name || undefined,
+          square_customer_id: customer?.id || undefined,
+          customer_email: customer?.email || undefined,
+        });
+        return Response.json({ accepted: true, pass_through: true, session_id: sessionId });
+      }
     }
 
     // Housekeeping before the call starts: a call whose app connection died

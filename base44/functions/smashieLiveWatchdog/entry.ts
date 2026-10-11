@@ -18,6 +18,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
 import { MAX_CALL_MS } from '../../shared/smashieLiveSession.ts';
+import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 // A call the app has written nothing for in this long has lost its worker.
 const STALE_MS = 20000;
@@ -43,13 +44,17 @@ export default async function (req) {
     const base44 = createClientFromRequest(req);
     // Scheduled maintenance: the platform calls this from the "Smashie Live
     // Watchdog" workflow with no user token, like the app's other scheduled
-    // sweeps. A signed-in caller hitting it by hand must be an admin.
-    const user = await base44.auth.me().catch(() => null);
-    if (user && user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
+    // sweeps. A signed-in caller must be an admin and a manual run may present the
+    // relay key; the scheduled path is held to one run per four minutes, just under
+    // its own five-minute cadence, so an anonymous caller cannot drive repeated
+    // sweeps without ever shutting the real schedule out.
     const body = await req.json().catch(() => ({}));
+    const gate = await maintenanceGate(base44, req, body, {
+      functionName: 'smashieLiveWatchdog',
+      windowMs: 4 * 60 * 1000,
+    });
+    if (!gate.ok) return gate.error;
+
     const dryRun = body?.dryRun === true;
     const relayKey = Deno.env.get('OPENAI_WEBHOOK_SECRET');
     const counterPhone = Deno.env.get('COUNTER_PHONE_NUMBER') || '';

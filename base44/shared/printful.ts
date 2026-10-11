@@ -82,7 +82,16 @@ function parseVariant(v: any, productImage?: string, productName?: string) {
 }
 
 // Fetch the full store catalog with per-product variant detail.
+// Catalog responses are cached briefly: the storefront and the merch checkout
+// both price from this, and a checkout must not wait on one Printful request per
+// product.
+let storeProductsCache: { at: number; products: any[] } | null = null;
+const STORE_CACHE_MS = 60 * 1000;
+
 export async function fetchStoreProducts() {
+  if (storeProductsCache && Date.now() - storeProductsCache.at < STORE_CACHE_MS) {
+    return storeProductsCache.products;
+  }
   const listRes = await fetch(`${PRINTFUL_BASE}/store/products`, { headers: authHeaders() });
   const listData = await listRes.json();
   if (!listRes.ok) throw new Error(listData?.error?.message || "Failed to fetch Printful products");
@@ -116,7 +125,9 @@ export async function fetchStoreProducts() {
       }
     })
   );
-  return detailed.filter(Boolean);
+  const resolved = detailed.filter(Boolean);
+  if (resolved.length) storeProductsCache = { at: Date.now(), products: resolved };
+  return resolved;
 }
 
 // Get live shipping rates for a recipient + item set. Returns cheapest first.

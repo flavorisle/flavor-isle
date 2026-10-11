@@ -298,7 +298,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     onSelect={(mod) => toggleSingle(group.name, mod)}
                   />
                 ) : (
-                <div className="space-y-2">
+                /* Lite/Extra pills sit two to a phone line; the wide name +
+                   price rows keep a full line of their own, as before. */
+                <div className="flex flex-wrap gap-2 sm:block sm:space-y-2">
                   {group.modifiers.map(mod => {
                     const isMultiple = group.selection_type === 'MULTIPLE';
                     const isSelected = isMultiple
@@ -309,36 +311,34 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                       return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={selectIceSize} />;
                     }
 
-                    // Flavors get the same − / + pill the burger sauces use:
-                    // − is Lite, + is Extra. Checked BEFORE the preference check
+                    // Flavors get the same Lite / Extra pill the burgers use.
+                    // Checked BEFORE the preference check
                     // so a flavor carrying Square's own "- / + Flavors" child list
                     // still renders (and prices) as the flavor pill — matching the
                     // product summary exactly.
                     if (!mod.sold_out && isFlavorGroup(group)) {
                       return (
-                        <div key={mod.id} className="py-1">
-                          <FlavorPillButton
-                            mod={mod}
-                            isSelected={isSelected}
-                            onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                            nestedSelection={nestedSelections[mod.id] || {}}
-                            onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-                          />
-                        </div>
+                        <FlavorPillButton
+                          key={mod.id}
+                          mod={mod}
+                          isSelected={isSelected}
+                          onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                          nestedSelection={nestedSelections[mod.id] || {}}
+                          onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                        />
                       );
                     }
 
                     if (!mod.sold_out && getPreferenceList(mod)) {
                       return (
-                        <div key={mod.id} className="py-1">
-                          <PreferencePillButton
-                            mod={mod}
-                            isSelected={isSelected}
-                            onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-                            nestedSelection={nestedSelections[mod.id] || {}}
-                            onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-                          />
-                        </div>
+                        <PreferencePillButton
+                          key={mod.id}
+                          mod={mod}
+                          isSelected={isSelected}
+                          onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                          nestedSelection={nestedSelections[mod.id] || {}}
+                          onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
+                        />
                       );
                     }
 

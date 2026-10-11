@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
+import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Scans CustomerProfiles for saved carts that have sat untouched for more than
 // one hour and sends each customer one compelling reminder email. Invoked by the
@@ -30,6 +31,15 @@ export default async function (req) {
     // updated_date, so the most-recently-updated profiles hold every active or
     // recently-abandoned cart. 500 is plenty for a single-location restaurant.
     const profiles = await base44.asServiceRole.entities.CustomerProfile.list('-updated_date', 500);
+
+    // Issue #93 (A13): blocked customers are never reminded. This flow sends
+    // email only — there is no SMS reminder step to filter. The block list is
+    // read once per run; a failed read is logged and the run continues.
+    const blockFilter = await loadBlockFilter(base44).catch((e) => {
+      console.error('Block-list lookup failed, sending unfiltered:', e.message);
+      return null;
+    });
+
     const now = Date.now();
     const reminded = [];
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -37,6 +47,8 @@ export default async function (req) {
     for (const p of (profiles || [])) {
       const cart = p.cart;
       if (!cart || !Array.isArray(cart.cartItems) || cart.cartItems.length === 0) continue;
+      // Issue #93 (A13): a blocked customer is never reminded.
+      if (blockFilter && (blockFilter.hasEmail(p.email) || blockFilter.hasPhone(p.phone))) continue;
 
       const savedAt = Number(cart.savedAt) || 0;
       if (!savedAt) continue;
