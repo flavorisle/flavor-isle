@@ -10,7 +10,7 @@
      night      #0F0818   page background
      crypt      #1A0B2B   footer / deepest surfaces
      witch      #4A1F70   navy replacement (sections, buttons)
-     pumpkin    #E85D04   cherry replacement (primary buttons)
+     pumpkin    #C74A05   cherry replacement (buttons, banners — deep enough for white text)
      candy      #FF9F1C   yellow replacement
      bone       #F7ECDD   main text
      ghost      #C9A3FF   secondary text accent
@@ -36,7 +36,7 @@ html.halloween:not(.high-contrast) {
   --ring: 24 97% 50%;
   --vanilla-malt: #0F0818;
   --cream-white: #1B1028;
-  --midnight-cherry: #E85D04;
+  --midnight-cherry: #C74A05;
   --patina-mint: #4A1F70;
   --obsidian-roast: #4A1F70;
   --smashie-yellow: #FF9F1C;
@@ -55,7 +55,7 @@ html.halloween:not(.high-contrast) .text-obsidian-roast { color: #F7ECDD; }
 html.halloween:not(.high-contrast) .text-patina-mint { color: #C9A3FF; }
 html.halloween:not(.high-contrast) .text-midnight-cherry { color: #FF7B1C; }
 html.halloween:not(.high-contrast) .text-smashie-yellow { color: #FFB347; }
-html.halloween:not(.high-contrast) .bg-midnight-cherry { background-color: #E85D04; }
+html.halloween:not(.high-contrast) .bg-midnight-cherry { background-color: #C74A05; }
 html.halloween:not(.high-contrast) .bg-patina-mint,
 html.halloween:not(.high-contrast) .bg-navy { background-color: #4A1F70; }
 html.halloween:not(.high-contrast) .bg-obsidian-roast { background-color: #1A0B2B; }
@@ -148,7 +148,7 @@ html.halloween:not(.high-contrast) .card-diner:hover {
 }
 html.halloween:not(.high-contrast) .shadow-float { box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 18px rgba(139, 63, 217, 0.15); }
 html.halloween:not(.high-contrast) .shadow-float-lg { box-shadow: 0 16px 60px rgba(0, 0, 0, 0.55), 0 0 28px rgba(232, 93, 4, 0.18); }
-html.halloween:not(.high-contrast) .btn-cherry:hover { background-color: #C24E03; box-shadow: 0 6px 22px rgba(232, 93, 4, 0.5); }
+html.halloween:not(.high-contrast) .btn-cherry:hover { background-color: #A63A02; box-shadow: 0 6px 22px rgba(232, 93, 4, 0.5); }
 html.halloween:not(.high-contrast) .btn-mint:hover { background-color: #3A165A; box-shadow: 0 6px 22px rgba(139, 63, 217, 0.5); }
 html.halloween:not(.high-contrast) .btn-yellow:hover { background-color: #F08A00; box-shadow: 0 6px 20px rgba(255, 159, 28, 0.5); }
 
@@ -167,6 +167,10 @@ html.halloween:not(.high-contrast) .bg-white\/90,
 html.halloween:not(.high-contrast) .bg-white\/95 { background-color: rgba(27, 16, 40, 0.94); }
 html.halloween:not(.high-contrast) .force-light .bg-white\/90,
 html.halloween:not(.high-contrast) .force-light .bg-white\/95 { background-color: rgba(255, 255, 255, 0.95); }
+
+/* Menu-card "add" buttons wear a fixed navy label on their white chip, so this
+   one chip stays light — darkening it left the label invisible. */
+html.halloween:not(.high-contrast) .bg-white\/90.text-\[\#003366\] { background-color: #ffffff; }
 
 /* Thin pumpkin-to-purple stripe under the header and above the footer */
 html.halloween:not(.high-contrast) .fall26-nav-accent {

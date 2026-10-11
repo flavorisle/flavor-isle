@@ -33,7 +33,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
       }`}>
         <Tag size={14} className="flex-shrink-0" />
         <span>Happy Hour · Unbeatable value on drinks · {window} daily · Online</span>
-        {active && <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full animate-pulse">NOW</span>}
+        {active && <span className="ml-auto text-xs bg-black/25 px-2 py-0.5 rounded-full animate-pulse">NOW</span>}
       </div>
     );
   }
@@ -56,12 +56,12 @@ export default function HappyHourBanner({ variant = 'full' }) {
               Happy Hour — Unbeatable Value on Drinks
             </h3>
             {active && (
-              <span className="text-xs font-heading bg-white/25 px-2.5 py-1 rounded-full animate-pulse">
+              <span className="text-xs font-heading bg-black/25 px-2.5 py-1 rounded-full animate-pulse">
                 HAPPENING NOW
               </span>
             )}
           </div>
-          <p className={`text-sm mt-1 ${active ? 'text-white/85' : 'text-muted-foreground'}`}>
+          <p className={`text-sm mt-1 ${active ? 'text-white' : 'text-muted-foreground'}`}>
             Unbeatable value on Classic Drinks when you order online — Coke, Coke Zero, Dr Pepper, Sprite, Root Beer & Sweet Tea. {window} daily, online orders only.
           </p>
         </div>

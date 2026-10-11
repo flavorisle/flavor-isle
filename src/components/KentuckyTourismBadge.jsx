@@ -9,7 +9,7 @@ export default function KentuckyTourismBadge() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Flavor Isle, listed on KentuckyTourism.com"
-      className="inline-flex items-center gap-3 h-14 rounded-2xl bg-white border border-[#E5E0D6] px-4 shadow-sm hover:shadow-md transition-shadow"
+      className="force-light inline-flex items-center gap-3 h-14 rounded-2xl bg-white border border-[#E5E0D6] px-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <span className="w-10 h-10 rounded-md bg-[#0082B4] flex items-center justify-center flex-shrink-0">
         <img src="/logos/kentucky-tourism.svg" alt="" aria-hidden="true" className="w-7 h-7" />
