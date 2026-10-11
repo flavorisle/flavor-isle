@@ -1,0 +1,62 @@
+{
+  "name": "MaintenanceRun",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "function_name": {
+      "type": "string",
+      "description": "The maintenance/sync function this row tracks - one row per function."
+    },
+    "window_key": {
+      "type": "string",
+      "description": "The clock-aligned cadence window that last did work, as an epoch-bucket number. A call that lands in a window which already ran does no work, so a caller cannot loop a heavy sweep for API quota or record churn, while the next scheduled window always runs normally."
+    },
+    "last_run_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the tracked function last did work."
+    },
+    "run_count": {
+      "type": "number",
+      "default": 0,
+      "description": "How many windows this function has run in since tracking started."
+    },
+    "last_caller": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "internal",
+        "scheduled"
+      ],
+      "description": "Who was allowed to run it: admin (signed-in admin), internal (app relay key), or scheduled (platform workflow, no user session)."
+    }
+  },
+  "required": [
+    "function_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

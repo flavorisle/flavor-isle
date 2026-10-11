@@ -38,6 +38,21 @@ export default async function(req) {
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Proof of possession. Order numbers are six digits and enumerable, so the
+    // number alone is not evidence that the caller owns the order — it used to be
+    // enough to ring the counter phone and have chosen text read out to the crew.
+    // The caller must also know the phone or email the order was placed with.
+    const contact = String(body?.contact || '').trim();
+    const contactDigits = contact.replace(/\D/g, '').slice(-10);
+    const orderPhoneDigits = String(order.customer_phone || '').replace(/\D/g, '').slice(-10);
+    const contactEmail = contact.toLowerCase();
+    const orderEmail = String(order.customer_email || '').toLowerCase().trim();
+    const phoneProved = contactDigits.length === 10 && orderPhoneDigits.length === 10 && contactDigits === orderPhoneDigits;
+    const emailProved = contactEmail.includes('@') && !!orderEmail && contactEmail === orderEmail;
+    if (!phoneProved && !emailProved) {
+      return Response.json({ error: 'Confirm the phone number or email this order was placed with so we know it is you.' }, { status: 403 });
+    }
+
     // Only a live curbside order may ring the kitchen, and only once per
     // cooldown — otherwise anyone could trigger repeated counter calls for
     // random order numbers and have chosen text read out loud.

@@ -20,6 +20,8 @@
 //   ?mode=messageSaved  save the recording as a PhoneMessage so it lands in the
 //                 same Message Log the crew already reads.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { validTwilioSignature } from '../../shared/twilioSmsSignature.ts';
+import { isInternalCaller } from '../../shared/internalRelay.ts';
 
 const HOLD_WINDOW_SECONDS = 180;
 const HOLD_MUSIC_URL = 'https://flavor-isle.com/hold-music.mp3';
@@ -93,8 +95,27 @@ export default async function (req: Request) {
     }
 
     if (mode === 'messageSaved') {
+      // This is the only mode on this endpoint that writes anything — a
+      // PhoneMessage the crew reads — so it is the one that must be authentic.
+      // Twilio signs the callback it makes when a recording finishes, and our own
+      // SIP/relay callers present the app relay key. Without either, a forged POST
+      // could drop a fake "Counter voicemail" from any caller number into the
+      // management message log. The other modes only return TwiML for a call that
+      // is already up on our own number: they write nothing, and a caller cannot
+      // make Twilio execute that TwiML by talking to this URL itself.
+      const signed = await validTwilioSignature(req, params, 'counterTransferTwiml');
+      if (!signed && !isInternalCaller(req)) {
+        console.warn('counterTransferTwiml: refused an unsigned messageSaved callback');
+        return response(`${say('Sorry, that message could not be saved. Please call the counter line and we will take it down.')}<Hangup/>`);
+      }
       const recordingUrl = params.get('RecordingUrl') || '';
-      if (recordingUrl) {
+      // Twilio hands back a recording reference on its own API host; anything else
+      // is not a recording we made.
+      const isTwilioRecording = /^https:\/\/api\.twilio\.com\//i.test(recordingUrl);
+      if (recordingUrl && !isTwilioRecording) {
+        console.warn('counterTransferTwiml: ignored a recording URL that is not Twilio\'s');
+      }
+      if (recordingUrl && isTwilioRecording) {
         try {
           await base44.asServiceRole.entities.PhoneMessage.create({
             caller_name: 'Counter voicemail',

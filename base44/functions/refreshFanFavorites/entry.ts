@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 // Aggregates the top 10 best-selling items across ALL Square order sources
 // (online + in-store POS) from COMPLETED, PAID orders in the last 60 days,
@@ -18,9 +19,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 //    actually sold; no rankings are fabricated.
 //  - On any Square API failure, previous rankings are RETAINED (nothing is
 //    updated) and an error is returned — success is never claimed.
-//  - The admin gate is soft: scheduled workflow invocations run without a
-//    user session and proceed as the service role; manual invocations still
-//    require an admin.
+//  - Callers: an admin or a relay-key holder runs it on demand; the platform
+//    scheduled run (which carries no user session and no way to present a secret)
+//    is throttled to one run per hour so an anonymous caller cannot loop a full
+//    Square order pull at the store's expense. See shared/maintenanceGate.ts.
 
 const SQUARE_VERSION = '2026-09-16';
 const LOOKBACK_DAYS = 60;
@@ -31,15 +33,12 @@ const CATALOG_BATCH = 1000;
 export default async function (req) {
   const base44 = createClientFromRequest(req);
 
-  // Soft admin gate — workflow invocations have no user session.
-  try {
-    const user = await base44.auth.me();
-    if (user && user.role !== 'admin') {
-      return Response.json({ error: 'Admin only' }, { status: 403 });
-    }
-  } catch (_e) {
-    // No user session (scheduled workflow) — proceed as service role.
-  }
+  const body = await req.json().catch(() => ({}));
+  const gate = await maintenanceGate(base44, req, body, {
+    functionName: 'refreshFanFavorites',
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!gate.ok) return gate.error;
 
   const connection = await base44.asServiceRole.connectors.getConnection('square');
   if (!connection || !connection.accessToken) {
@@ -196,7 +195,7 @@ export default async function (req) {
     rank: i + 1, name: r.name, qty: r.qty, bucket: r.bucket || null,
     menu_item_id: r.item?.id || null, square_item_id: r.sqId,
   }));
-  const dryRun = (await req.clone().json().catch(() => ({}))).dryRun === true;
+  const dryRun = body.dryRun === true;
   if (dryRun) return Response.json({ success: true, preview: true, ordersPulled, completedPaidOrders, ranked });
 
   const newFavIds = new Set(rankedVisible.filter((r) => r.item).map((r) => r.item.id));

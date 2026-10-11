@@ -1,6 +1,7 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { isPhoneOrder } from '../../shared/phoneOrderPricing.ts';
+import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 // End-of-night cleanup for abandoned checkouts.
 //
@@ -17,17 +18,34 @@ import { isPhoneOrder } from '../../shared/phoneOrderPricing.ts';
 // skipped outright: their own share flow settles them.
 //
 // Runs nightly after close via the "End of Night Order Cleanup" workflow. Safe to
-// run by hand: { "dryRun": true } previews without changing anything, and
-// { "olderThanMinutes": 1 } sweeps the whole backlog in one pass.
+// run by hand: { "dryRun": true } previews without changing anything, and an admin
+// (or a caller holding the app relay key) may pass { "olderThanMinutes": 1 } to
+// sweep the whole backlog in one pass. The age threshold is NOT caller-chosen for
+// anyone else — see the clamp below.
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const body = await req.json().catch(() => ({}));
+
+    // This endpoint expires live Stripe PaymentIntents, so it is not open to
+    // anonymous looping: the scheduled path is held to one run per half-hour
+    // window, a signed-in caller must be an admin, and a manual run may present
+    // the relay key. See shared/maintenanceGate.ts.
+    const gate = await maintenanceGate(base44, req, body, {
+      functionName: 'cleanupStaleOrders',
+      windowMs: 30 * 60 * 1000,
+    });
+    if (!gate.ok) return gate.error;
+
     const dryRun = body?.dryRun === true;
     // Only orders that have had ample time to be paid AND pushed are eligible —
-    // a live checkout is never touched.
-    const minAgeMinutes = Math.max(0, Number(body?.olderThanMinutes ?? 60) || 0);
+    // a live checkout is never touched. The threshold is fixed at an hour for every
+    // ordinary caller: it used to be a request parameter, which let anyone pass
+    // olderThanMinutes=1 and cancel legitimate checkouts that were still in
+    // progress. Only an admin or a relay-key caller may widen the sweep.
+    const requestedAge = gate.caller === 'scheduled' ? NaN : Number(body?.olderThanMinutes);
+    const minAgeMinutes = Number.isFinite(requestedAge) && requestedAge > 0 ? requestedAge : 60;
     const cutoff = Date.now() - minAgeMinutes * 60 * 1000;
 
     // Anything still unpaid and pending is an abandoned attempt: a real payment

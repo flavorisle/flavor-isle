@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { chicagoParts, todayChicago } from '../../shared/busynessTime.ts';
+import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 const SQUARE_VERSION = '2026-09-16';
 const FULL_LOOKBACK_DAYS = 90;
@@ -10,6 +11,17 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     const mode = body && body.mode === 'live' ? 'live' : 'full';
+
+    // Admin / relay-key callers run it on demand. The platform-scheduled path is
+    // held to one run per cadence window — five minutes for the live pull, six
+    // hours for the full-day profile rebuild — so an anonymous caller cannot loop
+    // Square order pulls. A window that is claimed still does the work, so the data
+    // is refreshed either way and the next real schedule is never starved.
+    const gate = await maintenanceGate(base44, req, body, {
+      functionName: mode === 'live' ? 'syncSquareBusynessLive' : 'syncSquareBusynessProfile',
+      windowMs: mode === 'live' ? 5 * 60 * 1000 : 6 * 60 * 60 * 1000,
+    });
+    if (!gate.ok) return gate.error;
 
     const connection = await base44.asServiceRole.connectors.getConnection('square');
     if (!connection || !connection.accessToken) {

@@ -5,6 +5,8 @@ import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
+import { NONCATALOG_PRICES } from '../../shared/noncatalogPrices.ts';
+import { isInternalCaller } from '../../shared/internalRelay.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
@@ -13,6 +15,41 @@ import { withTimeout } from '../../shared/withTimeout.ts';
 // The caller is waiting on the line, so link setup is bounded: a stalled
 // processor or SMS gateway falls through to the manual-pay reply with the total.
 const PAY_LINK_SETUP_MS = 6000;
+
+// Recent inbound conversations with a phone number. Those records are written
+// only by the Twilio/OpenAI inbound webhooks, which verify their own signatures,
+// so a matching row is evidence that the number really did call or text us.
+const CALL_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// A conversation counts as live when it was opened OR last used inside the
+// window: a text thread can stay on one record for a while, so looking only at
+// when it was first created would miss a caller we are still talking to.
+async function recentConversations(base44, phoneDigits) {
+  if (!phoneDigits || phoneDigits.length < 10) return [];
+  const since = new Date(Date.now() - CALL_SESSION_WINDOW_MS).toISOString();
+  const [byOpened, byLastUsed] = await Promise.all([
+    base44.asServiceRole.entities.SmsConversation
+      .filter({ created_date: { $gte: since } }, '-created_date', 100)
+      .catch((e) => {
+        console.error('Call-session lookup (opened) failed:', e.message);
+        return [];
+      }),
+    base44.asServiceRole.entities.SmsConversation
+      .filter({ last_message_at: { $gte: since } }, '-last_message_at', 100)
+      .catch((e) => {
+        console.error('Call-session lookup (last used) failed:', e.message);
+        return [];
+      }),
+  ]);
+  const target = phoneDigits.slice(-10);
+  const seen = new Set();
+  return [...(byOpened || []), ...(byLastUsed || [])].filter((r) => {
+    if (String(r.phone_number || '').replace(/\D/g, '').slice(-10) !== target) return false;
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+}
 
 // Phone / website-chat order intake for Smashie. Saves the order, sets up the
 // payment server-side, then TEXTS the customer a short link to our own
@@ -71,6 +108,26 @@ export default async function(req) {
     }
     const emailOk = !!customer_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email);
 
+    // Channel evidence. The pay link is TEXTED to the number on the order, so a
+    // caller that cannot show we hold a real inbound conversation with that number
+    // does not get to make our own line text a stranger: an anonymous caller could
+    // otherwise send a "pay $X for order #Y" text from the restaurant's number to
+    // any number it chose, with an amount it chose. Phone calls, texts and the SIP
+    // pipeline each write their conversation record when the call starts, so every
+    // real caller has one. Website chat has no inbound phone session: there the
+    // order is still saved and the link is returned to share in the chat instead.
+    const relayAuthorized = isInternalCaller(req, body);
+    const sessions = await recentConversations(base44, phoneDigits);
+    const phoneSession = relayAuthorized || sessions.length > 0;
+    const voiceSession = relayAuthorized || sessions.some((c) => c.channel === 'voice');
+
+    // Cash at pickup is arranged on a phone call — the crew hands over food against
+    // cash — so it requires a real voice call from this number. Without that check
+    // an anonymous caller could mint confirmed kitchen tickets nobody pays for.
+    if (cashPickup && !voiceSession) {
+      return Response.json({ error: 'Cash at pickup is only available on a phone call from this number. Offer the secure card payment link instead.' }, { status: 403 });
+    }
+
     // Blocked callers, texters, and chat customers never get an order placed.
     // Smashie is told to decline up front; this is the gate that guarantees it.
     const block = await findBlock(base44, { phone: customer_phone, email: emailOk ? customer_email : '' });
@@ -115,10 +172,12 @@ export default async function(req) {
     // placeholder is already treated as "no email" by the order emails.
     const orderEmail = emailOk ? customer_email : 'phone-order@flavorisle.com';
 
-    // Smashie quotes live prices, but the lines still arrive from the agent, so
-    // every plainly named line is matched against the menu and can never be
-    // priced below its menu price. A mis-heard — or talked-into — "one cent
-    // burger" therefore cannot be charged.
+    // Every line must resolve to a live menu item (or an approved non-catalog
+    // price). Smashie quotes live prices, but the values still arrive over the
+    // wire, so a line that is not on the menu is refused outright instead of being
+    // charged at whatever price the caller sent — that hole let a crafted call buy
+    // real food for a cent, and let an attacker choose the amount in the
+    // payment-link text. Lines that do resolve are never priced below the menu.
     const menuItems = await base44.asServiceRole.entities.MenuItem.filter({ is_available: true });
     const menuPriceByName = new Map();
     for (const menuItem of menuItems || []) {
@@ -127,15 +186,27 @@ export default async function(req) {
       if (menuKey && Number.isFinite(menuPrice) && menuPrice > 0) menuPriceByName.set(menuKey, menuPrice);
     }
 
-    const pricedItems = items.map((item) => {
+    const pricedItems = [];
+    const unknownItems = [];
+    for (const item of items) {
+      const itemKey = String(item?.name || '').trim().toLowerCase();
       const claimed = Number(item.price) || 0;
-      const catalogPrice = menuPriceByName.get(String(item.name || '').trim().toLowerCase());
-      return {
+      const catalogPrice = menuPriceByName.get(itemKey);
+      const approvedPrice = NONCATALOG_PRICES[itemKey];
+      const authoritative = catalogPrice != null ? catalogPrice : approvedPrice;
+      if (authoritative == null) {
+        unknownItems.push(String(item?.name || 'unnamed item'));
+        continue;
+      }
+      pricedItems.push({
         ...item,
-        price: catalogPrice != null && catalogPrice > claimed ? catalogPrice : claimed,
+        price: Math.max(authoritative, claimed),
         quantity: Math.max(1, Math.min(50, Number(item.quantity) || 1)),
-      };
-    });
+      });
+    }
+    if (unknownItems.length > 0 || pricedItems.length === 0) {
+      return Response.json({ error: `These items are not on the current menu and cannot be ordered: ${unknownItems.slice(0, 5).join(', ') || 'none supplied'}. Re-check them against the live menu with the customer, or pass them to the counter.` }, { status: 400 });
+    }
 
     const itemSubtotal = pricedItems.reduce(
       (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
@@ -232,9 +303,11 @@ export default async function(req) {
         ? await createSquarePhonePayment(base44, order)
         : await createStripePhonePayment(base44, order);
 
-      // Text it first — the customer is on the phone (or in chat), so it lands
-      // instantly. This is the primary delivery channel for the payment link.
-      if (paymentUrl) {
+      // Text it first — the customer is on the phone or on a text thread, so it
+      // lands instantly. This is the primary delivery channel for the payment
+      // link, and it only happens for a caller with inbound channel evidence; a
+      // website-chat order gets the link returned to share in the chat instead.
+      if (paymentUrl && phoneSession) {
         const payLinkBody = `Flavor Isle: pay $${finalTotal.toFixed(2)} for order #${orderNumber} here: ${paymentUrl}`;
         // Logged like every other customer text, so a pay link the carrier
         // refuses is visible in admin instead of looking like it went out.
@@ -251,8 +324,10 @@ export default async function(req) {
         paymentLinkSent = await sendSmashieSms(customer_phone, payLinkBody, { base44, logId: payLinkLog.id });
       }
 
-      // Email the same link as a backup when we have an address on file.
-      if (paymentUrl && emailOk) {
+      // Email the same link as a backup when we have an address on file. Gated on
+      // the same channel evidence as the text: without it an anonymous caller
+      // could mail a victim a demand from our own domain.
+      if (paymentUrl && emailOk && phoneSession) {
         try {
           await base44.asServiceRole.integrations.Core.SendEmail({
             to: customer_email,
@@ -326,7 +401,9 @@ export default async function(req) {
       payment_link_sent: paymentLinkSent,
       payment_link_emailed: paymentLinkEmailed,
       manual_pay_required: manualPayRequired,
-      message: !paymentLinkSent && paymentUrl && linkTimedOut
+      message: !paymentLinkSent && paymentUrl && !linkTimedOut && !phoneSession
+        ? `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (give the customer this total). No payment text was sent, because this order did not come from a call or text to that number. In website chat, share this secure payment link right here: ${paymentUrl}. If you are on a phone call instead, offer the counter at (270) 563-4618. The order is not confirmed until it is paid.`
+        : !paymentLinkSent && paymentUrl && linkTimedOut
         ? `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total). The payment link text was slow and may still arrive at ${customer_phone}. Tell them to check their texts in a minute, and if nothing comes, the crew can take payment at the counter at (270) 563-4618. Do not say it is paid, and do not place the order again.`
         : paymentLinkSent
         ? `Order #${orderNumber} total is $${finalTotal.toFixed(2)}${orderDeliveryFee > 0 ? ` including a $${orderDeliveryFee.toFixed(2)} delivery fee` : ''}. It is pending payment. A secure payment link for $${finalTotal.toFixed(2)} was ${deliveredVia}. The order is not confirmed until it is paid.`

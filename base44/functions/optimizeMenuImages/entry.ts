@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
+import { maintenanceCaller } from '../../shared/maintenanceGate.ts';
 
 // One-time (and safe to re-run) backfill from issue #33, phase 2.
 //
@@ -22,23 +23,19 @@ import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
 
 export default async function (req) {
   const base44 = createClientFromRequest(req);
+  const body = await req.json().catch(() => ({}));
 
-  // Soft admin gate: scheduled/service invocations have no user session.
-  try {
-    const user = await base44.auth.me();
-    if (user && user.role !== 'admin') {
-      return Response.json({ error: 'Admin only' }, { status: 403 });
-    }
-  } catch (_e) {}
+  // Owner-only. This re-encodes every menu photo and has no schedule behind it, so
+  // there is no reason to accept an anonymous caller at all — the old "soft" gate
+  // let exactly that caller through, because a missing session was read as
+  // "scheduled workflow". A signed-in caller must be an admin; a server-to-server
+  // caller must present the app relay key.
+  const caller = await maintenanceCaller(base44, req, body);
+  if (!caller.ok) return caller.error;
 
   const DEFAULT_BATCH = 20;
   let requested = Number(new URL(req.url).searchParams.get('limit') || 0);
-  if (!requested) {
-    try {
-      const body = await req.clone().json();
-      requested = Number(body?.limit || 0);
-    } catch (_e) {}
-  }
+  if (!requested) requested = Number(body?.limit || 0);
   const batchSize = requested > 0 ? requested : DEFAULT_BATCH;
 
   const items = await base44.asServiceRole.entities.MenuItem.list();

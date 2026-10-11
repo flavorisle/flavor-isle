@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
+import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 const SQUARE_VERSION = '2026-09-16';
 
@@ -25,9 +26,21 @@ async function fetchAllCatalog(accessToken, types) {
   return objects;
 }
 
-Deno.serve(async (req) => {
+export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Rebuilds the whole public menu from Square. Admin / relay-key callers run it
+    // on demand (Admin → Menu Manager does that); the platform-scheduled run is
+    // throttled to one run per fifteen minutes — its own cadence — so an anonymous
+    // caller cannot loop full catalog rewrites.
+    const body = await req.json().catch(() => ({}));
+    const gate = await maintenanceGate(base44, req, body, {
+      functionName: 'syncSquareCatalog',
+      windowMs: 15 * 60 * 1000,
+    });
+    if (!gate.ok) return gate.error;
+
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('square');
 
     // 1. Fetch all object types separately (Square returns empty for combined types in some API versions)
@@ -242,4 +255,4 @@ Deno.serve(async (req) => {
     console.error('Sync error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

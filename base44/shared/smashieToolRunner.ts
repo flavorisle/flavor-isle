@@ -2,6 +2,7 @@
 // call. Thin wrappers over the functions the phone line already uses, so the
 // SIP pipeline and the current Twilio pipeline place orders the same way.
 import { getSmashieSettings } from './smashieSettings.ts';
+import { relayKeyValue } from './internalRelay.ts';
 import { abilityEnabled } from './smashieAdminContext.ts';
 import { searchMenu } from './smashieMenuSearch.ts';
 
@@ -22,6 +23,10 @@ async function invokeFunction(base44, name, payload) {
 
 async function placeOrder(base44, args, callerPhone, sessionId) {
   return invokeFunction(base44, 'logPhoneOrder', {
+    // The Live pipeline is part of this app's own backend, so it presents the
+    // relay key: logPhoneOrder only texts a payment link for a caller it can tie
+    // to a real inbound session.
+    relay_key: relayKeyValue(),
     // The call id travels with the order so a handover that briefly puts two
     // workers on the same call can never turn one order into two.
     call_sid: sessionId,

@@ -7,6 +7,7 @@ import { sendPushToEmail } from './sendPush.ts';
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
+import { relayKeyValue } from './internalRelay.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -400,6 +401,9 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
   if (!skipSquarePush) {
     try {
       const squareRes = await base44.functions.invoke('createSquareOrder', {
+        // createSquareOrder is server-to-server only: it refuses any caller that
+        // does not present the app relay key.
+        relay_key: relayKeyValue(),
         items: order.items || [],
         orderType: order.order_type || 'pickup',
         pickupMethod: order.pickup_method || '',

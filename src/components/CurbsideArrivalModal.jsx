@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, MapPin, StickyNote, CheckCircle2, X } from 'lucide-react';
+import { Car, MapPin, StickyNote, CheckCircle2, X, Phone } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 // Curbside arrival screen — shown when a pickup customer taps "I'm Here".
@@ -14,6 +14,7 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
   const [carMake, setCarMake] = useState(order?.arrival_details?.car_make || '');
   const [carModel, setCarModel] = useState(order?.arrival_details?.car_model || '');
   const [notes, setNotes] = useState('');
+  const [contact, setContact] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -21,10 +22,15 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!contact.trim()) {
+      setError('Add the phone number or email this order was placed with so we know it is you.');
+      return;
+    }
     setSubmitting(true);
     try {
       await base44.functions.invoke('logCurbsideArrival', {
         order_number: order.order_number,
+        contact: contact.trim(),
         zone: zoneLabel || '',
         car_color: carColor.trim(),
         car_make: carMake.trim(),
@@ -34,7 +40,7 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
       setDone(true);
       onArrived?.();
     } catch (err) {
-      setError("Couldn't let the kitchen know — try again or hit the line at (270) 563-4618.");
+      setError(err?.response?.data?.error || "Couldn't let the kitchen know — try again or hit the line at (270) 563-4618.");
     } finally {
       setSubmitting(false);
     }
@@ -112,6 +118,26 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
                     className="w-full px-3 py-3 border border-border rounded-xl bg-white font-body text-sm text-obsidian-roast focus:outline-none focus:border-midnight-cherry focus:ring-2 focus:ring-midnight-cherry/20 transition-all"
                   />
                 </div>
+              </div>
+
+              {/* Proof this is the customer's own order — the order number alone
+                  is guessable and telling the kitchen you've arrived rings the
+                  counter phone. */}
+              <div>
+                <label className="flex items-center gap-2 text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">
+                  <Phone size={14} /> Phone or Email on This Order
+                </label>
+                <input
+                  type="text"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  required
+                  placeholder="(270) 555-1234 or you@example.com"
+                  className="w-full px-4 py-3 border border-border rounded-xl bg-white font-body text-sm text-obsidian-roast focus:outline-none focus:border-midnight-cherry focus:ring-2 focus:ring-midnight-cherry/20 transition-all"
+                />
+                <p className="text-[11px] text-muted-foreground font-body mt-1">
+                  We only ring the crew for the customer on the order.
+                </p>
               </div>
 
               {/* Special notes */}

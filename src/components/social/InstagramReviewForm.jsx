@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Instagram, ArrowRight, PartyPopper } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
+// Instagram review points are credited to the caller's OWN signed-in account: the
+// server reads the email from the session, never from this form, so the points can
+// only ever land in the account of whoever is submitting. A signed-out visitor
+// gets a sign-in prompt instead of a form that could not credit them.
 export default function InstagramReviewForm({ defaultEmail = '', defaultName = '' }) {
   const [name, setName] = useState(defaultName);
-  const [email, setEmail] = useState(defaultEmail);
   const [postUrl, setPostUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,8 +20,8 @@ export default function InstagramReviewForm({ defaultEmail = '', defaultName = '
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim() || !postUrl.trim()) {
-      setError('We need your email and your Instagram post link to hook you up with points.');
+    if (!postUrl.trim()) {
+      setError('We need your Instagram post link to hook you up with points.');
       return;
     }
     if (!/instagram\.com\//i.test(postUrl.trim())) {
@@ -27,7 +31,6 @@ export default function InstagramReviewForm({ defaultEmail = '', defaultName = '
     setLoading(true);
     try {
       const res = await base44.functions.invoke('awardInstagramReviewPoints', {
-        customer_email: email.trim(),
         customer_name: name.trim(),
         instagram_post_url: postUrl.trim(),
       });
@@ -61,6 +64,26 @@ export default function InstagramReviewForm({ defaultEmail = '', defaultName = '
     );
   }
 
+  // Not signed in: points can only be credited to the account itself, so send
+  // them to sign in first (and straight back here).
+  if (!defaultEmail) {
+    return (
+      <div className="card-diner p-6 sm:p-8 text-center">
+        <h3 className="font-heading text-2xl text-obsidian-roast mb-2">SIGN IN TO CLAIM</h3>
+        <p className="font-body text-sm text-muted-foreground mb-5">
+          Instagram review points go to your Flavor Isle rewards account, so you need to be signed in
+          first — that way the points can only ever land in your own account.
+        </p>
+        <Link
+          to="/login?returnTo=/social-reviews"
+          className="btn-cherry chrome-hover inline-flex items-center justify-center gap-2 w-full py-4 text-sm font-heading tap-44"
+        >
+          Sign In <ArrowRight size={16} />
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="card-diner p-6 sm:p-8 space-y-4">
       <div>
@@ -71,10 +94,14 @@ export default function InstagramReviewForm({ defaultEmail = '', defaultName = '
       </div>
       <div>
         <label className="block text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">
-          Account Email
+          Rewards Account
         </label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className={inputCls} />
-        <p className="text-xs text-muted-foreground mt-1.5 font-body">Use the email on your Flavor Isle rewards account so we credit the right one.</p>
+        <div className="w-full px-4 py-3.5 border border-border rounded-2xl bg-muted/60 font-body text-obsidian-roast">
+          {defaultEmail}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5 font-body">
+          The 100 points are credited to your signed-in account — that is the only account they can reach.
+        </p>
       </div>
       <div>
         <label className="block text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">

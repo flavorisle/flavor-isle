@@ -29,6 +29,19 @@ export function withRelayKey(url: URL): URL {
   return url;
 }
 
+// The relay key arrives either as ?key= (callers that build a URL, such as a
+// TwiML fetch) or as a body field relay_key (base44.functions.invoke callers,
+// which cannot set a query string).
+export function relayKeyFromRequest(req: Request, body?: any): string {
+  return new URL(req.url).searchParams.get('key') || String(body?.relay_key || '');
+}
+
+// True only for a caller that presents the app's relay key: our own server code,
+// or the crew running a maintenance endpoint by hand with the key.
+export function isInternalCaller(req: Request, body?: any): boolean {
+  return hasValidRelayKey(relayKeyFromRequest(req, body));
+}
+
 // Printful lets a webhook URL carry extra params but signs nothing, so the
 // store's own API key is used as the HMAC key to derive a webhook token. The
 // token is one-way (it never reveals the API key) and is what the registered
