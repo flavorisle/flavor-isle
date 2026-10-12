@@ -130,7 +130,12 @@ export default function MerchCheckout() {
         subtotal,
         total,
       });
-      if (res.data?.client_secret) {
+      if (res.data?.payment_url) {
+        // Secure hosted payment page (issue #95). The customer pays there for the
+        // exact total and lands back on our own confirmation screen; nothing is
+        // sent to production until the payment has been verified.
+        window.location.href = res.data.payment_url;
+      } else if (res.data?.client_secret) {
         // Create the embedded checkout session and mount it on this page.
         setStripePromise(loadStripe(res.data.publishableKey));
         setEmbedded({

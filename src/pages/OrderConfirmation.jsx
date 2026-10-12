@@ -20,6 +20,23 @@ export default function OrderConfirmation() {
   const readyFor = params.get('ready_for');
   const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }) : null;
   const [confetti, setConfetti] = useState(false);
+  // Paid on the secure payment page: the payment is verified server-side on
+  // arrival, and only a completed payment for the exact total is passed to the
+  // kitchen. This reflects whether it has cleared yet.
+  const squareReturn = params.get('square') === '1';
+  const [paymentConfirmed, setPaymentConfirmed] = useState(null);
+  useEffect(() => {
+    if (!squareReturn || !orderNumber) return;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke('settleSquareWebPayment', { order_number: String(orderNumber) });
+        setPaymentConfirmed(res?.data?.settled === true);
+      } catch (err) {
+        console.error('Payment confirmation on return failed:', err);
+        setPaymentConfirmed(false);
+      }
+    })();
+  }, [squareReturn, orderNumber]);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
 
@@ -85,6 +102,11 @@ export default function OrderConfirmation() {
               <Loader2 size={16} className="animate-spin" />
               Sending to Kitchen…
             </div>
+          ) : squareReturn && paymentConfirmed === false ? (
+            <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
+              <Loader2 size={16} className="animate-spin" />
+              Confirming Your Payment…
+            </div>
           ) : (
             <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-heading mb-4">
               <CheckCircle size={16} />
@@ -94,8 +116,9 @@ export default function OrderConfirmation() {
 
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">You're All Set!</h1>
           <p className="text-muted-foreground text-lg mb-8">
-            Thank you for your order! Your payment went through and our kitchen has been notified.
-            Get ready for something delicious.
+            {squareReturn && paymentConfirmed === false
+              ? "Thank you for your order! We're confirming your payment now — the kitchen is notified the moment it clears. If you split the order with friends, it goes through as soon as every share is paid."
+              : 'Thank you for your order! Your payment went through and our kitchen has been notified. Get ready for something delicious.'}
           </p>
 
           {(orderNumber || sessionId) && (

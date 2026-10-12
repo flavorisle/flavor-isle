@@ -68,6 +68,31 @@ export default async function (req: Request) {
     for (const order of candidates) {
       let paymentConfirmed = false;
 
+      // Square secure-page orders (issue #95). The customer pays on the hosted
+      // page and returns to us, but if they close the tab nothing would ever
+      // settle the order. Ask the settling pass whether Square holds a completed
+      // payment for the exact total, and let it do the same single push the
+      // customer's return path does — including the order-completion bonuses.
+      if (order.payment_provider === 'square' && !order.square_order_id && order.payment_status === 'pending') {
+        try {
+          const settleRes = await base44.asServiceRole.functions.invoke('settleSquareWebPayment', {
+            order_number: String(order.order_number),
+          });
+          const data = settleRes?.data || settleRes;
+          if (data?.settled) {
+            pushed++;
+            results.push({ order_number: order.order_number, pushed: true, provider: 'square' });
+          } else {
+            skipped++;
+            results.push({ order_number: order.order_number, skipped: true, reason: data?.reason || 'Square payment not completed yet' });
+          }
+        } catch (err) {
+          skipped++;
+          results.push({ order_number: order.order_number, skipped: true, reason: `Square settle failed: ${err.message}` });
+        }
+        continue;
+      }
+
       if (order.square_order_id) {
         // Square push already done — payment was verified when it pushed.
         // Just retry the missing emails (confirmOnlinePayment → pushOrderToSquareAndKitchen
@@ -128,7 +153,30 @@ export default async function (req: Request) {
       }
     }
 
-    return Response.json({ ok: true, checked: candidates.length, pushed, skipped, results });
+    // Tasty Threads merch paid on the secure page gets the same safety net: a
+    // customer who never returns to the confirmation page would otherwise leave
+    // their order unpaid and never handed to production.
+    const merchCandidates = await base44.asServiceRole.entities.MerchOrder.filter(
+      { payment_status: 'pending', payment_provider: 'square' }, '-created_date', 20
+    );
+    let merchSettled = 0;
+    for (const merchOrder of (merchCandidates || [])) {
+      if (!merchOrder.created_date || new Date(merchOrder.created_date).getTime() <= twoHoursAgo) continue;
+      try {
+        const settleRes = await base44.asServiceRole.functions.invoke('settleSquareWebPayment', {
+          order_number: String(merchOrder.order_number),
+        });
+        const data = settleRes?.data || settleRes;
+        if (data?.settled) {
+          merchSettled++;
+          results.push({ order_number: merchOrder.order_number, pushed: true, provider: 'square', merch: true });
+        }
+      } catch (err) {
+        console.warn(`Merch Square settle failed for ${merchOrder.order_number}:`, err.message);
+      }
+    }
+
+    return Response.json({ ok: true, checked: candidates.length, pushed, skipped, merch_settled: merchSettled, results });
   } catch (error) {
     console.error('autoSyncUnpushedOrders error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

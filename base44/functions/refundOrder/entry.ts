@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { refundStripePaymentIntent, stripePaymentIntentId } from '../../shared/stripeRefund.ts';
+import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -25,13 +26,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Order already refunded', order }, { status: 409 });
     }
 
-    if (!stripePaymentIntentId(order)) {
+    const paidOnSquare = order.payment_provider === 'square';
+    if (!stripePaymentIntentId(order) && !paidOnSquare) {
       return Response.json({ error: 'No valid Stripe PaymentIntent found on order' }, { status: 400 });
     }
 
-    // Issue a full refund of the PaymentIntent — shared with cancelOrder so the
-    // Stripe call lives in one place.
-    const refund = await refundStripePaymentIntent(order, reason);
+    // Issue a full refund where the money was taken — an order paid on Square's
+    // hosted page goes back through Square, everything else through Stripe.
+    // Shared with cancelOrder so each processor call lives in one place.
+    const refund = paidOnSquare
+      ? await refundSquareOrderPayments(base44, order)
+      : await refundStripePaymentIntent(order, reason);
+    const refundId = refund.refundId || refund.id || null;
+    const refundedAmount = refund.refundedCents != null ? refund.refundedCents / 100 : refund.amount / 100;
 
     // Update the order record.
     await base44.asServiceRole.entities.Order.update(order_id, {
@@ -113,8 +120,8 @@ Deno.serve(async (req) => {
     return Response.json({
       status: 'ok',
       order_number: order.order_number,
-      refund_id: refund.id,
-      amount_refunded: refund.amount / 100,
+      refund_id: refundId,
+      amount_refunded: refundedAmount,
     });
   } catch (error) {
     console.error('refundOrder error:', error.message);

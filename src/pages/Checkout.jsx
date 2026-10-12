@@ -9,6 +9,7 @@ import { base44 } from '@/api/base44Client';
 
 import SchedulePicker from '@/components/checkout/SchedulePicker';
 import SplitPayment from '@/components/checkout/SplitPayment';
+import SquareShareLinks from '@/components/checkout/SquareShareLinks';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
@@ -191,6 +192,17 @@ export default function Checkout() {
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
   // carried on the order payload so the referrer earns their 50 Stars.
   const [referralCode] = useState(() => getActiveReferralCode());
+  // Which system backs the secure payment page (issue #95). Read once so the
+  // payment step is decided before the customer taps Continue to Payment —
+  // anything other than the alternate setting keeps today's in-app card form.
+  const [webProvider, setWebProvider] = useState('stripe');
+  const [squareShares, setSquareShares] = useState([]);
+
+  useEffect(() => {
+    base44.functions.invoke('getWebPaymentProvider', {})
+      .then(res => { if (res?.data?.provider === 'square') setWebProvider('square'); })
+      .catch(() => {});
+  }, []);
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".
   const [hasAllergy, setHasAllergy] = useState(false);
@@ -501,14 +513,50 @@ export default function Checkout() {
           smsConsentVersion: SMS_CONSENT_VERSION,
         });
 
-        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored } = res.data;
+        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored, shares } = res.data;
         if (smsConsentStored === false) {
           toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
         }
-        setSplitIntents(intents);
-        setSplitPublishable(splitPk);
         setOrderNumber(on);
-        setStep('split');
+        if (shares && shares.length > 0) {
+          // Alternate secure page: each person gets their own link to pay their
+          // own share (issue #95).
+          setSquareShares(shares);
+          setStep('shares');
+        } else {
+          setSplitIntents(intents);
+          setSplitPublishable(splitPk);
+          setStep('split');
+        }
+      } else if (webProvider === 'square') {
+        // Alternate secure payment page (issue #95). The customer is handed to
+        // the page for the exact order total and comes straight back to our own
+        // confirmation screen; the payment is verified server-side and only then
+        // does the order reach Square POS and the kitchen. The referral code
+        // travels with the order exactly as it does on the card path, so a
+        // friend's 50 Stars still land when the order completes.
+        const res = await base44.functions.invoke('createSquareWebCheckout', {
+          items: mappedItems,
+          orderType,
+          pickupMethod,
+          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
+          instructions: instructionsWithExtras,
+          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+          loyaltyOptIn,
+          referralCode: referralCode || undefined,
+          scheduledFor,
+          estimatedTime,
+          vehicle: isCurbside ? vehicle : null,
+          smsTransactionalConsent: smsConsent,
+          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+          smsConsentVersion: SMS_CONSENT_VERSION,
+        });
+        if (res.data?.payment_url) {
+          window.location.href = res.data.payment_url;
+          return;
+        }
+        setError('We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
       } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
         // Same cart as an order we already created (the customer tapped Back, or
         // a wallet attempt failed) — reopen that same intent instead of creating
@@ -687,7 +735,10 @@ export default function Checkout() {
     return res.data;
   };
 
-  const expressAvailable = !cutoffStatus[orderType]
+  // One-tap wallets pay an in-app card intent, so they only apply to the primary
+  // payment page; the alternate hosted page offers the same wallets itself.
+  const expressAvailable = webProvider !== 'square'
+    && !cutoffStatus[orderType]
     && !(groupMode && payMode === 'separate')
     && (orderType !== 'delivery' || (form.address.trim() !== '' && deliveryQuote?.ok && !deliveryQuote.out_of_range));
 
@@ -990,6 +1041,10 @@ export default function Checkout() {
                 onSuccess={handleSuccess}
                 onError={setError}
               />
+            )}
+
+            {step === 'shares' && squareShares.length > 0 && (
+              <SquareShareLinks shares={squareShares} orderNumber={orderNumber} total={totalWithTip} />
             )}
 
             {step === 'payment' && clientSecret && (

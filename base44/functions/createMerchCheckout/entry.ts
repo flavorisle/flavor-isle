@@ -62,6 +62,7 @@ export default async function (req: Request) {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
     const origin = req.headers.get("origin") || "https://flavor-isle.com";
     const orderNumber = "MERCH-" + Date.now().toString().slice(-6);
+    const address = customer.address || {};
 
     // The record both payment paths save. Nothing is sent to production until a
     // payment has been verified, whichever path took it.
@@ -190,39 +191,11 @@ export default async function (req: Request) {
       },
     });
 
-    const address = customer.address || {};
     try {
       await base44.asServiceRole.entities.MerchOrder.create({
-        order_number: orderNumber,
-        customer_name: customer.name,
-        customer_email: customer.email,
-        customer_phone: customer.phone || "",
-        shipping_address: {
-          name: customer.name,
-          address1: address.address1 || "",
-          address2: address.address2 || "",
-          city: address.city || "",
-          state_code: address.state_code || "",
-          country_code: address.country_code || "US",
-          zip: address.zip || "",
-          phone: customer.phone || "",
-          email: customer.email || "",
-        },
-        items: pricedItems.map((i: any) => ({
-          name: i.name,
-          variant_name: i.variantName || "",
-          sku: i.sku || "",
-          sync_variant_id: i.sync_variant_id,
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image || "",
-        })),
-        subtotal: catalogSubtotal,
-        shipping: shippingCost,
-        total: orderTotal,
+        ...merchOrderRecord,
+        payment_provider: "stripe",
         stripe_session_id: session.id,
-        payment_status: "pending",
-        fulfillment_status: "pending",
       });
     } catch (dbError) {
       console.error("MerchOrder save error (non-fatal):", dbError.message);

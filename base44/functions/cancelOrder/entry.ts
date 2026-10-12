@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { cancelSquareOrder, notifyOrderCancelled } from '../../shared/cancelOrderFlow.ts';
 import { refundStripePaymentIntent, stripePaymentIntentId } from '../../shared/stripeRefund.ts';
+import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
 
 // One-tap order cancellation for the crew, in the order the money moves:
 //   1. cancel the Square order (so it leaves the POS + kitchen screen),
@@ -41,7 +42,19 @@ export default async function (req: Request) {
     let refundId: string | null = null;
     let refundNote = '';
     if (order.payment_status === 'paid') {
-      if (stripePaymentIntentId(order)) {
+      if (order.payment_provider === 'square') {
+        // Paid on Square's hosted page: the refund goes back through Square, on
+        // the same connector authorization the phone payment path already uses,
+        // so cancelling always refunds wherever the money was taken.
+        try {
+          const refund = await refundSquareOrderPayments(base44, order);
+          refunded = true;
+          refundId = refund.refundId || null;
+        } catch (error) {
+          refundNote = `Card refund failed (${(error as Error).message}) — refund it in Square.`;
+          console.error(`Square refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
+        }
+      } else if (stripePaymentIntentId(order)) {
         try {
           const refund = await refundStripePaymentIntent(order, 'requested_by_customer');
           refunded = true;
@@ -61,6 +74,9 @@ export default async function (req: Request) {
     //    outcome; payment_status only flips to refunded once Stripe confirms.
     const patch: Record<string, unknown> = { status: 'cancelled' };
     if (refunded) patch.payment_status = 'refunded';
+    // Square refunds are shown on the order card the way register refunds are;
+    // a Stripe refund never sets this.
+    if (refunded && order.payment_provider === 'square') patch.square_refund_amount = Number(order.total) || 0;
     const trimmedReason = String(reason || '').trim().slice(0, 300);
     if (trimmedReason) patch.cancel_reason = trimmedReason;
     await base44.asServiceRole.entities.Order.update(order_id, patch);

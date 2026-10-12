@@ -36,6 +36,7 @@ export default function SmashieSettingsPanel() {
           voice_ordering_enabled: true,
           phone_cash_enabled: true,
           phone_payment_provider: 'stripe',
+          web_payment_provider: 'stripe',
           realtime_sip_enabled: false,
           googleReviewSmsEnabled: true,
           day14ShowcaseEmailEnabled: false,
@@ -71,6 +72,7 @@ export default function SmashieSettingsPanel() {
         voice_ordering_enabled: settings.voice_ordering_enabled,
         phone_cash_enabled: settings.phone_cash_enabled !== false,
         phone_payment_provider: settings.phone_payment_provider === 'square' ? 'square' : 'stripe',
+        web_payment_provider: settings.web_payment_provider === 'square' ? 'square' : 'stripe',
         realtime_sip_enabled: settings.realtime_sip_enabled,
         googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
         day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
@@ -166,6 +168,29 @@ export default function SmashieSettingsPanel() {
                 <button
                   key={provider}
                   onClick={() => update('phone_payment_provider', provider)}
+                  className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {/* Website checkout's secure payment page. Primary is the live card form
+            inside checkout; Alternate hands the customer to a hosted secure page
+            that comes right back to flavor-isle.com. Either way no processor name
+            is ever shown to the customer. */}
+        <div className="py-2">
+          <p className="font-heading text-sm text-obsidian-roast">Website payment page</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Applies to online food orders, split shares, and Tasty Threads merch. Customers never see a processor name.</p>
+          <div className="flex gap-2 mt-2">
+            {['stripe', 'square'].map((provider) => {
+              const active = (settings.web_payment_provider || 'stripe') === provider;
+              const label = provider === 'stripe' ? 'Primary' : 'Alternate';
+              return (
+                <button
+                  key={provider}
+                  onClick={() => update('web_payment_provider', provider)}
                   className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
                 >
                   {label}
