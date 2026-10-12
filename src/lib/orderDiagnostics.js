@@ -5,7 +5,7 @@
 // what counts as a "failed order" live in exactly one place.
 //
 // A failed order is one of:
-//   • payment failed (Stripe rejected the charge)
+//   • payment failed (the card was refused at the processor)
 //   • Square push failed, or the order was paid but never landed in Square
 //   • a paid order whose staff "new order" alert or customer confirmation email
 //     never went out
@@ -115,7 +115,7 @@ export function analyzeOrderHealth({ orders = [], logs = [], now = Date.now() })
     {
       key: 'failed_payments',
       label: 'Failed payments',
-      hint: 'Stripe refused the charge. The customer was not charged — reach out before they reorder.',
+      hint: 'The card was refused. The customer was not charged — reach out before they reorder.',
       items: failedPayments,
       severity: failedPayments.length ? 'critical' : 'ok',
       alertable: true,

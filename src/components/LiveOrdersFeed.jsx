@@ -64,7 +64,12 @@ export default function LiveOrdersFeed() {
 
   const getSourceBadge = (order) => {
     if (order.square_order_id) return <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Square POS</span>;
-    if (order.stripe_session_id) return <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Online</span>;
+    // An order that still holds a secure payment page is an online order that
+    // has not reached Square yet — whether it pays through Square or through
+    // Base44 Payments.
+    if (order.payment_url || order.payment_provider === 'square' || order.payment_provider === 'wix') {
+      return <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Online</span>;
+    }
     return <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Phone</span>;
   };
 

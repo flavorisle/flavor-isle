@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
-import SavedCardsPanel from '@/components/account/SavedCardsPanel';
+
 import CommunicationPreferences from '@/components/account/CommunicationPreferences';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
@@ -142,7 +142,7 @@ function LoggedInAccount({ user, logout }) {
   // lands directly on the relevant tab. Unknown/missing values fall back to
   // 'orders' exactly as before.
   const [searchParams] = useSearchParams();
-  const VALID_TABS = ['orders', 'track', 'rewards', 'payments', 'favorites', 'profile'];
+  const VALID_TABS = ['orders', 'track', 'rewards', 'favorites', 'profile'];
   const initialTab = (() => {
     const t = searchParams.get('tab');
     return t && VALID_TABS.includes(t) ? t : 'orders';
@@ -355,7 +355,6 @@ function LoggedInAccount({ user, logout }) {
             { key: 'track', label: 'Track Order', icon: ClipboardList },
             { key: 'favorites', label: 'Favorites', icon: Heart },
             { key: 'rewards', label: 'Rewards', icon: Gift },
-            { key: 'payments', label: 'Payment Methods', icon: CreditCard },
             { key: 'profile', label: 'Profile & Preferences', icon: User },
           ].map(({ key, label, icon: Icon }) => (
             <button
@@ -425,12 +424,6 @@ function LoggedInAccount({ user, logout }) {
 
         {tab === 'rewards' && (
           <StarRewardsPanel status={starStatus} loading={starLoading} onAddPhone={() => setTab('profile')} />
-        )}
-
-        {tab === 'payments' && (
-          <div className="max-w-2xl">
-            <SavedCardsPanel />
-          </div>
         )}
 
         {tab === 'favorites' && (

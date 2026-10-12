@@ -84,7 +84,7 @@ export default function OrderConfirmation() {
   // Kitchen sync status: 'sent' = order reached Square POS, 'sending' = push
   // still in flight, 'unknown' = can't confirm. The checkout flow awaits the
   // push before navigating here, so most orders are already 'sent' on arrival —
-  // but poll a few times in case the Stripe webhook path is still processing.
+  // but poll a few times in case the payment confirmation is still landing.
   const [kitchenStatus, setKitchenStatus] = useState('sending');
 
   useEffect(() => {

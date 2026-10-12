@@ -1,14 +1,13 @@
-// Tasty Threads checkout — shipping + Stripe embedded checkout (iframe on page).
+// Tasty Threads checkout — shipping + the secure hosted payment page.
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Truck, Lock, AlertCircle } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
-import { trackBeginCheckout, trackPurchase, merchItemToGa4 } from '@/lib/ga4Ecommerce';
+import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -24,43 +23,8 @@ export default function MerchCheckout() {
   const [ratingShipping, setRatingShipping] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
-  // Embedded Stripe checkout session — when set, the Stripe form is mounted
-  // in an iframe on this page instead of redirecting the customer away.
-  const [embedded, setEmbedded] = useState(null); // { clientSecret, session_id, orderNumber }
-  const [stripePromise, setStripePromise] = useState(null);
-  const [mounting, setMounting] = useState(false);
 
   const total = subtotal + (shipping || 0);
-
-  // Mount the Stripe embedded checkout iframe once a session is created.
-  useEffect(() => {
-    if (!embedded || !stripePromise) return;
-    let checkout;
-    let cancelled = false;
-    setMounting(true);
-    (async () => {
-      try {
-        const stripe = await stripePromise;
-        checkout = await stripe.initEmbeddedCheckout({ clientSecret: embedded.clientSecret });
-        if (cancelled) { checkout.destroy(); return; }
-        checkout.mount('#merch-embedded-checkout');
-        checkout.onComplete(() => {
-          trackPurchase(items.map(merchItemToGa4), {
-            transaction_id: embedded.orderNumber,
-            value: total,
-            shipping,
-          });
-          clearCart();
-          navigate(`/merch-confirmation?session_id=${embedded.session_id}&order_number=${embedded.orderNumber}`);
-        });
-      } catch (err) {
-        if (!cancelled) setError('Could not load checkout. Please try again.');
-      } finally {
-        if (!cancelled) setMounting(false);
-      }
-    })();
-    return () => { cancelled = true; if (checkout) checkout.destroy(); };
-  }, [embedded, stripePromise]);
 
   // GA4 ecommerce: fire begin_checkout once when the customer lands on merch checkout.
   useEffect(() => {
@@ -135,14 +99,6 @@ export default function MerchCheckout() {
         // exact total and lands back on our own confirmation screen; nothing is
         // sent to production until the payment has been verified.
         window.location.href = res.data.payment_url;
-      } else if (res.data?.client_secret) {
-        // Create the embedded checkout session and mount it on this page.
-        setStripePromise(loadStripe(res.data.publishableKey));
-        setEmbedded({
-          clientSecret: res.data.client_secret,
-          session_id: res.data.session_id,
-          orderNumber: res.data.order_number,
-        });
       } else {
         setError('Could not start checkout. Please try again.');
       }
@@ -243,27 +199,6 @@ export default function MerchCheckout() {
               )}
             </div>
 
-            {/* Stripe embedded checkout — mounts in an iframe on the page once
-                the customer clicks Continue to Payment. No redirect away. */}
-            {embedded && (
-              <div className="card-diner p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading text-lg text-obsidian-roast">Payment</h2>
-                  <button
-                    onClick={() => { setEmbedded(null); setStripePromise(null); }}
-                    className="text-xs text-muted-foreground hover:text-midnight-cherry transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {mounting && (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="w-6 h-6 border-2 border-midnight-cherry border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                <div id="merch-embedded-checkout" />
-              </div>
-            )}
           </div>
 
           {/* Right – summary */}
@@ -305,18 +240,14 @@ export default function MerchCheckout() {
                 </div>
               )}
 
-              {embedded ? (
-                <p className="text-xs text-patina-mint text-center font-heading">Complete your payment below ↓</p>
-              ) : (
-                <button
-                  onClick={handlePay}
-                  disabled={paying || shipping == null}
-                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
-                </button>
-              )}
-              {shipping == null && !embedded && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
+              <button
+                onClick={handlePay}
+                disabled={paying || shipping == null}
+                className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
+              </button>
+              {shipping == null && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
             </div>
           </div>
         </div>
