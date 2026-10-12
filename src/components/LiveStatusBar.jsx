@@ -74,9 +74,11 @@ export default function LiveStatusBar() {
     return (
       <div className="w-full bg-gray-100 border-b border-gray-200 text-gray-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Lock size={16} className="flex-shrink-0" />
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <Lock size={16} className="flex-shrink-0 mt-0.5" />
+            {/* No truncation here: the closed message is admin-authored and can
+                run long, so it wraps to as many lines as it needs. */}
+            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide">
               Closed{closureMessage ? ` · ${closureMessage}` : ''}
             </p>
           </div>
