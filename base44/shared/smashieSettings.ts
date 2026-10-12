@@ -18,11 +18,11 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
-  // Where the secure phone payment link is created. Customers never see this.
-  phone_payment_provider: "stripe",
-  // Where the website checkout's secure payment page is created. Default keeps
-  // the live card path exactly as it was until the owner switches it.
-  web_payment_provider: "stripe",
+  // Card payments are taken on our own page, in Square. These two values are
+  // kept so stored settings records stay valid, but every path now uses Square —
+  // there is no other processor to switch to.
+  phone_payment_provider: "square",
+  web_payment_provider: "square",
   // The approved review request is active unless paused by the owner.
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
@@ -42,18 +42,13 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// Which processor creates the phone payment link — stripe, square, or helcim
-// (issue #97, Part B step 6). Anything unrecognized falls back to the live card
-// path so a typo can never strand a card order.
-export function phonePaymentProvider(settings) {
-  const value = settings?.phone_payment_provider;
-  return value === 'square' || value === 'helcim' ? value : 'stripe';
+// Cards are taken on our own page, in Square — for phone orders and for the
+// website. Both helpers keep their signature so every existing caller stays as
+// it is; the stored switch values are simply no longer consulted.
+export function phonePaymentProvider(_settings) {
+  return 'square';
 }
 
-// Which system backs the website checkout's secure payment page. Independent of
-// the phone switch, and anything unrecognized falls back to the live default so
-// a typo can never strand a web order.
-export function webPaymentProvider(settings) {
-  const value = settings?.web_payment_provider;
-  return value === 'square' || value === 'helcim' ? value : 'stripe';
+export function webPaymentProvider(_settings) {
+  return 'square';
 }

@@ -1,9 +1,5 @@
-import Stripe from "npm:stripe@14.25.0";
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { fetchStoreProducts, getShippingRates } from "../../shared/printful.ts";
-import { getSmashieSettings, webPaymentProvider } from "../../shared/smashieSettings.ts";
-import { createSquareCheckoutLink } from "../../shared/squareWebCheckout.ts";
-import { createHelcimCheckoutLink } from "../../shared/helcimCheckout.ts";
 
 export default async function (req: Request) {
   try {
@@ -60,7 +56,6 @@ export default async function (req: Request) {
     const shippingCost = Math.round(claimedShipping * 100) / 100;
     const orderTotal = Math.round((catalogSubtotal + shippingCost) * 100) / 100;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
     const origin = req.headers.get("origin") || "https://flavor-isle.com";
     const orderNumber = "MERCH-" + Date.now().toString().slice(-6);
     const address = customer.address || {};
@@ -99,95 +94,12 @@ export default async function (req: Request) {
       fulfillment_status: "pending",
     };
 
-    const webProvider = webPaymentProvider(await getSmashieSettings(base44));
-
-    // ── Helcim path (issue #97, Part B): the same hosted-page shape as the
-    // Square one below. If Helcim has no credentials yet, or cannot open a page,
-    // the customer is handed the Square page instead — a merch checkout must
-    // never land on a page that cannot be paid. Printful is only asked to
-    // produce the order once the payment is verified.
-    if (webProvider === "helcim") {
-      let helcimMerchOrder = null;
-      try {
-        helcimMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({
-          ...merchOrderRecord,
-          payment_provider: "helcim",
-        });
-      } catch (dbError) {
-        console.error("MerchOrder save error:", dbError.message);
-        return Response.json({ error: "Could not save your order. No charge was made — please try again." }, { status: 500 });
-      }
-
-      try {
-        const link = await createHelcimCheckoutLink({
-          invoiceNumber: helcimMerchOrder.id,
-          orderNumber,
-          amountUsd: orderTotal,
-          payPageOrigin: origin,
-          allowTipping: false,
-        });
-        await base44.asServiceRole.entities.MerchOrder.update(helcimMerchOrder.id, {
-          payment_provider: "helcim",
-          helcim_checkout_id: link.checkoutToken,
-          payment_url: link.url,
-        });
-        return Response.json({
-          provider: "helcim",
-          order_number: orderNumber,
-          payment_url: link.url,
-          total: orderTotal,
-        });
-      } catch (helcimErr) {
-        console.warn("Helcim merch checkout unavailable — opening the alternate secure page:", helcimErr.message);
-        try {
-          const link = await createSquareCheckoutLink(base44, {
-            idempotencyKey: `merch-square-${helcimMerchOrder.id}`,
-            referenceId: helcimMerchOrder.id,
-            sourceName: "Tasty Threads",
-            lineItems: pricedItems.map((item: any) => ({
-              name: item.name,
-              quantity: item.quantity,
-              note: item.variantName || "",
-              unitPriceUsd: item.price,
-            })),
-            serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
-            totalCents: Math.round(orderTotal * 100),
-            redirectUrl: `${origin}/merch-confirmation?order_number=${orderNumber}&square=1`,
-            paymentNote: `Tasty Threads order ${orderNumber}`,
-            fulfillmentNote: `${customer.name}\n${address.address1 || ""}\n${address.city || ""}, ${address.state_code || ""} ${address.zip || ""}`.trim(),
-            allowTipping: false,
-            metadata: { merch_order_id: helcimMerchOrder.id, order_source: "flavor-isle-merch" },
-          });
-          await base44.asServiceRole.entities.MerchOrder.update(helcimMerchOrder.id, {
-            payment_provider: "square",
-            square_checkout_order_id: link.orderId,
-            payment_url: link.url,
-          });
-          return Response.json({
-            provider: "square",
-            order_number: orderNumber,
-            payment_url: link.url,
-            total: orderTotal,
-          });
-        } catch (squareErr) {
-          console.error("Alternate merch checkout setup failed too:", squareErr.message);
-          try {
-            await base44.asServiceRole.entities.MerchOrder.delete(helcimMerchOrder.id);
-          } catch (cleanupErr) {
-            console.error(`Failed to remove stranded merch order ${orderNumber}:`, cleanupErr.message);
-          }
-          return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
-        }
-      }
-    }
-
-    // ── Alternate path (issue #95): a hosted secure payment page ──
-    // Built from the same verified catalog prices and live shipping rate, and
-    // Square's own total is checked to the cent before the URL is handed back.
-    // Nothing about the merch experience changes: same cart, same shipping, same
-    // confirmation, and Printful is only asked to produce the order once the
-    // payment is verified.
-    if (webProvider === "square") {
+    // ── Our own payment page ──
+    // The order is saved with its verified catalog prices and live shipping rate,
+    // then the browser opens flavor-isle.com/pay-square, where Square's card form
+    // runs inside our page. Printful is only asked to produce the order once the
+    // payment has been verified against this order's own total.
+    {
       let squareMerchOrder = null;
       try {
         squareMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({
@@ -200,32 +112,18 @@ export default async function (req: Request) {
       }
 
       try {
-        const link = await createSquareCheckoutLink(base44, {
-          idempotencyKey: `merch-square-${squareMerchOrder.id}`,
-          referenceId: squareMerchOrder.id,
-          sourceName: "Tasty Threads",
-          lineItems: pricedItems.map((item: any) => ({
-            name: item.name,
-            quantity: item.quantity,
-            note: item.variantName || "",
-            unitPriceUsd: item.price,
-          })),
-          serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
-          totalCents: Math.round(orderTotal * 100),
-          redirectUrl: `${origin}/merch-confirmation?order_number=${orderNumber}&square=1`,
-          paymentNote: `Tasty Threads order ${orderNumber}`,
-          fulfillmentNote: `${customer.name}\n${address.address1 || ""}\n${address.city || ""}, ${address.state_code || ""} ${address.zip || ""}`.trim(),
-          allowTipping: false,
-          metadata: { merch_order_id: squareMerchOrder.id, order_source: "flavor-isle-merch" },
-        });
+        // Our own payment page: Square's card form runs inside it, so the customer
+        // never leaves flavor-isle.com. The charge is verified against this order's
+        // own total before Printful is asked to produce anything.
+        const payUrl = `${origin}/pay-square?order_number=${orderNumber}`;
         await base44.asServiceRole.entities.MerchOrder.update(squareMerchOrder.id, {
           payment_provider: "square",
-          square_checkout_order_id: link.orderId,
+          payment_url: payUrl,
         });
         return Response.json({
           provider: "square",
           order_number: orderNumber,
-          payment_url: link.url,
+          payment_url: payUrl,
           total: orderTotal,
         });
       } catch (linkErr) {
@@ -234,61 +132,6 @@ export default async function (req: Request) {
       }
     }
 
-    const lineItems = pricedItems.map((item: any) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.name,
-          ...(item.image ? { images: [item.image] } : {}),
-        },
-        unit_amount: Math.round(item.price * 100),
-      },
-      quantity: item.quantity,
-    }));
-
-    if (shippingCost > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "usd",
-          product_data: { name: "Shipping" },
-          unit_amount: Math.round(shippingCost * 100),
-        },
-        quantity: 1,
-      });
-    }
-
-    // Embedded checkout — the Stripe form renders inside our merch checkout
-    // page (iframe) instead of redirecting the customer away to a hosted page.
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: "payment",
-      ui_mode: "embedded",
-      customer_email: customer.email,
-      return_url: `${origin}/merch-confirmation?session_id={CHECKOUT_SESSION_ID}&order_number=${orderNumber}`,
-      metadata: {
-        order_number: orderNumber,
-        order_type: "merch",
-        customer_name: customer.name,
-      },
-    });
-
-    try {
-      await base44.asServiceRole.entities.MerchOrder.create({
-        ...merchOrderRecord,
-        payment_provider: "stripe",
-        stripe_session_id: session.id,
-      });
-    } catch (dbError) {
-      console.error("MerchOrder save error (non-fatal):", dbError.message);
-    }
-
-    return Response.json({
-      client_secret: session.client_secret,
-      publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY"),
-      session_id: session.id,
-      order_number: orderNumber,
-    });
   } catch (error) {
     console.error("Merch checkout error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });

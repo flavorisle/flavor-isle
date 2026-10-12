@@ -157,47 +157,12 @@ export default function SmashieSettingsPanel() {
           checked={settings.phone_cash_enabled !== false}
           onChange={v => update('phone_cash_enabled', v)}
         />
+        {/* Cards are taken on our own page, in Square — nothing to switch here. */}
         <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Card payment links</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Both hosted on flavor-isle.com/pay. Customers never see a processor name.</p>
-          <div className="flex gap-2 mt-2">
-            {['stripe', 'square'].map((provider) => {
-              const active = (settings.phone_payment_provider || 'stripe') === provider;
-              const label = provider === 'stripe' ? 'Primary' : 'Alternate';
-              return (
-                <button
-                  key={provider}
-                  onClick={() => update('phone_payment_provider', provider)}
-                  className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {/* Website checkout's secure payment page. Primary is the live card form
-            inside checkout; Alternate hands the customer to a hosted secure page
-            that comes right back to flavor-isle.com. Either way no processor name
-            is ever shown to the customer. */}
-        <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Website payment page</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Applies to online food orders, split shares, and Tasty Threads merch. Customers never see a processor name.</p>
-          <div className="flex gap-2 mt-2">
-            {['stripe', 'square'].map((provider) => {
-              const active = (settings.web_payment_provider || 'stripe') === provider;
-              const label = provider === 'stripe' ? 'Primary' : 'Alternate';
-              return (
-                <button
-                  key={provider}
-                  onClick={() => update('web_payment_provider', provider)}
-                  className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          <p className="font-heading text-sm text-obsidian-roast">Card payments</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Taken on our own secure page at flavor-isle.com, with Square's card form: phone payment links, online food orders, and Tasty Threads merch. The customer never leaves our site and never sees a processor name.
+          </p>
         </div>
         <Toggle
           label="Live Phone Pipeline (OpenAI SIP)"

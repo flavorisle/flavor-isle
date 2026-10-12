@@ -5,64 +5,23 @@ import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
-import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
-import { createSquareCheckoutLink } from '../../shared/squareWebCheckout.ts';
-import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 
-// The website's secure payment page when the owner's switch is set to the
-// alternate processor (issue #95).
+// The website checkout's order creation.
 //
-// The validation front half is createPaymentIntent's, unchanged: blocked
-// customers, the loyalty phone check, reward validation against the rewards
-// program, and the authoritative re-pricing of the whole cart. Only once the
-// order is verified do we create the hosted payment page and hand its URL back
-// for the browser to follow — the customer never sees a processor name.
-//
-// The saved order's total is the FOOD total (subtotal − discounts + tax +
-// delivery). The tip is chosen on the secure page, exactly like the pay link
-// Smashie texts, so the tip the customer adds is recorded from the payment
-// itself when the order settles.
+// The whole validation front half lives here and is unchanged: blocked customers,
+// the loyalty phone check, reward validation against the live rewards program, and
+// the authoritative re-pricing of the entire cart. Once the order is verified and
+// saved, the customer is handed to OUR OWN payment page (flavor-isle.com/pay-square),
+// where Square's card form runs inside our page — no processor hosted page, no
+// redirect off the site. The charge is made there, server-side, against this saved
+// order's own total.
 const PAY_PAGE_ORIGIN = 'https://flavor-isle.com';
-
-function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
-}
-
-// The ticket note the secure page's Square order carries, in the same shape
-// createSquareOrder prints for a website order, so the counter and kitchen see
-// what they always see.
-function checkoutFulfillmentNote({ orderType, pickupMethod, vehicle, customer, instructions }) {
-  const lines: string[] = [];
-  if (orderType === 'delivery') {
-    lines.push('DELIVERY', customer.name || '', customer.address || '', customer.phone || '');
-  } else if (orderType === 'dine_in') {
-    lines.push('DINE IN', `Table: ${customer.table || 'N/A'}`, customer.name || '');
-  } else {
-    const curbside = pickupMethod === 'curbside' && vehicle;
-    const carDesc = curbside ? [vehicle?.color, vehicle?.make, vehicle?.model].filter(Boolean).join(' ') : '';
-    lines.push('CURBSIDE', customer.name || '', customer.phone || '');
-    if (carDesc) lines.push(`Car: ${carDesc}`);
-  }
-  if (instructions) lines.push('', `NOTES: ${instructions}`);
-  return lines.filter((line, index) => line !== '' || index > 0).join('\n').trim();
-}
 
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode } = body;
-
-    // The owner's switch is the only thing that decides where the website's
-    // payment page is created. This endpoint also answers the Helcim switch's
-    // fallback (issue #97): when Helcim has no credentials yet, the browser is
-    // sent here so the customer can still pay rather than hitting a dead page.
-    const settings = await getSmashieSettings(base44);
-    const provider = webPaymentProvider(settings);
-    if (provider !== 'square' && provider !== 'helcim') {
-      console.warn('createSquareWebCheckout: refused — the website payment switch is not on this path');
-      return Response.json({ error: 'This checkout is no longer available. Please refresh and order again.' }, { status: 410 });
-    }
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -83,8 +42,8 @@ export default async function (req: Request) {
     }
 
     // ── Reward validation ── verified against the live rewards program — tier,
-    // exact discount, eligibility and account balance — BEFORE any payment page
-    // exists. The authoritative discount is what the charge uses.
+    // exact discount, eligibility and account balance — BEFORE the order is saved.
+    // The authoritative discount is what the charge uses.
     let authoritativeDiscount = Number(discount) || 0;
     if (redemptionId) {
       const reward = await validateRewardDiscount({
@@ -120,17 +79,15 @@ export default async function (req: Request) {
     }
 
     const orderNumber = Date.now().toString().slice(-6);
-    // The tip is collected on the secure page, so the saved total is the food
-    // total — the payment must equal it exactly for the order to settle.
-    const foodTotal = round2(pricing.total - (pricing.tip || 0));
 
     // Customer link (issue #96, section A) — the same normalized phone + profile
     // id every other order-creation path writes.
     const customerLink = await customerLinkFields(base44, { phone: customer?.phone, email: customer?.email });
 
-    // ── Persist the Order BEFORE opening a payable page ──
-    let orderSaved = false;
-    let orderSaveError: string | null = null;
+    // ── Persist the Order ──
+    // The tip is chosen in checkout before the customer reaches the payment page,
+    // so it is part of the total saved here: the amount charged on our payment
+    // page is exactly this total, to the cent.
     let order = null;
     try {
       order = await base44.asServiceRole.entities.Order.create({
@@ -153,7 +110,7 @@ export default async function (req: Request) {
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery_fee: pricing.deliveryFee,
-        tip: 0,
+        tip: pricing.tip || 0,
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
@@ -162,7 +119,7 @@ export default async function (req: Request) {
         loyalty_opt_in: loyaltyOptIn === true,
         referral_code: normalizeReferralCode(referralCode),
         direct_web_rewards_v2: true,
-        total: foodTotal,
+        total: pricing.total,
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone || '',
@@ -172,71 +129,26 @@ export default async function (req: Request) {
         scheduled_for: scheduledFor || '',
         estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
-      orderSaved = true;
     } catch (dbError) {
-      orderSaveError = dbError.message;
       console.error('Order.create failed — no payment page created:', dbError.message);
-    }
-
-    if (!orderSaved) {
       return Response.json({ error: 'Could not save your order. No charge was made — please try again.' }, { status: 500 });
     }
 
-    // ── Open the secure payment page and verify Square's total to the cent ──
-    // The link is idempotent per order (its key is the order id), so a retried
-    // request can never mint a second payable page, and an order that already
-    // carries one is reused rather than re-created.
-    let link = null;
+    // ── Hand the customer to our own payment page ──
+    // No processor page is involved: this URL is our own page, with Square's card
+    // form embedded in it. `tip=included` tells the page the tip is already inside
+    // the saved total, so it does not offer a second one.
+    const payUrl = `${PAY_PAGE_ORIGIN}/pay-square?order_number=${orderNumber}&tip=included`;
     try {
-      if (order.payment_url && order.square_payment_link_id) {
-        link = { url: order.payment_url, linkId: order.square_payment_link_id, orderId: order.square_checkout_order_id };
-      } else {
-        const emailOk = !!customer.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email);
-        const discountFields = [
-          pricing.discount > 0 ? { uid: 'loyalty-reward', name: 'Loyalty Reward', amountUsd: pricing.discount } : null,
-          pricing.happyHourDiscount > 0 ? { uid: 'happy-hour', name: 'Happy Hour 50% Off Drinks', amountUsd: pricing.happyHourDiscount } : null,
-          (pricing.bundleDiscount || 0) > 0 ? { uid: 'family-bundle', name: 'School Night Lifesaver Bundle', amountUsd: pricing.bundleDiscount } : null,
-        ].filter(Boolean);
-        const taxBase = round2(pricing.subtotal - pricing.discount - pricing.happyHourDiscount - (pricing.bundleDiscount || 0));
-
-        link = await createSquareCheckoutLink(base44, {
-          idempotencyKey: `web-square-${order.id}`,
-          referenceId: order.id,
-          sourceName: 'Flavor Isle Web',
-          lineItems: items.map(i => ({
-            name: i.name,
-            quantity: i.quantity || 1,
-            note: formatItemModifiers(i).join(', '),
-            unitPriceUsd: i.price,
-          })),
-          discounts: discountFields,
-          taxUsd: pricing.tax,
-          taxBaseUsd: taxBase,
-          serviceCharges: pricing.deliveryFee > 0 ? [{ uid: 'delivery-fee', name: 'Delivery Fee', amountUsd: pricing.deliveryFee }] : [],
-          totalCents: Math.round(foodTotal * 100),
-          redirectUrl: `${PAY_PAGE_ORIGIN}/order-confirmation?order_number=${orderNumber}&square=1${scheduledFor ? `&ready_for=${encodeURIComponent(scheduledFor)}` : ''}`,
-          paymentNote: `Flavor Isle order #${orderNumber}`,
-          fulfillmentNote: checkoutFulfillmentNote({ orderType, pickupMethod, vehicle, customer, instructions }),
-          recipient: {
-            display_name: `${customer.name} (#${orderNumber})`,
-            ...(customer.phone ? { phone_number: customer.phone } : {}),
-            ...(emailOk ? { email_address: customer.email } : {}),
-          },
-          metadata: { app_order_id: order.id, order_source: 'flavor-isle-website', order_type: orderType },
-        });
-
-        await base44.asServiceRole.entities.Order.update(order.id, {
-          payment_provider: 'square',
-          square_payment_link_id: link.linkId,
-          square_checkout_order_id: link.orderId,
-          payment_url: link.url,
-          manual_pay_required: false,
-        });
-      }
+      await base44.asServiceRole.entities.Order.update(order.id, {
+        payment_provider: 'square',
+        payment_url: payUrl,
+        manual_pay_required: false,
+      });
     } catch (linkErr) {
       // Nothing payable exists, so the pending order is removed instead of left
       // stranded on the register. No charge was made.
-      console.error(`Square web checkout setup failed for order ${orderNumber}:`, (linkErr as Error).message);
+      console.error(`Could not record the payment page for order ${orderNumber}:`, (linkErr as Error).message);
       try {
         await base44.asServiceRole.entities.Order.delete(order.id);
       } catch (cleanupErr) {
@@ -272,8 +184,8 @@ export default async function (req: Request) {
     return Response.json({
       provider: 'square',
       orderNumber,
-      payment_url: link.url,
-      total: foodTotal,
+      payment_url: payUrl,
+      total: pricing.total,
       smsConsentStored,
     });
   } catch (error) {

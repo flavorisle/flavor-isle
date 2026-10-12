@@ -190,19 +190,10 @@ export default function Checkout() {
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
   // carried on the order payload so the referrer earns their 50 Stars.
   const [referralCode] = useState(() => getActiveReferralCode());
-  // Which system backs the secure payment page (issue #95). Read once so the
-  // payment step is decided before the customer taps Continue to Payment —
-  // anything other than the alternate setting keeps today's in-app card form.
-  const [webProvider, setWebProvider] = useState('stripe');
-
-  useEffect(() => {
-    base44.functions.invoke('getWebPaymentProvider', {})
-      .then(res => {
-        const provider = res?.data?.provider;
-        if (provider === 'square' || provider === 'helcim') setWebProvider(provider);
-      })
-      .catch(() => {});
-  }, []);
+  // Cards are taken on our own payment page, in Square — the customer never
+  // leaves flavor-isle.com. This never changes at runtime; it stays here only so
+  // the Stripe-only one-tap wallets below know to keep themselves hidden.
+  const [webProvider] = useState('square');
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".
   const [hasAllergy, setHasAllergy] = useState(false);
@@ -460,8 +451,7 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      // The hosted secure page's payload — identical for both processors, so the
-      // two paths cannot drift apart.
+      // The order payload our own payment page is created from.
       const hostedPayload = {
         items: mappedItems,
         orderType,
@@ -480,86 +470,22 @@ export default function Checkout() {
         smsConsentVersion: SMS_CONSENT_VERSION,
       };
 
-      if (webProvider === 'square' || webProvider === 'helcim') {
-        // Alternate secure payment page (issues #95 and #97). The customer is
-        // handed to the page for the exact order total and comes straight back to
-        // our own confirmation screen; the payment is verified server-side and
-        // only then does the order reach Square POS and the kitchen. The referral
-        // code travels with the order exactly as it does on the card path, so a
-        // friend's 50 Stars still land when the order completes.
-        //
-        // Whichever processor the owner's switch names, the customer only ever
-        // sees our own secure page. When Helcim has no credentials yet — or cannot
-        // open a page — the Square page opens instead, so a checkout can never
-        // land on a page that cannot be paid.
-        let data = null;
-        if (webProvider === 'helcim') {
-          try {
-            const helcimRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
-            data = helcimRes?.data || helcimRes;
-          } catch (helcimErr) {
-            data = helcimErr?.response?.data || helcimErr?.data || null;
-          }
-          if (!data?.payment_url) {
-            const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
-            data = squareRes?.data || squareRes;
-          }
-        } else {
-          const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
-          data = squareRes?.data || squareRes;
-        }
-        if (data?.payment_url) {
-          window.location.href = data.payment_url;
-          return;
-        }
-        setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
-      } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
-        // Same cart as an order we already created (the customer tapped Back, or
-        // a wallet attempt failed) — reopen that same intent instead of creating
-        // a second Order that would sit unpaid forever.
-        setClientSecret(pendingOrder.clientSecret);
-        setPublishableKey(pendingOrder.publishableKey);
-        setOrderNumber(pendingOrder.orderNumber);
-        initStripe(pendingOrder.publishableKey);
-        setStep('payment');
-      } else {
-        const res = await base44.functions.invoke('createPaymentIntent', {
-          items: mappedItems,
-          orderType,
-          pickupMethod,
-          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
-          loyaltyOptIn,
-          referralCode: referralCode || undefined,
-          scheduledFor,
-          estimatedTime,
-          vehicle: isCurbside ? vehicle : null,
-          stripeCustomerId: stripeCustomerId || undefined,
-          smsTransactionalConsent: smsConsent,
-          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
-          smsConsentVersion: SMS_CONSENT_VERSION,
-        });
-
-        const { clientSecret: cs, publishableKey: pk, orderNumber: on, smsConsentStored } = res.data;
-        // Never advance to a payment step that cannot be paid — a missing secret
-        // or key used to leave the customer there with no card form, holding an
-        // order that was never charged.
-        if (!cs || !pk) {
-          setError('We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
-          return;
-        }
-        if (smsConsentStored === false) {
-          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
-        }
-        setClientSecret(cs);
-        setPublishableKey(pk);
-        setOrderNumber(on);
-        setPendingOrder({ orderNumber: on, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
-        initStripe(pk);
-        setStep('payment');
+      // Our own payment page, with Square's card form embedded in it — the
+      // customer never leaves flavor-isle.com. The order is saved first (with its
+      // verified prices and the tip chosen above), then we open that page for the
+      // exact saved total. Nothing reaches Square POS or the kitchen until the
+      // payment is taken there, and the referral code travels with the order
+      // exactly as it always has.
+      const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
+      const data = squareRes?.data || squareRes;
+      if (data?.payment_url) {
+        // `from=checkout` lets the payment page send the customer on to the order
+        // confirmation (and clear the bag) once the payment goes through.
+        const sep = data.payment_url.includes('?') ? '&' : '?';
+        window.location.href = `${data.payment_url}${sep}from=checkout&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`;
+        return;
       }
+      setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.
