@@ -8,7 +8,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 //                       the account is verified against the User entity.
 //   source 'presence' — the admin panel itself, while an admin has a page open.
 //                       Those requests are made by the admin in person and are
-//                       authorised from their own session.
+//                       authorised from their own session. The first one in a
+//                       browser session carries sign_in, which stamps the
+//                       sign-in time so the dashboard can show who has been in
+//                       today even when a long-lived session skips the event.
 //
 // Only accounts whose role is 'admin' are ever recorded.
 
@@ -23,6 +26,9 @@ export default async function (req) {
     const source = body.source === 'presence' ? 'presence' : 'login';
     const at = body.at || new Date().toISOString();
     const view = String(body.view || '').trim().slice(0, 80);
+    // Set once per browser session by the admin panel; stamps the sign-in time
+    // without touching the login count the auth workflow keeps.
+    const signIn = body.sign_in === true;
 
     let email = '';
     let name = '';
@@ -71,6 +77,9 @@ export default async function (req) {
     if (source === 'login') {
       patch.last_login_at = at;
       patch.login_count = (existing.login_count || 0) + 1;
+      patch.last_view = 'Just signed in';
+    } else if (signIn) {
+      patch.last_login_at = at;
       patch.last_view = 'Just signed in';
     } else if (view) {
       patch.last_view = view;

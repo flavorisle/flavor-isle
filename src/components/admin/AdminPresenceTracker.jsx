@@ -20,6 +20,7 @@ const VIEW_LABELS = {
 };
 
 const HEARTBEAT_MS = 3 * 60 * 1000;
+const SIGN_IN_KEY = 'flavor-isle-admin-signed-in';
 
 // Invisible: records that this admin is on this screen, once when the screen
 // opens and then every few minutes while they stay on it.
@@ -30,14 +31,21 @@ export default function AdminPresenceTracker() {
     const view = VIEW_LABELS[pathname];
     if (!view) return;
 
-    const report = () => {
+    // The first admin screen of a browser session counts as a sign-in: admin
+    // sessions last for days, so the platform's sign-in event does not fire for
+    // every visit, and the dashboard still needs to show who was in today.
+    const signIn = !sessionStorage.getItem(SIGN_IN_KEY) && document.visibilityState === 'visible';
+
+    const report = (isSignIn = false) => {
       if (document.visibilityState !== 'visible') return;
       base44.functions
-        .invoke('trackAdminActivity', { source: 'presence', view })
+        .invoke('trackAdminActivity', { source: 'presence', view, ...(isSignIn ? { sign_in: true } : {}) })
         .catch(() => {});
     };
 
-    report();
+    report(signIn);
+    if (signIn) sessionStorage.setItem(SIGN_IN_KEY, '1');
+
     const timer = setInterval(report, HEARTBEAT_MS);
     return () => clearInterval(timer);
   }, [pathname]);
