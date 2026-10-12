@@ -47,11 +47,10 @@ export function phonePaymentProvider(_settings) {
   return 'square';
 }
 
-// The website's secure payment page can be backed by either processor: 'square'
-// (our own page, Square's card form) or 'wix' (Base44 Payments, powered by Wix).
-// The stored switch is consulted again so the owner can flip it from Admin →
-// Communications; anything unrecognised falls back to 'square', the fail-safe
-// default, so a bad or missing value can never strand a checkout.
-export function webPaymentProvider(settings) {
-  return settings?.web_payment_provider === 'wix' ? 'wix' : 'square';
+// Website checkout takes the card inside our own page, in Square: the order is
+// saved, then Square's card form runs on the checkout screen itself, so no
+// checkout ever hands the customer to a processor's hosted page. The stored
+// web_payment_provider value is kept only so older records stay valid.
+export function webPaymentProvider(_settings) {
+  return 'square';
 }

@@ -1,4 +1,4 @@
-// Tasty Threads checkout — shipping + the secure hosted payment page.
+// Tasty Threads checkout — shipping, then the card form built into this page.
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Truck, Lock, AlertCircle } from 'lucide-react';
@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
+import SquareCardForm from '@/components/pay/SquareCardForm';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -23,6 +24,11 @@ export default function MerchCheckout() {
   const [ratingShipping, setRatingShipping] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
+  // Step 2 — the card form is built into this page: the merch order is saved
+  // first, then Square's card form runs right here, so the customer never leaves
+  // checkout for a payment page.
+  const [payOrder, setPayOrder] = useState(null);
+  const [payError, setPayError] = useState('');
 
   const total = subtotal + (shipping || 0);
 
@@ -94,19 +100,28 @@ export default function MerchCheckout() {
         subtotal,
         total,
       });
-      if (res.data?.payment_url) {
-        // Secure hosted payment page (issue #95). The customer pays there for the
-        // exact total and lands back on our own confirmation screen; nothing is
-        // sent to production until the payment has been verified.
-        window.location.href = res.data.payment_url;
+      const data = res.data || {};
+      // The order is saved first, then the card form runs on this page: no hosted
+      // page is involved, and nothing goes to production until the payment has
+      // been verified against this order's own total.
+      if (data.order_number) {
+        setPayOrder({ order_number: data.order_number, total: Number(data.total) || total });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        setError('Could not start checkout. Please try again.');
+        setError(data.error || 'Could not start checkout. Please try again.');
       }
     } catch (err) {
       setError(err?.response?.data?.error || 'Checkout failed. Please try again.');
     } finally {
       setPaying(false);
     }
+  };
+
+  // Paid on this page — hand the customer to the merch confirmation, which shows
+  // the order and clears the merch bag.
+  const handleMerchPaid = () => {
+    clearCart();
+    navigate(`/merch-confirmation?order_number=${payOrder?.order_number}&square=1`);
   };
 
   if (items.length === 0) {
@@ -131,73 +146,93 @@ export default function MerchCheckout() {
         <h1 className="font-heading text-4xl text-obsidian-roast mb-8">Merch Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Left – form */}
+          {/* Left – form, swapped for the card form once the order is saved */}
           <div className="lg:col-span-3 space-y-6">
-            <div className="card-diner p-6">
-              <h2 className="font-heading text-lg text-obsidian-roast mb-4">Contact</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
-                  <input value={form.name} onChange={e => update('name', e.target.value)} placeholder="Jane Smith"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+            {payOrder ? (
+              <div className="space-y-4">
+                <div className="card-diner p-6">
+                  <h2 className="font-heading text-lg text-obsidian-roast mb-2">Payment</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Order {payOrder.order_number} is saved. Pay ${payOrder.total.toFixed(2)} by card right here — nothing goes to production until it goes through.
+                  </p>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
-                  <input type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="jane@example.com"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
-                  <input type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="(270) 555-0000"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                <SquareCardForm
+                  orderNumber={payOrder.order_number}
+                  amount={payOrder.total}
+                  onSuccess={handleMerchPaid}
+                  onError={setPayError}
+                />
+                {payError && <p className="text-sm text-destructive">{payError}</p>}
+              </div>
+            ) : (
+            <>
+              <div className="card-diner p-6">
+                <h2 className="font-heading text-lg text-obsidian-roast mb-4">Contact</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Name *</label>
+                    <input value={form.name} onChange={e => update('name', e.target.value)} placeholder="Jane Smith"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Email *</label>
+                    <input type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="jane@example.com"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>
+                    <input type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="(270) 555-0000"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="card-diner p-6">
-              <h2 className="font-heading text-lg text-obsidian-roast mb-4">Shipping Address</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Street Address *</label>
-                  <input value={form.address1} onChange={e => update('address1', e.target.value)} placeholder="123 Main St"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+              <div className="card-diner p-6">
+                <h2 className="font-heading text-lg text-obsidian-roast mb-4">Shipping Address</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Street Address *</label>
+                    <input value={form.address1} onChange={e => update('address1', e.target.value)} placeholder="123 Main St"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Apt / Suite</label>
+                    <input value={form.address2} onChange={e => update('address2', e.target.value)} placeholder="Apt 4"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">City *</label>
+                    <input value={form.city} onChange={e => update('city', e.target.value)} placeholder="Smiths Grove"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">State *</label>
+                    <BrandSelect value={form.state_code} onValueChange={(v) => update('state_code', v)}>
+                      {US_STATES.map(s => <BrandOption key={s} value={s}>{s}</BrandOption>)}
+                    </BrandSelect>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">ZIP *</label>
+                    <input value={form.zip} onChange={e => update('zip', e.target.value)} placeholder="42171"
+                      className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+                  </div>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Apt / Suite</label>
-                  <input value={form.address2} onChange={e => update('address2', e.target.value)} placeholder="Apt 4"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">City *</label>
-                  <input value={form.city} onChange={e => update('city', e.target.value)} placeholder="Smiths Grove"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">State *</label>
-                  <BrandSelect value={form.state_code} onValueChange={(v) => update('state_code', v)}>
-                    {US_STATES.map(s => <BrandOption key={s} value={s}>{s}</BrandOption>)}
-                  </BrandSelect>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">ZIP *</label>
-                  <input value={form.zip} onChange={e => update('zip', e.target.value)} placeholder="42171"
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
-                </div>
+                <button
+                  onClick={handleGetShipping}
+                  disabled={ratingShipping}
+                  className="mt-4 btn-mint px-6 py-3 text-sm font-heading flex items-center gap-2 disabled:opacity-60"
+                >
+                  {ratingShipping ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Truck size={16} />}
+                  {shipping != null ? 'Recalculate Shipping' : 'Calculate Shipping'}
+                </button>
+                {shipping != null && (
+                  <div className="mt-3 flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 text-sm font-heading">
+                    <Truck size={16} /> {rateName} — ${shipping.toFixed(2)}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleGetShipping}
-                disabled={ratingShipping}
-                className="mt-4 btn-mint px-6 py-3 text-sm font-heading flex items-center gap-2 disabled:opacity-60"
-              >
-                {ratingShipping ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Truck size={16} />}
-                {shipping != null ? 'Recalculate Shipping' : 'Calculate Shipping'}
-              </button>
-              {shipping != null && (
-                <div className="mt-3 flex items-center gap-2 bg-patina-mint/10 text-patina-mint rounded-2xl px-4 py-3 text-sm font-heading">
-                  <Truck size={16} /> {rateName} — ${shipping.toFixed(2)}
-                </div>
-              )}
-            </div>
+            </>
+            )}
 
           </div>
 
@@ -240,13 +275,17 @@ export default function MerchCheckout() {
                 </div>
               )}
 
-              <button
-                onClick={handlePay}
-                disabled={paying || shipping == null}
-                className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
-              </button>
+              {payOrder ? (
+                <p className="text-xs text-muted-foreground text-center">Your card form is open on this page — finish it to place the order.</p>
+              ) : (
+                <button
+                  onClick={handlePay}
+                  disabled={paying || shipping == null}
+                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
+                </button>
+              )}
               {shipping == null && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
             </div>
           </div>

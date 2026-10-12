@@ -157,34 +157,6 @@ export default function SmashieSettingsPanel() {
           checked={settings.phone_cash_enabled !== false}
           onChange={v => update('phone_cash_enabled', v)}
         />
-        {/* Which system takes the card on the WEBSITE's secure payment page. The
-            phone line and Tasty Threads merch stay on Square. */}
-        <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Website secure payment page</p>
-          <p className="text-xs text-muted-foreground mt-0.5 mb-2.5">
-            Where a website food order pays its card. Square takes it on our own page at flavor-isle.com, so the customer never leaves the site; Base44 Payments takes it on its own secure page and brings the customer straight back to their confirmation. Either way the customer never sees a processor name, and the price is verified the same way. The phone line and Tasty Threads merch always use Square.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: 'square', label: 'Square — Primary' },
-              { value: 'wix', label: 'Base44 Payments — Alternate' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => update('web_payment_provider', opt.value)}
-                aria-pressed={(settings.web_payment_provider || 'square') === opt.value}
-                className={`px-4 py-2.5 rounded-full font-heading text-xs border-2 transition-colors ${
-                  (settings.web_payment_provider || 'square') === opt.value
-                    ? 'border-midnight-cherry bg-midnight-cherry text-white'
-                    : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
         <Toggle
           label="Live Phone Pipeline (OpenAI SIP)"
           description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."
