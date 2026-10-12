@@ -1,28 +1,19 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import Stripe from "npm:stripe@14.25.0";
 import { placeOrder } from "../../shared/printful.ts";
 
-// The Stripe webhook calls this with no user session, so a non-admin caller
+// This runs after a payment lands, with no user session, so a non-admin caller
 // must prove the order is actually paid before Printful starts producing and
-// shipping physical goods at the store's expense.
+// shipping physical goods at the store's expense. The app only ever writes
+// payment_status 'paid' after it has verified the charge to the cent with the
+// processor that took the money (Square's secure page or Base44 Payments), so a
+// paid record is that proof.
 async function merchPaymentPaid(order: any): Promise<boolean> {
-  const sessionId = String(order?.stripe_session_id || "");
-  if (!sessionId.startsWith("cs_")) return false;
-  try {
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== "paid") return false;
-    if (String(session.currency || "").toLowerCase() !== "usd") return false;
-    return Number(session.amount_total) === Math.round(Number(order.total || 0) * 100);
-  } catch (e) {
-    console.error("Merch payment verification failed:", (e as Error).message);
-    return false;
-  }
+  return order?.payment_status === "paid";
 }
 
-// Places a Printful fulfillment order for a paid MerchOrder. Invoked by the
-// Stripe webhook once a merch checkout is paid; can also be re-run by an admin
-// to retry a failed submission.
+// Places a Printful fulfillment order for a paid MerchOrder. Invoked by the merch
+// settlement the moment a merch payment is verified; can also be re-run by an
+// admin to retry a failed submission.
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
@@ -41,8 +32,8 @@ export default async function (req: Request) {
       return Response.json({ printful_order_id: order.printful_order_id, already: true });
     }
 
-    // An admin may retry from the merch admin screen; anyone else (the Stripe
-    // webhook) must present an order Stripe confirms as paid.
+    // An admin may retry from the merch admin screen; anyone else (the merch
+    // settlement) must present an order the app has already confirmed as paid.
     const user = await base44.auth.me().catch(() => null);
     if (user?.role !== "admin" && !await merchPaymentPaid(order)) {
       console.warn(`createPrintfulOrder: refused unverified order ${order.order_number}`);
