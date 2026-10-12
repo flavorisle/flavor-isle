@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { useAuth } from '@/lib/AuthContext';
 import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
@@ -41,6 +42,12 @@ export function CartProvider({ children }) {
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');
   const [menuSetting, setMenuSetting] = useState(null);
   const [, setTick] = useState(0); // re-render every minute so cutoffs stay current
+
+  // A signed-in admin can always order — after hours, during an admin closure,
+  // and even with the all-ordering switch off — so the owner can place a test
+  // order while the store is shut to customers. Everyone else is unaffected.
+  const { user } = useAuth();
+  const adminOrdering = user?.role === 'admin';
 
   // Group order state — when active, every added item is tagged with the person
   // currently being ordered for. The whole group shares ONE delivery fee + tax.
@@ -135,7 +142,11 @@ export function CartProvider({ children }) {
     return () => clearInterval(timer);
   }, []);
 
-  const cutoffStatus = getCutoffStatus(menuSetting);
+  const cutoffStatusRaw = getCutoffStatus(menuSetting);
+  // Admins are never cut off — every order type stays open to them.
+  const cutoffStatus = adminOrdering
+    ? { ...cutoffStatusRaw, delivery: false, pickup: false, dine_in: false }
+    : cutoffStatusRaw;
 
   // If delivery is paused, move anyone already set to delivery back to pickup.
   useEffect(() => {
@@ -280,7 +291,7 @@ export function CartProvider({ children }) {
       pickupMethod, setPickupMethod,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
-      orderingEnabled, orderingClosedMessage,
+      orderingEnabled: adminOrdering || orderingEnabled, orderingClosedMessage,
       cutoffStatus,
       menuSetting,
       happyHourDiscount,

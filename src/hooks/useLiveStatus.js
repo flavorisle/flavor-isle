@@ -9,6 +9,7 @@ import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
 import { isOpenAllDay } from '@/lib/openAllDay';
 import { computeUnifiedStoreState } from '@/lib/storeState';
+import { useAuth } from '@/lib/AuthContext';
 
 // Minutes before today's close where the bar switches to the
 // "closing soon — order now" urgency state.
@@ -27,6 +28,12 @@ export default function useLiveStatus() {
   const [openAllDayDate, setOpenAllDayDate] = useState('');
   const [openAllDayUntil, setOpenAllDayUntil] = useState('');
   const [now, setNow] = useState(() => chicagoNow());
+
+  // A signed-in admin can always order — after hours, during an admin closure
+  // and with the all-ordering switch off — so a closed store never locks them
+  // out (see adminOverride below).
+  const { user } = useAuth();
+  const adminOrdering = user?.role === 'admin';
 
   // Poll the live busyness backend every 60s.
   useEffect(() => {
@@ -92,16 +99,18 @@ export default function useLiveStatus() {
   const minutesUntilOpen =
     openMins != null && !todayHours.closed ? openMins - now.totalMinutes : null;
 
-  const isClosed =
+  const closedForCustomers =
     closure.closed ||
     (!openAllDay && (
       data?.busyness_level === 'Closed' ||
       todayHours.closed === true ||
       (minutesUntilClose != null && minutesUntilClose <= 0)
     ));
+  // The store being closed to customers never closes it to an admin.
+  const isClosed = closedForCustomers && !adminOrdering;
   const closingSoon =
     !openAllDay &&
-    !isClosed &&
+    !closedForCustomers &&
     minutesUntilClose != null &&
     minutesUntilClose > 0 &&
     minutesUntilClose <= CLOSING_SOON_WINDOW;
@@ -127,6 +136,8 @@ export default function useLiveStatus() {
   return {
     loading: !data,
     isClosed,
+    // Shut to customers, but this viewer is an admin who may still order.
+    adminOverride: closedForCustomers && adminOrdering,
     closingSoon,
     preOpen,
     minutesUntilOpen,
@@ -136,7 +147,7 @@ export default function useLiveStatus() {
     waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 24,
     recovering: data?.recovering ?? false,
     activeCount: data?.activeCount ?? 0,
-    orderingEnabled,
+    orderingEnabled: orderingEnabled || adminOrdering,
     minutesUntilClose,
     closeTime: openAllDay || !(effectiveClose || todayHours.close) ? null : formatTime12(effectiveClose || todayHours.close),
     closureMessage: closure.message || data?.closure_message || '',
