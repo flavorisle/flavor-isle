@@ -117,7 +117,7 @@ export default function OrderConfirmation() {
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">You're All Set!</h1>
           <p className="text-muted-foreground text-lg mb-8">
             {squareReturn && paymentConfirmed === false
-              ? "Thank you for your order! We're confirming your payment now — the kitchen is notified the moment it clears. If you split the order with friends, it goes through as soon as every share is paid."
+              ? "Thank you for your order! We're confirming your payment now — the kitchen is notified the moment it clears."
               : 'Thank you for your order! Your payment went through and our kitchen has been notified. Get ready for something delicious.'}
           </p>
 

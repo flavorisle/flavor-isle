@@ -1,6 +1,5 @@
 import { squarePhoneApi } from './squarePhoneApi.ts';
 import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
-import { settleGroupOrderIfComplete } from './groupPaymentSettlement.ts';
 
 // Settlement for orders paid through a Square hosted checkout — the phone pay
 // link and the website's secure payment page both land here.
@@ -55,55 +54,4 @@ export async function settleSquareCheckoutOrder(base44: any, order: any, supplie
   const paidOrder = { ...order, ...updates };
   await pushOrderToSquareAndKitchen(base44, paidOrder);
   return paidOrder;
-}
-
-// Group / split orders paid through Square: each person gets their own payment
-// link, so the parent order settles only when EVERY share is a completed Square
-// payment for that person's exact share. A short payment fails its share, and a
-// failed share keeps the parent unsettled — the same rule the Stripe split
-// shares use.
-export async function settleSquareGroupShares(base44: any, order: any) {
-  const shares = await base44.asServiceRole.entities.GroupPaymentShare.filter({ order_id: order.id });
-  if (!shares || shares.length === 0) {
-    return { ok: false, reason: 'no group shares found (cannot verify without payment evidence)' };
-  }
-  const api = await squarePhoneApi(base44);
-  let allSucceeded = true;
-  const statuses: any[] = [];
-  for (const share of shares) {
-    if (!share.square_checkout_order_id) {
-      allSucceeded = false;
-      statuses.push({ person_name: share.person_name, status: share.status === 'succeeded' ? 'succeeded' : 'pending' });
-      continue;
-    }
-    let totals: any = { paid: false };
-    try {
-      totals = await squareCheckoutTotals(api, share.square_checkout_order_id);
-    } catch (err) {
-      console.warn(`Group Square share ${share.square_checkout_order_id} lookup failed:`, (err as Error).message);
-      allSucceeded = false;
-      statuses.push({ person_name: share.person_name, status: 'unknown' });
-      continue;
-    }
-    if (!totals.paid) {
-      allSucceeded = false;
-      statuses.push({ person_name: share.person_name, status: share.status === 'succeeded' ? 'succeeded' : 'pending' });
-      continue;
-    }
-    const expectedCents = Math.round((Number(share.expected_amount) || 0) * 100);
-    const status = totals.foodCents === expectedCents ? 'succeeded' : 'failed';
-    if (status === 'failed') {
-      console.error(`Group Square share for ${share.person_name} underpaid: expected ${expectedCents}c, paid ${totals.foodCents}c — marking failed`);
-    }
-    if (share.status !== status) {
-      await base44.asServiceRole.entities.GroupPaymentShare.update(share.id, {
-        status,
-        settled_at: new Date().toISOString(),
-      });
-    }
-    if (status !== 'succeeded') allSucceeded = false;
-    statuses.push({ person_name: share.person_name, status });
-  }
-  if (!allSucceeded) return { ok: false, partial: true, shares: statuses };
-  return { ok: true, shares: statuses, ...(await settleGroupOrderIfComplete(base44, order.id)) };
 }

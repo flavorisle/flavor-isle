@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, Trash2, ArrowRight, Users, Pencil } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ArrowRight, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import CartItemModifiers from './CartItemModifiers';
@@ -21,17 +21,15 @@ const ORDER_OPTIONS = [
 export default function CartDrawer() {
   const {
     cartItems, isCartOpen, setIsCartOpen,
-    updateQuantity, removeItem, reassignItem,
+    updateQuantity, removeItem,
     orderType, setOrderType,
     pickupMethod, setPickupMethod,
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
     happyHourDiscount,
-    groupMode, people, activePerson, startGroupOrder,
   } = useCart();
   const navigate = useNavigate();
-  const [assignFor, setAssignFor] = useState(null);
 
   useEffect(() => {
     if (isCartOpen && cartItems.length > 0) {
@@ -132,12 +130,6 @@ export default function CartDrawer() {
               >
                 Browse Menu
               </button>
-              <button
-                onClick={() => { startGroupOrder(); setIsCartOpen(false); navigate('/menu'); }}
-                className="text-xs text-patina-mint hover:text-midnight-cherry font-heading inline-flex items-center gap-1 transition-colors"
-              >
-                <Users size={13} /> Start a Group Order
-              </button>
             </div>
           ) : (
             <>
@@ -150,30 +142,6 @@ export default function CartDrawer() {
                   <p className="font-heading text-sm text-obsidian-roast truncate">{item.name}</p>
                   <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                   <p className="text-patina-mint font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
-
-                  {groupMode && (
-                    <div className="mt-1.5">
-                      <button
-                        onClick={() => setAssignFor(assignFor === item.id ? null : item.id)}
-                        className="inline-flex items-center gap-1 text-xs bg-patina-mint/10 text-patina-mint px-2 py-0.5 rounded-full font-heading hover:bg-patina-mint/20 transition-colors"
-                      >
-                        <Users size={10} /> {item.person_name || 'Unassigned'}
-                      </button>
-                      {assignFor === item.id && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {people.map(p => (
-                            <button
-                              key={p.id}
-                              onClick={() => { reassignItem(item.id, p.id, p.name); setAssignFor(null); }}
-                              className={`text-xs px-2 py-0.5 rounded-full font-heading transition-all ${item.person_id === p.id ? 'bg-patina-mint text-white' : 'bg-muted text-obsidian-roast hover:bg-patina-mint/20'}`}
-                            >
-                              {p.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <div className="flex items-center gap-2 mt-2">
                     <button

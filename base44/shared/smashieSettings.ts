@@ -42,15 +42,18 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// Which processor creates the phone payment link. Anything unrecognized falls
-// back to the default so a typo can never strand a card order.
+// Which processor creates the phone payment link — stripe, square, or helcim
+// (issue #97, Part B step 6). Anything unrecognized falls back to the live card
+// path so a typo can never strand a card order.
 export function phonePaymentProvider(settings) {
-  return settings?.phone_payment_provider === 'square' ? 'square' : 'stripe';
+  const value = settings?.phone_payment_provider;
+  return value === 'square' || value === 'helcim' ? value : 'stripe';
 }
 
 // Which system backs the website checkout's secure payment page. Independent of
 // the phone switch, and anything unrecognized falls back to the live default so
 // a typo can never strand a web order.
 export function webPaymentProvider(settings) {
-  return settings?.web_payment_provider === 'square' ? 'square' : 'stripe';
+  const value = settings?.web_payment_provider;
+  return value === 'square' || value === 'helcim' ? value : 'stripe';
 }

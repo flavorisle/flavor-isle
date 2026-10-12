@@ -8,8 +8,6 @@ import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 import { base44 } from '@/api/base44Client';
 
 import SchedulePicker from '@/components/checkout/SchedulePicker';
-import SplitPayment from '@/components/checkout/SplitPayment';
-import SquareShareLinks from '@/components/checkout/SquareShareLinks';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
 import WalletPayButton from '@/components/checkout/WalletPayButton';
@@ -162,7 +160,7 @@ function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, sav
 }
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, addItem } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, addItem } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const businessHours = useBusinessHours();
@@ -196,11 +194,13 @@ export default function Checkout() {
   // payment step is decided before the customer taps Continue to Payment —
   // anything other than the alternate setting keeps today's in-app card form.
   const [webProvider, setWebProvider] = useState('stripe');
-  const [squareShares, setSquareShares] = useState([]);
 
   useEffect(() => {
     base44.functions.invoke('getWebPaymentProvider', {})
-      .then(res => { if (res?.data?.provider === 'square') setWebProvider('square'); })
+      .then(res => {
+        const provider = res?.data?.provider;
+        if (provider === 'square' || provider === 'helcim') setWebProvider(provider);
+      })
       .catch(() => {});
   }, []);
   // Allergy notification — when ticked, the allergy text is required and goes to
@@ -256,7 +256,7 @@ export default function Checkout() {
   }, []);
 
   // Payment step state
-  const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
+  const [step, setStep] = useState('details'); // 'details' | 'payment'
   // Resolved Stripe.js instance for the payment step, plus a visible load error
   // so a failed or blocked script shows a reason and a retry instead of a dead
   // card form the customer cannot use.
@@ -273,11 +273,6 @@ export default function Checkout() {
   // Whether the device actually supports a wallet (Apple Pay / Google Pay).
   // The express card stays hidden until the Stripe Payment Request confirms support.
   const [walletReady, setWalletReady] = useState(null);
-
-  // Group split-payment state
-  const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
-  const [splitIntents, setSplitIntents] = useState([]);
-  const [splitPublishable, setSplitPublishable] = useState('');
 
   // Saved cards (logged-in customers) — lets them charge a stored card or
   // save a new one for next time. stripeCustomerId is attached to the
@@ -314,12 +309,6 @@ export default function Checkout() {
   useEffect(() => {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
-
-  // Clear an applied reward when split mode changes (separate split can't apply
-  // a single reward). The reward is now chosen in the cart drawer.
-  useEffect(() => {
-    setAppliedReward(null);
-  }, [groupMode, payMode]);
 
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
@@ -398,10 +387,10 @@ export default function Checkout() {
     loadStripe(pk).then(instance => (instance ? setStripe(instance) : fail())).catch(fail);
   };
 
-  // Scroll to top when moving to the payment or split step so the card form
-  // is immediately visible instead of leaving the user scrolled down past it.
+  // Scroll to top when moving to the payment step so the card form is
+  // immediately visible instead of leaving the user scrolled down past it.
   useEffect(() => {
-    if (step === 'payment' || step === 'split') {
+    if (step === 'payment') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [step]);
@@ -472,63 +461,7 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      if (groupMode && payMode === 'separate') {
-        // Split: each person pays their own share; one fee + tip shared across the group.
-        const withItems = personSubtotals.filter(p => p.itemCount > 0);
-        if (withItems.length === 0) { setError('Add items to split.'); setLoading(false); return; }
-        // Even split of the shared fee + tip, remainder on the last person so the
-        // sum of shares exactly equals the group total.
-        const shareCount = withItems.length;
-        const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
-        const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
-        const splits = withItems.map((p, idx) => {
-          // A bundle's lines are always tagged to whoever was ordering when it
-          // was added, so each person's own share of the bundle discount comes
-          // off their own subtotal and the shares still sum to the order total.
-          const pBundle = getFamilyBundleDiscount(cartItems.filter(i => i.person_id === p.id));
-          const pSub = +(p.subtotal - (p.happyHourDiscount || 0) - pBundle).toFixed(2);
-          const pTax = salesTaxFor(pSub);
-          const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
-          const pTotal = fromCents(toCents(pSub) + toCents(pTax) + toCents(feeTip));
-          return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
-        });
-
-        const res = await base44.functions.invoke('createGroupPayment', {
-          items: mappedItems,
-          orderType,
-          pickupMethod,
-          vehicle: isCurbside ? vehicle : null,
-          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          scheduledFor, estimatedTime,
-          splits,
-          groupName: people.map(p => p.name).join(', '),
-          happyHourDiscount,
-          bundleDiscount,
-          loyaltyOptIn,
-          referralCode: referralCode || undefined,
-          smsTransactionalConsent: smsConsent,
-          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
-          smsConsentVersion: SMS_CONSENT_VERSION,
-        });
-
-        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored, shares } = res.data;
-        if (smsConsentStored === false) {
-          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
-        }
-        setOrderNumber(on);
-        if (shares && shares.length > 0) {
-          // Alternate secure page: each person gets their own link to pay their
-          // own share (issue #95).
-          setSquareShares(shares);
-          setStep('shares');
-        } else {
-          setSplitIntents(intents);
-          setSplitPublishable(splitPk);
-          setStep('split');
-        }
-      } else if (webProvider === 'square') {
+      if (webProvider === 'square') {
         // Alternate secure payment page (issue #95). The customer is handed to
         // the page for the exact order total and comes straight back to our own
         // confirmation screen; the payment is verified server-side and only then
@@ -624,11 +557,9 @@ export default function Checkout() {
     });
     // Client-side fulfillment fallback: await before navigating so the order
     // reliably reaches Square POS + the kitchen even when the Stripe webhook
-    // is delayed or dropped — and the ONLY path for group/split orders (which
-    // use stripe_session_id 'GROUP' so the webhook can't match them). The
-    // paying spinner in each payment component stays on during this await, so
-    // the customer sees natural "processing" feedback. Idempotent, so it's
-    // safe when the webhook also fires.
+    // is delayed or dropped. The paying spinner in each payment component stays
+    // on during this await, so the customer sees natural "processing" feedback.
+    // Idempotent, so it's safe when the webhook also fires.
     try {
       await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(on) });
     } catch (err) {
@@ -736,10 +667,10 @@ export default function Checkout() {
   };
 
   // One-tap wallets pay an in-app card intent, so they only apply to the primary
-  // payment page; the alternate hosted page offers the same wallets itself.
-  const expressAvailable = webProvider !== 'square'
+  // card page; the hosted secure pages (Square, Helcim) offer the same wallets
+  // themselves on their own page.
+  const expressAvailable = webProvider === 'stripe'
     && !cutoffStatus[orderType]
-    && !(groupMode && payMode === 'separate')
     && (orderType !== 'delivery' || (form.address.trim() !== '' && deliveryQuote?.ok && !deliveryQuote.out_of_range));
 
   if (!orderingEnabled || storeClosed) {
@@ -781,7 +712,7 @@ export default function Checkout() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-32 lg:pb-10">
         <div className="flex items-center gap-4 mb-8">
-          {step === 'payment' || step === 'split' ? (
+          {step === 'payment' ? (
             <button onClick={() => setStep('details')} className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
               <ArrowLeft size={16} /> Back
             </button>
@@ -1009,42 +940,7 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Group payment mode — the whole group pays one fee; choose
-                    whether one person pays everything or each pays their share. */}
-                {groupMode && (
-                  <div className="card-diner p-4">
-                    <h2 className="font-heading text-base text-obsidian-roast mb-1">Group Payment</h2>
-                    <p className="text-xs text-muted-foreground mb-3">Split into per-person charges, or pay the full total. Delivery fee is charged once.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => setPayMode('together')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'together' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
-                        <p className="font-heading text-sm text-obsidian-roast">Pay Together</p>
-                        <p className="text-xs text-muted-foreground">One charge · ${totalWithTip.toFixed(2)}</p>
-                      </button>
-                      <button onClick={() => setPayMode('separate')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'separate' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
-                        <p className="font-heading text-sm text-obsidian-roast">Pay Separately</p>
-                        <p className="text-xs text-muted-foreground">Each person pays their share</p>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
               </>
-            )}
-
-            {step === 'split' && splitIntents.length > 0 && (
-              <SplitPayment
-                intents={splitIntents}
-                publishableKey={splitPublishable}
-                orderNumber={orderNumber}
-                onSuccess={handleSuccess}
-                onError={setError}
-              />
-            )}
-
-            {step === 'shares' && squareShares.length > 0 && (
-              <SquareShareLinks shares={squareShares} orderNumber={orderNumber} total={totalWithTip} />
             )}
 
             {step === 'payment' && clientSecret && (
@@ -1143,65 +1039,27 @@ export default function Checkout() {
               )}
 
               <div className="space-y-2 mb-4">
-                {groupMode ? (
-                  personSubtotals.filter(p => p.itemCount > 0).map(p => (
-                    <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-heading text-sm text-patina-mint">{p.name === 'Me' ? 'You' : p.name}</span>
-                        <span className="text-xs text-muted-foreground">{p.itemCount} item{p.itemCount !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {cartItems.filter(i => i.person_id === p.id).map(item => (
-                          <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                              <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                onClick={() => {
-                                  const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
-                                  if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
-                                }}
-                                className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
-                                aria-label={`Edit ${item.name}`}
-                              >
-                                <Pencil size={13} />
-                              </button>
-                              <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-between pt-2 mt-2 border-t border-border/60 text-xs">
-                        <span className="text-muted-foreground">{p.name === 'Me' ? 'Your share' : `${p.name}'s share`}</span>
-                        <span className="font-heading text-obsidian-roast">${p.subtotal.toFixed(2)}</span>
-                      </div>
+                {cartItems.map(item => (
+                  <div key={item.id} className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
+                      <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                     </div>
-                  ))
-                ) : (
-                  cartItems.map(item => (
-                    <div key={item.id} className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                        <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => {
-                            const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
-                            if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
-                          }}
-                          className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
-                          aria-label={`Edit ${item.name}`}
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                          if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
 
               {/* Referred by a friend — the referrer gets 50 bonus Stars once
@@ -1281,7 +1139,7 @@ export default function Checkout() {
                 </div>
                 {deliveryFee > 0 && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>{groupMode ? 'Delivery (shared once)' : 'Delivery'}</span><span>${deliveryFee.toFixed(2)}</span>
+                    <span>Delivery</span><span>${deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
@@ -1329,7 +1187,7 @@ export default function Checkout() {
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                    <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
+                    <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
                     )}
                   </button>
                   <div className="mt-3">
@@ -1354,7 +1212,7 @@ export default function Checkout() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
+              <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
             )}
           </button>
         </div>

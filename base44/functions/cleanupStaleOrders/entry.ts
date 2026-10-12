@@ -14,8 +14,8 @@ import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 // This closes them. It NEVER touches an order that was actually paid — it asks
 // Stripe for the truth first and skips anything that saw money, leaving a paid
 // order that missed the webhook to autoSyncUnpushedOrders. Phone orders whose pay
-// link was never created are closed. Group/split orders are
-// skipped outright: their own share flow settles them.
+// link was never created are closed. Orders that are not Stripe checkouts at all
+// are skipped: their own provider sync owns them.
 //
 // Runs nightly after close via the "End of Night Order Cleanup" workflow. Safe to
 // run by hand: { "dryRun": true } previews without changing anything, and an admin
@@ -67,8 +67,8 @@ export default async function (req: Request) {
 
       const ref = order.stripe_session_id;
       // A phone order with no Stripe ref never got a payable link (setup failed),
-      // so nothing can be charged: close it instead of keeping it as a group
-      // order. Legacy Square-hosted checkouts are left to the Square status sync.
+      // so nothing can be charged: close it. Hosted-page checkouts (Square,
+      // Helcim) are left to their own status sync.
       if (!ref && isPhoneOrder(order) && !order.square_checkout_order_id) {
         if (!dryRun) await base44.asServiceRole.entities.Order.update(order.id, { status: 'cancelled' });
         closed.push({
@@ -80,8 +80,11 @@ export default async function (req: Request) {
         continue;
       }
 
-      if (!ref || ref === 'GROUP') {
-        kept.push({ order_number: order.order_number, reason: 'group order — settled by its own share flow' });
+      // No Stripe reference at all: this is not a Stripe checkout (a hosted
+      // Square or Helcim page carries its own reference), so the provider's own
+      // status sync owns it and nothing here may expire it.
+      if (!ref) {
+        kept.push({ order_number: order.order_number, reason: 'not a Stripe checkout — left to the provider status sync' });
         continue;
       }
 

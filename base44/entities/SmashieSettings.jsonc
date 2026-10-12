@@ -101,19 +101,21 @@
       "type": "string",
       "enum": [
         "stripe",
-        "square"
+        "square",
+        "helcim"
       ],
       "default": "stripe",
-      "description": "Which processor backs the secure payment link Smashie texts for card phone orders. Both are hosted on flavor-isle.com/pay and the customer never sees a processor name; only where the link is created differs."
+      "description": "Which processor backs the secure payment link Smashie texts for card phone orders. All three are hosted on flavor-isle.com/pay and the customer never sees a processor name; only where the link is created differs. helcim needs its own credentials and, until they are supplied, a phone order falls back to the square link automatically. Flipped only by the owner."
     },
     "web_payment_provider": {
       "type": "string",
       "enum": [
         "stripe",
-        "square"
+        "square",
+        "helcim"
       ],
       "default": "stripe",
-      "description": "Which processor backs the secure payment page the WEBSITE checkout sends customers to (food orders, split shares, and Tasty Threads merch). 'stripe' is the live default and behaves exactly as before; 'square' sends the customer to a hosted secure page that comes right back to flavor-isle.com. The phone line has its own switch (phone_payment_provider). Customers never see a processor name on either."
+      "description": "Which processor backs the secure payment page the WEBSITE checkout sends customers to (food orders and Tasty Threads merch). 'stripe' is the live default and behaves exactly as before; 'square' and 'helcim' send the customer to a hosted secure page that comes right back to flavor-isle.com. helcim needs its own credentials and, until they are supplied, a web order falls back to the square page automatically rather than stranding the checkout. The phone line has its own switch (phone_payment_provider). Customers never see a processor name on either. Flipped only by the owner."
     },
     "realtime_sip_enabled": {
       "type": "boolean",

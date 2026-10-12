@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { squarePhoneApi } from '../../shared/squarePhoneApi.ts';
-import { squareCheckoutTotals, settleSquareCheckoutOrder, settleSquareGroupShares } from '../../shared/squareCheckoutSettlement.ts';
+import { squareCheckoutTotals, settleSquareCheckoutOrder } from '../../shared/squareCheckoutSettlement.ts';
 import { sendMerchConfirmationEmail } from '../../shared/sendMerchEmails.ts';
 
 // Settles an order paid on a Square hosted secure page (issue #95).
@@ -75,22 +75,6 @@ export default async function (req: Request) {
     }
     if (order.pay_cash_on_pickup) {
       return Response.json({ ok: false, settled: false, reason: 'cash is collected and recorded by staff at pickup' });
-    }
-
-    // Group / split orders: every person's own shared page must be paid at their
-    // exact share before the parent order settles.
-    if (order.stripe_session_id === 'GROUP') {
-      const result = await settleSquareGroupShares(base44, order);
-      if (!result.ok) {
-        return Response.json({
-          ok: false,
-          settled: false,
-          partial: !!result.partial,
-          reason: result.reason || 'Not every share has been paid yet.',
-          shares: result.shares,
-        });
-      }
-      return Response.json({ ok: true, settled: true, group: true, order_number: orderNumber });
     }
 
     if (order.payment_status === 'paid') {

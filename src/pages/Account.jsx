@@ -269,8 +269,8 @@ function LoggedInAccount({ user, logout }) {
   const handleReorder = (order) => {
     if (!order.items || order.items.length === 0) return;
     order.items.forEach(item => {
-      // Rebuild each line fresh: respect the original quantity and drop stale
-      // group-order person tags from the past order.
+      // Rebuild each line fresh, respecting the original quantity. Legacy person
+      // tags from the removed group-order feature are dropped.
       const { quantity, person_id, person_name, ...rest } = item;
       for (let n = 0; n < (quantity || 1); n++) addItem(rest);
     });

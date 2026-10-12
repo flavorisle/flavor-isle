@@ -4,6 +4,7 @@ import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
+import { customerLinkFields } from '../../shared/customerLink.ts';
 import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
 import { createSquareCheckoutLink } from '../../shared/squareWebCheckout.ts';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
@@ -121,6 +122,10 @@ export default async function (req: Request) {
     // total — the payment must equal it exactly for the order to settle.
     const foodTotal = round2(pricing.total - (pricing.tip || 0));
 
+    // Customer link (issue #96, section A) — the same normalized phone + profile
+    // id every other order-creation path writes.
+    const customerLink = await customerLinkFields(base44, { phone: customer?.phone, email: customer?.email });
+
     // ── Persist the Order BEFORE opening a payable page ──
     let orderSaved = false;
     let orderSaveError: string | null = null;
@@ -140,6 +145,8 @@ export default async function (req: Request) {
         status: 'pending',
         payment_status: 'pending',
         payment_provider: 'square',
+        normalized_phone: customerLink.normalized_phone,
+        customer_id: customerLink.customer_id,
         items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [], allergyNote: i.allergyNote || '' })),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
