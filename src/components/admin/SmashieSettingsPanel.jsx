@@ -35,8 +35,8 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           phone_cash_enabled: true,
-          phone_payment_provider: 'stripe',
-          web_payment_provider: 'stripe',
+          phone_payment_provider: 'square',
+          web_payment_provider: 'square',
           realtime_sip_enabled: false,
           googleReviewSmsEnabled: true,
           day14ShowcaseEmailEnabled: false,
@@ -71,8 +71,8 @@ export default function SmashieSettingsPanel() {
         sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
         voice_ordering_enabled: settings.voice_ordering_enabled,
         phone_cash_enabled: settings.phone_cash_enabled !== false,
-        phone_payment_provider: settings.phone_payment_provider === 'square' ? 'square' : 'stripe',
-        web_payment_provider: settings.web_payment_provider === 'square' ? 'square' : 'stripe',
+        phone_payment_provider: 'square',
+        web_payment_provider: settings.web_payment_provider === 'wix' ? 'wix' : 'square',
         realtime_sip_enabled: settings.realtime_sip_enabled,
         googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
         day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
@@ -157,12 +157,33 @@ export default function SmashieSettingsPanel() {
           checked={settings.phone_cash_enabled !== false}
           onChange={v => update('phone_cash_enabled', v)}
         />
-        {/* Cards are taken on our own page, in Square — nothing to switch here. */}
+        {/* Which system takes the card on the WEBSITE's secure payment page. The
+            phone line and Tasty Threads merch stay on Square. */}
         <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Card payments</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Taken on our own secure page at flavor-isle.com, with Square's card form: phone payment links, online food orders, and Tasty Threads merch. The customer never leaves our site and never sees a processor name.
+          <p className="font-heading text-sm text-obsidian-roast">Website secure payment page</p>
+          <p className="text-xs text-muted-foreground mt-0.5 mb-2.5">
+            Where a website food order pays its card. Square takes it on our own page at flavor-isle.com, so the customer never leaves the site; Base44 Payments takes it on its own secure page and brings the customer straight back to their confirmation. Either way the customer never sees a processor name, and the price is verified the same way. The phone line and Tasty Threads merch always use Square.
           </p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: 'square', label: 'Square — Primary' },
+              { value: 'wix', label: 'Base44 Payments — Alternate' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => update('web_payment_provider', opt.value)}
+                aria-pressed={(settings.web_payment_provider || 'square') === opt.value}
+                className={`px-4 py-2.5 rounded-full font-heading text-xs border-2 transition-colors ${
+                  (settings.web_payment_provider || 'square') === opt.value
+                    ? 'border-midnight-cherry bg-midnight-cherry text-white'
+                    : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
         <Toggle
           label="Live Phone Pipeline (OpenAI SIP)"

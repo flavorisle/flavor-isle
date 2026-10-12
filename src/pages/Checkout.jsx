@@ -190,10 +190,18 @@ export default function Checkout() {
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
   // carried on the order payload so the referrer earns their 50 Stars.
   const [referralCode] = useState(() => getActiveReferralCode());
-  // Cards are taken on our own payment page, in Square — the customer never
-  // leaves flavor-isle.com. This never changes at runtime; it stays here only so
-  // the Stripe-only one-tap wallets below know to keep themselves hidden.
-  const [webProvider] = useState('square');
+  // Which system backs the website's secure payment page: 'square' (our own page,
+  // Square's card form, the customer never leaves flavor-isle.com) or 'wix'
+  // (Base44 Payments' hosted checkout). Square is the default while the switch
+  // loads, and it is also the fail-safe value server-side.
+  const [webProvider, setWebProvider] = useState('square');
+  useEffect(() => {
+    base44.functions.invoke('getWebPaymentProvider', {})
+      .then(res => {
+        if (res?.data?.provider === 'wix') setWebProvider('wix');
+      })
+      .catch(() => {});
+  }, []);
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".
   const [hasAllergy, setHasAllergy] = useState(false);
@@ -469,6 +477,35 @@ export default function Checkout() {
         smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
         smsConsentVersion: SMS_CONSENT_VERSION,
       };
+
+      if (webProvider === 'wix') {
+        // Base44 Payments (powered by Wix) — the provider's own hosted checkout.
+        // The order is still saved first, with its verified prices and the tip
+        // chosen above, and the checkout is opened for that exact saved total.
+        // Nothing reaches Square POS or the kitchen until the payment has been
+        // verified against it, and the referral code, loyalty opt-in and SMS
+        // consent travel on the order exactly as they do on the Square path.
+        const wixOrderRes = await base44.functions.invoke('createWixWebCheckout', hostedPayload);
+        const wixOrder = wixOrderRes?.data || wixOrderRes;
+        if (!wixOrder?.order_number) {
+          setError(wixOrder?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
+          return;
+        }
+        const checkoutRes = await base44.functions.invoke('create-checkout', {
+          productId: `order:${wixOrder.order_number}`,
+          ready_for: schedule.scheduledFor || '',
+        });
+        const redirectUrl = checkoutRes?.data?.redirectUrl;
+        if (!redirectUrl) {
+          setError(checkoutRes?.data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
+          return;
+        }
+        // The hosted page returns the customer to our order confirmation, which
+        // clears the bag and shows the order — the same landing the Square page
+        // sends them to.
+        window.location.href = redirectUrl;
+        return;
+      }
 
       // Our own payment page, with Square's card form embedded in it — the
       // customer never leaves flavor-isle.com. The order is saved first (with its

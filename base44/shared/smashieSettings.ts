@@ -42,13 +42,16 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// Cards are taken on our own page, in Square — for phone orders and for the
-// website. Both helpers keep their signature so every existing caller stays as
-// it is; the stored switch values are simply no longer consulted.
+// The phone line always takes cards on our own page, in Square.
 export function phonePaymentProvider(_settings) {
   return 'square';
 }
 
-export function webPaymentProvider(_settings) {
-  return 'square';
+// The website's secure payment page can be backed by either processor: 'square'
+// (our own page, Square's card form) or 'wix' (Base44 Payments, powered by Wix).
+// The stored switch is consulted again so the owner can flip it from Admin →
+// Communications; anything unrecognised falls back to 'square', the fail-safe
+// default, so a bad or missing value can never strand a checkout.
+export function webPaymentProvider(settings) {
+  return settings?.web_payment_provider === 'wix' ? 'wix' : 'square';
 }

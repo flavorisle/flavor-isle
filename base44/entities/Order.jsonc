@@ -187,10 +187,11 @@
       "type": "string",
       "enum": [
         "square",
+        "wix",
         "stripe",
         "helcim"
       ],
-      "description": "Which processor this order pays through online or on the phone: stripe (the live card path), square (in-store forever, and the alternate secure payment page), or helcim (the third secure payment page, issue #97). The customer never sees a processor name."
+      "description": "Which processor this order pays through online or on the phone: square (in-store forever, our own payment page, and the phone line), wix (the website's Base44 Payments, powered by Wix, hosted checkout \u2014 issue #98), or one of the retired paths kept for historical orders (stripe, helcim). The customer never sees a processor name."
     },
     "square_payment_link_id": {
       "type": "string"
@@ -198,6 +199,14 @@
     "square_checkout_order_id": {
       "type": "string",
       "description": "Square hosted-checkout order; only copied to square_order_id after verified payment."
+    },
+    "wix_checkout_session_id": {
+      "type": "string",
+      "description": "Base44 Payments (powered by Wix) checkout session for this order \u2014 the join key the provider returns to our webhook (checkoutSession.id === order.checkoutId), recorded when the payment is settled so the charge can always be traced back to this order."
+    },
+    "wix_order_id": {
+      "type": "string",
+      "description": "The Base44 Payments (powered by Wix) order that actually paid this order, recorded when the settlement confirms it, so refunds in the provider dashboard can be matched to the right order."
     },
     "helcim_checkout_id": {
       "type": "string",

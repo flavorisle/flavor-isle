@@ -12,6 +12,7 @@
 
 import { createClientFromRequest } from "npm:@base44/sdk";
 import { importSPKI, jwtVerify } from "npm:jose@5.9.6";
+import { settleWixWebOrder } from "../../shared/wixWebSettlement.ts";
 
 // Wix event types (verbatim from Wix docs).
 const ORDER_APPROVED = "wix.ecom.v1.order_approved";
@@ -166,6 +167,31 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   //   - Gate paid access on a WRITABLE field you set here (e.g. plan / has_paid on the user or an
   //     Entitlement row) — NEVER on is_verified: it is platform-protected and cannot be set here,
   //     even as service role, so gating access on it locks the paying buyer out.
+  //
+  // What was bought here is a prepared food order. The purchase's productId carries
+  // the order number ("order:<number>") — Wix has no custom-metadata field, so the
+  // checkout id is the only correlation key and productId is where our own order
+  // number rides on the pending purchase. Settlement itself lives in the shared
+  // module so the app-payment workflow path uses exactly the same code.
+  //
+  // It is idempotent (an order already marked paid returns untouched, and the
+  // fulfillment path has its own per-action dedupe) and it only settles when the
+  // amount the provider reports equals the total this app saved, to the cent.
+  const settledOrderNumber = String(purchase.productId ?? "").replace(/^order:/, "");
+  const paidAmount = order?.priceSummary?.total?.amount;
+  const settlement = await settleWixWebOrder(db, {
+    orderNumber: settledOrderNumber,
+    checkoutSessionId: checkoutId,
+    wixOrderId: orderId ?? "",
+    amount: paidAmount != null ? Number(paidAmount) : null,
+  });
+  if (!settlement.ok) {
+    // Throw so the handler returns 500 and Wix retries: the purchase stays
+    // "pending", so the retry re-runs this block instead of short-circuiting on
+    // a status that was never earned.
+    console.error("payments-webhook: order settlement failed", { orderNumber: settledOrderNumber, checkoutId, error: settlement.error });
+    throw new Error(settlement.error || "Settlement failed");
+  }
   // ===== END APP-SPECIFIC =====
 
   // Mark paid LAST, so "paid" always implies the grant above completed. The idempotency

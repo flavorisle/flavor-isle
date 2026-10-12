@@ -28,7 +28,7 @@ const SECTIONS = [
       },
       {
         heading: 'Payment',
-        text: 'Payment is processed securely through our payment partners, Square and Stripe. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers. If you use group (split-the-bill) checkout, each participant authorizes only their own share.',
+        text: 'Payment is processed securely through our payment partners, Square and Base44 Payments powered by Wix. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers.',
       },
       {
         heading: 'Order Times & Availability',
@@ -197,7 +197,7 @@ const SECTIONS = [
       },
       {
         heading: 'Third-Party Services',
-        text: 'Our services rely on third parties (including Square, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
+        text: 'Our services rely on third parties (including Square, Wix, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
       },
     ],
   },
