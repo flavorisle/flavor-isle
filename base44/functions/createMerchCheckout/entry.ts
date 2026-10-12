@@ -1,6 +1,8 @@
 import Stripe from "npm:stripe@14.25.0";
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { fetchStoreProducts, getShippingRates } from "../../shared/printful.ts";
+import { getSmashieSettings, webPaymentProvider } from "../../shared/smashieSettings.ts";
+import { createSquareCheckoutLink } from "../../shared/squareWebCheckout.ts";
 
 export default async function (req: Request) {
   try {
@@ -60,6 +62,94 @@ export default async function (req: Request) {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
     const origin = req.headers.get("origin") || "https://flavor-isle.com";
     const orderNumber = "MERCH-" + Date.now().toString().slice(-6);
+
+    // The record both payment paths save. Nothing is sent to production until a
+    // payment has been verified, whichever path took it.
+    const merchOrderRecord = {
+      order_number: orderNumber,
+      customer_name: customer.name,
+      customer_email: customer.email,
+      customer_phone: customer.phone || "",
+      shipping_address: {
+        name: customer.name,
+        address1: address.address1 || "",
+        address2: address.address2 || "",
+        city: address.city || "",
+        state_code: address.state_code || "",
+        country_code: address.country_code || "US",
+        zip: address.zip || "",
+        phone: customer.phone || "",
+        email: customer.email || "",
+      },
+      items: pricedItems.map((i: any) => ({
+        name: i.name,
+        variant_name: i.variantName || "",
+        sku: i.sku || "",
+        sync_variant_id: i.sync_variant_id,
+        price: i.price,
+        quantity: i.quantity,
+        image: i.image || "",
+      })),
+      subtotal: catalogSubtotal,
+      shipping: shippingCost,
+      total: orderTotal,
+      payment_status: "pending",
+      fulfillment_status: "pending",
+    };
+
+    // ── Alternate path (issue #95): a hosted secure payment page ──
+    // Built from the same verified catalog prices and live shipping rate, and
+    // Square's own total is checked to the cent before the URL is handed back.
+    // Nothing about the merch experience changes: same cart, same shipping, same
+    // confirmation, and Printful is only asked to produce the order once the
+    // payment is verified.
+    if (webPaymentProvider(await getSmashieSettings(base44)) === "square") {
+      let squareMerchOrder = null;
+      try {
+        squareMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({
+          ...merchOrderRecord,
+          payment_provider: "square",
+        });
+      } catch (dbError) {
+        console.error("MerchOrder save error:", dbError.message);
+        return Response.json({ error: "Could not save your order. No charge was made — please try again." }, { status: 500 });
+      }
+
+      try {
+        const link = await createSquareCheckoutLink(base44, {
+          idempotencyKey: `merch-square-${squareMerchOrder.id}`,
+          referenceId: squareMerchOrder.id,
+          sourceName: "Tasty Threads",
+          lineItems: pricedItems.map((item: any) => ({
+            name: item.name,
+            quantity: item.quantity,
+            note: item.variantName || "",
+            unitPriceUsd: item.price,
+          })),
+          serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
+          totalCents: Math.round(orderTotal * 100),
+          redirectUrl: `${origin}/merch-confirmation?order_number=${orderNumber}&square=1`,
+          buyerEmail: customer.email,
+          paymentNote: `Tasty Threads order ${orderNumber}`,
+          fulfillmentNote: `${customer.name}\n${address.address1 || ""}\n${address.city || ""}, ${address.state_code || ""} ${address.zip || ""}`.trim(),
+          allowTipping: false,
+          metadata: { merch_order_id: squareMerchOrder.id, order_source: "flavor-isle-merch" },
+        });
+        await base44.asServiceRole.entities.MerchOrder.update(squareMerchOrder.id, {
+          payment_provider: "square",
+          square_checkout_order_id: link.orderId,
+        });
+        return Response.json({
+          provider: "square",
+          order_number: orderNumber,
+          payment_url: link.url,
+          total: orderTotal,
+        });
+      } catch (linkErr) {
+        console.error("Square merch checkout setup failed:", linkErr.message);
+        return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
+      }
+    }
 
     const lineItems = pricedItems.map((item: any) => ({
       price_data: {

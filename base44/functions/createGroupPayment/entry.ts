@@ -4,6 +4,8 @@ import { upsertSmsConsent, SMS_CONSENT_VERSION } from '../../shared/smsConsent.t
 import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
+import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
+import { createSquareCheckoutLink } from '../../shared/squareWebCheckout.ts';
 
 // Group / split payment:
 // Creates ONE order record for the whole group (so the kitchen sees a single
@@ -67,6 +69,11 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
 
+    // Which system backs the website's secure payment page (issue #95). The
+    // split shares follow the same switch the single web checkout uses, so the
+    // owner never has to set the group path separately.
+    const provider = webPaymentProvider(await getSmashieSettings(base44));
+
     const orderNumber = Date.now().toString().slice(-6);
 
     // ── Persist the shared Order BEFORE creating any payable intent ──
@@ -87,6 +94,7 @@ Deno.serve(async (req) => {
         } : {}),
         status: 'pending',
         payment_status: 'pending',
+        payment_provider: provider,
         items: items.map(i => ({
           name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '',
           selectedModifiers: i.selectedModifiers || [], person_name: i.person_name || '',
@@ -143,6 +151,57 @@ Deno.serve(async (req) => {
         smsConsentStored = false;
         console.error(`SMS consent upsert threw for group order ${orderNumber} (${customer.phone}):`, smsError.message);
       }
+    }
+
+    // ── Alternate path: one secure hosted page per person ──
+    // Every share gets its own payment page for exactly that person's share, and
+    // each is recorded on the share ledger so the parent order settles ONLY when
+    // every share is a completed payment for the exact amount — the same
+    // underpayment rule the in-app split path enforces.
+    if (provider === 'square') {
+      const shares: any[] = [];
+      const squareShareRecords: any[] = [];
+      try {
+        for (const [index, split] of splits.entries()) {
+          const amount = round2(Number(split.total) || 0);
+          if (amount <= 0) continue;
+          const person = split.person_name || 'Guest';
+          const link = await createSquareCheckoutLink(base44, {
+            idempotencyKey: `group-square-${groupOrderId}-${index}`,
+            referenceId: `${groupOrderId}:${index}`,
+            sourceName: 'Flavor Isle Web',
+            lineItems: [{ name: `Flavor Isle #${orderNumber} — ${person}'s share`, quantity: 1, unitPriceUsd: amount }],
+            totalCents: Math.round(amount * 100),
+            redirectUrl: `https://flavor-isle.com/order-confirmation?order_number=${orderNumber}&square=1`,
+            buyerEmail: index === 0 && customer?.email ? customer.email : undefined,
+            paymentNote: `Flavor Isle group order #${orderNumber}`,
+            fulfillmentNote: `${person} — share of group order #${orderNumber}`,
+            allowTipping: false,
+            metadata: { app_order_id: groupOrderId, order_source: 'flavor-isle-website' },
+          });
+          shares.push({ person_name: person, amount, payment_url: link.url, square_checkout_order_id: link.orderId });
+          squareShareRecords.push({
+            order_id: groupOrderId,
+            order_number: orderNumber,
+            person_name: person,
+            expected_amount: amount,
+            square_checkout_order_id: link.orderId,
+            payment_url: link.url,
+            status: 'pending',
+          });
+        }
+      } catch (linkErr) {
+        console.error(`Group Square share setup failed for order ${orderNumber}:`, (linkErr as Error).message);
+        return Response.json({ error: 'Could not open the secure payment pages. No charge was made — please try again.' }, { status: 502 });
+      }
+
+      try {
+        await base44.asServiceRole.entities.GroupPaymentShare.bulkCreate(squareShareRecords);
+      } catch (shareErr) {
+        console.error('Failed to persist group Square shares:', (shareErr as Error).message);
+      }
+
+      return Response.json({ orderNumber, provider: 'square', shares, smsConsentStored });
     }
 
     // ── Create one PaymentIntent per person ──
@@ -219,6 +278,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       orderNumber,
+      provider: 'stripe',
       publishableKey,
       intents,
       smsConsentStored,

@@ -20,6 +20,9 @@ const DEFAULTS = {
   phone_cash_enabled: true,
   // Where the secure phone payment link is created. Customers never see this.
   phone_payment_provider: "stripe",
+  // Where the website checkout's secure payment page is created. Default keeps
+  // the live card path exactly as it was until the owner switches it.
+  web_payment_provider: "stripe",
   // The approved review request is active unless paused by the owner.
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
@@ -43,4 +46,11 @@ export function phoneCashEnabled(settings) {
 // back to the default so a typo can never strand a card order.
 export function phonePaymentProvider(settings) {
   return settings?.phone_payment_provider === 'square' ? 'square' : 'stripe';
+}
+
+// Which system backs the website checkout's secure payment page. Independent of
+// the phone switch, and anything unrecognized falls back to the live default so
+// a typo can never strand a web order.
+export function webPaymentProvider(settings) {
+  return settings?.web_payment_provider === 'square' ? 'square' : 'stripe';
 }

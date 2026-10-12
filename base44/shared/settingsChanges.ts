@@ -28,6 +28,7 @@ export const FIELD_REACH = {
   happy_hour: 'Website checkout discounts',
   phone_cash_enabled: 'Phone only - what Smashie accepts for pickup orders',
   phone_payment_provider: 'Phone only - which processor backs the secure pay link',
+  web_payment_provider: 'Website checkout - which system backs the secure payment page',
   voice_ordering_enabled: 'Phone only - whether Smashie takes orders by voice',
   realtime_sip_enabled: 'Phone only - which phone pipeline answers calls',
   sms_status_updates_enabled: 'Customer texts',

@@ -72,6 +72,18 @@
     "stripe_session_id": {
       "type": "string"
     },
+    "payment_provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "square"
+      ],
+      "description": "Which system took the money for this merch order. Empty on historical orders (all of which were the original card path). Set from the website's secure payment switch when the order is created."
+    },
+    "square_checkout_order_id": {
+      "type": "string",
+      "description": "Square hosted-checkout order for this merch order when the website's secure payment page is set to the alternate processor. Payment is verified against it \u2014 to the cent \u2014 before Printful is asked to produce anything."
+    },
     "printful_order_id": {
       "type": "string"
     },

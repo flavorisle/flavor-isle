@@ -16,7 +16,15 @@
     },
     "intent_id": {
       "type": "string",
-      "description": "Stripe PaymentIntent id for this person's share. The Stripe webhook matches group orders by this id (group orders use stripe_session_id 'GROUP' on the parent, so they can't be matched the way single orders are)."
+      "description": "Stripe PaymentIntent id for this person's share. The Stripe webhook matches group orders by this id (group orders use stripe_session_id 'GROUP' on the parent, so they can't be matched the way single orders are). Empty when the group pays through Square payment links instead."
+    },
+    "square_checkout_order_id": {
+      "type": "string",
+      "description": "Square hosted-checkout order backing this person's share when the website's secure payment page is set to the alternate processor. The settle pass matches each share's Square payment against expected_amount, and a short payment fails the share."
+    },
+    "payment_url": {
+      "type": "string",
+      "description": "Hosted secure payment page for this person's share, shared on the split-payment screen. Empty for Stripe shares, which pay in the app."
     },
     "person_name": {
       "type": "string",
@@ -46,7 +54,6 @@
   },
   "required": [
     "order_id",
-    "intent_id",
     "expected_amount"
   ],
   "rls": {
