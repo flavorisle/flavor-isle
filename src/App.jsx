@@ -72,6 +72,7 @@ const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
 const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const PaySquare = lazy(() => import('./pages/PaySquare'));
+const PayHelcim = lazy(() => import('./pages/PayHelcim'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const About = lazy(() => import('./pages/About'));
 const Flyer = lazy(() => import('./pages/Flyer'));
@@ -223,6 +224,7 @@ const AuthenticatedApp = () => {
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
       <Route path="/pay-square" element={<PaySquare />} />
+      <Route path="/pay-helcim" element={<PayHelcim />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
 

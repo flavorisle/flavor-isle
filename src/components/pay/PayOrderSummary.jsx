@@ -4,12 +4,17 @@ const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Di
 
 // The customer's own order, as they see it on the pay page: what they ordered,
 // the totals, and the running total with the tip they picked.
-export default function PayOrderSummary({ order, tip, kind }) {
+//
+// `total` may be passed in when the amount charged is not simply the line items
+// plus the tip (an order with a discount, for example), so the page never shows a
+// total the customer is not actually about to pay.
+export default function PayOrderSummary({ order, tip, kind, total: chargedTotal }) {
   const isMerch = kind === 'merch';
   const subtotal = Number(order.subtotal) || 0;
   const tax = Number(order.tax) || 0;
   const deliveryFee = Number(order.delivery_fee) || 0;
-  const total = subtotal + tax + deliveryFee + (Number(tip) || 0);
+  const computedTotal = subtotal + tax + deliveryFee + (Number(tip) || 0);
+  const total = chargedTotal === undefined || chargedTotal === null ? computedTotal : Number(chargedTotal);
 
   return (
     <div className="card-diner p-5">

@@ -1,11 +1,11 @@
-import { createHelcimCheckoutLink, helcimConfigured, HELCIM_NOT_CONFIGURED } from './helcimCheckout.ts';
+import { helcimPayPageUrl, helcimConfigured, HELCIM_NOT_CONFIGURED } from './helcimCheckout.ts';
 import { createSquarePhonePayment } from './squarePhonePayment.ts';
 import { createStripePhonePayment } from './stripePhonePayment.ts';
 
-// The phone / text / website-chat payment link when the owner's phone switch is
-// on Helcim (issue #97, Part B step 11). Mirrors shared/squarePhonePayment.ts:
-// the link is created for the order's own total, verified before it is handed
-// out, and recorded on the order so the sweeper can settle it.
+// The phone / text / website-chat payment link when the owner's phone switch is on
+// Helcim. Mirrors shared/squarePhonePayment.ts: the link is our own page for the
+// order's own number, recorded on the order so it can be re-sent and so the sweeper
+// can settle the order if the customer never comes back to it.
 //
 // The caller (logPhoneOrder) catches a failure here and falls back to the Square
 // link, so an unconfigured or unhappy Helcim can never leave a caller without a
@@ -15,22 +15,18 @@ export async function createHelcimPhonePayment(base44: any, order: any) {
     throw new Error(HELCIM_NOT_CONFIGURED);
   }
 
-  const link = await createHelcimCheckoutLink({
-    invoiceNumber: order.id,
-    orderNumber: order.order_number,
-    amountUsd: Number(order.total) || 0,
-    payPageOrigin: 'https://flavor-isle.com',
-    allowTipping: true,
-  });
+  // The Helcim session — and the tip the customer picks on the page — is created
+  // when they open the link, so the same link can be texted again later without
+  // carrying a session that has already expired.
+  const url = helcimPayPageUrl('https://flavor-isle.com', order.order_number);
 
   await base44.asServiceRole.entities.Order.update(order.id, {
     payment_provider: 'helcim',
-    helcim_checkout_id: link.checkoutToken,
-    payment_url: link.url,
+    payment_url: url,
     manual_pay_required: false,
   });
 
-  return link.url;
+  return url;
 }
 
 // The phone payment link for whichever processor the phone switch names, with

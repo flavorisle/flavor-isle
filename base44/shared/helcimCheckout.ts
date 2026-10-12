@@ -6,10 +6,9 @@
 // two hosted paths behave identically from the customer's point of view — the
 // customer only ever sees our own secure page and never a processor name.
 //
-// FAIL CLOSED: HELCIM_API_KEY / HELCIM_ACCOUNT_ID do not exist yet. Every entry
-// point below refuses with a clear error when they are missing, and the caller
-// falls back to the Square path, so a missing credential can never produce a
-// dead checkout or an unverifiable payment.
+// FAIL CLOSED: with no HELCIM_API_KEY token, every entry point below refuses with
+// a clear error and the caller falls back to the Square path, so a missing
+// credential can never produce a dead checkout or an unverifiable payment.
 //
 // Amounts are verified to the cent against what Helcim reports before an order
 // is ever marked paid: the money rule is the same one the Square and Stripe
@@ -22,10 +21,14 @@ export function helcimApiBase(): string {
 
 // The credentials, or null when Helcim is not set up yet. Callers use this to
 // decide between the Helcim path and the Square fallback.
+//
+// The API token alone authenticates every HelcimPay.js session; the account id is
+// only used by the saved-card purchase path, so a merchant who cannot find it can
+// still take card payments instead of being sent to the alternate processor.
 export function helcimCredentials(): { apiKey: string; accountId: string } | null {
   const apiKey = (Deno.env.get('HELCIM_API_KEY') || '').trim();
   const accountId = (Deno.env.get('HELCIM_ACCOUNT_ID') || '').trim();
-  if (!apiKey || !accountId) return null;
+  if (!apiKey) return null;
   return { apiKey, accountId };
 }
 
@@ -34,7 +37,7 @@ export function helcimConfigured(): boolean {
 }
 
 export const HELCIM_NOT_CONFIGURED =
-  'Helcim is not configured yet (HELCIM_API_KEY and HELCIM_ACCOUNT_ID are missing), so no secure payment page was created.';
+  'Helcim is not configured yet (the HELCIM_API_KEY token is missing), so no secure payment page was created.';
 
 // One place for the authenticated Helcim call, so the key never leaves this
 // module and every failure carries the status and Helcim's own message.
@@ -77,32 +80,57 @@ function unwrap(data: any) {
 // a checkout token, and the customer enters their card on the page that token
 // renders. We keep the customer on flavor-isle.com, and the payment is verified
 // server-side afterwards — the same shape as the Square hosted link.
+// Our own secure page for one order. The link carries only the order number —
+// never a checkout token — so a link that is re-sent an hour later still opens a
+// page that mints a fresh session instead of one Helcim has already expired.
+export function helcimPayPageUrl(payPageOrigin: string, orderNumber: string, fromCheckout = false) {
+  const base = `${payPageOrigin}/pay-helcim?order_number=${encodeURIComponent(orderNumber)}`;
+  return fromCheckout ? `${base}&from=checkout` : base;
+}
+
 export async function createHelcimCheckoutLink(
   opts: {
     invoiceNumber: string;
     orderNumber: string;
     amountUsd: number;
     payPageOrigin: string;
-    allowTipping?: boolean;
+    fromCheckout?: boolean;
   },
 ): Promise<{ url: string; checkoutToken: string }> {
   const credentials = helcimCredentials();
   if (!credentials) throw new Error(HELCIM_NOT_CONFIGURED);
 
+  const amount = Math.round((Number(opts.amountUsd) + Number.EPSILON) * 100) / 100;
+
+  // invoiceRequest creates the record of this payment with OUR order id as the
+  // invoice number, so Helcim reports that number back on the transaction and the
+  // money is matched to this order and to nothing else. Its line item total has to
+  // equal the amount charged, to the cent.
   const init = await helcimRequest('/helcim-pay/initialize', 'POST', {
     paymentType: 'purchase',
-    amount: Number(opts.amountUsd).toFixed(2),
+    amount,
     currency: 'USD',
-    accountId: credentials.accountId,
-    invoiceNumber: opts.invoiceNumber,
-    allowTipping: opts.allowTipping !== false,
+    language: 'en',
+    confirmationScreen: true,
+    invoiceRequest: {
+      invoiceNumber: opts.invoiceNumber,
+      lineItems: [
+        {
+          sku: opts.orderNumber,
+          description: `Flavor Isle order #${opts.orderNumber}`,
+          quantity: 1,
+          price: amount,
+          total: amount,
+        },
+      ],
+    },
   });
 
   const checkoutToken = init?.checkoutToken || init?.data?.checkoutToken;
   if (!checkoutToken) throw new Error('Helcim did not return a checkout token.');
 
   return {
-    url: `${opts.payPageOrigin}/pay-helcim?order_number=${encodeURIComponent(opts.orderNumber)}&token=${encodeURIComponent(checkoutToken)}`,
+    url: helcimPayPageUrl(opts.payPageOrigin, opts.orderNumber, opts.fromCheckout === true),
     checkoutToken,
   };
 }
@@ -113,7 +141,9 @@ export async function createHelcimCheckoutLink(
 // is the order id we sent at checkout, so an order is matched back to its own
 // money and to nothing else.
 export async function helcimPaymentsForInvoice(invoiceNumber: string) {
-  const data = await helcimRequest(`/payments?invoiceNumber=${encodeURIComponent(invoiceNumber)}`);
+  // Get card transactions, filtered by the invoice number we set at checkout —
+  // the documented way to pull the transactions that belong to one invoice.
+  const data = await helcimRequest(`/card-transactions?invoiceNumber=${encodeURIComponent(invoiceNumber)}`);
   return unwrap(data)
     .filter((payment: any) => String(payment?.status || '').toUpperCase() === 'APPROVED')
     .filter((payment: any) => !payment?.currency || String(payment.currency).toUpperCase() === 'USD')
@@ -127,7 +157,7 @@ export async function helcimPaymentsForInvoice(invoiceNumber: string) {
 }
 
 export async function helcimPaymentByTransaction(transactionId: string) {
-  const data = await helcimRequest(`/payments/${encodeURIComponent(transactionId)}`);
+  const data = await helcimRequest(`/card-transactions/${encodeURIComponent(transactionId)}`);
   const payment = data?.data || data?.payment || data;
   if (!payment || (!payment.transactionId && !payment.id)) return null;
   return {

@@ -279,29 +279,28 @@ export default function Checkout() {
       };
 
       // The order is saved first — repriced and verified server-side, with the tip
-      // chosen above already inside it — and only then is the customer handed to
-      // the Base44 Payments checkout page for that exact saved total. Nothing
-      // reaches Square POS or the kitchen until the provider confirms the money.
-      const orderRes = await base44.functions.invoke('createWixWebCheckout', hostedPayload);
+      // chosen above already inside it — and only then is the customer handed to our
+      // own secure payment page, where Helcim takes the card for exactly that saved
+      // total. Nothing reaches Square POS or the kitchen until the payment is
+      // verified against the order.
+      const orderRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
       const data = orderRes?.data || orderRes;
-      if (!data?.order_number) {
-        setError(data?.error || 'We could not start your payment, so nothing was charged. Please try again.');
+      if (data?.payment_url) {
+        window.location.href = data.payment_url;
         return;
       }
-      // The platform opens the provider's checkout for this order — the amount is
-      // read back from the saved order server-side, never sent from the browser —
-      // and hands back the page to send the customer to. The order number rides
-      // along so the return lands on this order's own confirmation.
-      const checkoutRes = await base44.functions.invoke('create-checkout', {
-        productId: `order:${data.order_number}`,
-        ready_for: schedule.scheduledFor || '',
-      });
-      const redirectUrl = checkoutRes?.data?.redirectUrl;
-      if (!redirectUrl) {
-        setError('We could not open the secure payment page. Your order is saved and nothing was charged — please tap again.');
-        return;
+      // Helcim cannot take the payment right now: the same order is opened on the
+      // alternate secure page instead, so the customer can still pay.
+      if (data?.fallback === 'square') {
+        const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
+        const squareUrl = (squareRes?.data || squareRes)?.payment_url;
+        if (squareUrl) {
+          window.location.href = squareUrl;
+          return;
+        }
       }
-      window.location.href = redirectUrl;
+      setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
+      return;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.

@@ -25,7 +25,10 @@ export async function settleHelcimCheckoutOrder(base44: any, order: any, supplie
   const updates = {
     payment_status: 'paid',
     status: order.status === 'pending' ? 'confirmed' : order.status,
-    tip: totals.tipCents / 100,
+    // HelcimPay takes one amount and reports no separate tip, so the tip the
+    // customer chose on our own page (already inside the total just verified) is
+    // the one to keep — otherwise it would be wiped off the order.
+    tip: totals.tipCents > 0 ? totals.tipCents / 100 : (Number(order.tip) || 0),
     total: totals.receivedCents / 100,
     helcim_transaction_id: totals.transactionId || order.helcim_transaction_id || '',
     manual_pay_required: false,

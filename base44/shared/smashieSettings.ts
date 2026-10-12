@@ -18,11 +18,10 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
-  // Card payments are taken on our own page, in Square. These two values are
-  // kept so stored settings records stay valid, but every path now uses Square —
-  // there is no other processor to switch to.
-  phone_payment_provider: "square",
-  web_payment_provider: "square",
+  // Card payments are taken on our own page, in Helcim. Stored settings records
+  // keep whatever processor they name; the live switch is the pair of helpers below.
+  phone_payment_provider: "helcim",
+  web_payment_provider: "helcim",
   // The approved review request is active unless paused by the owner.
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
@@ -42,18 +41,20 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// The phone line always takes cards on our own page, in Square.
+// The phone line always takes cards on our own page, in Helcim. Until the Helcim
+// API token is in place the caller falls back to the Square link automatically.
 export function phonePaymentProvider(_settings) {
-  return 'square';
+  return 'helcim';
 }
 
-// The website's food checkout pays through Base44 Payments (powered by Wix): the
-// order is saved and re-priced first, then the customer pays on the provider's own
-// secure page and lands straight back on that order's confirmation.
+// The website's food checkout takes the card on our own page, in Helcim: the order
+// is saved and re-priced first, then the customer pays on that order's own secure
+// page and lands straight back on its confirmation. Until the Helcim API token is
+// in place, the checkout opens the alternate Square page rather than a dead one.
 //
-// Square keeps the two flows that take the card on our own page — the phone/text
-// payment link and the Tasty Threads merch checkout — plus the in-store POS.
+// Square keeps the flows that take the card on our own page — the phone/text
+// payment link's alternate and the Tasty Threads merch checkout — plus the POS.
 // The stored web_payment_provider value is kept only so older records stay valid.
 export function webPaymentProvider(_settings) {
-  return 'wix';
+  return 'helcim';
 }

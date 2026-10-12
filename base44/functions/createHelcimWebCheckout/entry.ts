@@ -6,20 +6,23 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
-import { createHelcimCheckoutLink, helcimConfigured } from '../../shared/helcimCheckout.ts';
+import { helcimPayPageUrl, helcimConfigured } from '../../shared/helcimCheckout.ts';
 
-// The website's secure payment page when the owner's switch is set to Helcim
-// (issue #97, Part B step 8).
+// The website's secure payment page when the owner's switch is set to Helcim.
 //
 // This is createSquareWebCheckout's twin, kept deliberately parallel so the two
 // hosted paths cannot drift: the same validation front half (blocked customers,
-// loyalty phone check, reward validation, authoritative re-pricing), the same
-// saved order before any payable page exists, and the same cleanup if the page
-// cannot be created.
+// loyalty phone check, reward validation, authoritative re-pricing) and the same
+// saved order before any payable page exists.
 //
-// FAIL CLOSED, then fall back: if Helcim has no credentials yet, this endpoint
-// answers with the Square fallback instead of a dead checkout, and the browser
-// opens the Square page — never a page that cannot be paid.
+// The order is saved with the tip already inside its total, and the customer is
+// sent to OUR OWN page (/pay-helcim), where HelcimPay takes the card for exactly
+// that saved total. The payment session itself is minted on that page, so an
+// abandoned checkout never leaves a stray invoice in the owner's Helcim account.
+//
+// FAIL CLOSED, then fall back: with no Helcim API token, this endpoint answers
+// with the Square fallback instead of a dead checkout, and the browser opens the
+// Square page — never a page that cannot be paid.
 const PAY_PAGE_ORIGIN = 'https://flavor-isle.com';
 
 function round2(n: number): number {
@@ -103,9 +106,9 @@ export default async function (req: Request) {
     }
 
     const orderNumber = Date.now().toString().slice(-6);
-    // The tip is chosen on the secure page, so the saved total is the food total
-    // and the payment must equal it exactly for the order to settle.
-    const foodTotal = round2(pricing.total - (pricing.tip || 0));
+    // The tip was chosen in our own checkout, so it stays inside the saved total:
+    // the secure page charges exactly this amount and settlement checks it to the cent.
+    const chargeTotal = round2(pricing.total);
     const customerLink = await customerLinkFields(base44, { phone: customer?.phone, email: customer?.email });
 
     // ── Persist the Order BEFORE opening a payable page ──
@@ -131,7 +134,7 @@ export default async function (req: Request) {
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery_fee: pricing.deliveryFee,
-        tip: 0,
+        tip: round2(pricing.tip || 0),
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
@@ -140,7 +143,7 @@ export default async function (req: Request) {
         loyalty_opt_in: loyaltyOptIn === true,
         referral_code: normalizeReferralCode(referralCode),
         direct_web_rewards_v2: true,
-        total: foodTotal,
+        total: chargeTotal,
         customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone || '',
@@ -155,30 +158,18 @@ export default async function (req: Request) {
       return Response.json({ error: 'Could not save your order. No charge was made — please try again.' }, { status: 500 });
     }
 
-    // ── Open the secure page (idempotent per order) ──
-    let link = null;
+    // ── Attach our own secure page, keyed to this order ──
+    const payPageUrl = helcimPayPageUrl(PAY_PAGE_ORIGIN, orderNumber, true);
     try {
-      if (order.payment_url && order.helcim_checkout_id) {
-        link = { url: order.payment_url, checkoutToken: order.helcim_checkout_id };
-      } else {
-        link = await createHelcimCheckoutLink({
-          invoiceNumber: order.id,
-          orderNumber,
-          amountUsd: foodTotal,
-          payPageOrigin: PAY_PAGE_ORIGIN,
-          allowTipping: true,
-        });
-        await base44.asServiceRole.entities.Order.update(order.id, {
-          payment_provider: 'helcim',
-          helcim_checkout_id: link.checkoutToken,
-          payment_url: link.url,
-          manual_pay_required: false,
-        });
-      }
+      await base44.asServiceRole.entities.Order.update(order.id, {
+        payment_provider: 'helcim',
+        payment_url: payPageUrl,
+        manual_pay_required: false,
+      });
     } catch (linkErr) {
       // Nothing payable exists: remove the pending order rather than leaving it
       // stranded, and tell the browser to use the Square page. No charge was made.
-      console.error(`Helcim web checkout setup failed for order ${orderNumber}:`, (linkErr as Error).message);
+      console.error(`Helcim pay page could not be attached to order ${orderNumber}:`, (linkErr as Error).message);
       try {
         await base44.asServiceRole.entities.Order.delete(order.id);
       } catch (cleanupErr) {
@@ -218,8 +209,8 @@ export default async function (req: Request) {
     return Response.json({
       provider: 'helcim',
       orderNumber,
-      payment_url: link.url,
-      total: foodTotal,
+      payment_url: payPageUrl,
+      total: chargeTotal,
       smsConsentStored,
     });
   } catch (error) {
