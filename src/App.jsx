@@ -220,12 +220,17 @@ const AuthenticatedApp = () => {
       <Route path="/merch" element={<Merch />} />
       <Route path="/merch-checkout" element={<MerchCheckout />} />
       <Route path="/merch-confirmation" element={<MerchConfirmation />} />
-      <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
       <Route path="/pay-square" element={<PaySquare />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
+
+      {/* Food checkout needs an account — a signed-out customer is sent to sign in
+          and comes right back here, with their bag still saved. */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login?returnTo=%2Fcheckout" replace />} />}>
+        <Route path="/checkout" element={<Checkout />} />
+      </Route>
 
       {/* Login required to view account or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, UserCircle, Pencil } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
 import { getFamilyBundleDiscount } from '@/lib/familyBundle';
@@ -51,7 +51,6 @@ export default function Checkout() {
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
-  const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
@@ -69,7 +68,7 @@ export default function Checkout() {
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
 
-  // Auto-focus the first field so a guest can start typing their name
+  // Auto-focus the first field so the customer can start typing their name
   // immediately without hunting for the input — especially on desktop.
   useEffect(() => { nameRef.current?.focus(); }, []);
 
@@ -82,12 +81,12 @@ export default function Checkout() {
   }, []);
 
   // Prefill contact details for signed-in customers from their account +
-  // saved customer profile. Only fills fields the guest hasn't typed into.
+  // saved customer profile. Only fills fields the customer hasn't typed into.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
-      if (!isAuthed) { if (!cancelled) setIsGuest(true); return; }
+      if (!isAuthed) return;
       if (cancelled) return;
       const me = await base44.auth.me().catch(() => null);
       if (!me || cancelled) return;
@@ -366,24 +365,6 @@ export default function Checkout() {
           {/* Left – Form */}
           <div className="lg:col-span-3 space-y-4">
 
-                {/* Non-blocking sign-in nudge for guests — encourages account
-                    creation without blocking checkout. */}
-                {isGuest && (
-                  <div className="card-diner p-4 flex items-center gap-3" style={{ backgroundColor: 'rgba(0,51,102,0.05)', borderColor: 'rgba(0,51,102,0.2)' }}>
-                    <div className="w-9 h-9 rounded-full bg-patina-mint/10 flex items-center justify-center flex-shrink-0">
-                      <UserCircle size={18} className="text-patina-mint" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-heading text-sm text-obsidian-roast">Sign in for faster checkout</p>
-                      <p className="text-xs text-muted-foreground">Save your details, track orders, and earn Star Rewards.</p>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Link to="/login?returnTo=%2Fcheckout" className="btn-mint px-3 py-2 text-xs font-heading whitespace-nowrap">Sign In</Link>
-                      <Link to="/register?returnTo=%2Fcheckout" className="px-3 py-2 text-xs font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-patina-mint/40 transition-colors whitespace-nowrap">Create Account</Link>
-                    </div>
-                  </div>
-                )}
-
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -421,7 +402,7 @@ export default function Checkout() {
                   </div>
 
                   {/* Delivery address — shown right after contact for delivery
-                      orders so a new guest fills the most important field first. */}
+                      orders so a new customer fills the most important field first. */}
                   {orderType === 'delivery' && (
                     <div className={fieldErrors.address ? 'ring-2 ring-destructive/30 rounded-2xl mt-4' : 'mt-4'}>
                       <SavedAddressField
