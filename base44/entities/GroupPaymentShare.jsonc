@@ -8,7 +8,7 @@
     },
     "order_id": {
       "type": "string",
-      "description": "Parent Order id this per-person split share belongs to."
+      "description": "Parent Order id this per-person split share belonged to."
     },
     "order_number": {
       "type": "string",
@@ -16,15 +16,15 @@
     },
     "intent_id": {
       "type": "string",
-      "description": "Stripe PaymentIntent id for this person's share. The Stripe webhook matches group orders by this id (group orders use stripe_session_id 'GROUP' on the parent, so they can't be matched the way single orders are). Empty when the group pays through Square payment links instead."
+      "description": "Stripe PaymentIntent id for this person's share. Empty when the share paid through a hosted payment link instead."
     },
     "square_checkout_order_id": {
       "type": "string",
-      "description": "Square hosted-checkout order backing this person's share when the website's secure payment page is set to the alternate processor. The settle pass matches each share's Square payment against expected_amount, and a short payment fails the share."
+      "description": "Square hosted-checkout order backing this person's share when the website's secure payment page was set to the alternate processor."
     },
     "payment_url": {
       "type": "string",
-      "description": "Hosted secure payment page for this person's share, shared on the split-payment screen. Empty for Stripe shares, which pay in the app."
+      "description": "Hosted secure payment page for this person's share, shared on the split-payment screen."
     },
     "person_name": {
       "type": "string",
@@ -32,7 +32,7 @@
     },
     "expected_amount": {
       "type": "number",
-      "description": "Expected share amount in USD. The webhook verifies the received amount matches before marking the share succeeded, so an underpayment never settles the parent order."
+      "description": "Expected share amount in USD."
     },
     "status": {
       "type": "string",
@@ -44,7 +44,7 @@
         "refunded"
       ],
       "default": "pending",
-      "description": "Settlement state of this share. pending = intent created, not yet paid; succeeded = paid at the correct amount; failed = payment failed or underpaid; canceled = intent canceled (setup failure or customer abandoned); refunded = charge later refunded. The parent Order is settled only when ALL shares are succeeded."
+      "description": "Settlement state of this share."
     },
     "settled_at": {
       "type": "string",
@@ -58,9 +58,7 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "data.order_id": "group-ordering-removed"
     },
     "read": {
       "user_condition": {
@@ -68,14 +66,10 @@
       }
     },
     "update": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "data.order_id": "group-ordering-removed"
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "data.order_id": "group-ordering-removed"
     }
   }
 }
