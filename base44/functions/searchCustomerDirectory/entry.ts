@@ -48,15 +48,17 @@ export default async function (req: Request) {
         : profile?.id
           ? { customer_id: profile.id }
           : { customer_email: email };
-      const orders = await base44.asServiceRole.entities.Order
-        .filter(orderQuery, { sort: '-created_date', limit: 25 })
-        .catch(() => ({ items: [] }));
+      // filter(query, sort, limit) returns an array on the server SDK.
+      const orderRows = await base44.asServiceRole.entities.Order
+        .filter(orderQuery, '-created_date', 25)
+        .catch(() => []);
+      const orders = Array.isArray(orderRows) ? orderRows : [];
 
       return Response.json({
         ok: true,
         profile: profile || null,
-        orders: orders?.items || [],
-        orders_truncated: !!orders?.has_more,
+        orders,
+        orders_truncated: orders.length >= 25,
       });
     }
 

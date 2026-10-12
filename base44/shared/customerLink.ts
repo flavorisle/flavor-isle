@@ -59,18 +59,23 @@ export async function loadCustomerProfileIndex(base44: any) {
   const byPhone = new Map<string, string>();
   const byEmail = new Map<string, string>();
 
-  let cursor: string | undefined;
+  // The server-side SDK takes filter(query, sort, limit, skip) and returns an
+  // array — the options form some newer clients use comes back as an array here
+  // too, so read in explicit pages by offset rather than by cursor.
+  const PAGE = 500;
   for (let page = 0; page < 20; page++) {
-    const result = await base44.asServiceRole.entities.CustomerProfile.filter({}, { limit: 500, cursor });
-    const items = result?.items || [];
+    const rows = await base44.asServiceRole.entities.CustomerProfile
+      .filter({}, '-created_date', PAGE, page * PAGE)
+      .catch(() => []);
+    const items = Array.isArray(rows) ? rows : [];
+    if (items.length === 0) break;
     for (const profile of items) {
       const normalized = normalizePhone(profile.phone);
       if (normalized && !byPhone.has(normalized)) byPhone.set(normalized, profile.id);
       const email = String(profile.email || '').trim().toLowerCase();
       if (email && !byEmail.has(email)) byEmail.set(email, profile.id);
     }
-    if (!result?.has_more || !result.next_cursor) break;
-    cursor = result.next_cursor;
+    if (items.length < PAGE) break;
   }
 
   return { byPhone, byEmail };

@@ -441,7 +441,6 @@ export default function Checkout() {
       quantity: i.quantity,
       image_url: i.image_url,
       selectedModifiers: i.selectedModifiers || [],
-      person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
       square_item_id: i.square_item_id || '',
       isBuildShake: !!i.isBuildShake,
@@ -644,7 +643,6 @@ export default function Checkout() {
       quantity: i.quantity,
       image_url: i.image_url,
       selectedModifiers: i.selectedModifiers || [],
-      person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
       square_item_id: i.square_item_id || '',
       isBuildShake: !!i.isBuildShake,
@@ -886,9 +884,9 @@ export default function Checkout() {
                   </label>
 
                   {/* SMS opt-in for order status updates — transactional only, optional,
-                      unchecked, and persisted through order creation (createPaymentIntent /
-                      createGroupPayment upsert an SMSSubscriber record). Marketing consent is
-                      never offered or inferred here. */}
+                      unchecked, and persisted through order creation (createPaymentIntent
+                      upserts an SMSSubscriber record). Marketing consent is never offered
+                      or inferred here. */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
                     <input
                       type="checkbox"

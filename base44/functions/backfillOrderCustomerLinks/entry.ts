@@ -33,14 +33,17 @@ export default async function (req: Request) {
     let linked = 0;
     let phoneOnly = 0;
     let unchanged = 0;
-    let cursor: string | undefined;
 
+    // The server-side SDK takes filter(query, sort, limit, skip) and returns an
+    // array, so the sweep pages by offset. A second run is a no-op: an order that
+    // already carries the right link is skipped.
+    const PAGE = 500;
     for (let page = 0; page < 20; page++) {
-      const result = await base44.asServiceRole.entities.Order.filter(
-        { order_source: 'online' },
-        { limit: 500, ...(cursor ? { cursor } : {}) },
-      );
-      const items = result?.items || [];
+      const rows = await base44.asServiceRole.entities.Order
+        .filter({ order_source: 'online' }, '-created_date', PAGE, page * PAGE)
+        .catch(() => []);
+      const items = Array.isArray(rows) ? rows : [];
+      if (items.length === 0) break;
 
       const patches: Array<{ id: string; normalized_phone: string; customer_id: string }> = [];
       for (const order of items) {
@@ -62,8 +65,7 @@ export default async function (req: Request) {
         updated += patches.length;
       }
 
-      if (!result?.has_more || !result.next_cursor) break;
-      cursor = result.next_cursor;
+      if (items.length < PAGE) break;
     }
 
     console.log(

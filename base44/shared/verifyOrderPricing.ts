@@ -1,8 +1,9 @@
 // Server-side order pricing authority. Recomputes subtotal, Happy Hour
 // discount, tax, and delivery fee from authoritative MenuItem + MenuSetting
 // records so a manipulated client total can never be charged. Used by
-// createPaymentIntent and createGroupPayment BEFORE any Stripe intent is
-// created.
+// createPaymentIntent before any Stripe intent exists, and by the hosted-page
+// checkout endpoints (createSquareWebCheckout, createHelcimWebCheckout) before
+// any payable page is opened.
 //
 // Authority map:
 //  - Item base price:        MenuItem.price (authoritative)

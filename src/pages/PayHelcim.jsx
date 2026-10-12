@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Loader2, ShieldCheck, AlertTriangle, Lock } from 'lucide-react';
+import HelcimSavedCardPay from '@/components/pay/HelcimSavedCardPay';
 
 // Our own secure payment page for the Helcim path (issue #97, Part B).
 //
@@ -121,6 +122,17 @@ export default function PayHelcim() {
             </div>
           ) : (
             <>
+              {/* Signed-in customers with a card on file can pay with it in one
+                  tap; this renders nothing at all unless Helcim actually holds a
+                  card for them. */}
+              <HelcimSavedCardPay
+                orderNumber={orderNumber}
+                onPaid={(merch) => {
+                  window.location.href = merch
+                    ? `/merch-confirmation?order_number=${orderNumber}&helcim=1`
+                    : `/order-confirmation?order_number=${orderNumber}&helcim=1`;
+                }}
+              />
               <div id="helcim-pay-container" className="mb-3" />
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <Lock size={12} /> Your card details are entered on this page and go straight to our payment processor. Flavor Isle never sees your card number.
