@@ -21,6 +21,14 @@ export async function settleWixWebOrder(base44, { orderNumber, checkoutSessionId
   const order = (matches || [])[0];
   if (!order) return { ok: false, error: `No order ${wanted}` };
 
+  // Only an order that really pays through Base44 Payments is settled here. A
+  // Square, phone, in-store or historical order must never be flipped to paid by
+  // this path — this holds even for a well-meant manual re-run, and it is what
+  // stops a stray call from turning an unpaid order into a kitchen ticket.
+  if (order.payment_provider !== 'wix') {
+    return { ok: false, error: `Order ${order.order_number} does not pay through Base44 Payments — not settling.` };
+  }
+
   if (order.payment_status === 'paid') {
     return { ok: true, already_paid: true, order_number: order.order_number };
   }

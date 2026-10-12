@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { cancelSquareOrder, notifyOrderCancelled } from '../../shared/cancelOrderFlow.ts';
-import { refundStripePaymentIntent, stripePaymentIntentId } from '../../shared/stripeRefund.ts';
 import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
 import { refundHelcimOrderPayments } from '../../shared/helcimRefund.ts';
 
@@ -36,9 +35,12 @@ export default async function (req: Request) {
     //    is copied over). Best effort: a failure is reported, never fatal.
     const square = await cancelSquareOrder(base44, order.square_order_id || order.square_checkout_order_id);
 
-    // 2. Refund. Online card orders are Stripe PaymentIntents; an order paid
-    //    another way (Square tender, cash at pickup) is reported back so the
-    //    crew refunds it where it was taken instead of us inventing a ledger.
+    // 2. Refund. An order paid on Square's secure page refunds through Square and
+    //    Helcim's through Helcim. An order paid through Base44 Payments (powered
+    //    by Wix) has no refund API in this app, so the crew issues that one in the
+    //    Base44 Payments dashboard and is told so. An order paid another way
+    //    (Square tender, cash at pickup) is reported back so the crew refunds it
+    //    where it was taken instead of us inventing a ledger.
     let refunded = false;
     let refundId: string | null = null;
     let refundNote = '';
@@ -67,15 +69,14 @@ export default async function (req: Request) {
           refundNote = `Card refund failed (${(error as Error).message}) — refund it in Helcim.`;
           console.error(`Helcim refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
-      } else if (stripePaymentIntentId(order)) {
-        try {
-          const refund = await refundStripePaymentIntent(order, 'requested_by_customer');
-          refunded = true;
-          refundId = refund.id;
-        } catch (error) {
-          refundNote = `Card refund failed (${(error as Error).message}) — refund it in Stripe.`;
-          console.error(`Refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
-        }
+      } else if (order.payment_provider === 'wix') {
+        // Paid through Base44 Payments (powered by Wix). This app holds no refund
+        // API for it, so the money goes back from that dashboard — the crew is
+        // told exactly that instead of being left to guess.
+        refundNote = 'Issue the refund in the Base44 Payments (powered by Wix) dashboard.';
+      } else if (order.payment_provider === 'stripe' || order.stripe_session_id) {
+        // Cards taken before the app moved to Base44 Payments: refund in Stripe.
+        refundNote = 'This order was paid through Stripe before the app moved off it — refund it in the Stripe dashboard.';
       } else {
         refundNote = 'Not paid by card here — refund it in Square (or hand back the cash).';
       }
@@ -84,11 +85,11 @@ export default async function (req: Request) {
     }
 
     // 3. Mark it cancelled. Written after the money so the record reflects the
-    //    outcome; payment_status only flips to refunded once Stripe confirms.
+    //    outcome; payment_status only flips to refunded once the processor confirms.
     const patch: Record<string, unknown> = { status: 'cancelled' };
     if (refunded) patch.payment_status = 'refunded';
     // Square refunds are shown on the order card the way register refunds are;
-    // a Stripe refund never sets this.
+    // a refund taken in another processor's dashboard never sets this.
     if (refunded && order.payment_provider === 'square') patch.square_refund_amount = Number(order.total) || 0;
     const trimmedReason = String(reason || '').trim().slice(0, 300);
     if (trimmedReason) patch.cancel_reason = trimmedReason;

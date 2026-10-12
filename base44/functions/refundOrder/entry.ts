@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
-import { refundStripePaymentIntent, stripePaymentIntentId } from '../../shared/stripeRefund.ts';
 import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
 import { refundHelcimOrderPayments } from '../../shared/helcimRefund.ts';
 
@@ -29,21 +28,34 @@ Deno.serve(async (req) => {
 
     const paidOnSquare = order.payment_provider === 'square';
     const paidOnHelcim = order.payment_provider === 'helcim';
-    if (!stripePaymentIntentId(order) && !paidOnSquare && !paidOnHelcim) {
-      return Response.json({ error: 'No valid Stripe PaymentIntent found on order' }, { status: 400 });
+    const paidOnWix = order.payment_provider === 'wix';
+    if (order.payment_provider === 'stripe' || order.stripe_session_id) {
+      // Cards taken before the app moved to Base44 Payments. Nothing in this app
+      // can reach those any more — the refund is issued in the Stripe dashboard.
+      return Response.json({ error: 'This order was paid through Stripe, before the app moved off it. Issue the refund from the Stripe dashboard — the app cannot refund it.' }, { status: 409 });
+    }
+    if (!paidOnSquare && !paidOnHelcim && !paidOnWix) {
+      return Response.json({ error: 'This order was not paid by card through the app, so there is nothing to refund from here.' }, { status: 400 });
     }
 
     // Issue a full refund where the money was taken — an order paid on Square's
-    // or Helcim's hosted page goes back through that processor, everything else
-    // through Stripe. Shared with cancelOrder so each processor call lives in one
-    // place.
-    const refund = paidOnSquare
-      ? await refundSquareOrderPayments(base44, order)
-      : paidOnHelcim
-        ? await refundHelcimOrderPayments(base44, order)
-        : await refundStripePaymentIntent(order, reason);
-    const refundId = refund.refundId || refund.id || null;
-    const refundedAmount = refund.refundedCents != null ? refund.refundedCents / 100 : refund.amount / 100;
+    // secure page goes back through Square, and Helcim's through Helcim. An order
+    // paid through Base44 Payments (powered by Wix) has no refund API in this app,
+    // so the crew issues that one in the Base44 Payments dashboard; the order is
+    // still closed out here and the customer is still told, exactly as below.
+    let refund: any = null;
+    let refundNote: string | null = null;
+    if (paidOnWix) {
+      refundNote = 'Issue the refund in the Base44 Payments (powered by Wix) dashboard.';
+    } else {
+      refund = paidOnSquare
+        ? await refundSquareOrderPayments(base44, order)
+        : await refundHelcimOrderPayments(base44, order);
+    }
+    const refundId = refund?.refundId || refund?.id || null;
+    const refundedAmount = refund
+      ? (refund.refundedCents != null ? refund.refundedCents / 100 : refund.amount / 100)
+      : Number(order.total) || 0;
 
     // Update the order record.
     await base44.asServiceRole.entities.Order.update(order_id, {
@@ -127,6 +139,7 @@ Deno.serve(async (req) => {
       order_number: order.order_number,
       refund_id: refundId,
       amount_refunded: refundedAmount,
+      refund_note: refundNote,
     });
   } catch (error) {
     console.error('refundOrder error:', error.message);
