@@ -22,7 +22,6 @@ export async function createSquareCheckoutLink(base44: any, opts: {
   serviceCharges?: Array<{ uid: string; name: string; amountUsd: number }>;
   totalCents: number;
   redirectUrl: string;
-  buyerEmail?: string;
   paymentNote?: string;
   fulfillmentNote?: string;
   recipient?: { display_name: string; phone_number?: string; email_address?: string };
@@ -99,7 +98,10 @@ export async function createSquareCheckoutLink(base44: any, opts: {
     },
     // Tip options on the secure page, exactly like the pay link Smashie texts.
     checkout_options: { allow_tipping: opts.allowTipping !== false, redirect_url: opts.redirectUrl },
-    ...(opts.buyerEmail ? { pre_populated_data: { buyer_email: opts.buyerEmail } } : {}),
+    // No pre_populated_data.buyer_email here: Square refuses a request carrying
+    // BOTH a fulfillment and a buyer_email (CONFLICTING_PARAMETERS), and every
+    // link this app creates has a pickup fulfillment. The customer's email rides
+    // on the fulfillment recipient below, which Square accepts.
     ...(opts.paymentNote ? { payment_note: opts.paymentNote } : {}),
   });
 

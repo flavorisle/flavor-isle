@@ -130,7 +130,6 @@ export default async function (req: Request) {
           serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
           totalCents: Math.round(orderTotal * 100),
           redirectUrl: `${origin}/merch-confirmation?order_number=${orderNumber}&square=1`,
-          buyerEmail: customer.email,
           paymentNote: `Tasty Threads order ${orderNumber}`,
           fulfillmentNote: `${customer.name}\n${address.address1 || ""}\n${address.city || ""}, ${address.state_code || ""} ${address.zip || ""}`.trim(),
           allowTipping: false,

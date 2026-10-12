@@ -37,7 +37,10 @@ export async function createSquarePhonePayment(base44, order) {
       metadata: { app_order_id: order.id, order_source: 'flavor-isle-website', order_type: order.order_type }, // Existing POS import skips app-owned orders.
     },
     checkout_options: { allow_tipping: true, redirect_url: `https://flavor-isle.com/pay/${order.order_number}` },
-    ...(email ? { pre_populated_data: { buyer_email: email } } : {}),
+    // No pre_populated_data.buyer_email: Square refuses a request carrying BOTH
+    // a fulfillment and a buyer_email (CONFLICTING_PARAMETERS), and this link
+    // always carries a pickup fulfillment. The caller's email rides on the
+    // fulfillment recipient above instead.
     payment_note: `Flavor Isle phone order #${order.order_number}`,
   });
   const link = data.payment_link;

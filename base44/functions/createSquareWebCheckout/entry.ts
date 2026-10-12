@@ -206,7 +206,6 @@ export default async function (req: Request) {
           serviceCharges: pricing.deliveryFee > 0 ? [{ uid: 'delivery-fee', name: 'Delivery Fee', amountUsd: pricing.deliveryFee }] : [],
           totalCents: Math.round(foodTotal * 100),
           redirectUrl: `${PAY_PAGE_ORIGIN}/order-confirmation?order_number=${orderNumber}&square=1${scheduledFor ? `&ready_for=${encodeURIComponent(scheduledFor)}` : ''}`,
-          buyerEmail: emailOk ? customer.email : undefined,
           paymentNote: `Flavor Isle order #${orderNumber}`,
           fulfillmentNote: checkoutFulfillmentNote({ orderType, pickupMethod, vehicle, customer, instructions }),
           recipient: {

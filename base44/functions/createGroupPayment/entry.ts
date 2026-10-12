@@ -173,7 +173,6 @@ Deno.serve(async (req) => {
             lineItems: [{ name: `Flavor Isle #${orderNumber} — ${person}'s share`, quantity: 1, unitPriceUsd: amount }],
             totalCents: Math.round(amount * 100),
             redirectUrl: `https://flavor-isle.com/order-confirmation?order_number=${orderNumber}&square=1`,
-            buyerEmail: index === 0 && customer?.email ? customer.email : undefined,
             paymentNote: `Flavor Isle group order #${orderNumber}`,
             fulfillmentNote: `${person} — share of group order #${orderNumber}`,
             allowTipping: false,
