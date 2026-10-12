@@ -461,35 +461,59 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      if (webProvider === 'square') {
-        // Alternate secure payment page (issue #95). The customer is handed to
-        // the page for the exact order total and comes straight back to our own
-        // confirmation screen; the payment is verified server-side and only then
-        // does the order reach Square POS and the kitchen. The referral code
-        // travels with the order exactly as it does on the card path, so a
+      // The hosted secure page's payload — identical for both processors, so the
+      // two paths cannot drift apart.
+      const hostedPayload = {
+        items: mappedItems,
+        orderType,
+        pickupMethod,
+        customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
+        instructions: instructionsWithExtras,
+        subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+        discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+        loyaltyOptIn,
+        referralCode: referralCode || undefined,
+        scheduledFor,
+        estimatedTime,
+        vehicle: isCurbside ? vehicle : null,
+        smsTransactionalConsent: smsConsent,
+        smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+        smsConsentVersion: SMS_CONSENT_VERSION,
+      };
+
+      if (webProvider === 'square' || webProvider === 'helcim') {
+        // Alternate secure payment page (issues #95 and #97). The customer is
+        // handed to the page for the exact order total and comes straight back to
+        // our own confirmation screen; the payment is verified server-side and
+        // only then does the order reach Square POS and the kitchen. The referral
+        // code travels with the order exactly as it does on the card path, so a
         // friend's 50 Stars still land when the order completes.
-        const res = await base44.functions.invoke('createSquareWebCheckout', {
-          items: mappedItems,
-          orderType,
-          pickupMethod,
-          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
-          loyaltyOptIn,
-          referralCode: referralCode || undefined,
-          scheduledFor,
-          estimatedTime,
-          vehicle: isCurbside ? vehicle : null,
-          smsTransactionalConsent: smsConsent,
-          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
-          smsConsentVersion: SMS_CONSENT_VERSION,
-        });
-        if (res.data?.payment_url) {
-          window.location.href = res.data.payment_url;
+        //
+        // Whichever processor the owner's switch names, the customer only ever
+        // sees our own secure page. When Helcim has no credentials yet — or cannot
+        // open a page — the Square page opens instead, so a checkout can never
+        // land on a page that cannot be paid.
+        let data = null;
+        if (webProvider === 'helcim') {
+          try {
+            const helcimRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
+            data = helcimRes?.data || helcimRes;
+          } catch (helcimErr) {
+            data = helcimErr?.response?.data || helcimErr?.data || null;
+          }
+          if (!data?.payment_url) {
+            const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
+            data = squareRes?.data || squareRes;
+          }
+        } else {
+          const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
+          data = squareRes?.data || squareRes;
+        }
+        if (data?.payment_url) {
+          window.location.href = data.payment_url;
           return;
         }
-        setError('We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
+        setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
       } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
         // Same cart as an order we already created (the customer tapped Back, or
         // a wallet attempt failed) — reopen that same intent instead of creating

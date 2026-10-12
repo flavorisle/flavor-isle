@@ -24,19 +24,24 @@ export default function OrderConfirmation() {
   // arrival, and only a completed payment for the exact total is passed to the
   // kitchen. This reflects whether it has cleared yet.
   const squareReturn = params.get('square') === '1';
+  const helcimReturn = params.get('helcim') === '1';
+  // Either hosted secure page brings the customer back here for the server to
+  // verify the payment; only a completed payment for the exact total is passed
+  // to the kitchen.
+  const hostedReturn = squareReturn || helcimReturn;
   const [paymentConfirmed, setPaymentConfirmed] = useState(null);
   useEffect(() => {
-    if (!squareReturn || !orderNumber) return;
+    if (!hostedReturn || !orderNumber) return;
     (async () => {
       try {
-        const res = await base44.functions.invoke('settleSquareWebPayment', { order_number: String(orderNumber) });
+        const res = await base44.functions.invoke(helcimReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {
         console.error('Payment confirmation on return failed:', err);
         setPaymentConfirmed(false);
       }
     })();
-  }, [squareReturn, orderNumber]);
+  }, [hostedReturn, helcimReturn, orderNumber]);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
 
@@ -102,7 +107,7 @@ export default function OrderConfirmation() {
               <Loader2 size={16} className="animate-spin" />
               Sending to Kitchen…
             </div>
-          ) : squareReturn && paymentConfirmed === false ? (
+          ) : hostedReturn && paymentConfirmed === false ? (
             <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
               <Loader2 size={16} className="animate-spin" />
               Confirming Your Payment…
@@ -116,7 +121,7 @@ export default function OrderConfirmation() {
 
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">You're All Set!</h1>
           <p className="text-muted-foreground text-lg mb-8">
-            {squareReturn && paymentConfirmed === false
+            {hostedReturn && paymentConfirmed === false
               ? "Thank you for your order! We're confirming your payment now — the kitchen is notified the moment it clears."
               : 'Thank you for your order! Your payment went through and our kitchen has been notified. Get ready for something delicious.'}
           </p>

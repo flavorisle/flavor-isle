@@ -1,5 +1,7 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { helcimConfigured, HELCIM_NOT_CONFIGURED } from '../../shared/helcimCheckout.ts';
+import { savedHelcimCards, saveHelcimCard, removeHelcimCard } from '../../shared/helcimVault.ts';
 
 // Manages a signed-in customer's saved payment methods (cards) in Stripe,
 // mirrored to the SavedPaymentMethod entity so the app can list/select them
@@ -26,6 +28,47 @@ Deno.serve(async (req) => {
     const email = (user.email || '').toLowerCase().trim();
     const body = await req.json().catch(() => ({}));
     const action = body?.action || 'list';
+
+    // ── Helcim path (issue #97, Part B step 14) ──
+    // Only used when the website checkout is on Helcim: the customer's cards live
+    // in Helcim's own vault and are read from there. Nothing in this branch
+    // touches the Stripe vault or its records, so the two never mix. Until Helcim
+    // credentials exist every action says so plainly instead of failing obscurely.
+    if (body?.provider === 'helcim') {
+      if (action === 'list') {
+        const { configured, cards } = await savedHelcimCards(email);
+        return Response.json({
+          provider: 'helcim',
+          configured,
+          cards: cards.map((card) => {
+            const digits = String(card.cardNumber || '').replace(/\D/g, '');
+            const expiry = String(card.cardExpiry || '').replace(/\D/g, '');
+            return {
+              id: card.cardId,
+              card_token: card.cardToken,
+              brand: card.cardType || '',
+              last4: digits.slice(-4),
+              exp_month: expiry.length >= 2 ? Number(expiry.slice(0, 2)) : null,
+              exp_year: expiry.length >= 4 ? Number(`20${expiry.slice(-2)}`) : null,
+              is_default: false,
+            };
+          }),
+        });
+      }
+      if (!helcimConfigured()) {
+        return Response.json({ error: HELCIM_NOT_CONFIGURED }, { status: 409 });
+      }
+      if (action === 'save') {
+        const card = await saveHelcimCard(email, body?.cardToken, user.full_name);
+        return Response.json({ provider: 'helcim', card });
+      }
+      if (action === 'detach') {
+        if (!body?.cardId) return Response.json({ error: 'cardId is required' }, { status: 400 });
+        await removeHelcimCard(String(body.cardId));
+        return Response.json({ success: true });
+      }
+      return Response.json({ error: `Unknown Helcim action: ${action}` }, { status: 400 });
+    }
 
     // Find or create the Stripe Customer for this user. Reuse an existing
     // card record's customer id when present so we don't duplicate customers.

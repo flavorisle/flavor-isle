@@ -39,6 +39,20 @@ export async function settleHelcimCheckoutOrder(base44: any, order: any, supplie
   return paidOrder;
 }
 
+// The settlement check behind the phone pay page and the admin payment actions:
+// it re-reads Helcim and hands back the refreshed order, and it never throws —
+// a page that cannot read the payment shows the order as it is rather than
+// erroring out in the customer's face.
+export async function settleHelcimPhonePayment(base44: any, order: any) {
+  if (order.payment_provider !== 'helcim' || order.payment_status === 'paid') return order;
+  try {
+    return await settleHelcimCheckoutOrder(base44, order);
+  } catch (error) {
+    console.error(`Helcim settlement check failed for order ${order.order_number}:`, (error as Error).message);
+    return order;
+  }
+}
+
 // Tasty Threads merch paid on a Helcim secure page: verify the payment to the
 // cent, then fulfil exactly as the card path does. Printful is only asked to
 // produce anything once the money is confirmed.

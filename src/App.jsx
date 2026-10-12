@@ -70,6 +70,8 @@ const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
 const AdminEmails = lazy(() => import('./pages/AdminEmails'));
 const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
 const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
+const PayHelcim = lazy(() => import('./pages/PayHelcim'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const About = lazy(() => import('./pages/About'));
 const Flyer = lazy(() => import('./pages/Flyer'));
@@ -221,6 +223,7 @@ const AuthenticatedApp = () => {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-confirmation" element={<OrderConfirmation />} />
       <Route path="/pay/:orderNumber" element={<PayPhoneOrder />} />
+      <Route path="/pay-helcim" element={<PayHelcim />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
 
@@ -240,6 +243,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/kitchen" element={<AdminKitchen />} />
         <Route path="/admin-analytics" element={<AdminAnalytics />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
+        <Route path="/admin/customers" element={<AdminCustomers />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

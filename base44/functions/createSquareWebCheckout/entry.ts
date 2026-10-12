@@ -54,10 +54,12 @@ export default async function (req: Request) {
     const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode } = body;
 
     // The owner's switch is the only thing that decides where the website's
-    // payment page is created. If it is back on the default path, this endpoint
-    // refuses rather than opening a second kind of payment page.
+    // payment page is created. This endpoint also answers the Helcim switch's
+    // fallback (issue #97): when Helcim has no credentials yet, the browser is
+    // sent here so the customer can still pay rather than hitting a dead page.
     const settings = await getSmashieSettings(base44);
-    if (webPaymentProvider(settings) !== 'square') {
+    const provider = webPaymentProvider(settings);
+    if (provider !== 'square' && provider !== 'helcim') {
       console.warn('createSquareWebCheckout: refused — the website payment switch is not on this path');
       return Response.json({ error: 'This checkout is no longer available. Please refresh and order again.' }, { status: 410 });
     }

@@ -1,5 +1,4 @@
-import { createStripePhonePayment } from '../../shared/stripePhonePayment.ts';
-import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
+import { createPhonePaymentLink } from '../../shared/helcimPhonePayment.ts';
 import { getSmashieSettings, phoneCashEnabled, phonePaymentProvider } from '../../shared/smashieSettings.ts';
 import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
@@ -299,9 +298,9 @@ export default async function(req) {
       // Secure payment link paid on flavor-isle.com/pay/:orderNumber. The owner
       // picks which processor backs it in Admin → Communications; the customer
       // only ever sees our own pay page.
-      paymentUrl = paymentProvider === 'square'
-        ? await createSquarePhonePayment(base44, order)
-        : await createStripePhonePayment(base44, order);
+      // Stripe, Square or Helcim — whichever the owner's phone switch names.
+      // A Helcim hiccup falls back to the Square link so the caller can still pay.
+      paymentUrl = await createPhonePaymentLink(base44, order, paymentProvider);
 
       // Text it first — the customer is on the phone or on a text thread, so it
       // lands instantly. This is the primary delivery channel for the payment

@@ -3,6 +3,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { fetchStoreProducts, getShippingRates } from "../../shared/printful.ts";
 import { getSmashieSettings, webPaymentProvider } from "../../shared/smashieSettings.ts";
 import { createSquareCheckoutLink } from "../../shared/squareWebCheckout.ts";
+import { createHelcimCheckoutLink } from "../../shared/helcimCheckout.ts";
 
 export default async function (req: Request) {
   try {
@@ -98,13 +99,95 @@ export default async function (req: Request) {
       fulfillment_status: "pending",
     };
 
+    const webProvider = webPaymentProvider(await getSmashieSettings(base44));
+
+    // ── Helcim path (issue #97, Part B): the same hosted-page shape as the
+    // Square one below. If Helcim has no credentials yet, or cannot open a page,
+    // the customer is handed the Square page instead — a merch checkout must
+    // never land on a page that cannot be paid. Printful is only asked to
+    // produce the order once the payment is verified.
+    if (webProvider === "helcim") {
+      let helcimMerchOrder = null;
+      try {
+        helcimMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({
+          ...merchOrderRecord,
+          payment_provider: "helcim",
+        });
+      } catch (dbError) {
+        console.error("MerchOrder save error:", dbError.message);
+        return Response.json({ error: "Could not save your order. No charge was made — please try again." }, { status: 500 });
+      }
+
+      try {
+        const link = await createHelcimCheckoutLink({
+          invoiceNumber: helcimMerchOrder.id,
+          orderNumber,
+          amountUsd: orderTotal,
+          payPageOrigin: origin,
+          allowTipping: false,
+        });
+        await base44.asServiceRole.entities.MerchOrder.update(helcimMerchOrder.id, {
+          payment_provider: "helcim",
+          helcim_checkout_id: link.checkoutToken,
+          payment_url: link.url,
+        });
+        return Response.json({
+          provider: "helcim",
+          order_number: orderNumber,
+          payment_url: link.url,
+          total: orderTotal,
+        });
+      } catch (helcimErr) {
+        console.warn("Helcim merch checkout unavailable — opening the alternate secure page:", helcimErr.message);
+        try {
+          const link = await createSquareCheckoutLink(base44, {
+            idempotencyKey: `merch-square-${helcimMerchOrder.id}`,
+            referenceId: helcimMerchOrder.id,
+            sourceName: "Tasty Threads",
+            lineItems: pricedItems.map((item: any) => ({
+              name: item.name,
+              quantity: item.quantity,
+              note: item.variantName || "",
+              unitPriceUsd: item.price,
+            })),
+            serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
+            totalCents: Math.round(orderTotal * 100),
+            redirectUrl: `${origin}/merch-confirmation?order_number=${orderNumber}&square=1`,
+            paymentNote: `Tasty Threads order ${orderNumber}`,
+            fulfillmentNote: `${customer.name}\n${address.address1 || ""}\n${address.city || ""}, ${address.state_code || ""} ${address.zip || ""}`.trim(),
+            allowTipping: false,
+            metadata: { merch_order_id: helcimMerchOrder.id, order_source: "flavor-isle-merch" },
+          });
+          await base44.asServiceRole.entities.MerchOrder.update(helcimMerchOrder.id, {
+            payment_provider: "square",
+            square_checkout_order_id: link.orderId,
+            payment_url: link.url,
+          });
+          return Response.json({
+            provider: "square",
+            order_number: orderNumber,
+            payment_url: link.url,
+            total: orderTotal,
+          });
+        } catch (squareErr) {
+          console.error("Alternate merch checkout setup failed too:", squareErr.message);
+          try {
+            await base44.asServiceRole.entities.MerchOrder.delete(helcimMerchOrder.id);
+          } catch (cleanupErr) {
+            console.error(`Failed to remove stranded merch order ${orderNumber}:`, cleanupErr.message);
+          }
+          return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
+        }
+      }
+    }
+
     // ── Alternate path (issue #95): a hosted secure payment page ──
     // Built from the same verified catalog prices and live shipping rate, and
     // Square's own total is checked to the cent before the URL is handed back.
     // Nothing about the merch experience changes: same cart, same shipping, same
     // confirmation, and Printful is only asked to produce the order once the
     // payment is verified.
-    if (webPaymentProvider(await getSmashieSettings(base44)) === "square") {
+    if (webProvider === "square") {
       let squareMerchOrder = null;
       try {
         squareMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({

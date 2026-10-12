@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { squarePhoneApi } from '../../shared/squarePhoneApi.ts';
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
-import { createStripePhonePayment } from '../../shared/stripePhonePayment.ts';
+import { createPhonePaymentLink } from '../../shared/helcimPhonePayment.ts';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
 export default async function(req) {
@@ -28,8 +28,12 @@ export default async function(req) {
       await base44.asServiceRole.entities.Order.update(order.id, { payment_url: '', square_payment_link_id: '', square_checkout_order_id: '', manual_pay_required: true });
       paymentUrl = '';
     }
-    if (!paymentUrl || order.payment_provider !== 'stripe' || !order.stripe_session_id) {
-      paymentUrl = await createStripePhonePayment(base44, order);
+    const provider = order.payment_provider || 'stripe';
+    if (provider === 'helcim' && paymentUrl) {
+      // The page already created for this order is reused — a re-send must never
+      // mint a second payable page.
+    } else if (!paymentUrl || provider !== 'stripe' || !order.stripe_session_id) {
+      paymentUrl = await createPhonePaymentLink(base44, order, provider);
     }
     const sent = await sendSmashieSms(order.customer_phone, `Flavor Isle: pay $${Number(order.total).toFixed(2)} for order #${order.order_number} here: ${paymentUrl}`);
     return Response.json({ payment_url: paymentUrl, sent, message: sent ? 'Payment link sent by text.' : 'The link is ready, but the text could not be sent. Open the order payment link and share it with the customer.' });

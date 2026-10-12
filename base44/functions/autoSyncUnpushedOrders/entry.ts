@@ -93,6 +93,30 @@ export default async function (req: Request) {
         continue;
       }
 
+      // Helcim secure-page orders (issue #97). The same safety net as the Square
+      // block above: if the customer closed the tab after paying, ask the
+      // settling pass whether Helcim holds a completed payment for the exact
+      // total, and let it do the single push the customer's return path does.
+      if (order.payment_provider === 'helcim' && !order.square_order_id && order.payment_status === 'pending') {
+        try {
+          const settleRes = await base44.asServiceRole.functions.invoke('settleHelcimWebPayment', {
+            order_number: String(order.order_number),
+          });
+          const data = settleRes?.data || settleRes;
+          if (data?.settled) {
+            pushed++;
+            results.push({ order_number: order.order_number, pushed: true, provider: 'helcim' });
+          } else {
+            skipped++;
+            results.push({ order_number: order.order_number, skipped: true, reason: data?.reason || 'Helcim payment not completed yet' });
+          }
+        } catch (err) {
+          skipped++;
+          results.push({ order_number: order.order_number, skipped: true, reason: `Helcim settle failed: ${err.message}` });
+        }
+        continue;
+      }
+
       if (order.square_order_id) {
         // Square push already done — payment was verified when it pushed.
         // Just retry the missing emails (confirmOnlinePayment → pushOrderToSquareAndKitchen

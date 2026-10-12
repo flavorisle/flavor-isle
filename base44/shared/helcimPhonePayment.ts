@@ -1,4 +1,6 @@
 import { createHelcimCheckoutLink, helcimConfigured, HELCIM_NOT_CONFIGURED } from './helcimCheckout.ts';
+import { createSquarePhonePayment } from './squarePhonePayment.ts';
+import { createStripePhonePayment } from './stripePhonePayment.ts';
 
 // The phone / text / website-chat payment link when the owner's phone switch is
 // on Helcim (issue #97, Part B step 11). Mirrors shared/squarePhonePayment.ts:
@@ -29,4 +31,25 @@ export async function createHelcimPhonePayment(base44: any, order: any) {
   });
 
   return link.url;
+}
+
+// The phone payment link for whichever processor the phone switch names, with
+// the Helcim fallback in one place: when Helcim has no credentials yet (or
+// cannot open a page), the caller gets the Square link instead of an error. A
+// customer must never be left without a way to pay.
+export async function createPhonePaymentLink(base44: any, order: any, provider: string) {
+  if (provider === 'helcim') {
+    try {
+      return await createHelcimPhonePayment(base44, order);
+    } catch (error) {
+      console.warn(
+        'Helcim phone payment link unavailable — using the alternate Square link instead:',
+        (error as Error).message,
+      );
+      return createSquarePhonePayment(base44, order);
+    }
+  }
+  return provider === 'square'
+    ? createSquarePhonePayment(base44, order)
+    : createStripePhonePayment(base44, order);
 }

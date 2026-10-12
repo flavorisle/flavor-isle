@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@14.25.0';
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
+import { settleHelcimPhonePayment } from '../../shared/helcimSettlement.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import {
   TIP_EDITABLE_INTENT_STATUSES,
@@ -29,8 +30,10 @@ export default async function (req) {
       );
     }
 
-    // Orders created by the earlier hosted-checkout flow can still settle here.
+    // Orders paid on a hosted secure page settle here, so opening the customer's
+    // own pay link again reflects the truth — whichever hosted page took it.
     if (order.payment_provider === 'square') order = await settleSquarePhonePayment(base44, order);
+    if (order.payment_provider === 'helcim') order = await settleHelcimPhonePayment(base44, order);
     const summary = orderPaySummary(order);
 
     if (order.payment_status === 'paid') {
