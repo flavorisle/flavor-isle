@@ -47,10 +47,13 @@ export function phonePaymentProvider(_settings) {
   return 'square';
 }
 
-// Website checkout takes the card inside our own page, in Square: the order is
-// saved, then Square's card form runs on the checkout screen itself, so no
-// checkout ever hands the customer to a processor's hosted page. The stored
-// web_payment_provider value is kept only so older records stay valid.
+// The website's food checkout pays through Base44 Payments (powered by Wix): the
+// order is saved and re-priced first, then the customer pays on the provider's own
+// secure page and lands straight back on that order's confirmation.
+//
+// Square keeps the two flows that take the card on our own page — the phone/text
+// payment link and the Tasty Threads merch checkout — plus the in-store POS.
+// The stored web_payment_provider value is kept only so older records stay valid.
 export function webPaymentProvider(_settings) {
-  return 'square';
+  return 'wix';
 }

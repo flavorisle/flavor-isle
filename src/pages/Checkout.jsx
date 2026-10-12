@@ -15,7 +15,6 @@ import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
-import SquareCardForm from '@/components/pay/SquareCardForm';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
@@ -29,7 +28,7 @@ const orderTypeLabel = (orderType, pickupMethod) =>
   orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -69,13 +68,6 @@ export default function Checkout() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
-  // Step 2 — the card form is built into this page. The order is saved first (its
-  // prices verified and the tip chosen above already inside it), then Square's
-  // card form runs right here against that exact saved total: the customer never
-  // leaves checkout, and no processor page is involved.
-  const [payOrder, setPayOrder] = useState(null);
-  const [payError, setPayError] = useState('');
-  const paymentRef = useRef(null);
 
   // Auto-focus the first field so a guest can start typing their name
   // immediately without hunting for the input — especially on desktop.
@@ -268,7 +260,7 @@ export default function Checkout() {
 
     setLoading(true);
     try {
-      // The order payload our own payment page is created from.
+      // The order payload the saved order — and its payment page — are built from.
       const hostedPayload = {
         items: mappedItems,
         orderType,
@@ -288,18 +280,29 @@ export default function Checkout() {
       };
 
       // The order is saved first — repriced and verified server-side, with the tip
-      // chosen above already inside it — and then Square's card form runs right
-      // here on this page, for that exact saved total. Nothing reaches Square POS
-      // or the kitchen until the payment goes through.
-      const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
-      const data = squareRes?.data || squareRes;
-      if (data?.order_number) {
-        setPayOrder({ order_number: data.order_number, total: Number(data.total) || totalWithTip });
-        // Phones show the summary first, so bring the card form into view.
-        requestAnimationFrame(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      // chosen above already inside it — and only then is the customer handed to
+      // the Base44 Payments checkout page for that exact saved total. Nothing
+      // reaches Square POS or the kitchen until the provider confirms the money.
+      const orderRes = await base44.functions.invoke('createWixWebCheckout', hostedPayload);
+      const data = orderRes?.data || orderRes;
+      if (!data?.order_number) {
+        setError(data?.error || 'We could not start your payment, so nothing was charged. Please try again.');
         return;
       }
-      setError(data?.error || 'We could not start your payment, so nothing was charged. Please try again.');
+      // The platform opens the provider's checkout for this order — the amount is
+      // read back from the saved order server-side, never sent from the browser —
+      // and hands back the page to send the customer to. The order number rides
+      // along so the return lands on this order's own confirmation.
+      const checkoutRes = await base44.functions.invoke('create-checkout', {
+        productId: `order:${data.order_number}`,
+        ready_for: schedule.scheduledFor || '',
+      });
+      const redirectUrl = checkoutRes?.data?.redirectUrl;
+      if (!redirectUrl) {
+        setError('We could not open the secure payment page. Your order is saved and nothing was charged — please tap again.');
+        return;
+      }
+      window.location.href = redirectUrl;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.
@@ -308,15 +311,6 @@ export default function Checkout() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Paid on this page — the bag is done and the customer goes straight to their
-  // order, the same landing the old payment page sent them to.
-  const handlePaid = () => {
-    clearCart();
-    navigate(
-      `/order-confirmation?order_number=${payOrder?.order_number}${schedule.scheduledFor ? `&ready_for=${encodeURIComponent(schedule.scheduledFor)}` : ''}`,
-    );
   };
 
   if (!orderingEnabled || storeClosed) {
@@ -365,7 +359,7 @@ export default function Checkout() {
 
         <div className="mb-6">
           <h1 className="font-heading text-3xl text-obsidian-roast leading-none">Checkout</h1>
-          <p className="text-sm text-muted-foreground mt-1">{payOrder ? 'Step 2 of 2 — Payment' : 'Step 1 of 2 — Your details'}</p>
+          <p className="text-sm text-muted-foreground mt-1">Review your order, then pay on our secure checkout page</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -374,7 +368,7 @@ export default function Checkout() {
 
                 {/* Non-blocking sign-in nudge for guests — encourages account
                     creation without blocking checkout. */}
-                {!payOrder && isGuest && (
+                {isGuest && (
                   <div className="card-diner p-4 flex items-center gap-3" style={{ backgroundColor: 'rgba(0,51,102,0.05)', borderColor: 'rgba(0,51,102,0.2)' }}>
                     <div className="w-9 h-9 rounded-full bg-patina-mint/10 flex items-center justify-center flex-shrink-0">
                       <UserCircle size={18} className="text-patina-mint" />
@@ -390,25 +384,6 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {/* Step 2 — the saved order's card form, built into this page. */}
-                {payOrder ? (
-                  <div ref={paymentRef} className="space-y-3 scroll-mt-28">
-                    <div className="card-diner p-4">
-                      <h2 className="font-heading text-base text-obsidian-roast">Payment</h2>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Order #{payOrder.order_number} is saved. Pay ${payOrder.total.toFixed(2)} by card right here and the kitchen starts on it — nothing is cooked before then. Need something changed on the order? Call the counter at (270) 563-4618.
-                      </p>
-                    </div>
-                    <SquareCardForm
-                      orderNumber={payOrder.order_number}
-                      amount={payOrder.total}
-                      onSuccess={handlePaid}
-                      onError={setPayError}
-                    />
-                    {payError && <p className="text-sm text-destructive">{payError}</p>}
-                    <CheckoutTrustBadges variant="compact" />
-                  </div>
-                ) : (
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -565,7 +540,6 @@ export default function Checkout() {
                     )}
                   </div>
                 </div>
-                )}
 
           </div>
 
@@ -592,7 +566,7 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {!payOrder && <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />}
+              <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
 
               <div className="space-y-2 mb-4">
                 {cartItems.map(item => (
@@ -627,7 +601,7 @@ export default function Checkout() {
               )}
 
               {/* Star Rewards — compact balance + redeemable rewards */}
-              {!payOrder && happyHourDiscount <= 0 && <CheckoutLoyaltyBox
+              {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
                 subtotal={subtotal}
                 phone={form.phone}
                 cartItems={cartItems}
@@ -635,9 +609,8 @@ export default function Checkout() {
                 onApply={setAppliedReward}
               />}
 
-              {/* Add a Tip — lives in the summary so the running total reflects it live.
-                  Frozen once the order is saved and the card form is open. */}
-              {!payOrder && <div className="border-t border-border pt-3 mb-3">
+              {/* Add a Tip — lives in the summary so the running total reflects it live. */}
+              <div className="border-t border-border pt-3 mb-3">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-heading text-base text-obsidian-roast">Add a Tip</h3>
                   <span className="text-midnight-cherry font-heading text-base">${tipAmount.toFixed(2)}</span>
@@ -688,7 +661,7 @@ export default function Checkout() {
                 >
                   No tip
                 </button>
-              </div>}
+              </div>
 
               <div className="border-t border-border pt-3 space-y-2 text-sm mb-4">
                 <div className="flex justify-between text-muted-foreground">
@@ -735,21 +708,20 @@ export default function Checkout() {
               )}
 
               <div className="hidden lg:block">
-                {payOrder ? (
-                  <p className="text-xs text-muted-foreground text-center">Your card form is open on this page — finish it to lock in the order.</p>
-                ) : (
-                  <button
-                    onClick={handleContinue}
-                    disabled={loading}
-                    className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                    <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={handleContinue}
+                  disabled={loading}
+                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                  <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+                  )}
+                </button>
+                <div className="mt-3">
+                  <CheckoutTrustBadges variant="compact" />
+                </div>
               </div>
 
             </div>
@@ -758,9 +730,8 @@ export default function Checkout() {
       </div>
 
       {/* Sticky mobile CTA — keeps the primary action reachable without scrolling
-          the full summary. Once the card form is open on the page the whole flow
-          lives here, so the bar steps aside. */}
-      {!payOrder && <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
+          the full summary. */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
         <button
           onClick={handleContinue}
           disabled={loading}
@@ -772,7 +743,7 @@ export default function Checkout() {
             <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
           )}
         </button>
-      </div>}
+      </div>
     </div>
   );
 }
