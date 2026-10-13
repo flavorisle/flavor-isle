@@ -15,6 +15,10 @@ import BottomTabBar from './components/BottomTabBar';
 import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
 import SmashieChat from './components/SmashieChat';
+import SmashieHunt from './components/findSmashie/SmashieHunt';
+import FindSmashieBanner from './components/findSmashie/FindSmashieBanner';
+import HalloweenTheme from '@/components/halloween/HalloweenTheme';
+import { isHalloweenSeason } from '@/lib/halloweenSeason';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -55,6 +59,7 @@ const SMSSignup = lazy(() => import('./pages/SMSSignup'));
 const BusynessGuide = lazy(() => import('./pages/BusynessGuide'));
 const Connect = lazy(() => import('./pages/Connect'));
 const Gallery = lazy(() => import('./pages/Gallery'));
+const FindSmashie = lazy(() => import('./pages/FindSmashie'));
 const SocialReviews = lazy(() => import('./pages/SocialReviews'));
 const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const CommunityNews = lazy(() => import('./pages/CommunityNews'));
@@ -152,6 +157,8 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      <FindSmashieBanner />
+
       {/* Keep-alive bottom-tab routes: stay mounted, toggled with `hidden` so
           view state + scroll survive tab switches instead of remounting. */}
       <div className={location.pathname === '/' ? '' : 'hidden'} aria-hidden={location.pathname !== '/'}>
@@ -187,6 +194,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/find-smashie" element={<FindSmashie />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -278,6 +286,8 @@ function AppShell() {
               <BottomTabBar />
               <MobileHeader />
               <ConsentBanner />
+              <HalloweenTheme />
+              <SmashieHunt />
               <SmashieChat />
               <MerchCartDrawer />
             </Router>
@@ -291,7 +301,13 @@ function AppShell() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      forcedTheme={isHalloweenSeason() ? 'dark' : undefined}
+    >
       <AppShell />
     </ThemeProvider>
   );

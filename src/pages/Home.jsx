@@ -37,6 +37,7 @@ import ExpressPickupStrip from '@/components/ExpressPickupStrip';
 import HeritageBadges from '@/components/HeritageBadges';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 
 const SPECIALS_TICKER = [
@@ -161,6 +162,10 @@ export default function Home() {
 
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero cityLine />
+
+      {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
+      <FindSmashiePromo />
+
       <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
       <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
       <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />

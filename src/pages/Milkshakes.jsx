@@ -10,6 +10,7 @@ import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
 import AllergyNote from '@/components/AllergyNote';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
@@ -226,6 +227,8 @@ export default function Milkshakes() {
           </div>
         </div>
       </section>
+
+      <FindSmashiePromo />
 
       <Footer />
 

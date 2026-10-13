@@ -5,6 +5,7 @@ import AdminNav from '@/components/admin/AdminNav';
 import ConversationLog from '@/components/admin/ConversationLog';
 import ManagementMessageLog from '@/components/admin/ManagementMessageLog';
 import SmashieSettingsPanel from '@/components/admin/SmashieSettingsPanel';
+import FindSmashiePanel from '@/components/admin/FindSmashiePanel';
 import SmsBroadcastPanel from '@/components/admin/SmsBroadcastPanel';
 import SmsSubscribersList from '@/components/admin/SmsSubscribersList';
 import SmsQrCode from '@/components/SmsQrCode';
@@ -72,7 +73,13 @@ export default function AdminCommunications() {
         {tab === 'messages' && <ManagementMessageLog />}
         {tab === 'blocked' && <BlockedContactsPanel />}
         {tab === 'passthrough' && <CounterPassThroughPanel />}
-        {tab === 'settings' && <SmashieSettingsPanel />}
+        {tab === 'settings' && (
+          <>
+            <SmashieSettingsPanel />
+            <div className="h-8" />
+            <FindSmashiePanel />
+          </>
+        )}
       </div>
     </div>
   );

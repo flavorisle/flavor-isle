@@ -1,0 +1,56 @@
+{
+  "name": "FindSmashieWinner",
+  "type": "object",
+  "properties": {
+    "game_date": {
+      "type": "string",
+      "description": "Hunt day this win belongs to, YYYY-MM-DD store local time (America/Chicago)."
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["pumpkin", "vampire"],
+      "description": "Which costume Smashie was wearing when found: pumpkin (open-5PM) or vampire (5PM-close)."
+    },
+    "winner_name": {
+      "type": "string",
+      "description": "Public display name for the winner board and announcements: first name + last initial."
+    },
+    "prize_choice": {
+      "type": "string",
+      "enum": ["", "points", "milkshake"],
+      "description": "Prize the winner picked: points = 100 Star Rewards points credited to their phone-number account; milkshake = free milkshake applied to an order placed right then."
+    },
+    "found_at": {
+      "type": "string",
+      "description": "ISO timestamp of the winning click."
+    },
+    "found_time": {
+      "type": "string",
+      "description": "Human-readable store-local time of the find, e.g. 12:47 PM, for the winner board."
+    },
+    "prize_fulfilled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin flag: whether the prize (points credit or free milkshake) has been fulfilled."
+    }
+  },
+  "required": ["game_date"],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

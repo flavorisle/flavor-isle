@@ -9,6 +9,7 @@ import GalleryLightbox from '@/components/gallery/GalleryLightbox';
 import Seo from '@/components/Seo';
 import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
 import CinematicHero from '@/components/cinematic/CinematicHero';
+import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import { base44 } from '@/api/base44Client';
 
 const SQUARE_PHOTO_NAMES = ['Mini Cheeseburger', 'Cheeseburger', 'French Fries', 'Curly Fries', 'Tater Tots', 'Onion Rings', 'Double Cheeseburger', 'Hamburger', 'Bacon Cheeseburger', 'Sundae'];
@@ -95,6 +96,8 @@ export default function Gallery() {
           onNext={() => setOpenIndex((i) => (i + 1) % photos.length)}
         />
       )}
+
+      <FindSmashiePromo />
 
       <Footer />
       <CartDrawer />
