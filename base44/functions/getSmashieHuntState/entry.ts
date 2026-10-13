@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { HUNT_START_DATE, HUNT_END_DATE } from '../../shared/smashieHuntWindow.ts';
+import { HUNT_START_DATE, HUNT_END_DATE, inHuntWindow } from '../../shared/smashieHuntWindow.ts';
 
 // Find Smashie — public state for the hunt banner + sprite.
 // Returns whether the game is active, today's open/close hours,
@@ -41,7 +41,9 @@ Deno.serve(async (req) => {
     try {
       const winners = await base44.asServiceRole.entities.FindSmashieWinner
         .filter({ game_date: dateStr });
-      const w = winners?.[0];
+      // Today's winner is only announced on the hunt's own days, so a test-mode
+      // win never shows up on the live site before the hunt opens.
+      const w = inHuntWindow(dateStr) ? winners?.[0] : null;
       if (w) {
         const found = new Date(w.found_at || w.created_date);
         todayWinner = {

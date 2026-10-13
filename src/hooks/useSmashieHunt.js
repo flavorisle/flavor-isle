@@ -67,12 +67,16 @@ export default function useSmashieHunt() {
   const startDate = state.start_date || HUNT_START_DATE;
   const endDate = state.end_date || HUNT_END_DATE;
 
+  // Test mode (the admin Preview switch) runs the hunt outside the locked
+  // window, so the hint and the sprite can be walked through before it opens.
+  const testing = !!state.preview_mode;
+
   // Advertising runs from the promo start date through the last hunt day.
-  if (!state.active || today < HUNT_PROMO_START_DATE || today > endDate) {
+  if (!state.active || (!testing && (today < HUNT_PROMO_START_DATE || today > endDate))) {
     return { show: false, started: false, startDate, phase: null, spot: null, hint: null, winner };
   }
 
-  if (today < startDate) {
+  if (today < startDate && !testing) {
     return { show: true, started: false, startDate, phase: null, spot: null, hint: null, winner };
   }
 

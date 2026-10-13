@@ -106,7 +106,9 @@ export default function SmashieHunt() {
     ? (nowMinutes < minutesOfDay(VAMPIRE_SWITCH_TIME) ? 'pumpkin' : 'vampire')
     : getHuntPhase({ nowMinutes, openMinutes: openM, closeMinutes: closeM });
 
-  const active = !!state?.active && inDateRange(dateStr);
+  // Test mode (the admin Preview switch) runs the hunt outside the locked
+  // Oct 15 – Nov 1 window so the whole game can be walked through before launch.
+  const active = !!state?.active && (inDateRange(dateStr) || !!state?.preview_mode);
   const foundToday = !!state?.today_winner;
   const spot = useMemo(
     () => (phase ? getHuntSpot({ dateStr, phase, nowMinutes }) : null),

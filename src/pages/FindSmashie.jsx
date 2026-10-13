@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate } from '@/lib/findSmashie';
+import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, HUNT_START_DATE } from '@/lib/findSmashie';
 import useSmashieHunt from '@/hooks/useSmashieHunt';
 
 // Public rules + winner board for the Find Smashie game.
@@ -12,8 +12,12 @@ export default function FindSmashie() {
     let cancelled = false;
     (async () => {
       try {
-        const list = await base44.entities.FindSmashieWinner.list('-game_date', 31);
-        if (!cancelled) setWinners(list);
+        // Only the hunt's own days — a test-mode win never reaches the public board.
+        const { items } = await base44.entities.FindSmashieWinner.filter(
+          { game_date: { $gte: HUNT_START_DATE } },
+          { sort: '-game_date', limit: 31 },
+        );
+        if (!cancelled) setWinners(items);
       } catch (e) {
         if (!cancelled) setWinners([]);
       }

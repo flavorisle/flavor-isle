@@ -118,7 +118,7 @@ export default function FindSmashiePanel() {
             />
           </label>
           <label className="text-sm space-y-1">
-            <span className="font-semibold">Preview mode (ignore open/close hours)</span>
+            <span className="font-semibold">Preview mode — test the game right now</span>
             <select
               className="w-full rounded-md border bg-background p-2"
               value={settings.preview_mode ? 'on' : 'off'}
@@ -127,7 +127,9 @@ export default function FindSmashiePanel() {
               <option value="on">On — for testing only</option>
               <option value="off">Off — hide only during open hours</option>
             </select>
-            <span className="text-xs text-muted-foreground">Turn OFF before the live October launch.</span>
+            <span className="text-xs text-muted-foreground">
+              Runs the hunt outside its dates and open hours so you can play it today. Turn OFF before the live October launch.
+            </span>
           </label>
           <div className="sm:col-span-2 rounded-lg bg-muted p-3 text-sm">
             <p className="font-semibold">Game dates — locked</p>
@@ -152,8 +154,9 @@ export default function FindSmashiePanel() {
         <h4 className="font-semibold mb-3">Today's hiding spots ({todayStr()})</h4>
         {!inDateRange(todayStr()) && (
           <p className="text-xs text-muted-foreground mb-3">
-            Preview only — the hunt runs {formatHuntDate(HUNT_START_DATE)} – {formatHuntDate(HUNT_END_DATE)}, so Smashie is
-            not hidden on the site today.
+            Outside the {formatHuntDate(HUNT_START_DATE)} – {formatHuntDate(HUNT_END_DATE)} hunt window — this is where
+            Smashie would hide today. Turn <strong>Preview mode</strong> on to see him there, and turn it off again before
+            the hunt opens.
           </p>
         )}
         <div className="grid sm:grid-cols-2 gap-3 text-sm">

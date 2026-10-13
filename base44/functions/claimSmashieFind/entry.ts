@@ -51,8 +51,10 @@ Deno.serve(async (req) => {
     };
     if (!settings.active) return Response.json({ off: true });
     // Wins only count inside the locked official window (Oct 15 – Nov 1), so a
-    // stale saved date range can never open the game early or run it late.
-    if (!inHuntWindow(dateStr)) {
+    // stale saved date range can never open the game early or run it late. Test
+    // mode (the admin Preview switch) is the one exception, so the win flow can
+    // be walked through before the hunt opens.
+    if (!inHuntWindow(dateStr) && !settings.preview_mode) {
       return Response.json({ off: true });
     }
 
