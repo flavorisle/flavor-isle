@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // Find Smashie — Halloween Hide & Seek (October game)
 //
-// Runs Oct 15 through Nov 1. Every day Smashie hides somewhere on
+// Runs Oct 15 through Oct 31. Every day Smashie hides somewhere on
 // the site. Pumpkin Smashie
 // hides from open until 5:00 PM; if nobody has found him by 5 PM,
 // he moves to a NEW hiding spot as Vampire Smashie until close.
@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 export const HUNT_START_DATE = '2026-10-15';
-export const HUNT_END_DATE = '2026-11-01';
+export const HUNT_END_DATE = '2026-10-31';
 // The site starts advertising the game before the hunt opens: the site-wide
 // banner and the promo band tease it from this date.
 export const HUNT_PROMO_START_DATE = '2026-10-09';
@@ -87,7 +87,7 @@ export function formatHuntDate(dateStr) {
 
 /**
  * Is this YYYY-MM-DD one of the hunt's days? The window is locked for this
- * season — Oct 15 through Nov 1 inclusive — so the game starts and stops on
+ * season — Oct 15 through Oct 31 inclusive — so the game starts and stops on
  * the right days whatever the saved settings record holds.
  */
 export function inDateRange(dateStr) {

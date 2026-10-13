@@ -107,8 +107,11 @@ export default function SmashieHunt() {
     : getHuntPhase({ nowMinutes, openMinutes: openM, closeMinutes: closeM });
 
   // Test mode (the admin Preview switch) runs the hunt outside the locked
-  // Oct 15 – Nov 1 window so the whole game can be walked through before launch.
-  const active = !!state?.active && (inDateRange(dateStr) || !!state?.preview_mode);
+  // Oct 15 – Oct 31 window so the whole game can be walked through before launch.
+  // It never reaches past the last hunt day, so a preview switch left on cannot
+  // keep Smashie on the site after the season is over.
+  const active = !!state?.active
+    && (inDateRange(dateStr) || (!!state?.preview_mode && dateStr <= HUNT_END_DATE));
   const foundToday = !!state?.today_winner;
   const spot = useMemo(
     () => (phase ? getHuntSpot({ dateStr, phase, nowMinutes }) : null),

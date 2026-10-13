@@ -5,7 +5,7 @@ import HalloweenDecor from '@/components/halloween/HalloweenDecor';
 
 // Site-wide Halloween theme. While the season is on it tags <html> with
 // `halloween` (which re-colors the whole site via halloween.css) and adds the
-// spooky decorations. After November 1 it renders nothing and the regular
+// spooky decorations. After October 31 it renders nothing and the regular
 // theme is back automatically.
 export default function HalloweenTheme() {
   const on = isHalloweenSeason();

@@ -55,7 +55,7 @@ export default function FindSmashieBanner() {
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3 text-center sm:text-left">
         {beforeStart ? (
           <p>
-            🎃 <strong>Find Smashie starts {startDateLabel}!</strong> Every day through November 1, Smashie
+            🎃 <strong>Find Smashie starts {startDateLabel}!</strong> Every day through {formatHuntDate(endDate)}, Smashie
             hides somewhere on this site — first signed-in finder wins a free milkshake or 100 Star
             Rewards points. Follow the daily winner reveals on Instagram&nbsp;
             <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="underline font-semibold">{INSTAGRAM_HANDLE}</a>

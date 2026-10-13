@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────
    Halloween 2026 seasonal theme — colors and spooky touches only, no layout.
    Every rule is gated on html.halloween, which HalloweenTheme adds only while
-   the season is on (through Nov 1), so the regular theme returns by itself.
+   the season is on (through Oct 31), so the regular theme returns by itself.
    The site is also switched to its dark mode for the season (App.jsx); these
    rules re-tint that dark mode in pumpkin orange, witch purple and bone white.
    High-contrast mode always wins over the seasonal palette.

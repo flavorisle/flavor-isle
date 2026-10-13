@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, HUNT_START_DATE } from '@/lib/findSmashie';
+import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, HUNT_START_DATE, HUNT_END_DATE } from '@/lib/findSmashie';
 import useSmashieHunt from '@/hooks/useSmashieHunt';
 
 // Public rules + winner board for the Find Smashie game.
@@ -37,8 +37,8 @@ export default function FindSmashie() {
           🎃 Find Smashie: Halloween Hide &amp; Seek
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          From October 15 through November 1, Smashie hides somewhere on
-          flavor-isle.com — dressed for Halloween and trying his best not to be
+          From {formatHuntDate(HUNT_START_DATE)} through {formatHuntDate(HUNT_END_DATE)}, Smashie
+          hides somewhere on flavor-isle.com — dressed for Halloween and trying his best not to be
           spotted.
         </p>
       </div>

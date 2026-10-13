@@ -68,8 +68,10 @@ export default function useSmashieHunt() {
   const endDate = state.end_date || HUNT_END_DATE;
 
   // Test mode (the admin Preview switch) runs the hunt outside the locked
-  // window, so the hint and the sprite can be walked through before it opens.
-  const testing = !!state.preview_mode;
+  // window, so the hint and the sprite can be walked through before it opens. It
+  // never reaches past the last hunt day, so a preview switch left on cannot keep
+  // the game alive once the season is over.
+  const testing = !!state.preview_mode && today <= endDate;
 
   // Advertising runs from the promo start date through the last hunt day.
   if (!state.active || (!testing && (today < HUNT_PROMO_START_DATE || today > endDate))) {
