@@ -6,7 +6,7 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
-import { helcimPayPageUrl, helcimConfigured } from '../../shared/helcimCheckout.ts';
+import { helcimPayPageUrl, helcimCanTakePayment } from '../../shared/helcimCheckout.ts';
 
 // The website's secure payment page when the owner's switch is set to Helcim.
 //
@@ -44,15 +44,20 @@ export default async function (req: Request) {
       return Response.json({ error: 'This checkout is no longer available. Please refresh and order again.' }, { status: 410 });
     }
 
-    // No Helcim credentials yet: tell the browser to use the Square page so the
-    // customer can still pay. Nothing is charged and no order is created here.
-    if (!helcimConfigured()) {
-      console.warn('createHelcimWebCheckout: Helcim is not configured — sending the customer to the Square page instead');
+    // No Helcim credentials yet — or a Helcim account that cannot take a USD card
+    // right now (no active terminal, an account not boarded yet): tell the browser to
+    // use the Square page so the customer can still pay. Nothing is charged and no
+    // order is created here.
+    //
+    // Answered 200 on purpose: the browser only acts on the fallback when the
+    // response arrives normally, so an error status would dead-end the customer.
+    if (!(await helcimCanTakePayment())) {
+      console.warn('createHelcimWebCheckout: Helcim cannot take a card payment right now — sending the customer to the Square page instead');
       return Response.json({
         provider: 'helcim',
         fallback: 'square',
-        reason: 'Helcim is not configured yet, so the secure payment page is opened on the alternate processor.',
-      }, { status: 409 });
+        reason: 'The Helcim payment page is unavailable, so the alternate secure page is being used instead.',
+      });
     }
 
     if (!items || items.length === 0) {
@@ -175,11 +180,13 @@ export default async function (req: Request) {
       } catch (cleanupErr) {
         console.error(`Failed to remove stranded pending order ${orderNumber}:`, (cleanupErr as Error).message);
       }
+      // 200 for the same reason as the probe above: the browser has to receive the
+      // fallback normally to open the Square page.
       return Response.json({
         provider: 'helcim',
         fallback: 'square',
         reason: 'The Helcim payment page could not be opened, so the alternate secure page is being used instead.',
-      }, { status: 409 });
+      });
     }
 
     // ── SMS consent: inspect the result, never claim enrollment on failure ──

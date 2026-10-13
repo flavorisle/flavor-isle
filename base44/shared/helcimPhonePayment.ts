@@ -1,4 +1,4 @@
-import { helcimPayPageUrl, helcimConfigured, HELCIM_NOT_CONFIGURED } from './helcimCheckout.ts';
+import { helcimPayPageUrl, helcimCanTakePayment } from './helcimCheckout.ts';
 import { createSquarePhonePayment } from './squarePhonePayment.ts';
 import { createStripePhonePayment } from './stripePhonePayment.ts';
 
@@ -11,8 +11,11 @@ import { createStripePhonePayment } from './stripePhonePayment.ts';
 // link, so an unconfigured or unhappy Helcim can never leave a caller without a
 // way to pay.
 export async function createHelcimPhonePayment(base44: any, order: any) {
-  if (!helcimConfigured()) {
-    throw new Error(HELCIM_NOT_CONFIGURED);
+  // A Helcim account that cannot open a session (no active terminal for the currency,
+  // say) is treated exactly like a missing credential: the caller hands the customer
+  // the alternate Square link instead of texting a page that cannot be paid.
+  if (!(await helcimCanTakePayment())) {
+    throw new Error('Helcim cannot open a checkout session right now.');
   }
 
   // The Helcim session — and the tip the customer picks on the page — is created

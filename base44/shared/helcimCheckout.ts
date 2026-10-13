@@ -13,6 +13,8 @@
 // Amounts are verified to the cent against what Helcim reports before an order
 // is ever marked paid: the money rule is the same one the Square and Stripe
 // paths enforce.
+import { withTimeout } from './withTimeout.ts';
+
 const DEFAULT_API_BASE = 'https://api.helcim.com/v2';
 
 export function helcimApiBase(): string {
@@ -38,6 +40,37 @@ export function helcimConfigured(): boolean {
 
 export const HELCIM_NOT_CONFIGURED =
   'Helcim is not configured yet (the HELCIM_API_KEY token is missing), so no secure payment page was created.';
+
+// Can this merchant account actually take a USD card right now?
+//
+// Helcim refuses /helcim-pay/initialize at the ACCOUNT level when the merchant has
+// no active terminal for the currency ("No active terminals for USD currency"), and
+// every session minted afterwards fails the same way — a customer is left staring at
+// a payment page that can never be paid. Each entry point asks this first, so an
+// account-level problem routes the customer to the alternate processor instead.
+//
+// No invoice request is sent, so a discarded probe leaves no invoice behind in the
+// merchant's account, and it is bounded so a stalled Helcim call cannot hang checkout.
+export async function helcimCanTakePayment(): Promise<boolean> {
+  if (!helcimConfigured()) return false;
+  try {
+    await withTimeout(
+      () =>
+        helcimRequest('/helcim-pay/initialize', 'POST', {
+          paymentType: 'purchase',
+          amount: 1,
+          currency: 'USD',
+          language: 'en',
+        }),
+      6000,
+      'Helcim checkout probe',
+    );
+    return true;
+  } catch (error) {
+    console.error('helcimCanTakePayment: Helcim will not open a checkout session:', (error as Error).message);
+    return false;
+  }
+}
 
 // One place for the authenticated Helcim call, so the key never leaves this
 // module and every failure carries the status and Helcim's own message.
