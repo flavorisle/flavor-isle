@@ -125,26 +125,31 @@ export function cancellationSmsBody(order: any, { refunded, amountText }: { refu
 // Tell the customer the order is off. The email always goes (when there's an
 // address); the text rides the app's existing transactional-consent gate, so a
 // customer who never opted into texts is simply skipped and the crew sees why.
-export async function notifyOrderCancelled(base44: any, order: any, { refunded }: { refunded: boolean }) {
+// Email the cancellation notice on its own. Split out so the crew can resend just
+// the email from Admin → Emails when a customer calls: the same body and the same
+// sender as the automatic notice, with no text riding along and no refund issued.
+// Returns 'sent', null (the order has no customer email) or 'failed (…)'.
+export async function sendCancellationEmail(base44: any, order: any, { refunded }: { refunded: boolean }): Promise<string | null> {
+  if (!order.customer_email) return null;
   const amountText = `$${Number(order.total || 0).toFixed(2)}`;
-  let email: string | null = null;
-  let sms: string | null = null;
-
-  if (order.customer_email) {
-    try {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: order.customer_email,
-        subject: refunded
-          ? `Order ${order.order_number} cancelled — refund on the way`
-          : `Order ${order.order_number} cancelled`,
-        body: cancellationEmailBody(order, { refunded, amountText }),
-      });
-      email = 'sent';
-    } catch (error) {
-      email = `failed (${(error as Error).message})`;
-      console.error(`Cancellation email to ${order.customer_email} failed:`, (error as Error).message);
-    }
+  try {
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: order.customer_email,
+      subject: refunded
+        ? `Order ${order.order_number} cancelled — refund on the way`
+        : `Order ${order.order_number} cancelled`,
+      body: cancellationEmailBody(order, { refunded, amountText }),
+    });
+    return 'sent';
+  } catch (error) {
+    console.error(`Cancellation email to ${order.customer_email} failed:`, (error as Error).message);
+    return `failed (${(error as Error).message})`;
   }
+}
+
+export async function notifyOrderCancelled(base44: any, order: any, { refunded }: { refunded: boolean }) {
+  const email = await sendCancellationEmail(base44, order, { refunded });
+  let sms: string | null = null;
 
   if (order.customer_phone) {
     const result = await sendOrderStatusSms(base44, order, 'cancelled', {
