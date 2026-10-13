@@ -18,7 +18,14 @@ export default async function (req: Request) {
     const orderId = body.order_id;
     if (!orderId) return Response.json({ error: 'order_id is required' }, { status: 400 });
 
-    const order = await base44.asServiceRole.entities.Order.get(orderId);
+    // An unknown id makes the SDK throw rather than return null, so a mistyped
+    // order id answers with a plain "not found" instead of a 500.
+    let order = null;
+    try {
+      order = await base44.asServiceRole.entities.Order.get(orderId);
+    } catch (notFound) {
+      order = null;
+    }
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
     if (!order.customer_email) {
       return Response.json({ error: `Order ${order.order_number} has no customer email on it, so there is nowhere to send this.` }, { status: 400 });
