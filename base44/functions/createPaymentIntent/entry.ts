@@ -6,6 +6,7 @@ import { verifyOrderPricing } from '../../shared/verifyOrderPricing.ts';
 import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
+import { customerLinkFields } from '../../shared/customerLink.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -123,6 +124,12 @@ Deno.serve(async (req) => {
     }
     const paymentIntent = await stripe.paymentIntents.create(piParams);
 
+    // ── Customer link (issue #96, section A) ──
+    // Every order carries its customer's normalized phone and, when the person
+    // is already in the directory, their profile id — so the admin Customers
+    // page can show a complete history from the first order onward.
+    const customerLink = await customerLinkFields(base44, { phone: customer?.phone, email: customer?.email });
+
     // ── Persist the Order BEFORE returning a payable intent ──
     // If the DB save fails, cancel the just-created (unconfirmed) intent so no
     // payable flow exists without a recoverable persisted Order, then return an
@@ -133,6 +140,8 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Order.create({
         order_number: orderNumber,
         order_type: orderType,
+        normalized_phone: customerLink.normalized_phone,
+        customer_id: customerLink.customer_id,
         ...(orderType === 'pickup' ? { pickup_method: pickupMethod === 'curbside' ? 'curbside' : 'counter' } : {}),
         ...(vehicle && (vehicle.color || vehicle.make || vehicle.model) ? {
           arrival_details: {

@@ -14,6 +14,7 @@ import SearchPerformanceCard from '@/components/admin/SearchPerformanceCard';
 import AutoPrintToggle from '@/components/admin/AutoPrintToggle';
 import FailedOrderAlert from '@/components/admin/FailedOrderAlert';
 import AdminActivityPanel from '@/components/admin/AdminActivityPanel';
+import AdminTodayOrders from '@/components/admin/AdminTodayOrders';
 
 const orderPages = [
 {
@@ -99,8 +100,11 @@ export default function AdminDashboard() {
           payments, and missed customer/staff emails. Silent when all clear. */}
       <FailedOrderAlert />
 
-      {/* Last admin sign-in and what each admin is working on right now */}
+      {/* Who has signed in today and what each admin is working on right now */}
       <AdminActivityPanel />
+
+      {/* Orders placed and processed today, on the store's own day */}
+      <AdminTodayOrders />
 
       <BroadcastPushCard />
       <PushLogList />

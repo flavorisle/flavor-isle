@@ -1,5 +1,4 @@
-import { createStripePhonePayment } from '../../shared/stripePhonePayment.ts';
-import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
+import { createPhonePaymentLink } from '../../shared/helcimPhonePayment.ts';
 import { getSmashieSettings, phoneCashEnabled, phonePaymentProvider } from '../../shared/smashieSettings.ts';
 import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
@@ -10,6 +9,7 @@ import { isInternalCaller } from '../../shared/internalRelay.ts';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { customerLinkFields } from '../../shared/customerLink.ts';
 import { withTimeout } from '../../shared/withTimeout.ts';
 
 // The caller is waiting on the line, so link setup is bounded: a stalled
@@ -242,6 +242,11 @@ export default async function(req) {
     const { subtotal, tax, deliveryFee: orderDeliveryFee, total: finalTotal } = phoneOrderTotals(baseSubtotal, deliveryFee);
     const orderNumber = Date.now().toString().slice(-6);
 
+    // Customer link (issue #96, section A): the caller's number is normalized and
+    // matched against the directory, so a phone order joins that person's history
+    // rather than sitting apart from it.
+    const customerLink = await customerLinkFields(base44, { phone: customer_phone, email: orderEmail });
+
     // Keep the order pending until the customer pays on the payment page.
     const order = await base44.asServiceRole.entities.Order.create({
       order_number: orderNumber,
@@ -255,6 +260,8 @@ export default async function(req) {
       delivery_fee: orderDeliveryFee,
       total: finalTotal,
       order_source: PHONE_ORDER_SOURCE,
+      normalized_phone: customerLink.normalized_phone,
+      customer_id: customerLink.customer_id,
       customer_name,
       customer_phone,
       customer_email: orderEmail,
@@ -299,9 +306,9 @@ export default async function(req) {
       // Secure payment link paid on flavor-isle.com/pay/:orderNumber. The owner
       // picks which processor backs it in Admin → Communications; the customer
       // only ever sees our own pay page.
-      paymentUrl = paymentProvider === 'square'
-        ? await createSquarePhonePayment(base44, order)
-        : await createStripePhonePayment(base44, order);
+      // Stripe, Square or Helcim — whichever the owner's phone switch names.
+      // A Helcim hiccup falls back to the Square link so the caller can still pay.
+      paymentUrl = await createPhonePaymentLink(base44, order, paymentProvider);
 
       // Text it first — the customer is on the phone or on a text thread, so it
       // lands instantly. This is the primary delivery channel for the payment

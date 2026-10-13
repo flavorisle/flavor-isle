@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Lock, Clock, Coffee, UserCircle, Pencil } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
 import { getFamilyBundleDiscount } from '@/lib/familyBundle';
@@ -8,12 +8,8 @@ import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 import { base44 } from '@/api/base44Client';
 
 import SchedulePicker from '@/components/checkout/SchedulePicker';
-import SplitPayment from '@/components/checkout/SplitPayment';
 import SavedAddressField from '@/components/checkout/SavedAddressField';
 import CheckoutTrustBadges from '@/components/checkout/CheckoutTrustBadges';
-import WalletPayButton from '@/components/checkout/WalletPayButton';
-import ExpressCheckout from '@/components/checkout/ExpressCheckout';
-import SavedCardSelector from '@/components/checkout/SavedCardSelector';
 import CheckoutLoyaltyBox from '@/components/checkout/CheckoutLoyaltyBox';
 import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
@@ -23,147 +19,18 @@ import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { trackBeginCheckout, trackPurchase, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
+import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
-import { useToast } from '@/components/ui/use-toast';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
   orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
-// Brand-neutral card field styling — matches the app's diner aesthetic with
-// no Stripe logos or branding.
-const CARD_STYLE = {
-  style: {
-    base: {
-      fontSize: '15px',
-      color: '#141414',
-      fontFamily: 'Open Sans, system-ui, sans-serif',
-      '::placeholder': { color: '#9ca3af' },
-      iconColor: '#C0392B',
-    },
-    invalid: { color: '#dc2626', iconColor: '#dc2626' },
-  },
-  hidePostalCode: true,
-};
-
-// Stable fingerprint of the cart being ordered — recognises "the same cart" so a
-// retry reopens the Order + PaymentIntent already created for it instead of
-// creating a second, duplicate pending order.
-function buildCartFingerprint(items, { orderType, pickupMethod, total, tip, reward, scheduledFor, loyaltyOptIn, phone }) {
-  return JSON.stringify({
-    items: items.map(i => [i.name, i.quantity, i.price, (i.selectedModifiers || []).map(m => m.name).join(',')]),
-    orderType, pickupMethod, total, tip, reward: reward || '', scheduledFor, loyaltyOptIn, phone,
-  });
-}
-
-// Inner payment form — must be rendered inside <Elements>
-function PaymentForm({ clientSecret, orderNumber, onSuccess, onError, total, savedCard, saveNewCard, setSaveNewCard, canSaveCard }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [paying, setPaying] = useState(false);
-
-  const handlePay = async (e) => {
-    e.preventDefault();
-    if (!stripe) return;
-    setPaying(true);
-    onError('');
-
-    let result;
-    if (savedCard) {
-      // Charge a saved card by its PaymentMethod id.
-      result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: savedCard.stripe_payment_method_id,
-      });
-    } else {
-      // The card field never became ready (script blocked or still loading) —
-      // say so instead of silently doing nothing when the customer taps Pay.
-      if (!elements || !elements.getElement(CardElement)) {
-        setPaying(false);
-        onError("The card form isn't ready yet. Turn off any ad blocker and tap Pay again — if it still won't open, reload the page.");
-        return;
-      }
-      result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: elements.getElement(CardElement) },
-      });
-    }
-
-    if (result.error) {
-      onError(result.error.message);
-      setPaying(false);
-    } else if (result.paymentIntent.status === 'succeeded') {
-      // Save the new card for next time if the customer opted in. Done after
-      // a successful charge so a failed payment never saves a card.
-      if (!savedCard && saveNewCard && canSaveCard && result.paymentIntent.payment_method) {
-        try {
-          await base44.functions.invoke('manageSavedCards', {
-            action: 'save',
-            paymentMethodId: String(result.paymentIntent.payment_method),
-          });
-        } catch (err) {
-          console.error('Save new card failed:', err);
-        }
-      }
-      onSuccess(orderNumber);
-    }
-  };
-
-  return (
-    <div>
-      {!savedCard && (
-        <WalletPayButton
-          clientSecret={clientSecret}
-          total={total}
-          label={`Flavor Isle #${orderNumber}`}
-          onSuccess={() => onSuccess(orderNumber)}
-          onError={onError}
-        />
-      )}
-      <form onSubmit={handlePay}>
-      {savedCard ? (
-        <div className="flex items-center gap-3 border border-border rounded-2xl px-4 py-4 bg-white mb-5">
-          <div className="w-9 h-9 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
-            <Lock size={16} className="text-midnight-cherry" />
-          </div>
-          <div className="flex-1">
-            <p className="font-heading text-sm text-obsidian-roast capitalize">{savedCard.brand} •••• {savedCard.last4}</p>
-            <p className="text-xs text-muted-foreground">Expires {String(savedCard.exp_month).padStart(2, '0')}/{String(savedCard.exp_year).slice(-2)} · saved card</p>
-          </div>
-        </div>
-      ) : (
-        <div className="border border-border rounded-2xl px-4 py-4 bg-white mb-3">
-          <CardElement options={CARD_STYLE} />
-        </div>
-      )}
-      {!savedCard && canSaveCard && (
-        <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
-          <input type="checkbox" checked={saveNewCard} onChange={e => setSaveNewCard(e.target.checked)} className="w-4 h-4 rounded accent-midnight-cherry" />
-          <span className="text-sm text-obsidian-roast">Save this card for faster checkout next time</span>
-        </label>
-      )}
-      <button
-        type="submit"
-        disabled={paying || !stripe}
-        className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {paying ? (
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <><Lock size={15} /> Pay ${total.toFixed(2)}</>
-        )}
-      </button>
-      </form>
-    </div>
-  );
-}
-
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, clearCart, orderingEnabled, orderingClosedMessage, cutoffStatus, groupMode, personSubtotals, people, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, addItem } = useCart();
+  const { cartItems, clearCart, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
   // Kitchen prep estimate scales with the live busyness level so checkout
@@ -171,6 +38,21 @@ export default function Checkout() {
   // wait from the backend so it eases back to normal as inflow slows.
   const prepMinutes = waitMin || 20;
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
+
+  // The order this customer already saved but has not paid yet — a declined card, or
+  // a card form they closed. Paying it again reuses that same order rather than
+  // leaving a second unpaid one behind; anything that changes what is being ordered
+  // drops it, so the amount charged always matches what is on the screen.
+  const [pendingOrder, setPendingOrder] = useState(null);
+
+  const handleHelcimPaid = useCallback((paidOrderNumber) => {
+    clearCart();
+    navigate(`/order-confirmation?order_number=${paidOrderNumber}&helcim=1&from=checkout`);
+  }, [clearCart, navigate]);
+
+  // Helcim's card form opens over this page, and the shared flow verifies the
+  // payment against Helcim's own record before this is called.
+  const { startPayment: startHelcimPay, starting: helcimStarting, error: helcimError } = useHelcimInlinePay(handleHelcimPaid);
 
   // Before the store opens for pickup, ready times are clamped to opening —
   // show "from {open}" on the order-type tiles instead of a minute estimate.
@@ -185,7 +67,6 @@ export default function Checkout() {
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
-  const [isGuest, setIsGuest] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
@@ -199,12 +80,11 @@ export default function Checkout() {
   const [extras, setExtras] = useState({ forks: false, ketchup: false, salt: false, napkins: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [mugAdded, setMugAdded] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
 
-  // Auto-focus the first field so a guest can start typing their name
+  // Auto-focus the first field so the customer can start typing their name
   // immediately without hunting for the input — especially on desktop.
   useEffect(() => { nameRef.current?.focus(); }, []);
 
@@ -217,12 +97,12 @@ export default function Checkout() {
   }, []);
 
   // Prefill contact details for signed-in customers from their account +
-  // saved customer profile. Only fills fields the guest hasn't typed into.
+  // saved customer profile. Only fills fields the customer hasn't typed into.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
-      if (!isAuthed) { if (!cancelled) setIsGuest(true); return; }
+      if (!isAuthed) return;
       if (cancelled) return;
       const me = await base44.auth.me().catch(() => null);
       if (!me || cancelled) return;
@@ -242,39 +122,6 @@ export default function Checkout() {
     })();
     return () => { cancelled = true; };
   }, []);
-
-  // Payment step state
-  const [step, setStep] = useState('details'); // 'details' | 'payment' | 'split'
-  // Resolved Stripe.js instance for the payment step, plus a visible load error
-  // so a failed or blocked script shows a reason and a retry instead of a dead
-  // card form the customer cannot use.
-  const [stripe, setStripe] = useState(null);
-  const [stripeLoadError, setStripeLoadError] = useState('');
-  const [publishableKey, setPublishableKey] = useState('');
-  const [expressStripePromise, setExpressStripePromise] = useState(null);
-  const [clientSecret, setClientSecret] = useState('');
-  const [orderNumber, setOrderNumber] = useState('');
-  // The Order + PaymentIntent already created for the current cart. Reusing it
-  // stops a Back-then-Continue tap (or a failed wallet attempt) from creating a
-  // second, never-paid Order for the same cart.
-  const [pendingOrder, setPendingOrder] = useState(null);
-  // Whether the device actually supports a wallet (Apple Pay / Google Pay).
-  // The express card stays hidden until the Stripe Payment Request confirms support.
-  const [walletReady, setWalletReady] = useState(null);
-
-  // Group split-payment state
-  const [payMode, setPayMode] = useState('together'); // 'together' | 'separate'
-  const [splitIntents, setSplitIntents] = useState([]);
-  const [splitPublishable, setSplitPublishable] = useState('');
-
-  // Saved cards (logged-in customers) — lets them charge a stored card or
-  // save a new one for next time. stripeCustomerId is attached to the
-  // PaymentIntent so saved methods can be charged.
-  const [savedCards, setSavedCards] = useState([]);
-  const [stripeCustomerId, setStripeCustomerId] = useState(null);
-  const [canSaveCard, setCanSaveCard] = useState(false); // signed-in customer can save cards
-  const [selectedCardId, setSelectedCardId] = useState('new'); // 'new' | stripe_payment_method_id
-  const [saveNewCard, setSaveNewCard] = useState(false);
 
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
@@ -303,14 +150,14 @@ export default function Checkout() {
     setTipPreset(smartFlat ? '2' : '18');
   }, [smartFlat]);
 
-  // Clear an applied reward when split mode changes (separate split can't apply
-  // a single reward). The reward is now chosen in the cart drawer.
-  useEffect(() => {
-    setAppliedReward(null);
-  }, [groupMode, payMode]);
-
   // Clear stale field errors (e.g. delivery address) when the order type changes.
   useEffect(() => { setFieldErrors({}); }, [orderType]);
+
+  // A saved, still-unpaid order stops being the one to charge as soon as what is
+  // being ordered changes — the bag, the time, or the tip. The next tap then creates
+  // a fresh verified order instead of charging a stale amount.
+  useEffect(() => { setPendingOrder(null); },
+    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length]);
 
   // Distance-based delivery pricing — quote the fee from the typed address
   // (debounced). Clears the quote when not delivering or the address is empty.
@@ -372,27 +219,11 @@ export default function Checkout() {
   const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const updateForm = (field, val) => {
+    // Editing any detail of the order makes an already-saved, unpaid order stale.
+    setPendingOrder(null);
     setForm(prev => ({ ...prev, [field]: val }));
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
   };
-
-  // Load Stripe.js for the payment step. A missing or blocked script used to
-  // leave the customer on a payment step with no card form and no explanation —
-  // now it shows a reason plus a retry that reuses the same order.
-  const initStripe = (pk) => {
-    setStripeLoadError('');
-    setStripe(null);
-    const fail = () => setStripeLoadError("We couldn't load the secure card form. Check your connection, turn off any ad blocker, then tap Retry.");
-    loadStripe(pk).then(instance => (instance ? setStripe(instance) : fail())).catch(fail);
-  };
-
-  // Scroll to top when moving to the payment or split step so the card form
-  // is immediately visible instead of leaving the user scrolled down past it.
-  useEffect(() => {
-    if (step === 'payment' || step === 'split') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [step]);
 
   const handleContinue = async () => {
     setError('');
@@ -440,7 +271,6 @@ export default function Checkout() {
       quantity: i.quantity,
       image_url: i.image_url,
       selectedModifiers: i.selectedModifiers || [],
-      person_name: i.person_name || '',
       catalog_object_id: i.catalog_object_id || '',
       square_item_id: i.square_item_id || '',
       isBuildShake: !!i.isBuildShake,
@@ -451,111 +281,57 @@ export default function Checkout() {
       allergyNote: i.allergyNote || '',
     }));
 
-    // Fingerprint of exactly what is being ordered, so a retry for the same cart
-    // reopens the intent we already created instead of creating another one.
-    const cartFingerprint = buildCartFingerprint(mappedItems, {
-      orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
-      reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: form.phone,
-    });
-
     setLoading(true);
     try {
-      if (groupMode && payMode === 'separate') {
-        // Split: each person pays their own share; one fee + tip shared across the group.
-        const withItems = personSubtotals.filter(p => p.itemCount > 0);
-        if (withItems.length === 0) { setError('Add items to split.'); setLoading(false); return; }
-        // Even split of the shared fee + tip, remainder on the last person so the
-        // sum of shares exactly equals the group total.
-        const shareCount = withItems.length;
-        const feeShareBase = Math.floor((deliveryFee + tipAmount) * 100 / shareCount) / 100;
-        const remainder = +((deliveryFee + tipAmount) - feeShareBase * shareCount).toFixed(2);
-        const splits = withItems.map((p, idx) => {
-          // A bundle's lines are always tagged to whoever was ordering when it
-          // was added, so each person's own share of the bundle discount comes
-          // off their own subtotal and the shares still sum to the order total.
-          const pBundle = getFamilyBundleDiscount(cartItems.filter(i => i.person_id === p.id));
-          const pSub = +(p.subtotal - (p.happyHourDiscount || 0) - pBundle).toFixed(2);
-          const pTax = salesTaxFor(pSub);
-          const feeTip = feeShareBase + (idx === withItems.length - 1 ? remainder : 0);
-          const pTotal = fromCents(toCents(pSub) + toCents(pTax) + toCents(feeTip));
-          return { person_name: p.name, subtotal: pSub, tax: pTax, deliveryFee: feeTip, tip: 0, total: pTotal };
-        });
+      // The order payload the saved order — and its payment page — are built from.
+      const hostedPayload = {
+        items: mappedItems,
+        orderType,
+        pickupMethod,
+        customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
+        instructions: instructionsWithExtras,
+        subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
+        discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+        loyaltyOptIn,
+        referralCode: referralCode || undefined,
+        scheduledFor,
+        estimatedTime,
+        vehicle: isCurbside ? vehicle : null,
+        smsTransactionalConsent: smsConsent,
+        smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
+        smsConsentVersion: SMS_CONSENT_VERSION,
+      };
 
-        const res = await base44.functions.invoke('createGroupPayment', {
-          items: mappedItems,
-          orderType,
-          pickupMethod,
-          vehicle: isCurbside ? vehicle : null,
-          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          scheduledFor, estimatedTime,
-          splits,
-          groupName: people.map(p => p.name).join(', '),
-          happyHourDiscount,
-          bundleDiscount,
-          loyaltyOptIn,
-          referralCode: referralCode || undefined,
-          smsTransactionalConsent: smsConsent,
-          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
-          smsConsentVersion: SMS_CONSENT_VERSION,
-        });
+      // A tap after a declined card (or a card form the customer closed) pays the
+      // order that is already saved, so no second unpaid order is left behind.
+      if (pendingOrder) {
+        await startHelcimPay(pendingOrder);
+        return;
+      }
 
-        const { intents, publishableKey: splitPk, orderNumber: on, smsConsentStored } = res.data;
-        if (smsConsentStored === false) {
-          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
-        }
-        setSplitIntents(intents);
-        setSplitPublishable(splitPk);
-        setOrderNumber(on);
-        setStep('split');
-      } else if (pendingOrder && pendingOrder.fingerprint === cartFingerprint) {
-        // Same cart as an order we already created (the customer tapped Back, or
-        // a wallet attempt failed) — reopen that same intent instead of creating
-        // a second Order that would sit unpaid forever.
-        setClientSecret(pendingOrder.clientSecret);
-        setPublishableKey(pendingOrder.publishableKey);
-        setOrderNumber(pendingOrder.orderNumber);
-        initStripe(pendingOrder.publishableKey);
-        setStep('payment');
-      } else {
-        const res = await base44.functions.invoke('createPaymentIntent', {
-          items: mappedItems,
-          orderType,
-          pickupMethod,
-          customer: { name: fullName, email: form.email, phone: form.phone, address: form.address, table: form.table },
-          instructions: instructionsWithExtras,
-          subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-          discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
-          loyaltyOptIn,
-          referralCode: referralCode || undefined,
-          scheduledFor,
-          estimatedTime,
-          vehicle: isCurbside ? vehicle : null,
-          stripeCustomerId: stripeCustomerId || undefined,
-          smsTransactionalConsent: smsConsent,
-          smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
-          smsConsentVersion: SMS_CONSENT_VERSION,
-        });
-
-        const { clientSecret: cs, publishableKey: pk, orderNumber: on, smsConsentStored } = res.data;
-        // Never advance to a payment step that cannot be paid — a missing secret
-        // or key used to leave the customer there with no card form, holding an
-        // order that was never charged.
-        if (!cs || !pk) {
-          setError('We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
+      // The order is saved first — repriced and verified server-side, with the tip
+      // chosen above already inside it — and only then is the card taken on Helcim's
+      // form over this same page, for exactly that saved total. Nothing reaches
+      // Square POS or the kitchen until the payment is verified against the order.
+      const orderRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
+      const data = orderRes?.data || orderRes;
+      // Helcim cannot take the payment right now: the same order is opened on the
+      // alternate secure page instead, so the customer can still pay.
+      if (data?.fallback === 'square') {
+        const squareRes = await base44.functions.invoke('createSquareWebCheckout', hostedPayload);
+        const squareUrl = (squareRes?.data || squareRes)?.payment_url;
+        if (squareUrl) {
+          window.location.href = squareUrl;
           return;
         }
-        if (smsConsentStored === false) {
-          toast({ title: 'Text sign-up failed', description: "We couldn't save your order-text sign-up. You can retry from your account later.", variant: 'destructive' });
-        }
-        setClientSecret(cs);
-        setPublishableKey(pk);
-        setOrderNumber(on);
-        setPendingOrder({ orderNumber: on, clientSecret: cs, publishableKey: pk, fingerprint: cartFingerprint });
-        initStripe(pk);
-        setStep('payment');
       }
+      if (data?.orderNumber) {
+        setPendingOrder(data.orderNumber);
+        await startHelcimPay(data.orderNumber);
+        return;
+      }
+      setError(data?.error || 'We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
+      return;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.
@@ -565,131 +341,6 @@ export default function Checkout() {
       setLoading(false);
     }
   };
-
-  const handleSuccess = async (on) => {
-    trackPurchase(cartItems.map(foodItemToGa4), {
-      transaction_id: on,
-      value: totalWithTip,
-      tax,
-      shipping: deliveryFee,
-      coupon: appliedReward?.description,
-    });
-    // Client-side fulfillment fallback: await before navigating so the order
-    // reliably reaches Square POS + the kitchen even when the Stripe webhook
-    // is delayed or dropped — and the ONLY path for group/split orders (which
-    // use stripe_session_id 'GROUP' so the webhook can't match them). The
-    // paying spinner in each payment component stays on during this await, so
-    // the customer sees natural "processing" feedback. Idempotent, so it's
-    // safe when the webhook also fires.
-    try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(on) });
-    } catch (err) {
-      console.error('confirmOnlinePayment fallback failed:', err);
-    }
-    clearCart();
-    navigate(`/order-confirmation?order_number=${on}&ready_for=${encodeURIComponent(schedule.scheduledFor || '')}`);
-  };
-
-  // Load the Stripe publishable key once so Apple Pay / Google Pay can render
-  // on the first step (before a payment intent exists).
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await base44.functions.invoke('getStripePublishableKey', {});
-        if (!cancelled && res?.data?.publishableKey) {
-          setExpressStripePromise(loadStripe(res.data.publishableKey));
-        }
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Load saved cards for signed-in customers so they can pick one for checkout.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const isAuthed = await base44.auth.isAuthenticated().catch(() => false);
-      if (!isAuthed || cancelled) return;
-      try {
-        const res = await base44.functions.invoke('manageSavedCards', { action: 'list' });
-        if (cancelled) return;
-        setCanSaveCard(true); // list succeeded → customer is signed in
-        const cards = res.data?.cards || [];
-        setSavedCards(cards);
-        setStripeCustomerId(res.data?.customerId || null);
-        const def = cards.find(c => c.is_default) || cards[0];
-        if (def) setSelectedCardId(def.stripe_payment_method_id);
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Build a single-pay intent from the current cart + wallet-provided contact
-  // details. Used by the express Apple Pay / Google Pay button.
-  const createIntent = async (walletCustomer) => {
-    // One-tap checkout skips the details form, so it must not skip the required
-    // allergy text — otherwise the kitchen would never see the alert.
-    if (hasAllergy && !form.allergy.trim()) {
-      throw new Error('Tell us what the allergy is, then tap again — or pay with the card form below.');
-    }
-    const scheduledFor = schedule.scheduledFor;
-    const estimatedTime = schedule.estimatedTime;
-    const mappedItems = cartItems.map(i => ({
-      name: i.name,
-      price: i.price,
-      quantity: i.quantity,
-      image_url: i.image_url,
-      selectedModifiers: i.selectedModifiers || [],
-      person_name: i.person_name || '',
-      catalog_object_id: i.catalog_object_id || '',
-      square_item_id: i.square_item_id || '',
-      isBuildShake: !!i.isBuildShake,
-      deluxeLabel: i.deluxeLabel || '',
-      deluxeToppings: i.deluxeToppings || [],
-      comboConfigId: i.comboConfigId || '',
-      comboComponents: i.comboComponents || [],
-      allergyNote: i.allergyNote || '',
-    }));
-    const customer = {
-      name: walletCustomer.name || fullName,
-      email: walletCustomer.email || form.email,
-      phone: walletCustomer.phone || form.phone,
-      address: orderType === 'delivery' ? form.address : '',
-      table: form.table || '',
-    };
-    const res = await base44.functions.invoke('createPaymentIntent', {
-      items: mappedItems,
-      orderType,
-      pickupMethod,
-      customer,
-      instructions: instructionsWithExtras,
-      subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
-      discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
-      loyaltyOptIn,
-      referralCode: referralCode || undefined,
-      scheduledFor, estimatedTime,
-      vehicle: isCurbside ? vehicle : null,
-    });
-    // Remember this order + intent: if the wallet sheet fails, the card form
-    // below completes the SAME order instead of creating a second pending one.
-    if (res.data?.clientSecret && res.data?.orderNumber) {
-      setPendingOrder({
-        orderNumber: res.data.orderNumber,
-        clientSecret: res.data.clientSecret,
-        publishableKey: res.data.publishableKey,
-        fingerprint: buildCartFingerprint(mappedItems, {
-          orderType, pickupMethod, total: totalWithTip, tip: tipAmount,
-          reward: appliedReward?.tierId, scheduledFor, loyaltyOptIn, phone: customer.phone,
-        }),
-      });
-    }
-    return res.data;
-  };
-
-  const expressAvailable = !cutoffStatus[orderType]
-    && !(groupMode && payMode === 'separate')
-    && (orderType !== 'delivery' || (form.address.trim() !== '' && deliveryQuote?.ok && !deliveryQuote.out_of_range));
 
   if (!orderingEnabled || storeClosed) {
     return (
@@ -730,77 +381,20 @@ export default function Checkout() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-32 lg:pb-10">
         <div className="flex items-center gap-4 mb-8">
-          {step === 'payment' || step === 'split' ? (
-            <button onClick={() => setStep('details')} className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
-              <ArrowLeft size={16} /> Back
-            </button>
-          ) : (
-            <Link to="/menu" className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
-              <ArrowLeft size={16} /> Back to Menu
-            </Link>
-          )}
+          <Link to="/menu" className="inline-flex items-center gap-2 text-muted-foreground hover:text-midnight-cherry transition-colors text-sm">
+            <ArrowLeft size={16} /> Back to Menu
+          </Link>
         </div>
 
         <div className="mb-6">
           <h1 className="font-heading text-3xl text-obsidian-roast leading-none">Checkout</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {step === 'details' ? 'Step 1 of 2 — Your details' : 'Step 2 of 2 — Payment'}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">Review your order, then pay on our secure checkout page</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left – Form */}
           <div className="lg:col-span-3 space-y-4">
 
-            {step === 'details' && (
-              <>
-                {/* Non-blocking sign-in nudge for guests — encourages account
-                    creation without blocking checkout. */}
-                {isGuest && (
-                  <div className="card-diner p-4 flex items-center gap-3" style={{ backgroundColor: 'rgba(0,51,102,0.05)', borderColor: 'rgba(0,51,102,0.2)' }}>
-                    <div className="w-9 h-9 rounded-full bg-patina-mint/10 flex items-center justify-center flex-shrink-0">
-                      <UserCircle size={18} className="text-patina-mint" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-heading text-sm text-obsidian-roast">Sign in for faster checkout</p>
-                      <p className="text-xs text-muted-foreground">Save your details, track orders, and earn Star Rewards.</p>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Link to="/login?returnTo=%2Fcheckout" className="btn-mint px-3 py-2 text-xs font-heading whitespace-nowrap">Sign In</Link>
-                      <Link to="/register?returnTo=%2Fcheckout" className="px-3 py-2 text-xs font-heading rounded-full border-2 border-border text-obsidian-roast hover:border-patina-mint/40 transition-colors whitespace-nowrap">Create Account</Link>
-                    </div>
-                  </div>
-                )}
-
-                {/* Express checkout — one-tap Apple Pay / Google Pay first.
-                    Hidden entirely when the device has no wallet (walletReady === false). */}
-                {expressStripePromise && expressAvailable && walletReady !== false && (
-                  <div className="card-diner p-5 border-2 border-midnight-cherry/20 bg-white">
-                    <div className="flex items-center justify-between mb-1">
-                      <h2 className="font-heading text-lg text-obsidian-roast">One-Tap Checkout</h2>
-                      <span className="text-xs bg-midnight-cherry/10 text-midnight-cherry px-2.5 py-1 rounded-full font-heading">Fastest</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-4">Skip the form — pay instantly with your wallet and we'll grab the details we need from it.</p>
-                    <Elements stripe={expressStripePromise}>
-                      <ExpressCheckout
-                        total={totalWithTip}
-                        label="Flavor Isle"
-                        createIntent={createIntent}
-                        onSuccess={handleSuccess}
-                        onError={setError}
-                        onAvailability={setWalletReady}
-                      />
-                    </Elements>
-                    <div className="flex items-center gap-3 mt-5">
-                      <div className="h-px bg-border flex-1" />
-                      <span className="text-xs text-muted-foreground font-heading uppercase tracking-widest">or fill in details</span>
-                      <div className="h-px bg-border flex-1" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact Info — delivery address moved up front so a new guest
-                    sees the most important field first, before consent/instructions. */}
                 <div className="card-diner p-4">
                   <h2 className="font-heading text-base text-obsidian-roast mb-3">Your Info</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -838,7 +432,7 @@ export default function Checkout() {
                   </div>
 
                   {/* Delivery address — shown right after contact for delivery
-                      orders so a new guest fills the most important field first. */}
+                      orders so a new customer fills the most important field first. */}
                   {orderType === 'delivery' && (
                     <div className={fieldErrors.address ? 'ring-2 ring-destructive/30 rounded-2xl mt-4' : 'mt-4'}>
                       <SavedAddressField
@@ -880,9 +474,9 @@ export default function Checkout() {
                   </label>
 
                   {/* SMS opt-in for order status updates — transactional only, optional,
-                      unchecked, and persisted through order creation (createPaymentIntent /
-                      createGroupPayment upsert an SMSSubscriber record). Marketing consent is
-                      never offered or inferred here. */}
+                      unchecked, and persisted through order creation (which upserts an
+                      SMSSubscriber record). Marketing consent is never offered or
+                      inferred here. */}
                   <label className="flex items-start gap-3 mt-4 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -958,106 +552,6 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                {/* Group payment mode — the whole group pays one fee; choose
-                    whether one person pays everything or each pays their share. */}
-                {groupMode && (
-                  <div className="card-diner p-4">
-                    <h2 className="font-heading text-base text-obsidian-roast mb-1">Group Payment</h2>
-                    <p className="text-xs text-muted-foreground mb-3">Split into per-person charges, or pay the full total. Delivery fee is charged once.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => setPayMode('together')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'together' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
-                        <p className="font-heading text-sm text-obsidian-roast">Pay Together</p>
-                        <p className="text-xs text-muted-foreground">One charge · ${totalWithTip.toFixed(2)}</p>
-                      </button>
-                      <button onClick={() => setPayMode('separate')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all ${payMode === 'separate' ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40'}`}>
-                        <p className="font-heading text-sm text-obsidian-roast">Pay Separately</p>
-                        <p className="text-xs text-muted-foreground">Each person pays their share</p>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-              </>
-            )}
-
-            {step === 'split' && splitIntents.length > 0 && (
-              <SplitPayment
-                intents={splitIntents}
-                publishableKey={splitPublishable}
-                orderNumber={orderNumber}
-                onSuccess={handleSuccess}
-                onError={setError}
-              />
-            )}
-
-            {step === 'payment' && clientSecret && (
-              <div className="card-diner p-4">
-                <h2 className="font-heading text-base text-obsidian-roast mb-1">Payment</h2>
-                <p className="text-sm text-muted-foreground mb-4">Enter your card details below to complete your order.</p>
-                {subtotal > 25 && !mugAdded && !cartItems.some(i => i.id === 'souvenir-mug') && (
-                  <div className="mb-4 rounded-2xl border-2 border-midnight-cherry/30 bg-midnight-cherry/5 p-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
-                        <Coffee size={22} className="text-midnight-cherry" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-heading text-sm text-obsidian-roast">Add a Flavor Isle souvenir mug</p>
-                        <p className="text-xs text-muted-foreground">Take a piece of the Isle home — $6.00</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { addItem({ id: 'souvenir-mug', name: 'Flavor Isle Souvenir Mug', price: 6.00, quantity: 1, selectedModifiers: [] }); setMugAdded(true); }}
-                      className="btn-cherry px-4 py-2.5 text-xs font-heading whitespace-nowrap flex-shrink-0"
-                    >
-                      Add — $6.00
-                    </button>
-                  </div>
-                )}
-                {savedCards.length > 0 && (
-                  <SavedCardSelector
-                    cards={savedCards}
-                    selectedId={selectedCardId}
-                    onSelect={setSelectedCardId}
-                  />
-                )}
-                {stripeLoadError ? (
-                  <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 text-center">
-                    <p className="text-sm text-destructive mb-3">{stripeLoadError}</p>
-                    <button
-                      type="button"
-                      onClick={() => initStripe(publishableKey)}
-                      className="btn-cherry px-6 py-2.5 text-xs font-heading"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : !stripe ? (
-                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-                    <div className="w-5 h-5 border-2 border-midnight-cherry border-t-transparent rounded-full animate-spin" />
-                    Loading the secure card form…
-                  </div>
-                ) : (
-                  <Elements stripe={stripe} options={{ clientSecret }}>
-                    <PaymentForm
-                      clientSecret={clientSecret}
-                      orderNumber={orderNumber}
-                      onSuccess={handleSuccess}
-                      onError={setError}
-                      total={totalWithTip}
-                      savedCard={selectedCardId !== 'new' ? savedCards.find(c => c.stripe_payment_method_id === selectedCardId) : null}
-                      saveNewCard={saveNewCard}
-                      setSaveNewCard={setSaveNewCard}
-                      canSaveCard={canSaveCard}
-                    />
-                  </Elements>
-                )}
-                <div className="mt-5">
-                  <CheckoutTrustBadges variant="full" />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right – Order Details & Summary */}
@@ -1083,70 +577,30 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {step === 'details' && (
-                <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
-              )}
+              <SchedulePicker onChange={setSchedule} prepMinutes={prepMinutes} compact />
 
               <div className="space-y-2 mb-4">
-                {groupMode ? (
-                  personSubtotals.filter(p => p.itemCount > 0).map(p => (
-                    <div key={p.id} className="rounded-2xl bg-muted/60 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-heading text-sm text-patina-mint">{p.name === 'Me' ? 'You' : p.name}</span>
-                        <span className="text-xs text-muted-foreground">{p.itemCount} item{p.itemCount !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {cartItems.filter(i => i.person_id === p.id).map(item => (
-                          <div key={item.id} className="flex justify-between items-start gap-3 pl-2 border-l-2 border-patina-mint/30">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                              <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                onClick={() => {
-                                  const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
-                                  if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
-                                }}
-                                className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
-                                aria-label={`Edit ${item.name}`}
-                              >
-                                <Pencil size={13} />
-                              </button>
-                              <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-between pt-2 mt-2 border-t border-border/60 text-xs">
-                        <span className="text-muted-foreground">{p.name === 'Me' ? 'Your share' : `${p.name}'s share`}</span>
-                        <span className="font-heading text-obsidian-roast">${p.subtotal.toFixed(2)}</span>
-                      </div>
+                {cartItems.map(item => (
+                  <div key={item.id} className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
+                      <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
                     </div>
-                  ))
-                ) : (
-                  cartItems.map(item => (
-                    <div key={item.id} className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                        <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => {
-                            const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
-                            if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
-                          }}
-                          className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
-                          aria-label={`Edit ${item.name}`}
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
+                          if (pid && !pid.startsWith('combo-')) navigate(`/product/${pid}`);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-patina-mint transition-colors"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <span className="text-midnight-cherry font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
 
               {/* Referred by a friend — the referrer gets 50 bonus Stars once
@@ -1166,7 +620,7 @@ export default function Checkout() {
                 onApply={setAppliedReward}
               />}
 
-              {/* Add a Tip — lives in the summary so the running total reflects it live */}
+              {/* Add a Tip — lives in the summary so the running total reflects it live. */}
               <div className="border-t border-border pt-3 mb-3">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-heading text-base text-obsidian-roast">Add a Tip</h3>
@@ -1226,7 +680,7 @@ export default function Checkout() {
                 </div>
                 {deliveryFee > 0 && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>{groupMode ? 'Delivery (shared once)' : 'Delivery'}</span><span>${deliveryFee.toFixed(2)}</span>
+                    <span>Delivery</span><span>${deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
@@ -1257,53 +711,50 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {error && (
+              {(error || helcimError) && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <span>{error || helcimError}</span>
                 </div>
               )}
 
-              {step === 'details' && (
-                <div className="hidden lg:block">
-                  <button
-                    onClick={handleContinue}
-                    disabled={loading}
-                    className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                    <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
-                    )}
-                  </button>
-                  <div className="mt-3">
-                    <CheckoutTrustBadges variant="compact" />
-                  </div>
+              <div className="hidden lg:block">
+                <button
+                  onClick={handleContinue}
+                  disabled={loading || helcimStarting}
+                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading || helcimStarting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                  <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+                  )}
+                </button>
+                <div className="mt-3">
+                  <CheckoutTrustBadges variant="compact" />
                 </div>
-              )}
+              </div>
 
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sticky mobile CTA — keeps the primary action reachable without scrolling the full summary */}
-      {step === 'details' && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
-          <button
-            onClick={handleContinue}
-            disabled={loading}
-            className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>{groupMode && payMode === 'separate' ? `Pay Separately · $${totalWithTip.toFixed(2)}` : `Continue to Payment · $${totalWithTip.toFixed(2)}`}</>
-            )}
-          </button>
-        </div>
-      )}
+      {/* Sticky mobile CTA — keeps the primary action reachable without scrolling
+          the full summary. */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
+        <button
+          onClick={handleContinue}
+          disabled={loading || helcimStarting}
+          className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading || helcimStarting ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { UserPlus, Mail, Lock, Phone, Calendar, Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
+import { safeReturnTo } from "@/lib/authReturnTo";
 import { toast } from "@/components/ui/use-toast";
 
 export default function Register() {
@@ -79,7 +80,9 @@ export default function Register() {
       } catch (err) {
         console.error("Customer profile save failed:", err);
       }
-      window.location.href = "/";
+      // Back to wherever they were headed (?returnTo=) — a customer sent here from
+      // checkout lands on checkout rather than the home page.
+      window.location.href = safeReturnTo();
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
@@ -101,7 +104,7 @@ export default function Register() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/");
+    base44.auth.loginWithProvider("google", safeReturnTo());
   };
 
   if (showOtp) {
@@ -166,7 +169,7 @@ export default function Register() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
+          <Link to={`/login${window.location.search}`} className="text-primary font-medium hover:underline">
             Log in
           </Link>
         </>

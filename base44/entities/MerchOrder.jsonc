@@ -72,6 +72,31 @@
     "stripe_session_id": {
       "type": "string"
     },
+    "payment_provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "square",
+        "helcim"
+      ],
+      "description": "Which system took the money for this merch order. Empty on historical orders (all of which were the original card path). Set from the website's secure payment switch when the order is created."
+    },
+    "payment_url": {
+      "type": "string",
+      "description": "The secure payment page this merch order was sent to (our own page on flavor-isle.com for the hosted paths). Kept so a re-opened confirmation can show where the payment was made."
+    },
+    "square_checkout_order_id": {
+      "type": "string",
+      "description": "Square hosted-checkout order for this merch order when the website's secure payment page is set to the alternate processor. Payment is verified against it \u2014 to the cent \u2014 before Printful is asked to produce anything."
+    },
+    "helcim_checkout_id": {
+      "type": "string",
+      "description": "Helcim hosted-checkout token for this merch order when the website's secure payment page is set to Helcim (issue #97). Payment is matched back by this token and the order's own invoice number, and verified to the cent before Printful is asked to produce anything."
+    },
+    "helcim_transaction_id": {
+      "type": "string",
+      "description": "The Helcim transaction that actually paid this merch order, recorded when the payment is verified so refunds go back through the same transaction."
+    },
     "printful_order_id": {
       "type": "string"
     },

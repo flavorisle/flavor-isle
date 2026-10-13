@@ -11,6 +11,7 @@ import PostOrderFeedback from '@/components/PostOrderFeedback';
 import CheckoutSmsOptIn from '@/components/CheckoutSmsOptIn';
 import MerchPromoCard from '@/components/merch/MerchPromoCard';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import { useCart } from '@/context/CartContext';
 
 export default function OrderConfirmation() {
   const location = useLocation();
@@ -20,13 +21,70 @@ export default function OrderConfirmation() {
   const readyFor = params.get('ready_for');
   const readyForLabel = readyFor ? new Date(readyFor).toLocaleTimeString('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit' }) : null;
   const [confetti, setConfetti] = useState(false);
+  // Paid on the secure payment page: the payment is verified server-side on
+  // arrival, and only a completed payment for the exact total is passed to the
+  // kitchen. This reflects whether it has cleared yet.
+  const squareReturn = params.get('square') === '1';
+  const helcimReturn = params.get('helcim') === '1';
+  // Back from the Base44 Payments (powered by Wix) hosted checkout. The payment
+  // is settled server-side by the provider's own verified event, so this page
+  // never settles anything itself — it only watches for the order to clear.
+  const wixReturn = params.get('wix') === '1';
+  // Either hosted secure page brings the customer back here for the server to
+  // verify the payment; only a completed payment for the exact total is passed
+  // to the kitchen.
+  const hostedReturn = squareReturn || helcimReturn || wixReturn;
+  // A provider return starts unconfirmed, so the page never claims a payment it
+  // cannot see yet.
+  const [paymentConfirmed, setPaymentConfirmed] = useState(wixReturn ? false : null);
+  const { clearCart } = useCart();
+  // The order was already saved before the customer left for the hosted page, so
+  // the bag that was checked out is cleared here instead of left full behind them.
+  useEffect(() => {
+    if (params.get('from') === 'checkout') clearCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!hostedReturn || !orderNumber) return;
+    if (wixReturn) {
+      // Watch the order until the provider's settlement lands. Read through the
+      // public order-summary endpoint rather than the order itself: a returning
+      // buyer is often not signed in, and this only ever reports status.
+      let cancelled = false;
+      let attempts = 0;
+      (async () => {
+        while (!cancelled && attempts < 10) {
+          attempts++;
+          try {
+            const res = await base44.functions.invoke('getPayableOrder', { order_number: String(orderNumber) });
+            if (res?.data?.payment_status === 'paid') {
+              if (!cancelled) setPaymentConfirmed(true);
+              return;
+            }
+          } catch {}
+          if (attempts < 10) await new Promise(r => setTimeout(r, 3000));
+        }
+        if (!cancelled) setPaymentConfirmed(false);
+      })();
+      return () => { cancelled = true; };
+    }
+    (async () => {
+      try {
+        const res = await base44.functions.invoke(helcimReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
+        setPaymentConfirmed(res?.data?.settled === true);
+      } catch (err) {
+        console.error('Payment confirmation on return failed:', err);
+        setPaymentConfirmed(false);
+      }
+    })();
+  }, [hostedReturn, helcimReturn, wixReturn, orderNumber]);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
 
   // Kitchen sync status: 'sent' = order reached Square POS, 'sending' = push
   // still in flight, 'unknown' = can't confirm. The checkout flow awaits the
   // push before navigating here, so most orders are already 'sent' on arrival —
-  // but poll a few times in case the Stripe webhook path is still processing.
+  // but poll a few times in case the payment confirmation is still landing.
   const [kitchenStatus, setKitchenStatus] = useState('sending');
 
   useEffect(() => {
@@ -85,6 +143,11 @@ export default function OrderConfirmation() {
               <Loader2 size={16} className="animate-spin" />
               Sending to Kitchen…
             </div>
+          ) : hostedReturn && paymentConfirmed === false ? (
+            <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
+              <Loader2 size={16} className="animate-spin" />
+              Confirming Your Payment…
+            </div>
           ) : (
             <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-heading mb-4">
               <CheckCircle size={16} />
@@ -94,8 +157,9 @@ export default function OrderConfirmation() {
 
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">You're All Set!</h1>
           <p className="text-muted-foreground text-lg mb-8">
-            Thank you for your order! Your payment went through and our kitchen has been notified.
-            Get ready for something delicious.
+            {hostedReturn && paymentConfirmed === false
+              ? "Thank you for your order! We're confirming your payment now — the kitchen is notified the moment it clears."
+              : 'Thank you for your order! Your payment went through and our kitchen has been notified. Get ready for something delicious.'}
           </p>
 
           {(orderNumber || sessionId) && (

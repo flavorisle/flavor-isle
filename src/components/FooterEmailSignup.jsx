@@ -35,17 +35,17 @@ export default function FooterEmailSignup() {
     <div className="border-t border-white/10 px-4 sm:px-6 py-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest mb-2 text-[hsl(var(--primary))] flex items-center gap-2">
+          <h4 className="font-heading text-sm uppercase tracking-widest mb-2 text-smashie-yellow flex items-center gap-2">
             <Mail size={16} /> GET UPDATES FROM THE ISLE
           </h4>
-          <p className="text-gray-300 text-sm leading-relaxed">
+          <p className="text-white/85 text-[15px] leading-relaxed">
             New menu items, seasonal shakes, and special events — straight to your inbox. We only send what matters, and you can unsubscribe anytime.
           </p>
         </div>
 
         {status === 'done' || status === 'active' ? (
-          <div className="flex items-center gap-2 text-sm text-gray-200">
-            <CheckCircle2 size={18} className="text-[hsl(var(--primary))] flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[15px] text-white">
+            <CheckCircle2 size={18} className="text-smashie-yellow flex-shrink-0" />
             {status === 'active'
               ? "You're already on the list — thanks for being a Flavor Isle insider!"
               : "You're almost there! Check your email to confirm your subscription."}
@@ -56,7 +56,7 @@ export default function FooterEmailSignup() {
               <input
                 type="email" inputMode="email" autoComplete="email" value={email}
                 onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" aria-label="Email for newsletter"
-                className="flex-1 min-w-0 px-4 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                className="flex-1 min-w-0 px-4 py-3 rounded-full bg-white/10 border border-white/25 text-white placeholder:text-white/60 text-[15px] focus:outline-none focus:ring-2 focus:ring-smashie-yellow"
               />
               <button type="submit" disabled={status === 'submitting'} className="btn-cherry px-5 py-3 text-sm whitespace-nowrap disabled:opacity-60 tap-44">
                 {status === 'submitting' ? <Loader2 size={16} className="animate-spin" /> : 'Get Updates'}

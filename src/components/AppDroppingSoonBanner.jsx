@@ -15,7 +15,7 @@ export default function AppDroppingSoonBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" />
-            <p className="font-heading text-white text-sm leading-none">THE APP IS DROPPING SOON</p>
+            <p className="font-heading text-white text-sm leading-none">THE APP DROPS 10/16/2026</p>
           </div>
           <p className="text-white/70 text-[11px] mt-1 leading-snug">Track orders faster — launching on the App Store & Google Play</p>
         </div>

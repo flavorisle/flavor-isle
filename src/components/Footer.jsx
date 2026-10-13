@@ -5,16 +5,49 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 import FooterEmailSignup from '@/components/FooterEmailSignup';
+import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import { optimizedImageUrl } from '@/lib/utils';
+
+// Footer links, split into two labelled columns so they read as short scannable
+// lists instead of one long stack down the page.
+const ORDER_LINKS = [
+  { label: 'Order Online', to: '/menu' },
+  { label: 'Combos', to: '/combos' },
+  { label: 'Milkshakes', to: '/milkshakes' },
+  { label: 'Tasty Threads Merch', to: '/merch' },
+  { label: 'Star Rewards', to: '/rewards' },
+  { label: 'Newsletter', to: '/newsletter' },
+  { label: 'My Account', to: '/account' },
+];
+
+const VISIT_LINKS = [
+  { label: 'About Us', to: '/about' },
+  { label: 'What to Expect', to: '/what-to-expect' },
+  { label: 'What People Are Saying', to: '/reviews' },
+  { label: 'I-65 Exit 38 Stop', to: '/i65-exit-38' },
+  { label: 'Mammoth Cave Dining', to: '/mammoth-cave-dining' },
+  { label: 'Corvette Car Clubs', to: '/corvette-car-clubs' },
+  { label: 'FAQ', to: '/faq' },
+  { label: 'Contact Us', to: '/contact' },
+  { label: 'Share Feedback', to: '/feedback' },
+];
+
+const HEADING_CLASS = 'font-heading text-sm uppercase tracking-widest text-smashie-yellow mb-4';
+
+// Every footer link gets a comfortable tap height and an obvious hover/focus
+// state, so nothing here reads as flat low-contrast text on the navy band.
+const LINK_CLASS =
+  'inline-flex items-center min-h-[38px] text-[15px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors';
 
 export default function Footer() {
   const businessHours = useBusinessHours();
+
   return (
     <footer className="bg-obsidian-roast text-white fall26-footer-accent">
       {/* Main footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-x-10 gap-y-10">
         {/* Brand */}
-        <div className="md:col-span-1">
+        <div className="sm:col-span-2 lg:col-span-3">
           <img
             src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 600, 400, 'fit')}
             alt="Flavor Isle roadside stand — Smiths Grove, KY, Est. 1964"
@@ -22,74 +55,96 @@ export default function Footer() {
             height="400"
             loading="lazy"
             decoding="async"
-            className="w-full max-w-[260px] object-contain mb-4"
+            className="w-full max-w-[240px] object-contain mb-4"
           />
-          <p className="text-gray-300 text-sm leading-relaxed">
+          <p className="text-white/85 text-[15px] leading-relaxed">
             Smiths Grove's favorite burger restaurant. Fresh, never-frozen burgers, thick shakes, and hot sides.
           </p>
           <div className="flex gap-3 mt-5">
-            <a href="https://instagram.com/flavor_isle" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-patina-mint transition-colors">
-              <Instagram size={16} />
+            <a
+              href="https://instagram.com/flavor_isle"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Flavor Isle on Instagram"
+              className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
+            >
+              <Instagram size={18} />
             </a>
-            <a href="https://facebook.com/flavorisle" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-patina-mint transition-colors">
-              <Facebook size={16} />
+            <a
+              href="https://facebook.com/flavorisle"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Flavor Isle on Facebook"
+              className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
+            >
+              <Facebook size={18} />
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-patina-mint transition-colors">
-              <Twitter size={16} />
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Flavor Isle on Twitter"
+              className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
+            >
+              <Twitter size={18} />
             </a>
           </div>
         </div>
 
         {/* Hours */}
-        <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">HOURS</h4>
-          <div className="space-y-2 text-sm text-gray-300">
-            {hoursGroups(businessHours).map((g) =>
-            <div key={g.days} className="flex justify-between gap-4">
+        <div className="lg:col-span-3">
+          <h4 className={HEADING_CLASS}>Hours</h4>
+          <div className="text-[15px] text-white/85 divide-y divide-white/10">
+            {hoursGroups(businessHours).map((g) => (
+              <div key={g.days} className="flex justify-between gap-4 py-2">
                 <span>{g.days}</span>
-                <span>{g.label}</span>
+                <span className="text-white/75 text-right">{g.label}</span>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">QUICK LINKS</h4>
-          <div className="flex flex-col gap-2 text-sm text-gray-300">
-            <Link to="/menu" className="hover:text-white transition-colors">Order Online</Link>
-            <Link to="/merch" className="hover:text-white transition-colors">Tasty Threads</Link>
-            <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
-            <Link to="/faq" className="hover:text-white transition-colors">FAQ</Link>
-            <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Stop</Link>
-            <Link to="/mammoth-cave-dining" className="hover:text-white transition-colors">Mammoth Cave Dining</Link>
-            <Link to="/corvette-car-clubs" className="hover:text-white transition-colors">Corvette Car Clubs</Link>
-            <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
-            <Link to="/what-to-expect" className="hover:text-white transition-colors">What to Expect</Link>
-            <Link to="/feedback" className="hover:text-white transition-colors">Share Feedback</Link>
-            <Link to="/reviews" className="hover:text-white transition-colors">What People Are Saying</Link>
-            <Link to="/i65-exit-38" className="hover:text-white transition-colors">I-65 Exit 38 Guide</Link>
-            <Link to="/newsletter" className="hover:text-white transition-colors">Newsletter</Link>
-            <Link to="/account" className="hover:text-white transition-colors">My Account</Link>
+        {/* Links */}
+        <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-2 gap-x-8 gap-y-8">
+          <div>
+            <h4 className={HEADING_CLASS}>Order &amp; Explore</h4>
+            <div className="flex flex-col items-start">
+              {ORDER_LINKS.map((l) => (
+                <Link key={l.label} to={l.to} className={LINK_CLASS}>{l.label}</Link>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className={HEADING_CLASS}>Visit &amp; Learn</h4>
+            <div className="flex flex-col items-start">
+              {VISIT_LINKS.map((l) => (
+                <Link key={l.label} to={l.to} className={LINK_CLASS}>{l.label}</Link>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Contact */}
-        <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest mb-4 text-[hsl(var(--primary))]">FIND US</h4>
-          <div className="space-y-3 text-sm text-gray-300">
-            <div className="flex items-start gap-2">
-              <MapPin size={16} className="mt-0.5 flex-shrink-0 text-[hsl(var(--primary))]" />
-              <a href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">103 N Main St, Smiths Grove<br />Kentucky, KY 42171</a>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone size={16} className="flex-shrink-0 text-[hsl(var(--primary))]" />
-              <a href="tel:+12705634618" className="hover:text-white transition-colors">(270) 563-4618</a>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="flex-shrink-0 text-[hsl(var(--primary))]" />
+        {/* Find us */}
+        <div className="lg:col-span-2">
+          <h4 className={HEADING_CLASS}>Find Us</h4>
+          <div className="flex flex-col items-start gap-1 text-[15px]">
+            <a
+              href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${LINK_CLASS} items-start gap-2 text-left`}
+            >
+              <MapPin size={17} className="mt-1 flex-shrink-0 text-smashie-yellow" />
+              <span>103 N Main St<br />Smiths Grove, KY 42171</span>
+            </a>
+            <a href="tel:+12705634618" className={`${LINK_CLASS} gap-2`}>
+              <Phone size={17} className="flex-shrink-0 text-smashie-yellow" />
+              <span>(270) 563-4618</span>
+            </a>
+            <p className="flex items-start gap-2 py-2 text-white/75">
+              <Clock size={17} className="mt-1 flex-shrink-0 text-smashie-yellow" />
               <span>Kitchen closes 30 min before closing</span>
-            </div>
+            </p>
           </div>
         </div>
       </div>
@@ -101,23 +156,27 @@ export default function Footer() {
       <FooterSmsOptIn />
 
       {/* Traveler tips link — shown on every page */}
-      <div className="border-t border-white/10 px-4 sm:px-6 py-3 text-center">
-        <Link to="/about#traveler-tips" className="text-sm text-gray-300 hover:text-white transition-colors">
+      <div className="border-t border-white/10 px-5 sm:px-6 py-4 text-center">
+        <Link
+          to="/about#traveler-tips"
+          className="inline-flex items-center min-h-[38px] text-[15px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors"
+        >
           Just passing through? See traveler tips.
         </Link>
       </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-white/10 px-4 sm:px-6 py-5">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
-          <span className="text-[hsl(var(--primary))]">© 2026 Flavor Isle. All rights reserved.</span>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
-            <span className="text-white/70">Designed by Wesley Booker</span>
+      {/* Bottom bar — Kentucky Tourism listing + legal */}
+      <div className="border-t border-white/10 px-5 sm:px-6 py-6">
+        <div className="max-w-7xl mx-auto flex flex-col-reverse sm:flex-row items-center justify-between gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+            <span className="text-white/70">© 2026 Flavor Isle. All rights reserved.</span>
+            <Link to="/privacy-policy" className="inline-flex items-center min-h-[38px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="inline-flex items-center min-h-[38px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors">Terms of Service</Link>
+            <span className="text-white/60">Designed by Wesley Booker</span>
           </div>
+          <KentuckyTourismBadge />
         </div>
       </div>
-    </footer>);
-
+    </footer>
+  );
 }

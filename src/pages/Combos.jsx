@@ -4,7 +4,6 @@ import { ArrowDown, ShoppingBag, Package } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import GroupOrderBar from '@/components/GroupOrderBar';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
 import Seo from '@/components/Seo';
 import { isNativeApp } from '@/lib/isNativeApp';
@@ -26,7 +25,6 @@ export default function Combos() {
         description="Build your own Isle Combo: pick a hand-patted burger, add crinkle fries and a hand-spun shake, and save. Order combos online for pickup or delivery at Flavor Isle."
       />
       <Navbar />
-      <GroupOrderBar />
       <CartDrawer />
 
       {/* Hero */}

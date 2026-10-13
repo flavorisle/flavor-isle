@@ -31,6 +31,7 @@ export default function LiveStatusBar() {
   const {
     loading,
     isClosed,
+    adminOverride,
     closingSoon,
     preOpen,
     minutesUntilOpen,
@@ -69,14 +70,38 @@ export default function LiveStatusBar() {
     );
   }
 
+  // ── Shut to customers, but this viewer is an admin who may still order ──
+  if (adminOverride) {
+    return (
+      <div className="w-full bg-patina-mint/10 border-b border-patina-mint/20 text-obsidian-roast">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <Lock size={16} className="flex-shrink-0 mt-0.5" />
+            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide">
+              Closed to customers{closureMessage ? ` · ${closureMessage}` : ''} — admin account can still order
+            </p>
+          </div>
+          <Link
+            to="/menu"
+            className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+          >
+            Order anyway <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // ── Closed (after hours or admin closure) ──
   if (isClosed) {
     return (
       <div className="w-full bg-gray-100 border-b border-gray-200 text-gray-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Lock size={16} className="flex-shrink-0" />
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <Lock size={16} className="flex-shrink-0 mt-0.5" />
+            {/* No truncation here: the closed message is admin-authored and can
+                run long, so it wraps to as many lines as it needs. */}
+            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide">
               Closed{closureMessage ? ` · ${closureMessage}` : ''}
             </p>
           </div>

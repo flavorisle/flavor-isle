@@ -75,13 +75,15 @@ export default function StoreStatusCard() {
 
         <div className="mt-5 border-t border-border pt-5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Closed Message</label>
-          <div className="flex gap-2 flex-wrap">
-            <input
-              type="text"
+          <div className="flex gap-2 flex-wrap items-start">
+            {/* Wrapping textarea rather than a one-line input: the message can
+                be long, and this way the whole thing is readable while editing. */}
+            <textarea
+              rows={3}
               value={message}
               onChange={e => setMessage(e.target.value)}
               placeholder="Ordering is temporarily closed"
-              className="flex-1 min-w-[220px] px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
+              className="flex-1 min-w-[220px] px-4 py-3 bg-muted border border-border rounded-2xl text-sm resize-y focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
             />
             <button
               onClick={saveMessage}

@@ -62,22 +62,22 @@ export default function FooterSmsOptIn() {
     <div className="border-t border-white/10 px-4 sm:px-6 py-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div>
-          <h4 className="font-heading text-sm uppercase tracking-widest mb-2 text-[hsl(var(--primary))] flex items-center gap-2">
+          <h4 className="font-heading text-sm uppercase tracking-widest mb-2 text-smashie-yellow flex items-center gap-2">
             <MessageSquare size={16} /> TEXT UPDATES FROM FLAVOR ISLE
           </h4>
-          <p className="text-gray-300 text-sm leading-relaxed">
+          <p className="text-white/85 text-[15px] leading-relaxed">
             Choose order status alerts, recurring offers, or both — each is optional.{' '}
             <a href="/sms-signup" className="underline hover:text-white">Full sign-up page →</a>
           </p>
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="flex items-center gap-2 text-[15px] text-white/80">
             <Loader2 size={16} className="animate-spin" /> Checking your text preferences…
           </div>
         ) : bothAlready ? null : done ? (
-          <div className="flex items-center gap-2 text-sm text-gray-200">
-            <CheckCircle2 size={18} className="text-[hsl(var(--primary))]" /> You're signed up! Reply STOP anytime to cancel, HELP for help.
+          <div className="flex items-center gap-2 text-[15px] text-white">
+            <CheckCircle2 size={18} className="text-smashie-yellow" /> You're signed up! Reply STOP anytime to cancel, HELP for help.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -85,7 +85,7 @@ export default function FooterSmsOptIn() {
               <input
                 type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="(270) 555-0000" aria-label="Mobile number for SMS"
-                className="flex-1 min-w-0 px-4 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                className="flex-1 min-w-0 px-4 py-3 rounded-full bg-white/10 border border-white/25 text-white placeholder:text-white/60 text-[15px] focus:outline-none focus:ring-2 focus:ring-smashie-yellow"
               />
               <button type="submit" disabled={submitting} className="btn-cherry px-5 py-3 text-sm whitespace-nowrap disabled:opacity-60 tap-44">
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Sign Up'}
@@ -95,7 +95,7 @@ export default function FooterSmsOptIn() {
             {!alreadyTx && (
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input type="checkbox" checked={txConsent} onChange={e => setTxConsent(e.target.checked)} className="mt-0.5 w-5 h-5 rounded flex-shrink-0 accent-[#CC3300]" />
-                <span className="text-xs text-gray-400 leading-relaxed">
+                <span className="text-xs text-white/75 leading-relaxed">
                   Send me order status alerts (confirmed, preparing, ready) and pay-by-text links from Flavor Isle. Optional and not a condition of purchase. Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help. See our{' '}
                   <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Privacy Policy</a> and{' '}
                   <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Terms of Service</a>.
@@ -106,7 +106,7 @@ export default function FooterSmsOptIn() {
             {!alreadyMk && (
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input type="checkbox" checked={mkConsent} onChange={e => setMkConsent(e.target.checked)} className="mt-0.5 w-5 h-5 rounded flex-shrink-0 accent-[#CC3300]" />
-                <span className="text-xs text-gray-400 leading-relaxed">
+                <span className="text-xs text-white/75 leading-relaxed">
                   Yes, send me recurring promotional offers from Flavor Isle. Consent is not a condition of purchase. Message frequency varies (a few per month). Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help. See our{' '}
                   <a href={SMS_TERMS_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Terms of Service</a> and{' '}
                   <a href={SMS_POLICY_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Privacy Policy</a>.

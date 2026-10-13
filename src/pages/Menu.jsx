@@ -8,7 +8,6 @@ import Seo from '@/components/Seo';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
 import { optimizedImageUrl } from '@/lib/utils';
-import GroupOrderBar from '@/components/GroupOrderBar';
 import MenuItemCard from '@/components/MenuItemCard';
 import MenuShakeCard from '@/components/MenuShakeCard';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
@@ -158,7 +157,6 @@ export default function Menu() {
       <CartDrawer />
       <PullRefreshIndicator pull={pull} refreshing={refreshing} />
       <ConversionNudgeBar />
-      <GroupOrderBar />
       <div className="bg-obsidian-roast py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <p className="text-sm font-heading uppercase tracking-widest mb-2 text-[hsl(var(--primary))]">ORDER ONLINE</p>

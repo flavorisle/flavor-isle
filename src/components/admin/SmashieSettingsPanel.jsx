@@ -35,7 +35,8 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           phone_cash_enabled: true,
-          phone_payment_provider: 'stripe',
+          phone_payment_provider: 'square',
+          web_payment_provider: 'square',
           realtime_sip_enabled: false,
           googleReviewSmsEnabled: true,
           day14ShowcaseEmailEnabled: false,
@@ -70,7 +71,8 @@ export default function SmashieSettingsPanel() {
         sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
         voice_ordering_enabled: settings.voice_ordering_enabled,
         phone_cash_enabled: settings.phone_cash_enabled !== false,
-        phone_payment_provider: settings.phone_payment_provider === 'square' ? 'square' : 'stripe',
+        phone_payment_provider: 'square',
+        web_payment_provider: settings.web_payment_provider === 'wix' ? 'wix' : 'square',
         realtime_sip_enabled: settings.realtime_sip_enabled,
         googleReviewSmsEnabled: settings.googleReviewSmsEnabled === true,
         day14ShowcaseEmailEnabled: settings.day14ShowcaseEmailEnabled === true,
@@ -155,25 +157,6 @@ export default function SmashieSettingsPanel() {
           checked={settings.phone_cash_enabled !== false}
           onChange={v => update('phone_cash_enabled', v)}
         />
-        <div className="py-2">
-          <p className="font-heading text-sm text-obsidian-roast">Card payment links</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Both hosted on flavor-isle.com/pay. Customers never see a processor name.</p>
-          <div className="flex gap-2 mt-2">
-            {['stripe', 'square'].map((provider) => {
-              const active = (settings.phone_payment_provider || 'stripe') === provider;
-              const label = provider === 'stripe' ? 'Primary' : 'Alternate';
-              return (
-                <button
-                  key={provider}
-                  onClick={() => update('phone_payment_provider', provider)}
-                  className={`px-4 py-2 rounded-full text-xs font-heading transition-all ${active ? 'bg-midnight-cherry text-white' : 'bg-muted text-muted-foreground border border-border hover:border-midnight-cherry/40'}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
         <Toggle
           label="Live Phone Pipeline (OpenAI SIP)"
           description="Answer calls through OpenAI's realtime voice bridge for near-instant replies. Leave this off until the SIP trunk points at this app and a test call has passed."

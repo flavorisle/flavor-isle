@@ -1,0 +1,41 @@
+{
+  "name": "Settle Base44 Payments Orders",
+  "description": "When a Base44 Payments (powered by Wix) payment succeeds, settle the food order it paid: mark the order paid and send it to Square POS and the kitchen. The provider's own approved event is what proves the money, and the amount must match the order's saved total.",
+  "trigger": {
+    "config": {
+      "trigger_type": "app_payment",
+      "events": [
+        "payment_succeeded"
+      ]
+    },
+    "condition": "${ .trigger.provider == \"wix_payments\" or .trigger.provider == \"payments_by_wix\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "settle_base44_payments_orders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "settle_paid_order": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "settleWixWebPayment",
+            "args": {
+              "provider_transaction_id": "${ .trigger.provider_transaction_id }",
+              "amount_cents": "${ .trigger.amount }",
+              "provider": "${ .trigger.provider }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Settle the paid order",
+            "description": "Mark paid, then Square POS + kitchen"
+          }
+        }
+      }
+    ]
+  }
+}

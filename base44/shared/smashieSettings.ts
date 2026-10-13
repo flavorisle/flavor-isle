@@ -18,8 +18,10 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
-  // Where the secure phone payment link is created. Customers never see this.
-  phone_payment_provider: "stripe",
+  // Card payments are taken on our own page, in Helcim. Stored settings records
+  // keep whatever processor they name; the live switch is the pair of helpers below.
+  phone_payment_provider: "helcim",
+  web_payment_provider: "helcim",
   // The approved review request is active unless paused by the owner.
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
@@ -39,8 +41,20 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// Which processor creates the phone payment link. Anything unrecognized falls
-// back to the default so a typo can never strand a card order.
-export function phonePaymentProvider(settings) {
-  return settings?.phone_payment_provider === 'square' ? 'square' : 'stripe';
+// The phone line always takes cards on our own page, in Helcim. Until the Helcim
+// API token is in place the caller falls back to the Square link automatically.
+export function phonePaymentProvider(_settings) {
+  return 'helcim';
+}
+
+// The website's food checkout takes the card on our own page, in Helcim: the order
+// is saved and re-priced first, then the customer pays on that order's own secure
+// page and lands straight back on its confirmation. Until the Helcim API token is
+// in place, the checkout opens the alternate Square page rather than a dead one.
+//
+// Square keeps the flows that take the card on our own page — the phone/text
+// payment link's alternate and the Tasty Threads merch checkout — plus the POS.
+// The stored web_payment_provider value is kept only so older records stay valid.
+export function webPaymentProvider(_settings) {
+  return 'helcim';
 }

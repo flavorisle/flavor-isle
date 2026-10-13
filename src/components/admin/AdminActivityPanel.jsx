@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { formatDistanceToNow } from 'date-fns';
 import { Users, Circle } from 'lucide-react';
+import { chicagoDayKey, formatChicagoTime } from '@/lib/chicagoTime';
 
 // How recently an admin must have been on an admin screen to count as "on now".
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -15,6 +16,11 @@ function timeAgo(value) {
 export default function AdminActivityPanel() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // "Today" is the store's day, so the dashboard agrees with the kitchen's.
+  const todayKey = chicagoDayKey();
+  const inToday = (iso) => !!iso && chicagoDayKey(iso) === todayKey;
+  const inTodayCount = rows.filter((row) => inToday(row.last_seen_at)).length;
 
   useEffect(() => {
     const load = async () => {
@@ -38,7 +44,17 @@ export default function AdminActivityPanel() {
           <Users size={20} className="text-midnight-cherry" />
           <h2 className="font-heading text-xl text-obsidian-roast">Admin Activity</h2>
         </div>
-        <p className="text-sm text-muted-foreground mb-5">Who has been in, and what they are working on right now.</p>
+        <p className="text-sm text-muted-foreground mb-5">Who has signed in, and what they are working on right now.</p>
+
+        {!loading && rows.length > 0 && (
+          <p className="text-sm mb-5">
+            <span className="font-heading text-patina-mint">{inTodayCount}</span>{' '}
+            <span className="text-muted-foreground">
+              of {rows.length} admin account{rows.length === 1 ? '' : 's'} signed in today
+              {inTodayCount === 0 ? ' — nobody yet.' : '.'}
+            </span>
+          </p>
+        )}
 
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading admin activity…</p>
@@ -54,6 +70,11 @@ export default function AdminActivityPanel() {
                   <div className="min-w-[180px]">
                     <p className="font-heading text-obsidian-roast">{row.admin_name || row.admin_email}</p>
                     <p className="text-xs text-muted-foreground">{row.admin_email}</p>
+                    {inToday(row.last_seen_at) && (
+                      <span className="inline-block mt-1 text-[10px] uppercase tracking-wide text-green-800 bg-green-100 rounded-full px-2 py-0.5">
+                        In today
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 min-w-[150px]">
@@ -73,8 +94,10 @@ export default function AdminActivityPanel() {
                     <span className="text-sm font-heading text-midnight-cherry">{activity}</span>
                   </div>
 
-                  <div className="text-sm text-muted-foreground" title={row.last_login_at ? new Date(row.last_login_at).toLocaleString() : ''}>
-                    Last login {timeAgo(row.last_login_at) || 'not recorded'}
+                  <div className="text-sm text-muted-foreground" title={row.last_login_at ? formatChicagoTime(row.last_login_at) : ''}>
+                    {inToday(row.last_login_at)
+                      ? `Signed in today · ${formatChicagoTime(row.last_login_at, { hour: 'numeric', minute: '2-digit' })}`
+                      : `Last signed in ${timeAgo(row.last_login_at) || 'not recorded'}`}
                     {row.login_count ? ` · ${row.login_count} sign-in${row.login_count === 1 ? '' : 's'}` : ''}
                   </div>
                 </div>

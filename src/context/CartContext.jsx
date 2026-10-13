@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { useAuth } from '@/lib/AuthContext';
 import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
@@ -42,11 +43,11 @@ export function CartProvider({ children }) {
   const [menuSetting, setMenuSetting] = useState(null);
   const [, setTick] = useState(0); // re-render every minute so cutoffs stay current
 
-  // Group order state — when active, every added item is tagged with the person
-  // currently being ordered for. The whole group shares ONE delivery fee + tax.
-  const [groupMode, setGroupMode] = useState(() => readSession('groupMode', false));
-  const [people, setPeople] = useState(() => readSession('people', [])); // [{ id, name }]
-  const [activePersonId, setActivePersonId] = useState(() => readSession('activePersonId', null));
+  // A signed-in admin can always order — after hours, during an admin closure,
+  // and even with the all-ordering switch off — so the owner can place a test
+  // order while the store is shut to customers. Everyone else is unaffected.
+  const { user } = useAuth();
+  const adminOrdering = user?.role === 'admin';
 
   // Applied Star Rewards discount — shared between the cart drawer (where the
   // customer picks a reward) and checkout (where it reduces the total).
@@ -61,9 +62,9 @@ export function CartProvider({ children }) {
   // through login doesn't lose the order.
   useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, pickupMethod, groupMode, people, activePersonId }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, pickupMethod }));
     } catch { /* storage unavailable */ }
-  }, [cartItems, orderType, pickupMethod, groupMode, people, activePersonId]);
+  }, [cartItems, orderType, pickupMethod]);
 
   // Cross-device cart sync for signed-in customers. On mount we load the cart
   // saved to their CustomerProfile; on every change we debounce-save it back so
@@ -91,9 +92,6 @@ export function CartProvider({ children }) {
         if (saved && Array.isArray(saved.cartItems) && saved.cartItems.length > 0 && !localHasItems) {
           setCartItems(dropComboLines(saved.cartItems));
           setOrderType(saved.orderType || 'pickup');
-          setGroupMode(!!saved.groupMode);
-          setPeople(saved.people || []);
-          setActivePersonId(saved.activePersonId || null);
         }
       } catch { /* profile not available yet */ }
       finally {
@@ -108,7 +106,7 @@ export function CartProvider({ children }) {
     if (!hydratedRef.current || !profileRef.current) return;
     const timer = setTimeout(async () => {
       try {
-        const payload = { cartItems, orderType, groupMode, people, activePersonId, savedAt: Date.now() };
+        const payload = { cartItems, orderType, savedAt: Date.now() };
         const { email, id } = profileRef.current;
         if (id) {
           await base44.entities.CustomerProfile.update(id, { cart: payload });
@@ -120,7 +118,7 @@ export function CartProvider({ children }) {
       } catch { /* offline or quota — sessionStorage still has it */ }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [cartItems, orderType, groupMode, people, activePersonId]);
+  }, [cartItems, orderType]);
 
   useEffect(() => {
     getMenuSetting()
@@ -135,7 +133,11 @@ export function CartProvider({ children }) {
     return () => clearInterval(timer);
   }, []);
 
-  const cutoffStatus = getCutoffStatus(menuSetting);
+  const cutoffStatusRaw = getCutoffStatus(menuSetting);
+  // Admins are never cut off — every order type stays open to them.
+  const cutoffStatus = adminOrdering
+    ? { ...cutoffStatusRaw, delivery: false, pickup: false, dine_in: false }
+    : cutoffStatusRaw;
 
   // If delivery is paused, move anyone already set to delivery back to pickup.
   useEffect(() => {
@@ -156,34 +158,27 @@ export function CartProvider({ children }) {
       .map(m => `${m.name}:${m.price ?? 0}`)
       .sort()
       .join('|');
-    const personKey = item.person_id ? `p${item.person_id}` : '';
     // A customer's per-item allergy note joins the line key, so two of the same
     // shake with different allergies stay separate lines instead of merging.
     const noteKey = item.allergyNote ? `a${item.allergyNote}` : '';
     const flavorKey = item.flavorLevel ? `|f${item.flavorLevel}` : '';
-    return mods || personKey || noteKey || flavorKey ? `${item.id}__${personKey}${noteKey}${flavorKey}${mods ? '|' : ''}${mods}` : item.id;
+    return mods || noteKey || flavorKey ? `${item.id}__${noteKey}${flavorKey}${mods ? '|' : ''}${mods}` : item.id;
   };
-
-  const activePerson = people.find(p => p.id === activePersonId) || null;
 
   const addItem = useCallback((item) => {
     trackAddToCart(foodItemToGa4(item));
     setCartItems(prev => {
-      // Tag with the active person when in group mode (unless item already has one).
-      const tagged = groupMode && !item.person_id
-        ? { ...item, person_id: activePerson?.id, person_name: activePerson?.name }
-        : item;
-      const id = lineId(tagged);
+      const id = lineId(item);
       // Combos (alwaysUnique) never merge — always a fresh line.
-      if (!tagged.alwaysUnique) {
+      if (!item.alwaysUnique) {
         const existing = prev.find(i => i.id === id);
         if (existing) {
           return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
         }
       }
-      return [...prev, { ...tagged, id, quantity: 1 }];
+      return [...prev, { ...item, id, quantity: 1 }];
     });
-  }, [groupMode, activePerson]);
+  }, []);
 
   const removeItem = useCallback((itemId) => {
     setCartItems(prev => prev.filter(i => i.id !== itemId));
@@ -197,47 +192,7 @@ export function CartProvider({ children }) {
     }
   }, []);
 
-  // Reassign an already-carted line to a different person (group mode).
-  const reassignItem = useCallback((itemId, personId, personName) => {
-    setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, person_id: personId, person_name: personName } : i));
-  }, []);
-
   const clearCart = useCallback(() => { setCartItems([]); setAppliedReward(null); }, []);
-
-  // Group order helpers
-  const addPerson = useCallback((name) => {
-    const trimmed = (name || '').trim();
-    if (!trimmed) return null;
-    const existing = people.find(p => p.name.toLowerCase() === trimmed.toLowerCase());
-    if (existing) return existing.id;
-    const id = `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setPeople(prev => [...prev, { id, name: trimmed }]);
-    return id;
-  }, [people]);
-
-  const removePerson = useCallback((personId) => {
-    setPeople(prev => prev.filter(p => p.id !== personId));
-    setCartItems(prev => prev.map(i => i.person_id === personId ? { ...i, person_id: null, person_name: null } : i));
-    setActivePersonId(prev => prev === personId ? null : prev);
-  }, []);
-
-  const startGroupOrder = useCallback(() => {
-    setGroupMode(true);
-    if (people.length === 0) {
-      const id = `p-${Date.now()}`;
-      setPeople([{ id, name: 'Me' }]);
-      setActivePersonId(id);
-    } else if (!activePersonId) {
-      setActivePersonId(people[0].id);
-    }
-  }, [people, activePersonId]);
-
-  const endGroupOrder = useCallback(() => {
-    setGroupMode(false);
-    setPeople([]);
-    setActivePersonId(null);
-    setCartItems(prev => prev.map(i => ({ ...i, person_id: null, person_name: null })));
-  }, []);
 
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -261,33 +216,18 @@ export function CartProvider({ children }) {
   const tax = fromCents(taxCentsValue);
   const total = fromCents(toCents(adjustedSubtotal) + toCents(deliveryFee) + taxCentsValue);
 
-  // Per-person subtotal (group mode breakdown)
-  const personSubtotals = people.map(p => {
-    const personItems = cartItems.filter(i => i.person_id === p.id);
-    return {
-      ...p,
-      subtotal: personItems.reduce((s, i) => s + i.price * i.quantity, 0),
-      happyHourDiscount: getHappyHourDiscount(personItems, menuSetting),
-      itemCount: personItems.reduce((s, i) => s + i.quantity, 0),
-    };
-  }).filter(p => p.itemCount > 0 || people.length > 0);
-  const unassignedSubtotal = cartItems.filter(i => !i.person_id).reduce((s, i) => s + i.price * i.quantity, 0);
-
   return (
     <CartContext.Provider value={{
-      cartItems, addItem, removeItem, updateQuantity, clearCart, reassignItem,
+      cartItems, addItem, removeItem, updateQuantity, clearCart,
       orderType, setOrderType,
       pickupMethod, setPickupMethod,
       isCartOpen, setIsCartOpen,
       totalItems, subtotal, deliveryFee, tax, total,
-      orderingEnabled, orderingClosedMessage,
+      orderingEnabled: adminOrdering || orderingEnabled, orderingClosedMessage,
       cutoffStatus,
       menuSetting,
       happyHourDiscount,
       bundleDiscount,
-      groupMode, people, activePersonId, activePerson,
-      startGroupOrder, endGroupOrder, addPerson, removePerson, setActivePersonId,
-      personSubtotals, unassignedSubtotal,
       appliedReward, setAppliedReward,
       deliveryQuote, setDeliveryQuote,
     }}>

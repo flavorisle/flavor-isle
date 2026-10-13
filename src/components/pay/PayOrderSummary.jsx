@@ -4,18 +4,24 @@ const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Di
 
 // The customer's own order, as they see it on the pay page: what they ordered,
 // the totals, and the running total with the tip they picked.
-export default function PayOrderSummary({ order, tip }) {
+//
+// `total` may be passed in when the amount charged is not simply the line items
+// plus the tip (an order with a discount, for example), so the page never shows a
+// total the customer is not actually about to pay.
+export default function PayOrderSummary({ order, tip, kind, total: chargedTotal }) {
+  const isMerch = kind === 'merch';
   const subtotal = Number(order.subtotal) || 0;
   const tax = Number(order.tax) || 0;
   const deliveryFee = Number(order.delivery_fee) || 0;
-  const total = subtotal + tax + deliveryFee + (Number(tip) || 0);
+  const computedTotal = subtotal + tax + deliveryFee + (Number(tip) || 0);
+  const total = chargedTotal === undefined || chargedTotal === null ? computedTotal : Number(chargedTotal);
 
   return (
     <div className="card-diner p-5">
       <div className="flex items-baseline justify-between gap-3 mb-3">
         <h2 className="font-heading text-lg text-obsidian-roast">Order #{order.order_number}</h2>
         <span className="text-xs font-heading uppercase tracking-widest text-muted-foreground flex-shrink-0">
-          {ORDER_TYPE_LABELS[order.order_type] || 'Pickup'}
+          {isMerch ? 'Tasty Threads' : ORDER_TYPE_LABELS[order.order_type] || 'Pickup'}
         </span>
       </div>
 
@@ -41,12 +47,14 @@ export default function PayOrderSummary({ order, tip }) {
         </div>
         {deliveryFee > 0 && (
           <div className="flex justify-between text-muted-foreground">
-            <span>Delivery</span><span>${deliveryFee.toFixed(2)}</span>
+            <span>{isMerch ? 'Shipping' : 'Delivery'}</span><span>${deliveryFee.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between text-muted-foreground">
-          <span>Tax (6%)</span><span>${tax.toFixed(2)}</span>
-        </div>
+        {!isMerch && (
+          <div className="flex justify-between text-muted-foreground">
+            <span>Tax (6%)</span><span>${tax.toFixed(2)}</span>
+          </div>
+        )}
         {tip > 0 && (
           <div className="flex justify-between text-muted-foreground">
             <span>Tip</span><span>${tip.toFixed(2)}</span>
