@@ -36,6 +36,16 @@ function displayInitial(user) {
   return `${first}${last}`;
 }
 
+// Does this stored win belong to the caller? A win is written with the service
+// role on the player's behalf, so the record's own owner fields belong to the
+// service account — the player is identified by winner_user_id, which is what
+// makes "same winner, updating their prize" and the monthly win limit work.
+function isMine(winner, user) {
+  if (winner?.winner_user_id) return winner.winner_user_id === user?.id;
+  if (winner?.created_by_id && user?.id) return winner.created_by_id === user.id;
+  return !!winner?.created_by && winner.created_by === user?.email;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -82,7 +92,7 @@ Deno.serve(async (req) => {
     if (existing && existing.length > 0) {
       const w = existing[0];
       // Same winner updating their prize choice — allowed.
-      if (w.created_by === user.id && validChoice) {
+      if (isMine(w, user) && validChoice) {
         await base44.asServiceRole.entities.FindSmashieWinner.update(w.id, { prize_choice: validChoice });
         return Response.json({ you_won: true, prize_choice: validChoice });
       }
@@ -93,16 +103,24 @@ Deno.serve(async (req) => {
     const limit = Number(settings.win_limit_per_customer ?? 1);
     if (limit > 0) {
       const all = await base44.asServiceRole.entities.FindSmashieWinner.list('-game_date', 200);
-      const mine = all.filter((w) => w.created_by === user.id && (w.game_date || '').startsWith(month));
+      const mine = all.filter((w) => isMine(w, user) && (w.game_date || '').startsWith(month));
       if (mine.length >= limit) return Response.json({ limit_reached: true });
     }
 
     // This user is today's winner.
-    const created = await base44.asServiceRole.entities.FindSmashieWinner.create({
+    const foundAt = new Date();
+    await base44.asServiceRole.entities.FindSmashieWinner.create({
       game_date: dateStr,
       phase,
       winner_name: displayInitial(user),
+      // The player this win belongs to — the record's own owner fields are the
+      // service account's, so this is the only link back to the winner.
+      winner_user_id: user.id,
       prize_choice: validChoice || '',
+      // The moment of the find, for the winner board's Time column and the
+      // "found by ... at ..." announcement.
+      found_at: foundAt.toISOString(),
+      found_time: foundAt.toLocaleTimeString('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }),
     });
 
     return Response.json({ you_won: true, prize_choice: validChoice || '' });

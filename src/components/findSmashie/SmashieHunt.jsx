@@ -199,7 +199,9 @@ export default function SmashieHunt() {
           : {
               position: 'absolute',
               top: `${Math.round((renderSpot.topPct / 100) * docHeight)}px`,
-              left: `${renderSpot.leftPct}vw`,
+              // Clamped so a spot near the right edge never hangs off a phone
+              // screen and gives the page a sideways scroll.
+              left: `min(${renderSpot.leftPct}vw, calc(100vw - 4.5rem))`,
               transform: 'rotate(-3deg)',
               opacity: 0.92,
               transition: 'top 0.8s ease-out',

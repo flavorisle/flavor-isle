@@ -8,16 +8,27 @@
     },
     "phase": {
       "type": "string",
-      "enum": ["pumpkin", "vampire"],
+      "enum": [
+        "pumpkin",
+        "vampire"
+      ],
       "description": "Which costume Smashie was wearing when found: pumpkin (open-5PM) or vampire (5PM-close)."
     },
     "winner_name": {
       "type": "string",
       "description": "Public display name for the winner board and announcements: first name + last initial."
     },
+    "winner_user_id": {
+      "type": "string",
+      "description": "App user id of the winning finder. A win is written by the backend on the player's behalf, so the record's own owner fields belong to the service account - this is what ties a win back to the player, for recording their prize choice and for the one-win-per-month limit."
+    },
     "prize_choice": {
       "type": "string",
-      "enum": ["", "points", "milkshake"],
+      "enum": [
+        "",
+        "points",
+        "milkshake"
+      ],
       "description": "Prize the winner picked: points = 100 Star Rewards points credited to their phone-number account; milkshake = free milkshake applied to an order placed right then."
     },
     "found_at": {
@@ -34,7 +45,9 @@
       "description": "Admin flag: whether the prize (points credit or free milkshake) has been fulfilled."
     }
   },
-  "required": ["game_date"],
+  "required": [
+    "game_date"
+  ],
   "rls": {
     "create": {
       "user_condition": {
