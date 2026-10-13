@@ -264,6 +264,9 @@ export default function Checkout() {
     // Fresh ready time at submit — ASAP = now + prepMinutes; scheduled = chosen slot
     const scheduledFor = schedule.scheduledFor;
     const estimatedTime = schedule.estimatedTime;
+    // The ready time the confirmation page shows after a hosted payment page
+    // returns the customer (Base44 Payments carries it through the checkout).
+    const readyForIso = scheduledFor || new Date(Date.now() + estimatedTime * 60000).toISOString();
 
     const mappedItems = cartItems.map(i => ({
       name: i.name,
@@ -306,6 +309,37 @@ export default function Checkout() {
       // order that is already saved, so no second unpaid order is left behind.
       if (pendingOrder) {
         await startHelcimPay(pendingOrder);
+        return;
+      }
+
+      // Where the website takes the card is the owner's switch, read here so a
+      // change takes effect without a deploy: Base44 Payments (the provider's hosted
+      // checkout) while the Helcim account is still being approved, or Helcim's own
+      // form over this page.
+      const providerRes = await base44.functions.invoke('getWebPaymentProvider', {});
+      const provider = (providerRes?.data || providerRes)?.provider;
+
+      if (provider === 'wix') {
+        // The order is saved unpaid first — re-priced and verified server-side — and
+        // the customer then pays on Base44 Payments' hosted page for exactly that
+        // saved total. Settlement and the kitchen ticket happen on the provider's own
+        // verified event, never here.
+        const wixRes = await base44.functions.invoke('createWixWebCheckout', hostedPayload);
+        const wixData = wixRes?.data || wixRes;
+        if (!wixData?.order_number) {
+          setError(wixData?.error || 'We could not start the secure payment page, so nothing was charged. Please try again.');
+          return;
+        }
+        const hostedRes = await base44.functions.invoke('create-checkout', {
+          productId: `order:${wixData.order_number}`,
+          ready_for: readyForIso,
+        });
+        const hostedData = hostedRes?.data || hostedRes;
+        if (hostedData?.redirectUrl) {
+          window.location.href = hostedData.redirectUrl;
+          return;
+        }
+        setError(hostedData?.error || 'We could not open the secure payment page, so nothing was charged. Please try again.');
         return;
       }
 
