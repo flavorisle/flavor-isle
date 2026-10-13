@@ -57,6 +57,7 @@ export default function DownloadApp() {
             <h1 className="font-heading text-5xl sm:text-7xl text-white leading-tight mb-4">
               GET THE<br />
               <span style={{ color: '#F5A623' }}>FLAVOR ISLE APP</span>
+              <span className="block text-3xl sm:text-4xl mt-2" style={{ color: '#F5A623' }}>DROPPING 10/16/2026</span>
             </h1>
             <p className="text-gray-300 text-lg max-w-lg leading-relaxed mb-8">
               Order ahead, earn Star Rewards, track your food in real time, and chat with Smashie — all from your phone. Smashie says it's a no-brainer.
