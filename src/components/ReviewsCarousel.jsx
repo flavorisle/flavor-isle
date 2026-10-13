@@ -2,7 +2,8 @@
 // desktop, 2 on tablet, ~1 on mobile, with arrow controls that advance one
 // viewport at a time. Scroll-snap keeps cards aligned as you drag or click.
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { GOOGLE_REVIEW_URL } from '@/components/ReviewPlatformLinks';
 
 export default function ReviewsCarousel({ reviews }) {
   const trackRef = useRef(null);
@@ -122,6 +123,16 @@ function ReviewCard({ text, name, source, rating }) {
       </div>
       <p className="text-sm text-obsidian-roast leading-relaxed mb-3">&ldquo;{text}&rdquo;</p>
       <p className="text-xs text-muted-foreground font-semibold">— {name}</p>
+      {/* Every listed review carries our Google review link, so a reader who
+          wants to see (or leave) a Google review can get there in one tap. */}
+      <a
+        href={GOOGLE_REVIEW_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-flex items-center gap-1 text-xs font-heading uppercase tracking-wider text-patina-mint hover:text-midnight-cherry transition-colors"
+      >
+        Read on Google <ExternalLink size={11} />
+      </a>
     </div>
   );
 }

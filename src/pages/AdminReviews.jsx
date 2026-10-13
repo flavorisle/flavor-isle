@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Check, CheckCircle2, Trash2, Loader2, MessageSquareQuote, Filter, Inbox, CheckCheck } from 'lucide-react';
+import { Star, Check, CheckCircle2, Trash2, Loader2, MessageSquareQuote, Filter, Inbox, CheckCheck, ExternalLink } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { GOOGLE_REVIEW_URL } from '@/components/ReviewPlatformLinks';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import AdminNav from '@/components/admin/AdminNav';
@@ -147,9 +148,21 @@ export default function AdminReviews() {
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground mb-4">
-                  {new Date(r.created_date).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(r.created_date).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </p>
+                  {/* The Google review URL this review points readers to, shown in
+                      full so the crew can copy it or open it straight from here. */}
+                  <a
+                    href={GOOGLE_REVIEW_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-patina-mint hover:underline break-all"
+                  >
+                    {GOOGLE_REVIEW_URL} <ExternalLink size={11} className="flex-shrink-0" />
+                  </a>
+                </div>
 
                 <div className="flex gap-2">
                   <button
