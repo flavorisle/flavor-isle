@@ -73,10 +73,10 @@ export default function DownloadApp() {
               />
               <div>
                 <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 border border-smashie-yellow/40 text-smashie-yellow px-3 py-1 rounded-full text-xs font-heading mb-2">
-                  <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> COMING SOON
+                  <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> DROPPING 10/16/2026
                 </div>
                 <p className="text-gray-300 text-sm leading-snug max-w-xs">
-                  Launching on the App Store & Google Play soon. For now, order right here on the web.
+                  Launching on the App Store & Google Play October 16, 2026. Until then, order right here on the web.
                 </p>
               </div>
             </div>
@@ -154,10 +154,10 @@ export default function DownloadApp() {
             </p>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
-                <Apple size={18} /> App Store · Soon
+                <Apple size={18} /> App Store · 10/16
               </span>
               <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
-                <Play size={16} className="fill-current" /> Google Play · Soon
+                <Play size={16} className="fill-current" /> Google Play · 10/16
               </span>
               <Link to="/menu" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-2">
                 Order on the Web <ArrowRight size={16} />

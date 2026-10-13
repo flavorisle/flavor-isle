@@ -16,7 +16,7 @@ export default function DownloadAppBanner({ variant = 'full' }) {
         <img src={optimizedImageUrl(APP_ICON, 160, 160, 'fit')} alt="Flavor Isle app" width="160" height="160" loading="lazy" decoding="async" className="w-10 h-10 rounded-xl object-contain bg-white/90 p-1 flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="font-heading text-white text-sm leading-none">GET THE APP</p>
-          <p className="text-white/70 text-[11px] mt-0.5">Coming Soon · App Store & Google Play</p>
+          <p className="text-white/70 text-[11px] mt-0.5">Dropping 10/16/2026 · App Store & Google Play</p>
         </div>
         <ArrowRight size={16} className="text-white/80 flex-shrink-0" />
       </Link>
@@ -30,11 +30,11 @@ export default function DownloadAppBanner({ variant = 'full' }) {
           <img src={optimizedImageUrl(APP_ICON, 200, 200, 'fit')} alt="Flavor Isle app icon" width="200" height="200" loading="lazy" decoding="async" className="w-20 h-20 rounded-2xl object-contain bg-white/90 p-1.5 flex-shrink-0" />
           <div className="flex-1 text-center sm:text-left">
             <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 border border-smashie-yellow/40 text-smashie-yellow px-3 py-1 rounded-full text-xs font-heading mb-3">
-              <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> COMING SOON
+              <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> DROPPING 10/16/2026
             </div>
             <h2 className="font-heading text-3xl text-white mb-2">Get the Flavor Isle App</h2>
             <p className="text-white/70 text-sm max-w-md mx-auto sm:mx-0">
-              Order faster, track in real time, and stack up Star Rewards. Launching soon on the App Store & Google Play.
+              Order faster, track in real time, and stack up Star Rewards. Launching October 16, 2026 on the App Store & Google Play.
             </p>
           </div>
           <Link
