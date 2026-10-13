@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Apple, Play, ArrowRight, Bell, Star, Truck, MessageCircle, Zap } from 'lucide-react';
+import { Apple, Play, ArrowRight, Bell, Star, Truck, MessageCircle, Zap, Calendar, Clock, MessageSquare, Phone, Car, Gift, Users, Cake, Percent, Utensils, ShoppingBag, Flame, Repeat, CreditCard, Smartphone, Shirt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -15,9 +15,26 @@ const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 
 const FEATURES = [
   { icon: Zap, title: 'Order Ahead', desc: 'Skip the wait. Build your order and grab it hot — pickup, delivery, or dine-in.' },
-  { icon: Star, title: 'Star Rewards', desc: 'Every order earns Stars toward free food — and your 2nd online order scores 50 bonus Stars.' },
+  { icon: Truck, title: 'Every Way to Get It', desc: 'Counter pickup, curbside, delivery to your door, or dine-in at your table.' },
+  { icon: Calendar, title: 'Schedule for Later', desc: 'Order for ASAP or lock in a time that fits your day — we cook it when you want it.' },
+  { icon: Clock, title: 'Live Order Tracking', desc: 'Watch your order move from confirmed to preparing to ready, in real time.' },
   { icon: Bell, title: 'Order Ready Alerts', desc: 'We ping you the second your food is ready. No guessing, no waiting around.' },
+  { icon: MessageSquare, title: 'Order by Text', desc: 'Text us and Smashie takes your order right in the thread.' },
+  { icon: Phone, title: 'Call & Order', desc: 'Smashie answers the phone, takes your order, and texts you a secure link to pay.' },
+  { icon: Car, title: 'Curbside Check-In', desc: "Tap I'm here and tell us your car — we'll bring it right out to you." },
+  { icon: Star, title: 'Star Rewards', desc: 'Every order earns Stars toward free food — and your 2nd online order scores 50 bonus Stars.' },
+  { icon: Gift, title: 'Rewards You Can Taste', desc: 'Cash your Stars in for free items right from your phone. No paper punch card.' },
+  { icon: Users, title: 'Refer a Friend', desc: 'Share your referral code — you both stack up bonus Stars when they order.' },
+  { icon: Cake, title: 'Birthday Treat', desc: 'Add your birthday and we drop 100 free Stars in your account every year.' },
+  { icon: Percent, title: 'Happy Hour Discounts', desc: 'Half off drinks every afternoon, applied automatically at checkout.' },
+  { icon: Utensils, title: 'Build-a-Shake', desc: 'Pick your flavor, mix-ins, and toppings — your shake, made exactly your way.' },
+  { icon: ShoppingBag, title: 'Combos & Family Bundles', desc: 'Build a combo for one or grab the School Night Lifesaver for the whole crew.' },
+  { icon: Flame, title: 'Specials & Fan Favorites', desc: "See today's specials and the items everybody keeps coming back for." },
+  { icon: Repeat, title: 'One-Tap Reorder', desc: 'Your past orders and favorites are one tap away when you are in a hurry.' },
   { icon: MessageCircle, title: 'Chat with Smashie', desc: 'Ask the menu, get recommendations, or place an order — Smashie is built in.' },
+  { icon: CreditCard, title: 'Faster Checkout', desc: 'Saved addresses, cars, and payment methods fill in instantly.' },
+  { icon: Smartphone, title: 'Cart on Every Device', desc: 'Start your bag on your phone and finish it on your tablet or laptop.' },
+  { icon: Shirt, title: 'Tasty Threads Merch', desc: 'Shop Flavor Isle gear and have it shipped straight to your door.' },
 ];
 
 export default function DownloadApp() {
@@ -128,7 +145,7 @@ export default function DownloadApp() {
           <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Why You'll Love It</p>
           <h2 className="font-heading text-4xl text-obsidian-roast">Everything Smashie Loves, On Tap</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map(f => {
             const Icon = f.icon;
             return (
