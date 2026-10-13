@@ -13,7 +13,22 @@ import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
 // fulfillment path below has its own per-action dedupe (one Square push, one
 // staff alert, one confirmation email). Wix delivers approved events more than
 // once, so this can run twice safely.
-export async function settleWixWebOrder(base44, { orderNumber, checkoutSessionId = '', wixOrderId = '', amount = null }) {
+//
+// Callers hand this function either the platform's service-role client (the
+// payments-webhook holds that one) or the full SDK client (the settle route and the
+// payment automation). The service-role client carries entities, functions and
+// integrations but has no `.asServiceRole` of its own, while everything below — and
+// the shared fulfillment path — reaches for both. Pointing it at itself makes the
+// two callers behave identically instead of throwing on every webhook delivery.
+function sdkClient(client: any): any {
+  if (client?.asServiceRole) return client;
+  const shim = Object.create(client);
+  shim.asServiceRole = shim;
+  return shim;
+}
+
+export async function settleWixWebOrder(client: any, { orderNumber, checkoutSessionId = '', wixOrderId = '', amount = null }) {
+  const base44 = sdkClient(client);
   const wanted = String(orderNumber || '').trim().toUpperCase();
   if (!wanted) return { ok: false, error: 'order_number is required' };
 
