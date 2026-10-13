@@ -1,5 +1,10 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { fetchStoreProducts, getShippingRates } from "../../shared/printful.ts";
+import { helcimPayPageUrl } from "../../shared/helcimCheckout.ts";
+
+// Our own secure page for this merch order — the page whose card form the customer
+// pays in, so a link the crew shares lands on the order's own saved total.
+const PAY_PAGE_ORIGIN = "https://flavor-isle.com";
 
 export default async function (req: Request) {
   try {
@@ -56,7 +61,6 @@ export default async function (req: Request) {
     const shippingCost = Math.round(claimedShipping * 100) / 100;
     const orderTotal = Math.round((catalogSubtotal + shippingCost) * 100) / 100;
 
-    const origin = req.headers.get("origin") || "https://flavor-isle.com";
     const orderNumber = "MERCH-" + Date.now().toString().slice(-6);
     const address = customer.address || {};
 
@@ -96,40 +100,37 @@ export default async function (req: Request) {
 
     // ── Our own payment page ──
     // The order is saved with its verified catalog prices and live shipping rate,
-    // then the browser opens flavor-isle.com/pay-square, where Square's card form
-    // runs inside our page. Printful is only asked to produce the order once the
+    // and the card is then taken in Helcim's form over our own merch checkout page,
+    // keyed to this order. Printful is only asked to produce the order once the
     // payment has been verified against this order's own total.
-    {
-      let squareMerchOrder = null;
-      try {
-        squareMerchOrder = await base44.asServiceRole.entities.MerchOrder.create({
-          ...merchOrderRecord,
-          payment_provider: "square",
-        });
-      } catch (dbError) {
-        console.error("MerchOrder save error:", dbError.message);
-        return Response.json({ error: "Could not save your order. No charge was made — please try again." }, { status: 500 });
-      }
+    let merchOrder = null;
+    try {
+      merchOrder = await base44.asServiceRole.entities.MerchOrder.create({
+        ...merchOrderRecord,
+        payment_provider: "helcim",
+      });
+    } catch (dbError) {
+      console.error("MerchOrder save error:", dbError.message);
+      return Response.json({ error: "Could not save your order. No charge was made — please try again." }, { status: 500 });
+    }
 
-      try {
-        // Our own payment page: Square's card form runs inside it, so the customer
-        // never leaves flavor-isle.com. The charge is verified against this order's
-        // own total before Printful is asked to produce anything.
-        const payUrl = `${origin}/pay-square?order_number=${orderNumber}`;
-        await base44.asServiceRole.entities.MerchOrder.update(squareMerchOrder.id, {
-          payment_provider: "square",
-          payment_url: payUrl,
-        });
-        return Response.json({
-          provider: "square",
-          order_number: orderNumber,
-          payment_url: payUrl,
-          total: orderTotal,
-        });
-      } catch (linkErr) {
-        console.error("Square merch checkout setup failed:", linkErr.message);
-        return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
-      }
+    try {
+      // The order's own secure page, kept on the record so the same link can be
+      // shared with the customer and never points anywhere but this order.
+      const payUrl = helcimPayPageUrl(PAY_PAGE_ORIGIN, orderNumber);
+      await base44.asServiceRole.entities.MerchOrder.update(merchOrder.id, {
+        payment_provider: "helcim",
+        payment_url: payUrl,
+      });
+      return Response.json({
+        provider: "helcim",
+        order_number: orderNumber,
+        payment_url: payUrl,
+        total: orderTotal,
+      });
+    } catch (linkErr) {
+      console.error("Helcim merch checkout setup failed:", linkErr.message);
+      return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
     }
 
   } catch (error) {

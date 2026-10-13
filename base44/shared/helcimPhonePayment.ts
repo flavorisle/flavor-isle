@@ -1,19 +1,16 @@
 import { helcimPayPageUrl, helcimCanTakePayment } from './helcimCheckout.ts';
-import { createSquarePhonePayment } from './squarePhonePayment.ts';
-import { createStripePhonePayment } from './stripePhonePayment.ts';
 
 // The phone / text / website-chat payment link when the owner's phone switch is on
 // Helcim. Mirrors shared/squarePhonePayment.ts: the link is our own page for the
 // order's own number, recorded on the order so it can be re-sent and so the sweeper
 // can settle the order if the customer never comes back to it.
 //
-// The caller (logPhoneOrder) catches a failure here and falls back to the Square
-// link, so an unconfigured or unhappy Helcim can never leave a caller without a
-// way to pay.
+// Helcim is the only card processor, so this is the only phone link there is. An
+// account that cannot open a session (no active terminal for the currency, say) is
+// treated like a missing credential: nothing is texted, and the caller
+// (logPhoneOrder) flags the order for payment at the counter rather than sending a
+// page that cannot be paid.
 export async function createHelcimPhonePayment(base44: any, order: any) {
-  // A Helcim account that cannot open a session (no active terminal for the currency,
-  // say) is treated exactly like a missing credential: the caller hands the customer
-  // the alternate Square link instead of texting a page that cannot be paid.
   if (!(await helcimCanTakePayment())) {
     throw new Error('Helcim cannot open a checkout session right now.');
   }
@@ -32,23 +29,8 @@ export async function createHelcimPhonePayment(base44: any, order: any) {
   return url;
 }
 
-// The phone payment link for whichever processor the phone switch names, with
-// the Helcim fallback in one place: when Helcim has no credentials yet (or
-// cannot open a page), the caller gets the Square link instead of an error. A
-// customer must never be left without a way to pay.
-export async function createPhonePaymentLink(base44: any, order: any, provider: string) {
-  if (provider === 'helcim') {
-    try {
-      return await createHelcimPhonePayment(base44, order);
-    } catch (error) {
-      console.warn(
-        'Helcim phone payment link unavailable — using the alternate Square link instead:',
-        (error as Error).message,
-      );
-      return createSquarePhonePayment(base44, order);
-    }
-  }
-  return provider === 'square'
-    ? createSquarePhonePayment(base44, order)
-    : createStripePhonePayment(base44, order);
+// The phone payment link. Helcim backs every one of them; the provider argument is
+// kept only so existing callers do not change shape.
+export async function createPhonePaymentLink(base44: any, order: any, _provider?: string) {
+  return createHelcimPhonePayment(base44, order);
 }

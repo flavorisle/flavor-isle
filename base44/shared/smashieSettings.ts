@@ -41,21 +41,19 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// The phone line always takes cards on our own page, in Helcim. Until the Helcim
-// API token is in place the caller falls back to the Square link automatically.
+// The phone line takes cards on our own page, in Helcim. Helcim is the only card
+// processor, so there is no longer a second link to fall back to.
 export function phonePaymentProvider(_settings) {
   return 'helcim';
 }
 
-// The website's food checkout takes the card on Base44 Payments (the platform's
-// hosted checkout) while the Helcim account is still being approved: the order is
-// saved and re-priced first, then the customer pays on that order's own hosted page
-// and lands straight back on its confirmation.
+// Helcim is the only card processor for the website — food orders and Tasty Threads
+// merch alike. The order is saved and re-priced first, then the customer pays in
+// Helcim's own form over our page and lands straight back on its confirmation.
 //
-// Switch this back to 'helcim' once the account can take a USD card. The phone line
-// and the Tasty Threads merch checkout keep the paths they already use, and the POS
-// is untouched (the stored web_payment_provider value is kept only so older records
-// stay valid).
+// Base44 Payments and the Square payment page are no longer reached by a new
+// checkout; the only other card taken is in store, on the crew's own POS terminal
+// (the stored web_payment_provider value is kept only so older records stay valid).
 export function webPaymentProvider(_settings) {
-  return 'wix';
+  return 'helcim';
 }

@@ -15,20 +15,25 @@ export default function MerchConfirmation() {
   // Paid on the secure payment page: the payment is verified server-side on
   // arrival, and only a verified payment sends the gear to production. This
   // reflects whether it has cleared yet.
+  // Helcim is the card path; the older Square return is still handled for an order
+  // paid on the retired page.
+  const helcimReturn = params.get('helcim') === '1';
   const squareReturn = params.get('square') === '1';
+  const paidReturn = helcimReturn || squareReturn;
   const [paymentConfirmed, setPaymentConfirmed] = useState(null);
   useEffect(() => {
-    if (!squareReturn || !orderNumber) return;
+    if (!paidReturn || !orderNumber) return;
     (async () => {
       try {
-        const res = await base44.functions.invoke('settleSquareWebPayment', { order_number: String(orderNumber) });
+        const settleFn = helcimReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment';
+        const res = await base44.functions.invoke(settleFn, { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {
         console.error('Payment confirmation on return failed:', err);
         setPaymentConfirmed(false);
       }
     })();
-  }, [squareReturn, orderNumber]);
+  }, [paidReturn, helcimReturn, orderNumber]);
 
   useEffect(() => {
     setConfetti(true);
@@ -52,11 +57,11 @@ export default function MerchConfirmation() {
           </div>
           <div className="inline-flex items-center gap-2 bg-patina-mint/15 text-patina-mint px-4 py-2 rounded-full text-sm font-heading mb-4">
             <div className="w-2 h-2 bg-patina-mint rounded-full animate-pulse" />
-            {squareReturn && paymentConfirmed === false ? 'Confirming Payment…' : 'Order Received!'}
+            {paidReturn && paymentConfirmed === false ? 'Confirming Payment…' : 'Order Received!'}
           </div>
           <h1 className="font-heading text-4xl text-obsidian-roast mb-3">Thanks for your order!</h1>
           <p className="text-muted-foreground text-lg mb-8">
-            {squareReturn && paymentConfirmed === false
+            {paidReturn && paymentConfirmed === false
               ? "We're confirming your payment now. Your Tasty Threads gear goes into production the moment it clears, and you'll get a tracking number by email once it ships."
               : "Your Tasty Threads gear is headed into production. You'll get a tracking number by email once it ships."}
           </p>

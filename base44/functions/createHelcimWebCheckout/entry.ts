@@ -44,20 +44,15 @@ export default async function (req: Request) {
       return Response.json({ error: 'This checkout is no longer available. Please refresh and order again.' }, { status: 410 });
     }
 
-    // No Helcim credentials yet — or a Helcim account that cannot take a USD card
-    // right now (no active terminal, an account not boarded yet): tell the browser to
-    // use the Square page so the customer can still pay. Nothing is charged and no
-    // order is created here.
-    //
-    // Answered 200 on purpose: the browser only acts on the fallback when the
-    // response arrives normally, so an error status would dead-end the customer.
+    // No Helcim credentials, or a Helcim account that cannot take a USD card right
+    // now (no active terminal, an account not boarded yet): refuse outright rather
+    // than opening a page that can never be paid. Nothing is charged and no order is
+    // created, so the customer is told to try again or call the store.
     if (!(await helcimCanTakePayment())) {
-      console.warn('createHelcimWebCheckout: Helcim cannot take a card payment right now — sending the customer to the Square page instead');
+      console.error('createHelcimWebCheckout: Helcim will not open a card payment right now — no order created, nothing charged');
       return Response.json({
-        provider: 'helcim',
-        fallback: 'square',
-        reason: 'The Helcim payment page is unavailable, so the alternate secure page is being used instead.',
-      });
+        error: 'Our secure card payment is temporarily unavailable, so nothing was charged. Please try again in a moment, or call us at (270) 563-4618.',
+      }, { status: 503 });
     }
 
     if (!items || items.length === 0) {
@@ -173,20 +168,16 @@ export default async function (req: Request) {
       });
     } catch (linkErr) {
       // Nothing payable exists: remove the pending order rather than leaving it
-      // stranded, and tell the browser to use the Square page. No charge was made.
+      // stranded, and tell the customer. No charge was made.
       console.error(`Helcim pay page could not be attached to order ${orderNumber}:`, (linkErr as Error).message);
       try {
         await base44.asServiceRole.entities.Order.delete(order.id);
       } catch (cleanupErr) {
         console.error(`Failed to remove stranded pending order ${orderNumber}:`, (cleanupErr as Error).message);
       }
-      // 200 for the same reason as the probe above: the browser has to receive the
-      // fallback normally to open the Square page.
       return Response.json({
-        provider: 'helcim',
-        fallback: 'square',
-        reason: 'The Helcim payment page could not be opened, so the alternate secure page is being used instead.',
-      });
+        error: 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again, or call us at (270) 563-4618.',
+      }, { status: 503 });
     }
 
     // ── SMS consent: inspect the result, never claim enrollment on failure ──

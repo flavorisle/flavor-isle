@@ -303,11 +303,10 @@ export default async function(req) {
 
     try {
       await withTimeout(async () => {
-      // Secure payment link paid on flavor-isle.com/pay/:orderNumber. The owner
-      // picks which processor backs it in Admin → Communications; the customer
-      // only ever sees our own pay page.
-      // Stripe, Square or Helcim — whichever the owner's phone switch names.
-      // A Helcim hiccup falls back to the Square link so the caller can still pay.
+      // Secure payment link paid on our own pay page. Helcim backs every link; the
+      // customer only ever sees our own page, never a processor's name. A Helcim
+      // hiccup leaves the order flagged for payment at the counter instead of
+      // sending a link that cannot be paid.
       paymentUrl = await createPhonePaymentLink(base44, order, paymentProvider);
 
       // Text it first — the customer is on the phone or on a text thread, so it

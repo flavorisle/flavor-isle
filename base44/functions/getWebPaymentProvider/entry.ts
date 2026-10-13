@@ -19,6 +19,6 @@ export default async function (req: Request) {
     return Response.json({ provider: webPaymentProvider(settings) });
   } catch (error) {
     console.error('getWebPaymentProvider error:', (error as Error).message);
-    return Response.json({ provider: 'square' });
+    return Response.json({ provider: 'helcim' });
   }
 }

@@ -2,12 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { squarePhoneApi } from '../../shared/squarePhoneApi.ts';
 import { settleSquarePhonePayment } from '../../shared/settleSquarePhonePayment.ts';
-import { createSquarePhonePayment } from '../../shared/squarePhonePayment.ts';
+import { settleHelcimPhonePayment } from '../../shared/helcimSettlement.ts';
+import { createHelcimPhonePayment } from '../../shared/helcimPhonePayment.ts';
 import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
 // Resend a phone order's payment link by text.
 //
-// The link is always OUR OWN payment page on flavor-isle.com, with Square's card
+// The link is always OUR OWN payment page on flavor-isle.com, with Helcim's card
 // form on it — never a processor's hosted page. A resend reuses the URL already
 // on the order, so it can never mint a second payable page for the same order.
 export default async function(req) {
@@ -22,8 +23,11 @@ export default async function(req) {
     if (order.pay_cash_on_pickup) return Response.json({ error: 'This order is cash at pickup. Collect and record cash instead of sending a card link.' }, { status: 409 });
 
     // A payment may have landed while nobody was looking — check the processor
-    // before sending anything, so a paid order is never asked to pay again.
-    order = await settleSquarePhonePayment(base44, order);
+    // before sending anything, so a paid order is never asked to pay again. Only a
+    // legacy Square order is checked against Square; every other order pays Helcim.
+    order = order.payment_provider === 'square'
+      ? await settleSquarePhonePayment(base44, order)
+      : await settleHelcimPhonePayment(base44, order);
     if (order.payment_status === 'paid' || order.status === 'cancelled' || order.payment_status === 'refunded') return Response.json({ error: 'This order cannot accept another payment.' }, { status: 409 });
 
     // An order that still carries an older card form of its own is left alone:
@@ -44,8 +48,10 @@ export default async function(req) {
       paymentUrl = '';
     }
 
-    if (!paymentUrl || order.square_payment_link_id) {
-      paymentUrl = await createSquarePhonePayment(base44, order);
+    // Every link minted from here on is a Helcim link: an order still pointing at
+    // the old Square page is moved onto it rather than sent there again.
+    if (!paymentUrl || order.square_payment_link_id || order.payment_provider === 'square') {
+      paymentUrl = await createHelcimPhonePayment(base44, order);
     }
 
     const sent = await sendSmashieSms(order.customer_phone, `Flavor Isle: pay $${Number(order.total).toFixed(2)} for order #${order.order_number} here: ${paymentUrl}`);

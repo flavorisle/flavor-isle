@@ -6,7 +6,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
-import SquareCardForm from '@/components/pay/SquareCardForm';
+import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -121,8 +121,13 @@ export default function MerchCheckout() {
   // the order and clears the merch bag.
   const handleMerchPaid = () => {
     clearCart();
-    navigate(`/merch-confirmation?order_number=${payOrder?.order_number}&square=1`);
+    navigate(`/merch-confirmation?order_number=${payOrder?.order_number}&helcim=1`);
   };
+
+  // The card is taken in Helcim's own form over this page, for the saved total. The
+  // shared flow verifies the payment against this order's own record before this
+  // runs, so nothing is sent to production on an unverified charge.
+  const { startPayment: startHelcimPay, starting: startingHelcim, error: helcimError } = useHelcimInlinePay(handleMerchPaid);
 
   if (items.length === 0) {
     return (
@@ -155,14 +160,23 @@ export default function MerchCheckout() {
                   <p className="text-xs text-muted-foreground">
                     Order {payOrder.order_number} is saved. Pay ${payOrder.total.toFixed(2)} by card right here — nothing goes to production until it goes through.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => startHelcimPay(payOrder.order_number)}
+                    disabled={startingHelcim}
+                    className="w-full mt-4 py-4 font-heading text-sm flex items-center justify-center gap-2 rounded-full btn-cherry chrome-hover disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {startingHelcim ? (
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <><Lock size={15} /> Pay ${payOrder.total.toFixed(2)} securely</>
+                    )}
+                  </button>
+                  {(payError || helcimError) && <p className="text-sm text-destructive mt-3">{payError || helcimError}</p>}
+                  <p className="text-[11px] text-muted-foreground text-center mt-3">
+                    Your card is entered on our secure payment form — we never see your card number.
+                  </p>
                 </div>
-                <SquareCardForm
-                  orderNumber={payOrder.order_number}
-                  amount={payOrder.total}
-                  onSuccess={handleMerchPaid}
-                  onError={setPayError}
-                />
-                {payError && <p className="text-sm text-destructive">{payError}</p>}
               </div>
             ) : (
             <>
@@ -276,7 +290,7 @@ export default function MerchCheckout() {
               )}
 
               {payOrder ? (
-                <p className="text-xs text-muted-foreground text-center">Your card form is open on this page — finish it to place the order.</p>
+                <p className="text-xs text-muted-foreground text-center">Tap Pay to open the secure card form on this page — it places the order once it goes through.</p>
               ) : (
                 <button
                   onClick={handlePay}

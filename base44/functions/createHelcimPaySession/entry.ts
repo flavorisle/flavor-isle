@@ -40,8 +40,55 @@ export default async function (req: Request) {
     const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber }, '-created_date', 10);
     const order = (orders || []).find((o) => o.payment_provider === 'helcim');
     if (!order) {
-      console.warn(`createHelcimPaySession: no Helcim order found for ${orderNumber}`);
-      return Response.json({ error: 'That order does not pay through this page.' }, { status: 404 });
+      // Tasty Threads merch lives in its own record with its own saved total, and a
+      // merch order never carries a tip: the card is taken for exactly what was
+      // saved, and the session is recorded on the merch order so settlement can
+      // match Helcim's payment back to it.
+      const merchOrders = await base44.asServiceRole.entities.MerchOrder.filter({ order_number: orderNumber }, '-created_date', 10);
+      const merch = (merchOrders || [])[0];
+      if (!merch) {
+        console.warn(`createHelcimPaySession: no Helcim order found for ${orderNumber}`);
+        return Response.json({ error: 'That order does not pay through this page.' }, { status: 404 });
+      }
+      if (merch.payment_status === 'paid') {
+        return Response.json({ error: 'This order is already paid.', paid: true }, { status: 409 });
+      }
+      if (merch.fulfillment_status === 'canceled' || merch.payment_status === 'refunded') {
+        return Response.json({ error: 'This order is no longer open.' }, { status: 409 });
+      }
+      const merchTotal = round2(Number(merch.total) || 0);
+      if (!(merchTotal > 0)) {
+        return Response.json({ error: 'That order has no amount to pay.' }, { status: 409 });
+      }
+
+      const merchLink = await createHelcimCheckoutLink({
+        invoiceNumber: merch.id,
+        orderNumber: merch.order_number,
+        amountUsd: merchTotal,
+        payPageOrigin: PAY_PAGE_ORIGIN,
+        fromCheckout: false,
+      });
+      try {
+        await base44.asServiceRole.entities.MerchOrder.update(merch.id, {
+          payment_provider: 'helcim',
+          helcim_checkout_id: merchLink.checkoutToken,
+          payment_url: merchLink.url,
+        });
+      } catch (dbError) {
+        // The session exists but the merch order does not know about it: refuse
+        // rather than hand out a way to pay an amount nothing is watching for.
+        console.error(`createHelcimPaySession: could not record the session on merch order ${orderNumber}:`, (dbError as Error).message);
+        return Response.json({ error: 'We could not open the secure payment page. Please try again.' }, { status: 500 });
+      }
+
+      console.log(`HelcimPay session created for merch order ${orderNumber}: $${merchTotal.toFixed(2)}`);
+      return Response.json({
+        ok: true,
+        order_number: merch.order_number,
+        checkout_token: merchLink.checkoutToken,
+        total: merchTotal,
+        merch: true,
+      });
     }
     if (order.payment_status === 'paid') {
       return Response.json({ error: 'This order is already paid.', paid: true }, { status: 409 });
