@@ -1,5 +1,5 @@
 // Tasty Threads checkout — shipping here, then the card on our own payment page.
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Truck, Lock, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -14,7 +14,7 @@ import InlineCardFields from '@/components/checkout/InlineCardFields';
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
 export default function MerchCheckout() {
-  const { items, subtotal, clearCart: clearMerchCart } = useMerchCart();
+  const { items, subtotal } = useMerchCart();
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     address1: '', address2: '', city: '', state_code: 'KY', zip: '', country_code: 'US',
@@ -27,15 +27,7 @@ export default function MerchCheckout() {
   // The saved merch order's own number, so a second tap pays that same order
   // instead of leaving another unpaid one behind.
   const [savedOrder, setSavedOrder] = useState(null);
-  const navigate = useNavigate();
 
-  // The card is typed on this page: our own secure form opens over the merch
-  // checkout the moment the order is saved, and the gear only goes to production
-  // once the payment has been verified against that saved total.
-  const handlePaid = useCallback((paidOrderNumber) => {
-    clearMerchCart();
-    navigate(`/merch-confirmation?order_number=${paidOrderNumber}&card=1`);
-  }, [clearMerchCart, navigate]);
 
   const {
     startPayment: startCardPay,
@@ -43,7 +35,7 @@ export default function MerchCheckout() {
     form: cardForm,
     starting: openingCardForm,
     error: cardFormError,
-  } = useInlineCardPay(handlePaid);
+  } = useInlineCardPay();
 
   const total = subtotal + (shipping || 0);
 

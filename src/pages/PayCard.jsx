@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, CreditCard, Store } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Seo from '@/components/Seo';
@@ -8,8 +8,6 @@ import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayPageState from '@/components/pay/PayPageState';
 import useInlineCardPay from '@/hooks/useInlineCardPay';
 import InlineCardFields from '@/components/checkout/InlineCardFields';
-import { useCart } from '@/context/CartContext';
-import { useMerchCart } from '@/context/MerchCartContext';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
 
 const FALLBACK_ERROR =
@@ -17,14 +15,11 @@ const FALLBACK_ERROR =
 const PHONE = '(270) 563-4618';
 
 // Our own secure payment page for card orders — the website's food checkout, the
-// Tasty Threads merch checkout, and the short link Smashie texts. The checkout is a
-// hosted page of its own on flavor-isle.com, never a card form built into another
-// screen. The customer sees their order, picks a tip if the order has not got one
-// yet, and pays on this page; every amount is rebuilt server-side from the saved order.
+// Tasty Threads merch checkout, and the short link Smashie texts. The customer sees
+// their order, picks a tip if the order has not got one yet, and types their card in
+// fields on this page; every amount is rebuilt server-side from the saved order, and
+// nothing is counted as paid until the processor's own record confirms it.
 export default function PayCard() {
-  const navigate = useNavigate();
-  const { clearCart } = useCart();
-  const { clearCart: clearMerchCart } = useMerchCart();
   const params = new URLSearchParams(window.location.search);
   const orderNumber = params.get('order_number') || '';
   // A website checkout order already carries its tip inside its saved total, so
@@ -38,23 +33,7 @@ export default function PayCard() {
   const [tipPreset, setTipPreset] = useState('18');
   const [customTip, setCustomTip] = useState('');
 
-  // The card form opens over this page, and the shared flow verifies the payment
-  // against the processor's own record before this runs.
-  const handlePaid = useCallback((paidOrderNumber) => {
-    setPaid(true);
-    if (fromCheckout) {
-      clearCart();
-      navigate(`/order-confirmation?order_number=${paidOrderNumber}&card=1&from=checkout`);
-      return;
-    }
-    // Tasty Threads merch is made to order, so it has a confirmation of its own.
-    if (order?.kind === 'merch') {
-      clearMerchCart();
-      navigate(`/merch-confirmation?order_number=${paidOrderNumber}&card=1`);
-    }
-  }, [fromCheckout, order?.kind, clearCart, clearMerchCart, navigate]);
-
-  const { startPayment: startCardPay, form: cardForm, starting, error: payError, resetCardForm } = useInlineCardPay(handlePaid);
+  const { startPayment: startCardPay, form: cardForm, starting, error: payError, resetCardForm } = useInlineCardPay();
 
   // A different tip is a different amount, so the card fields signed for the old one go
   // away with it.

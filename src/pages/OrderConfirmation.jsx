@@ -175,7 +175,7 @@ export default function OrderConfirmation() {
               {
                 icon: kitchenStatus === 'sent' ? ChefHat : kitchenStatus === 'sending' ? Loader2 : CheckCircle,
                 label: kitchenStatus === 'sent' ? 'Sent to Kitchen' : kitchenStatus === 'sending' ? 'Sending to Kitchen' : 'Order Confirmed',
-                desc: kitchenStatus === 'sent' ? 'Reached Square POS — the crew is on it' : kitchenStatus === 'sending' ? 'Transmitting to Square POS…' : 'Sent to our kitchen via Square',
+                desc: kitchenStatus === 'sent' ? 'Reached the kitchen — the crew is on it' : kitchenStatus === 'sending' ? 'Sending to the kitchen…' : 'Sent to our kitchen',
                 color: kitchenStatus === 'sent' ? 'text-green-600' : 'text-patina-mint',
                 spin: kitchenStatus === 'sending',
               },

@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -30,15 +30,8 @@ const orderTypeLabel = (orderType, pickupMethod) =>
   orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, clearCart } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
   const navigate = useNavigate();
-
-  // The card is typed on this page: our own secure form opens over the checkout the
-  // moment the order is saved, so the customer never leaves it.
-  const handlePaid = useCallback((paidOrderNumber) => {
-    clearCart();
-    navigate(`/order-confirmation?order_number=${paidOrderNumber}&card=1&from=checkout`);
-  }, [clearCart, navigate]);
 
   const {
     startPayment: startCardPay,
@@ -46,7 +39,7 @@ export default function Checkout() {
     form: cardForm,
     starting: openingCardForm,
     error: cardFormError,
-  } = useInlineCardPay(handlePaid);
+  } = useInlineCardPay();
 
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
