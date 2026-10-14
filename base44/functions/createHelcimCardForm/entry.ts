@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { helcimConfigured, HELCIM_NOT_CONFIGURED } from '../../shared/helcimCheckout.ts';
+import { helcimConfigured } from '../../shared/helcimCheckout.ts';
 import { resolvePayableOrder, round2 } from '../../shared/helcimPayableOrder.ts';
 import { formatCardAmount, helcimAmountHash, helcimJsConfigured, helcimJsToken } from '../../shared/helcimJs.ts';
 
@@ -21,12 +21,15 @@ export default async function (req: Request) {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
-    if (!helcimConfigured()) {
-      console.error('createHelcimCardForm: HELCIM_API_KEY is missing, so no card form can be opened');
-      return Response.json({ error: HELCIM_NOT_CONFIGURED }, { status: 503 });
-    }
-    if (!helcimJsConfigured()) {
-      // Not an error: the caller falls back to the processor's own secure form.
+    // Either half of the configuration missing means no card can be taken on our own page
+    // right now. There is no second, third-party form to fall back to, so the checkout is
+    // told plainly and shows the customer what to do instead of sending them elsewhere.
+    const apiKeyReady = helcimConfigured();
+    const inlineReady = helcimJsConfigured();
+    if (!apiKeyReady || !inlineReady) {
+      console.error(
+        `createHelcimCardForm: card fields unavailable (api key ${apiKeyReady ? 'set' : 'missing'}, inline ${inlineReady ? 'set' : 'missing'})`,
+      );
       return Response.json({ ok: true, available: false });
     }
 

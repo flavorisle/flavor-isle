@@ -107,66 +107,23 @@ function unwrap(data: any) {
   return Array.isArray(data) ? data : data?.payments || data?.data || [];
 }
 
-// ── Creating the hosted checkout ──
+// ── Our own page for one order ──
 //
-// The card form hands the card fields straight to the processor inside our own page: it returns
-// a checkout token, and the customer enters their card on the page that token
-// renders. We keep the customer on flavor-isle.com, and the payment is verified
-// server-side afterwards — the same shape as the Square hosted link.
-// Our own secure page for one order. The link carries only the order number —
-// never a checkout token — so a link that is re-sent an hour later still opens a
-// page that mints a fresh session instead of one that has already expired.
+// Our own secure page for card orders, wherever the customer came from: the website
+// checkout, the Tasty Threads checkout, or the short link Smashie texts. The card fields
+// are rendered on that page itself (src/components/checkout/InlineCardFields.jsx) and the
+// payment is verified server-side afterwards, so no checkout token and no processor page
+// is ever handed out.
+//
+// The link carries only the order number — never a checkout token — so a link that is
+// re-sent an hour later still opens a page that computes the amount afresh instead of one
+// that has already expired.
 export function helcimPayPageUrl(payPageOrigin: string, orderNumber: string, fromCheckout = false) {
   const base = `${payPageOrigin}/pay?order_number=${encodeURIComponent(orderNumber)}`;
   return fromCheckout ? `${base}&from=checkout` : base;
 }
 
-export async function createHelcimCheckoutLink(
-  opts: {
-    invoiceNumber: string;
-    orderNumber: string;
-    amountUsd: number;
-    payPageOrigin: string;
-    fromCheckout?: boolean;
-  },
-): Promise<{ url: string; checkoutToken: string }> {
-  const credentials = helcimCredentials();
-  if (!credentials) throw new Error(HELCIM_NOT_CONFIGURED);
 
-  const amount = Math.round((Number(opts.amountUsd) + Number.EPSILON) * 100) / 100;
-
-  // invoiceRequest creates the record of this payment with OUR order id as the
-  // invoice number, so the processor reports that number back on the transaction and the
-  // money is matched to this order and to nothing else. Its line item total has to
-  // equal the amount charged, to the cent.
-  const init = await helcimRequest('/helcim-pay/initialize', 'POST', {
-    paymentType: 'purchase',
-    amount,
-    currency: 'USD',
-    language: 'en',
-    confirmationScreen: true,
-    invoiceRequest: {
-      invoiceNumber: opts.invoiceNumber,
-      lineItems: [
-        {
-          sku: opts.orderNumber,
-          description: `Flavor Isle order #${opts.orderNumber}`,
-          quantity: 1,
-          price: amount,
-          total: amount,
-        },
-      ],
-    },
-  });
-
-  const checkoutToken = init?.checkoutToken || init?.data?.checkoutToken;
-  if (!checkoutToken) throw new Error('The card processor did not return a checkout token.');
-
-  return {
-    url: helcimPayPageUrl(opts.payPageOrigin, opts.orderNumber, opts.fromCheckout === true),
-    checkoutToken,
-  };
-}
 
 // ── Reading the payment back ──
 

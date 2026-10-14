@@ -1,24 +1,24 @@
 import { useCallback, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import useCardPay from '@/hooks/useCardPay';
 
 // The card step for one saved order, with our own fields on our own page.
 //
 // The server hands back everything the fields need for that one order — the amount, the
 // signature that proves we set it, and the public configuration token — so nothing here
-// decides what a customer is charged.
+// decides what a customer is charged, and the form's result is verified against the
+// processor's own record before an order is ever marked paid.
 //
-// Until the inline configuration is in place on the account, the server says so and the
-// processor's own secure form takes the card instead: a checkout that cannot be paid is
-// worse than one more click.
+// There is deliberately no popup path: when the card fields cannot be opened, the
+// customer is told plainly and the order simply stays unpaid.
+const UNAVAILABLE =
+  'Card payment is temporarily unavailable. Call us at (270) 563-4618 or pay at pickup - nothing was charged.';
 const FORM_ERROR =
   'We could not open the card form. Nothing was charged — please try again, or call us at (270) 563-4618.';
 
-export default function useInlineCardPay(onPaid) {
+export default function useInlineCardPay() {
   const [form, setForm] = useState(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
-  const modal = useCardPay(onPaid);
 
   const startPayment = useCallback(async (orderNumber, tip) => {
     setError('');
@@ -30,7 +30,7 @@ export default function useInlineCardPay(onPaid) {
       });
       const data = res?.data || {};
       if (data.available === false) {
-        await modal.startPayment(orderNumber, tip);
+        setError(UNAVAILABLE);
         return;
       }
       if (data.error || !data.amount_hash || !data.token) {
@@ -50,17 +50,11 @@ export default function useInlineCardPay(onPaid) {
     } finally {
       setStarting(false);
     }
-  }, [modal]);
+  }, []);
 
   // Anything that changes what is being ordered makes the signed amount stale, so the
   // fields go away with the order they were signed for.
   const resetCardForm = useCallback(() => setForm(null), []);
 
-  return {
-    startPayment,
-    resetCardForm,
-    form,
-    starting: starting || modal.starting,
-    error: error || modal.error,
-  };
+  return { startPayment, resetCardForm, form, starting, error };
 }
