@@ -12,8 +12,13 @@ import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
 export async function settleHelcimCheckoutOrder(base44: any, order: any, suppliedTransactionId?: string) {
   if (order.payment_provider !== 'helcim' || order.payment_status === 'paid') return order;
 
+  // An order our own card fields took carries the transaction they created, so a later
+  // attempt — the confirmation page, the sweeper, an admin retry — verifies the same
+  // payment even when the browser's own POST never arrived.
+  const transactionId = suppliedTransactionId || String(order.helcim_transaction_id || '');
+
   const expectedCents = Math.round(Number(order.total) * 100);
-  const totals = await helcimCheckoutTotals(order.id, expectedCents, suppliedTransactionId);
+  const totals = await helcimCheckoutTotals(order.id, expectedCents, transactionId || undefined);
   if (!totals.paid) return order;
 
   if (totals.foodCents !== expectedCents) {
@@ -60,13 +65,16 @@ export async function settleHelcimPhonePayment(base44: any, order: any) {
 // cent, then fulfil exactly as the card path does. Printful is only asked to
 // produce anything once the money is confirmed.
 export async function settleHelcimMerchOrder(base44: any, merchOrder: any, suppliedTransactionId?: string) {
-  if (!merchOrder.helcim_checkout_id && !suppliedTransactionId) {
+  // The same rule as a food order: the transaction the card fields produced is recorded
+  // on the merch order, so a later attempt can still verify that payment.
+  const transactionId = suppliedTransactionId || String(merchOrder.helcim_transaction_id || '');
+  if (!merchOrder.helcim_checkout_id && !transactionId) {
     return { ok: false, reason: 'no card payment page on this order' };
   }
   if (merchOrder.payment_status === 'paid') return { ok: true, already_paid: true };
 
   const expectedCents = Math.round(Number(merchOrder.total) * 100);
-  const totals = await helcimCheckoutTotals(merchOrder.id, expectedCents, suppliedTransactionId);
+  const totals = await helcimCheckoutTotals(merchOrder.id, expectedCents, transactionId || undefined);
   if (!totals.paid) return { ok: false, reason: 'payment not completed yet' };
   if (totals.foodCents !== expectedCents) {
     console.error(

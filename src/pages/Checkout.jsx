@@ -22,7 +22,8 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
-import useCardPay from '@/hooks/useCardPay';
+import useInlineCardPay from '@/hooks/useInlineCardPay';
+import InlineCardFields from '@/components/checkout/InlineCardFields';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -39,7 +40,13 @@ export default function Checkout() {
     navigate(`/order-confirmation?order_number=${paidOrderNumber}&card=1&from=checkout`);
   }, [clearCart, navigate]);
 
-  const { startPayment: startCardPay, starting: openingCardForm, error: cardFormError } = useCardPay(handlePaid);
+  const {
+    startPayment: startCardPay,
+    resetCardForm,
+    form: cardForm,
+    starting: openingCardForm,
+    error: cardFormError,
+  } = useInlineCardPay(handlePaid);
 
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -158,8 +165,8 @@ export default function Checkout() {
   // A saved, still-unpaid order stops being the one to charge as soon as what is
   // being ordered changes — the bag, the time, or the tip. The next tap then creates
   // a fresh verified order instead of charging a stale amount.
-  useEffect(() => { setPendingOrder(null); },
-    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length]);
+  useEffect(() => { setPendingOrder(null); resetCardForm(); },
+    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length, resetCardForm]);
 
   // Distance-based delivery pricing — quote the fee from the typed address
   // (debounced). Clears the quote when not delivering or the address is empty.
@@ -221,8 +228,10 @@ export default function Checkout() {
   const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const updateForm = (field, val) => {
-    // Editing any detail of the order makes an already-saved, unpaid order stale.
+    // Editing any detail of the order makes an already-saved, unpaid order stale — and
+    // with it the card fields that were signed for its amount.
     setPendingOrder(null);
+    resetCardForm();
     setForm(prev => ({ ...prev, [field]: val }));
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
   };
@@ -712,31 +721,47 @@ export default function Checkout() {
                 </div>
               )}
 
-              {pendingOrder && (
-                <div className="mb-3 rounded-xl bg-patina-mint/10 px-3 py-2.5">
-                  <p className="text-xs font-semibold text-patina-mint">Order #{pendingOrder.orderNumber} is saved.</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Type your card in our secure form right on this page — nothing goes to the kitchen until it's paid.
+              {cardForm ? (
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-heading text-base text-obsidian-roast">Enter your card</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Order #{cardForm.orderNumber} is saved — pay ${cardForm.amount} and it goes straight to the kitchen.
                   </p>
+                  <InlineCardFields
+                    form={cardForm}
+                    defaultName={fullName}
+                    defaultAddress={form.address}
+                  />
                 </div>
-              )}
-
-              <div className="hidden lg:block">
-                <button
-                  onClick={handleContinue}
-                  disabled={loading || openingCardForm}
-                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {loading || openingCardForm ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                  <>{pendingOrder ? 'Pay' : 'Continue to Payment'} · ${totalWithTip.toFixed(2)}</>
+              ) : (
+                <>
+                  {pendingOrder && (
+                    <div className="mb-3 rounded-xl bg-patina-mint/10 px-3 py-2.5">
+                      <p className="text-xs font-semibold text-patina-mint">Order #{pendingOrder.orderNumber} is saved.</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Type your card in our secure form right on this page — nothing goes to the kitchen until it's paid.
+                      </p>
+                    </div>
                   )}
-                </button>
-                <div className="mt-3">
-                  <CheckoutTrustBadges variant="compact" />
-                </div>
-              </div>
+
+                  <div className="hidden lg:block">
+                    <button
+                      onClick={handleContinue}
+                      disabled={loading || openingCardForm}
+                      className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {loading || openingCardForm ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                      <>{pendingOrder ? 'Pay' : 'Continue to Payment'} · ${totalWithTip.toFixed(2)}</>
+                      )}
+                    </button>
+                    <div className="mt-3">
+                      <CheckoutTrustBadges variant="compact" />
+                    </div>
+                  </div>
+                </>
+              )}
 
             </div>
           </div>
@@ -747,14 +772,25 @@ export default function Checkout() {
           the full summary. */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
         <button
-          onClick={handleContinue}
+          onClick={() => {
+            // The card fields live in the summary above: bring them into view rather
+            // than opening a second way to pay.
+            if (cardForm) {
+              document.getElementById('helcimForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              return;
+            }
+            handleContinue();
+          }}
           disabled={loading || openingCardForm}
           className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading || openingCardForm ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>{pendingOrder ? 'Pay' : 'Continue to Payment'} · ${totalWithTip.toFixed(2)}</>
+            <>
+              {cardForm ? 'Enter your card to pay' : pendingOrder ? 'Pay' : 'Continue to Payment'} · $
+              {(cardForm?.amount ? Number(cardForm.amount) : totalWithTip).toFixed(2)}
+            </>
           )}
         </button>
       </div>

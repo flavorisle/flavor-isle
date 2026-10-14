@@ -6,7 +6,8 @@ import Seo from '@/components/Seo';
 import PayOrderSummary from '@/components/pay/PayOrderSummary';
 import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayPageState from '@/components/pay/PayPageState';
-import useCardPay from '@/hooks/useCardPay';
+import useInlineCardPay from '@/hooks/useInlineCardPay';
+import InlineCardFields from '@/components/checkout/InlineCardFields';
 import { useCart } from '@/context/CartContext';
 import { useMerchCart } from '@/context/MerchCartContext';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
@@ -53,7 +54,11 @@ export default function PayCard() {
     }
   }, [fromCheckout, order?.kind, clearCart, clearMerchCart, navigate]);
 
-  const { startPayment: startCardPay, starting, error: payError } = useCardPay(handlePaid);
+  const { startPayment: startCardPay, form: cardForm, starting, error: payError, resetCardForm } = useInlineCardPay(handlePaid);
+
+  // A different tip is a different amount, so the card fields signed for the old one go
+  // away with it.
+  useEffect(() => { resetCardForm(); }, [tipPreset, customTip, resetCardForm]);
 
   useEffect(() => {
     if (!orderNumber) {
@@ -163,34 +168,48 @@ export default function PayCard() {
         ) : (
           <>
             <PayOrderSummary order={order} tip={tip} kind={order.kind} total={totalDue} />
-            {showTipPicker && (
-              <PayTipSelector
-                presets={presets}
-                preset={tipPreset}
-                onPreset={setTipPreset}
-                customTip={customTip}
-                onCustomTip={setCustomTip}
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => startCardPay(order.order_number, showTipPicker ? tip : undefined)}
-              disabled={starting}
-              className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {starting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CreditCard size={16} /> Pay ${totalDue.toFixed(2)} securely
-                </>
-              )}
-            </button>
-            {payError && (
-              <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm">
-                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                <span>{payError}</span>
+            {cardForm ? (
+              <div className="card-diner p-5 space-y-3">
+                <div>
+                  <h2 className="font-heading text-lg text-obsidian-roast">Enter your card</h2>
+                  <p className="text-xs text-muted-foreground font-body">
+                    Paying ${cardForm.amount} for order #{cardForm.orderNumber}.
+                  </p>
+                </div>
+                <InlineCardFields form={cardForm} defaultName={order.first_name || ''} />
               </div>
+            ) : (
+              <>
+                {showTipPicker && (
+                  <PayTipSelector
+                    presets={presets}
+                    preset={tipPreset}
+                    onPreset={setTipPreset}
+                    customTip={customTip}
+                    onCustomTip={setCustomTip}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => startCardPay(order.order_number, showTipPicker ? tip : undefined)}
+                  disabled={starting}
+                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {starting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard size={16} /> Pay ${totalDue.toFixed(2)} securely
+                    </>
+                  )}
+                </button>
+                {payError && (
+                  <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm">
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                    <span>{payError}</span>
+                  </div>
+                )}
+              </>
             )}
             <p className="text-center text-xs text-muted-foreground font-body">
               Your card details are entered on our secure payment form — Flavor Isle never sees your card

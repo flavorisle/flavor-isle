@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CheckCircle, Truck, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useMerchCart } from '@/context/MerchCartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -21,6 +22,13 @@ export default function MerchConfirmation() {
   const squareReturn = params.get('square') === '1';
   const paidReturn = cardReturn || squareReturn;
   const [paymentConfirmed, setPaymentConfirmed] = useState(null);
+  const { clearCart: clearMerchCart } = useMerchCart();
+
+  // Arriving with card=1 means the card fields on our own page just took this payment,
+  // so the bag that was paid for is done with.
+  useEffect(() => {
+    if (cardReturn) clearMerchCart();
+  }, [cardReturn, clearMerchCart]);
   useEffect(() => {
     if (!paidReturn || !orderNumber) return;
     (async () => {
