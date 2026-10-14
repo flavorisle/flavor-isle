@@ -1,15 +1,16 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import PayPhoneDemo from '@/components/pay/PayPhoneDemo';
-import SquarePayPage from '@/components/pay/SquarePayPage';
 
-// The page behind the short payment link Smashie texts (/pay/<order>).
-// The customer sees their order, picks a tip, and pays with Square's card form
-// embedded right here — they never leave flavor-isle.com.
+// The page behind the short payment link Smashie texts (/pay/<order>). It opens
+// the site's own Helcim payment page — the same one the website checkout uses —
+// carrying this order's number. The customer sees their order, picks a tip when
+// the order does not carry one yet, and pays in the Helcim card fields, all on
+// flavor-isle.com. The retired Square form is no longer reached from any link.
 export default function PayPhoneOrder() {
   const { orderNumber } = useParams();
 
   if (orderNumber === 'demo') return <PayPhoneDemo />;
 
-  return <SquarePayPage orderNumber={orderNumber} tipEnabled />;
+  return <Navigate to={`/pay?order_number=${encodeURIComponent(orderNumber)}`} replace />;
 }
