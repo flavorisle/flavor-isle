@@ -1,0 +1,96 @@
+{
+  "name": "CardPaymentLog",
+  "type": "object",
+  "properties": {
+    "order_number": {
+      "type": "string",
+      "description": "Order number the card attempt was made for, so the crew can open the order alongside the reason."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "declined",
+        "unsettled",
+        "error"
+      ],
+      "description": "declined = the card system refused the card and nothing was charged; unsettled = the card system approved it but the amount did not match the saved order to the cent, so the order was deliberately left unpaid for a human to check; error = the card result handler itself failed."
+    },
+    "response_code": {
+      "type": "string",
+      "description": "The card system's own response flag exactly as it was sent back (1 = approved, 0 = not approved)."
+    },
+    "response_message": {
+      "type": "string",
+      "description": "The exact message the card system returned for this card, stored verbatim. On a decline this is the refusal reason and is the only account of why the card did not go through."
+    },
+    "notice_message": {
+      "type": "string",
+      "description": "The card system's secondary note for the attempt, verbatim, when it sent one."
+    },
+    "card_type": {
+      "type": "string",
+      "description": "Card brand the card system reported (Visa, Mastercard, Amex...), for telling apart a card-type problem from a card problem."
+    },
+    "avs_response": {
+      "type": "string",
+      "description": "Address verification result code from the card system. A mismatch here is one of the most common reasons a card is refused."
+    },
+    "cvv_response": {
+      "type": "string",
+      "description": "Security-code (CVV) verification result code from the card system. A mismatch here is a common reason a card is refused."
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount the card was attempted for, in dollars, as the card form sent it."
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Card system transaction id when one was issued. Empty on a refusal that never reached an authorization."
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Customer on the order, when the order number could be matched to one, so the crew know who to call back."
+    },
+    "customer_email": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Our own explanation for the attempts the card system did not report on: the amount mismatch on an unsettled payment, or the failure that threw on an error."
+    },
+    "source_path": {
+      "type": "string",
+      "description": "The page the customer was paying on (the website checkout, the pay page for a texted link, or Tasty Threads merch), recorded so a pattern on one page can be spotted."
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the card attempt was recorded."
+    }
+  },
+  "required": [
+    "outcome"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

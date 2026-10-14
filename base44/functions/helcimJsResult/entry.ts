@@ -69,13 +69,65 @@ async function transactionAlreadySettled(base44: any, transactionId: string, rec
   return false;
 }
 
+// ── The record of a card that did not go through ──
+//
+// A refused card reaches us long before any charge exists, so the card system's own words
+// are the ONLY account of why it did not go through. Each of those attempts is written
+// down, verbatim, so the crew can read the exact reason in Admin → Card Declines.
+async function recordCardLog(req: Request, row: any) {
+  try {
+    await createClientFromRequest(req).asServiceRole.entities.CardPaymentLog.create(row);
+  } catch (logError) {
+    // Bookkeeping must never break the customer's page.
+    console.error('helcimJsResult: could not record the card attempt:', (logError as Error).message);
+  }
+}
+
+// Who the order number belongs to, so a refusal names someone the crew can call back.
+// Best effort: a missing record just leaves the entry without a name.
+async function customerForOrder(base44: any, orderNumber: string) {
+  try {
+    const [food, merch] = await Promise.all([
+      base44.asServiceRole.entities.Order.filter({ order_number: orderNumber }, '-created_date', 3),
+      base44.asServiceRole.entities.MerchOrder.filter({ order_number: orderNumber }, '-created_date', 3),
+    ]);
+    const record = (food || [])[0] || (merch || [])[0];
+    return record
+      ? { customer_name: record.customer_name || '', customer_email: record.customer_email || '' }
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+// The card form's own result fields, taken verbatim from the submission so what is stored
+// is exactly what the card system sent — nothing re-worded, nothing guessed.
+function cardAttempt(field: (name: string) => string, sourcePath: string) {
+  return {
+    order_number: field('order_number').toUpperCase(),
+    response_code: field('response'),
+    response_message: field('responseMessage'),
+    notice_message: field('noticeMessage'),
+    card_type: field('cardType'),
+    avs_response: field('avsResponse'),
+    cvv_response: field('cvvResponse'),
+    amount: Number(field('amount')) || 0,
+    transaction_id: field('transactionId'),
+    source_path: sourcePath,
+    occurred_at: new Date().toISOString(),
+  };
+}
+
 export default async function (req: Request) {
+  // Kept outside the try so a thrown error can still be filed against its order.
+  let attemptedOrder = '';
   try {
     const base44 = createClientFromRequest(req);
     const params = new URLSearchParams(await req.text().catch(() => ''));
     const field = (name: string) => clean(params.get(name));
 
     const orderNumber = field('order_number').toUpperCase();
+    attemptedOrder = orderNumber;
     if (!orderNumber) {
       console.error('helcimJsResult: the card form result carried no order_number');
       return Response.json({ error: 'order_number is required' }, { status: 400 });
@@ -92,6 +144,14 @@ export default async function (req: Request) {
     if (!approved || !transactionId) {
       const reason = field('responseMessage');
       console.warn(`Card fields reported no approval for order ${orderNumber}: ${reason}`);
+
+      // The exact refusal is filed here, with the address and security-code checks that
+      // usually explain it.
+      await recordCardLog(req, {
+        ...cardAttempt(field, returnPath),
+        outcome: 'declined',
+        ...(await customerForOrder(base44, orderNumber)),
+      });
 
       // The card system's own line, shown in full and escaped. A refusal reaches us
       // long before any charge exists, so this line is the ONLY account of why a card
@@ -178,6 +238,18 @@ export default async function (req: Request) {
       console.warn(
         `Card fields: order ${orderNumber} left unsettled (transaction ${transactionId}, expected ${expectedCents}c, the processor reports ${payment ? payment.amountCents : 'nothing'})`,
       );
+      // Approved by the card system but not a cent-for-cent match with the saved order:
+      // real money needs a human, so the attempt is written down with both figures.
+      await recordCardLog(req, {
+        ...cardAttempt(field, returnPath),
+        outcome: 'unsettled',
+        customer_name: record.customer_name || '',
+        customer_email: record.customer_email || '',
+        detail:
+          `This order needs ${(expectedCents / 100).toFixed(2)}; the card system reports ` +
+          (payment ? `${(payment.amountCents / 100).toFixed(2)} (${payment.status})` : 'no approved payment') +
+          (alreadySettledElsewhere ? '. That transaction already settled a different order.' : '.'),
+      });
     }
 
     // Either way the customer lands on their own confirmation page, which re-checks the
@@ -188,6 +260,14 @@ export default async function (req: Request) {
     return Response.redirect(confirmation, 303);
   } catch (error) {
     console.error('helcimJsResult error:', (error as Error).message);
+    // A crash in the handler is also something the crew needs to see, filed against
+    // whatever order number was being handled.
+    await recordCardLog(req, {
+      outcome: 'error',
+      order_number: attemptedOrder,
+      detail: (error as Error).message,
+      occurred_at: new Date().toISOString(),
+    });
     return Response.json(
       { error: 'We could not read that payment. Please call us at (270) 563-4618.' },
       { status: 500 },

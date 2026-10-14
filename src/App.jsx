@@ -74,6 +74,7 @@ const AdminReviews = lazy(() => import('./pages/AdminReviews'));
 const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
 const AdminEmails = lazy(() => import('./pages/AdminEmails'));
 const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
+const AdminCardLogs = lazy(() => import('./pages/AdminCardLogs'));
 const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const PaySquare = lazy(() => import('./pages/PaySquare'));
@@ -258,6 +259,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/reviews" element={<AdminReviews />} />
         <Route path="/admin/emails" element={<AdminEmails />} />
         <Route path="/admin/square-logs" element={<AdminSquareLogs />} />
+        <Route path="/admin/card-logs" element={<AdminCardLogs />} />
         <Route path="/admin/kitchen" element={<AdminKitchen />} />
         <Route path="/admin-analytics" element={<AdminAnalytics />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
