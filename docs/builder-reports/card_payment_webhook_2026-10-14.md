@@ -255,4 +255,26 @@ Changed / deleted: none.
 - Move state checked on both paths, plus a `find` across the repo.
 - `npx vite build`: exit code 0, clean log.
 - Live HTTP probe of the deployed function on the custom domain: 500 `not configured` (fail-closed).
-- No orders placed, no payments made, no test data created, no secrets set, no settings changed.
+- No orders placed, no payments made, no test data created, no settings changed. (The verifier-token secret was added later that evening, by Wesley's approval — see the update below.)
+
+---
+
+## Update — 2026-10-14 21:48 UTC: delivery URL registered, token stored, endpoint armed
+
+Wesley registered the delivery URL in the Helcim dashboard (`https://flavor-isle.com/functions/cardPaymentWebhook`,
+"Card Transaction Processing" on) and approved storing the verifier token as `HELCIM_WEBHOOK_SECRET`. The
+endpoint moved from "not configured" onto the signature gate, which is the proof the token is live in the
+function's environment:
+
+| Probe | Before the token | Now |
+| --- | --- | --- |
+| Unsigned `GET` / `POST` on the function URL | 500 `{"error":"not configured"}` | **401 `{"error":"missing webhook headers"}`** |
+| `POST` with a forged `webhook-signature` header | — | **401 `{"error":"invalid signature"}`** — a forged or unsigned delivery settles nothing |
+| Platform function tester on `cardPaymentWebhook` | refused: missing `HELCIM_WEBHOOK_SECRET` | **401 `missing webhook headers`** in 51 ms, no logs emitted — same gate, no side effects |
+
+Nothing else changed: no file edited, no order created, no test data, nothing settled, no payment made.
+
+Still unverified, and only a real delivery can verify it: an actual Helcim-signed event arriving and settling
+an order. That happens on the next real card payment — the function's own log lines
+(`Card webhook: order … settled from transaction …`, plus the ambiguity warning that names the candidates)
+are where it shows.
