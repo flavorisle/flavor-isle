@@ -1,20 +1,18 @@
-// Tasty Threads checkout — shipping, then the card form built into this page.
+// Tasty Threads checkout — shipping here, then the card on our own payment page.
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Truck, Lock, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
-import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
 export default function MerchCheckout() {
-  const { items, subtotal, clearCart } = useMerchCart();
-  const navigate = useNavigate();
+  const { items, subtotal } = useMerchCart();
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     address1: '', address2: '', city: '', state_code: 'KY', zip: '', country_code: 'US',
@@ -24,11 +22,6 @@ export default function MerchCheckout() {
   const [ratingShipping, setRatingShipping] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
-  // Step 2 — the card form is built into this page: the merch order is saved
-  // first, then Square's card form runs right here, so the customer never leaves
-  // checkout for a payment page.
-  const [payOrder, setPayOrder] = useState(null);
-  const [payError, setPayError] = useState('');
 
   const total = subtotal + (shipping || 0);
 
@@ -101,33 +94,22 @@ export default function MerchCheckout() {
         total,
       });
       const data = res.data || {};
-      // The order is saved first, then the card form runs on this page: no hosted
-      // page is involved, and nothing goes to production until the payment has
-      // been verified against this order's own total.
+      // The order is saved first — with its verified catalog prices and live shipping
+      // rate — and the customer then pays on our own payment page: a page of its own
+      // on flavor-isle.com, never a card form opened over this checkout. Nothing goes
+      // to production until the payment has been verified against this order's total.
       if (data.order_number) {
-        setPayOrder({ order_number: data.order_number, total: Number(data.total) || total });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        setError(data.error || 'Could not start checkout. Please try again.');
+        window.location.href = data.payment_url
+          || `${window.location.origin}/pay-helcim?order_number=${encodeURIComponent(data.order_number)}`;
+        return;
       }
+      setError(data.error || 'Could not start checkout. Please try again.');
     } catch (err) {
       setError(err?.response?.data?.error || 'Checkout failed. Please try again.');
     } finally {
       setPaying(false);
     }
   };
-
-  // Paid on this page — hand the customer to the merch confirmation, which shows
-  // the order and clears the merch bag.
-  const handleMerchPaid = () => {
-    clearCart();
-    navigate(`/merch-confirmation?order_number=${payOrder?.order_number}&helcim=1`);
-  };
-
-  // The card is taken in Helcim's own form over this page, for the saved total. The
-  // shared flow verifies the payment against this order's own record before this
-  // runs, so nothing is sent to production on an unverified charge.
-  const { startPayment: startHelcimPay, starting: startingHelcim, error: helcimError } = useHelcimInlinePay(handleMerchPaid);
 
   if (items.length === 0) {
     return (
@@ -151,34 +133,8 @@ export default function MerchCheckout() {
         <h1 className="font-heading text-4xl text-obsidian-roast mb-8">Merch Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Left – form, swapped for the card form once the order is saved */}
+          {/* Left – contact and shipping */}
           <div className="lg:col-span-3 space-y-6">
-            {payOrder ? (
-              <div className="space-y-4">
-                <div className="card-diner p-6">
-                  <h2 className="font-heading text-lg text-obsidian-roast mb-2">Payment</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Order {payOrder.order_number} is saved. Pay ${payOrder.total.toFixed(2)} by card right here — nothing goes to production until it goes through.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => startHelcimPay(payOrder.order_number)}
-                    disabled={startingHelcim}
-                    className="w-full mt-4 py-4 font-heading text-sm flex items-center justify-center gap-2 rounded-full btn-cherry chrome-hover disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {startingHelcim ? (
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <><Lock size={15} /> Pay ${payOrder.total.toFixed(2)} securely</>
-                    )}
-                  </button>
-                  {(payError || helcimError) && <p className="text-sm text-destructive mt-3">{payError || helcimError}</p>}
-                  <p className="text-[11px] text-muted-foreground text-center mt-3">
-                    Your card is entered on our secure payment form — we never see your card number.
-                  </p>
-                </div>
-              </div>
-            ) : (
             <>
               <div className="card-diner p-6">
                 <h2 className="font-heading text-lg text-obsidian-roast mb-4">Contact</h2>
@@ -246,7 +202,6 @@ export default function MerchCheckout() {
                 )}
               </div>
             </>
-            )}
 
           </div>
 
@@ -289,17 +244,13 @@ export default function MerchCheckout() {
                 </div>
               )}
 
-              {payOrder ? (
-                <p className="text-xs text-muted-foreground text-center">Tap Pay to open the secure card form on this page — it places the order once it goes through.</p>
-              ) : (
-                <button
-                  onClick={handlePay}
-                  disabled={paying || shipping == null}
-                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
-                </button>
-              )}
+              <button
+                onClick={handlePay}
+                disabled={paying || shipping == null}
+                className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
+              </button>
               {shipping == null && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
             </div>
           </div>

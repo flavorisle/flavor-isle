@@ -29,23 +29,23 @@ export default async function (req: Request) {
       if (order.pay_cash_on_pickup) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'pay_at_counter' });
       }
-      // A card order that pays through its own form (an older card intent still
-      // open on the order) must not also be charged here — that would be a second
-      // charge for the same food.
-      // An order that still carries an older card page of its own (a Stripe
-      // intent, or a processor-hosted checkout link from before) pays there, not
-      // here — paying on both would be two charges for the same food.
+      // This page is where the card is taken, so a Helcim order — a website checkout
+      // order, a phone order, an order that was texted a link — is payable here.
+      // The exception is an order that still pays on a page of its own: a card
+      // intent from the retired Stripe path, the old Square page, or the Base44
+      // Payments hosted checkout. Paying on that one and on this one would be two
+      // charges for the same food.
       if (
         order.stripe_session_id ||
         order.square_payment_link_id ||
-        order.helcim_checkout_id ||
-        (order.payment_provider && order.payment_provider !== 'square')
+        order.wix_checkout_session_id ||
+        (order.payment_provider && order.payment_provider !== 'helcim')
       ) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'own_card_form' });
       }
       // An order the crew collects in person (an in-store or historical order
       // that was never set up to pay online) has nothing to pay here.
-      if (!order.payment_url && !order.manual_pay_required && order.payment_provider !== 'square') {
+      if (!order.payment_url && !order.manual_pay_required) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'pay_at_counter' });
       }
       return Response.json({ ...summary, paid: false, payable: true });
@@ -85,7 +85,9 @@ export default async function (req: Request) {
     if (merch.payment_status === 'failed' || merch.fulfillment_status === 'canceled') {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });
     }
-    if (merch.payment_provider && merch.payment_provider !== 'square') {
+    // A Helcim merch order pays on this page, for its own saved total. One still
+    // pointing at an older payment page of its own pays there instead.
+    if (merch.payment_provider && merch.payment_provider !== 'helcim') {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });
     }
     return Response.json({ ...merchSummary, paid: false, payable: true });

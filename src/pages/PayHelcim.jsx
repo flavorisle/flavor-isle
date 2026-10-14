@@ -8,20 +8,23 @@ import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayPageState from '@/components/pay/PayPageState';
 import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
 import { useCart } from '@/context/CartContext';
+import { useMerchCart } from '@/context/MerchCartContext';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
 
 const FALLBACK_ERROR =
   'We could not open that payment page. Please try the link again, or call us at (270) 563-4618.';
 const PHONE = '(270) 563-4618';
 
-// Our own secure payment page for Helcim orders: the website's food checkout and
-// the short link Smashie texts. The customer sees their order, picks a tip if the
-// order has not got one yet, and pays in Helcim's card form over this page — they
-// never leave flavor-isle.com, and every amount is rebuilt server-side from the
-// saved order.
+// Our own secure payment page for Helcim orders — the website's food checkout, the
+// Tasty Threads merch checkout, and the short link Smashie texts. The checkout is a
+// hosted page of its own on flavor-isle.com, never a card form built into another
+// screen. The customer sees their order, picks a tip if the order has not got one
+// yet, and pays in Helcim's card form on this page; every amount is rebuilt
+// server-side from the saved order.
 export default function PayHelcim() {
   const navigate = useNavigate();
   const { clearCart } = useCart();
+  const { clearCart: clearMerchCart } = useMerchCart();
   const params = new URLSearchParams(window.location.search);
   const orderNumber = params.get('order_number') || '';
   // A website checkout order already carries its tip inside its saved total, so
@@ -42,8 +45,14 @@ export default function PayHelcim() {
     if (fromCheckout) {
       clearCart();
       navigate(`/order-confirmation?order_number=${paidOrderNumber}&helcim=1&from=checkout`);
+      return;
     }
-  }, [fromCheckout, clearCart, navigate]);
+    // Tasty Threads merch is made to order, so it has a confirmation of its own.
+    if (order?.kind === 'merch') {
+      clearMerchCart();
+      navigate(`/merch-confirmation?order_number=${paidOrderNumber}&helcim=1`);
+    }
+  }, [fromCheckout, order?.kind, clearCart, clearMerchCart, navigate]);
 
   const { startPayment: startHelcimPay, starting, error: payError } = useHelcimInlinePay(handlePaid);
 
@@ -138,6 +147,13 @@ export default function PayHelcim() {
               </a>
             </div>
           </PayPageState>
+        ) : order.reason === 'own_card_form' ? (
+          <PayPageState
+            Icon={AlertTriangle}
+            tone="warn"
+            title={`Order #${order.order_number} pays on its own page`}
+            body={`This order was set up to pay on the page you were sent, so there is nothing to pay here. Use the link from your text or email, or call the counter at ${PHONE} and we'll take it from there.`}
+          />
         ) : order.reason === 'pay_at_counter' ? (
           <PayPageState
             Icon={Store}

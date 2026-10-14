@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -19,7 +19,6 @@ import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
-import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
@@ -29,7 +28,7 @@ const orderTypeLabel = (orderType, pickupMethod) =>
   orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 export default function Checkout() {
-  const { cartItems, clearCart, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -40,19 +39,11 @@ export default function Checkout() {
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   // The order this customer already saved but has not paid yet — a declined card, or
-  // a card form they closed. Paying it again reuses that same order rather than
-  // leaving a second unpaid one behind; anything that changes what is being ordered
-  // drops it, so the amount charged always matches what is on the screen.
+  // a payment page they closed. Tapping again sends them back to that same saved
+  // order's own page rather than leaving a second unpaid one behind; anything that
+  // changes what is being ordered drops it, so the amount they pay always matches
+  // what is on the screen.
   const [pendingOrder, setPendingOrder] = useState(null);
-
-  const handleHelcimPaid = useCallback((paidOrderNumber) => {
-    clearCart();
-    navigate(`/order-confirmation?order_number=${paidOrderNumber}&helcim=1&from=checkout`);
-  }, [clearCart, navigate]);
-
-  // Helcim's card form opens over this page, and the shared flow verifies the
-  // payment against Helcim's own record before this is called.
-  const { startPayment: startHelcimPay, starting: helcimStarting, error: helcimError } = useHelcimInlinePay(handleHelcimPaid);
 
   // Before the store opens for pickup, ready times are clamped to opening —
   // show "from {open}" on the order-type tiles instead of a minute estimate.
@@ -302,26 +293,29 @@ export default function Checkout() {
         smsConsentVersion: SMS_CONSENT_VERSION,
       };
 
-      // A tap after a declined card (or a card form the customer closed) pays the
-      // order that is already saved, so no second unpaid order is left behind.
+      // A tap after a declined card (or a payment page the customer closed) sends
+      // them back to that order's own page, so no second unpaid order is left behind.
       if (pendingOrder) {
-        await startHelcimPay(pendingOrder);
+        window.location.href = pendingOrder.paymentUrl;
         return;
       }
 
-      // Helcim is the only card processor. The order is saved first — repriced and
-      // verified server-side, with the tip chosen above already inside it — and only
-      // then is the card taken in Helcim's form over this same page, for exactly that
-      // saved total. Nothing reaches the kitchen until Helcim's own record confirms
-      // the payment against the order.
+      // Helcim is the only card processor, and the card is taken on our own payment
+      // page — a page of its own on flavor-isle.com, not a card form built into this
+      // checkout. The order is saved first, repriced and verified server-side with the
+      // tip chosen above already inside it, and the customer pays that saved total on
+      // that page. Nothing reaches the kitchen until Helcim's own record confirms the
+      // payment against the order.
       const orderRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
       const data = orderRes?.data || orderRes;
       if (data?.orderNumber) {
-        setPendingOrder(data.orderNumber);
-        await startHelcimPay(data.orderNumber);
+        const paymentUrl = data.payment_url
+          || `${window.location.origin}/pay-helcim?order_number=${encodeURIComponent(data.orderNumber)}&from=checkout`;
+        setPendingOrder({ orderNumber: data.orderNumber, paymentUrl });
+        window.location.href = paymentUrl;
         return;
       }
-      setError(data?.error || 'We could not open the secure payment form, so nothing was charged. Please tap Continue to Payment again.');
+      setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap Continue to Payment again.');
       return;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
@@ -702,20 +696,20 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {(error || helcimError) && (
+              {error && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>{error || helcimError}</span>
+                  <span>{error}</span>
                 </div>
               )}
 
               <div className="hidden lg:block">
                 <button
                   onClick={handleContinue}
-                  disabled={loading || helcimStarting}
+                  disabled={loading}
                   className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {loading || helcimStarting ? (
+                  {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                   <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
@@ -736,10 +730,10 @@ export default function Checkout() {
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
         <button
           onClick={handleContinue}
-          disabled={loading || helcimStarting}
+          disabled={loading}
           className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading || helcimStarting ? (
+          {loading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             <>Continue to Payment · ${totalWithTip.toFixed(2)}</>
