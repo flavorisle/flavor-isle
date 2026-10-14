@@ -67,7 +67,8 @@ export default function PayCard() {
 
   const base = (Number(order?.subtotal) || 0) + (Number(order?.tax) || 0) + (Number(order?.delivery_fee) || 0);
   const storedTotal = Number(order?.total) || 0;
-  const showTipPicker = !fromCheckout && !!order && order.kind === 'food' && !paid;
+  const showTipPicker = !fromCheckout && !!order && order.kind === 'food' && !paid &&
+    !(Number(order.tip) > 0);
   const presets = tipPresetsFor(order?.subtotal || 0);
   const tip = showTipPicker
     ? tipAmountFor(tipPreset, presets, customTip)

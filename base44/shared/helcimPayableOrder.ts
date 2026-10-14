@@ -69,9 +69,15 @@ export async function resolvePayableOrder(
   }
   if (order.pay_cash_on_pickup) return { error: 'This order is paid in cash at the counter.', status: 409 };
 
-  // A tip picked on our page is added on top of the order's own total and is capped
-  // the same way the phone flow caps it: at the food subtotal, or $10 on a tiny order.
-  const tipProvided = pickedTip !== undefined && pickedTip !== null && pickedTip !== '';
+  // A tip picked on our page is added on top of the order's own total ONLY when the
+  // stored order carries no tip of its own (a web checkout order's total already
+  // includes its tip; adding another would double-charge it). A phone order starts
+  // with tip 0, so its pay-page tip works exactly as before. The cap is unchanged:
+  // at the food subtotal, or $10 on a tiny order.
+  const storedTipCents = Math.round((Number(order.tip) || 0) * 100);
+  const tipProvided =
+    pickedTip !== undefined && pickedTip !== null && pickedTip !== '' &&
+    storedTipCents === 0;
   const baseCents = Math.round((Number(order.total) || 0) * 100);
   const tipCents = tipProvided ? Math.round((Number(pickedTip) || 0) * 100) : 0;
   const tipCapCents = Math.max(Math.round((Number(order.subtotal) || 0) * 100), 1000);
