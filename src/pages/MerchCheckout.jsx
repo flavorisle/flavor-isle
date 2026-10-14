@@ -1,6 +1,6 @@
 // Tasty Threads checkout — shipping here, then the card on our own payment page.
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Truck, Lock, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
@@ -8,11 +8,12 @@ import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
+import useCardPay from '@/hooks/useCardPay';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
 export default function MerchCheckout() {
-  const { items, subtotal } = useMerchCart();
+  const { items, subtotal, clearCart: clearMerchCart } = useMerchCart();
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     address1: '', address2: '', city: '', state_code: 'KY', zip: '', country_code: 'US',
@@ -22,6 +23,20 @@ export default function MerchCheckout() {
   const [ratingShipping, setRatingShipping] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
+  // The saved merch order's own number, so a second tap pays that same order
+  // instead of leaving another unpaid one behind.
+  const [savedOrder, setSavedOrder] = useState(null);
+  const navigate = useNavigate();
+
+  // The card is typed on this page: our own secure form opens over the merch
+  // checkout the moment the order is saved, and the gear only goes to production
+  // once the payment has been verified against that saved total.
+  const handlePaid = useCallback((paidOrderNumber) => {
+    clearMerchCart();
+    navigate(`/merch-confirmation?order_number=${paidOrderNumber}&card=1`);
+  }, [clearMerchCart, navigate]);
+
+  const { startPayment: startCardPay, starting: openingCardForm, error: cardFormError } = useCardPay(handlePaid);
 
   const total = subtotal + (shipping || 0);
 
@@ -72,6 +87,12 @@ export default function MerchCheckout() {
     const v = validateAddress();
     if (v) { setError(v); return; }
     if (shipping == null) { setError('Please calculate shipping first.'); return; }
+    // A second tap after a declined card (or a form the customer closed) pays the
+    // order that is already saved rather than creating another one.
+    if (savedOrder) {
+      await startCardPay(savedOrder);
+      return;
+    }
     setPaying(true);
     try {
       const res = await base44.functions.invoke('createMerchCheckout', {
@@ -95,12 +116,12 @@ export default function MerchCheckout() {
       });
       const data = res.data || {};
       // The order is saved first — with its verified catalog prices and live shipping
-      // rate — and the customer then pays on our own payment page: a page of its own
-      // on flavor-isle.com, never a card form opened over this checkout. Nothing goes
-      // to production until the payment has been verified against this order's total.
+      // rate — and the card is then typed in our own secure form, opened right here on
+      // this page. Nothing goes to production until the payment has been verified
+      // against this order's saved total.
       if (data.order_number) {
-        window.location.href = data.payment_url
-          || `${window.location.origin}/pay?order_number=${encodeURIComponent(data.order_number)}`;
+        setSavedOrder(data.order_number);
+        await startCardPay(data.order_number);
         return;
       }
       setError(data.error || 'Could not start checkout. Please try again.');
@@ -237,19 +258,28 @@ export default function MerchCheckout() {
 
               <ProductionTimeNotice variant="compact" className="mb-5" />
 
-              {error && (
+              {savedOrder && (
+                <div className="mb-4 rounded-2xl bg-patina-mint/10 px-4 py-3">
+                  <p className="text-xs font-semibold text-patina-mint">Order #{savedOrder} is saved.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Type your card in our secure form right on this page — nothing is printed until it's paid.
+                  </p>
+                </div>
+              )}
+
+              {(error || cardFormError) && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <span>{error || cardFormError}</span>
                 </div>
               )}
 
               <button
                 onClick={handlePay}
-                disabled={paying || shipping == null}
+                disabled={paying || openingCardForm || shipping == null}
                 className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> Continue to Payment · ${total.toFixed(2)}</>}
+                {paying || openingCardForm ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> {savedOrder ? 'Pay' : 'Continue to Payment'} · ${total.toFixed(2)}</>}
               </button>
               {shipping == null && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
             </div>
