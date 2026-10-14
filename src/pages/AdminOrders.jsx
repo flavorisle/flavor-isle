@@ -13,6 +13,7 @@ import MerchOrdersList from '@/components/admin/MerchOrdersList';
 import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
 import CancelOrderDialog from '@/components/admin/CancelOrderDialog';
 import PhonePaymentActions from '@/components/admin/PhonePaymentActions';
+import { getOrderSource } from '@/lib/orderSource';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -39,13 +40,6 @@ const NEXT_STATUS = {
 };
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
-
-// Detect where an order came from.
-function getSource(order) {
-  if (order.order_source === 'in_store') return 'pos';
-  if (order.payment_provider || order.payment_url || order.manual_pay_required || order.order_number?.startsWith('PH')) return 'phone';
-  return 'online';
-}
 
 const SOURCES = [
   { key: 'all', label: 'All Sources', Icon: ShoppingBag },
@@ -80,7 +74,7 @@ function StatCard({ label, value, Icon, tone }) {
 
 function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
   const [expanded, setExpanded] = useState(false);
-  const source = getSource(order);
+  const source = getOrderSource(order);
   const badge = SOURCE_BADGE[source];
   const items = order.items || [];
   const canAdvance = !!NEXT_STATUS[order.status];
@@ -266,7 +260,7 @@ export default function AdminOrders() {
 
   const stats = useMemo(() => {
     const active = orders.filter(o => ACTIVE_STATUSES.includes(o.status));
-    const bySource = (src) => active.filter(o => getSource(o) === src);
+    const bySource = (src) => active.filter(o => getOrderSource(o) === src);
     const revenue = active.reduce((sum, o) => sum + (o.total || 0), 0);
     return {
       totalActive: active.length,
@@ -282,7 +276,7 @@ export default function AdminOrders() {
       ? orders.filter(o => ACTIVE_STATUSES.includes(o.status))
       : orders.filter(o => !ACTIVE_STATUSES.includes(o.status));
 
-    if (sourceFilter !== 'all') list = list.filter(o => getSource(o) === sourceFilter);
+    if (sourceFilter !== 'all') list = list.filter(o => getOrderSource(o) === sourceFilter);
     if (typeFilter !== 'all') list = list.filter(o => o.order_type === typeFilter);
 
     if (search.trim()) {
@@ -385,7 +379,7 @@ export default function AdminOrders() {
             {SOURCES.map(({ key, label, Icon }) => {
               const count = key === 'all'
                 ? orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length
-                : orders.filter(o => ACTIVE_STATUSES.includes(o.status) && getSource(o) === key).length;
+                : orders.filter(o => ACTIVE_STATUSES.includes(o.status) && getOrderSource(o) === key).length;
               return (
                 <button
                   key={key}

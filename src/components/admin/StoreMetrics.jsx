@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TrendingUp, ShoppingBag, DollarSign, Calendar, Loader2, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toUtcDate } from '@/lib/chicagoTime';
+import { getOrderSource } from '@/lib/orderSource';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
@@ -108,8 +109,10 @@ export default function StoreMetrics() {
         weekRevenue += total;
         weekTip += tip;
         byType[o.order_type] = (byType[o.order_type] || 0) + total;
-        const src = o.order_source === 'in_store' ? 'in_store'
-          : (o.order_number?.startsWith('PH') ? 'phone' : 'online');
+        // Same classifier the Orders page uses. Recent phone orders carry plain
+        // 6-digit numbers, so the old PH-prefix test counted them as online.
+        const source = getOrderSource(o);
+        const src = source === 'pos' ? 'in_store' : source;
         bySource[src] = (bySource[src] || 0) + total;
       }
 

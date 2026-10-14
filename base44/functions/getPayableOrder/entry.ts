@@ -31,14 +31,11 @@ export default async function (req: Request) {
       }
       // This page is where the card is taken, so a card order — a website checkout
       // order, a phone order, an order that was texted a link — is payable here.
-      // The exception is an order that still pays on a page of its own: a card
-      // intent from the retired Stripe path, the old Square page, or the Base44
-      // Payments hosted checkout. Paying on that one and on this one would be two
-      // charges for the same food.
+      // The exception is an order that still pays on a page of its own: the Square
+      // payment page. Paying on that one and on this one would be two charges for
+      // the same food.
       if (
-        order.stripe_session_id ||
         order.square_payment_link_id ||
-        order.wix_checkout_session_id ||
         (order.payment_provider && order.payment_provider !== 'helcim')
       ) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'own_card_form' });

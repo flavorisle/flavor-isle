@@ -56,7 +56,6 @@ async function payFoodOrder(base44: any, order: any, sourceId: string, rawTip: u
   // Never charge an order that already has its own open card form or a different
   // processor behind it — that would be a second charge for the same food.
   if (
-    order.stripe_session_id ||
     order.square_payment_link_id ||
     order.helcim_checkout_id ||
     (order.payment_provider && order.payment_provider !== 'square')

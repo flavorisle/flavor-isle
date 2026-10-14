@@ -12,6 +12,8 @@
 // Abandoned unpaid checkouts and unaccrued Star Rewards are shown as watch
 // items in the panel but never raise the alert banner.
 
+import { getOrderSource } from '@/lib/orderSource';
+
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -34,7 +36,8 @@ const byNewest = (a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).g
 
 // One row per order/log, in the shape the banner renders. `retryable` marks the
 // failures a retry can actually fix (they are re-pushed and re-verified through
-// confirmOnlinePayment); a declined card is not retryable from here.
+// the provider-aware settle for the processor that took the money); a declined
+// card is not retryable from here.
 const orderItem = (o, reason, retryable = false) => ({
   id: o.id,
   order_number: o.order_number,
@@ -67,7 +70,9 @@ const dedupeByOrder = (items) => {
 };
 
 export function analyzeOrderHealth({ orders = [], logs = [], now = Date.now() }) {
-  const online = orders.filter((o) => (o.order_source || 'online') === 'online');
+  // Web orders only — a phone order is not a web order, so it must not count
+  // toward web health (paid-but-unsynced, abandoned, loyalty) here.
+  const online = orders.filter((o) => getOrderSource(o) === 'online');
   const paid = online.filter((o) => o.payment_status === 'paid' && o.status !== 'cancelled');
   const unsynced = paid.filter((o) => !o.square_order_id);
   const age = (o) => ageMs(o.updated_date || o.created_date, now);

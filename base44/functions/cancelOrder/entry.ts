@@ -69,14 +69,6 @@ export default async function (req: Request) {
           refundNote = `Card refund failed (${(error as Error).message}) — refund it from the card processor's dashboard.`;
           console.error(`Card refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
-      } else if (order.payment_provider === 'wix') {
-        // Paid through Base44 Payments (powered by Wix). This app holds no refund
-        // API for it, so the money goes back from that dashboard — the crew is
-        // told exactly that instead of being left to guess.
-        refundNote = 'Issue the refund in the Base44 Payments (powered by Wix) dashboard.';
-      } else if (order.payment_provider === 'stripe' || order.stripe_session_id) {
-        // Cards taken before the app moved to Base44 Payments: refund in Stripe.
-        refundNote = 'This order was paid through Stripe before the app moved off it — refund it in the Stripe dashboard.';
       } else {
         refundNote = 'Not paid by card here — refund it in Square (or hand back the cash).';
       }

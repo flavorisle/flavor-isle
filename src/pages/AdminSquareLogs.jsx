@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import AdminNav from '@/components/admin/AdminNav';
 import { RefreshCw, AlertTriangle, CheckCircle, SkipForward, XCircle, Search } from 'lucide-react';
+import { verifyAndPushOrder } from '@/lib/verifyAndPushOrder';
 
 const STATUS_STYLES = {
   success: { badge: 'bg-green-100 text-green-700', Icon: CheckCircle, label: 'Success' },
@@ -35,10 +36,13 @@ export default function AdminSquareLogs() {
 
   useEffect(() => { loadData(); }, []);
 
+  // Same provider-aware verifier as the Failed order alert: Square orders through
+  // the Square settle, our own inline card orders through the card settle.
   const retryOrder = async (orderNumber) => {
     setRetrying(orderNumber);
     try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(orderNumber) });
+      const result = await verifyAndPushOrder(orderNumber);
+      if (result.message) console.warn('Retry:', result.message);
       await loadData();
     } catch (err) {
       console.error('Retry failed:', err);

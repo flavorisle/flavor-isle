@@ -33,9 +33,6 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Review.deleteMany({ customer_email: email }).catch((e) =>
         console.error('Review cleanup failed:', e.message),
       ),
-      base44.asServiceRole.entities.SavedPaymentMethod.deleteMany({ user_id: userId }).catch((e) =>
-        console.error('SavedPaymentMethod cleanup failed:', e.message),
-      ),
       base44.asServiceRole.entities.PushSubscription.deleteMany({ user_id: userId }).catch((e) =>
         console.error('PushSubscription cleanup failed:', e.message),
       ),

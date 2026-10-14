@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Clock, MapPin, TrendingUp } from 'lucide-react';
+import { getOrderSource } from '@/lib/orderSource';
 
 export default function LiveOrdersFeed() {
   const [orders, setOrders] = useState([]);
@@ -62,14 +63,12 @@ export default function LiveOrdersFeed() {
     }
   };
 
+  // One classifier for every admin surface (src/lib/orderSource.js): the old
+  // badge here had the fallback inverted and called web orders "Phone".
   const getSourceBadge = (order) => {
-    if (order.square_order_id) return <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Square POS</span>;
-    // An order that still holds a secure payment page is an online order that
-    // has not reached Square yet — whether it pays through Square or through
-    // Base44 Payments.
-    if (order.payment_url || order.payment_provider === 'square' || order.payment_provider === 'wix') {
-      return <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Online</span>;
-    }
+    const source = getOrderSource(order);
+    if (source === 'pos') return <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Square POS</span>;
+    if (source === 'online') return <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Online</span>;
     return <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Phone</span>;
   };
 

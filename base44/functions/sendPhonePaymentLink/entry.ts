@@ -30,12 +30,6 @@ export default async function(req) {
       : await settleHelcimPhonePayment(base44, order);
     if (order.payment_status === 'paid' || order.status === 'cancelled' || order.payment_status === 'refunded') return Response.json({ error: 'This order cannot accept another payment.' }, { status: 409 });
 
-    // An order that still carries an older card form of its own is left alone:
-    // sending it a second, different form risks charging it twice.
-    if (order.stripe_session_id) {
-      return Response.json({ error: 'This order pays on an older card form that is no longer in use. Collect payment at the counter, or take a new order with the customer.' }, { status: 409 });
-    }
-
     let paymentUrl = order.payment_url;
     // A leftover Square-hosted link from the earlier flow is closed first (only
     // once Square confirms it), so the customer can never pay it as well.

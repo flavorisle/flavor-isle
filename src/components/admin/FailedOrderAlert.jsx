@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertOctagon, AlertTriangle, CheckCircle2, RefreshCw, ArrowRight } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import useOrderDiagnostics from '@/hooks/useOrderDiagnostics';
+import { verifyAndPushOrder } from '@/lib/verifyAndPushOrder';
 
 // Failed-order alert for the top of the admin dashboard: paid orders that never
 // reached Square, failed payments, and paid orders whose customer/staff emails
 // never went out — newest first, with one-tap retry for the failures a retry can
-// actually fix (confirmOnlinePayment re-verifies the payment, then re-pushes).
+// actually fix (the provider-aware settle re-verifies the payment, then re-pushes).
 const TONES = {
   critical: { border: 'border-red-300', bg: 'bg-red-50', heading: 'text-red-700', icon: 'text-red-600', pill: 'bg-red-600 text-white' },
   warning: { border: 'border-amber-300', bg: 'bg-amber-50', heading: 'text-amber-800', icon: 'text-amber-600', pill: 'bg-amber-500 text-white' },
@@ -37,8 +37,11 @@ export default function FailedOrderAlert() {
     setRetrying(orderNumber);
     setNotice('');
     try {
-      await base44.functions.invoke('confirmOnlinePayment', { orderNumber: String(orderNumber) });
-      await reload();
+      // Re-verified through the processor that took the money (Square or our own
+      // inline card processor); an order with neither is refused, not guessed at.
+      const result = await verifyAndPushOrder(orderNumber);
+      if (!result.ok) setNotice(result.message);
+      else await reload();
     } catch (err) {
       setNotice(`Retry could not finish for #${orderNumber}. Check the sync log for the reason.`);
     } finally {

@@ -56,11 +56,11 @@ async function recentConversations(base44, phoneDigits) {
 // flavor-isle.com/pay page (and emails the same link whenever we have an
 // address). The customer pays on our site and never sees a processor URL.
 //
-// Nothing is cooked until the payment clears: the webhook (with the
-// autoSyncUnpushedOrders sweep as backup) matches the PaymentIntent back to this
-// order via stripe_session_id, marks it paid, and pushes it to Square + the
-// kitchen — including any tip added on the pay page, even if the customer never
-// returns to it.
+// Nothing is cooked until the payment clears: the settle pass (with the
+// autoSyncUnpushedOrders sweep as backup) matches the processor's own payment
+// back to this order, marks it paid, and pushes it to Square + the kitchen —
+// including any tip added on the pay page, even if the customer never returns
+// to it.
 export default async function(req) {
   let logPhone = 'unknown';
   try {

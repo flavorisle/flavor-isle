@@ -1,8 +1,8 @@
 import { fromCents, salesTaxCents, toCents } from './taxMath.ts';
 
 // Money rules for phone / text / website-chat orders, kept free of runtime
-// imports so the logPhoneOrder totals, the PaymentIntent amount, and the
-// settlement checks all derive from one place.
+// imports so the logPhoneOrder totals and the settlement checks all derive from
+// one place.
 
 export const PHONE_ORDER_SOURCE = 'online';
 
@@ -32,13 +32,4 @@ export function phoneOrderTotals(subtotal: number, deliveryFee = 0) {
 // What the stored order says should be charged, tip included.
 export function expectedPhoneOrderCents(order: any): number {
   return toCents(order?.subtotal) + toCents(order?.tax) + toCents(order?.delivery_fee) + toCents(order?.tip);
-}
-
-// Settlement guard: the money Stripe actually took must be a succeeded USD
-// payment for exactly the stored order total (which already includes any tip).
-export function phoneIntentMatchesOrder(order: any, intent: any): boolean {
-  if (intent?.status !== 'succeeded') return false;
-  if (String(intent.currency || '').toLowerCase() !== 'usd') return false;
-  const received = Number(intent.amount_received ?? intent.amount);
-  return received === toCents(order?.total) && received === expectedPhoneOrderCents(order);
 }

@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import CashPickupPayment from '@/components/admin/CashPickupPayment';
+import { getOrderSource } from '@/lib/orderSource';
 
 export default function PhonePaymentActions({ order }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   if (order.pay_cash_on_pickup) return <CashPickupPayment order={order} />;
-  if (!(order.payment_provider || order.payment_url || order.manual_pay_required) || order.payment_status === 'paid' || order.status === 'cancelled') return null;
+  // Only a phone order gets phone-payment actions. Web orders carry payment
+  // fields too now, so the old field test put these buttons on web orders.
+  if (getOrderSource(order) !== 'phone') return null;
+  if (order.payment_status === 'paid' || order.status === 'cancelled') return null;
   const send = async () => {
     setBusy(true); setMessage(''); setError('');
     try {

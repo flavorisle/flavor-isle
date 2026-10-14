@@ -26,17 +26,13 @@ export default function OrderConfirmation() {
   // kitchen. This reflects whether it has cleared yet.
   const squareReturn = params.get('square') === '1';
   const cardReturn = params.get('card') === '1';
-  // Back from the Base44 Payments (powered by Wix) hosted checkout. The payment
-  // is settled server-side by the provider's own verified event, so this page
-  // never settles anything itself — it only watches for the order to clear.
-  const wixReturn = params.get('wix') === '1';
-  // Either hosted secure page brings the customer back here for the server to
+  // Either secure card page brings the customer back here for the server to
   // verify the payment; only a completed payment for the exact total is passed
   // to the kitchen.
-  const hostedReturn = squareReturn || cardReturn || wixReturn;
-  // A provider return starts unconfirmed, so the page never claims a payment it
+  const hostedReturn = squareReturn || cardReturn;
+  // Null until the settle call answers, so the page never claims a payment it
   // cannot see yet.
-  const [paymentConfirmed, setPaymentConfirmed] = useState(wixReturn ? false : null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(null);
   const { clearCart } = useCart();
   // The order was already saved before the customer left for the hosted page, so
   // the bag that was checked out is cleared here instead of left full behind them.
@@ -46,28 +42,6 @@ export default function OrderConfirmation() {
   }, []);
   useEffect(() => {
     if (!hostedReturn || !orderNumber) return;
-    if (wixReturn) {
-      // Watch the order until the provider's settlement lands. Read through the
-      // public order-summary endpoint rather than the order itself: a returning
-      // buyer is often not signed in, and this only ever reports status.
-      let cancelled = false;
-      let attempts = 0;
-      (async () => {
-        while (!cancelled && attempts < 10) {
-          attempts++;
-          try {
-            const res = await base44.functions.invoke('getPayableOrder', { order_number: String(orderNumber) });
-            if (res?.data?.payment_status === 'paid') {
-              if (!cancelled) setPaymentConfirmed(true);
-              return;
-            }
-          } catch {}
-          if (attempts < 10) await new Promise(r => setTimeout(r, 3000));
-        }
-        if (!cancelled) setPaymentConfirmed(false);
-      })();
-      return () => { cancelled = true; };
-    }
     (async () => {
       try {
         const res = await base44.functions.invoke(cardReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
@@ -77,7 +51,7 @@ export default function OrderConfirmation() {
         setPaymentConfirmed(false);
       }
     })();
-  }, [hostedReturn, cardReturn, wixReturn, orderNumber]);
+  }, [hostedReturn, cardReturn, orderNumber]);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
 

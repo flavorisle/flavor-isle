@@ -69,7 +69,6 @@ export default async function (req: Request) {
       // and left alone; a payment that never landed lets the order be closed.
       const settleFn = {
         square: 'settleSquareWebPayment',
-        wix: 'settleWixWebPayment',
         helcim: 'settleHelcimWebPayment',
       }[order.payment_provider];
       if (settleFn) {
@@ -88,7 +87,7 @@ export default async function (req: Request) {
           kept.push({ order_number: order.order_number, reason: `${order.payment_provider} check failed: ${err.message}` });
           continue;
         }
-      } else if (order.stripe_session_id || order.helcim_checkout_id) {
+      } else if (order.helcim_checkout_id) {
         // Older card paths the app no longer reaches: what happened to them can
         // only be read in the owner's own dashboard, so they are left alone.
         kept.push({ order_number: order.order_number, reason: 'an older card path — left to its own record' });

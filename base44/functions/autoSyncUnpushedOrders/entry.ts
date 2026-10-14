@@ -1,23 +1,22 @@
-import Stripe from 'npm:stripe@14.25.0';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { isPhoneOrder, phoneIntentMatchesOrder } from '../../shared/phoneOrderPricing.ts';
+import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
 
 // Self-healing safety net for the order → Square sync.
 //
-// The Stripe webhook + client-side confirmOnlinePayment fallback are the
-// primary triggers, but both can fail silently (webhook not delivered, client
-// network error, function timeout). When that happens the order sits as
-// "pending" forever and the kitchen never sees it — which is exactly what the
-// user has been hitting.
+// The customer's own return to the confirmation page is the primary trigger, but
+// it can fail silently (a tab closed before the settle call, a network error, a
+// function timeout). When that happens the order sits as "pending" forever and
+// the kitchen never sees it — which is exactly what the user has been hitting.
 //
 // This function runs on a schedule (every few minutes via a workflow), finds
 // recent online orders that were paid but never reached Square POS, and pushes
-// them. It verifies with Stripe that the payment actually succeeded before
-// pushing, so a failed payment is never turned into a free kitchen order.
+// them. Every provider-backed order is settled by asking the processor that took
+// the money — Square or our own card processor — whether it holds a completed
+// payment for the exact total, so a failed payment is never turned into a free
+// kitchen order.
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
     // Recent orders, newest first
     const orders = await base44.asServiceRole.entities.Order.list('-created_date', 60);
@@ -119,43 +118,12 @@ export default async function (req: Request) {
 
       if (order.square_order_id) {
         // Square push already done — payment was verified when it pushed.
-        // Just retry the missing emails (confirmOnlinePayment → pushOrderToSquareAndKitchen
-        // skips the push, tries emails with per-action dedupe).
+        // Just retry the missing emails (pushOrderToSquareAndKitchen skips the
+        // push and tries the emails with per-action dedupe).
         paymentConfirmed = true;
       } else if (order.payment_status === 'paid') {
         // Webhook marked it paid but it never reached Square — push it.
         paymentConfirmed = true;
-      } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('pi_')) {
-        // Webhook never fired — verify with Stripe that the payment succeeded
-        // before pushing, so a failed/declined payment doesn't become a free order.
-        // This is also what settles a phone order whose customer paid and never
-        // returned to the /pay page.
-        try {
-          const pi = await stripe.paymentIntents.retrieve(order.stripe_session_id);
-          if (pi.status === 'succeeded' && isPhoneOrder(order) && !phoneIntentMatchesOrder(order, pi)) {
-            results.push({ order_number: order.order_number, skipped: true, reason: 'Phone order payment amount/currency does not match the order total' });
-          } else if (pi.status === 'succeeded') {
-            paymentConfirmed = true;
-          } else {
-            results.push({ order_number: order.order_number, skipped: true, reason: `Stripe PI status: ${pi.status}` });
-          }
-        } catch (err) {
-          results.push({ order_number: order.order_number, skipped: true, reason: `Stripe lookup failed: ${err.message}` });
-        }
-      } else if (order.payment_status === 'pending' && order.stripe_session_id?.startsWith('cs_')) {
-        // Phone/chat orders pay through a Stripe Checkout Session. If the
-        // checkout.session.completed webhook never arrived, verify the session
-        // with Stripe before pushing so an unpaid order never reaches the kitchen.
-        try {
-          const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
-          if (session.payment_status === 'paid') {
-            paymentConfirmed = true;
-          } else {
-            results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session payment_status: ${session.payment_status}` });
-          }
-        } catch (err) {
-          results.push({ order_number: order.order_number, skipped: true, reason: `Stripe session lookup failed: ${err.message}` });
-        }
       }
 
       if (!paymentConfirmed) {
@@ -163,13 +131,16 @@ export default async function (req: Request) {
         continue;
       }
 
-      // confirmOnlinePayment is idempotent (skips if square_order_id is already
-      // set by the time it re-reads) and handles the full push: mark paid +
-      // confirmed, send to Square, fire kitchen printer, notify customer/staff.
+      // The shared push is idempotent — it re-reads the order and skips the Square
+      // push when square_order_id is already set — and handles the rest: mark paid
+      // + confirmed, send to Square, fire the kitchen printer, notify
+      // customer/staff. Called directly here: the Stripe-only verifier this used to
+      // go through is gone, and the processor that took the money was asked above.
       try {
-        await base44.asServiceRole.functions.invoke('confirmOnlinePayment', {
-          orderNumber: String(order.order_number),
-        });
+        if (order.payment_status !== 'paid' || order.status === 'pending') {
+          await base44.asServiceRole.entities.Order.update(order.id, { payment_status: 'paid', status: 'confirmed' });
+        }
+        await pushOrderToSquareAndKitchen(base44, { ...order, payment_status: 'paid', status: order.status === 'pending' ? 'confirmed' : order.status });
         pushed++;
         results.push({ order_number: order.order_number, pushed: true });
       } catch (err) {
