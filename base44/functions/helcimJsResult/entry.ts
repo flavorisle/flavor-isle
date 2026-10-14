@@ -90,10 +90,24 @@ export default async function (req: Request) {
     // so on their own page rather than being walked into a confirmation for money that
     // never moved.
     if (!approved || !transactionId) {
-      console.warn(`Card fields reported no approval for order ${orderNumber}: ${field('responseMessage')}`);
+      const reason = field('responseMessage');
+      console.warn(`Card fields reported no approval for order ${orderNumber}: ${reason}`);
+
+      // The card system's own line, shown in full and escaped. A refusal reaches us
+      // long before any charge exists, so this line is the ONLY account of why a card
+      // did not go through — without it, a refused payment is invisible everywhere.
+      const safeReason = reason.slice(0, 300)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
       return pageHtml(
         'That card was not approved',
-        'Nothing was charged. You can try another card, or pay in person at the counter.',
+        'Nothing was charged. You can try another card, or pay in person at the counter.' +
+          (safeReason
+            ? `<br><span style="display:inline-block;margin-top:.85rem;font-size:.85rem;opacity:.75">What the card system reported: ${safeReason} (code ${field('response') || 'none'})</span>`
+            : ''),
         `${origin}${returnPath}` || `${origin}/checkout`,
         'Try again',
       );

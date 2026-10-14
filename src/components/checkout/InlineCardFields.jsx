@@ -52,7 +52,7 @@ export default function InlineCardFields({
     if (processing || !ready) return;
     tidy('cardNumber', 19);
     tidy('cardExpiryMonth', 2);
-    tidy('cardExpiryYear', 2);
+    tidy('cardExpiryYear', 4);
     tidy('cardCVV', 4);
     setProcessing(true);
     // A successful payment takes the page on to the confirmation by itself; this only
@@ -123,9 +123,9 @@ export default function InlineCardFields({
             type="text"
             inputMode="numeric"
             autoComplete="cc-exp-year"
-            placeholder="YY"
-            maxLength={2}
-            onChange={(event) => { event.target.value = digitsOnly(event.target.value, 2); }}
+            placeholder="YY or YYYY"
+            maxLength={4}
+            onChange={(event) => { event.target.value = digitsOnly(event.target.value, 4); }}
             className={inputClass}
           />
         </div>
