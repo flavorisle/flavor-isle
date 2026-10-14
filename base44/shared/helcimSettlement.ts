@@ -18,7 +18,7 @@ export async function settleHelcimCheckoutOrder(base44: any, order: any, supplie
   const transactionId = suppliedTransactionId || String(order.helcim_transaction_id || '');
 
   const expectedCents = Math.round(Number(order.total) * 100);
-  const totals = await helcimCheckoutTotals(order.id, expectedCents, transactionId || undefined);
+  const totals = await helcimCheckoutTotals(order.id, expectedCents, transactionId || undefined, String(order.order_number || ''));
   if (!totals.paid) return order;
 
   if (totals.foodCents !== expectedCents) {
@@ -74,7 +74,7 @@ export async function settleHelcimMerchOrder(base44: any, merchOrder: any, suppl
   if (merchOrder.payment_status === 'paid') return { ok: true, already_paid: true };
 
   const expectedCents = Math.round(Number(merchOrder.total) * 100);
-  const totals = await helcimCheckoutTotals(merchOrder.id, expectedCents, transactionId || undefined);
+  const totals = await helcimCheckoutTotals(merchOrder.id, expectedCents, transactionId || undefined, String(merchOrder.order_number || ''));
   if (!totals.paid) return { ok: false, reason: 'payment not completed yet' };
   if (totals.foodCents !== expectedCents) {
     console.error(

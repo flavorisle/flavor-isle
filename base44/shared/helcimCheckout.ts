@@ -146,6 +146,27 @@ export async function helcimPaymentsForInvoice(invoiceNumber: string) {
     }));
 }
 
+// The rescue path for inline card-form payments: the form posts the order
+// number, not an invoice number, so the invoice lookup above finds nothing even
+// when the payment landed. This asks the processor for the transactions that
+// name this order. If the API ignores the filter and returns unrelated
+// transactions, the consistency check below empties the result — fail safe,
+// never a false match.
+export async function helcimPaymentsForOrderNumber(orderNumber: string) {
+  const data = await helcimRequest(`/card-transactions?orderNumber=${encodeURIComponent(orderNumber)}`);
+  return unwrap(data)
+    .filter((payment: any) => String(payment?.orderNumber ?? '').trim() === String(orderNumber).trim())
+    .filter((payment: any) => String(payment?.status || '').toUpperCase() === 'APPROVED')
+    .filter((payment: any) => !payment?.currency || String(payment.currency).toUpperCase() === 'USD')
+    .map((payment: any) => ({
+      transactionId: String(payment.transactionId || payment.id || ''),
+      amountCents: Math.round(Number(payment.amount || payment.total || 0) * 100),
+      tipCents: Math.round(Number(payment.tipAmount || payment.tip || 0) * 100),
+      currency: String(payment.currency || 'USD').toUpperCase(),
+      createdAt: payment.dateCreated || payment.createdAt || '',
+    }));
+}
+
 export async function helcimPaymentByTransaction(transactionId: string) {
   const data = await helcimRequest(`/card-transactions/${encodeURIComponent(transactionId)}`);
   const payment = data?.data || data?.payment || data;
@@ -167,10 +188,18 @@ export async function helcimCheckoutTotals(
   invoiceNumber: string,
   expectedCents: number,
   suppliedTransactionId?: string,
+  orderNumber?: string,
 ) {
-  const payments = suppliedTransactionId
+  let payments = suppliedTransactionId
     ? [await helcimPaymentByTransaction(suppliedTransactionId)].filter(Boolean)
     : await helcimPaymentsForInvoice(invoiceNumber);
+
+  // Inline card-form payments carry no invoice number: rescue by the order
+  // number the form sent. Only reached when the invoice lookup found nothing,
+  // so web-checkout orders are never disturbed.
+  if (!suppliedTransactionId && orderNumber && (payments as any[]).length === 0) {
+    payments = await helcimPaymentsForOrderNumber(orderNumber).catch(() => []);
+  }
 
   const approved = (payments as any[]).filter((payment) => {
     if (!payment?.transactionId) return false;
