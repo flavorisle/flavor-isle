@@ -1,8 +1,8 @@
-// Helcim customer/card vault helpers (issue #97, Part B step 14).
+// Card customer/vault helpers (issue #97, Part B step 14).
 //
 // Thin, fail-closed wrappers over the card endpoints in helcimCheckout.ts so the
 // saved-card function has one place to name a customer. Nothing here runs today:
-// Helcim credentials do not exist yet, so every call refuses with the shared
+// Card credentials do not exist yet, so every call refuses with the shared
 // "not configured" error and the checkout falls back to the live card path. The
 // Stripe vault and its records are untouched by this module.
 import { helcimConfigured, HELCIM_NOT_CONFIGURED, listHelcimCards, createHelcimCard, deleteHelcimCard, chargeHelcimCard } from './helcimCheckout.ts';

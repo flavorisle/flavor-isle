@@ -1,11 +1,11 @@
 import { helcimCheckoutTotals } from './helcimCheckout.ts';
 import { pushOrderToSquareAndKitchen } from './fulfillOrder.ts';
 
-// Settlement for orders paid through the Helcim secure page (issue #97, Part B
+// Settlement for orders paid through the card secure page (issue #97, Part B
 // step 9). Mirrors shared/squareCheckoutSettlement.ts exactly.
 //
-// Helcim is the only source of truth for whether the money arrived: an order is
-// paid only when Helcim reports an APPROVED USD payment for the exact total we
+// The card processor is the only source of truth for whether the money arrived: an
+// order is paid only when it reports an APPROVED USD payment for the exact total we
 // saved, matched back to this order by its own invoice number (the order id).
 // A short payment, a second payment, or a payment we cannot read leaves the
 // order pending — it never becomes a kitchen ticket on anything but exact money.
@@ -18,14 +18,14 @@ export async function settleHelcimCheckoutOrder(base44: any, order: any, supplie
 
   if (totals.foodCents !== expectedCents) {
     throw new Error(
-      `Helcim payment does not match the order total (expected ${expectedCents}c, paid ${totals.foodCents}c).`,
+      `Card payment does not match the order total (expected ${expectedCents}c, paid ${totals.foodCents}c).`,
     );
   }
 
   const updates = {
     payment_status: 'paid',
     status: order.status === 'pending' ? 'confirmed' : order.status,
-    // HelcimPay takes one amount and reports no separate tip, so the tip the
+    // The card form takes one amount and reports no separate tip, so the tip the
     // customer chose on our own page (already inside the total just verified) is
     // the one to keep — otherwise it would be wiped off the order.
     tip: totals.tipCents > 0 ? totals.tipCents / 100 : (Number(order.tip) || 0),
@@ -36,14 +36,14 @@ export async function settleHelcimCheckoutOrder(base44: any, order: any, supplie
   await base44.asServiceRole.entities.Order.update(order.id, updates);
 
   // The Square POS ticket and the kitchen push are unchanged by this build: a
-  // Helcim-paid order enters the same fulfilment path every other order uses.
+  // A card-paid order enters the same fulfilment path every other order uses.
   const paidOrder = { ...order, ...updates };
   await pushOrderToSquareAndKitchen(base44, paidOrder);
   return paidOrder;
 }
 
 // The settlement check behind the phone pay page and the admin payment actions:
-// it re-reads Helcim and hands back the refreshed order, and it never throws —
+// it re-reads the processor and hands back the refreshed order, and it never throws —
 // a page that cannot read the payment shows the order as it is rather than
 // erroring out in the customer's face.
 export async function settleHelcimPhonePayment(base44: any, order: any) {
@@ -51,17 +51,17 @@ export async function settleHelcimPhonePayment(base44: any, order: any) {
   try {
     return await settleHelcimCheckoutOrder(base44, order);
   } catch (error) {
-    console.error(`Helcim settlement check failed for order ${order.order_number}:`, (error as Error).message);
+    console.error(`Card settlement check failed for order ${order.order_number}:`, (error as Error).message);
     return order;
   }
 }
 
-// Tasty Threads merch paid on a Helcim secure page: verify the payment to the
+// Tasty Threads merch paid on a card secure page: verify the payment to the
 // cent, then fulfil exactly as the card path does. Printful is only asked to
 // produce anything once the money is confirmed.
 export async function settleHelcimMerchOrder(base44: any, merchOrder: any, suppliedTransactionId?: string) {
   if (!merchOrder.helcim_checkout_id && !suppliedTransactionId) {
-    return { ok: false, reason: 'no Helcim secure payment page on this order' };
+    return { ok: false, reason: 'no card payment page on this order' };
   }
   if (merchOrder.payment_status === 'paid') return { ok: true, already_paid: true };
 
@@ -80,7 +80,7 @@ export async function settleHelcimMerchOrder(base44: any, merchOrder: any, suppl
     fulfillment_status: 'paid',
     helcim_transaction_id: totals.transactionId || merchOrder.helcim_transaction_id || '',
   });
-  console.log(`Merch order ${merchOrder.order_number} marked paid (Helcim)`);
+  console.log(`Merch order ${merchOrder.order_number} marked paid (card)`);
 
   try {
     const { sendMerchConfirmationEmail } = await import('./sendMerchEmails.ts');

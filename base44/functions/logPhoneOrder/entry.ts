@@ -303,8 +303,8 @@ export default async function(req) {
 
     try {
       await withTimeout(async () => {
-      // Secure payment link paid on our own pay page. Helcim backs every link; the
-      // customer only ever sees our own page, never a processor's name. A Helcim
+      // Secure payment link paid on our own pay page. The card processor backs every
+      // link; the customer only ever sees our own page, never a processor's name. A card
       // hiccup leaves the order flagged for payment at the counter instead of
       // sending a link that cannot be paid.
       paymentUrl = await createPhonePaymentLink(base44, order, paymentProvider);

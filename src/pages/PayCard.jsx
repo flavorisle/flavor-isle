@@ -6,7 +6,7 @@ import Seo from '@/components/Seo';
 import PayOrderSummary from '@/components/pay/PayOrderSummary';
 import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayPageState from '@/components/pay/PayPageState';
-import useHelcimInlinePay from '@/hooks/useHelcimInlinePay';
+import useCardPay from '@/hooks/useCardPay';
 import { useCart } from '@/context/CartContext';
 import { useMerchCart } from '@/context/MerchCartContext';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
@@ -15,13 +15,12 @@ const FALLBACK_ERROR =
   'We could not open that payment page. Please try the link again, or call us at (270) 563-4618.';
 const PHONE = '(270) 563-4618';
 
-// Our own secure payment page for Helcim orders — the website's food checkout, the
+// Our own secure payment page for card orders — the website's food checkout, the
 // Tasty Threads merch checkout, and the short link Smashie texts. The checkout is a
 // hosted page of its own on flavor-isle.com, never a card form built into another
 // screen. The customer sees their order, picks a tip if the order has not got one
-// yet, and pays in Helcim's card form on this page; every amount is rebuilt
-// server-side from the saved order.
-export default function PayHelcim() {
+// yet, and pays on this page; every amount is rebuilt server-side from the saved order.
+export default function PayCard() {
   const navigate = useNavigate();
   const { clearCart } = useCart();
   const { clearCart: clearMerchCart } = useMerchCart();
@@ -38,23 +37,23 @@ export default function PayHelcim() {
   const [tipPreset, setTipPreset] = useState('18');
   const [customTip, setCustomTip] = useState('');
 
-  // Helcim's card form opens over this page, and the shared flow verifies the
-  // payment against Helcim's own record before this runs.
+  // The card form opens over this page, and the shared flow verifies the payment
+  // against the processor's own record before this runs.
   const handlePaid = useCallback((paidOrderNumber) => {
     setPaid(true);
     if (fromCheckout) {
       clearCart();
-      navigate(`/order-confirmation?order_number=${paidOrderNumber}&helcim=1&from=checkout`);
+      navigate(`/order-confirmation?order_number=${paidOrderNumber}&card=1&from=checkout`);
       return;
     }
     // Tasty Threads merch is made to order, so it has a confirmation of its own.
     if (order?.kind === 'merch') {
       clearMerchCart();
-      navigate(`/merch-confirmation?order_number=${paidOrderNumber}&helcim=1`);
+      navigate(`/merch-confirmation?order_number=${paidOrderNumber}&card=1`);
     }
   }, [fromCheckout, order?.kind, clearCart, clearMerchCart, navigate]);
 
-  const { startPayment: startHelcimPay, starting, error: payError } = useHelcimInlinePay(handlePaid);
+  const { startPayment: startCardPay, starting, error: payError } = useCardPay(handlePaid);
 
   useEffect(() => {
     if (!orderNumber) {
@@ -175,7 +174,7 @@ export default function PayHelcim() {
             )}
             <button
               type="button"
-              onClick={() => startHelcimPay(order.order_number, showTipPicker ? tip : undefined)}
+              onClick={() => startCardPay(order.order_number, showTipPicker ? tip : undefined)}
               disabled={starting}
               className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >

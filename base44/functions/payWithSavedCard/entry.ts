@@ -3,15 +3,15 @@ import { helcimConfigured, HELCIM_NOT_CONFIGURED } from '../../shared/helcimChec
 import { payWithHelcimCard } from '../../shared/helcimVault.ts';
 import { settleHelcimCheckoutOrder } from '../../shared/helcimSettlement.ts';
 
-// Pay a pending Helcim order with a card the customer already saved (issue #97,
+// Pay a pending card order with a card the customer already saved (issue #97,
 // Part B step 14).
 //
-// Only ever used when the checkout is on Helcim and Helcim holds the saved card.
+// Only ever used when the checkout takes cards and the processor holds the saved card.
 // The charge is attempted for the order's own saved total — no amount comes from
 // the request — and the order only settles once the charge is approved and the
-// settling pass re-verifies the payment against Helcim.
+// settling pass re-verifies the payment against the processor's own record.
 //
-// Fail closed: with no Helcim credentials this refuses plainly and the checkout
+// Fail closed: with no card credentials this refuses plainly and the checkout
 // keeps the customer on the card page instead.
 export default async function (req: Request) {
   try {
@@ -34,7 +34,7 @@ export default async function (req: Request) {
     const order = orders?.[0];
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
     if (order.payment_provider !== 'helcim') {
-      return Response.json({ error: 'This order does not pay through Helcim' }, { status: 400 });
+      return Response.json({ error: 'This order does not pay by card' }, { status: 400 });
     }
     if (order.payment_status === 'paid') {
       return Response.json({ ok: true, settled: true, already_paid: true });
@@ -53,7 +53,7 @@ export default async function (req: Request) {
       return Response.json({ error: 'That card could not be charged. Please try another card.' }, { status: 402 });
     }
 
-    // Re-verify against Helcim before anything reaches the kitchen, exactly as a
+    // Re-verify against the processor before anything reaches the kitchen, exactly as a
     // page payment would be verified.
     const settled = await settleHelcimCheckoutOrder(base44, order, charge.transactionId);
     if (settled?.payment_status === 'paid') {

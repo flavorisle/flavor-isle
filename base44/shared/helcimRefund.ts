@@ -1,7 +1,7 @@
 import { helcimPaymentsForInvoice, helcimPaymentByTransaction, refundHelcimTransaction } from './helcimCheckout.ts';
 
-// Refunds for orders paid through the Helcim secure page (issue #97, Part B
-// step 12). Mirrors shared/squareRefund.ts: Helcim reports what was actually
+// Refunds for orders paid through the card secure page (issue #97, Part B
+// step 12). Mirrors shared/squareRefund.ts: the processor reports what was actually
 // taken, and that is what goes back — nothing here invents a ledger.
 //
 // Used by refundOrder and cancelOrder for orders whose payment_provider is
@@ -19,7 +19,7 @@ export async function refundHelcimOrderPayments(base44: any, order: any) {
     const payments = await helcimPaymentsForInvoice(order.id);
     transaction = payments.find((payment: any) => payment.amountCents === expectedCents) || payments[0] || null;
   }
-  if (!transaction?.transactionId) throw new Error('Helcim has no payment recorded against this order');
+  if (!transaction?.transactionId) throw new Error('No card payment is recorded against this order');
 
   const refund = await refundHelcimTransaction(
     transaction.transactionId,

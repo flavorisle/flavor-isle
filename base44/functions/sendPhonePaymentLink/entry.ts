@@ -8,7 +8,7 @@ import { sendSmashieSms } from '../../shared/sendSmashieSms.ts';
 
 // Resend a phone order's payment link by text.
 //
-// The link is always OUR OWN payment page on flavor-isle.com, with Helcim's card
+// The link is always OUR OWN payment page on flavor-isle.com, with the card
 // form on it — never a processor's hosted page. A resend reuses the URL already
 // on the order, so it can never mint a second payable page for the same order.
 export default async function(req) {
@@ -24,7 +24,7 @@ export default async function(req) {
 
     // A payment may have landed while nobody was looking — check the processor
     // before sending anything, so a paid order is never asked to pay again. Only a
-    // legacy Square order is checked against Square; every other order pays Helcim.
+    // legacy Square order is checked against Square; every other order pays by card.
     order = order.payment_provider === 'square'
       ? await settleSquarePhonePayment(base44, order)
       : await settleHelcimPhonePayment(base44, order);
@@ -48,7 +48,7 @@ export default async function(req) {
       paymentUrl = '';
     }
 
-    // Every link minted from here on is a Helcim link: an order still pointing at
+    // Every link minted from here on is a card link: an order still pointing at
     // the old Square page is moved onto it rather than sent there again.
     if (!paymentUrl || order.square_payment_link_id || order.payment_provider === 'square') {
       paymentUrl = await createHelcimPhonePayment(base44, order);

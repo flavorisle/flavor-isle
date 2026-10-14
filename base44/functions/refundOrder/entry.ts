@@ -27,19 +27,19 @@ Deno.serve(async (req) => {
     }
 
     const paidOnSquare = order.payment_provider === 'square';
-    const paidOnHelcim = order.payment_provider === 'helcim';
+    const paidOnCard = order.payment_provider === 'helcim';
     const paidOnWix = order.payment_provider === 'wix';
     if (order.payment_provider === 'stripe' || order.stripe_session_id) {
       // Cards taken before the app moved to Base44 Payments. Nothing in this app
       // can reach those any more — the refund is issued in the Stripe dashboard.
       return Response.json({ error: 'This order was paid through Stripe, before the app moved off it. Issue the refund from the Stripe dashboard — the app cannot refund it.' }, { status: 409 });
     }
-    if (!paidOnSquare && !paidOnHelcim && !paidOnWix) {
+    if (!paidOnSquare && !paidOnCard && !paidOnWix) {
       return Response.json({ error: 'This order was not paid by card through the app, so there is nothing to refund from here.' }, { status: 400 });
     }
 
     // Issue a full refund where the money was taken — an order paid on Square's
-    // secure page goes back through Square, and Helcim's through Helcim. An order
+    // secure page goes back through Square, and a card payment through the card processor. An order
     // paid through Base44 Payments (powered by Wix) has no refund API in this app,
     // so the crew issues that one in the Base44 Payments dashboard; the order is
     // still closed out here and the customer is still told, exactly as below.

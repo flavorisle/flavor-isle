@@ -15,17 +15,17 @@ export default function MerchConfirmation() {
   // Paid on the secure payment page: the payment is verified server-side on
   // arrival, and only a verified payment sends the gear to production. This
   // reflects whether it has cleared yet.
-  // Helcim is the card path; the older Square return is still handled for an order
-  // paid on the retired page.
-  const helcimReturn = params.get('helcim') === '1';
+  // The card page is the live path; the older Square return is still handled for an
+  // order paid on the retired page.
+  const cardReturn = params.get('card') === '1';
   const squareReturn = params.get('square') === '1';
-  const paidReturn = helcimReturn || squareReturn;
+  const paidReturn = cardReturn || squareReturn;
   const [paymentConfirmed, setPaymentConfirmed] = useState(null);
   useEffect(() => {
     if (!paidReturn || !orderNumber) return;
     (async () => {
       try {
-        const settleFn = helcimReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment';
+        const settleFn = cardReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment';
         const res = await base44.functions.invoke(settleFn, { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {
@@ -33,7 +33,7 @@ export default function MerchConfirmation() {
         setPaymentConfirmed(false);
       }
     })();
-  }, [paidReturn, helcimReturn, orderNumber]);
+  }, [paidReturn, cardReturn, orderNumber]);
 
   useEffect(() => {
     setConfetti(true);

@@ -300,17 +300,16 @@ export default function Checkout() {
         return;
       }
 
-      // Helcim is the only card processor, and the card is taken on our own payment
-      // page — a page of its own on flavor-isle.com, not a card form built into this
-      // checkout. The order is saved first, repriced and verified server-side with the
-      // tip chosen above already inside it, and the customer pays that saved total on
-      // that page. Nothing reaches the kitchen until Helcim's own record confirms the
-      // payment against the order.
+      // The card is taken on our own payment page — a page of its own on
+      // flavor-isle.com, not a card form built into this checkout. The order is saved
+      // first, repriced and verified server-side with the tip chosen above already
+      // inside it, and the customer pays that saved total on that page. Nothing reaches
+      // the kitchen until the processor's own record confirms the payment.
       const orderRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
       const data = orderRes?.data || orderRes;
       if (data?.orderNumber) {
         const paymentUrl = data.payment_url
-          || `${window.location.origin}/pay-helcim?order_number=${encodeURIComponent(data.orderNumber)}&from=checkout`;
+          || `${window.location.origin}/pay?order_number=${encodeURIComponent(data.orderNumber)}&from=checkout`;
         setPendingOrder({ orderNumber: data.orderNumber, paymentUrl });
         window.location.href = paymentUrl;
         return;

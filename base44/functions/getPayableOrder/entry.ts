@@ -29,7 +29,7 @@ export default async function (req: Request) {
       if (order.pay_cash_on_pickup) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'pay_at_counter' });
       }
-      // This page is where the card is taken, so a Helcim order — a website checkout
+      // This page is where the card is taken, so a card order — a website checkout
       // order, a phone order, an order that was texted a link — is payable here.
       // The exception is an order that still pays on a page of its own: a card
       // intent from the retired Stripe path, the old Square page, or the Base44
@@ -85,7 +85,7 @@ export default async function (req: Request) {
     if (merch.payment_status === 'failed' || merch.fulfillment_status === 'canceled') {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });
     }
-    // A Helcim merch order pays on this page, for its own saved total. One still
+    // A card merch order pays on this page, for its own saved total. One still
     // pointing at an older payment page of its own pays there instead.
     if (merch.payment_provider && merch.payment_provider !== 'helcim') {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });

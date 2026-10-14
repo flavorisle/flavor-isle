@@ -29,10 +29,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action || 'list';
 
-    // ── Helcim path (issue #97, Part B step 14) ──
-    // Only used when the website checkout is on Helcim: the customer's cards live
-    // in Helcim's own vault and are read from there. Nothing in this branch
-    // touches the Stripe vault or its records, so the two never mix. Until Helcim
+    // ── Card vault path (issue #97, Part B step 14) ──
+    // Only used when the website checkout takes cards: the customer's cards live
+    // in the processor's own vault and are read from there. Nothing in this branch
+    // touches the Stripe vault or its records, so the two never mix. Until the card
     // credentials exist every action says so plainly instead of failing obscurely.
     if (body?.provider === 'helcim') {
       if (action === 'list') {
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         await removeHelcimCard(String(body.cardId));
         return Response.json({ success: true });
       }
-      return Response.json({ error: `Unknown Helcim action: ${action}` }, { status: 400 });
+      return Response.json({ error: `Unknown saved-card action: ${action}` }, { status: 400 });
     }
 
     // Find or create the Stripe Customer for this user. Reuse an existing

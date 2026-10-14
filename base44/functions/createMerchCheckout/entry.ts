@@ -100,7 +100,7 @@ export default async function (req: Request) {
 
     // ── Our own payment page ──
     // The order is saved with its verified catalog prices and live shipping rate,
-    // and the card is then taken in Helcim's form over our own merch checkout page,
+    // and the card is then taken on our own payment page,
     // keyed to this order. Printful is only asked to produce the order once the
     // payment has been verified against this order's own total.
     let merchOrder = null;
@@ -129,7 +129,7 @@ export default async function (req: Request) {
         total: orderTotal,
       });
     } catch (linkErr) {
-      console.error("Helcim merch checkout setup failed:", linkErr.message);
+      console.error("Merch card checkout setup failed:", linkErr.message);
       return Response.json({ error: "Could not open the secure payment page, so nothing was charged. Please try again." }, { status: 502 });
     }
 

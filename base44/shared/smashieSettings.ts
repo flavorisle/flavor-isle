@@ -18,7 +18,7 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
-  // Card payments are taken on our own page, in Helcim. Stored settings records
+  // Card payments are taken on our own page. Stored settings records
   // keep whatever processor they name; the live switch is the pair of helpers below.
   phone_payment_provider: "helcim",
   web_payment_provider: "helcim",
@@ -41,15 +41,15 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// The phone line takes cards on our own page, in Helcim. Helcim is the only card
+// The phone line takes cards on our own page. One card processor is the only card
 // processor, so there is no longer a second link to fall back to.
 export function phonePaymentProvider(_settings) {
   return 'helcim';
 }
 
-// Helcim is the only card processor for the website — food orders and Tasty Threads
+// One card processor backs the website — food orders and Tasty Threads
 // merch alike. The order is saved and re-priced first, then the customer pays in
-// Helcim's own form over our page and lands straight back on its confirmation.
+// its own secure form over our page and lands straight back on its confirmation.
 //
 // Base44 Payments and the Square payment page are no longer reached by a new
 // checkout; the only other card taken is in store, on the crew's own POS terminal

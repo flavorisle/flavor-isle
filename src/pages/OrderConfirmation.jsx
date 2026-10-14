@@ -25,7 +25,7 @@ export default function OrderConfirmation() {
   // arrival, and only a completed payment for the exact total is passed to the
   // kitchen. This reflects whether it has cleared yet.
   const squareReturn = params.get('square') === '1';
-  const helcimReturn = params.get('helcim') === '1';
+  const cardReturn = params.get('card') === '1';
   // Back from the Base44 Payments (powered by Wix) hosted checkout. The payment
   // is settled server-side by the provider's own verified event, so this page
   // never settles anything itself — it only watches for the order to clear.
@@ -33,7 +33,7 @@ export default function OrderConfirmation() {
   // Either hosted secure page brings the customer back here for the server to
   // verify the payment; only a completed payment for the exact total is passed
   // to the kitchen.
-  const hostedReturn = squareReturn || helcimReturn || wixReturn;
+  const hostedReturn = squareReturn || cardReturn || wixReturn;
   // A provider return starts unconfirmed, so the page never claims a payment it
   // cannot see yet.
   const [paymentConfirmed, setPaymentConfirmed] = useState(wixReturn ? false : null);
@@ -70,14 +70,14 @@ export default function OrderConfirmation() {
     }
     (async () => {
       try {
-        const res = await base44.functions.invoke(helcimReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
+        const res = await base44.functions.invoke(cardReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {
         console.error('Payment confirmation on return failed:', err);
         setPaymentConfirmed(false);
       }
     })();
-  }, [hostedReturn, helcimReturn, wixReturn, orderNumber]);
+  }, [hostedReturn, cardReturn, wixReturn, orderNumber]);
   const { waitMin } = useLiveStatus();
   const prepEstimate = waitMin ? `~${waitMin} min` : '15–25 min for pickup · 35–50 for delivery';
 

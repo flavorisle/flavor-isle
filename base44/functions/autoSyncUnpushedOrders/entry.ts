@@ -93,9 +93,9 @@ export default async function (req: Request) {
         continue;
       }
 
-      // Helcim secure-page orders (issue #97). The same safety net as the Square
+      // Card secure-page orders (issue #97). The same safety net as the Square
       // block above: if the customer closed the tab after paying, ask the
-      // settling pass whether Helcim holds a completed payment for the exact
+      // settling pass whether the processor holds a completed payment for the exact
       // total, and let it do the single push the customer's return path does.
       if (order.payment_provider === 'helcim' && !order.square_order_id && order.payment_status === 'pending') {
         try {
@@ -108,11 +108,11 @@ export default async function (req: Request) {
             results.push({ order_number: order.order_number, pushed: true, provider: 'helcim' });
           } else {
             skipped++;
-            results.push({ order_number: order.order_number, skipped: true, reason: data?.reason || 'Helcim payment not completed yet' });
+            results.push({ order_number: order.order_number, skipped: true, reason: data?.reason || 'Card payment not completed yet' });
           }
         } catch (err) {
           skipped++;
-          results.push({ order_number: order.order_number, skipped: true, reason: `Helcim settle failed: ${err.message}` });
+          results.push({ order_number: order.order_number, skipped: true, reason: `Card payment check failed: ${err.message}` });
         }
         continue;
       }

@@ -1,7 +1,7 @@
-// Helcim as the third secure-payment path (issue #97, Part B).
+// The card processor as the third secure-payment path (issue #97, Part B).
 //
 // This is the shared money helper for every path that takes a card through
-// Helcim: the website checkout, the phone payment link Smashie texts, the /pay
+// the card processor: the website checkout, the phone payment link Smashie texts, the /pay
 // page, merch, refunds and the sweeper. It mirrors squareWebCheckout.ts so the
 // two hosted paths behave identically from the customer's point of view — the
 // customer only ever sees our own secure page and never a processor name.
@@ -10,7 +10,7 @@
 // a clear error and the caller falls back to the Square path, so a missing
 // credential can never produce a dead checkout or an unverifiable payment.
 //
-// Amounts are verified to the cent against what Helcim reports before an order
+// Amounts are verified to the cent against what the processor reports before an order
 // is ever marked paid: the money rule is the same one the Square and Stripe
 // paths enforce.
 import { withTimeout } from './withTimeout.ts';
@@ -21,8 +21,8 @@ export function helcimApiBase(): string {
   return (Deno.env.get('HELCIM_API_BASE') || DEFAULT_API_BASE).replace(/\/$/, '');
 }
 
-// The credentials, or null when Helcim is not set up yet. Callers use this to
-// decide between the Helcim path and the Square fallback.
+// The credentials, or null when card payments are not set up yet. Callers use this to
+// decide between the card path and the Square fallback.
 //
 // The API token alone authenticates every HelcimPay.js session; the account id is
 // only used by the saved-card purchase path, so a merchant who cannot find it can
@@ -39,18 +39,18 @@ export function helcimConfigured(): boolean {
 }
 
 export const HELCIM_NOT_CONFIGURED =
-  'Helcim is not configured yet (the HELCIM_API_KEY token is missing), so no secure payment page was created.';
+  'Secure card payments are not configured yet (the card API token is missing), so no secure payment page was created.';
 
 // Can this merchant account actually take a USD card right now?
 //
-// Helcim refuses /helcim-pay/initialize at the ACCOUNT level when the merchant has
+// The processor refuses /helcim-pay/initialize at the ACCOUNT level when the merchant has
 // no active terminal for the currency ("No active terminals for USD currency"), and
 // every session minted afterwards fails the same way — a customer is left staring at
 // a payment page that can never be paid. Each entry point asks this first, so an
 // account-level problem routes the customer to the alternate processor instead.
 //
 // No invoice request is sent, so a discarded probe leaves no invoice behind in the
-// merchant's account, and it is bounded so a stalled Helcim call cannot hang checkout.
+// merchant's account, and it is bounded so a stalled card call cannot hang checkout.
 export async function helcimCanTakePayment(): Promise<boolean> {
   if (!helcimConfigured()) return false;
   try {
@@ -63,17 +63,17 @@ export async function helcimCanTakePayment(): Promise<boolean> {
           language: 'en',
         }),
       6000,
-      'Helcim checkout probe',
+      'Card checkout probe',
     );
     return true;
   } catch (error) {
-    console.error('helcimCanTakePayment: Helcim will not open a checkout session:', (error as Error).message);
+    console.error('helcimCanTakePayment: the card processor will not open a checkout session:', (error as Error).message);
     return false;
   }
 }
 
-// One place for the authenticated Helcim call, so the key never leaves this
-// module and every failure carries the status and Helcim's own message.
+// One place for the authenticated card call, so the key never leaves this
+// module and every failure carries the status and the processor's own message.
 export async function helcimRequest(path: string, method = 'GET', body?: any) {
   const credentials = helcimCredentials();
   if (!credentials) throw new Error(HELCIM_NOT_CONFIGURED);
@@ -98,7 +98,7 @@ export async function helcimRequest(path: string, method = 'GET', body?: any) {
     }
   }
   if (!response.ok) {
-    throw new Error(`Helcim ${method} ${path} failed (${response.status}): ${JSON.stringify(data).slice(0, 300)}`);
+    throw new Error(`Card API ${method} ${path} failed (${response.status}): ${JSON.stringify(data).slice(0, 300)}`);
   }
   return data;
 }
@@ -109,15 +109,15 @@ function unwrap(data: any) {
 
 // ── Creating the hosted checkout ──
 //
-// Helcim Pay hands the card fields to Helcim inside our own page: Helcim returns
+// The card form hands the card fields straight to the processor inside our own page: it returns
 // a checkout token, and the customer enters their card on the page that token
 // renders. We keep the customer on flavor-isle.com, and the payment is verified
 // server-side afterwards — the same shape as the Square hosted link.
 // Our own secure page for one order. The link carries only the order number —
 // never a checkout token — so a link that is re-sent an hour later still opens a
-// page that mints a fresh session instead of one Helcim has already expired.
+// page that mints a fresh session instead of one that has already expired.
 export function helcimPayPageUrl(payPageOrigin: string, orderNumber: string, fromCheckout = false) {
-  const base = `${payPageOrigin}/pay-helcim?order_number=${encodeURIComponent(orderNumber)}`;
+  const base = `${payPageOrigin}/pay?order_number=${encodeURIComponent(orderNumber)}`;
   return fromCheckout ? `${base}&from=checkout` : base;
 }
 
@@ -136,7 +136,7 @@ export async function createHelcimCheckoutLink(
   const amount = Math.round((Number(opts.amountUsd) + Number.EPSILON) * 100) / 100;
 
   // invoiceRequest creates the record of this payment with OUR order id as the
-  // invoice number, so Helcim reports that number back on the transaction and the
+  // invoice number, so the processor reports that number back on the transaction and the
   // money is matched to this order and to nothing else. Its line item total has to
   // equal the amount charged, to the cent.
   const init = await helcimRequest('/helcim-pay/initialize', 'POST', {
@@ -160,7 +160,7 @@ export async function createHelcimCheckoutLink(
   });
 
   const checkoutToken = init?.checkoutToken || init?.data?.checkoutToken;
-  if (!checkoutToken) throw new Error('Helcim did not return a checkout token.');
+  if (!checkoutToken) throw new Error('The card processor did not return a checkout token.');
 
   return {
     url: helcimPayPageUrl(opts.payPageOrigin, opts.orderNumber, opts.fromCheckout === true),
@@ -170,7 +170,7 @@ export async function createHelcimCheckoutLink(
 
 // ── Reading the payment back ──
 
-// Every APPROVED USD payment Helcim recorded for one invoice. The invoice number
+// Every APPROVED USD payment the processor recorded for one invoice. The invoice number
 // is the order id we sent at checkout, so an order is matched back to its own
 // money and to nothing else.
 export async function helcimPaymentsForInvoice(invoiceNumber: string) {
@@ -204,7 +204,7 @@ export async function helcimPaymentByTransaction(transactionId: string) {
 }
 
 // What an order's payment really is, in the form the settlement code needs:
-// paid only when Helcim reports an APPROVED USD payment, with the food amount
+// paid only when the processor reports an APPROVED USD payment, with the food amount
 // (what was taken minus any tip added on the secure page) and the tip split out.
 export async function helcimCheckoutTotals(
   invoiceNumber: string,
@@ -241,13 +241,13 @@ export async function helcimCheckoutTotals(
 
 // ── Refunds ──
 
-// Refund a Helcim transaction in full. Used by refundOrder and cancelOrder for
+// Refund a card transaction in full. Used by refundOrder and cancelOrder for
 // orders whose payment_provider is helcim.
 export async function refundHelcimTransaction(transactionId: string, amountCents: number, reference: string) {
-  if (!transactionId) throw new Error('No Helcim transaction found on this order');
+  if (!transactionId) throw new Error('No card transaction found on this order');
   const refund = await helcimRequest(`/payments/${encodeURIComponent(transactionId)}/refund`, 'POST', {
     amount: (amountCents / 100).toFixed(2),
-    // Helcim echoes this back on the refund record, so a retried cancellation is
+    // The processor echoes this back on the refund record, so a retried cancellation is
     // identifiable instead of looking like a second refund.
     reference,
   });
@@ -260,7 +260,7 @@ export async function refundHelcimTransaction(transactionId: string, amountCents
 
 // ── Card vault (issue #97 step 14) ──
 //
-// Only the Helcim path uses these. The Stripe vault and its SavedPaymentMethod
+// Only the card path uses these. The Stripe vault and its SavedPaymentMethod
 // records are never touched by this module.
 export async function listHelcimCards(customerCode: string) {
   const data = await helcimRequest(`/cards?customerCode=${encodeURIComponent(customerCode)}`);
@@ -298,7 +298,7 @@ export async function deleteHelcimCard(cardId: string) {
 }
 
 // Charge a vaulted card for an exact amount. Only used when the owner has both
-// switched the checkout to Helcim and supplied the credentials.
+// switched the checkout to cards and supplied the credentials.
 export async function chargeHelcimCard(opts: {
   cardToken: string;
   amountUsd: number;

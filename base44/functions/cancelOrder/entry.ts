@@ -36,7 +36,7 @@ export default async function (req: Request) {
     const square = await cancelSquareOrder(base44, order.square_order_id || order.square_checkout_order_id);
 
     // 2. Refund. An order paid on Square's secure page refunds through Square and
-    //    Helcim's through Helcim. An order paid through Base44 Payments (powered
+    //    a card payment through the card processor. An order paid through Base44 Payments (powered
     //    by Wix) has no refund API in this app, so the crew issues that one in the
     //    Base44 Payments dashboard and is told so. An order paid another way
     //    (Square tender, cash at pickup) is reported back so the crew refunds it
@@ -58,16 +58,16 @@ export default async function (req: Request) {
           console.error(`Square refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
       } else if (order.payment_provider === 'helcim') {
-        // Paid on the Helcim secure page: the refund goes back through Helcim,
+        // Paid on the card secure page: the refund goes back through the card processor,
         // on the same transaction the customer paid with.
         try {
           const refund = await refundHelcimOrderPayments(base44, order);
           refunded = true;
           refundNote = null;
-          console.log(`Helcim refund issued for order ${order.order_number}: ${refund.refundId || ''}`);
+          console.log(`Card refund issued for order ${order.order_number}: ${refund.refundId || ''}`);
         } catch (error) {
-          refundNote = `Card refund failed (${(error as Error).message}) — refund it in Helcim.`;
-          console.error(`Helcim refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
+          refundNote = `Card refund failed (${(error as Error).message}) — refund it from the card processor's dashboard.`;
+          console.error(`Card refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
       } else if (order.payment_provider === 'wix') {
         // Paid through Base44 Payments (powered by Wix). This app holds no refund

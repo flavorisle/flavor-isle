@@ -100,7 +100,7 @@ export default function MerchCheckout() {
       // to production until the payment has been verified against this order's total.
       if (data.order_number) {
         window.location.href = data.payment_url
-          || `${window.location.origin}/pay-helcim?order_number=${encodeURIComponent(data.order_number)}`;
+          || `${window.location.origin}/pay?order_number=${encodeURIComponent(data.order_number)}`;
         return;
       }
       setError(data.error || 'Could not start checkout. Please try again.');
