@@ -81,6 +81,10 @@ export default function InlineCardFields({
       <input type="hidden" id="amount" defaultValue={form.amount} />
       <input type="hidden" id="amountHash" defaultValue={form.amountHash} />
       <input type="hidden" id="language" defaultValue="en" />
+      {/* The processor's script reads an element with this exact id and stamps the order
+          number onto the transaction it creates — which is how a payment is matched back
+          to its own order by the sweeper when the browser's own reply never arrives. */}
+      <input type="hidden" id="orderNumber" name="orderNumber" defaultValue={form.orderNumber} />
       <input type="hidden" name="order_number" defaultValue={form.orderNumber} />
       <input type="hidden" name="return_url" defaultValue={window.location.origin} />
       <input type="hidden" name="return_path" defaultValue={`${window.location.pathname}${window.location.search}`} />

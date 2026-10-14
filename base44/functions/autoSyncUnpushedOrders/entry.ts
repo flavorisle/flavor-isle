@@ -148,26 +148,34 @@ export default async function (req: Request) {
       }
     }
 
-    // Tasty Threads merch paid on the secure page gets the same safety net: a
+    // Tasty Threads merch paid on either secure page gets the same safety net: a
     // customer who never returns to the confirmation page would otherwise leave
     // their order unpaid and never handed to production.
     const merchCandidates = await base44.asServiceRole.entities.MerchOrder.filter(
-      { payment_status: 'pending', payment_provider: 'square' }, '-created_date', 20
+      { payment_status: 'pending', payment_provider: { $in: ['square', 'helcim'] } }, '-created_date', 20
     );
     let merchSettled = 0;
     for (const merchOrder of (merchCandidates || [])) {
       if (!merchOrder.created_date || new Date(merchOrder.created_date).getTime() <= twoHoursAgo) continue;
+      const settleFunction = merchOrder.payment_provider === 'helcim'
+        ? 'settleHelcimWebPayment'
+        : 'settleSquareWebPayment';
       try {
-        const settleRes = await base44.asServiceRole.functions.invoke('settleSquareWebPayment', {
+        const settleRes = await base44.asServiceRole.functions.invoke(settleFunction, {
           order_number: String(merchOrder.order_number),
         });
         const data = settleRes?.data || settleRes;
         if (data?.settled) {
           merchSettled++;
-          results.push({ order_number: merchOrder.order_number, pushed: true, provider: 'square', merch: true });
+          results.push({
+            order_number: merchOrder.order_number,
+            pushed: true,
+            provider: merchOrder.payment_provider,
+            merch: true,
+          });
         }
       } catch (err) {
-        console.warn(`Merch Square settle failed for ${merchOrder.order_number}:`, err.message);
+        console.warn(`Merch ${merchOrder.payment_provider} settle failed for ${merchOrder.order_number}:`, err.message);
       }
     }
 
