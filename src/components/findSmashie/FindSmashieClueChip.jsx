@@ -1,7 +1,17 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import useSmashieHunt from '@/hooks/useSmashieHunt';
 import { huntClueText, SMASHIE_IMAGES } from '@/lib/findSmashie';
+
+// The riddle belongs to the pages a player hunts on. The footer carries this chip
+// on every page, so one path check here keeps it off the customer's own account
+// and off the screens where money or the crew's tools are the point — for the
+// corner placement and the footer placement alike.
+const CLUE_CHIP_HIDDEN_PATHS = ['/account', '/checkout', '/cart'];
+const clueChipHidden = (pathname) =>
+  !!pathname &&
+  (pathname.startsWith('/admin') || CLUE_CHIP_HIDDEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)));
 
 // The clue chip. It drops onto the pages a player is allowed to hunt on
 // (Home, Menu, Gallery, About, Meet Smashie, Find Smashie) and into the footer,
@@ -16,11 +26,12 @@ import { huntClueText, SMASHIE_IMAGES } from '@/lib/findSmashie';
 // lib/findSmashie, so it can never disagree with the banner. Outside the October
 // window the hook returns show:false and the chip removes itself.
 export default function FindSmashieClueChip({ placement = 'corner' }) {
+  const location = useLocation();
   const hunt = useSmashieHunt();
   const [open, setOpen] = useState(false);
 
   const text = huntClueText(hunt);
-  if (!hunt?.show || !text) return null;
+  if (clueChipHidden(location.pathname) || !hunt?.show || !text) return null;
 
   const label = hunt.winner ? 'Smashie was found!' : "Clue of the Day";
 
