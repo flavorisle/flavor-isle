@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Camera, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import GalleryGrid from '@/components/gallery/GalleryGrid';
 import GalleryLightbox from '@/components/gallery/GalleryLightbox';
@@ -99,6 +100,7 @@ export default function Gallery() {
 
       <FindSmashiePromo />
 
+      <FindSmashieClueChip />
       <Footer />
       <CartDrawer />
     </div>

@@ -27,9 +27,22 @@ function toMin(t) {
   return (h || 0) * 60 + (m || 0);
 }
 
+// The name the winner board, the site banner and the Instagram reveal all show.
+//
+// An account whose name did not resolve to a real one arrives here as an email
+// username or a single run-together token ("wesleyrbooker1"), and that is not
+// something to put in front of the town. Only a name that looks like a name is
+// used; anything else becomes "A lucky finder".
 function displayInitial(user) {
   const full = (user?.full_name || user?.name || '').trim();
-  if (!full) return 'A lucky finder';
+  if (!full || full.includes('@') || !/\s/.test(full)) {
+    const single = full.split(/\s+/)[0] || '';
+    // Letters, apostrophes and hyphens only, no digits — a real single-word name.
+    if (/^[A-Za-z][A-Za-z'-]*$/.test(single)) {
+      return single.charAt(0).toUpperCase() + single.slice(1).toLowerCase();
+    }
+    return 'A lucky finder';
+  }
   const parts = full.split(/\s+/);
   const first = parts[0];
   const last = parts.length > 1 ? ` ${parts[parts.length - 1][0]}.` : '';

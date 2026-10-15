@@ -1,80 +1,54 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import useSmashieHunt from '@/hooks/useSmashieHunt';
 import {
-  todayStr, INSTAGRAM_URL, INSTAGRAM_HANDLE,
-  HUNT_START_DATE, HUNT_END_DATE, HUNT_PROMO_START_DATE, formatHuntDate,
+  huntClueText, INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, SMASHIE_IMAGES,
 } from '@/lib/findSmashie';
 
-const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
-
+// The site-wide Find Smashie band: it advertises the game before it opens and,
+// once the hunt is live, carries one small clue line under the headline. The clue
+// line is the same shared text every other clue surface shows, so after the day's
+// win the whole site switches to "FOUND! ..." together. Outside the October
+// window the hook returns show:false and the band removes itself.
 export default function FindSmashieBanner() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
-  const [state, setState] = useState(null);
+  const hunt = useSmashieHunt();
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const { data } = await base44.functions.invoke('getSmashieHuntState', {});
-        if (!cancelled) setState(data);
-      } catch (e) {
-        // Preview fallback: show the banner even if the backend function
-        // isn't deployed on this branch.
-        if (!cancelled) setState({
-          active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
-          preview_mode: true, today_winner: null,
-        });
-      }
-    };
-    load();
-    const onUpdate = () => load();
-    window.addEventListener(HUNT_REFRESH_EVENT, onUpdate);
-    return () => {
-      cancelled = true;
-      window.removeEventListener(HUNT_REFRESH_EVENT, onUpdate);
-    };
-  }, []);
+  if (!hunt?.show) return null;
 
-  if (!state) return null;
-
-  // The banner advertises the game before it opens: it shows through the promo
-  // window (from HUNT_PROMO_START_DATE) as well as the hunt itself.
-  const today = todayStr();
-  const endDate = state.end_date || HUNT_END_DATE;
-  if (!state.active || today < HUNT_PROMO_START_DATE || today > endDate) return null;
-
-  const winner = state.today_winner;
-  const startDate = state.start_date || HUNT_START_DATE;
-  const beforeStart = today < startDate;
-  const startDateLabel = formatHuntDate(startDate);
+  const { started, startDate, endDate } = hunt;
+  const clueLine = huntClueText(hunt);
 
   return (
     <div className="w-full bg-midnight-cherry text-white text-xs sm:text-sm">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3 text-center sm:text-left">
-        {beforeStart ? (
-          <p>
-            🎃 <strong>Find Smashie starts {startDateLabel}!</strong> Every day through {formatHuntDate(endDate)}, Smashie
-            hides somewhere on this site — first signed-in finder wins a free milkshake or 100 Star
-            Rewards points. Follow the daily winner reveals on Instagram&nbsp;
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="underline font-semibold">{INSTAGRAM_HANDLE}</a>
-          </p>
-        ) : winner ? (
-          <p>
-            🧛 <strong>Smashie was found by {winner.name || 'a lucky finder'}</strong>
-            {winner.time ? ` at ${winner.time}` : ''} — new hiding spot tomorrow at open!
-            Winners revealed daily on Instagram&nbsp;
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="underline font-semibold">{INSTAGRAM_HANDLE}</a>
-          </p>
-        ) : (
-          <p>
-            🎃 <strong>Find Smashie!</strong> He's hiding on the site right now — first
-            signed-in finder wins a free milkshake or 100 Star Rewards points.
-            Winners revealed daily on Instagram&nbsp;
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="underline font-semibold">{INSTAGRAM_HANDLE}</a>
-          </p>
-        )}
+        <div>
+          {!started ? (
+            <p>
+              🎃 <strong>Find Smashie starts {formatHuntDate(startDate)}!</strong> Every day through {formatHuntDate(endDate)}, Smashie
+              hides somewhere on this site — first signed-in finder wins a free milkshake or 100 Star
+              Rewards points. Follow the daily winner reveals on Instagram&nbsp;
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="underline font-semibold">{INSTAGRAM_HANDLE}</a>
+            </p>
+          ) : (
+            <p>
+              🎃 <strong>Find Smashie!</strong> He's hiding on the site right now — first
+              signed-in finder wins a free milkshake or 100 Star Rewards points.
+            </p>
+          )}
+          {clueLine && (
+            <p className="mt-1 flex items-center justify-center sm:justify-start gap-1.5 text-[11px] sm:text-xs text-white/90">
+              <img
+                src={SMASHIE_IMAGES.pumpkin}
+                alt=""
+                width="14"
+                height="14"
+                className="h-3.5 w-3.5 object-contain flex-shrink-0"
+              />
+              <span>{clueLine}</span>
+            </p>
+          )}
+        </div>
         <span className="flex shrink-0 gap-3 items-center">
           <Link to="/find-smashie" className="underline font-semibold">
             Rules &amp; winners

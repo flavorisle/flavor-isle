@@ -40,6 +40,7 @@ import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 import { isBundleLine, bundleDiscountForLines, FAMILY_BUNDLE_INCLUDED_OPTION_IDS } from './familyBundle.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 import { getMenuSettingRecord } from './storeState.ts';
+import { isSmashieShake } from './findSmashiePrize.ts';
 
 const TOLERANCE_CENTS = 1; // accept up to 1 cent of rounding drift
 
@@ -136,6 +137,8 @@ export interface PricingResult {
   tax?: number;
   deliveryFee?: number;
   discount?: number;
+  // The Find Smashie free-shake prize, priced from the catalog (issue #108).
+  freeShakeDiscount?: number;
   tip?: number;
   total?: number;
   warnings?: string[];
@@ -156,11 +159,16 @@ export async function verifyOrderPricing(base44: any, opts: {
   clientDiscount?: number;
   clientHappyHourDiscount?: number;
   clientBundleDiscount?: number;
+  // Set only by a caller that has already proven the customer holds today's
+  // unused free-shake win. The amount is never taken from the client: it is the
+  // authoritative price of the most expensive shake line below.
+  freeShakePrize?: boolean;
 }): Promise<PricingResult> {
   const {
     items, orderType, deliveryAddress,
     clientSubtotal, clientDeliveryFee, clientTax, clientTotal,
     clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0, clientBundleDiscount = 0,
+    freeShakePrize = false,
   } = opts;
 
   if (!items || items.length === 0) return { ok: false, error: 'No items provided' };
@@ -195,6 +203,10 @@ export async function verifyOrderPricing(base44: any, opts: {
   // ── Recompute line prices + Happy Hour + family bundle ──
   let serverSubtotal = 0;
   let serverHappyHour = 0;
+  // The dearest shake line's unit price — the free Find Smashie shake comes off
+  // the order at exactly this price, from the same catalog authority as every
+  // other line price above.
+  let freeShakeUnitPrice = 0;
   // Per bundle-line included money, grouped so each added bundle pays its fixed
   // price once. The discount is recomputed from the catalog below.
   const bundleLines: Array<{ bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
@@ -272,6 +284,11 @@ export async function verifyOrderPricing(base44: any, opts: {
       }
     }
 
+    // One free shake (issue #108): the most expensive shake line in the order.
+    if (freeShakePrize && menuItem && isSmashieShake(menuItem, item) && lineUnitPrice > freeShakeUnitPrice) {
+      freeShakeUnitPrice = lineUnitPrice;
+    }
+
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
 
@@ -331,10 +348,18 @@ export async function verifyOrderPricing(base44: any, opts: {
 
   // ── Reward discount (capped, trusted) + tip (trusted) ──
   const serverDiscount = round2(Math.min(Math.max(0, clientDiscount), adjustedSubtotal));
+  // The free shake comes off whatever is left after the reward discount, so the
+  // two can never take the total below zero.
+  const serverFreeShake = freeShakePrize
+    ? round2(Math.min(freeShakeUnitPrice, Math.max(0, adjustedSubtotal - serverDiscount)))
+    : 0;
   const serverTip = Math.max(0, Number(clientTip) || 0);
   // Total assembled in whole cents so it is exactly the sum the client shows.
   const serverTotal = fromCents(
-    Math.max(0, adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount)) + toCents(serverTip),
+    Math.max(
+      0,
+      adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount) - toCents(serverFreeShake),
+    ) + toCents(serverTip),
   );
 
   // ── Validate each authoritative component against the client ──
@@ -367,6 +392,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     tax: serverTax,
     deliveryFee: serverDeliveryFee,
     discount: serverDiscount,
+    freeShakeDiscount: serverFreeShake,
     tip: serverTip,
     total: round2(clientTotal), // validated — charge what the customer saw
     warnings,

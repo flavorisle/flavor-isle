@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
-  getHuntSpot, phaseLabel, todayStr, inDateRange, formatHuntDate,
+  getHuntSpot, getHuntClue, phaseLabel, todayStr, inDateRange, formatHuntDate,
   HUNT_START_DATE, HUNT_END_DATE,
 } from '@/lib/findSmashie';
 
@@ -13,6 +13,9 @@ export default function FindSmashiePanel() {
   const [winners, setWinners] = useState([]);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
+  const [clues, setClues] = useState(null);
+  const [savingClues, setSavingClues] = useState(false);
+  const [cluesSavedAt, setCluesSavedAt] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +30,29 @@ export default function FindSmashiePanel() {
         const w = await base44.entities.FindSmashieWinner.list('-game_date', 31);
         if (!cancelled) setWinners(w || []);
       } catch (e) { /* entity may not exist yet */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Today's riddle, prefilled with the built-in bank so the crew only edits the
+  // words they want to change. Saving writes today's own record, which then wins
+  // over the bank everywhere the clue is shown.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const today = todayStr();
+      let record = null;
+      try {
+        const res = await base44.entities.SmashieClue.filter({ game_date: today });
+        record = (Array.isArray(res) ? res[0] : res?.items?.[0]) || null;
+      } catch (e) { /* entity may not exist yet */ }
+      if (cancelled) return;
+      setClues({
+        id: record?.id || null,
+        game_date: today,
+        clue_1: record?.clue_1 || getHuntClue({ dateStr: today, phase: 'pumpkin' }),
+        clue_2: record?.clue_2 || getHuntClue({ dateStr: today, phase: 'vampire' }),
+      });
     })();
     return () => { cancelled = true; };
   }, []);
@@ -59,6 +85,27 @@ export default function FindSmashiePanel() {
       setSavedAt(new Date());
     } finally {
       setSaving(false);
+    }
+  }
+
+  // One record per hunt day holds the crew's riddle; the bank stays the default.
+  async function saveClues() {
+    setSavingClues(true);
+    try {
+      const payload = {
+        game_date: clues.game_date,
+        clue_1: clues.clue_1 || '',
+        clue_2: clues.clue_2 || '',
+      };
+      if (clues.id) {
+        await base44.entities.SmashieClue.update(clues.id, payload);
+      } else {
+        const created = await base44.entities.SmashieClue.create(payload);
+        if (created?.id) setClues((c) => ({ ...c, id: created.id }));
+      }
+      setCluesSavedAt(new Date());
+    } finally {
+      setSavingClues(false);
     }
   }
 
@@ -169,6 +216,47 @@ export default function FindSmashiePanel() {
             <p>{todaySpots.vampire.page.name} page ({todaySpots.vampire.page.path}) — roughly {todaySpots.vampire.topPct}% down, {todaySpots.vampire.leftPct}% across</p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-5">
+        <h4 className="font-semibold mb-1">Daily clues</h4>
+        <p className="text-xs text-muted-foreground mb-3">
+          Today's riddles ({clues?.game_date || todayStr()}). Clue 1 shows from open until 5 PM and must never name the
+          page; Clue 2 shows from 5 PM to close and may name the page but never the corner. These are pre-filled with the
+          built-in riddle bank — edit any wording here and save to use your own.
+        </p>
+        {!clues ? (
+          <p className="text-muted-foreground text-sm">Loading today's clues…</p>
+        ) : (
+          <>
+            <label className="text-sm space-y-1 block mb-3">
+              <span className="font-semibold">🎃 Clue 1 — open until 5:00 PM (riddle only, no page name)</span>
+              <textarea
+                rows={2}
+                className="w-full rounded-md border bg-background p-2 text-sm"
+                value={clues.clue_1}
+                onChange={(e) => setClues({ ...clues, clue_1: e.target.value })}
+              />
+            </label>
+            <label className="text-sm space-y-1 block mb-4">
+              <span className="font-semibold">🧛 Clue 2 — 5:00 PM to close (may name the page)</span>
+              <textarea
+                rows={2}
+                className="w-full rounded-md border bg-background p-2 text-sm"
+                value={clues.clue_2}
+                onChange={(e) => setClues({ ...clues, clue_2: e.target.value })}
+              />
+            </label>
+            <button
+              className="rounded-md bg-midnight-cherry text-white px-4 py-2 font-semibold disabled:opacity-50"
+              onClick={saveClues}
+              disabled={savingClues}
+            >
+              {savingClues ? 'Saving…' : 'Save today\'s clues'}
+            </button>
+            {cluesSavedAt && <span className="ml-3 text-green-600 text-sm">Saved ✓</span>}
+          </>
+        )}
       </div>
 
       <div className="rounded-xl border bg-card p-5">

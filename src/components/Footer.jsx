@@ -6,6 +6,7 @@ import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 import FooterEmailSignup from '@/components/FooterEmailSignup';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import { optimizedImageUrl } from '@/lib/utils';
 
 // Footer links, split into two labelled columns so they read as short scannable
@@ -154,6 +155,10 @@ export default function Footer() {
 
       {/* SMS opt-in + A2P disclosure */}
       <FooterSmsOptIn />
+
+      {/* Clue of the Day — the hunt's riddle chip, October only. It renders
+          nothing outside the hunt window, so the band disappears with it. */}
+      <FindSmashieClueChip placement="footer" />
 
       {/* Traveler tips link — shown on every page */}
       <div className="border-t border-white/10 px-5 sm:px-6 py-4 text-center">

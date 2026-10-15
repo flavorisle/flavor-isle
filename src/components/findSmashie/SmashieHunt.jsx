@@ -179,8 +179,21 @@ export default function SmashieHunt() {
       // Preview fallback: choice still recorded in modal state.
     } finally {
       setClaiming(false);
-      setModal('claimed');
     }
+
+    if (choice === 'milkshake') {
+      // The free shake is applied at checkout, so the winner goes straight to the
+      // shake list with a marker that this browser has one waiting. Checkout still
+      // asks the server before it takes anything off, so a stale flag can never
+      // hand out a free shake.
+      try { localStorage.setItem('smashie_free_shake', '1'); } catch (e) { /* storage unavailable */ }
+      setModal(null);
+      window.dispatchEvent(new Event(HUNT_REFRESH_EVENT));
+      navigate('/milkshakes');
+      return;
+    }
+
+    setModal('claimed');
   }
 
   const renderSpot = preview ? previewSpot : spot;

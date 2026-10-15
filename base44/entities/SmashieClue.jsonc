@@ -1,0 +1,39 @@
+{
+  "name": "SmashieClue",
+  "type": "object",
+  "properties": {
+    "game_date": {
+      "type": "string",
+      "description": "Hunt day this riddle pair belongs to, YYYY-MM-DD store local time (America/Chicago). One record per day: the crew's edited clue for a date replaces the built-in bank for that date."
+    },
+    "clue_1": {
+      "type": "string",
+      "description": "Pumpkin-phase riddle (open until 5 PM). A riddle only - it must never name the page or the spot."
+    },
+    "clue_2": {
+      "type": "string",
+      "description": "Vampire-phase riddle (5 PM to close). May name the page, but never the corner or position he is hiding in."
+    }
+  },
+  "required": [
+    "game_date"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

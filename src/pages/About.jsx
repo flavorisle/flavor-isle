@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import AboutHero from '@/components/about/AboutHero';
@@ -46,6 +47,8 @@ export default function About() {
       <AboutVisit />
       <AboutTraveler />
       <AboutExplore />
+
+      <FindSmashieClueChip />
       <Footer />
     </div>
   );

@@ -7,6 +7,7 @@ import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
 import { helcimPayPageUrl, helcimCanTakePayment } from '../../shared/helcimCheckout.ts';
+import { todaysMilkshakePrize } from '../../shared/findSmashiePrize.ts';
 
 // The website's secure payment page when the owner's switch is set to Helcim.
 //
@@ -33,7 +34,7 @@ export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize } = body;
 
     // The owner's switch decides where the website's payment page is created.
     // If it is not on the Helcim path, this endpoint refuses rather than opening
@@ -88,6 +89,24 @@ export default async function (req: Request) {
       authoritativeDiscount = reward.exactDiscount || 0;
     }
 
+    // The free Find Smashie shake (issue #108). The claim is only honoured when
+    // the signed-in customer genuinely holds today's unused shake win — the
+    // record is read by their own user id, never from the request — and the money
+    // itself is priced from the catalog inside verifyOrderPricing. A forged flag
+    // therefore buys nothing.
+    const freeShakePrizeGranted = freeShakePrize === true && await (async () => {
+      try {
+        const user = await base44.auth.me();
+        return !!(user && await todaysMilkshakePrize(base44, user.id));
+      } catch (error) {
+        console.warn('createHelcimWebCheckout: free-shake prize check failed — no discount applied:', (error as Error).message);
+        return false;
+      }
+    })();
+    if (freeShakePrize === true && !freeShakePrizeGranted) {
+      console.warn('createHelcimWebCheckout: free-shake prize claimed but not held by this signed-in customer — ignored');
+    }
+
     const pricing = await verifyOrderPricing(base44, {
       items,
       orderType,
@@ -100,6 +119,7 @@ export default async function (req: Request) {
       clientDiscount: authoritativeDiscount,
       clientHappyHourDiscount: happyHourDiscount,
       clientBundleDiscount: bundleDiscount,
+      freeShakePrize: freeShakePrizeGranted,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -135,7 +155,11 @@ export default async function (req: Request) {
         tax: pricing.tax,
         delivery_fee: pricing.deliveryFee,
         tip: round2(pricing.tip || 0),
-        discount: pricing.discount,
+        // The free shake is recorded with the reward discount, exactly as the
+        // reward path does — the same order-level discount the customer paid
+        // against, and never an item or a changed item price. redemption_id stays
+        // empty unless a Star Reward was actually redeemed.
+        discount: round2((pricing.discount || 0) + (pricing.freeShakeDiscount || 0)),
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',

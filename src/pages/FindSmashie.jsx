@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, HUNT_START_DATE, HUNT_END_DATE } from '@/lib/findSmashie';
+import { INSTAGRAM_URL, INSTAGRAM_HANDLE, formatHuntDate, huntClueText, HUNT_START_DATE, HUNT_END_DATE } from '@/lib/findSmashie';
 import useSmashieHunt from '@/hooks/useSmashieHunt';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 
 // Public rules + winner board for the Find Smashie game.
 export default function FindSmashie() {
@@ -55,15 +56,24 @@ export default function FindSmashie() {
         </div>
       )}
 
-      {hunt?.hint && (
+      {hunt?.show && hunt.started && (
         <div className="rounded-xl border border-smashie-yellow bg-smashie-yellow/15 p-5 mb-10 text-center">
           <p className="font-heading uppercase text-sm tracking-widest text-midnight-cherry mb-1">
-            🔎 Today's Hint
+            🔎 Today's Clues
           </p>
-          <p className="font-semibold text-obsidian-roast">{hunt.hint}</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            He moves to a brand-new spot at 5 PM if nobody has found him yet — check back for the new hint.
-          </p>
+          {hunt.winner ? (
+            <p className="font-semibold text-obsidian-roast">{huntClueText(hunt)}</p>
+          ) : hunt.clue ? (
+            <>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Today's clue</p>
+              <p className="font-semibold text-obsidian-roast">{hunt.clue}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                He moves to a brand-new spot at 5 PM if nobody has found him yet — check back for the new clue.
+              </p>
+            </>
+          ) : (
+            <p className="font-semibold text-obsidian-roast">{hunt.closedNote}</p>
+          )}
         </div>
       )}
 
@@ -130,6 +140,8 @@ export default function FindSmashie() {
           </table>
         )}
       </div>
+
+      <FindSmashieClueChip />
     </div>
   );
 }

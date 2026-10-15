@@ -4,6 +4,7 @@ import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
@@ -339,6 +340,8 @@ export default function Home() {
       <DownloadAppBanner />
 
       <StickyOrderBar />
+
+      <FindSmashieClueChip />
       <Footer />
     </div>);
 

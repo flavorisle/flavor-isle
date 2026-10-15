@@ -15,6 +15,12 @@ export const HUNT_END_DATE = '2026-10-31';
 // banner and the promo band tease it from this date.
 export const HUNT_PROMO_START_DATE = '2026-10-09';
 export const VAMPIRE_SWITCH_TIME = '17:00'; // 5:00 PM store-local
+
+// The Square categories that hold shakes: "Whirl & Twirl" is the made-to-order
+// shake and malt list, "Blend & Bliss" the specialty Bliss shakes. Both are
+// shakes the free-prize winner can pick, so checkout counts both. Mirrored on the
+// server in base44/shared/findSmashiePrize.ts.
+export const SHAKE_CATEGORIES = ['Whirl & Twirl', 'Blend & Bliss'];
 export const INSTAGRAM_HANDLE = '@flavor_isle';
 export const INSTAGRAM_URL = 'https://www.instagram.com/flavor_isle/';
 
@@ -123,29 +129,121 @@ export function getHuntPhase({ nowMinutes, openMinutes, closeMinutes }) {
   return nowMinutes < minutesOfDay(VAMPIRE_SWITCH_TIME) ? 'pumpkin' : 'vampire';
 }
 
-const HINT_ROWS = [
-  [0, 25, 'near the top'],
-  [25, 55, 'in the upper-middle'],
-  [55, 80, 'in the lower-middle'],
-  [80, 101, 'near the bottom'],
-];
-const HINT_COLS = [
-  [0, 34, 'on the left side'],
-  [34, 67, 'in the middle'],
-  [67, 101, 'on the right side'],
-];
+// ── The riddle bank (issue #109) ──
+//
+// The locked 17-day bank: clue1 is the pumpkin-phase riddle (open until 5 PM)
+// and is a riddle only — it never names the page or the spot. clue2 is the
+// vampire-phase riddle (5 PM to close), which may name the page but never the
+// corner he is hiding in. Text is copied verbatim from the approved bank; the
+// crew can override any single day from Pulse (Admin → Find Smashie → Daily
+// clues), which is stored in SmashieClue and beats this bank for that date.
+export const HUNT_RIDDLES = {
+  '2026-10-15': {
+    clue1: "He's lurking where you'd go to reach us — phone, map, or a friendly hello. He won't pick up, but he IS there.",
+    clue2: "The sun's down and he's back at our front door. He's on the Home page — where every visit starts.",
+  },
+  '2026-10-16': {
+    clue1: "He's admiring himself on the one page that's ALL about him. The cheek.",
+    clue2: "Star chasers, look sharp — he's skulking on the Rewards page, where the points pile up.",
+  },
+  '2026-10-17': {
+    clue1: "He's hiding among the kind words folks leave us. Read the compliments closely.",
+    clue2: "He's moved to where you'd find our phone and directions. Give us a ring — or just find him. (Contact page.)",
+  },
+  '2026-10-18': {
+    clue1: "He's tucked in where the stars live. Loyalty has its hiding spots.",
+    clue2: "He's pairing up — he's on the Combos page, where the deals team up.",
+  },
+  '2026-10-19': {
+    clue1: "Something's swirled in with the frosty flavors. He's chilling where the shakes live.",
+    clue2: "He's gone social — the Connect page, where the isle meets the internet.",
+  },
+  '2026-10-20': {
+    clue1: "Extra, extra! He's hiding among the town talk and the latest isle news.",
+    clue2: "He's hiding with the five-star tales — the Reviews page, where the love notes live.",
+  },
+  '2026-10-21': {
+    clue1: "He's buried in our story — the tale of how the isle began.",
+    clue2: "Say cheese! He's posing on the Gallery page, hiding among the snapshots.",
+  },
+  '2026-10-22': {
+    clue1: "He's where you'd follow, tag, or subscribe. Lurking in the social scene.",
+    clue2: "News flash — he's moved to the Isle Update page, among the headlines.",
+  },
+  '2026-10-23': {
+    clue1: "Picture this: a red burger in a frame. He's hiding among our photos.",
+    clue2: "Deal hunters — he's on the Combos page, where the pairings pay off.",
+  },
+  '2026-10-24': {
+    clue1: "Frosty alert: he's back among the shakes. Blend in, little pumpkin.",
+    clue2: "He's run home. Check the Home page top to bottom.",
+  },
+  '2026-10-25': {
+    clue1: "He's where two tastes team up — hiding among the duos.",
+    clue2: "Hungry? He's on the Menu page, hiding among our favorites. Don't order him.",
+  },
+  '2026-10-26': {
+    clue1: "He's right at the front door of the whole site — where everyone lands first.",
+    clue2: "He's gone frosty again — the Milkshakes page, where the swirls live.",
+  },
+  '2026-10-27': {
+    clue1: "Same story, new chapter — he's back where the isle's tale is told.",
+    clue2: "He stayed put in our story! Still the About page — new corner.",
+  },
+  '2026-10-28': {
+    clue1: "Reach out — he's hiding where our number and directions live.",
+    clue2: "He's made the connection — the Connect page, where the socials live.",
+  },
+  '2026-10-29': {
+    clue1: "He's hiding among the whole spread. Every burger's a suspect.",
+    clue2: "Still hungry? He's STILL on the Menu page — new hiding spot. Don't stop at the fries.",
+  },
+  '2026-10-30': {
+    clue1: "Back to the beginning — he's tucked into the isle's own story.",
+    clue2: "Halloween eve! He's posing on the Gallery page, among the pictures.",
+  },
+  '2026-10-31': {
+    clue1: "HALLOWEEN! He's at the very front door. Start where every visit starts.",
+    clue2: "Last hiding spot of the year — he's among the shakes one final time. (Milkshakes page.)",
+  },
+};
 
 /**
- * Plain-language hint for a hiding spot: which page he's on plus a rough
- * area, so players know where to look without it being handed to them.
+ * Today's riddle for the phase that is live. A Pulse override saved for this
+ * exact date wins; otherwise the bank. An empty string means no riddle is on
+ * file for the day, so the clue surfaces stay quiet rather than inventing one.
  */
-export function getHuntHint({ spot, phase }) {
-  if (!spot) return '';
-  const row = HINT_ROWS.find(([lo, hi]) => spot.topPct >= lo && spot.topPct < hi)?.[2];
-  const col = HINT_COLS.find(([lo, hi]) => spot.leftPct >= lo && spot.leftPct < hi)?.[2];
-  const who = phase === 'vampire' ? 'Vampire Smashie' : 'Pumpkin Smashie';
-  const area = [row, col].filter(Boolean).join(', ');
-  return `${who} is hiding on the ${spot.page.name} page, ${area}.`;
+export function getHuntClue({ dateStr, phase, overrides } = {}) {
+  const day = HUNT_RIDDLES[dateStr] || null;
+  const override = overrides && overrides.game_date === dateStr ? overrides : null;
+  if (phase === 'vampire') return String(override?.clue_2 || day?.clue2 || '').trim();
+  if (phase === 'pumpkin') return String(override?.clue_1 || day?.clue1 || '').trim();
+  return '';
+}
+
+/** First name only, capitalized — clue surfaces say "Wesley", never "wesleyrbooker1". */
+export function winnerFirstName(winner) {
+  const name = String(winner?.name || winner?.winner_name || '').trim();
+  if (!name) return 'A lucky finder';
+  const first = name.split(/\s+/)[0];
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+/**
+ * The one line every clue surface shows: the day's riddle, the FOUND message
+ * once somebody has won, or where the hunt stands outside open hours. Banner,
+ * footer chip, corner chips and the Find Smashie page all read this, so they can
+ * never disagree with each other.
+ */
+export function huntClueText(hunt) {
+  if (!hunt) return '';
+  if (hunt.winner) {
+    const at = hunt.winner.time ? ` at ${hunt.winner.time}` : '';
+    return `FOUND! ${winnerFirstName(hunt.winner)} spotted Smashie${at}. Come back tomorrow at open — he's hiding somewhere brand new.`;
+  }
+  if (hunt.clue) return hunt.clue;
+  if (hunt.started === false) return `The hunt opens ${formatHuntDate(hunt.startDate)} — get ready!`;
+  return hunt.closedNote || '';
 }
 
 export function phaseLabel(phase) {

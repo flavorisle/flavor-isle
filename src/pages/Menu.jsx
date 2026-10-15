@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import Seo from '@/components/Seo';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
@@ -353,6 +354,7 @@ export default function Menu() {
         </button>
       }
 
+      <FindSmashieClueChip />
       <Footer />
       <ShakeCustomizer open={!!activeShake} onClose={() => setActiveShake(null)} shakeItem={activeShake} />
     </div>);

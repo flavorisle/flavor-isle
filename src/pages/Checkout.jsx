@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
 import { getFamilyBundleDiscount } from '@/lib/familyBundle';
+import { SHAKE_CATEGORIES } from '@/lib/findSmashie';
 
 import { base44 } from '@/api/base44Client';
 
@@ -125,6 +126,31 @@ export default function Checkout() {
     return () => { cancelled = true; };
   }, []);
 
+  // Find Smashie free-shake prize (#108). A signed-in winner holds one free
+  // milkshake for today: the dearest shake in the bag comes off the total as its
+  // own summary line. The server checks the prize again and prices the shake from
+  // the catalog, so what is shown here only ever mirrors what it will confirm.
+  const [shakePrizeActive, setShakePrizeActive] = useState(false);
+  const [shakeIds, setShakeIds] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const authed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!authed) return;
+      const [prizeRes, shakes] = await Promise.all([
+        base44.functions.invoke('getMySmashiePrize', {}).catch(() => null),
+        base44.entities.MenuItem
+          .filter({ square_category: { $in: SHAKE_CATEGORIES } }, { limit: 200 })
+          .catch(() => null),
+      ]);
+      if (cancelled) return;
+      setShakePrizeActive(!!prizeRes?.data?.active);
+      setShakeIds(new Set((shakes?.items || []).map((i) => i.square_item_id).filter(Boolean)));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
 
@@ -207,10 +233,24 @@ export default function Checkout() {
   const fullName = `${form.firstName} ${form.lastName}`.trim();
   const rewardDiscount = happyHourDiscount > 0 ? 0 : appliedReward?.discountValue || 0;
   useEffect(() => { if (happyHourDiscount > 0 && appliedReward) setAppliedReward(null); }, [happyHourDiscount, appliedReward, setAppliedReward]);
+
+  // The free Find Smashie shake: the most expensive shake in the bag, one of them
+  // free. Taken off after any reward discount and never below zero — the same
+  // bound the server applies, so the two totals agree to the cent.
+  const shakeUnitPrice = useMemo(() => {
+    if (!shakePrizeActive || !shakeIds) return 0;
+    return cartItems
+      .filter((i) => i.isBuildShake || shakeIds.has(i.square_item_id || i.catalog_object_id))
+      .reduce((max, i) => Math.max(max, Number(i.price) || 0), 0);
+  }, [shakePrizeActive, shakeIds, cartItems]);
+  const adjustedCents = toCents(subtotal - happyHourDiscount - bundleDiscount);
+  const freeShakeCents = Math.min(toCents(shakeUnitPrice), Math.max(0, adjustedCents - toCents(rewardDiscount)));
+  const freeShakeDiscount = fromCents(freeShakeCents);
+
   // Composed in whole cents with the shared half-up rule, exactly like the
   // cart total and the server's verification — never a float sum re-rounded by
   // toFixed (which is what produced the $3.44 / $3.45 mismatch).
-  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount)) + toCents(tipAmount));
+  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount - freeShakeDiscount)) + toCents(tipAmount));
 
   // Single combined ready-by label: "~N min · clock time". For ASAP the clock
   // time is order time + prep minutes; for a scheduled order it's the chosen slot.
@@ -296,6 +336,9 @@ export default function Checkout() {
         instructions: instructionsWithExtras,
         subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
         discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+        // Tells the server a free shake is in play; it re-checks the prize and
+        // prices the shake itself, so this only ever reports the claim.
+        freeShakePrize: freeShakeCents > 0,
         loyaltyOptIn,
         referralCode: referralCode || undefined,
         scheduledFor,
@@ -323,6 +366,12 @@ export default function Checkout() {
       const data = orderRes?.data || orderRes;
       if (data?.orderNumber) {
         setPendingOrder({ orderNumber: data.orderNumber });
+        // The order is saved and the shake is in it, so the prize is now spent.
+        // Fired and forgotten: an order must never fail because the prize record
+        // could not be marked used.
+        if (freeShakeCents > 0) {
+          base44.functions.invoke('fulfillSmashiePrize', {}).catch(() => {});
+        }
         await startCardPay(data.orderNumber);
         return;
       }
@@ -607,6 +656,14 @@ export default function Checkout() {
                 </p>
               )}
 
+              {/* Free Find Smashie shake — the prize waits until a shake is in the
+                  bag, so the winner is nudged rather than the prize being burned. */}
+              {shakePrizeActive && freeShakeCents === 0 && (
+                <p className="text-xs text-patina-mint mb-3">
+                  Your free Find Smashie shake applies when you add one.
+                </p>
+              )}
+
               {/* Star Rewards — compact balance + redeemable rewards */}
               {happyHourDiscount <= 0 && <CheckoutLoyaltyBox
                 subtotal={subtotal}
@@ -700,6 +757,11 @@ export default function Checkout() {
                 {rewardDiscount > 0 && (
                   <div className="flex justify-between text-patina-mint">
                     <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {freeShakeDiscount > 0 && (
+                  <div className="flex justify-between text-midnight-cherry font-semibold">
+                    <span>Free shake — Find Smashie</span><span>−${freeShakeDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-heading text-obsidian-roast text-base pt-2 border-t border-border">

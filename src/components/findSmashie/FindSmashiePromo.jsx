@@ -16,7 +16,7 @@ export default function FindSmashiePromo() {
 
   if (!hunt || !hunt.show) return null;
 
-  const { winner, hint, phase, started, startDate } = hunt;
+  const { winner, clue, phase, started, startDate } = hunt;
   const startLabel = formatHuntDate(startDate);
   const endLabel = formatHuntDate(HUNT_END_DATE);
 
@@ -46,9 +46,9 @@ export default function FindSmashiePromo() {
                   ? `Smashie was found by ${winner.name || 'a lucky finder'} today. A brand-new hiding spot appears tomorrow at open.`
                   : "He's hiding somewhere on the site right now. The first signed-in player to spot him wins a free milkshake or 100 Star Rewards points."}
             </p>
-            {started && !winner && hint && (
+            {started && !winner && clue && (
               <p className="text-sm font-semibold text-smashie-yellow mt-2">
-                🔎 Today's hint: {hint}
+                🔎 Today's clue: {clue}
               </p>
             )}
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-3 mt-5">

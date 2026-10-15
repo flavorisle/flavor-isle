@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
 import CartDrawer from '@/components/CartDrawer';
+import FindSmashieFreeShakeBanner from '@/components/findSmashie/FindSmashieFreeShakeBanner';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
@@ -85,6 +86,10 @@ export default function Milkshakes() {
         ogImageAlt="Flavor Isle milkshake share card with real-fruit shake"
       />
       <Navbar />
+      {/* A Find Smashie winner who chose the free milkshake lands here — the
+          banner confirms their shake is waiting (it only shows while the prize
+          is genuinely unused). */}
+      <FindSmashieFreeShakeBanner />
       <CartDrawer />
 
       {/* Hero */}

@@ -10,6 +10,7 @@ const SMASHIE_POSES = [
 ];
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import SmashieChat from '@/components/SmashieChat';
 import Seo from '@/components/Seo';
@@ -217,6 +218,7 @@ export default function MeetSmashie() {
         </div>
       </section>
 
+      <FindSmashieClueChip />
       <Footer />
       <SmashieChat />
     </div>
