@@ -224,6 +224,7 @@ const AuthenticatedApp = () => {
       {/* Public — browse & order without an account */}
       <Route path="/menu" element={<Menu />} />
       <Route path="/order" element={<Order />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/product/:slug" element={<ProductDetail />} />
       <Route path="/combos" element={<Combos />} />
       <Route path="/milkshakes" element={<Milkshakes />} />
@@ -239,12 +240,6 @@ const AuthenticatedApp = () => {
       <Route path="/pay-helcim" element={<PayCard />} />
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
-
-      {/* Food checkout needs an account — a signed-out customer is sent to sign in
-          and comes right back here, with their bag still saved. */}
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login?returnTo=%2Fcheckout" replace />} />}>
-        <Route path="/checkout" element={<Checkout />} />
-      </Route>
 
       {/* Login required to view account or admin tools */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
