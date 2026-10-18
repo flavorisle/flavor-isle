@@ -229,7 +229,13 @@ export default async function (req) {
           }
         }
       }
-      const itemWithOptimizedImage = { ...item, image_url_opt };
+      // Square carries no description on most items, so a site-side description (the
+      // approved wording) must survive every catalog pull instead of being blanked.
+      const itemWithOptimizedImage = {
+        ...item,
+        description: item.description || existingItem?.description || '',
+        image_url_opt,
+      };
       if (existingItem) {
         toUpdate.push({
           id: existingItem.id,
