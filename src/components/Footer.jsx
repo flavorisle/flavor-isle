@@ -177,7 +177,7 @@ export default function Footer() {
             <span className="text-white/70">© 2026 Flavor Isle. All rights reserved.</span>
             <Link to="/privacy-policy" className="inline-flex items-center min-h-[38px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="inline-flex items-center min-h-[38px] text-white/85 hover:text-white hover:underline underline-offset-4 transition-colors">Terms of Service</Link>
-            <span className="text-white/60">Designed by Wesley Booker</span>
+            <span className="text-white/60">Designed by WSLY Studios</span>
           </div>
           <KentuckyTourismBadge />
         </div>
