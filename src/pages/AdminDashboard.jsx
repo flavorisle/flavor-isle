@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt, Store, Tag, Printer, Mail } from 'lucide-react';
+import { Settings, UtensilsCrossed, MessagesSquare, MessageSquareQuote, Receipt, Store, Tag, Printer, Mail, Star } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import LiveOrdersFeed from '@/components/LiveOrdersFeed';
@@ -74,6 +74,13 @@ const adminPages = [
   icon: Mail,
   path: '/admin/emails',
   color: 'patina-mint'
+},
+{
+  title: 'Employee of the Month',
+  description: 'Feature a crew member on the public About page',
+  icon: Star,
+  path: '/admin/employee-of-the-month',
+  color: 'midnight-cherry'
 }];
 
 

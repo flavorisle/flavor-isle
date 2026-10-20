@@ -1,0 +1,54 @@
+{
+  "name": "EmployeeOfTheMonth",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Featured crew member's display name."
+    },
+    "role": {
+      "type": "string",
+      "description": "Their role at Flavor Isle, e.g. 'Grill Cook'."
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Public URL of the crew member's photo, uploaded via UploadPublicFile so the public About page can render it without signing in."
+    },
+    "quote": {
+      "type": "string",
+      "description": "A short line from or about the team member shown beside the photo."
+    },
+    "month_label": {
+      "type": "string",
+      "description": "Display label for the month this feature covers, e.g. 'October 2026'."
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": true,
+      "description": "The record shown on the public About page. Only the most recent is_featured record displays; the admin manager demotes all others when featuring a new one."
+    }
+  },
+  "required": [
+    "name",
+    "role",
+    "quote"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

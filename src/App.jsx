@@ -77,6 +77,7 @@ const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
 const AdminCardLogs = lazy(() => import('./pages/AdminCardLogs'));
 const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
+const AdminEmployeeOfMonth = lazy(() => import('./pages/AdminEmployeeOfMonth'));
 const PaySquare = lazy(() => import('./pages/PaySquare'));
 const PayCard = lazy(() => import('./pages/PayCard'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
@@ -259,6 +260,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin-analytics" element={<AdminAnalytics />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
         <Route path="/admin/customers" element={<AdminCustomers />} />
+        <Route path="/admin/employee-of-the-month" element={<AdminEmployeeOfMonth />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

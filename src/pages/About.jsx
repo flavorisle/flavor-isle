@@ -12,6 +12,7 @@ import AboutVisit from '@/components/about/AboutVisit';
 import AboutTraveler from '@/components/about/AboutTraveler';
 import AboutTastyThreads from '@/components/about/AboutTastyThreads';
 import AboutExplore from '@/components/about/AboutExplore';
+import AboutEmployeeOfMonth from '@/components/about/AboutEmployeeOfMonth';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
 
@@ -42,6 +43,7 @@ export default function About() {
         heading="And sometimes the whole crew rolls up."
       />
       <AboutValues />
+      <AboutEmployeeOfMonth />
       <AboutSmashie />
       <AboutTastyThreads />
       <AboutVisit />
