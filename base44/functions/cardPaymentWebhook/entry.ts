@@ -68,7 +68,9 @@ export default async function (req: Request) {
     try {
       const raw = await helcimRequest(`/card-transactions/${encodeURIComponent(transactionId)}`);
       const record = raw?.data || raw?.payment || raw;
-      orderNumberOnTransaction = String(record?.orderNumber || '').trim();
+      // The inline card form stamps the order number onto the transaction Helcim creates,
+      // and Helcim stores it under invoiceNumber (not orderNumber), so read either field.
+      orderNumberOnTransaction = String(record?.orderNumber || record?.invoiceNumber || '').trim();
     } catch (readError) {
       console.error(`Card webhook: could not read order number off transaction ${transactionId}:`, (readError as Error).message);
     }

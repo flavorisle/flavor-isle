@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { helcimPaymentByTransaction } from '../../shared/helcimCheckout.ts';
+import { helcimCheckoutTotals } from '../../shared/helcimCheckout.ts';
 import { settleHelcimCheckoutOrder, settleHelcimMerchOrder } from '../../shared/helcimSettlement.ts';
 
 // Where our own card fields hand their result back.
@@ -193,21 +193,20 @@ export default async function (req: Request) {
 
     const expectedCents = Math.round(Number(record.total) * 100);
 
-    // Read the transaction back from the processor — retrying briefly, because its
-    // record can lag the approval by a moment. What the browser says is never enough.
-    let payment: any = null;
-    for (let attempt = 0; attempt < 4 && !payment; attempt += 1) {
-      const read = await helcimPaymentByTransaction(transactionId).catch(() => null);
-      if (read && read.status === 'APPROVED' && read.currency === 'USD') {
-        payment = read;
-        break;
-      }
-      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-
-    const matchesOrder = !!payment && payment.amountCents - payment.tipCents === expectedCents;
-    const alreadySettledElsewhere = matchesOrder
-      ? await transactionAlreadySettled(base44, transactionId, record.id)
+    // Verify the payment through the shared settlement resolver. The browser posts a
+    // transaction id that is not always the card-transaction id Helcim can retrieve
+    // directly (it 400s), so this falls back to the invoice lookup (the order number
+    // the card form stamped) before giving up. What the browser says is never enough.
+    const totals = await helcimCheckoutTotals(
+      String(record.id),
+      expectedCents,
+      transactionId || undefined,
+      orderNumber,
+    );
+    const verifiedTransactionId = totals.paid ? String(totals.transactionId || '') : '';
+    const matchesOrder = !!totals.paid && totals.foodCents === expectedCents;
+    const alreadySettledElsewhere = matchesOrder && verifiedTransactionId
+      ? await transactionAlreadySettled(base44, verifiedTransactionId, record.id)
       : false;
 
     if (matchesOrder && !alreadySettledElsewhere) {
@@ -216,7 +215,7 @@ export default async function (req: Request) {
       // even if this request dies before it finishes.
       try {
         const entity = merchOrder ? base44.asServiceRole.entities.MerchOrder : base44.asServiceRole.entities.Order;
-        await entity.update(record.id, { helcim_transaction_id: transactionId });
+        await entity.update(record.id, { helcim_transaction_id: verifiedTransactionId || transactionId });
       } catch (claimError) {
         console.error(
           `Card fields: could not record transaction ${transactionId} on order ${orderNumber}:`,
@@ -225,10 +224,10 @@ export default async function (req: Request) {
       }
       try {
         if (merchOrder) {
-          const result = await settleHelcimMerchOrder(base44, merchOrder, transactionId);
+          const result = await settleHelcimMerchOrder(base44, merchOrder, verifiedTransactionId || transactionId);
           console.log(`Merch order ${orderNumber} settled from the card fields: ${JSON.stringify(result)}`);
         } else {
-          const paid = await settleHelcimCheckoutOrder(base44, foodOrder, transactionId);
+          const paid = await settleHelcimCheckoutOrder(base44, foodOrder, verifiedTransactionId || transactionId);
           console.log(`Order ${orderNumber} settled from the card fields: payment_status=${paid?.payment_status}`);
         }
       } catch (settleError) {
@@ -236,7 +235,7 @@ export default async function (req: Request) {
       }
     } else {
       console.warn(
-        `Card fields: order ${orderNumber} left unsettled (transaction ${transactionId}, expected ${expectedCents}c, the processor reports ${payment ? payment.amountCents : 'nothing'})`,
+        `Card fields: order ${orderNumber} left unsettled (transaction ${transactionId}, expected ${expectedCents}c, the processor reports ${totals.paid ? totals.foodCents + 'c' : 'nothing'})`,
       );
       // Approved by the card system but not a cent-for-cent match with the saved order:
       // real money needs a human, so the attempt is written down with both figures.
@@ -247,7 +246,7 @@ export default async function (req: Request) {
         customer_email: record.customer_email || '',
         detail:
           `This order needs ${(expectedCents / 100).toFixed(2)}; the card system reports ` +
-          (payment ? `${(payment.amountCents / 100).toFixed(2)} (${payment.status})` : 'no approved payment') +
+          (totals.paid ? `${(totals.foodCents / 100).toFixed(2)}` : 'no approved payment') +
           (alreadySettledElsewhere ? '. That transaction already settled a different order.' : '.'),
       });
     }

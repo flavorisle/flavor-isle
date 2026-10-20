@@ -155,7 +155,12 @@ export async function helcimPaymentsForInvoice(invoiceNumber: string) {
 export async function helcimPaymentsForOrderNumber(orderNumber: string) {
   const data = await helcimRequest(`/card-transactions?orderNumber=${encodeURIComponent(orderNumber)}`);
   return unwrap(data)
-    .filter((payment: any) => String(payment?.orderNumber ?? '').trim() === String(orderNumber).trim())
+    // The inline card form stamps the order number onto the transaction Helcim creates,
+    // and Helcim stores it under invoiceNumber (not orderNumber), so match either field.
+    .filter((payment: any) => {
+      const want = String(orderNumber).trim();
+      return String(payment?.orderNumber ?? '').trim() === want || String(payment?.invoiceNumber ?? '').trim() === want;
+    })
     .filter((payment: any) => String(payment?.status || '').toUpperCase() === 'APPROVED')
     .filter((payment: any) => !payment?.currency || String(payment.currency).toUpperCase() === 'USD')
     .map((payment: any) => ({
@@ -190,19 +195,48 @@ export async function helcimCheckoutTotals(
   suppliedTransactionId?: string,
   orderNumber?: string,
 ) {
-  let payments = suppliedTransactionId
-    ? [await helcimPaymentByTransaction(suppliedTransactionId)].filter(Boolean)
-    : await helcimPaymentsForInvoice(invoiceNumber);
+  // The inline card form stamps the order number onto the transaction Helcim creates,
+  // and Helcim stores it under the transaction's invoiceNumber — so the order number
+  // the form sent is the invoice number the processor actually knows. The browser also
+  // posts a transaction id that is not always the card-transaction id Helcim can retrieve
+  // directly (it 400s), so each lookup below is best-effort and the union is what settles
+  // an order: a payment is matched on exact money, never on which id happened to resolve.
+  const collected: any[] = [];
 
-  // Inline card-form payments carry no invoice number: rescue by the order
-  // number the form sent. Only reached when the invoice lookup found nothing,
-  // so web-checkout orders are never disturbed.
-  if (!suppliedTransactionId && orderNumber && (payments as any[]).length === 0) {
-    payments = await helcimPaymentsForOrderNumber(orderNumber).catch(() => []);
+  if (suppliedTransactionId) {
+    const byId = await helcimPaymentByTransaction(suppliedTransactionId).catch(() => null);
+    if (byId) collected.push(byId);
   }
 
-  const approved = (payments as any[]).filter((payment) => {
+  // The order number is what the card form sent and what Helcim stored as the invoice
+  // number — this is the lookup that reliably finds an inline card-form payment.
+  if (orderNumber) {
+    const byInvoiceOrderNumber = await helcimPaymentsForInvoice(orderNumber).catch(() => []);
+    collected.push(...(byInvoiceOrderNumber || []));
+  }
+
+  // The hosted-page path may have stamped the order's own id as the invoice number.
+  if (invoiceNumber) {
+    const byInvoiceId = await helcimPaymentsForInvoice(invoiceNumber).catch(() => []);
+    collected.push(...(byInvoiceId || []));
+  }
+
+  // Last resort: the order-number filter (Helcim may store it on orderNumber too).
+  if (orderNumber) {
+    const byOrderNumber = await helcimPaymentsForOrderNumber(orderNumber).catch(() => []);
+    collected.push(...(byOrderNumber || []));
+  }
+
+  // Dedupe by transaction id so a payment found by two lookups is counted once.
+  const seen = new Set<string>();
+  const payments = collected.filter((payment: any) => {
     if (!payment?.transactionId) return false;
+    if (seen.has(payment.transactionId)) return false;
+    seen.add(payment.transactionId);
+    return true;
+  });
+
+  const approved = payments.filter((payment) => {
     if (payment.status && payment.status !== 'APPROVED') return false;
     return payment.currency === 'USD';
   });
