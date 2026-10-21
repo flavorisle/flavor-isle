@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import NewsPostCard from '@/components/news/NewsPostCard';
 import NewsComposer from '@/components/news/NewsComposer';
+import AskAdminForm from '@/components/news/AskAdminForm';
 import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -61,6 +62,7 @@ export default function CommunityNews() {
         ) : (
           posts.map((post) => <NewsPostCard key={post.id} post={post} />)
         )}
+        <AskAdminForm />
       </section>
 
       <Footer />
