@@ -131,6 +131,52 @@ export default async function (req: Request) {
     const chargeTotal = round2(pricing.total);
     const customerLink = await customerLinkFields(base44, { phone: customer?.phone, email: customer?.email });
 
+    // ── Retry guard: a resubmit reopens the customer's own still-pending order ──
+    // The checkout page loses its saved order on a refresh or back-button, so a
+    // resubmit used to mint a second unpaid order for the same cart (Oct 21:
+    // Barry Craddock — #688719 abandoned beside paid #727169). Before saving a
+    // new order, look for THIS customer's own pending/unpaid Helcim order from
+    // the last 10 minutes with the same item count and the same saved total,
+    // and reopen that one instead. Fail-open: any lookup problem falls through
+    // and creates a fresh order exactly as before.
+    try {
+      const guardPhone = customerLink.normalized_phone;
+      const guardEmail = String(customer?.email || '').trim().toLowerCase();
+      if (guardPhone || guardEmail) {
+        const dupFilter = guardPhone
+          ? { normalized_phone: guardPhone, status: 'pending', payment_status: 'pending' }
+          : { customer_email: guardEmail, status: 'pending', payment_status: 'pending' };
+        const recent = await base44.asServiceRole.entities.Order.filter(dupFilter, '-created_date', 20);
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        const match = (recent || []).find((o) =>
+          o.payment_provider === 'helcim'
+          && new Date(o.created_date).getTime() >= tenMinutesAgo
+          && (o.items?.length || 0) === items.length
+          && round2(Number(o.total)) === chargeTotal
+        );
+        if (match) {
+          console.log(`createHelcimWebCheckout: retry guard — reopening pending order ${match.order_number} instead of creating a second order`);
+          let reuseUrl = match.payment_url && String(match.payment_url).includes('/pay?order_number=')
+            ? match.payment_url
+            : null;
+          if (!reuseUrl) {
+            reuseUrl = helcimPayPageUrl(PAY_PAGE_ORIGIN, match.order_number, true);
+            await base44.asServiceRole.entities.Order.update(match.id, { payment_url: reuseUrl });
+          }
+          return Response.json({
+            provider: 'helcim',
+            orderNumber: match.order_number,
+            payment_url: reuseUrl,
+            total: round2(Number(match.total)),
+            smsConsentStored: true,
+            reused: true,
+          });
+        }
+      }
+    } catch (guardError) {
+      console.error('createHelcimWebCheckout: retry-guard lookup failed — creating a new order as before:', (guardError as Error).message);
+    }
+
     // ── Persist the Order BEFORE opening a payable page ──
     let order = null;
     try {
