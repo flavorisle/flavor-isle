@@ -36,7 +36,6 @@ export async function searchPulseCustomers(rawQuery: string, limit = 25) {
   const looksLikePhone = digits.length >= 7 && digits.length <= 11 && !isEmail;
 
   const url = new URL(`${credentials.apiUrl}/entities/Customer`);
-  url.searchParams.set('api_key', credentials.apiKey);
   url.searchParams.set('limit', String(limit));
 
   if (looksLikePhone) {
@@ -51,7 +50,12 @@ export async function searchPulseCustomers(rawQuery: string, limit = 25) {
     url.searchParams.set('sort', '-last_order_date');
   }
 
-  const response = await fetch(url.toString(), { headers: { accept: 'application/json' } });
+  const response = await fetch(url.toString(), {
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${credentials.apiKey}`,
+    },
+  });
   const text = await response.text();
   if (!response.ok) {
     throw new Error(`The Pulse directory did not answer (${response.status}). ${text.slice(0, 200)}`);
