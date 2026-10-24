@@ -34,10 +34,11 @@ export default async function (req: Request) {
       // The exception is an order that still pays on a page of its own: the Square
       // payment page. Paying on that one and on this one would be two charges for
       // the same food.
-      if (
-        order.square_payment_link_id ||
-        (order.payment_provider && order.payment_provider !== 'helcim')
-      ) {
+      // Provider-aware (issue #116): the platform's secure page is opened from this
+      // page for a wix order, and a Square order with no link of its own pays here
+      // too. Only an order that still holds its own Square payment link is sent back
+      // to it, so the same food is never charged twice.
+      if (order.square_payment_link_id) {
         return Response.json({ ...summary, paid: false, payable: false, reason: 'own_card_form' });
       }
       // An order the crew collects in person (an in-store or historical order
@@ -82,9 +83,9 @@ export default async function (req: Request) {
     if (merch.payment_status === 'failed' || merch.fulfillment_status === 'canceled') {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });
     }
-    // A card merch order pays on this page, for its own saved total. One still
-    // pointing at an older payment page of its own pays there instead.
-    if (merch.payment_provider && merch.payment_provider !== 'helcim') {
+    // A card merch order pays on this page, for its own saved total, on whichever
+    // provider the owner has switched on (issue #116).
+    if (merch.payment_url && !String(merch.payment_url).includes('/pay?order_number=')) {
       return Response.json({ ...merchSummary, paid: false, payable: false, reason: 'payment_closed' });
     }
     return Response.json({ ...merchSummary, paid: false, payable: true });

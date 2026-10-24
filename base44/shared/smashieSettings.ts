@@ -18,10 +18,10 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
-  // Card payments are taken on our own page. Stored settings records
-  // keep whatever processor they name; the live switch is the pair of helpers below.
-  phone_payment_provider: "helcim",
-  web_payment_provider: "helcim",
+  // Card payments are taken on our own page. The provider switch is the pair of
+  // helpers below; these defaults name the primary path (issue #116).
+  phone_payment_provider: "wix",
+  web_payment_provider: "wix",
   // The approved review request is active unless paused by the owner.
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
@@ -41,19 +41,38 @@ export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
 }
 
-// The phone line takes cards on our own page. One card processor is the only card
-// processor, so there is no longer a second link to fall back to.
-export function phonePaymentProvider(_settings) {
-  return 'helcim';
+// Which systems may back a card payment (issue #116, Part A step 8). Base44
+// Payments (Wix) is the primary path; Square stays as the working alternative. Any
+// older stored value — including the retired card processor — resolves to the
+// primary, so a stale settings record can never point a customer at a dead path.
+const PAYMENT_PROVIDERS = ['wix', 'square'];
+
+export function normalizePaymentProvider(value: string | null | undefined): 'wix' | 'square' {
+  const wanted = String(value || '').trim().toLowerCase();
+  return PAYMENT_PROVIDERS.includes(wanted) ? (wanted as 'wix' | 'square') : 'wix';
 }
 
-// One card processor backs the website — food orders and Tasty Threads
-// merch alike. The order is saved and re-priced first, then the customer pays in
-// its own secure form over our page and lands straight back on its confirmation.
-//
-// Base44 Payments and the Square payment page are no longer reached by a new
-// checkout; the only other card taken is in store, on the crew's own POS terminal
-// (the stored web_payment_provider value is kept only so older records stay valid).
-export function webPaymentProvider(_settings) {
-  return 'helcim';
+// The phone line takes cards on our own page, backed by the provider the owner has
+// switched on. A settings read that fails falls safe to Square, which takes a card on
+// every account.
+export function phonePaymentProvider(settings) {
+  try {
+    return normalizePaymentProvider(settings?.phone_payment_provider);
+  } catch (error) {
+    console.error('phonePaymentProvider: settings unavailable — falling back to Square:', (error as Error).message);
+    return 'square';
+  }
+}
+
+// The website's secure payment page — food orders and Tasty Threads merch alike. The
+// order is saved and re-priced first, then the customer pays and lands straight back
+// on its own confirmation. Same fail-safe: an unusable settings record routes the
+// customer to the Square page rather than to a checkout that cannot open.
+export function webPaymentProvider(settings) {
+  try {
+    return normalizePaymentProvider(settings?.web_payment_provider);
+  } catch (error) {
+    console.error('webPaymentProvider: settings unavailable — falling back to Square:', (error as Error).message);
+    return 'square';
+  }
 }

@@ -1,16 +1,19 @@
-import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
-import { fetchStoreProducts, getShippingRates } from "../../shared/printful.ts";
-import { helcimPayPageUrl } from "../../shared/helcimCheckout.ts";
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { fetchStoreProducts, getShippingRates } from '../../shared/printful.ts';
+import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
+import { openWixCheckoutSession, resolveAppUrl, wixPayPageUrl } from '../../shared/wixCheckout.ts';
 
-// Our own secure page for this merch order — the page whose card form the customer
-// pays in, so a link the crew shares lands on the order's own saved total.
+// Tasty Threads merch checkout. The order is priced from Printful's own variant
+// catalog and that address's live shipping rate, saved, and then paid on whichever
+// secure page the owner has switched on (issue #116, Part A step 5): Base44 Payments
+// on the primary path, the Square page on the alternative.
 const PAY_PAGE_ORIGIN = "https://flavor-isle.com";
 
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, customer, shipping, subtotal, total } = body;
+    const { items, customer, shipping, subtotal } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: "No items provided" }, { status: 400 });
@@ -20,11 +23,10 @@ export default async function (req: Request) {
     }
 
     // ── Server-side price authority ──
-    // This endpoint used to charge exactly what the request said. Item prices
-    // now come from Printful's own variant catalog and shipping from that
-    // address's live rates, so a cart of one-cent line items cannot be checked
-    // out; a request that disagrees with the catalog is refused rather than
-    // quietly charged a different amount.
+    // Item prices come from Printful's own variant catalog and shipping from that
+    // address's live rates, so a cart of one-cent line items cannot be checked out;
+    // a request that disagrees with the catalog is refused rather than quietly
+    // charged a different amount.
     const products = await fetchStoreProducts();
     const catalogPrices = new Map<string, number>();
     for (const product of products || []) {
@@ -64,6 +66,11 @@ export default async function (req: Request) {
     const orderNumber = "MERCH-" + Date.now().toString().slice(-6);
     const address = customer.address || {};
 
+    // The provider this order will pay on, decided by the owner's switch on the server.
+    const settings = await getSmashieSettings(base44);
+    const provider = webPaymentProvider(settings);
+    const appUrl = resolveAppUrl(req);
+
     // The record both payment paths save. Nothing is sent to production until a
     // payment has been verified, whichever path took it.
     const merchOrderRecord = {
@@ -98,16 +105,11 @@ export default async function (req: Request) {
       fulfillment_status: "pending",
     };
 
-    // ── Our own payment page ──
-    // The order is saved with its verified catalog prices and live shipping rate,
-    // and the card is then taken on our own payment page,
-    // keyed to this order. Printful is only asked to produce the order once the
-    // payment has been verified against this order's own total.
     let merchOrder = null;
     try {
       merchOrder = await base44.asServiceRole.entities.MerchOrder.create({
         ...merchOrderRecord,
-        payment_provider: "helcim",
+        payment_provider: provider,
       });
     } catch (dbError) {
       console.error("MerchOrder save error:", dbError.message);
@@ -115,17 +117,49 @@ export default async function (req: Request) {
     }
 
     try {
-      // The order's own secure page, kept on the record so the same link can be
-      // shared with the customer and never points anywhere but this order.
-      const payUrl = helcimPayPageUrl(PAY_PAGE_ORIGIN, orderNumber);
-      await base44.asServiceRole.entities.MerchOrder.update(merchOrder.id, {
-        payment_provider: "helcim",
-        payment_url: payUrl,
-      });
-      return Response.json({
-        provider: "helcim",
+      // ── Base44 Payments (the primary path) ──
+      if (provider === "wix") {
+        const session = await openWixCheckoutSession(base44, {
+          orderNumber,
+          itemName: `Flavor Isle Tasty Threads #${orderNumber}`,
+          amount: orderTotal,
+          appUrl,
+          thankYouPath: `/merch-confirmation?order_number=${encodeURIComponent(orderNumber)}&wix=1`,
+          postFlowPath: "/merch",
+          buyer: { email: customer.email, phone: customer.phone || "", firstName: String(customer.name).split(" ")[0] || "" },
+        });
+        // The order's own pay page, kept on the record so the crew can always open it.
+        const payUrl = wixPayPageUrl(PAY_PAGE_ORIGIN, orderNumber);
+        await base44.asServiceRole.entities.MerchOrder.update(merchOrder.id, {
+          payment_url: payUrl,
+          wix_checkout_session_id: session.checkoutSessionId,
+        });
+        return Response.json({
+          provider: "wix",
+          order_number: orderNumber,
+          checkoutUrl: session.redirectUrl,
+          payment_url: payUrl,
+          total: orderTotal,
+        });
+      }
+
+      // ── Square (the alternative path) ──
+      const squareRes = await base44.functions.invoke("createMerchSquareCheckout", {
+        items: pricedItems,
+        customer,
+        shipping: shippingCost,
+        subtotal: catalogSubtotal,
+        total: orderTotal,
         order_number: orderNumber,
-        payment_url: payUrl,
+        merch_order_id: merchOrder.id,
+      });
+      const squareData = squareRes?.data || squareRes || {};
+      if (!squareData?.payment_url) throw new Error(squareData?.error || "The Square payment page could not be opened.");
+      return Response.json({
+        provider: "square",
+        order_number: orderNumber,
+        checkoutUrl: squareData.payment_url,
+        payment_url: squareData.payment_url,
         total: orderTotal,
       });
     } catch (linkErr) {

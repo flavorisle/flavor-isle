@@ -81,3 +81,36 @@ export async function settleWixWebOrder(client: any, { orderNumber, checkoutSess
   console.log(`Base44 Payments order ${paidOrder.order_number} settled and fulfilled (${paidOrder.total}).`);
   return { ok: true, order_number: paidOrder.order_number, total: paidOrder.total };
 }
+
+// The settlement check behind the pay page, the admin payment actions and the
+// sweeper. It asks the platform's own purchase record whether this order's checkout
+// session was paid, and only then runs the same settlement above — so an order is
+// never marked paid on our say-so, only on the provider's. Never throws: a page that
+// cannot read the payment shows the order as it is instead of erroring in the
+// customer's face.
+export async function settleWixPhonePayment(client: any, order: any) {
+  const base44 = sdkClient(client);
+  if (order?.payment_provider !== 'wix' || order?.payment_status === 'paid') return order;
+  const checkoutId = String(order?.wix_checkout_session_id || '').trim();
+  if (!checkoutId) return order;
+
+  try {
+    const page = await base44.asServiceRole.payments.listPurchases({ checkout_id: checkoutId, limit: 5 });
+    const purchase = (page?.items || [])[0];
+    if (!purchase || purchase.status !== 'paid') return order;
+
+    const settled = await settleWixWebOrder(base44, {
+      orderNumber: order.order_number,
+      checkoutSessionId: checkoutId,
+      amount: purchase.amount_total != null ? Number(purchase.amount_total) / 100 : null,
+    });
+    if (!settled.ok) {
+      console.error(`Base44 Payments settlement check failed for order ${order.order_number}:`, settled.error);
+      return order;
+    }
+    return await base44.asServiceRole.entities.Order.get(order.id);
+  } catch (error) {
+    console.error(`Base44 Payments settlement check failed for order ${order.order_number}:`, (error as Error).message);
+    return order;
+  }
+}

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
-import { refundHelcimOrderPayments } from '../../shared/helcimRefund.ts';
+import { refundWixOrderPayments } from '../../shared/wixRefund.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -27,18 +27,21 @@ Deno.serve(async (req) => {
     }
 
     const paidOnSquare = order.payment_provider === 'square';
-    const paidOnCard = order.payment_provider === 'helcim';
-    if (!paidOnSquare && !paidOnCard) {
+    // Orders paid on the platform's own secure page (Base44 Payments, powered by
+    // Wix). Historical orders from the retired card processor are not refundable
+    // here: those charges are already being reversed by that processor.
+    const paidOnPlatform = order.payment_provider === 'wix';
+    if (!paidOnSquare && !paidOnPlatform) {
       return Response.json({ error: 'This order was not paid by card through the app, so there is nothing to refund from here.' }, { status: 400 });
     }
 
     // Issue a full refund where the money was taken — an order paid on Square's
-    // secure page goes back through Square, a card payment through our card
-    // processor. Either way the order is closed out here and the customer is told,
-    // exactly as below.
+    // secure page goes back through Square, an order paid on the platform's secure
+    // page goes back through the platform's own refund API. Either way the order is
+    // closed out here and the customer is told, exactly as below.
     const refund: any = paidOnSquare
       ? await refundSquareOrderPayments(base44, order)
-      : await refundHelcimOrderPayments(base44, order);
+      : await refundWixOrderPayments(base44, order);
     const refundNote: string | null = null;
     const refundId = refund?.refundId || refund?.id || null;
     const refundedAmount = refund

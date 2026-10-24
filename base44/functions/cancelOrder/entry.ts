@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { cancelSquareOrder, notifyOrderCancelled } from '../../shared/cancelOrderFlow.ts';
 import { refundSquareOrderPayments } from '../../shared/squareRefund.ts';
-import { refundHelcimOrderPayments } from '../../shared/helcimRefund.ts';
+import { refundWixOrderPayments } from '../../shared/wixRefund.ts';
 
 // One-tap order cancellation for the crew, in the order the money moves:
 //   1. cancel the Square order (so it leaves the POS + kitchen screen),
@@ -57,16 +57,17 @@ export default async function (req: Request) {
           refundNote = `Card refund failed (${(error as Error).message}) — refund it in Square.`;
           console.error(`Square refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
-      } else if (order.payment_provider === 'helcim') {
-        // Paid on the card secure page: the refund goes back through the card processor,
-        // on the same transaction the customer paid with.
+      } else if (order.payment_provider === 'wix') {
+        // Paid on the platform's own secure page (Base44 Payments, powered by Wix):
+        // the refund goes back through the platform's refund API, against the same
+        // payment the customer made, for the exact amount taken.
         try {
-          const refund = await refundHelcimOrderPayments(base44, order);
+          const refund = await refundWixOrderPayments(base44, order);
           refunded = true;
-          refundNote = null;
+          refundNote = '';
           console.log(`Card refund issued for order ${order.order_number}: ${refund.refundId || ''}`);
         } catch (error) {
-          refundNote = `Card refund failed (${(error as Error).message}) — refund it from the card processor's dashboard.`;
+          refundNote = `Card refund failed (${(error as Error).message}) — refund it in the payments dashboard.`;
           console.error(`Card refund failed while cancelling order ${order.order_number}:`, (error as Error).message);
         }
       } else {

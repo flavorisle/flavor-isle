@@ -1,4 +1,4 @@
-import { createPhonePaymentLink } from '../../shared/helcimPhonePayment.ts';
+import { createPhonePaymentLink } from '../../shared/phonePaymentLink.ts';
 import { getSmashieSettings, phoneCashEnabled, phonePaymentProvider } from '../../shared/smashieSettings.ts';
 import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { PHONE_ORDER_SOURCE, phoneOrderTotals } from '../../shared/phoneOrderPricing.ts';
@@ -303,10 +303,10 @@ export default async function(req) {
 
     try {
       await withTimeout(async () => {
-      // Secure payment link paid on our own pay page. The card processor backs every
-      // link; the customer only ever sees our own page, never a processor's name. A card
-      // hiccup leaves the order flagged for payment at the counter instead of
-      // sending a link that cannot be paid.
+      // Secure payment link paid on our own pay page. Base44 Payments backs the
+      // primary link and Square the alternative (issue #116); the customer only ever
+      // sees our own page, never a processor's name. A hiccup on either leaves the
+      // order flagged for payment at the counter instead of sending a dead link.
       paymentUrl = await createPhonePaymentLink(base44, order, paymentProvider);
 
       // Text it first — the customer is on the phone or on a text thread, so it
