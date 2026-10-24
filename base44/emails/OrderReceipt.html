@@ -1,0 +1,62 @@
+<mjml>
+  <mj-head>
+    <mj-title>Thanks for Visiting, {{first_name}}</mj-title>
+    <mj-preview>Your loyalty points, new menu highlights, and an offer worth pulling up a booth for.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Nunito, Helvetica, Arial, sans-serif" />
+      <mj-section background-color="#0f0818" padding="0 36px" />
+      <mj-column padding="0" />
+      <mj-text color="#ffffff" font-size="15px" line-height="1.6" padding="0" />
+      <mj-button background-color="#c74a05" color="#ffffff" border-radius="24px" font-size="15px" font-weight="700" inner-padding="14px 28px" padding="0" align="left" />
+      <mj-image padding="0" />
+      <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
+      <mj-class name="h" font-family="'Bebas Neue', Helvetica, Arial, sans-serif" font-weight="700" />
+      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#c74a05" />
+      <mj-class name="muted" color="#cdbdac" />
+    </mj-attributes>
+    <mj-style>
+      @media (max-width:480px) { .hero-h div { font-size:32px !important; line-height:1.12 !important; } .offer-h div { font-size:48px !important; } }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#0f0818" width="600px">
+    <mj-wrapper padding="28px 12px" background-color="#0f0818">
+      <mj-section background-color="#c74a05" padding="24px 36px" border-radius="24px 24px 0 0">
+        <mj-column>
+          <mj-image src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b4a2a395c_logo.png" alt="Flavor Isle" width="40px" align="center" padding="0 0 12px" />
+          <mj-text align="center" font-size="12px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#ffffff">Flavor Isle</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding="40px 36px 8px">
+        <mj-column>
+          <mj-text mj-class="h" font-size="30px" line-height="1.2" padding="0 0 10px">Thanks for Visiting, {{first_name}}.</mj-text>
+          <mj-text mj-class="muted" font-size="15px">Keep this email as your receipt for today&#x27;s visit to Flavor Isle.</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding="24px 36px 0">
+        <mj-group background-color="#1e0d16">
+          <mj-column padding="16px 20px 12px"><mj-text mj-class="label">Order</mj-text></mj-column>
+          <mj-column padding="16px 20px 12px"><mj-text align="right" font-family="'Courier New', Courier, monospace" font-size="13px">#{{order_id}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px">
+        <mj-group background-color="#1e0d16">
+          <mj-column padding="12px 20px"><mj-text font-size="15px">{{item_name}}</mj-text></mj-column>
+          <mj-column padding="12px 20px"><mj-text align="right" font-family="'Courier New', Courier, monospace" font-size="15px">{{item_price}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 28px">
+        <mj-group background-color="#1e0d16">
+          <mj-column border-top="1px solid #3f1913" padding="14px 20px 18px"><mj-text font-size="12px" letter-spacing="2px" text-transform="uppercase" font-weight="700">Total</mj-text></mj-column>
+          <mj-column border-top="1px solid #3f1913" padding="12px 20px 16px"><mj-text align="right" font-family="'Courier New', Courier, monospace" font-size="20px" font-weight="700">{{total}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 40px"><mj-column><mj-button href="{{cta_url}}" align="left">View Order</mj-button></mj-column></mj-section>
+      <mj-section background-color="#c74a05" padding="26px 36px 30px" border-radius="0 0 24px 24px">
+        <mj-column>
+          <mj-text mj-class="h" align="center" font-size="17px" color="#ffffff" padding="0 0 8px">Flavor Isle</mj-text>
+          <mj-text align="center" font-size="12px" line-height="1.7" color="#ffffff" padding="0 0 6px">Your rewards points and order history are saved to your Flavor Isle account.</mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>
