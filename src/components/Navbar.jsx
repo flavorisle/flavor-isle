@@ -50,47 +50,47 @@ export default function Navbar() {
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={toggleHighContrast}
-              aria-pressed={highContrast}
-              title="Toggle high contrast for easier reading"
-              aria-label="Toggle high contrast"
-              className={`p-2 rounded-full transition-colors tap-44 ${highContrast ? 'bg-smashie-yellow text-obsidian-roast' : 'text-obsidian-roast hover:bg-muted'}`}
-            >
-              <Contrast size={18} />
+                onClick={toggleHighContrast}
+                aria-pressed={highContrast}
+                title="Toggle high contrast for easier reading"
+                aria-label="Toggle high contrast"
+                className={`p-2 rounded-full transition-colors tap-44 ${highContrast ? 'bg-smashie-yellow text-obsidian-roast' : 'text-obsidian-roast hover:bg-muted'}`}>
+                
+              <Contrast size={18} className="hidden" />
             </button>
             <a
-              href="tel:+12705634618"
-              aria-label="Call Flavor Isle"
-              title="(270) 563-4618"
-              className="hidden sm:inline-flex p-2 rounded-full text-obsidian-roast hover:bg-muted transition-colors tap-44"
-            >
+                href="tel:+12705634618"
+                aria-label="Call Flavor Isle"
+                title="(270) 563-4618"
+                className="hidden sm:inline-flex p-2 rounded-full text-obsidian-roast hover:bg-muted transition-colors tap-44">
+                
               <Phone size={18} />
             </a>
             <MerchCartButton />
             <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-1 rounded-full hover:opacity-90 transition">
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-1 rounded-full hover:opacity-90 transition">
               
               <img
-                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png', 200, 200, 'fit')}
-                alt="Your bag"
-                width="200"
-                height="200"
-                className="w-10 h-10 object-contain"
-              />
+                  src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7c5e40c67_shoppingcart.png', 200, 200, 'fit')}
+                  alt="Your bag"
+                  width="200"
+                  height="200"
+                  className="w-10 h-10 object-contain" />
+                
               {totalItems > 0 &&
-              <span className="absolute -top-1 -right-1 bg-patina-mint text-white text-xs font-heading w-5 h-5 rounded-full flex items-center justify-center animate-float-up">
+                <span className="absolute -top-1 -right-1 bg-patina-mint text-white text-xs font-heading w-5 h-5 rounded-full flex items-center justify-center animate-float-up">
                   {totalItems}
                 </span>
-              }
+                }
             </button>
             <button
-              aria-label="Open menu"
-              aria-expanded={mobileOpen}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full font-heading text-sm tracking-wider transition-colors tap-44 ${
-                mobileOpen ? 'bg-midnight-cherry text-white' : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'
-              }`}
-              onClick={() => setMobileOpen(!mobileOpen)}>
+                aria-label="Open menu"
+                aria-expanded={mobileOpen}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full font-heading text-sm tracking-wider transition-colors tap-44 ${
+                mobileOpen ? 'bg-midnight-cherry text-white' : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white'}`
+                }
+                onClick={() => setMobileOpen(!mobileOpen)}>
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
               <span className="hidden sm:inline">MENU</span>
             </button>
@@ -98,14 +98,14 @@ export default function Navbar() {
         </div>
 
         {mobileOpen &&
-        <NavMenuPanel
-          pathname={location.pathname}
-          onClose={() => setMobileOpen(false)}
-          isAuthenticated={isAuthenticated}
-          user={user}
-          logout={logout}
-        />
-        }
+          <NavMenuPanel
+            pathname={location.pathname}
+            onClose={() => setMobileOpen(false)}
+            isAuthenticated={isAuthenticated}
+            user={user}
+            logout={logout} />
+
+          }
         </nav>
         <LiveStatusBar />
       </div>
