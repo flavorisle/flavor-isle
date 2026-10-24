@@ -4,7 +4,7 @@
 // store-local day. Three callers need to ask the same question about it:
 //   * getMySmashiePrize  — does the signed-in player hold today's unused shake?
 //   * fulfillSmashiePrize — mark it used once an order carries it.
-//   * createHelcimWebCheckout — take it off the order the customer is placing.
+//   * createWixWebCheckout — take it off the order the customer is placing.
 // Keeping the day window and the "which line counts as a shake" rule here means
 // the prize endpoint, the fulfiller and checkout can never disagree about what
 // the prize is worth or when it is still good.

@@ -11,7 +11,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Payment Information',
-        text: 'Payment is processed securely through our payment partners, Square and our secure card processor (Helcim). We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order. If you save a payment method for faster checkout, the card details are held by our payment processor, not by us.',
+        text: 'Payment is processed securely through our payment partners, which handle card payments for online, phone, and in-store orders. We do not store your full card number, CVV, or sensitive card details on our servers; a tokenized reference is saved to link your payment to your order. If you save a payment method for faster checkout, the card details are held by our payment processor, not by us.',
       },
       {
         heading: 'Order History & Preferences',
@@ -65,7 +65,7 @@ const SECTIONS = [
     body: [
       {
         heading: 'Service Partners',
-        text: 'We share only what is necessary with our trusted service partners — for payment processing (Square and our secure card processor, Helcim) and in-store order syncing (Square), delivery courier services, and merchandise fulfillment (Printful) — to run our business.',
+        text: 'We share only what is necessary with our trusted service partners — for payment processing and order syncing, delivery courier services, and merchandise fulfillment (Printful) — to run our business.',
       },
       {
         heading: 'Phone & SMS Communications (Twilio)',

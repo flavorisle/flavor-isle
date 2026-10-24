@@ -3,12 +3,11 @@ import { base44 } from '@/api/base44Client';
 // Provider-aware "verify the payment, then push the order again" — the retry
 // behind the Failed order alert and the Square sync log's Retry buttons.
 //
-// The old Stripe-only verifier (confirmOnlinePayment) is gone. Each order is
-// re-verified by the processor that actually took the money: Square orders
-// through settleSquareWebPayment, our own inline card orders through
-// settleHelcimWebPayment. Both are the same idempotent verify-and-push the
-// overnight sweeper runs. An order with neither provider is refused rather
-// than guessed at — nothing is invoked for it.
+// Each order is re-verified by the processor that actually took the money: Square
+// orders through settleSquareWebPayment, orders paid on the platform's secure page
+// through settleWixWebPayment (issue #116). Both are the same idempotent
+// verify-and-push the overnight sweeper runs. An order with neither provider is
+// refused rather than guessed at — nothing is invoked for it.
 export async function verifyAndPushOrder(orderNumber) {
   const number = String(orderNumber || '').trim();
   if (!number) return { ok: false, message: 'No order number to retry.' };
@@ -16,7 +15,7 @@ export async function verifyAndPushOrder(orderNumber) {
   const [order] = await base44.entities.Order.filter({ order_number: number }, '-created_date', 1);
   const provider = order?.payment_provider;
 
-  if (provider !== 'square' && provider !== 'helcim') {
+  if (provider !== 'square' && provider !== 'wix') {
     return {
       ok: false,
       unsupported: true,
@@ -25,7 +24,7 @@ export async function verifyAndPushOrder(orderNumber) {
   }
 
   try {
-    const fn = provider === 'square' ? 'settleSquareWebPayment' : 'settleHelcimWebPayment';
+    const fn = provider === 'square' ? 'settleSquareWebPayment' : 'settleWixWebPayment';
     await base44.functions.invoke(fn, { order_number: number });
     return { ok: true };
   } catch {

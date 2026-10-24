@@ -75,11 +75,12 @@
     "payment_provider": {
       "type": "string",
       "enum": [
-        "stripe",
+        "wix",
         "square",
+        "stripe",
         "helcim"
       ],
-      "description": "Which system took the money for this merch order. Empty on historical orders (all of which were the original card path). Set from the website's secure payment switch when the order is created."
+      "description": "Which system took the money for this merch order. 'wix' is Base44 Payments, the primary path (issue #116); 'square' is the alternative hosted page. stripe and helcim are retired values kept so historical orders stay valid. Set from the website's secure payment switch when the order is created."
     },
     "payment_url": {
       "type": "string",
@@ -89,13 +90,21 @@
       "type": "string",
       "description": "Square hosted-checkout order for this merch order when the website's secure payment page is set to the alternate processor. Payment is verified against it \u2014 to the cent \u2014 before Printful is asked to produce anything."
     },
+    "wix_checkout_session_id": {
+      "type": "string",
+      "description": "Base44 Payments (powered by Wix) checkout session for this merch order \u2014 the join key the provider returns to our webhook (checkoutSession.id === order.checkoutId), recorded when the payment is settled so the charge can always be traced back to this order."
+    },
+    "wix_order_id": {
+      "type": "string",
+      "description": "The Base44 Payments order that actually paid this merch order, recorded when the settlement confirms it, so refunds in the provider dashboard can be matched to the right order."
+    },
     "helcim_checkout_id": {
       "type": "string",
-      "description": "Helcim hosted-checkout token for this merch order when the website's secure payment page is set to Helcim (issue #97). Payment is matched back by this token and the order's own invoice number, and verified to the cent before Printful is asked to produce anything."
+      "description": "Retired: Helcim hosted-checkout token from before issue #116. Kept so historical merch orders still read correctly."
     },
     "helcim_transaction_id": {
       "type": "string",
-      "description": "The Helcim transaction that actually paid this merch order, recorded when the payment is verified so refunds go back through the same transaction."
+      "description": "Retired: the Helcim transaction that paid a historical merch order, kept so a refund of an old order can still be traced."
     },
     "printful_order_id": {
       "type": "string"

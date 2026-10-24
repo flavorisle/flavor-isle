@@ -69,7 +69,7 @@ export default async function (req: Request) {
       // and left alone; a payment that never landed lets the order be closed.
       const settleFn = {
         square: 'settleSquareWebPayment',
-        helcim: 'settleHelcimWebPayment',
+        wix: 'settleWixWebPayment',
       }[order.payment_provider];
       if (settleFn) {
         try {

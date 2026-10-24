@@ -25,7 +25,9 @@ export default function OrderConfirmation() {
   // arrival, and only a completed payment for the exact total is passed to the
   // kitchen. This reflects whether it has cleared yet.
   const squareReturn = params.get('square') === '1';
-  const cardReturn = params.get('card') === '1';
+  // wix=1 is the primary secure page (issue #116); card=1 stays handled so an order
+  // paid on an earlier path still confirms on arrival.
+  const cardReturn = params.get('wix') === '1' || params.get('card') === '1';
   // Either secure card page brings the customer back here for the server to
   // verify the payment; only a completed payment for the exact total is passed
   // to the kitchen.

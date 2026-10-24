@@ -28,7 +28,7 @@ const SECTIONS = [
       },
       {
         heading: 'Payment',
-        text: 'Payment is processed securely through our payment partners, Square and our secure card processor (Helcim). We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers.',
+        text: 'Payment is processed securely through our payment partners, which handle card payments for online, phone, and in-store orders. We do not store your full card details. By submitting payment, you authorize us to charge the total shown for your order. If you choose to save a payment method for faster checkout, the card details are held by our payment processor, not on our servers.',
       },
       {
         heading: 'Order Times & Availability',
@@ -197,7 +197,7 @@ const SECTIONS = [
       },
       {
         heading: 'Third-Party Services',
-        text: 'Our services rely on third parties (including Square, Helcim, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
+        text: 'Our services rely on third parties (including our payment processors, Twilio, OpenAI, and Printful). We are not responsible for their separate policies or service interruptions.',
       },
     ],
   },

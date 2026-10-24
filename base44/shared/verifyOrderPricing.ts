@@ -2,7 +2,7 @@
 // discount, tax, and delivery fee from authoritative MenuItem + MenuSetting
 // records so a manipulated client total can never be charged. Used by
 // createPaymentIntent before any Stripe intent exists, and by the hosted-page
-// checkout endpoints (createSquareWebCheckout, createHelcimWebCheckout) before
+// checkout endpoints (createWixWebCheckout, createSquareWebCheckout) before
 // any payable page is opened.
 //
 // Authority map:

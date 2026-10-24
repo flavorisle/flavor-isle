@@ -238,7 +238,7 @@ const AuthenticatedApp = () => {
       <Route path="/pay" element={<PayCard />} />
       {/* Payment links sent before the page moved here: the same page, so a link
           already texted or emailed still opens. */}
-      <Route path="/pay-helcim" element={<PayCard />} />
+
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/rewards" element={<Rewards />} />
 

@@ -96,15 +96,15 @@ export default async function (req: Request) {
       // block above: if the customer closed the tab after paying, ask the
       // settling pass whether the processor holds a completed payment for the exact
       // total, and let it do the single push the customer's return path does.
-      if (order.payment_provider === 'helcim' && !order.square_order_id && order.payment_status === 'pending') {
+      if (order.payment_provider === 'wix' && !order.square_order_id && order.payment_status === 'pending') {
         try {
-          const settleRes = await base44.asServiceRole.functions.invoke('settleHelcimWebPayment', {
+          const settleRes = await base44.asServiceRole.functions.invoke('settleWixWebPayment', {
             order_number: String(order.order_number),
           });
           const data = settleRes?.data || settleRes;
           if (data?.settled) {
             pushed++;
-            results.push({ order_number: order.order_number, pushed: true, provider: 'helcim' });
+            results.push({ order_number: order.order_number, pushed: true, provider: 'wix' });
           } else {
             skipped++;
             results.push({ order_number: order.order_number, skipped: true, reason: data?.reason || 'Card payment not completed yet' });
@@ -152,13 +152,13 @@ export default async function (req: Request) {
     // customer who never returns to the confirmation page would otherwise leave
     // their order unpaid and never handed to production.
     const merchCandidates = await base44.asServiceRole.entities.MerchOrder.filter(
-      { payment_status: 'pending', payment_provider: { $in: ['square', 'helcim'] } }, '-created_date', 20
+      { payment_status: 'pending', payment_provider: { $in: ['square', 'wix'] } }, '-created_date', 20
     );
     let merchSettled = 0;
     for (const merchOrder of (merchCandidates || [])) {
       if (!merchOrder.created_date || new Date(merchOrder.created_date).getTime() <= twoHoursAgo) continue;
-      const settleFunction = merchOrder.payment_provider === 'helcim'
-        ? 'settleHelcimWebPayment'
+      const settleFunction = merchOrder.payment_provider === 'wix'
+        ? 'settleWixWebPayment'
         : 'settleSquareWebPayment';
       try {
         const settleRes = await base44.asServiceRole.functions.invoke(settleFunction, {
