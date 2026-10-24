@@ -56,7 +56,7 @@ export default function Navbar() {
                 aria-label="Toggle high contrast"
                 className={`p-2 rounded-full transition-colors tap-44 ${highContrast ? 'bg-smashie-yellow text-obsidian-roast' : 'text-obsidian-roast hover:bg-muted'}`}>
                 
-              <Contrast size={18} className="hidden" />
+              
             </button>
             <a
                 href="tel:+12705634618"
