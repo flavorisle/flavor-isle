@@ -82,6 +82,49 @@ export async function settleWixWebOrder(client: any, { orderNumber, checkoutSess
   return { ok: true, order_number: paidOrder.order_number, total: paidOrder.total };
 }
 
+// Tasty Threads merch paid on the platform's secure page: verify the payment against
+// the merchandise order's own saved total, then fulfill exactly as the Square merch
+// path does — mark paid, confirm to the customer, and hand the order to Printful.
+export async function settleWixMerchOrder(client: any, merchOrder: any) {
+  const base44 = sdkClient(client);
+  if (merchOrder?.payment_status === 'paid') return { ok: true, already_paid: true };
+  const checkoutId = String(merchOrder?.wix_checkout_session_id || '').trim();
+  if (!checkoutId) return { ok: false, reason: 'no secure payment page on this order' };
+
+  const page = await base44.asServiceRole.payments.listPurchases({ checkout_id: checkoutId, limit: 5 });
+  const purchase = (page?.items || [])[0];
+  if (!purchase || purchase.status !== 'paid') return { ok: false, reason: 'payment not completed yet' };
+
+  const expectedCents = Math.round(Number(merchOrder.total) * 100);
+  const paidCents = Math.round(Number(purchase.amount_total ?? 0));
+  if (paidCents !== expectedCents) {
+    console.error(`Merch order ${merchOrder.order_number} paid ${paidCents}c but should be ${expectedCents}c — not fulfilling`);
+    return { ok: false, reason: 'payment does not match the order total' };
+  }
+
+  await base44.asServiceRole.entities.MerchOrder.update(merchOrder.id, {
+    payment_status: 'paid',
+    fulfillment_status: 'paid',
+  });
+  console.log(`Merch order ${merchOrder.order_number} marked paid`);
+  try {
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: merchOrder.customer_email,
+      subject: `Order ${merchOrder.order_number} confirmed — Tasty Threads`,
+      body: `<!DOCTYPE html><html><body style="font-family:'Open Sans',Arial,sans-serif;background:#F5EDD6;color:#141414;margin:0;padding:24px;"><div style="max-width:520px;margin:0 auto;background:#FFFFFF;border-radius:18px;padding:32px;"><h1 style="font-family:Oswald,Arial,sans-serif;color:#C0392B;margin:0;font-size:24px;">FLAVOR ISLE</h1><h2 style="font-family:Oswald,Arial,sans-serif;font-size:20px;">Thanks, ${merchOrder.customer_name}!</h2><p style="font-size:15px;line-height:1.6;">Your Tasty Threads order <strong>${merchOrder.order_number}</strong> is paid and heading to production. We'll email your tracking link as soon as it ships.</p><p style="font-size:13px;color:#666;margin-top:24px;">— The Flavor Isle Team</p></div></body></html>`,
+    });
+  } catch (mailErr) {
+    console.error('Merch confirmation email failed:', (mailErr as Error).message);
+  }
+  try {
+    await base44.asServiceRole.functions.invoke('createPrintfulOrder', { merchOrderId: merchOrder.id });
+    console.log(`Printful order placed for merch order ${merchOrder.order_number}`);
+  } catch (pfErr) {
+    console.error('Printful order placement failed:', (pfErr as Error).message);
+  }
+  return { ok: true, settled: true };
+}
+
 // The settlement check behind the pay page, the admin payment actions and the
 // sweeper. It asks the platform's own purchase record whether this order's checkout
 // session was paid, and only then runs the same settlement above — so an order is

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { fetchStoreProducts, getShippingRates } from '../../shared/printful.ts';
 import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSettings.ts';
 import { openWixCheckoutSession, resolveAppUrl, wixPayPageUrl } from '../../shared/wixCheckout.ts';
+import { createSquareCheckoutLink } from '../../shared/squareWebCheckout.ts';
 
 // Tasty Threads merch checkout. The order is priced from Printful's own variant
 // catalog and that address's live shipping rate, saved, and then paid on whichever
@@ -143,23 +144,32 @@ export default async function (req: Request) {
         });
       }
 
-      // ── Square (the alternative path) ──
-      const squareRes = await base44.functions.invoke("createMerchSquareCheckout", {
-        items: pricedItems,
-        customer,
-        shipping: shippingCost,
-        subtotal: catalogSubtotal,
-        total: orderTotal,
-        order_number: orderNumber,
-        merch_order_id: merchOrder.id,
+      // ── Square (the alternative path, kept exactly as it works today) ──
+      const link = await createSquareCheckoutLink(base44, {
+        idempotencyKey: `merch-${orderNumber}`,
+        referenceId: orderNumber,
+        sourceName: "Flavor Isle Tasty Threads",
+        lineItems: pricedItems.map((i: any) => ({
+          name: i.variantName ? `${i.name} — ${i.variantName}` : i.name,
+          quantity: i.quantity,
+          unitPriceUsd: i.price,
+        })),
+        serviceCharges: shippingCost > 0 ? [{ uid: "shipping", name: "Shipping", amountUsd: shippingCost }] : [],
+        totalCents: Math.round(orderTotal * 100),
+        redirectUrl: `${appUrl}/merch-confirmation?order_number=${encodeURIComponent(orderNumber)}&square=1`,
+        allowTipping: false,
       });
-      const squareData = squareRes?.data || squareRes || {};
-      if (!squareData?.payment_url) throw new Error(squareData?.error || "The Square payment page could not be opened.");
+      const payUrl = wixPayPageUrl(PAY_PAGE_ORIGIN, orderNumber);
+      await base44.asServiceRole.entities.MerchOrder.update(merchOrder.id, {
+        payment_url: link.url,
+        square_payment_link_id: link.linkId,
+        square_checkout_order_id: link.orderId,
+      });
       return Response.json({
         provider: "square",
         order_number: orderNumber,
-        checkoutUrl: squareData.payment_url,
-        payment_url: squareData.payment_url,
+        checkoutUrl: link.url,
+        payment_url: payUrl,
         total: orderTotal,
       });
     } catch (linkErr) {

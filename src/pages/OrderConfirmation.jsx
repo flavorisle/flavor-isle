@@ -44,7 +44,7 @@ export default function OrderConfirmation() {
     if (!hostedReturn || !orderNumber) return;
     (async () => {
       try {
-        const res = await base44.functions.invoke(cardReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
+        const res = await base44.functions.invoke(cardReturn ? 'settleWixWebPayment' : 'settleSquareWebPayment', { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {
         console.error('Payment confirmation on return failed:', err);

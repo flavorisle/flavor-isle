@@ -23,8 +23,6 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
-import useInlineCardPay from '@/hooks/useInlineCardPay';
-import InlineCardFields from '@/components/checkout/InlineCardFields';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -33,14 +31,6 @@ const orderTypeLabel = (orderType, pickupMethod) =>
 export default function Checkout() {
   const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
   const navigate = useNavigate();
-
-  const {
-    startPayment: startCardPay,
-    resetCardForm,
-    form: cardForm,
-    starting: openingCardForm,
-    error: cardFormError,
-  } = useInlineCardPay();
 
   const businessHours = useBusinessHours();
   const { level, waitMin } = useLiveStatus();
@@ -184,8 +174,8 @@ export default function Checkout() {
   // A saved, still-unpaid order stops being the one to charge as soon as what is
   // being ordered changes — the bag, the time, or the tip. The next tap then creates
   // a fresh verified order instead of charging a stale amount.
-  useEffect(() => { setPendingOrder(null); resetCardForm(); },
-    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length, resetCardForm]);
+  useEffect(() => { setPendingOrder(null); },
+    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length]);
 
   // Distance-based delivery pricing — quote the fee from the typed address
   // (debounced). Clears the quote when not delivering or the address is empty.
@@ -261,10 +251,8 @@ export default function Checkout() {
   const readyLabel = `~${readyMinutes} min · ${readyAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const updateForm = (field, val) => {
-    // Editing any detail of the order makes an already-saved, unpaid order stale — and
-    // with it the card fields that were signed for its amount.
+    // Editing any detail of the order makes an already-saved, unpaid order stale.
     setPendingOrder(null);
-    resetCardForm();
     setForm(prev => ({ ...prev, [field]: val }));
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
   };
@@ -349,22 +337,18 @@ export default function Checkout() {
         smsConsentVersion: SMS_CONSENT_VERSION,
       };
 
-      // A tap after a declined card (or a card form the customer closed) re-opens our
-      // secure card form for that same saved order, so no second unpaid order is left
-      // behind.
-      if (pendingOrder) {
-        await startCardPay(pendingOrder.orderNumber);
-        return;
-      }
-
-      // The card is typed right here: the order is saved first, repriced and verified
-      // server-side with the tip chosen above already inside its total, and our own
-      // secure card form then opens over this same page for that saved total. The
-      // customer never leaves the checkout, and nothing reaches the kitchen until the
-      // processor's own record confirms the payment against that total.
-      const orderRes = await base44.functions.invoke('createHelcimWebCheckout', hostedPayload);
+      // The order is saved and repriced server-side first, with the tip chosen above
+      // already inside its total, and the customer is then sent to the secure payment
+      // page for exactly that saved total (issue #116). Nothing reaches the kitchen
+      // until the provider's own record confirms the payment against that total.
+      //
+      // A tap after a declined payment asks again for the same saved order: the
+      // server's own retry guard re-opens that order's checkout instead of creating a
+      // second one, and if the payment page cannot open the order automatically moves
+      // to the Square page rather than leaving a dead button.
+      const orderRes = await base44.functions.invoke('createWixWebCheckout', hostedPayload);
       const data = orderRes?.data || orderRes;
-      if (data?.orderNumber) {
+      if (data?.orderNumber && data?.checkoutUrl) {
         setPendingOrder({ orderNumber: data.orderNumber });
         // The order is saved and the shake is in it, so the prize is now spent.
         // Fired and forgotten: an order must never fail because the prize record
@@ -372,10 +356,10 @@ export default function Checkout() {
         if (freeShakeCents > 0) {
           base44.functions.invoke('fulfillSmashiePrize', {}).catch(() => {});
         }
-        await startCardPay(data.orderNumber);
+        window.location.href = data.checkoutUrl;
         return;
       }
-      setError(data?.error || 'We could not open the secure card form, so nothing was charged. Please tap the pay button again.');
+      setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap the pay button again.');
       return;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
@@ -769,32 +753,20 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {(error || cardFormError) && (
+              {error && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>{error || cardFormError}</span>
+                  <span>{error}</span>
                 </div>
               )}
 
-              {cardForm ? (
-                <div className="border-t border-border pt-4">
-                  <h3 className="font-heading text-base text-obsidian-roast">Enter your card</h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Order #{cardForm.orderNumber} is saved — pay ${cardForm.amount} and it goes straight to the kitchen.
-                  </p>
-                  <InlineCardFields
-                    form={cardForm}
-                    defaultName={fullName}
-                    defaultAddress={form.address}
-                  />
-                </div>
-              ) : (
+              {(
                 <>
                   {pendingOrder && (
                     <div className="mb-3 rounded-xl bg-patina-mint/10 px-3 py-2.5">
                       <p className="text-xs font-semibold text-patina-mint">Order #{pendingOrder.orderNumber} is saved.</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Type your card in our secure form right on this page — nothing goes to the kitchen until it's paid.
+                        Tap Pay to open our secure payment page again — nothing goes to the kitchen until it's paid.
                       </p>
                     </div>
                   )}
@@ -802,10 +774,10 @@ export default function Checkout() {
                   <div className="hidden lg:block">
                     <button
                       onClick={handleContinue}
-                      disabled={loading || openingCardForm}
+                      disabled={loading}
                       className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {loading || openingCardForm ? (
+                      {loading ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
                       <>{pendingOrder ? 'Pay' : 'Continue to Payment'} · ${totalWithTip.toFixed(2)}</>
@@ -827,25 +799,14 @@ export default function Checkout() {
           the full summary. */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-border shadow-float-lg px-4 pt-3 pb-8 safe-bottom">
         <button
-          onClick={() => {
-            // The card fields live in the summary above: bring them into view rather
-            // than opening a second way to pay.
-            if (cardForm) {
-              document.getElementById('helcimForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              return;
-            }
-            handleContinue();
-          }}
-          disabled={loading || openingCardForm}
+          onClick={handleContinue}
+          disabled={loading}
           className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading || openingCardForm ? (
+          {loading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>
-              {cardForm ? 'Enter your card to pay' : pendingOrder ? 'Pay' : 'Continue to Payment'} · $
-              {(cardForm?.amount ? Number(cardForm.amount) : totalWithTip).toFixed(2)}
-            </>
+            <>{pendingOrder ? 'Pay' : 'Continue to Payment'} · ${totalWithTip.toFixed(2)}</>
           )}
         </button>
       </div>

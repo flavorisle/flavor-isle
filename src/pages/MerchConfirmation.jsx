@@ -18,7 +18,9 @@ export default function MerchConfirmation() {
   // reflects whether it has cleared yet.
   // The card page is the live path; the older Square return is still handled for an
   // order paid on the retired page.
-  const cardReturn = params.get('card') === '1';
+  // wix=1 is the primary secure page (issue #116); card=1 and square=1 stay handled
+  // so an order paid on an earlier path still confirms on arrival.
+  const cardReturn = params.get('wix') === '1' || params.get('card') === '1';
   const squareReturn = params.get('square') === '1';
   const paidReturn = cardReturn || squareReturn;
   const [paymentConfirmed, setPaymentConfirmed] = useState(null);
@@ -33,7 +35,7 @@ export default function MerchConfirmation() {
     if (!paidReturn || !orderNumber) return;
     (async () => {
       try {
-        const settleFn = cardReturn ? 'settleHelcimWebPayment' : 'settleSquareWebPayment';
+        const settleFn = cardReturn ? 'settleWixWebPayment' : 'settleSquareWebPayment';
         const res = await base44.functions.invoke(settleFn, { order_number: String(orderNumber) });
         setPaymentConfirmed(res?.data?.settled === true);
       } catch (err) {

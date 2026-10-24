@@ -6,8 +6,6 @@ import Seo from '@/components/Seo';
 import PayOrderSummary from '@/components/pay/PayOrderSummary';
 import PayTipSelector from '@/components/pay/PayTipSelector';
 import PayPageState from '@/components/pay/PayPageState';
-import useInlineCardPay from '@/hooks/useInlineCardPay';
-import InlineCardFields from '@/components/checkout/InlineCardFields';
 import { defaultTipPreset, tipAmountFor, tipPresetsFor } from '@/lib/phoneTip';
 
 const FALLBACK_ERROR =
@@ -16,15 +14,17 @@ const PHONE = '(270) 563-4618';
 
 // Our own secure payment page for card orders — the website's food checkout, the
 // Tasty Threads merch checkout, and the short link Smashie texts. The customer sees
-// their order, picks a tip if the order has not got one yet, and types their card in
-// fields on this page; every amount is rebuilt server-side from the saved order, and
-// nothing is counted as paid until the processor's own record confirms it.
+// their order, picks a tip if the order has not got one yet, and pays on the secure
+// payment page for the exact saved total: Base44 Payments on the primary path, Square
+// on the alternative (issue #116). Every amount is rebuilt server-side from the saved
+// order, and nothing is counted as paid until the provider's own record confirms it.
 export default function PayCard() {
   const params = new URLSearchParams(window.location.search);
   const orderNumber = params.get('order_number') || '';
   // A website checkout order already carries its tip inside its saved total, so
   // it is never asked for one twice.
   const fromCheckout = params.get('from') === 'checkout';
+  const cameBackPaid = params.get('wix') === '1' || params.get('square') === '1';
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,12 +32,8 @@ export default function PayCard() {
   const [paid, setPaid] = useState(false);
   const [tipPreset, setTipPreset] = useState('18');
   const [customTip, setCustomTip] = useState('');
-
-  const { startPayment: startCardPay, form: cardForm, starting, error: payError, resetCardForm } = useInlineCardPay();
-
-  // A different tip is a different amount, so the card fields signed for the old one go
-  // away with it.
-  useEffect(() => { resetCardForm(); }, [tipPreset, customTip, resetCardForm]);
+  const [starting, setStarting] = useState(false);
+  const [payError, setPayError] = useState('');
 
   useEffect(() => {
     if (!orderNumber) {
@@ -65,6 +61,20 @@ export default function PayCard() {
     return () => { active = false; };
   }, [orderNumber]);
 
+  // Back from the provider: confirm the payment with the server, which only marks the
+  // order paid on the provider's own record.
+  useEffect(() => {
+    if (!cameBackPaid || !orderNumber) return;
+    let active = true;
+    base44.functions
+      .invoke('settleWixWebPayment', { order_number: orderNumber })
+      .then((res) => {
+        if (active && (res?.data?.settled || res?.data?.already_paid)) setPaid(true);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [cameBackPaid, orderNumber, order?.kind]);
+
   const base = (Number(order?.subtotal) || 0) + (Number(order?.tax) || 0) + (Number(order?.delivery_fee) || 0);
   const storedTotal = Number(order?.total) || 0;
   const showTipPicker = !fromCheckout && !!order && order.kind === 'food' && !paid &&
@@ -74,6 +84,28 @@ export default function PayCard() {
     ? tipAmountFor(tipPreset, presets, customTip)
     : Math.max(0, Math.round((storedTotal - base) * 100) / 100);
   const totalDue = showTipPicker ? Math.round((base + tip) * 100) / 100 : storedTotal;
+
+  const startPayment = async () => {
+    setStarting(true);
+    setPayError('');
+    try {
+      // The tip becomes part of the STORED order before the charge is opened, so the
+      // amount the customer pays and the amount we saved can never disagree.
+      if (showTipPicker && tip > 0) {
+        await base44.functions.invoke('applyPhoneOrderTip', { order_number: order.order_number, tip });
+      }
+      const res = await base44.functions.invoke('create-checkout', {
+        productId: `order:${order.order_number}`,
+      });
+      const redirectUrl = res?.data?.redirectUrl;
+      if (!redirectUrl) throw new Error(res?.data?.error || FALLBACK_ERROR);
+      window.location.href = redirectUrl;
+    } catch (err) {
+      setPayError(err?.response?.data?.error || err?.message || FALLBACK_ERROR);
+    } finally {
+      setStarting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
@@ -126,7 +158,7 @@ export default function PayCard() {
               <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center justify-center px-6 py-3 text-sm">
                 Start a new order
               </Link>
-              <a href="tel:+12705634618" className="btn-mint chrome-hover inline-flex items-center justify-center px-6 py-3 text-sm">
+              <a href="tel:******" className="btn-mint chrome-hover inline-flex items-center justify-center px-6 py-3 text-sm">
                 Call the counter
               </a>
             </div>
@@ -148,56 +180,44 @@ export default function PayCard() {
         ) : (
           <>
             <PayOrderSummary order={order} tip={tip} kind={order.kind} total={totalDue} />
-            {cardForm ? (
-              <div className="card-diner p-5 space-y-3">
-                <div>
-                  <h2 className="font-heading text-lg text-obsidian-roast">Enter your card</h2>
-                  <p className="text-xs text-muted-foreground font-body">
-                    Paying ${cardForm.amount} for order #{cardForm.orderNumber}.
-                  </p>
+            <div className="card-diner p-5 space-y-3">
+              {showTipPicker && (
+                <PayTipSelector
+                  presets={presets}
+                  preset={tipPreset}
+                  onPreset={setTipPreset}
+                  customTip={customTip}
+                  onCustomTip={setCustomTip}
+                />
+              )}
+              <button
+                type="button"
+                onClick={startPayment}
+                disabled={starting}
+                className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {starting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <CreditCard size={16} /> Pay ${totalDue.toFixed(2)} securely
+                  </>
+                )}
+              </button>
+              {payError && (
+                <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm">
+                  <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{payError}</span>
                 </div>
-                <InlineCardFields form={cardForm} defaultName={order.first_name || ''} />
-              </div>
-            ) : (
-              <>
-                {showTipPicker && (
-                  <PayTipSelector
-                    presets={presets}
-                    preset={tipPreset}
-                    onPreset={setTipPreset}
-                    customTip={customTip}
-                    onCustomTip={setCustomTip}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => startCardPay(order.order_number, showTipPicker ? tip : undefined)}
-                  disabled={starting}
-                  className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {starting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard size={16} /> Pay ${totalDue.toFixed(2)} securely
-                    </>
-                  )}
-                </button>
-                {payError && (
-                  <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm">
-                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                    <span>{payError}</span>
-                  </div>
-                )}
-              </>
-            )}
-            <p className="text-center text-xs text-muted-foreground font-body">
-              Your card details are entered on our secure payment form — Flavor Isle never sees your card
-              number. Trouble paying? Call us at{' '}
-              <a href="tel:+12705634618" className="text-midnight-cherry font-semibold">
-                {PHONE}
-              </a>
-            </p>
+              )}
+              <p className="text-center text-xs text-muted-foreground font-body">
+                You'll finish payment on our secure payment page — Flavor Isle never sees your card
+                number. Trouble paying? Call us at{' '}
+                <a href="tel:******" className="text-midnight-cherry font-semibold">
+                  {PHONE}
+                </a>
+              </p>
+            </div>
           </>
         )}
       </div>

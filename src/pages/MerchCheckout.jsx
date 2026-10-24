@@ -8,8 +8,6 @@ import { useMerchCart } from '@/context/MerchCartContext';
 import ProductionTimeNotice from '@/components/merch/ProductionTimeNotice';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { trackBeginCheckout, merchItemToGa4 } from '@/lib/ga4Ecommerce';
-import useInlineCardPay from '@/hooks/useInlineCardPay';
-import InlineCardFields from '@/components/checkout/InlineCardFields';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -29,14 +27,6 @@ export default function MerchCheckout() {
   const [savedOrder, setSavedOrder] = useState(null);
 
 
-  const {
-    startPayment: startCardPay,
-    resetCardForm,
-    form: cardForm,
-    starting: openingCardForm,
-    error: cardFormError,
-  } = useInlineCardPay();
-
   const total = subtotal + (shipping || 0);
 
   // GA4 ecommerce: fire begin_checkout once when the customer lands on merch checkout.
@@ -48,10 +38,8 @@ export default function MerchCheckout() {
   }, []);
 
   const update = (field, val) => {
-    // Editing any detail makes an already-saved order stale, and with it the card fields
-    // that were signed for its total.
+    // Editing any detail makes an already-saved order stale.
     setSavedOrder(null);
-    resetCardForm();
     setForm(prev => ({ ...prev, [field]: val }));
   };
 
@@ -67,7 +55,6 @@ export default function MerchCheckout() {
     if (v) { setError(v); return; }
     // A new shipping rate is a new total, so the saved order goes with it.
     setSavedOrder(null);
-    resetCardForm();
     setRatingShipping(true);
     try {
       const res = await base44.functions.invoke('getPrintfulShipping', {
@@ -95,12 +82,6 @@ export default function MerchCheckout() {
     const v = validateAddress();
     if (v) { setError(v); return; }
     if (shipping == null) { setError('Please calculate shipping first.'); return; }
-    // A second tap after a declined card (or a form the customer closed) pays the
-    // order that is already saved rather than creating another one.
-    if (savedOrder) {
-      await startCardPay(savedOrder);
-      return;
-    }
     setPaying(true);
     try {
       const res = await base44.functions.invoke('createMerchCheckout', {
@@ -124,12 +105,12 @@ export default function MerchCheckout() {
       });
       const data = res.data || {};
       // The order is saved first — with its verified catalog prices and live shipping
-      // rate — and the card is then typed in our own secure form, opened right here on
-      // this page. Nothing goes to production until the payment has been verified
-      // against this order's saved total.
-      if (data.order_number) {
+      // rate — and the customer then pays on the secure payment page for exactly that
+      // saved total (issue #116). Nothing goes to production until the payment has been
+      // verified against this order's saved total.
+      if (data.order_number && data.checkoutUrl) {
         setSavedOrder(data.order_number);
-        await startCardPay(data.order_number);
+        window.location.href = data.checkoutUrl;
         return;
       }
       setError(data.error || 'Could not start checkout. Please try again.');
@@ -266,38 +247,30 @@ export default function MerchCheckout() {
 
               <ProductionTimeNotice variant="compact" className="mb-5" />
 
-              {(error || cardFormError) && (
+              {error && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>{error || cardFormError}</span>
+                  <span>{error}</span>
                 </div>
               )}
 
-              {cardForm ? (
-                <div className="border-t border-border pt-4">
-                  <h3 className="font-heading text-base text-obsidian-roast">Enter your card</h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Order #{cardForm.orderNumber} is saved — pay ${cardForm.amount} and it goes into production.
-                  </p>
-                  <InlineCardFields form={cardForm} defaultName={form.name} defaultAddress={form.address1} defaultPostalCode={form.zip} />
-                </div>
-              ) : (
+              {(
                 <>
                   {savedOrder && (
                     <div className="mb-4 rounded-2xl bg-patina-mint/10 px-4 py-3">
                       <p className="text-xs font-semibold text-patina-mint">Order #{savedOrder} is saved.</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Type your card in our secure form right on this page — nothing is printed until it's paid.
+                        Tap Pay to open our secure payment page again — nothing is printed until it's paid.
                       </p>
                     </div>
                   )}
 
                   <button
                     onClick={handlePay}
-                    disabled={paying || openingCardForm || shipping == null}
+                    disabled={paying || shipping == null}
                     className="btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {paying || openingCardForm ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> {savedOrder ? 'Pay' : 'Continue to Payment'} · ${total.toFixed(2)}</>}
+                    {paying ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Lock size={15} /> {savedOrder ? 'Pay' : 'Continue to Payment'} · ${total.toFixed(2)}</>}
                   </button>
                   {shipping == null && <p className="text-xs text-muted-foreground text-center mt-2">Calculate shipping to enable payment.</p>}
                 </>
