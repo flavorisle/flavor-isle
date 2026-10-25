@@ -128,6 +128,25 @@ test('the cash-only phone switch reaches the owner notice as a phone change', as
   assert.match(f.emails[0].body, /cash pickup orders while website ordering is off/);
 });
 
+// Issue #122: flipping the curbside switch must reach the owner notice as a website change.
+test('the curbside switch reaches the owner notice as a website change', async () => {
+  const f = fakeBase44({
+    record: { id: 'm1', ordering_enabled: true, curbside_enabled: true, updated_date: '2026-10-25T00:00:00Z' },
+    logs: [{
+      entity: 'MenuSetting',
+      snapshot: { id: 'm1', ordering_enabled: true, curbside_enabled: false, updated_date: '2026-10-01T00:00:00Z' },
+      changed_at: '2026-10-01T00:00:00Z',
+    }],
+  });
+  const result = await processSettingsChange(f.client, { entityName: 'MenuSetting', entityId: 'm1' });
+
+  assert.equal(result.changes, 1);
+  assert.equal(result.affected, 'website');
+  assert.equal(result.emailed, 'sent');
+  assert.equal(f.created[0].field_changes[0].reach, 'Website checkout - the curbside pickup option');
+  assert.match(f.emails[0].body, /curbside pickup option/);
+});
+
 test('an unrelated entity is ignored', async () => {
   const f = fakeBase44({ record: { id: 'o1' } });
   const result = await processSettingsChange(f.client, { entityName: 'Order', entityId: 'o1' });

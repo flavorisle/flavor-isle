@@ -20,6 +20,9 @@ export function getCutoffStatus(setting) {
   const closedFallback = toMins(setting?.closing_time) ?? toMins('20:00');
   // Admin can pause delivery entirely — it stays unavailable regardless of hours.
   const deliveryPaused = setting?.delivery_enabled === false;
+  // Curbside starts OFF (issue #122), so the switch must be explicitly true to
+  // offer it — the opposite polarity of delivery_enabled.
+  const curbsidePaused = setting?.curbside_enabled !== true;
 
   const allClosed = {
     delivery: true,
@@ -27,6 +30,7 @@ export function getCutoffStatus(setting) {
     dine_in: true,
     deliveryCutoff,
     pickupCutoff,
+    curbsidePaused,
   };
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: STORE_TZ });
@@ -48,7 +52,7 @@ export function getCutoffStatus(setting) {
   // and a closure above still wins.
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: STORE_TZ }));
   if (isOpenAllDay(setting, todayStr, now.getHours() * 60 + now.getMinutes())) {
-    return { delivery: deliveryPaused, pickup: false, dine_in: false, deliveryCutoff, pickupCutoff };
+    return { delivery: deliveryPaused, pickup: false, dine_in: false, deliveryCutoff, pickupCutoff, curbsidePaused };
   }
 
   const dayKey = DAY_KEYS[(now.getDay() + 6) % 7];
@@ -78,5 +82,6 @@ export function getCutoffStatus(setting) {
     dine_in: minsToClose < pickupCutoff,
     deliveryCutoff,
     pickupCutoff,
+    curbsidePaused,
   };
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Save, Check, Truck } from 'lucide-react';
-import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled } from '@/lib/menuSettings';
+import { Clock, Save, Check, Truck, Car } from 'lucide-react';
+import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled, setCurbsideEnabled } from '@/lib/menuSettings';
 
 export default function OrderCutoffSettings() {
   const [closingTime, setClosingTime] = useState('20:00');
@@ -9,6 +9,8 @@ export default function OrderCutoffSettings() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryEnabled, setDeliveryEnabledState] = useState(true);
   const [togglingDelivery, setTogglingDelivery] = useState(false);
+  const [curbsideEnabled, setCurbsideEnabledState] = useState(false);
+  const [togglingCurbside, setTogglingCurbside] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -20,6 +22,7 @@ export default function OrderCutoffSettings() {
         if (s.pickup_cutoff_minutes != null) setPickupCutoff(s.pickup_cutoff_minutes);
         if (s.delivery_fee != null) setDeliveryFee(s.delivery_fee);
         if (s.delivery_enabled != null) setDeliveryEnabledState(s.delivery_enabled);
+        if (s.curbside_enabled != null) setCurbsideEnabledState(s.curbside_enabled);
       })
       .catch(() => {});
   }, []);
@@ -31,6 +34,16 @@ export default function OrderCutoffSettings() {
       setDeliveryEnabledState(updated.delivery_enabled !== false);
     } finally {
       setTogglingDelivery(false);
+    }
+  };
+
+  const toggleCurbside = async (enabled) => {
+    setTogglingCurbside(true);
+    try {
+      const updated = await setCurbsideEnabled(enabled);
+      setCurbsideEnabledState(updated.curbside_enabled === true);
+    } finally {
+      setTogglingCurbside(false);
     }
   };
 
@@ -91,6 +104,37 @@ export default function OrderCutoffSettings() {
             className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-60 flex-shrink-0 ${deliveryEnabled ? 'bg-patina-mint' : 'bg-muted-foreground/30'}`}
           >
             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${deliveryEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+
+        {/* Curbside pause toggle (issue #122) — starts OFF. While off, the
+            curbside option is disabled and a saved curbside selection falls
+            back to counter pickup. Nothing is deleted. */}
+        <div className={`rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 ${curbsideEnabled ? 'bg-patina-mint/5 border-patina-mint/20' : 'bg-midnight-cherry/5 border-midnight-cherry/20'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${curbsideEnabled ? 'bg-patina-mint/10' : 'bg-midnight-cherry/10'}`}>
+              <Car size={18} className={curbsideEnabled ? 'text-patina-mint' : 'text-midnight-cherry'} />
+            </div>
+            <div>
+              <p className="font-heading text-sm text-obsidian-roast">
+                Curbside {curbsideEnabled ? 'Available' : 'Paused'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {curbsideEnabled
+                  ? 'Customers can choose curbside pickup during open hours.'
+                  : 'Curbside is paused — customers can still pick up at the counter or dine in.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => toggleCurbside(!curbsideEnabled)}
+            disabled={togglingCurbside}
+            role="switch"
+            aria-checked={curbsideEnabled}
+            aria-label={curbsideEnabled ? 'Pause curbside' : 'Resume curbside'}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-60 flex-shrink-0 ${curbsideEnabled ? 'bg-patina-mint' : 'bg-muted-foreground/30'}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${curbsideEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
         </div>
 

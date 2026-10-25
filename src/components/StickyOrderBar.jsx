@@ -13,7 +13,7 @@ const ORDER_TYPES = [
 ];
 
 export default function StickyOrderBar() {
-  const { orderType, setOrderType, pickupMethod, setPickupMethod, orderingEnabled } = useCart();
+  const { orderType, setOrderType, pickupMethod, setPickupMethod, orderingEnabled, menuSetting } = useCart();
   const navigate = useNavigate();
 
   if (!orderingEnabled) return null;
@@ -35,7 +35,8 @@ export default function StickyOrderBar() {
               <button
                 key={opt.key}
                 onClick={() => { setOrderType(opt.orderType); if (opt.method) setPickupMethod(opt.method); }}
-                className={`px-2.5 py-1.5 text-xs font-heading rounded-full transition-all whitespace-nowrap ${
+                disabled={opt.method === 'curbside' && menuSetting?.curbside_enabled !== true}
+                className={`px-2.5 py-1.5 text-xs font-heading rounded-full transition-all whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed ${
                   isActive(opt) ? 'bg-midnight-cherry text-white' : 'text-muted-foreground'
                 }`}
               >

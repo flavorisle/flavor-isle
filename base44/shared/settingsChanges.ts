@@ -13,6 +13,7 @@ export const FIELD_REACH = {
   ordering_enabled: "Both - website checkout and Smashie's phone line",
   ordering_closed_message: 'Both - shown on the website and spoken by Smashie',
   delivery_enabled: "Both - website checkout and Smashie's phone orders",
+  curbside_enabled: 'Website checkout - the curbside pickup option',
   delivery_fee: "Both - online delivery and Smashie's quotes",
   delivery_tiers: "Both - online delivery and Smashie's quotes",
   closing_time: 'Both - website ordering window and Smashie',

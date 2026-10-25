@@ -28,6 +28,7 @@ export default function CartDrawer() {
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
     happyHourDiscount,
+    menuSetting,
   } = useCart();
   const navigate = useNavigate();
 
@@ -82,7 +83,7 @@ export default function CartDrawer() {
           <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Order Type</p>
           <div className="grid grid-cols-4 gap-2">
             {ORDER_OPTIONS.map(opt => {
-              const disabled = cutoffStatus[opt.orderType];
+              const disabled = cutoffStatus[opt.orderType] || (opt.method === 'curbside' && menuSetting?.curbside_enabled !== true);
               const active = orderType === opt.orderType && (!opt.method || pickupMethod === opt.method);
               return (
                 <button

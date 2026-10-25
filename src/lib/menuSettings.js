@@ -157,6 +157,15 @@ export async function setDeliveryEnabled(enabled) {
   return { ...setting, ...updates };
 }
 
+export async function setCurbsideEnabled(enabled) {
+  const setting = await getMenuSetting();
+  const id = await requireSettingId();
+  const updates = { curbside_enabled: enabled };
+  await base44.entities.MenuSetting.update(id, updates);
+  bustMenuSettingCache();
+  return { ...setting, ...updates };
+}
+
 export async function setOrderingEnabled(enabled, closedMessage) {
   const setting = await getMenuSetting();
   const id = await requireSettingId();

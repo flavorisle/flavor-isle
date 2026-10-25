@@ -72,3 +72,13 @@ test('the cash-only phone switch is reported as a phone-only switch', () => {
   assert.equal(change.reach, 'Phone only - cash pickup orders while website ordering is off');
   assert.equal(changeReach([change]), 'phone');
 });
+
+// Issue #122: the curbside pause switch must be reported with its reach.
+test('the curbside switch is reported as a website-only switch', () => {
+  const [change] = diffSettings({ curbside_enabled: false }, { curbside_enabled: true });
+  assert.equal(change.field, 'curbside_enabled');
+  assert.equal(change.old, 'OFF');
+  assert.equal(change.new, 'ON');
+  assert.equal(change.reach, 'Website checkout - the curbside pickup option');
+  assert.equal(changeReach([change]), 'website');
+});

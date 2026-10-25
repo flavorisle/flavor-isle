@@ -146,6 +146,14 @@ export function CartProvider({ children }) {
     }
   }, [menuSetting, orderType]);
 
+  // Curbside starts OFF (issue #122): unless the switch is on, a saved curbside
+  // selection falls back to counter pickup — same bounce as delivery above.
+  useEffect(() => {
+    if (menuSetting?.curbside_enabled !== true && pickupMethod === 'curbside') {
+      setPickupMethod('counter');
+    }
+  }, [menuSetting, pickupMethod]);
+
   // Different modifier combos on the same menu item become separate lines,
   // so each selection's modifiers are preserved and displayed.
   // Combo builder items (alwaysUnique) are NEVER merged — each built combo is
