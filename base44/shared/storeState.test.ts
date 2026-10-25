@@ -16,7 +16,7 @@ const HOURS = { monday: { open: '10:00', close: '21:00' } };
 
 // Stub client: proves which record id the store state asks for, and fails loudly
 // if a reader ever falls back to scanning the whole entity.
-function fakeBase44(record) {
+function fakeBase44(record, smashie = null) {
   const asked = [];
   return {
     asked,
@@ -26,6 +26,11 @@ function fakeBase44(record) {
           MenuSetting: {
             get: async (id) => { asked.push(id); return { id, ...record }; },
             list: async () => { throw new Error('list() must not run while the record is pinned'); },
+          },
+          // The cash-only bypass reads the pinned SmashieSettings record.
+          SmashieSettings: {
+            get: async (id) => ({ id, ...(smashie || {}) }),
+            list: async () => (smashie ? [{ id: 's1', ...smashie }] : []),
           },
         },
       },
@@ -121,4 +126,29 @@ test('the 24/7 override opens the phone line', async () => {
   const f = fakeBase44({ open_all_day_date: chicagoTodayKey() });
   const status = await getPhoneStoreStatus(f.client);
   assert.equal(status.open, true);
+});
+
+// Issue #120: cash-only phone mode. The website stays closed while the phone
+// keeps taking cash pickup orders — and nothing else changes.
+test('cash-only phone mode keeps the phone open while website ordering is off', async () => {
+  // The 24/7 override pins the clock so this never depends on the run time; the
+  // point is that the ordering gate below no longer short-circuits.
+  const f = fakeBase44(
+    { ordering_enabled: false, ordering_closed_message: 'Website ordering is off', open_all_day_date: chicagoTodayKey() },
+    { phone_cash_orders_only: true },
+  );
+  assert.equal((await getPhoneStoreStatus(f.client)).open, true);
+});
+
+test('with cash-only mode off, ordering off still closes the phone', async () => {
+  const f = fakeBase44(
+    { ordering_enabled: false, ordering_closed_message: 'Website ordering is off', open_all_day_date: chicagoTodayKey() },
+    { phone_cash_orders_only: false },
+  );
+  assert.deepEqual(await getPhoneStoreStatus(f.client), { open: false, message: 'Website ordering is off' });
+});
+
+test('ordering on is unchanged by the cash-only switch', async () => {
+  const f = fakeBase44({ open_all_day_date: chicagoTodayKey() }, { phone_cash_orders_only: true });
+  assert.equal((await getPhoneStoreStatus(f.client)).open, true);
 });

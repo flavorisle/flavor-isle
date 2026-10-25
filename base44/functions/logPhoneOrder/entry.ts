@@ -79,6 +79,10 @@ export default async function(req) {
     if (cashPickup && !phoneCashEnabled(smashieSettings)) {
       return Response.json({ error: 'Cash orders are paused right now. Offer the secure card payment link or the counter.' }, { status: 400 });
     }
+    // Cash-only phone mode: no card links while the owner has switched it on.
+    if (!cashPickup && smashieSettings.phone_cash_orders_only === true) {
+      return Response.json({ error: 'Cash only on the phone right now — offer the counter at (270) 563-4618 for card payment.' }, { status: 400 });
+    }
     const paymentProvider = phonePaymentProvider(smashieSettings);
 
     if (!customer_name || !customer_phone || !items || !Array.isArray(items) || items.length === 0) {

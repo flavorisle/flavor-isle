@@ -235,10 +235,15 @@ export async function getPhoneStoreStatus(base44) {
   if (closure.active) return { open: false, message: closure.message };
 
   if (s.ordering_enabled === false) {
-    return {
-      open: false,
-      message: String(s.ordering_closed_message || '').trim() || ORDERING_CLOSED_DEFAULT,
-    };
+    // Cash-only phone mode: the phone keeps taking cash pickup orders while
+    // the website stays closed. All other gates below still apply.
+    const smashie = await readSingleRecord(base44, 'SmashieSettings', SMASHIE_SETTINGS_ID);
+    if (smashie?.phone_cash_orders_only !== true) {
+      return {
+        open: false,
+        message: String(s.ordering_closed_message || '').trim() || ORDERING_CLOSED_DEFAULT,
+      };
+    }
   }
 
   const early = earlyCloseToday(s, now);

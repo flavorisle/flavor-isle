@@ -23,7 +23,7 @@ export default function ExpressPickupStrip() {
         <Zap size={16} className="text-smashie-yellow flex-shrink-0" />
         <p className="text-sm font-body leading-tight">
           <strong className="font-heading tracking-wide">Express Pickup:</strong>{' '}
-          Ready in 10–15 mins. Order on your phone, pull into Curbside, and we bring it out hot.
+          Ready in 10–15 mins. Order on your phone and grab it hot at the counter.
         </p>
       </div>
     </div>

@@ -36,7 +36,12 @@ const dropComboLines = (items) =>
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => dropComboLines(readSession('cartItems', [])));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
-  const [pickupMethod, setPickupMethod] = useState(() => readSession('pickupMethod', 'counter')); // counter | curbside (pickup only)
+  // counter only: curbside is no longer offered on the website (issue #120), and
+  // a bag saved before that change falls back to counter pickup.
+  const [pickupMethod, setPickupMethod] = useState(() => {
+    const saved = readSession('pickupMethod', 'counter');
+    return saved === 'curbside' ? 'counter' : saved;
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderingEnabled, setOrderingEnabledState] = useState(true);
   const [orderingClosedMessage, setOrderingClosedMessage] = useState('Ordering is temporarily closed');

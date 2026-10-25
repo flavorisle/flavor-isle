@@ -27,6 +27,7 @@ export const FIELD_REACH = {
   extra_cook_date: 'Kitchen - quoted wait times for website and phone orders',
   happy_hour: 'Website checkout discounts',
   phone_cash_enabled: 'Phone only - what Smashie accepts for pickup orders',
+  phone_cash_orders_only: 'Phone only - cash pickup orders while website ordering is off',
   phone_payment_provider: 'Phone only - which processor backs the secure pay link',
   web_payment_provider: 'Website checkout - which system backs the secure payment page',
   voice_ordering_enabled: 'Phone only - whether Smashie takes orders by voice',

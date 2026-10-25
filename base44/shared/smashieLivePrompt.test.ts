@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCallContext, deliveryLine, CASH_OFF_PHONE_INTRO, OPEN_PHONE_INTRO } from './smashieLivePrompt.ts';
+import { buildCallContext, deliveryLine, CASH_OFF_PHONE_INTRO, CASH_ONLY_PHONE_INTRO, OPEN_PHONE_INTRO } from './smashieLivePrompt.ts';
+import { phoneIntro } from './smashieAdminContext.ts';
 
 // What Smashie is told on a call. These are the lines that carry the store's
 // switches onto the phone, so each one has to say exactly one thing.
@@ -77,4 +78,37 @@ test('the cash-off opening says card only, with no cash offer', () => {
   assert.match(CASH_OFF_PHONE_INTRO, /secure card payment link/);
   assert.doesNotMatch(CASH_OFF_PHONE_INTRO, /cash/i);
   assert.match(OPEN_PHONE_INTRO, /cash due when you pick it up/);
+});
+
+// Issue #120: cash-only phone mode.
+test('cash-only mode tells Smashie cash is the only way to order', () => {
+  const context = buildCallContext({
+    storeStatus: { open: true, message: '' },
+    storeState: STATE,
+    cashEnabled: true,
+    cashOnly: true,
+    callerPhone: '+12705550000',
+  });
+  assert.match(context, /\[CASH: accepted for pickup orders — CASH ONLY right now/);
+  assert.match(context, /no card payment links, no delivery, no dine-in orders/);
+  assert.match(context, /counter at \(270\) 563-4618/);
+  // The plain cash-accepted line is gone while the mode is on.
+  assert.doesNotMatch(context, /\[CASH: accepted for pickup orders\]/);
+});
+
+test('the cash-only introduction is present and promises cash only', () => {
+  assert.ok(CASH_ONLY_PHONE_INTRO.length > 0);
+  assert.match(CASH_ONLY_PHONE_INTRO, /cash only/i);
+});
+
+test('cash-only mode overrides every other introduction', () => {
+  // An admin-saved custom intro mentions the card link, so the mode wins.
+  assert.equal(
+    phoneIntro({ phone_cash_orders_only: true, phone_intro: 'Custom greeting that offers a card link' }),
+    CASH_ONLY_PHONE_INTRO
+  );
+  // Mode off: the existing introductions are untouched.
+  assert.equal(phoneIntro({ phone_intro: 'Custom greeting' }), 'Custom greeting');
+  assert.equal(phoneIntro({}), OPEN_PHONE_INTRO);
+  assert.equal(phoneIntro({ phone_cash_enabled: false }), CASH_OFF_PHONE_INTRO);
 });

@@ -62,3 +62,13 @@ test('values are rendered readably and long ones are trimmed', () => {
   assert.match(renderValue({ a: 1 }), /^\{/);
   assert.equal(fieldLabel('phone_cash_enabled'), 'phone cash enabled');
 });
+
+// Issue #120: the cash-only phone switch must reach the owner notice.
+test('the cash-only phone switch is reported as a phone-only switch', () => {
+  const [change] = diffSettings({ phone_cash_orders_only: false }, { phone_cash_orders_only: true });
+  assert.equal(change.field, 'phone_cash_orders_only');
+  assert.equal(change.old, 'OFF');
+  assert.equal(change.new, 'ON');
+  assert.equal(change.reach, 'Phone only - cash pickup orders while website ordering is off');
+  assert.equal(changeReach([change]), 'phone');
+});

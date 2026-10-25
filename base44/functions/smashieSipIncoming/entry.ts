@@ -17,7 +17,7 @@
 // the call record.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
-import { getSmashieSettings, phoneCashEnabled } from '../../shared/smashieSettings.ts';
+import { getSmashieSettings, phoneCashEnabled, phoneCashOrdersOnly } from '../../shared/smashieSettings.ts';
 import { getPhoneStoreStatus, getUnifiedStoreState } from '../../shared/storeState.ts';
 import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { lookupCustomerByPhone } from '../../shared/squareCustomer.ts';
@@ -170,7 +170,7 @@ export default async function (req) {
       console.log(`Counter pass-through caller ${callerPhone}${counterTarget ? '' : ' — no counter routing address configured'}`);
     }
 
-    const context = buildCallContext({ storeStatus, storeState, cashEnabled: phoneCashEnabled(settings), busyness, callerPhone, customer, blockedContact: block });
+    const context = buildCallContext({ storeStatus, storeState, cashEnabled: phoneCashEnabled(settings), cashOnly: phoneCashOrdersOnly(settings), busyness, callerPhone, customer, blockedContact: block });
 
     const enabledTools = SMASHIE_LIVE_TOOLS.filter((tool) => {
       const ability = TOOL_ABILITIES[tool.name];

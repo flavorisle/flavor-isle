@@ -8,7 +8,6 @@ import { useCart } from '@/context/CartContext';
 // safe-area insets so it never covers the cart tab or other tap targets.
 const ORDER_TYPES = [
   { key: 'pickup', label: 'Pickup', orderType: 'pickup', method: 'counter' },
-  { key: 'curbside', label: 'Curbside', orderType: 'pickup', method: 'curbside' },
   { key: 'delivery', label: 'Delivery', orderType: 'delivery' },
 ];
 

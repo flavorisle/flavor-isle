@@ -18,6 +18,9 @@ const DEFAULTS = {
   personality_notes: "",
   // Cash on phone pickup orders is accepted unless the owner turns it off.
   phone_cash_enabled: true,
+  // Cash-only phone mode (issue #120): the phone keeps taking cash pickup
+  // orders even while website ordering is switched off.
+  phone_cash_orders_only: false,
   // Card payments are taken on our own page. The provider switch is the pair of
   // helpers below; these defaults name the primary path (issue #116).
   phone_payment_provider: "wix",
@@ -39,6 +42,11 @@ export async function getSmashieSettings(base44) {
 // True unless the owner has switched cash off for phone pickup orders.
 export function phoneCashEnabled(settings) {
   return settings?.phone_cash_enabled !== false;
+}
+
+// True only when the owner has switched the phone into cash-only mode.
+export function phoneCashOrdersOnly(settings) {
+  return settings?.phone_cash_orders_only === true;
 }
 
 // Which systems may back a card payment (issue #116, Part A step 8). Base44

@@ -35,6 +35,7 @@ export default function SmashieSettingsPanel() {
           sms_auto_reply_enabled: true,
           voice_ordering_enabled: true,
           phone_cash_enabled: true,
+          phone_cash_orders_only: false,
           phone_payment_provider: 'wix',
           web_payment_provider: 'wix',
           realtime_sip_enabled: false,
@@ -71,6 +72,7 @@ export default function SmashieSettingsPanel() {
         sms_auto_reply_enabled: settings.sms_auto_reply_enabled,
         voice_ordering_enabled: settings.voice_ordering_enabled,
         phone_cash_enabled: settings.phone_cash_enabled !== false,
+        phone_cash_orders_only: settings.phone_cash_orders_only === true,
         phone_payment_provider: 'wix',
         web_payment_provider: 'wix',
         realtime_sip_enabled: settings.realtime_sip_enabled,
@@ -150,6 +152,12 @@ export default function SmashieSettingsPanel() {
           description="Let Smashie answer inbound phone calls and take orders by voice. Subordinate to All ordering in Store Settings — when that master switch is off, the phone cannot take orders regardless of this toggle."
           checked={settings.voice_ordering_enabled}
           onChange={v => update('voice_ordering_enabled', v)}
+        />
+        <Toggle
+          label="Cash-Only Phone Orders"
+          description="Phone takes cash pickup orders only — even while website ordering is switched off. No card links, delivery, or dine-in on the phone."
+          checked={settings.phone_cash_orders_only === true}
+          onChange={v => update('phone_cash_orders_only', v)}
         />
         <Toggle
           label="Accept cash on phone pickup orders"

@@ -97,6 +97,11 @@
       "default": true,
       "description": "When false, Smashie does not take cash-on-pickup phone orders: the phone context says cash is not accepted, the intro offers the card link or the counter only, and logPhoneOrder refuses cash_on_pickup server-side."
     },
+    "phone_cash_orders_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #120 cash-only phone mode. When true the phone keeps taking cash pickup orders even while MenuSetting.ordering_enabled is off (the website stays closed): Smashie offers cash pickup only, sends no card link, takes no delivery or dine-in, points card callers to the counter, and logPhoneOrder refuses card orders server-side."
+    },
     "phone_payment_provider": {
       "type": "string",
       "enum": [

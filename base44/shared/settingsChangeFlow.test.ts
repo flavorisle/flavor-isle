@@ -113,6 +113,21 @@ test('a refused send is recorded as not emailed, never as sent', async () => {
   assert.match(f.created[0].description, /failed/);
 });
 
+// Issue #120: flipping the cash-only phone switch must be reported to the owner.
+test('the cash-only phone switch reaches the owner notice as a phone change', async () => {
+  const f = fakeBase44({
+    record: { id: 's1', phone_cash_orders_only: true },
+    logs: [{ entity: 'SmashieSettings', snapshot: { id: 's1', phone_cash_orders_only: false }, changed_at: '2026-10-25T00:00:00Z' }],
+  });
+  const result = await processSettingsChange(f.client, { entityName: 'SmashieSettings', entityId: 's1' });
+
+  assert.equal(result.changes, 1);
+  assert.equal(result.affected, 'phone');
+  assert.equal(result.emailed, 'sent');
+  assert.equal(f.created[0].field_changes[0].reach, 'Phone only - cash pickup orders while website ordering is off');
+  assert.match(f.emails[0].body, /cash pickup orders while website ordering is off/);
+});
+
 test('an unrelated entity is ignored', async () => {
   const f = fakeBase44({ record: { id: 'o1' } });
   const result = await processSettingsChange(f.client, { entityName: 'Order', entityId: 'o1' });
