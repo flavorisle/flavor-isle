@@ -13,6 +13,7 @@ import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
 const ORDER_OPTIONS = [
   { key: 'pickup', label: 'Pickup', orderType: 'pickup', method: 'counter' },
+  { key: 'curbside', label: 'Curbside', orderType: 'pickup', method: 'curbside' },
   { key: 'delivery', label: 'Delivery', orderType: 'delivery' },
   { key: 'dine_in', label: 'Dine-In', orderType: 'dine_in' },
 ];

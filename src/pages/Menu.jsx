@@ -85,6 +85,7 @@ export default function Menu() {
   // pickupMethod 'curbside'), so its active/onClick differ from counter pickup.
   const orderTiles = [
     { key: 'pickup', label: ORDER_TYPES.pickup.label, time: ORDER_TYPES.pickup.time, img: ORDER_TYPE_IMAGES.pickup, onSelect: () => { setOrderType('pickup'); setPickupMethod('counter'); }, isActive: orderType === 'pickup' && pickupMethod !== 'curbside' },
+    { key: 'curbside', label: ORDER_TYPES.curbside.label, time: ORDER_TYPES.curbside.time, img: ORDER_TYPE_IMAGES.curbside, onSelect: () => { setOrderType('pickup'); setPickupMethod('curbside'); }, isActive: orderType === 'pickup' && pickupMethod === 'curbside' },
     { key: 'delivery', label: ORDER_TYPES.delivery.label, time: ORDER_TYPES.delivery.time, img: ORDER_TYPE_IMAGES.delivery, onSelect: () => setOrderType('delivery'), isActive: orderType === 'delivery' },
     { key: 'dine_in', label: ORDER_TYPES.dine_in.label, time: ORDER_TYPES.dine_in.time, img: ORDER_TYPE_IMAGES.dine_in, onSelect: () => setOrderType('dine_in'), isActive: orderType === 'dine_in' },
   ];
