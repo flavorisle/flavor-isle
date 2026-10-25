@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe } from 'lucide-react';
 import AdminPresenceTracker from '@/components/admin/AdminPresenceTracker';
 
 const LINKS = [
@@ -16,6 +16,7 @@ const LINKS = [
   { label: 'Emails', to: '/admin/emails', Icon: Mail },
   { label: 'Square Logs', to: '/admin/square-logs', Icon: Activity },
   { label: 'Card Declines', to: '/admin/card-logs', Icon: CreditCard },
+  { label: 'Visitors', to: '/admin/visitors', Icon: Globe },
   { label: 'Kitchen', to: '/admin/kitchen', Icon: Flame },
   { label: 'Analytics', to: '/admin-analytics', Icon: BarChart3 },
 ];

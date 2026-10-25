@@ -1,0 +1,59 @@
+{
+  "name": "VisitorPageView",
+  "type": "object",
+  "properties": {
+    "ip": {
+      "type": "string",
+      "description": "The visitor's IP address as reported by the network edge on the request that recorded this page view."
+    },
+    "path": {
+      "type": "string",
+      "description": "Page path the visitor opened, e.g. /menu. Query strings are dropped so links carrying order numbers stay out of the trail."
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the signed-in account that opened the page. Empty for a visitor who is not signed in, which is what makes a view part of a guest trail."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "App user id of the signed-in account, empty for a guest."
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the signed-in account at the time of the view, so the trail is readable without looking the user up."
+    },
+    "referrer": {
+      "type": "string",
+      "description": "Page the browser came from when it exists (an outside link, a search result, or another page of this site)."
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser user-agent string, kept so two guests behind the same address can still be told apart."
+    }
+  },
+  "required": [
+    "path"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

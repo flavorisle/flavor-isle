@@ -9,6 +9,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
+import VisitorPageTracker from './components/VisitorPageTracker';
 import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
@@ -75,6 +76,7 @@ const AdminStoreSettings = lazy(() => import('./pages/AdminStoreSettings'));
 const AdminEmails = lazy(() => import('./pages/AdminEmails'));
 const AdminSquareLogs = lazy(() => import('./pages/AdminSquareLogs'));
 const AdminCardLogs = lazy(() => import('./pages/AdminCardLogs'));
+const AdminVisitors = lazy(() => import('./pages/AdminVisitors'));
 const AdminKitchen = lazy(() => import('./pages/AdminKitchen'));
 const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminEmployeeOfMonth = lazy(() => import('./pages/AdminEmployeeOfMonth'));
@@ -256,6 +258,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/emails" element={<AdminEmails />} />
         <Route path="/admin/square-logs" element={<AdminSquareLogs />} />
         <Route path="/admin/card-logs" element={<AdminCardLogs />} />
+        <Route path="/admin/visitors" element={<AdminVisitors />} />
         <Route path="/admin/kitchen" element={<AdminKitchen />} />
         <Route path="/admin-analytics" element={<AdminAnalytics />} />
         <Route path="/admin/store-settings" element={<AdminStoreSettings />} />
@@ -281,6 +284,7 @@ function AppShell() {
           <MerchCartProvider>
             <Router>
               <ScrollToTop />
+              <VisitorPageTracker />
               <RestaurantSchema />
               <CanonicalLink />
               <ReferralCapture />
