@@ -54,6 +54,11 @@ export default async function(req) {
               car_color: order.arrival_details.car_color || '',
               car_make: order.arrival_details.car_make || '',
               car_model: order.arrival_details.car_model || '',
+              relay_status: order.arrival_details.relay_status || null,
+              relay_employee: order.arrival_details.relay_employee || null,
+              relay_ready: typeof order.arrival_details.relay_ready === 'boolean' ? order.arrival_details.relay_ready : null,
+              relay_eta_minutes: order.arrival_details.relay_eta_minutes ?? null,
+              relay_message: order.arrival_details.relay_message || null,
             }
           : null,
       },

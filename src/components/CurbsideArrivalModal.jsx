@@ -57,7 +57,7 @@ export default function CurbsideArrivalModal({ order, zoneLabel, onClose, onArri
             </div>
             <h3 className="font-heading text-2xl text-obsidian-roast mb-2">We See You, Fam!</h3>
             <p className="font-body text-sm text-muted-foreground mb-2">
-              The kitchen's been notified — someone's running your order out{zoneLabel ? ` to ${zoneLabel}` : ''}.
+              Smashie's letting the crew know you're here — watch the order page for who's bringing your food out.
             </p>
             {notes.trim() && (
               <p className="font-body text-xs text-muted-foreground bg-muted/60 rounded-xl p-3 mt-3">

@@ -26,6 +26,31 @@ const STATUS_PROFILE = {
 
 const stageIndex = (status) => STATUS_PROFILE[status]?.stage;
 
+// What the crew has said back about a curbside arrival. The relay call writes
+// these onto the order, and the existing 15-second refresh picks them up.
+function curbsideRelayMessage(arrival) {
+  const status = arrival?.relay_status;
+  if (status === 'pending') {
+    return "Smashie's calling the crew to let them know you're here — this page will show who's bringing your order out.";
+  }
+  if (status === 'relayed') {
+    const employee = arrival.relay_employee || 'The crew';
+    if (arrival.relay_ready === true) {
+      return `${employee} is bringing your order out now.`;
+    }
+    if (arrival.relay_eta_minutes != null) {
+      return `${employee} will bring your order out in about ${arrival.relay_eta_minutes} minutes.`;
+    }
+    if (arrival.relay_message) {
+      return arrival.relay_message;
+    }
+  }
+  if (status === 'no_answer') {
+    return "The crew couldn't be reached by phone — your arrival was still announced at the counter. Need us? Call (270) 563-4618.";
+  }
+  return "Kitchen's been told you're here — your order's on its way out!";
+}
+
 export default function OrderLookup() {
   const [orderNum, setOrderNum] = useState('');
   const [order, setOrder] = useState(null);
@@ -241,7 +266,7 @@ export default function OrderLookup() {
                   <div className="mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3">
                     <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
                     <p className="font-body text-sm text-obsidian-roast">
-                      Kitchen's been told you're here — your order's on its way out!
+                      {curbsideRelayMessage(order.arrival_details)}
                     </p>
                   </div>
                 ) : (

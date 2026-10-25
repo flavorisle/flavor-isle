@@ -2,10 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import twilio, { Twilio } from 'npm:twilio@5.3.3';
 import { withRelayKey } from '../../shared/internalRelay.ts';
 
-// Logs a curbside arrival from the order status page and notifies the kitchen
-// by CALLING the counter phone in Smashie's voice. Special notes (extra
-// ketchup, napkins, etc.) get their own clearly-spoken section, and the whole
-// announcement repeats once so the crew can't miss it.
+// Logs a curbside arrival from the order status page and notifies the kitchen.
+// The primary path hands the arrival to the Insights agent, which places a
+// two-way call to the counter phone: it asks who answered, reads the arrival
+// out, then asks whether the order is ready or how long it needs and writes the
+// answer back onto this order. Special notes (extra ketchup, napkins, etc.) get
+// their own clearly-spoken section, and the whole announcement repeats once so
+// the crew can't miss it.
 // Spoken text is built from customer-typed fields, so keep them to one short,
 // plain line — no control characters, no newlines, nothing that could turn the
 // kitchen announcement into the caller's own message.
@@ -20,6 +23,49 @@ function cleanField(value, max) {
 // One announcement per order every few minutes: a customer can re-request a
 // while later, but an order number cannot be used to hammer the counter phone.
 const ANNOUNCE_COOLDOWN_MS = 5 * 60 * 1000;
+
+// The Insights agent's two-way relay. It calls the counter, collects the
+// employee's name and the ready time, and writes them back onto this order.
+const RELAY_URL = 'https://flavor-isle-insights-agent-44d8cc53.base44.app/functions/startCurbsideRelay';
+const RELAY_TIMEOUT_MS = 10_000;
+
+// One-way kitchen announcement in Smashie's voice: the fallback used when the
+// two-way relay cannot be started.
+async function announceArrivalToKitchen(order, cleanZone, vehicle, cleanNotes) {
+  // Spoken announcement — order number read digit by digit so it's clear.
+  const spokenOrderNumber = String(order.order_number).split('').join(', ');
+  let announcement =
+    `Heads up crew, curbside arrival! Order number ${spokenOrderNumber}. ` +
+    `Customer: ${order.customer_name || 'unknown'}. ` +
+    `Parked at ${cleanZone || 'an unspecified zone'}. ` +
+    `Vehicle: ${vehicle || 'not specified'}. `;
+  if (cleanNotes) {
+    announcement += `Special notes: ${cleanNotes}. `;
+  }
+  announcement += `Run it out!`;
+
+  // Speak in Smashie's voice via the TTS endpoint, and repeat once.
+  const ttsUrl = new URL('https://flavor-isle.com/functions/smashieTts');
+  ttsUrl.searchParams.set('text', announcement);
+  withRelayKey(ttsUrl);
+  const VoiceResponse = twilio.twiml.VoiceResponse;
+  const twiml = new VoiceResponse();
+  twiml.play({}, ttsUrl.toString());
+  twiml.pause({ length: 1 });
+  twiml.play({}, ttsUrl.toString());
+  twiml.hangup();
+
+  const client = new Twilio(
+    Deno.env.get('TWILIO_ACCOUNT_SID'),
+    Deno.env.get('TWILIO_AUTH_TOKEN')
+  );
+
+  await client.calls.create({
+    from: Deno.env.get('TWILIO_PHONE_NUMBER'),
+    to: Deno.env.get('COUNTER_PHONE_NUMBER') || '+12705634618', // Counter phone (falls back to main line)
+    twiml: twiml.toString(),
+  });
+}
 
 export default async function(req) {
   try {
@@ -76,53 +122,53 @@ export default async function(req) {
     const cleanMake = cleanField(car_make, 30);
     const cleanModel = cleanField(car_model, 30);
 
-    // Persist arrival on the order so admins can see it in the dashboard.
-    await base44.asServiceRole.entities.Order.update(order.id, {
-      arrival_details: {
-        arrived_at: arrivedAt,
-        zone: cleanZone,
-        car_color: cleanColor,
-        car_make: cleanMake,
-        car_model: cleanModel,
-        notes: cleanNotes,
-      },
-    });
+    // Persist arrival on the order so admins can see it in the dashboard. The
+    // relay starts out as pending: the order page tells the customer Smashie is
+    // calling the crew until the agent reports back.
+    const arrivalDetails = {
+      arrived_at: arrivedAt,
+      zone: cleanZone,
+      car_color: cleanColor,
+      car_make: cleanMake,
+      car_model: cleanModel,
+      notes: cleanNotes,
+      relay_status: 'pending',
+      relay_at: arrivedAt,
+    };
+    await base44.asServiceRole.entities.Order.update(order.id, { arrival_details: arrivalDetails });
 
     const vehicle = [cleanColor, cleanMake, cleanModel].filter(Boolean).join(' ');
 
-    // Spoken announcement — order number read digit by digit so it's clear.
-    const spokenOrderNumber = String(order.order_number).split('').join(', ');
-    let announcement =
-      `Heads up crew, curbside arrival! Order number ${spokenOrderNumber}. ` +
-      `Customer: ${order.customer_name || 'unknown'}. ` +
-      `Parked at ${cleanZone || 'an unspecified zone'}. ` +
-      `Vehicle: ${vehicle || 'not specified'}. `;
-    if (cleanNotes) {
-      announcement += `Special notes: ${cleanNotes}. `;
+    // Ask the Insights agent to place the two-way call to the counter. A failure
+    // here is not the customer's problem: fall back to the one-way announcement.
+    let relayStarted = false;
+    try {
+      const relayResponse = await fetch(RELAY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          zone: cleanZone,
+          vehicle,
+          notes: cleanNotes,
+        }),
+        signal: AbortSignal.timeout(RELAY_TIMEOUT_MS),
+      });
+      relayStarted = relayResponse.ok;
+      if (!relayStarted) {
+        console.error(`Relay webhook failed (${relayResponse.status}); fell back to one-way announcement`);
+      }
+    } catch (error) {
+      console.error('Relay webhook failed; fell back to one-way announcement:', error.message);
     }
-    announcement += `Run it out!`;
 
-    // Speak in Smashie's voice via the TTS endpoint, and repeat once.
-    const ttsUrl = new URL('https://flavor-isle.com/functions/smashieTts');
-    ttsUrl.searchParams.set('text', announcement);
-    withRelayKey(ttsUrl);
-    const VoiceResponse = twilio.twiml.VoiceResponse;
-    const twiml = new VoiceResponse();
-    twiml.play({}, ttsUrl.toString());
-    twiml.pause({ length: 1 });
-    twiml.play({}, ttsUrl.toString());
-    twiml.hangup();
-
-    const client = new Twilio(
-      Deno.env.get('TWILIO_ACCOUNT_SID'),
-      Deno.env.get('TWILIO_AUTH_TOKEN')
-    );
-
-    await client.calls.create({
-      from: Deno.env.get('TWILIO_PHONE_NUMBER'),
-      to: Deno.env.get('COUNTER_PHONE_NUMBER') || '+12705634618', // Counter phone (falls back to main line)
-      twiml: twiml.toString(),
-    });
+    if (!relayStarted) {
+      await announceArrivalToKitchen(order, cleanZone, vehicle, cleanNotes);
+      await base44.asServiceRole.entities.Order.update(order.id, {
+        arrival_details: { ...arrivalDetails, relay_status: 'fallback_announced' },
+      });
+    }
 
     console.log(`Curbside arrival logged for order #${order.order_number}, zone: ${zone}, notes: ${cleanNotes || 'none'}`);
     return Response.json({ success: true, arrived_at: arrivedAt });

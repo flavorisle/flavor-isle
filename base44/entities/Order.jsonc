@@ -283,6 +283,38 @@
         },
         "notes": {
           "type": "string"
+        },
+        "relay_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "relayed",
+            "no_answer",
+            "fallback_announced"
+          ],
+          "description": "Curbside relay call state set by the Insights agent after the two-way store call"
+        },
+        "relay_employee": {
+          "type": "string",
+          "description": "Name of the employee who answered the counter phone on the relay call, as they gave it."
+        },
+        "relay_ready": {
+          "type": "boolean",
+          "description": "Whether the crew said the order is ready to come out when they answered the relay call."
+        },
+        "relay_eta_minutes": {
+          "type": "number",
+          "description": "Minutes the crew said the order still needs, when it was not ready at the time of the relay call."
+        },
+        "relay_message": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Short note from the relay call, shown on the order status page when there is no ready flag or ETA to show."
+        },
+        "relay_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the relay call was started for this arrival."
         }
       }
     },
