@@ -107,22 +107,20 @@
       "enum": [
         "wix",
         "square",
-        "stripe",
-        "helcim"
+        "stripe"
       ],
       "default": "wix",
-      "description": "Which processor backs the secure payment link Smashie texts for card phone orders. 'wix' is the platform's Base44 Payments hosted page and the live default (issue #116); 'square' is the alternative. Both open on flavor-isle.com/pay and the customer never sees a processor name; only where the payment is taken differs. stripe and helcim are retired values kept so historical records stay valid. Flipped only by the owner."
+      "description": "Which processor backs the secure payment link Smashie texts for card phone orders. 'wix' is the platform's Base44 Payments hosted page and the live default (issue #116); 'square' is the alternative. Both open on flavor-isle.com/pay and the customer never sees a processor name; only where the payment is taken differs. stripe is a retired value kept so historical records stay valid. Flipped only by the owner."
     },
     "web_payment_provider": {
       "type": "string",
       "enum": [
         "wix",
         "square",
-        "stripe",
-        "helcim"
+        "stripe"
       ],
       "default": "wix",
-      "description": "Which processor backs the secure payment page the WEBSITE checkout sends customers to (food orders and Tasty Threads merch). 'wix' is Base44 Payments and the live default (issue #116); 'square' sends the customer to the alternate hosted secure page. Both come right back to flavor-isle.com. stripe and helcim are retired values kept so historical records stay valid. The phone line has its own switch (phone_payment_provider). Customers never see a processor name on either. Flipped only by the owner."
+      "description": "Which processor backs the secure payment page the WEBSITE checkout sends customers to (food orders and Tasty Threads merch). 'wix' is Base44 Payments and the live default (issue #116); 'square' sends the customer to the alternate hosted secure page. Both come right back to flavor-isle.com. stripe is a retired value kept so historical records stay valid. The phone line has its own switch (phone_payment_provider). Customers never see a processor name on either. Flipped only by the owner."
     },
     "realtime_sip_enabled": {
       "type": "boolean",

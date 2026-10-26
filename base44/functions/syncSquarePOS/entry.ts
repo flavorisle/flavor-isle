@@ -32,7 +32,13 @@ Deno.serve(async (req) => {
     // endpoint and silently returned no orders). The wider window lets us both
     // sync new POS orders and relink recently-synced ones whose customer had
     // no resolvable email on the first pass.
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    //
+    // Issue #123 C4: a manual run may pass { days } to widen that window (the
+    // one-time backfill uses 30 so the rest of the month can be relinked).
+    // Scheduled runs send no body and keep the 7-day default.
+    const body = await req.json().catch(() => ({}));
+    const syncDays = Math.min(Math.max(Number(body?.days) || 7, 1), 30);
+    const since = new Date(Date.now() - syncDays * 24 * 60 * 60 * 1000).toISOString();
     const squareOrders = [];
     let cursor = undefined;
     // Page through all results so a busy week doesn't leave orders behind.
@@ -78,9 +84,75 @@ Deno.serve(async (req) => {
 
     // Resolve every Square customer referenced by the fetched orders in a
     // single batch so each POS order can carry the real name/email/phone.
+    // Issue #123 C1: a card swipe or a loyalty sign-in at the counter does not
+    // write the ticket's own customer_id, but Square's Tender objects carry the
+    // paying card's customer, so those ids are collected here too.
     const customerIdSet = new Set();
-    squareOrders.forEach(so => { if (so.customer_id) customerIdSet.add(so.customer_id); });
+    squareOrders.forEach(so => {
+      if (so.customer_id) customerIdSet.add(so.customer_id);
+      (so.tenders || []).forEach(tender => {
+        if (tender.customer_id) customerIdSet.add(tender.customer_id);
+      });
+    });
     const customerMap = await lookupCustomersByIds(base44, [...customerIdSet]);
+
+    // Issue #123 C2(c): a walk-in who keyed in their Star Rewards phone number
+    // leaves no customer id on the ticket — only a loyalty event. The event's
+    // account points at the Square customer. Accounts are cached per run so a
+    // repeat customer costs one call.
+    const loyaltyAccountCache = new Map();
+    let loyaltyUnauthorized = false;
+    const loyaltyCustomerIdForOrder = async (orderId: string) => {
+      if (!orderId || loyaltyUnauthorized) return '';
+      const headers = {
+        'Authorization': `Bearer ${connection.accessToken}`,
+        'Content-Type': 'application/json',
+        'Square-Version': SQUARE_VERSION
+      };
+      try {
+        const eventsRes = await fetch('https://connect.squareup.com/v2/loyalty/events/search', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            query: { filter: { order_filter: { order_id: orderId } } },
+            limit: 30
+          }),
+          signal: AbortSignal.timeout(10000)
+        });
+        if (eventsRes.status === 403) {
+          loyaltyUnauthorized = true;
+          return '';
+        }
+        const eventsData = await eventsRes.json();
+        if (!eventsRes.ok) {
+          console.error('Square loyalty event search failed:', JSON.stringify(eventsData));
+          return '';
+        }
+        const loyaltyAccountId = (eventsData.events || [])[0]?.loyalty_account_id || '';
+        if (!loyaltyAccountId) return '';
+        if (loyaltyAccountCache.has(loyaltyAccountId)) return loyaltyAccountCache.get(loyaltyAccountId);
+        const accountRes = await fetch(`https://connect.squareup.com/v2/loyalty/accounts/${loyaltyAccountId}`, {
+          headers,
+          signal: AbortSignal.timeout(10000)
+        });
+        if (accountRes.status === 403) {
+          loyaltyUnauthorized = true;
+          return '';
+        }
+        const accountData = await accountRes.json();
+        if (!accountRes.ok) {
+          console.error('Square loyalty account lookup failed:', JSON.stringify(accountData));
+          return '';
+        }
+        const customerId = accountData?.account?.customer_id || '';
+        loyaltyAccountCache.set(loyaltyAccountId, customerId);
+        return customerId;
+      } catch (error) {
+        // The loyalty step never fails a sync.
+        console.error('Square loyalty lookup error:', (error as Error).message);
+        return '';
+      }
+    };
 
     // Build a phone -> online-account-email map from CustomerProfile. The
     // loyalty program keys on phone, so this is the reliable join between a
@@ -96,6 +168,10 @@ Deno.serve(async (req) => {
 
     const newOrders = [];
     const updates = [];
+    // Issue #123 C3: an id that produced no customer record is a failed lookup,
+    // not a Walk-In — it is counted and logged, never silently degraded.
+    let unresolvedCustomerCount = 0;
+    const unresolvedCustomerIds = new Set();
     for (const so of squareOrders) {
       // Skip Square orders that were pushed from our website (online orders
       // we created via createSquareOrder). These have metadata.order_source
@@ -106,7 +182,29 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const cust = so.customer_id ? customerMap.get(so.customer_id) : null;
+      // Issue #123 C2: the ticket's own customer first, then the paying card's
+      // customer from its tender, then the customer behind this order's loyalty
+      // event. A walk-in who pays by card or uses Star Rewards lands on their
+      // profile; a cash walk-in with no loyalty stays Walk-In.
+      const ticketCustomerId = so.customer_id || '';
+      const tenderCustomerId = ticketCustomerId
+        ? ''
+        : ((so.tenders || []).find(tender => tender.customer_id)?.customer_id || '');
+      let resolvedCustomerId = ticketCustomerId || tenderCustomerId;
+      if (!resolvedCustomerId) {
+        resolvedCustomerId = await loyaltyCustomerIdForOrder(so.id);
+        if (resolvedCustomerId && !customerMap.has(resolvedCustomerId)) {
+          // This customer was on no ticket, so the batch lookup never saw them.
+          const extra = await lookupCustomersByIds(base44, [resolvedCustomerId]);
+          extra.forEach((value, key) => customerMap.set(key, value));
+        }
+      }
+      if ((ticketCustomerId || tenderCustomerId) && !customerMap.has(resolvedCustomerId)) {
+        unresolvedCustomerCount += 1;
+        unresolvedCustomerIds.add(resolvedCustomerId);
+      }
+
+      const cust = resolvedCustomerId ? customerMap.get(resolvedCustomerId) : null;
       const sqEmail = cust?.email || '';
       const sqPhone = cust?.phone || '';
       const sqName = cust?.name || '';
@@ -115,7 +213,7 @@ Deno.serve(async (req) => {
       // user.email). Fall back to the Square email, then the placeholder.
       const linkedEmail = (sqPhone && phoneToEmail.get(normalizePhone(sqPhone))) || sqEmail || '';
       const customerEmail = linkedEmail || PLACEHOLDER_EMAIL;
-      const customerName = sqName || (so.customer_id ? 'POS Customer' : 'Walk-In');
+      const customerName = sqName || (resolvedCustomerId ? 'POS Customer' : 'Walk-In');
       const items = (so.line_items || []).map(item => ({
         name: item.name || 'Item',
         quantity: item.quantity ? parseInt(item.quantity) : 1,
@@ -203,11 +301,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (unresolvedCustomerIds.size > 0) {
+      console.error('Square customer lookups returned no record for:', [...unresolvedCustomerIds].join(', '));
+    }
+
     return Response.json({
       success: true,
       squareOrdersPulled: squareOrders.length,
       newOrders: newOrders.length,
       relinkedOrders: updates.length,
+      unresolved_customers: unresolvedCustomerCount,
+      ...(loyaltyUnauthorized ? { loyalty_lookup: 'unauthorized' } : {}),
       metricsUpdated: true
     });
   } catch (error) {

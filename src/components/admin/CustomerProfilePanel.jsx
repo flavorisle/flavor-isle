@@ -8,12 +8,12 @@ import { Phone, Mail, MapPin, Loader2, CalendarDays, Receipt } from 'lucide-reac
 // profile id), so the history is complete rather than whatever happened to be
 // loaded on screen.
 export default function CustomerProfilePanel({ customer }) {
-  const [state, setState] = useState({ loading: true, profile: null, orders: [], truncated: false, error: '' });
+  const [state, setState] = useState({ loading: true, profile: null, orders: [], truncated: false, stats: null, error: '' });
 
   useEffect(() => {
     if (!customer) return;
     let cancelled = false;
-    setState({ loading: true, profile: null, orders: [], truncated: false, error: '' });
+    setState({ loading: true, profile: null, orders: [], truncated: false, stats: null, error: '' });
     (async () => {
       try {
         const res = await base44.functions.invoke('searchCustomerDirectory', { customer });
@@ -25,10 +25,11 @@ export default function CustomerProfilePanel({ customer }) {
           profile: data?.profile || null,
           orders: data?.orders || [],
           truncated: !!data?.orders_truncated,
+          stats: data?.stats || null,
           error: '',
         });
       } catch (error) {
-        if (!cancelled) setState({ loading: false, profile: null, orders: [], truncated: false, error: error.message || 'Could not load this customer.' });
+        if (!cancelled) setState({ loading: false, profile: null, orders: [], truncated: false, stats: null, error: error.message || 'Could not load this customer.' });
       }
     })();
     return () => { cancelled = true; };
@@ -43,6 +44,9 @@ export default function CustomerProfilePanel({ customer }) {
   }
 
   const address = state.profile?.delivery_address || state.profile?.address || '';
+  // Issue #123 B3: the history call computes the counters from the merged order
+  // history; the directory's own all-zero counters are only a fallback.
+  const statSource = state.stats || customer;
 
   return (
     <div className="space-y-4">
@@ -66,10 +70,10 @@ export default function CustomerProfilePanel({ customer }) {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           {[
-            { label: 'Online orders', value: customer.online_orders ?? 0 },
-            { label: 'Online total', value: `$${Number(customer.online_total_spent || 0).toFixed(2)}` },
-            { label: 'In-store orders', value: customer.in_store_orders ?? 0 },
-            { label: 'In-store total', value: `$${Number(customer.in_store_total_spent || 0).toFixed(2)}` },
+            { label: 'Online orders', value: statSource.online_orders ?? 0 },
+            { label: 'Online total', value: `$${Number(statSource.online_total_spent || 0).toFixed(2)}` },
+            { label: 'In-store orders', value: statSource.in_store_orders ?? 0 },
+            { label: 'In-store total', value: `$${Number(statSource.in_store_total_spent || 0).toFixed(2)}` },
           ].map((stat) => (
             <div key={stat.label} className="rounded-xl bg-muted px-3 py-2">
               <p className="text-xs text-muted-foreground">{stat.label}</p>

@@ -87,11 +87,6 @@ export default async function (req: Request) {
           kept.push({ order_number: order.order_number, reason: `${order.payment_provider} check failed: ${err.message}` });
           continue;
         }
-      } else if (order.helcim_checkout_id) {
-        // Older card paths the app no longer reaches: what happened to them can
-        // only be read in the owner's own dashboard, so they are left alone.
-        kept.push({ order_number: order.order_number, reason: 'an older card path — left to its own record' });
-        continue;
       } else if (!isPhoneOrder(order)) {
         kept.push({ order_number: order.order_number, reason: 'not an online card order — left to its own flow' });
         continue;

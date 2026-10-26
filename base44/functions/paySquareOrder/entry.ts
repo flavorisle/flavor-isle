@@ -57,7 +57,6 @@ async function payFoodOrder(base44: any, order: any, sourceId: string, rawTip: u
   // processor behind it — that would be a second charge for the same food.
   if (
     order.square_payment_link_id ||
-    order.helcim_checkout_id ||
     (order.payment_provider && order.payment_provider !== 'square')
   ) {
     return { error: 'This order pays on its own card page. Please use the link you were sent, or call us at (270) 563-4618.' };

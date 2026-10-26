@@ -29,7 +29,7 @@ test('tax rounds half up on odd-cent subtotals', () => {
 });
 
 test('only orders with phone-payment fields count as phone orders', () => {
-  assert.equal(isPhoneOrder({ payment_provider: 'helcim' }), true);
+  assert.equal(isPhoneOrder({ payment_provider: 'square' }), true);
   assert.equal(isPhoneOrder({ manual_pay_required: true }), true);
   assert.equal(isPhoneOrder({ payment_url: 'https://flavor-isle.com/pay/1' }), true);
   assert.equal(isPhoneOrder({ stripe_session_id: 'pi_1' }), false);

@@ -71,13 +71,24 @@ export async function searchPulseCustomers(rawQuery: string, limit = 25) {
   return rows.map(mapPulseCustomer);
 }
 
+// Issue #123 B1: Pulse leaves normalized_phone empty and keeps the raw number
+// in phone (e.g. "+13607429809"). Orders are matched on the E.164 form, so it is
+// derived here in exactly that shape.
+function e164Phone(raw: any): string {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) return '+1' + digits;
+  if (digits.length === 11 && digits.startsWith('1')) return '+' + digits;
+  return '+' + digits;
+}
+
 export function mapPulseCustomer(row: any) {
   return {
     pulse_customer_id: String(row?.id || row?.pulse_customer_id || ''),
     name: row?.name || '',
     phone: row?.phone || '',
     email: row?.email || '',
-    normalized_phone: row?.normalized_phone || '',
+    normalized_phone: row?.normalized_phone || e164Phone(row?.phone),
     profile_id: row?.profile_id || '',
     source: row?.source || '',
     square_customer_id: row?.square_customer_id || '',

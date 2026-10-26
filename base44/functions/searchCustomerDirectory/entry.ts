@@ -40,25 +40,60 @@ export default async function (req: Request) {
         console.warn('Customer profile lookup failed:', (profileErr as Error).message);
       }
 
-      // Orders that belong to this person. The link is normalized phone first,
-      // then the profile id, then email — the same rule every order is written
-      // with, so nothing that belongs to them is left out of their history.
-      const orderQuery = normalizedPhone
-        ? { normalized_phone: normalizedPhone }
-        : profile?.id
-          ? { customer_id: profile.id }
-          : { customer_email: email };
-      // filter(query, sort, limit) returns an array on the server SDK.
-      const orderRows = await base44.asServiceRole.entities.Order
-        .filter(orderQuery, '-created_date', 25)
-        .catch(() => []);
-      const orders = Array.isArray(orderRows) ? orderRows : [];
+      // Orders that belong to this person (issue #123 B2). Checkout never wrote
+      // the local profile id, so a single-key lookup matched nothing. Every key
+      // an order can carry is queried instead — normalized phone, email, and the
+      // profile id when one exists — then merged, deduped and sorted newest
+      // first. filter(query, sort, limit) returns an array on the server SDK.
+      const candidateKeys = [
+        { value: normalizedPhone, query: (key: string) => ({ normalized_phone: key }) },
+        { value: email, query: (key: string) => ({ customer_email: key }) },
+        { value: profile?.id ? String(profile.id) : '', query: (key: string) => ({ customer_id: key }) },
+      ].filter((entry) => entry.value);
+
+      const matched: any[] = [];
+      for (const entry of candidateKeys) {
+        const rows = await base44.asServiceRole.entities.Order
+          .filter(entry.query(entry.value), '-created_date', 25)
+          .catch(() => []);
+        if (Array.isArray(rows)) matched.push(...rows);
+      }
+
+      const byId = new Map();
+      matched.forEach((order) => {
+        if (order?.id && !byId.has(order.id)) byId.set(order.id, order);
+      });
+      // Merged set before the display cap — the stats are computed from this.
+      const allMatched = [...byId.values()].sort(
+        (a, b) => new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
+      );
+      const orders = allMatched.slice(0, 25);
+
+      const inStore = allMatched.filter((order) => order.order_source === 'in_store');
+      const online = allMatched.filter((order) => order.order_source !== 'in_store');
+      const sumSpent = (rows: any[]) =>
+        Number(
+          rows
+            .filter((order) => order.status !== 'cancelled')
+            .reduce((sum, order) => sum + (Number(order.total) || 0), 0)
+            .toFixed(2)
+        );
+      const dates = allMatched.map((order) => order.created_date).filter(Boolean).sort();
+      const stats = {
+        online_orders: online.length,
+        online_total_spent: sumSpent(online),
+        in_store_orders: inStore.length,
+        in_store_total_spent: sumSpent(inStore),
+        first_order_date: dates[0] || '',
+        last_order_date: dates[dates.length - 1] || '',
+      };
 
       return Response.json({
         ok: true,
         profile: profile || null,
         orders,
-        orders_truncated: orders.length >= 25,
+        orders_truncated: allMatched.length >= 25,
+        stats,
       });
     }
 
