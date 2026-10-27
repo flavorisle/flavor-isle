@@ -17,6 +17,11 @@ import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 const TIKTOK_VIDEOS = [
   {
+    url: 'https://www.tiktok.com/@bigscottexperiences/video/7700747406803012877',
+    creator: 'bigscottexperiences',
+    title: "Big Scott Food Review: Joyce's Flavor Isle in Smiths Grove, KY",
+  },
+  {
     url: 'https://www.tiktok.com/@ashtonsjokes/video/7534173940646726942',
     creator: 'ashtonsjokes',
     title: 'Some of the best mozzarella sticks in the game!',
