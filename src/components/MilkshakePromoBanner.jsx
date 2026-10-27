@@ -23,7 +23,7 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
 
   const regularCount = shakes.filter((s) => !/malt/i.test(s.name || '')).length;
   const maltCount = shakes.filter((s) => /malt/i.test(s.name || '')).length;
-  const PREMIUM_COUNT = 5;
+  const PREMIUM_COUNT = 7;
   const totalCount = regularCount + maltCount + PREMIUM_COUNT;
 
   const fromPrice = (() => {

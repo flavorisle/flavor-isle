@@ -7,8 +7,10 @@ import ModifierModal from './ModifierModal';
 import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import { optimizedImageUrl } from '@/lib/utils';
 
-// The five specialty "Bliss" shakes — standalone Square items with their own
+// The specialty "Bliss" shakes — standalone Square items with their own
 // pricing and a Size modifier. Displayed below the build-your-own flavor grid.
+// Hidden (is_hidden) entries stay listed here so re-activating a flavor in
+// Square needs no code change.
 const PREMIUM_SHAKE_IDS = [
   '6a3e37fe23e413b185c3732a', // Banana Pudding Bliss
   '6a3e3807f128347090f2090d', // Circus Cookie Bliss
@@ -16,6 +18,8 @@ const PREMIUM_SHAKE_IDS = [
   '6a3e37fee8d7ba1372e2072f', // Banana Split Bliss
   '6a7b92470796edccdb26af34', // Caramel Apple Bliss
   '6ab2d3f6dfddfc7740e92cde', // Strawberry Crunch Bliss
+  '6adcb31da2a930a844ed2026', // Apple Pie Bliss
+  '6adcb69c70a34c9e1e47ee31', // Smores
 ];
 
 // Special availability badges keyed by MenuItem id.
@@ -23,6 +27,8 @@ const AVAILABILITY_BADGES = {
   '6a3e3807f128347090f2090d': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
   '6a7b92470796edccdb26af34': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
   '6ab2d3f6dfddfc7740e92cde': { label: 'New', className: 'bg-patina-mint text-white' },
+  '6adcb31da2a930a844ed2026': { label: 'New', className: 'bg-patina-mint text-white' },
+  '6adcb69c70a34c9e1e47ee31': { label: 'New', className: 'bg-patina-mint text-white' },
 };
 
 // Short display names (strip the "Milkshake" suffix for the card title).
@@ -33,6 +39,8 @@ const SHORT_NAMES = {
   '6a3e37fee8d7ba1372e2072f': 'Banana Split Bliss',
   '6a7b92470796edccdb26af34': 'Caramel Apple Bliss',
   '6ab2d3f6dfddfc7740e92cde': 'Strawberry Crunch Bliss',
+  '6adcb31da2a930a844ed2026': 'Apple Pie Bliss',
+  '6adcb69c70a34c9e1e47ee31': 'Smores',
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {

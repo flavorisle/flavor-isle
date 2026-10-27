@@ -5,7 +5,7 @@ import ChamberBadge from '@/components/about/ChamberBadge';
 const VALUES = [
   { icon: Beef, title: 'Fresh, Never Frozen', body: 'Our beef arrives fresh and gets hand-patted in our kitchen every morning. No freezer, no shortcuts, no exceptions.' },
   { icon: Flame, title: 'Made When You Order', body: 'Nothing waits under a heat lamp. Your burger hits the grill the moment your ticket prints, and your fries come out of the fryer hot.' },
-  { icon: Milk, title: 'Hand-Spun Shakes', body: 'Real ice cream, spun one at a time. Sixteen original flavors, five premium legends, or build your own from scratch.' },
+  { icon: Milk, title: 'Hand-Spun Shakes', body: 'Real ice cream, spun one at a time. Fourteen original flavors, seven premium legends, or build your own from scratch.' },
   { icon: HeartHandshake, title: 'Neighbors First', body: "We know our regulars by name and their orders by heart. Fair prices, friendly faces, and a seat for everyone." },
 ];
 
