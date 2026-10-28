@@ -1,10 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendOrderStatusSms } from '../../shared/sendOrderStatusSms.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
-import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail } from '../../shared/sendOrderEmails.ts';
 import { sendPushToEmail } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
-import { getLiveBusyness } from '../../shared/liveBusyness.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { grantCompletedWebOrderBonuses } from '../../shared/webOrderLoyaltyBonuses.ts';
 
@@ -14,9 +12,14 @@ import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { mapSquareFulfillmentStatus, advanceOrderStatus } from '../../shared/orderTrackingStatus.ts';
 import { CANCELABLE_STATUSES, mirrorPosCancellation, mirrorPosRefunds, listRecentSquareRefunds } from '../../shared/posOrderCancellation.ts';
 
-// Returns the ordered list of status milestones between (prev, new] so the
-// sync can send catch-up emails for any states the polling interval skipped.
-// e.g. confirmed → completed should fire preparing, ready, then completed.
+// Message consolidation (Oct 28 2026): the sync no longer sends any status
+// email. A status change now produces at most ONE customer text per order
+// ('ready', or 'confirmed' when that is the only milestone reached) plus the
+// existing "order ready" push. Thank-you, review ask and Stars totals all live
+// in the single thank-you email sent later by processPendingRecommendationEmails.
+//
+// Returns the ordered list of status milestones between (prev, new] so a
+// polling interval that skipped states still lands on the right one text.
 function missedMilestones(prevStatus, newStatus) {
   const order = ['confirmed', 'preparing', 'ready', 'completed'];
   const startIdx = order.indexOf(prevStatus);
@@ -222,56 +225,28 @@ export default async function(req) {
         completedThisRun.push(order.id);
       }
 
-      // Send email/push/SMS for the new status AND any intermediate milestones
-      // the polling interval skipped (e.g. confirmed → completed should also
-      // fire preparing + ready notifications so the customer is never left
-      // wondering).
+      // One text per order: 'ready', or 'confirmed' when that is the only
+      // milestone reached. No preparing or completed text, and no status email.
       const customerEmail = order.customer_email;
-      const customerName = order.customer_name;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
       const milestones = missedMilestones(prevStatus, newStatus);
-      // Record each text outcome independently of email/push success.
-      if (order.order_source !== 'in_store') {
-        for (const milestone of milestones) {
-          try {
-            await sendOrderStatusSms(base44, order, milestone, { settings: smashieSettings });
-          } catch (smsError) {
-            console.error(`Order ${order.order_number} ${milestone} SMS log failed:`, smsError.message);
-          }
+      const reachedReady = milestones.includes('ready') || milestones.includes('completed');
+      const textMilestone = reachedReady ? 'ready' : (milestones.includes('confirmed') ? 'confirmed' : null);
+      if (order.order_source !== 'in_store' && textMilestone) {
+        try {
+          await sendOrderStatusSms(base44, order, textMilestone, { settings: smashieSettings });
+        } catch (smsError) {
+          console.error(`Order ${order.order_number} ${textMilestone} SMS log failed:`, smsError.message);
         }
       }
+
       // Placeholder email addresses do not suppress a customer's text history.
-      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail) || order.order_source === 'in_store';
+      const isPlaceholderEmail = /@flavorisle\.(com|local)$/i.test(customerEmail || '') || order.order_source === 'in_store';
       if (!customerEmail || isPlaceholderEmail) continue;
-      try {
-      for (const milestone of milestones) {
-        if (milestone === 'preparing') {
-          await sendOrderPreparingEmail(order, base44);
-          notified++;
-          // Live wait for the push body — same number the email and site show.
-          let pushWait = '';
-          try {
-            const live = await getLiveBusyness(base44);
-            if (!live.isClosed && live.estimated_wait_min > 0) {
-              pushWait = ` Expect ~${live.estimated_wait_min} min — kitchen is ${live.busyness_level.toLowerCase()}.`;
-            }
-          } catch (e) {
-            console.error('live wait for push failed:', e.message);
-          }
 
-          await sendPushToEmail(base44, customerEmail, {
-            title: '🍔 Order on the grill',
-            body: `Hey ${customerName}, order #${orderNum} just hit the kitchen.${pushWait} We'll ping you the second it's ready!`,
-            url: '/order-status',
-            tag: `order-${order.id}`,
-          });
-        }
-
-        if (milestone === 'ready') {
-          await sendOrderReadyEmail(order, base44);
-          notified++;
-
+      if (newStatus === 'ready') {
+        try {
           await sendPushToEmail(base44, customerEmail, {
             title: '✅ Order ready!',
             body: order.order_type === 'delivery'
@@ -280,22 +255,10 @@ export default async function(req) {
             url: '/order-status',
             tag: `order-${order.id}`,
           });
-        }
-
-        if (milestone === 'completed') {
-          await sendOrderCompletedEmail(order, base44);
           notified++;
-
-          await sendPushToEmail(base44, customerEmail, {
-            title: 'Thanks for rolling with us! 🙌',
-            body: `Order #${orderNum} is all wrapped. Hope you ate good — see you again soon!`,
-            url: '/order-status',
-            tag: `order-${order.id}`,
-          });
+        } catch (pushError) {
+          console.error(`Order ${order.order_number} ready push failed:`, pushError.message);
         }
-      }
-      } catch (notificationError) {
-        console.error(`Status saved for order ${order.order_number}, but notification failed:`, notificationError.message);
       }
     }
 

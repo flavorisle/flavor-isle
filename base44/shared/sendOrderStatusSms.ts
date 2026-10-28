@@ -2,7 +2,26 @@ import { normalizePhone, sendSmashieSms, smashieSmsTemplates } from './sendSmash
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
 
+// Message consolidation (Oct 28 2026): only confirmed, ready and cancelled are
+// still texted. Anything else is logged as skipped and never sent.
+const ALLOWED_MILESTONES = new Set(['confirmed', 'ready', 'cancelled']);
+
 export async function sendOrderStatusSms(base44, order, milestone, options = {}) {
+  if (!ALLOWED_MILESTONES.has(milestone)) {
+    const retired = await base44.asServiceRole.entities.SmsDeliveryLog.create({
+      order_id: order.id, order_number: order.order_number, customer_name: order.customer_name || '',
+      phone: normalizePhone(order.customer_phone) || '', milestone, body: '',
+      status: 'skipped', reason: 'Milestone text retired in the Oct 28 2026 message consolidation',
+      status_at: new Date().toISOString(),
+    });
+    return { sent: false, skipped: true, reason: 'Milestone text retired', log_id: retired.id };
+  }
+  // One text per poll: if this order already has a live log for this milestone,
+  // never text it a second time.
+  const prior = await base44.asServiceRole.entities.SmsDeliveryLog.filter({ order_id: order.id, milestone });
+  if ((prior || []).some((r) => ['queued', 'sent', 'delivered'].includes(r.status))) {
+    return { sent: false, skipped: true, reason: 'Already sent for this order' };
+  }
   const cashNote = order.pay_cash_on_pickup && order.payment_status !== 'paid' && ['confirmed', 'ready'].includes(milestone)
     ? ` Pay $${Number(order.total).toFixed(2)} in cash at the counter at pickup.` : '';
   const body = (options.body || smashieSmsTemplates[milestone](order)) + cashNote;

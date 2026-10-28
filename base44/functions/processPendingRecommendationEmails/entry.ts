@@ -1,19 +1,35 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
-// Scheduled-job companion to sendOrderRecommendationEmail. Finds paid online
-// orders created ~30 minutes ago that haven't received a recommendation email
-// yet, and dispatches one sendOrderRecommendationEmail call per qualifying
-// order. The per-order function owns all guardrails (skip POS/test, 7-day
-// dedup, already-sent) — this function just finds candidates.
+// Message consolidation (Oct 28 2026): this scheduler now dispatches the ONE
+// customer thank-you email and nothing else — no separate review-request email
+// and no review text. Finds online orders created between 2 and 48 hours ago
+// that haven't received it yet and dispatches one
+// sendOrderRecommendationEmail call per qualifying order.
+//
+// Quiet hours: runs only 10 AM–9 PM store local (America/Chicago). Outside that
+// window it returns immediately, so no customer is emailed overnight; held
+// orders go out on the first in-window run.
+//
+// The per-order function owns all guardrails (skip POS/test, 7-day dedup,
+// already-sent) — this function just finds candidates.
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
 
-    // 30 min ago (lower bound) to 2 hours ago (upper bound — don't bother with
-    // very old orders that were already missed).
-    const lowerBound = new Date(Date.now() - 30 * 60 * 1000);
-    const upperBound = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    // ── Quiet hours (9 PM–10 AM store local) ──
+    const storeHour = parseInt(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hour12: false }).format(new Date()),
+      10
+    );
+    if (storeHour >= 21 || storeHour < 10) {
+      return Response.json({ ok: true, skipped: true, reason: 'quiet hours (9 PM–10 AM store local)' });
+    }
+
+    // 2 hours ago (lower bound — the meal is over) to 48 hours ago (upper
+    // bound — don't bother with very old orders that were already missed).
+    const lowerBound = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const upperBound = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
     // Recent online orders (sorted newest first). We do NOT filter by
     // payment_status here because many completed online orders sit at
@@ -23,10 +39,10 @@ export default async function (req: Request) {
     const orders = await base44.asServiceRole.entities.Order.filter(
       { order_source: 'online' },
       '-created_date',
-      100,
+      200,
     );
 
-    // Keep only orders created between 30 min and 2 hours ago, and exclude
+    // Keep only orders created between 2 and 48 hours ago, and exclude
     // cancelled / failed / refunded orders up front so we don't waste a send
     // attempt on them.
     // Issue #93 (A5): blocked customers are filtered out at selection time so

@@ -4,6 +4,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -205,6 +206,11 @@ export default async function (req: Request) {
         skipped++;
         continue;
       }
+
+      // Message consolidation cap: no marketing email within 24 hours of an
+      // order, and only one automated marketing email per 7 days.
+      const policy = await canSendMarketingEmail(base44, target.email);
+      if (!policy.ok) { console.log(`Marketing skip for ${target.email}: ${policy.reason}`); skipped++; continue; }
 
       // Build email
       const firstName = (target.order.customer_name || 'friend').split(' ')[0] || 'friend';

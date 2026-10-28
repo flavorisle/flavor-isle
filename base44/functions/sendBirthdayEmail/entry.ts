@@ -5,6 +5,7 @@ import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { grantLoyaltyPointsByPhone, toE164Phone } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const BIRTHDAY_POINTS = 100;
@@ -181,6 +182,11 @@ export default async function (req: Request) {
         skipped++;
         continue;
       }
+
+      // Message consolidation cap: no marketing email within 24 hours of an
+      // order, and only one automated marketing email per 7 days.
+      const policy = await canSendMarketingEmail(base44, profile.email);
+      if (!policy.ok) { console.log(`Marketing skip for ${profile.email}: ${policy.reason}`); skipped++; continue; }
 
       // Grant loyalty points (skip in test mode)
       let pointsGranted = 0;

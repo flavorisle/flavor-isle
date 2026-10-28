@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { Resend } from 'npm:resend@3.2.0';
 import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 
 // Scans CustomerProfiles for saved carts that have sat untouched for more than
 // one hour and sends each customer one compelling reminder email. Invoked by the
@@ -42,6 +43,7 @@ export default async function (req) {
 
     const now = Date.now();
     const reminded = [];
+    let skipped = 0;
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
     for (const p of (profiles || [])) {
@@ -53,6 +55,17 @@ export default async function (req) {
       const savedAt = Number(cart.savedAt) || 0;
       if (!savedAt) continue;
       if (now - savedAt < ONE_HOUR_MS) continue; // not idle long enough yet
+
+      // Message consolidation cap: no marketing email within 24 hours of an
+      // order, and only one automated marketing email per 7 days. A capped cart
+      // is NOT stamped, so it can still fire once the customer is eligible.
+      const policy = await canSendMarketingEmail(base44, p.email);
+      if (!policy.ok) {
+        console.log(`Marketing skip for ${p.email}: ${policy.reason}`);
+        skipped++;
+        reminded.push({ email: p.email, status: 'marketing_cap', reason: policy.reason });
+        continue;
+      }
 
       const lastReminderMs = p.cart_reminder_sent_at ? new Date(p.cart_reminder_sent_at).getTime() : 0;
       // Skip if we already reminded for this (or a later) version of the cart.
@@ -88,6 +101,7 @@ export default async function (req) {
     return Response.json({
       checked: (profiles || []).length,
       reminded_count: reminded.filter((r) => r.status === 'sent').length,
+      skipped,
       details: reminded,
     });
   } catch (error) {

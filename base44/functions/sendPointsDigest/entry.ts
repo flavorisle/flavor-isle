@@ -4,6 +4,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { getLoyaltyProgram, searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
@@ -116,6 +117,11 @@ export default async function (req: Request) {
         skipped++;
         continue;
       }
+
+      // Message consolidation cap: no marketing email within 24 hours of an
+      // order, and only one automated marketing email per 7 days.
+      const policy = await canSendMarketingEmail(base44, profile.email);
+      if (!policy.ok) { console.log(`Marketing skip for ${profile.email}: ${policy.reason}`); skipped++; continue; }
 
       const balance = Number(account?.balance || 0);
       const tier = nextTier(balance, rewardTiers);

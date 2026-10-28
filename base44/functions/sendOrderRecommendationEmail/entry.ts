@@ -1,9 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
-import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { brandedEmailHtml, reviewCtaHtml, starsEarnedHtml } from '../../shared/sendOrderEmails.ts';
+import { searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+
+// Message consolidation (Oct 28 2026): this is now the customer's ONE
+// post-order email. It carries the thank-you subject, the Stars they earned
+// (with their live balance when we can read it), the review ask, and the
+// suggestion card so the visit still ends with a reason to come back. The old
+// separate review-request email and the review text are retired.
 
 const APP_URL = 'https://flavor-isle.com';
 // Backend function endpoints are NOT reachable through the custom domain.
@@ -368,6 +375,22 @@ export default async function (req: Request) {
     // Tag buckets for copy generation
     recommendations = recommendations.map((r) => ({ ...r, _bucket: bucketItem(r) }));
 
+    // ── Thank-you framing: subject, Stars earned, live balance ──
+    const thanksSubject = `Thanks for stopping by Flavor Isle, ${(order.customer_name || 'friend').split(' ')[0]}`;
+    const pointsEarned = order.customer_phone
+      ? Math.floor(Number(order.total || 0) * (order.order_source === 'online' ? 1.1 : 1))
+      : 0;
+    let starsBalance = null;
+    if (pointsEarned > 0) {
+      try {
+        const acct = await searchLoyaltyAccountByPhone(base44, order.customer_phone);
+        const b = acct?.balance ?? acct?.points_balance ?? null;
+        if (typeof b === 'number') starsBalance = b;
+      } catch (e) {
+        console.error('Stars balance lookup failed, sending without balance:', e.message);
+      }
+    }
+
     // ── Build email HTML ──
     const customerName = (order.customer_name || 'friend').split(' ')[0];
     const heading = subject.replace(/[🍦🍔🍟]/gu, '').trim();
@@ -387,6 +410,8 @@ export default async function (req: Request) {
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:16px 40px;border-radius:999px;font-size:16px;">${ctaLabel}</a>
       </div>
+      ${pointsEarned > 0 ? starsEarnedHtml({ pointsEarned, balance: starsBalance ?? undefined }) : ''}
+      ${reviewCtaHtml(order.id)}
       <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
     `;
 
@@ -398,7 +423,7 @@ export default async function (req: Request) {
     const { error } = await resend.emails.send({
       from: FROM,
       to: recipient,
-      subject: isTest ? `[TEST] ${subject}` : subject,
+      subject: isTest ? `[TEST] ${thanksSubject}` : thanksSubject,
       html,
     });
     if (error) {
