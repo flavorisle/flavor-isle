@@ -23,7 +23,7 @@ const HTML = `<!DOCTYPE html>
 <body>
 <h1>Terms of Service</h1>
 <p class="muted">The rules and terms for using Flavor Isle's website and services.</p>
-<p class="muted">Last updated: August 28, 2026</p>
+<p class="muted">Last updated: October 28, 2026</p>
 
 <p>Welcome to Flavor Isle! These Terms of Service explain the rules for using our website, placing orders, earning rewards, chatting with our assistant Smashie, using our mobile app, and receiving messages from us. By using our services, you agree to these terms — including your consent to SMS, phone, and push notifications, the use of OpenAI for our assistant, and the promotional use of your information and photos as described here.</p>
 
@@ -32,6 +32,16 @@ const HTML = `<!DOCTYPE html>
 <p>These Terms of Service govern your use of the Flavor Isle website, online ordering, loyalty program, and our AI assistant, Smashie. By placing an order, creating an account, chatting with Smashie, or providing your phone number, you agree to these terms. If you do not agree, please do not use our services.</p>
 <h3>Changes to These Terms</h3>
 <p>We may update these terms from time to time. The "Last updated" date below reflects the most recent revision. Continued use of our services after changes means you accept the updated terms.</p>
+
+<h2>Ownership &amp; Operation of Flavor Isle</h2>
+<h3>Who Owns Flavor Isle</h3>
+<p>Flavor Isle is a restaurant business owned by Joseph Booker and Vickie Booker.</p>
+<h3>Who Operates Flavor Isle</h3>
+<p>Flavor Isle is currently operated and run by Ashley Booker, who manages the day-to-day operations of the restaurant on behalf of the owners.</p>
+<h3>Who Owns This Website</h3>
+<p>The Flavor Isle website, including its pages, content, design, and code, is owned by Wesley Booker, and the domain name flavor-isle.com is owned by Wesley Booker. The website is provided and maintained by its owner in support of Flavor Isle's restaurant operations.</p>
+<h3>How "We," "Us," and "Our" Are Used in These Terms</h3>
+<p>In these Terms of Service, "Flavor Isle," "we," "us," and "our" refer to the Flavor Isle restaurant business together with its owners and its current operator as described above. Where these Terms concern this website or the flavor-isle.com domain, those words also include the website's owner as described above.</p>
 
 <h2>Ordering &amp; Payment</h2>
 <h3>Placing an Order</h3>
@@ -101,7 +111,6 @@ const HTML = `<!DOCTYPE html>
 <h3>Program Changes &amp; Limitations</h3>
 <p>Flavor Isle may modify, suspend, or discontinue the Star Rewards program — including earning rules, reward tiers, expiration policies, and promotional bonuses — at any time without notice. Continued participation after changes means you accept the updated terms. Participation in Star Rewards does not guarantee the availability of any specific reward, earning rate, or benefit. Flavor Isle may limit reward quantities, restrict eligibility, or adjust program mechanics as needed.</p>
 
-<h2>Star Rewards</h2>
 <h3>Points &amp; Phone Number Ownership</h3>
 <p>Flavor Isle Star Rewards is our free rewards program. Points accrue only to the rewards account matching the phone number provided at checkout. Entering a phone number on another customer's purchase does not transfer that purchase's points to the person entering the number; points belong to the account that earned them. If we reasonably suspect that someone has claimed points on another customer's purchase, we may suspend or terminate the rewards account used and void its points. Automatic card recognition at the register is a convenience feature and is not the same as signing in to your account on this website. Rewards questions or disputes: rewards@flavor-isle.com.</p>
 
