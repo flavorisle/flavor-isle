@@ -6,6 +6,7 @@ import CommunicationPreferences from '@/components/account/CommunicationPreferen
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
 import { saveSignupProfile } from '@/lib/saveSignupProfile';
+import { isAccountNotFoundError } from '@/lib/authErrors';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
@@ -709,11 +710,13 @@ function GuestAuth({ onSuccess }) {
   const [otpCode, setOtpCode] = useState('');
   const [step, setStep] = useState('form'); // 'form' | 'otp'
   const [error, setError] = useState('');
+  const [accountNotFound, setAccountNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setAccountNotFound(false);
     if (mode === 'register' && !phone.trim()) {
       setError('Phone number is required');
       return;
@@ -728,7 +731,13 @@ function GuestAuth({ onSuccess }) {
         setStep('otp');
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      const notFound = mode === 'login' && isAccountNotFoundError(err);
+      setAccountNotFound(notFound);
+      setError(
+        notFound
+          ? "We couldn't find an account with that email."
+          : err.message || 'Something went wrong. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -821,6 +830,11 @@ function GuestAuth({ onSuccess }) {
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
+        {accountNotFound && (
+          <button type="button" onClick={() => { setMode('register'); setError(''); setAccountNotFound(false); }} className="text-sm font-semibold text-midnight-cherry underline underline-offset-2">
+            Please create a new account
+          </button>
+        )}
         <button type="submit" disabled={loading} className="btn-cherry chrome-hover w-full py-4 text-sm font-heading disabled:opacity-60">
           {loading ? (mode === 'login' ? 'Signing in…' : 'Creating account…') : (mode === 'login' ? 'Sign In' : 'Create Account')}
         </button>

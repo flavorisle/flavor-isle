@@ -8,16 +8,19 @@ import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { isAccountNotFoundError } from "@/lib/authErrors";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [accountNotFound, setAccountNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setAccountNotFound(false);
     setLoading(true);
     try {
       // Return the customer to wherever they were headed (?returnTo=), so signing
@@ -26,7 +29,13 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = returnTo;
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      const notFound = isAccountNotFoundError(err);
+      setAccountNotFound(notFound);
+      setError(
+        notFound
+          ? "We couldn't find an account with that email."
+          : err.message || "Invalid email or password"
+      );
     } finally {
       setLoading(false);
     }
@@ -70,7 +79,15 @@ export default function Login() {
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
+          <p>{error}</p>
+          {accountNotFound && (
+            <Link
+              to={`/register${window.location.search}`}
+              className="inline-block mt-1 font-semibold underline"
+            >
+              Please create a new account
+            </Link>
+          )}
         </div>
       )}
 
