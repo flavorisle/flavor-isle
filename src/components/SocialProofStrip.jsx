@@ -5,7 +5,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 
 export default function SocialProofStrip({ tone = 'dark' }) {
   const isLight = tone === 'light';
-  const text = isLight ? 'text-white/90' : 'text-obsidian-roast/80';
+  const text = isLight ? 'text-white/90' : 'text-obsidian-roast';
   const [rating, setRating] = useState(null);
   const [count, setCount] = useState(0);
   const { waitMin } = useLiveStatus();

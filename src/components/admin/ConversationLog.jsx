@@ -155,7 +155,7 @@ export default function ConversationLog({ channel }) {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {hasName && <span className="text-obsidian-roast/70">{c.phone_number} · </span>}
+                      {hasName && <span className="text-obsidian-roast">{c.phone_number} · </span>}
                       {c.last_message_at ? new Date(c.last_message_at).toLocaleString() : '—'}
                       {c.call_duration != null && <> · {fmtDur(c.call_duration)}</>}
                       {channel === 'voice' && !hasName && resolving[c.id] && <> · looking up…</>}

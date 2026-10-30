@@ -6,7 +6,7 @@ import { base44 } from '@/api/base44Client';
 const THEMES = {
   cherry: { bg: 'bg-midnight-cherry', text: 'text-white', sub: 'text-white/80', btn: 'bg-white text-midnight-cherry' },
   navy: { bg: 'bg-obsidian-roast', text: 'text-white', sub: 'text-white/70', btn: 'bg-smashie-yellow text-obsidian-roast' },
-  yellow: { bg: 'bg-smashie-yellow', text: 'text-obsidian-roast', sub: 'text-obsidian-roast/70', btn: 'bg-obsidian-roast text-white' },
+  yellow: { bg: 'bg-smashie-yellow', text: 'text-obsidian-roast', sub: 'text-obsidian-roast', btn: 'bg-obsidian-roast text-white' },
 };
 
 // Today's date in store-local time (America/Chicago) as YYYY-MM-DD, so scheduled

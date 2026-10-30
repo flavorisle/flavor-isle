@@ -39,7 +39,7 @@ export default function AskAdminForm() {
       {status === 'sent' ? (
         <div className="flex items-start gap-2 py-2">
           <CheckCircle size={20} className="text-green-700 shrink-0 mt-0.5" />
-          <p className="font-body text-sm text-obsidian-roast/85">
+          <p className="font-body text-sm text-obsidian-roast">
             Got it — the admin's got it now. We'll get back to you.
           </p>
         </div>

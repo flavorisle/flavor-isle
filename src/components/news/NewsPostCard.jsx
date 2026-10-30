@@ -28,7 +28,7 @@ export default function NewsPostCard({ post }) {
           <span className="text-xs text-muted-foreground font-body">{date}</span>
         </div>
         <h2 className="font-heading text-xl sm:text-2xl text-obsidian-roast leading-tight mb-2">{post.title}</h2>
-        <p className="font-body text-sm sm:text-base text-obsidian-roast/85 leading-relaxed whitespace-pre-line">{post.body}</p>
+        <p className="font-body text-sm sm:text-base text-obsidian-roast leading-relaxed whitespace-pre-line">{post.body}</p>
       </div>
     </article>
   );

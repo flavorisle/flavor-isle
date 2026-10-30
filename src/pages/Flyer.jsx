@@ -149,7 +149,7 @@ export default function Flyer() {
 
           {/* More on the menu */}
           <div className="px-8 pb-2 text-center">
-            <p className="text-[11px] text-obsidian-roast/80 leading-snug">
+            <p className="text-[11px] text-obsidian-roast leading-snug">
               <span className="font-heading tracking-wide">PLUS:</span> Mini Cheeseburger &middot; Tenderloin &middot; Chuck Wagon &middot; Curly Fries &middot; Sweet Potato Fries &middot; Bacon Cheeseburger &middot; Cheeseburger &middot; Loaded Cajun Chili Fries &middot; Shakes &amp; more!
             </p>
           </div>
