@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Utensils, ShoppingBag, Bike, HelpCircle, Car, Newspaper } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -160,6 +160,21 @@ export default function Home() {
       <CartDrawer />
 
       <EarlyCloseNotice />
+
+      {/* ── COMMUNITY NEWS LINK (small, top of page) ── */}
+      <div className="bg-vanilla-malt border-b border-midnight-cherry/15">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <Link
+            to="/community-news"
+            className="flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-heading uppercase tracking-widest text-midnight-cherry hover:text-obsidian-roast transition-colors whitespace-nowrap"
+          >
+            <Newspaper size={14} aria-hidden="true" />
+            <span>Community News</span>
+            <span className="hidden sm:inline font-body normal-case tracking-normal text-muted-foreground">&mdash; what&rsquo;s happening at the Isle</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
 
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero cityLine />

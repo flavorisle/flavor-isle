@@ -18,7 +18,7 @@
           "then": "end",
           "x-base44": {
             "title": "Refresh fan favorites",
-            "description": "Aggregate 60 days of Square sales, stamp top 10"
+            "description": "Aggregate 7 days of Square sales, stamp top 10"
           }
         }
       }

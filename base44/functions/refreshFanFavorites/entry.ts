@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 // Aggregates the top 10 best-selling items across ALL Square order sources
-// (online + in-store POS) from COMPLETED, PAID orders in the last 60 days,
+// (online + in-store POS) from COMPLETED, PAID orders in the last 7 days,
 // then stamps the matching visible MenuItem records with is_fan_favorite +
 // fan_favorite_rank so the homepage "Fan Favorites" rail can surface them.
 //
@@ -25,7 +25,7 @@ import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 //    Square order pull at the store's expense. See shared/maintenanceGate.ts.
 
 const SQUARE_VERSION = '2026-09-16';
-const LOOKBACK_DAYS = 60;
+const LOOKBACK_DAYS = 7;
 const TOP_N = 10;
 const MAX_ORDERS = 20000;
 const CATALOG_BATCH = 1000;
