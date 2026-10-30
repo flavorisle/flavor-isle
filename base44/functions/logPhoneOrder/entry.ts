@@ -172,9 +172,9 @@ export default async function(req) {
       }
     }
 
-    // Orders without an email still need a value for the required field — this
-    // placeholder is already treated as "no email" by the order emails.
-    const orderEmail = emailOk ? customer_email : 'phone-order@flavorisle.com';
+    // No placeholder address: a caller who gave no email leaves the field empty.
+    // The order email helpers already treat a blank email as "no email".
+    const orderEmail = emailOk ? customer_email : '';
 
     // Every line must resolve to a live menu item (or an approved non-catalog
     // price). Smashie quotes live prices, but the values still arrive over the

@@ -226,6 +226,14 @@
       ],
       "default": "pending"
     },
+    "loyalty_account_id": {
+      "type": "string",
+      "description": "Square loyalty account id tied to this order, when Square provides one"
+    },
+    "loyalty_points_earned": {
+      "type": "number",
+      "description": "Star Rewards points Square actually credited for this order"
+    },
     "loyalty_accrued": {
       "type": "boolean",
       "default": false
