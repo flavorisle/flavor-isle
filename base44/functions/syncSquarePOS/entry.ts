@@ -1,10 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
-import { lookupCustomersByIds, normalizePhone } from '../../shared/squareCustomer.ts';
+import { lookupCustomersByIds, lookupCustomersByIdsDetailed, normalizePhone } from '../../shared/squareCustomer.ts';
+import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
+import { squareOrderFields } from '../../shared/squareOrderFields.ts';
 import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
 
-const PLACEHOLDER_EMAIL = 'square-pos@flavorisle.com';
 const SQUARE_VERSION = '2026-09-16';
+// Star Rewards lookups are one Square call each, so a run checks at most this
+// many orders (newest first — Square returns them newest first).
+const LOYALTY_LOOKUP_CAP = 50;
 
 Deno.serve(async (req) => {
   try {
@@ -94,7 +98,23 @@ Deno.serve(async (req) => {
         if (tender.customer_id) customerIdSet.add(tender.customer_id);
       });
     });
-    const customerMap = await lookupCustomersByIds(base44, [...customerIdSet]);
+    const { map: customerMap, error: customerLookupError } =
+      await lookupCustomersByIdsDetailed(base44, [...customerIdSet]);
+
+    // A customer lookup that genuinely failed is recorded, never swallowed:
+    // otherwise every affected order silently degrades to Walk-In with no trace.
+    if (customerLookupError) {
+      try {
+        await base44.asServiceRole.entities.SquareSyncLog.create({
+          order_id: '(customer-lookup)',
+          order_number: '(customer-lookup)',
+          status: 'failed',
+          error_message: String(customerLookupError).slice(0, 1000),
+        });
+      } catch (logErr) {
+        console.error('Square customer lookup log failed:', (logErr as Error).message);
+      }
+    }
 
     // Issue #123 C2(c): a walk-in who keyed in their Star Rewards phone number
     // leaves no customer id on the ticket — only a loyalty event. The event's
@@ -171,6 +191,7 @@ Deno.serve(async (req) => {
     // Issue #123 C3: an id that produced no customer record is a failed lookup,
     // not a Walk-In — it is counted and logged, never silently degraded.
     let unresolvedCustomerCount = 0;
+    let loyaltyLookups = 0;
     const unresolvedCustomerIds = new Set();
     for (const so of squareOrders) {
       // Skip Square orders that were pushed from our website (online orders
@@ -210,16 +231,44 @@ Deno.serve(async (req) => {
       const sqName = cust?.name || '';
       // Prefer the online account email matched by phone so the POS order
       // lands in the customer's web history (RLS keys on customer_email =
-      // user.email). Fall back to the Square email, then the placeholder.
+      // user.email). Fall back to the Square email, then leave it empty — an
+      // unknown email is never filled with an invented address.
       const linkedEmail = (sqPhone && phoneToEmail.get(normalizePhone(sqPhone))) || sqEmail || '';
-      const customerEmail = linkedEmail || PLACEHOLDER_EMAIL;
-      const customerName = sqName || (resolvedCustomerId ? 'POS Customer' : 'Walk-In');
+      const customerEmail = linkedEmail || '';
+      const customerName = sqName || 'Walk-In';
       const items = (so.line_items || []).map(item => ({
         name: item.name || 'Item',
         quantity: item.quantity ? parseInt(item.quantity) : 1,
         price: item.gross_sales_money ? (item.gross_sales_money.amount / 100) : 0
       }));
-      const total = so.total_money ? (so.total_money.amount / 100) : 0;
+
+      // Money, tender and fulfillment details read straight from the Square
+      // order; empty/0 when Square has nothing to say.
+      const { square_name, square_email: _squareEmail, square_phone: _squarePhone, ...orderFields } =
+        squareOrderFields(so, cust);
+
+      // Star Rewards: Square's own accrual event is the only record of the
+      // points a POS order actually earned. Capped per run, newest first, and
+      // never allowed to fail the sync.
+      let loyalty = {};
+      if (resolvedCustomerId && loyaltyLookups < LOYALTY_LOOKUP_CAP) {
+        loyaltyLookups += 1;
+        try {
+          const event = await getAccrualEventForOrder(so.id);
+          if (event) {
+            const points = Number(
+              event.accumulate_points?.points ?? event.accumulate_promotion_points?.points ?? 0,
+            ) || 0;
+            loyalty = {
+              loyalty_account_id: event.loyalty_account_id || '',
+              loyalty_points_earned: points,
+              loyalty_accrued: true,
+            };
+          }
+        } catch (loyaltyErr) {
+          console.error(`Square loyalty lookup failed for order ${so.id}:`, (loyaltyErr as Error).message);
+        }
+      }
 
       const existing = existingBySquareId.get(so.id);
       if (!existing) {
@@ -229,23 +278,32 @@ Deno.serve(async (req) => {
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: sqPhone,
-          order_type: 'dine_in',
           order_source: 'in_store',
           status: mapSquareStatus(so.state),
           items,
-          total,
-          subtotal: total,
-          tax: so.total_tax_money ? (so.total_tax_money.amount / 100) : 0,
-          payment_status: 'paid'
+          ...orderFields,
+          ...loyalty,
         });
-      } else if (linkedEmail && existing.customer_email === PLACEHOLDER_EMAIL) {
-        // Relink a previously-synced POS order now that we can resolve the
-        // customer to a real online account.
-        updates.push(base44.asServiceRole.entities.Order.update(existing.id, {
-          customer_email: customerEmail,
-          customer_phone: sqPhone || existing.customer_phone || '',
-          customer_name: customerName,
-        }));
+      } else {
+        // Relink an already-synced order once Square can resolve who paid it:
+        // the old placeholder email, an empty phone, or an empty customer id.
+        // Only fresh non-empty values are written; a real stored value is kept.
+        const needsRelink =
+          existing.customer_email === 'square-pos@flavorisle.com' ||
+          !existing.customer_phone ||
+          !existing.customer_id;
+        if (needsRelink) {
+          const patch: Record<string, any> = {};
+          if (customerEmail && customerEmail !== existing.customer_email) patch.customer_email = customerEmail;
+          if (sqPhone && !existing.customer_phone) patch.customer_phone = sqPhone;
+          if (orderFields.normalized_phone && !existing.normalized_phone) patch.normalized_phone = orderFields.normalized_phone;
+          if (orderFields.customer_id && !existing.customer_id) patch.customer_id = orderFields.customer_id;
+          if (square_name && square_name !== existing.customer_name) patch.customer_name = square_name;
+          if (loyalty.loyalty_accrued && !existing.loyalty_accrued) Object.assign(patch, loyalty);
+          if (Object.keys(patch).length > 0) {
+            updates.push(base44.asServiceRole.entities.Order.update(existing.id, patch));
+          }
+        }
       }
     }
 
