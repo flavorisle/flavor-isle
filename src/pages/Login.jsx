@@ -22,6 +22,25 @@ export default function Login() {
     setError("");
     setAccountNotFound(false);
     setLoading(true);
+
+    // Deterministic existence check first: the platform's login error text
+    // can't tell a missing account from a wrong password. A check that itself
+    // fails is ignored so a real customer is never blocked by it.
+    let exists = null;
+    try {
+      const res = await base44.functions.invoke("checkAccountExists", { email });
+      if (typeof res?.data?.exists === "boolean") exists = res.data.exists;
+    } catch (err) {
+      exists = null;
+    }
+
+    if (exists === false) {
+      setAccountNotFound(true);
+      setError("No account found for that email.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Return the customer to wherever they were headed (?returnTo=), so signing
       // in from checkout lands back on checkout with the bag still full.
@@ -29,16 +48,26 @@ export default function Login() {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = returnTo;
     } catch (err) {
-      const notFound = isAccountNotFoundError(err);
-      setAccountNotFound(notFound);
-      setError(
-        notFound
-          ? "We couldn't find an account with that email."
-          : err.message || "Invalid email or password"
-      );
+      // The check said the account is there, so the password is what failed.
+      // Otherwise fall back to the platform error text (last resort only).
+      if (exists === true) {
+        setError("Incorrect password for that account.");
+      } else if (isAccountNotFoundError(err)) {
+        setAccountNotFound(true);
+        setError("No account found for that email.");
+      } else {
+        setError(err.message || "Invalid email or password");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const useDifferentEmail = () => {
+    setEmail("");
+    setPassword("");
+    setError("");
+    setAccountNotFound(false);
   };
 
   const handleGoogle = () => {
@@ -77,19 +106,39 @@ export default function Login() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          <p>{error}</p>
-          {accountNotFound && (
-            <Link
-              to={`/register${window.location.search}`}
-              className="inline-block mt-1 font-semibold underline"
-            >
-              Please create a new account
-            </Link>
-          )}
+      {accountNotFound ? (
+        <div className="mb-4 p-4 rounded-lg bg-muted text-sm">
+          <p className="font-semibold text-foreground">No account found for that email.</p>
+          <p className="mt-1 text-muted-foreground">
+            All previous Flavor Isle accounts were deleted, so your old login no longer works.
+            Create a new account and you're back in.
+          </p>
+          <Link
+            to={`/register?email=${encodeURIComponent(email)}`}
+            className="btn-cherry chrome-hover mt-4 flex w-full items-center justify-center py-3 text-sm"
+          >
+            Create a new account
+          </Link>
+          <button
+            type="button"
+            onClick={useDifferentEmail}
+            className="mt-3 block text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Use a different email
+          </button>
         </div>
+      ) : (
+        error && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            {error}
+          </div>
+        )
       )}
+
+      <div className="mb-5 rounded-lg bg-muted px-4 py-3 text-xs text-muted-foreground">
+        Heads up: all previous Flavor Isle accounts were deleted. Please create a new account
+        to use Star Rewards online.
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

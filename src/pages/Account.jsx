@@ -722,6 +722,26 @@ function GuestAuth({ onSuccess }) {
       return;
     }
     setLoading(true);
+
+    // Sign-in only: check the account exists before handing credentials to the
+    // platform, so a wrong email gets a clear answer. Register mode is untouched,
+    // and a failed check never blocks a real sign-in.
+    let exists = null;
+    if (mode === 'login') {
+      try {
+        const res = await base44.functions.invoke('checkAccountExists', { email });
+        if (typeof res?.data?.exists === 'boolean') exists = res.data.exists;
+      } catch (err) {
+        exists = null;
+      }
+      if (exists === false) {
+        setAccountNotFound(true);
+        setError('No account found for that email.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       if (mode === 'login') {
         await base44.auth.loginViaEmailPassword(email, password);
@@ -731,11 +751,13 @@ function GuestAuth({ onSuccess }) {
         setStep('otp');
       }
     } catch (err) {
-      const notFound = mode === 'login' && isAccountNotFoundError(err);
+      const notFound = mode === 'login' && exists !== true && isAccountNotFoundError(err);
       setAccountNotFound(notFound);
       setError(
         notFound
-          ? "We couldn't find an account with that email."
+          ? 'No account found for that email.'
+          : mode === 'login' && exists === true
+          ? 'Incorrect password for that account.'
           : err.message || 'Something went wrong. Please try again.'
       );
     } finally {
@@ -832,7 +854,7 @@ function GuestAuth({ onSuccess }) {
         {error && <p className="text-sm text-destructive">{error}</p>}
         {accountNotFound && (
           <button type="button" onClick={() => { setMode('register'); setError(''); setAccountNotFound(false); }} className="text-sm font-semibold text-midnight-cherry underline underline-offset-2">
-            Please create a new account
+            Create a new account
           </button>
         )}
         <button type="submit" disabled={loading} className="btn-cherry chrome-hover w-full py-4 text-sm font-heading disabled:opacity-60">

@@ -13,12 +13,17 @@ import { saveSignupProfile } from "@/lib/saveSignupProfile";
 import { toast } from "@/components/ui/use-toast";
 
 export default function Register() {
-  const [email, setEmail] = useState("");
+  // ?email= arrives from the sign-in page's "Create a new account" link, so the
+  // address just rejected is already filled in. Phone and password stay empty.
+  const [email, setEmail] = useState(
+    () => new URLSearchParams(window.location.search).get("email") || ""
+  );
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [accountExists, setAccountExists] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
@@ -26,6 +31,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setAccountExists(false);
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -35,6 +41,21 @@ export default function Register() {
       return;
     }
     setLoading(true);
+
+    // Already registered? Send them to log in instead of starting a signup the
+    // platform would reject. A check that itself fails never blocks signup.
+    try {
+      const res = await base44.functions.invoke("checkAccountExists", { email });
+      if (res?.data?.exists === true) {
+        setAccountExists(true);
+        setError("An account already exists for that email. Log in instead.");
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      // fall through to the normal registration attempt
+    }
+
     try {
       await base44.auth.register({ email, password });
       setShowOtp(true);
@@ -183,9 +204,22 @@ export default function Register() {
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
+          <p>{error}</p>
+          {accountExists && (
+            <Link
+              to={`/login${window.location.search}`}
+              className="inline-block mt-1 font-semibold underline"
+            >
+              Log in
+            </Link>
+          )}
         </div>
       )}
+
+      <div className="mb-5 rounded-lg bg-muted px-4 py-3 text-xs text-muted-foreground">
+        Heads up: all previous Flavor Isle accounts were deleted. Please create a new account
+        to use Star Rewards online.
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
