@@ -211,7 +211,7 @@ export default function Faq() {
 
         <div className="text-center mt-10">
           <h2 className="font-heading text-2xl text-obsidian-roast">Still curious?</h2>
-          <p className="text-sm text-muted-foreground mt-2 mb-5">103 N Main St, Smiths Grove, KY 42171 · (270) 563-7230</p>
+          <p className="text-sm text-muted-foreground mt-2 mb-5">103 N Main St, Smiths Grove, KY 42171 · (270) 563-4618</p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link to="/menu" className="btn-cherry chrome-hover px-7 py-3.5 text-sm font-heading inline-flex items-center gap-2">
               Order Online <ArrowRight size={16} />
@@ -220,7 +220,7 @@ export default function Faq() {
               Plan your Exit 38 stop <ArrowRight size={16} />
             </Link>
             <a href="tel:+12705637230" className="btn-mint chrome-hover px-7 py-3.5 text-sm font-heading inline-flex items-center gap-2">
-              <Phone size={16} /> (270) 563-7230
+              <Phone size={16} /> Call Smashie · (270) 563-7230
             </a>
           </div>
         </div>

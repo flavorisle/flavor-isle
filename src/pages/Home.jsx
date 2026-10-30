@@ -177,7 +177,7 @@ export default function Home() {
       </div>
 
       {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero cityLine />
+      <CinematicHero cityLine heading="Burgers & shakes in Smiths Grove since 1964." subtitle="Two minutes off I-65. Zero regrets." />
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
       <FindSmashiePromo />
