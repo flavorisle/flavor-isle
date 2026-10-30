@@ -9,6 +9,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { saveSignupProfile } from "@/lib/saveSignupProfile";
 import { toast } from "@/components/ui/use-toast";
 
 export default function Register() {
@@ -63,20 +64,7 @@ export default function Register() {
       // so Star Rewards (keyed by phone) and the birthday automation work
       // without a separate profile setup step.
       try {
-        const existing = await base44.entities.CustomerProfile.filter({ email });
-        if (existing?.length) {
-          await base44.entities.CustomerProfile.update(existing[0].id, {
-            phone,
-            ...(birthday ? { birthday } : {}),
-          });
-        } else {
-          await base44.entities.CustomerProfile.create({
-            name: email.split("@")[0],
-            email,
-            phone,
-            ...(birthday ? { birthday } : {}),
-          });
-        }
+        await saveSignupProfile({ email, phone, birthday });
       } catch (err) {
         console.error("Customer profile save failed:", err);
       }

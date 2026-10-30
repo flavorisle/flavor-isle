@@ -5,6 +5,7 @@ import OrderLookup from '@/components/OrderLookup';
 import CommunicationPreferences from '@/components/account/CommunicationPreferences';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDate } from '@/lib/chicagoTime';
+import { saveSignupProfile } from '@/lib/saveSignupProfile';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel
@@ -703,6 +704,8 @@ function GuestAuth({ onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [step, setStep] = useState('form'); // 'form' | 'otp'
   const [error, setError] = useState('');
@@ -711,6 +714,10 @@ function GuestAuth({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (mode === 'register' && !phone.trim()) {
+      setError('Phone number is required');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'login') {
@@ -734,6 +741,13 @@ function GuestAuth({ onSuccess }) {
     try {
       const { access_token } = await base44.auth.verifyOtp({ email, otpCode });
       base44.auth.setToken(access_token);
+      // Save the phone + birthday collected at sign-up onto the customer
+      // profile so Star Rewards and the birthday automation get them.
+      try {
+        await saveSignupProfile({ email, phone, birthday });
+      } catch (err) {
+        console.error('Customer profile save failed:', err);
+      }
       window.location.href = window.location.pathname + window.location.search;
     } catch (err) {
       setError(err.message || 'Invalid code. Please try again.');
@@ -784,6 +798,18 @@ function GuestAuth({ onSuccess }) {
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Full Name</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+          </div>
+        )}
+        {mode === 'register' && (
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone Number</label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(270) 555-0000" required className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
+          </div>
+        )}
+        {mode === 'register' && (
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Date of Birth</label>
+            <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry" />
           </div>
         )}
         <div>
