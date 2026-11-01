@@ -6,9 +6,9 @@ import { getSmashieSettings } from './smashieSettings.ts';
 // Mechanics for the two loyalty follow-up emails (issue #37, step 6): the Day 14
 // "here's what you didn't try yet" showcase and the Day 45 nudge for customers
 // who never came back. Both are wired here and switched on only from
-// Admin → Communications, and the copy below is deliberately placeholder text —
-// nothing goes out until the owner approves the final wording and flips the
-// toggle himself.
+// Admin → Communications. The copy below is the owner-approved wording
+// (Nov 1 2026); each email still sends only when the owner turns its toggle on
+// himself.
 //
 // Rules carried through from the approved plan:
 //   • Only customers subscribed through the existing double opt-in
@@ -27,17 +27,17 @@ const EMAIL_TYPE = { day14: 'day14_showcase', day45: 'day45_nudge' };
 const TOGGLE = { day14: 'day14ShowcaseEmailEnabled', day45: 'day45NudgeEmailEnabled' };
 const DAYS = { day14: 14, day45: 45 };
 
-// Placeholder copy — swapped for the approved wording before the toggles ever
-// go on. Kept in one place so the swap is a single edit per email.
-export const PLACEHOLDER_COPY = {
+// Approved copy (owner, Nov 1 2026). Kept in one place so a wording change is a
+// single edit per email. Both emails stay gated by their SmashieSettings toggles.
+export const FOLLOW_UP_COPY = {
   day14: {
-    heading: '[PLACEHOLDER COPY] Here is what you did not try yet',
-    body: '[PLACEHOLDER COPY] You have ordered with us once, and these three are still waiting for you. Come see us again.',
+    heading: 'Three things still waiting for you',
+    body: "You've been in once, and there's a whole menu you haven't touched yet. Here are three we think you'll like, picked from what you haven't ordered.",
     cta: 'See the menu',
   },
   day45: {
-    heading: '[PLACEHOLDER COPY] We saved your seat',
-    body: '[PLACEHOLDER COPY] It has been a while since your last order. The grill is still hot and the shakes are still spinning.',
+    heading: "Been a while, the grill's still hot",
+    body: "It's been a few weeks since your last order, and we'd hate for that to be the last one. The grill's hot, the shakes are spinning, and Exit 38 is a short hop off the interstate.",
     cta: 'Order again',
   },
 };
@@ -139,7 +139,7 @@ function picksHtml(picks) {
 }
 
 export function buildFollowUpHtml({ kind, firstName, picks, subscriber }) {
-  const copy = PLACEHOLDER_COPY[kind];
+  const copy = FOLLOW_UP_COPY[kind];
   const ctaLink = `${APP_URL}/menu`;
   const body = `
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
@@ -155,8 +155,8 @@ export function buildFollowUpHtml({ kind, firstName, picks, subscriber }) {
 
 export function subjectFor(kind) {
   return kind === 'day14'
-    ? '[PLACEHOLDER COPY] Three things you haven\'t tried at Flavor Isle'
-    : '[PLACEHOLDER COPY] We saved your seat at Flavor Isle';
+    ? "Three things you haven't tried yet at Flavor Isle"
+    : 'We saved your seat at Flavor Isle';
 }
 
 async function sendEmail({ to, subject, html }) {

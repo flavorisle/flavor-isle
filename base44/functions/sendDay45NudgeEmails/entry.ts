@@ -4,7 +4,8 @@ import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 
 // Day 45 loyalty nudge for customers who never placed a second order
 // (issue #37, step 6). Gated on the day45NudgeEmailEnabled toggle, which ships
-// OFF — nothing sends until the owner approves the final copy and switches it on.
+// OFF — the copy is approved, and switching the toggle on is the owner's go-live
+// step.
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
