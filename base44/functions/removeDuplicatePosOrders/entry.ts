@@ -7,7 +7,7 @@
 //
 // MANUAL RUN ONLY. Nothing schedules or triggers this function — no workflow,
 // no schedule, no entity trigger. It is invoked by hand, once.
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 const PAGE_SIZE = 500;
 const MAX_PAGES = 60;

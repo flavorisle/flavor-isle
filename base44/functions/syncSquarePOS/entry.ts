@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
 import { lookupCustomersByIds, lookupCustomersByIdsDetailed, normalizePhone } from '../../shared/squareCustomer.ts';
 import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
