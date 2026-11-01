@@ -2,24 +2,35 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { lookupCustomersByIds } from '../../shared/squareCustomer.ts';
 import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { squareOrderFields } from '../../shared/squareOrderFields.ts';
+import { loadCustomerProfileIndex, lookupProfileId, ensureCustomerProfile } from '../../shared/customerLink.ts';
 
 // Issue #135 — one-time cleanup of in-store orders whose customer data was
 // never real: the old square-pos@ placeholder address, an empty phone, or an
-// empty customer id. Read-only against Square; only non-empty Square values are
+// empty directory link. Read-only against Square; only non-empty Square values are
 // ever written, and a real stored value is never overwritten.
+//
+// Issue #135 C5: no row is skipped past the email rule. An unreadable Square
+// order is counted and its placeholder address is STILL cleared — that field is
+// ours, not Square's — while every other field on it is left untouched.
 
 const SQUARE_API = 'https://connect.squareup.com/v2';
 const SQUARE_VERSION = '2026-09-16';
 const PLACEHOLDER_EMAIL = 'square-pos@flavorisle.com';
+const PLACEHOLDER_EMAIL_RE = /square-pos@flavorisle\.com|phone-order@flavorisle\.com/i;
 const MAX_PER_RUN = 100;
 const LOYALTY_CAP = 50;
 
-function isCandidate(order) {
+// A row needs this pass when the fake address is on it, when a customer field is
+// empty, or when customer_id is not a CustomerProfile id at all — the old Square
+// id this field used to hold (issue #135 D2) is exactly what has to be repaired.
+function isCandidate(order, profileIndex) {
+  const customerId = order.customer_id || '';
+  const customerIdIsProfile = !!customerId && !!profileIndex?.byId?.has(customerId);
   return (
     order.customer_email === PLACEHOLDER_EMAIL ||
     !order.customer_email ||
     !order.customer_phone ||
-    !order.customer_id
+    !customerIdIsProfile
   );
 }
 
@@ -29,6 +40,7 @@ function beforeSnapshot(order) {
     customer_email: order.customer_email || '',
     customer_phone: order.customer_phone || '',
     customer_id: order.customer_id || '',
+    square_customer_id: order.square_customer_id || '',
     normalized_phone: order.normalized_phone || '',
     tip: order.tip || 0,
     discount: order.discount || 0,
@@ -55,6 +67,10 @@ export default async function (req) {
     const limit = Math.min(Math.max(Number(body?.limit) || MAX_PER_RUN, 1), MAX_PER_RUN);
     const skip = Math.max(Number(body?.skip) || 0, 0);
 
+    // One read of the customer directory for the whole batch. Loaded before the
+    // scan because whether customer_id holds a real profile decides candidacy.
+    const profileIndex = await loadCustomerProfileIndex(base44);
+
     // Gather candidates page by page, stopping once one batch is in hand.
     const candidates = [];
     let cursor = undefined;
@@ -66,7 +82,7 @@ export default async function (req) {
       );
       const items = page?.items || [];
       for (const order of items) {
-        if (isCandidate(order)) candidates.push(order);
+        if (isCandidate(order, profileIndex)) candidates.push(order);
       }
       cursor = page?.next_cursor;
       pages += 1;
@@ -111,23 +127,58 @@ export default async function (req) {
 
     const counts = {
       scanned: 0,
+      orderNotReadable: 0,
+      squareOrderNoCustomer: 0,
+      matchedExisting: 0,
+      createdNew: 0,
+      linkSkippedNoEmailKey: 0,
+      placeholderCleared: 0,
       wouldUpdate: 0,
-      resolvedWithEmail: 0,
-      resolvedWithPhone: 0,
-      resolvedNameOnly: 0,
-      noSquareCustomer: 0,
       loyaltyFound: 0,
       applied: 0,
     };
-    const samples = [];
+    // Rows whose only change is the cleared placeholder are kept separately so a
+    // dry run always shows at least three of them.
+    const placeholderOnlySamples = [];
+    const otherSamples = [];
     const pendingUpdates = [];
     let loyaltyLookups = 0;
 
+    const collect = (order, after) => {
+      if (Object.keys(after).length === 0) return;
+      counts.wouldUpdate += 1;
+      const sample = {
+        order_number: order.order_number || order.id,
+        before: beforeSnapshot(order),
+        after,
+      };
+      const onlyClearedPlaceholder = Object.keys(after).length === 1 && 'customer_email' in after && !after.customer_email;
+      if (onlyClearedPlaceholder) {
+        if (placeholderOnlySamples.length < 3) placeholderOnlySamples.push(sample);
+      } else if (otherSamples.length < 10) {
+        otherSamples.push(sample);
+      }
+      pendingUpdates.push({ id: order.id, order_number: order.order_number || order.id, after });
+    };
+
     for (const order of batch) {
       counts.scanned += 1;
+
+      const storedEmail = order.customer_email || '';
+      const isPlaceholder = storedEmail === PLACEHOLDER_EMAIL;
       const so = squareOrders.get(order.id);
+      const after: Record<string, any> = {};
+
+      // An unreadable Square order is counted, and its placeholder is cleared:
+      // the fake address is ours to remove, and removing it is the point of this
+      // pass. No other field on the row is touched.
       if (!so) {
-        counts.noSquareCustomer += 1;
+        counts.orderNotReadable += 1;
+        if (isPlaceholder) {
+          after.customer_email = '';
+          counts.placeholderCleared += 1;
+        }
+        collect(order, after);
         continue;
       }
 
@@ -136,38 +187,78 @@ export default async function (req) {
       const cust = squareCustomerId ? customerMap.get(squareCustomerId) : null;
       const { square_name, square_email, square_phone, ...squareFields } = squareOrderFields(so, cust);
 
-      const hasCustomer = !!squareCustomerId;
-      if (!hasCustomer) counts.noSquareCustomer += 1;
-      else if (square_email) counts.resolvedWithEmail += 1;
-      else if (square_phone) counts.resolvedWithPhone += 1;
-      else counts.resolvedNameOnly += 1;
+      // Counted only for orders that were actually read and carry no customer.
+      if (!squareCustomerId) counts.squareOrderNoCustomer += 1;
 
-      const after: Record<string, any> = {};
+      // The directory entry: matched by phone then email, or created when Square
+      // supplied a real name and a real email. A dry run writes nothing, so it can
+      // only report matches.
+      const createdBefore = profileIndex.createdCount || 0;
+      const profileId = dryRun
+        ? lookupProfileId(profileIndex, { phone: square_phone, email: square_email })
+        : await ensureCustomerProfile(base44, profileIndex, {
+          name: square_name,
+          phone: square_phone,
+          email: square_email,
+        });
+      const profile = profileId ? profileIndex.byId.get(profileId) : null;
+      if (profileId) {
+        if ((profileIndex.createdCount || 0) > createdBefore) counts.createdNew += 1;
+        else counts.matchedExisting += 1;
+      } else if ((square_name || square_phone) && !String(square_email || '').trim()) {
+        // A real person we cannot link: no email key, and an email is never made up.
+        counts.linkSkippedNoEmailKey += 1;
+      }
+
       const fill = (field, value) => {
         if (!value) return;
         if (order[field]) return;
         after[field] = value;
       };
 
-      // Customer identity: only non-empty Square values, never over a real one.
-      fill('customer_id', squareFields.customer_id);
-      fill('customer_phone', square_phone);
+      // Square's own customer id and the directory id live in separate fields.
+      fill('square_customer_id', squareFields.square_customer_id);
+      // A stored customer_id that is not a known profile is the old Square id this
+      // field used to hold (issue #135 D2); the resolved profile replaces it. A
+      // real profile link is never touched.
+      const storedCustomerId = order.customer_id || '';
+      const storedIsProfile = !!storedCustomerId && profileIndex.byId.has(storedCustomerId);
+      if (profileId && !storedIsProfile) after.customer_id = profileId;
+
+      // Phone: Square's, else the matched profile's, into an empty field.
+      fill('customer_phone', String(square_phone || '').trim() || (profile?.phone ? String(profile.phone).trim() : ''));
       fill('normalized_phone', squareFields.normalized_phone);
 
       // Name: replace only an empty or invented name. 'Walk-In' is used only
       // when the order truly has no customer at all.
       const storedName = order.customer_name || '';
       const nameIsUnknown = !storedName || storedName === 'POS Customer';
-      const freshName = square_name || (hasCustomer ? '' : 'Walk-In');
+      const freshName = square_name || (squareCustomerId ? '' : 'Walk-In');
       if (freshName && nameIsUnknown && freshName !== storedName) after.customer_name = freshName;
 
-      // Email: the placeholder is cleared when Square has no email, and a real
-      // address replaces it (or fills an empty field).
-      const storedEmail = order.customer_email || '';
-      if (square_email && (!storedEmail || storedEmail === PLACEHOLDER_EMAIL)) {
-        after.customer_email = square_email;
-      } else if (!square_email && storedEmail === PLACEHOLDER_EMAIL) {
-        after.customer_email = '';
+      // Email, with no row able to skip past it: a real Square address replaces
+      // the placeholder or fills an empty field; with no Square email the
+      // placeholder is cleared, else the matched profile's address fills an empty
+      // field. An unknown customer keeps an empty address rather than an invented
+      // one.
+      const squareEmail = String(square_email || '').trim();
+      // The matched profile's own address is a real one; the old fake addresses
+      // never count.
+      const profileEmail = profile?.email && !PLACEHOLDER_EMAIL_RE.test(String(profile.email))
+        ? String(profile.email).trim()
+        : '';
+      if (squareEmail) {
+        if (!storedEmail || isPlaceholder) {
+          after.customer_email = squareEmail;
+          if (isPlaceholder) counts.placeholderCleared += 1;
+        }
+      } else if (isPlaceholder) {
+        // The placeholder never survives: a matched profile's real address takes
+        // its place, otherwise the field goes empty.
+        after.customer_email = profileEmail;
+        counts.placeholderCleared += 1;
+      } else if (!storedEmail && profileEmail) {
+        after.customer_email = profileEmail;
       }
 
       // Money + tender details, only where nothing real is stored yet.
@@ -207,17 +298,7 @@ export default async function (req) {
         }
       }
 
-      if (Object.keys(after).length === 0) continue;
-
-      counts.wouldUpdate += 1;
-      if (samples.length < 10) {
-        samples.push({
-          order_number: order.order_number || order.id,
-          before: beforeSnapshot(order),
-          after,
-        });
-      }
-      pendingUpdates.push({ id: order.id, order_number: order.order_number || order.id, after });
+      collect(order, after);
     }
 
     if (!dryRun) {
@@ -236,7 +317,7 @@ export default async function (req) {
           last_run_at: new Date().toISOString(),
           run_count: 1,
           last_caller: 'admin',
-          description: `Scanned ${counts.scanned}, applied ${counts.applied} of ${counts.wouldUpdate} (skip ${skip})`,
+          description: `Scanned ${counts.scanned}, applied ${counts.applied} of ${counts.wouldUpdate}, cleared ${counts.placeholderCleared} placeholders (skip ${skip})`,
         });
       } catch (e) {
         console.error('MaintenanceRun write failed:', (e as Error).message);
@@ -249,7 +330,7 @@ export default async function (req) {
       ...counts,
       hasMore,
       nextSkip: skip + batch.length,
-      samples,
+      samples: [...placeholderOnlySamples, ...otherSamples],
     });
   } catch (error) {
     console.error('backfillSquareOrderDetails error:', error?.message || 'unknown error');

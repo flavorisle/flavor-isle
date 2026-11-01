@@ -3,6 +3,7 @@ import { mapSquareStatus } from '../../shared/squareOrderStatus.ts';
 import { lookupCustomersByIds, lookupCustomersByIdsDetailed, normalizePhone } from '../../shared/squareCustomer.ts';
 import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { squareOrderFields } from '../../shared/squareOrderFields.ts';
+import { loadCustomerProfileIndex, ensureCustomerProfile } from '../../shared/customerLink.ts';
 import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
 
 const SQUARE_VERSION = '2026-09-16';
@@ -98,6 +99,12 @@ Deno.serve(async (req) => {
     (existingOrders || []).forEach(o => {
       if (o.square_order_id) existingBySquareId.set(o.square_order_id, o);
     });
+
+    // One read of the customer directory for the whole run, so each order links
+    // to the person it belongs to (or creates them) without a query per order.
+    // Issue #135 C4: profileIndex carries byId too, so a newly created profile is
+    // reused by every later order in the same run.
+    const profileIndex = await loadCustomerProfileIndex(base44);
 
     // Resolve every Square customer referenced by the fetched orders in a
     // single batch so each POS order can carry the real name/email/phone.
@@ -284,13 +291,37 @@ Deno.serve(async (req) => {
       }
 
       const existing = existingBySquareId.get(so.id);
+      // Issue #135 D2: Order.customer_id is a CustomerProfile id on every other
+      // path, so Square's own customer id now rides in square_customer_id and the
+      // profile is resolved (or created) here.
+      const needsRelink = !!existing && (
+        existing.customer_email === 'square-pos@flavorisle.com' ||
+        !existing.customer_phone ||
+        !existing.customer_id ||
+        !existing.square_customer_id
+      );
+      let profileId = '';
+      let profile: any = null;
+      if (!existing || needsRelink) {
+        profileId = await ensureCustomerProfile(base44, profileIndex, {
+          name: sqName,
+          phone: sqPhone,
+          email: sqEmail,
+        });
+        profile = profileId ? profileIndex.byId.get(profileId) : null;
+      }
+      // A matched profile supplies what Square left out; nothing is invented.
+      const profileEmail = profile?.email ? String(profile.email).trim() : '';
+      const profilePhone = profile?.phone ? String(profile.phone).trim() : '';
+
       if (!existing) {
         newOrders.push({
           order_number: so.reference_id || so.id.substring(0, 8),
           square_order_id: so.id,
           customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: sqPhone,
+          customer_email: customerEmail || profileEmail,
+          customer_phone: sqPhone || profilePhone,
+          customer_id: profileId,
           order_source: 'in_store',
           status: mapSquareStatus(so.state),
           items,
@@ -299,18 +330,29 @@ Deno.serve(async (req) => {
         });
       } else {
         // Relink an already-synced order once Square can resolve who paid it:
-        // the old placeholder email, an empty phone, or an empty customer id.
-        // Only fresh non-empty values are written; a real stored value is kept.
-        const needsRelink =
-          existing.customer_email === 'square-pos@flavorisle.com' ||
-          !existing.customer_phone ||
-          !existing.customer_id;
+        // the old placeholder email, an empty phone, an empty customer id or an
+        // empty Square customer id. Only empty fields are filled; a real stored
+        // value is kept, and the placeholder rules are unchanged.
         if (needsRelink) {
           const patch: Record<string, any> = {};
-          if (customerEmail && customerEmail !== existing.customer_email) patch.customer_email = customerEmail;
-          if (sqPhone && !existing.customer_phone) patch.customer_phone = sqPhone;
+          const squareEmail = String(sqEmail || '').trim();
+          if (squareEmail) {
+            if (!existing.customer_email || existing.customer_email === 'square-pos@flavorisle.com') {
+              patch.customer_email = squareEmail;
+            }
+          } else if (existing.customer_email === 'square-pos@flavorisle.com') {
+            patch.customer_email = '';
+          } else if (!existing.customer_email && profileEmail) {
+            patch.customer_email = profileEmail;
+          }
+          // Both ids, each in its own field, only where the order has none.
+          if (profileId && !existing.customer_id) patch.customer_id = profileId;
+          if (orderFields.square_customer_id && !existing.square_customer_id) {
+            patch.square_customer_id = orderFields.square_customer_id;
+          }
+          const phoneToWrite = String(sqPhone || '').trim() || profilePhone;
+          if (phoneToWrite && !existing.customer_phone) patch.customer_phone = phoneToWrite;
           if (orderFields.normalized_phone && !existing.normalized_phone) patch.normalized_phone = orderFields.normalized_phone;
-          if (orderFields.customer_id && !existing.customer_id) patch.customer_id = orderFields.customer_id;
           if (square_name && square_name !== existing.customer_name) patch.customer_name = square_name;
           if (loyalty.loyalty_accrued && !existing.loyalty_accrued) Object.assign(patch, loyalty);
           if (Object.keys(patch).length > 0) {

@@ -107,6 +107,10 @@
       "type": "string",
       "description": "CustomerProfile id this order belongs to (issue #96, section A). Written when the order is created and by the one-time backfill, matching by normalized phone first and email second; empty when the customer is not in the directory yet, which is what the Customers page counts as unlinked."
     },
+    "square_customer_id": {
+      "type": "string",
+      "description": "Square's own customer id for this order, when Square provides one"
+    },
     "normalized_phone": {
       "type": "string",
       "description": "customer_phone in +1XXXXXXXXXX form (shared/normalizePhone.ts). The customer directory links an order to a person on this field, so the same customer's history groups together no matter which format their number was typed in."

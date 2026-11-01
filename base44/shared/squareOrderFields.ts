@@ -33,7 +33,10 @@ export function squareOrderFields(so, customer) {
   const phone = customer?.phone || '';
 
   const fields: Record<string, any> = {
-    customer_id: customerId,
+    // Square's own customer id. Order.customer_id belongs to the customer
+    // directory (a CustomerProfile id), so Square's id gets its own field — the
+    // caller resolves the profile id itself and never copies this one there.
+    square_customer_id: customerId,
     normalized_phone: normalizePhone(phone),
     tip: cents(so?.total_tip_money),
     discount: cents(so?.total_discount_money),
