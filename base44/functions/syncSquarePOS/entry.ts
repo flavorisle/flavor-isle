@@ -80,7 +80,20 @@ Deno.serve(async (req) => {
 
     // Index existing orders by square_order_id so we can skip already-synced
     // orders and relink ones still carrying the placeholder email.
-    const existingOrders = await base44.asServiceRole.entities.Order.list();
+    //
+    // Issue #124: an unpaginated Order.list() returns only the first page, so a
+    // pull larger than that page treated already-synced orders as new and
+    // re-created them. Walk the whole register instead — 500 per page, following
+    // the cursor until a short/empty page, with a 60-page (30,000 record) cap.
+    const existingOrders: any[] = [];
+    let existingCursor: string | null = null;
+    for (let page = 0; page < 60; page++) {
+      const res = await base44.asServiceRole.entities.Order.list({ limit: 500, cursor: existingCursor });
+      const pageItems = res?.items || [];
+      existingOrders.push(...pageItems);
+      existingCursor = res?.next_cursor || null;
+      if (pageItems.length < 500 || !existingCursor) break;
+    }
     const existingBySquareId = new Map();
     (existingOrders || []).forEach(o => {
       if (o.square_order_id) existingBySquareId.set(o.square_order_id, o);
