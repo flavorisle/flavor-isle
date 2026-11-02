@@ -10,7 +10,7 @@ import PrintableMenu from '@/components/admin/PrintableMenu';
 import PrintMenuEditor from '@/components/admin/PrintMenuEditor';
 import BuildCardEditor from '@/components/admin/BuildCardEditor';
 import PrintableBuildCards from '@/components/admin/PrintableBuildCards';
-import { loadBuildCards, saveBuildCards, normalizeCard, DEFAULT_BUILD_CARDS } from '@/lib/buildCards';
+import { deriveBuildCards, loadCardOverrides, saveCardOverrides } from '@/lib/buildCards';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 const STORAGE_KEY = 'flavorisle_print_menu_v2';
@@ -46,17 +46,26 @@ export default function AdminPrintMenu() {
 
   // Build Cards is the second sheet in this same tool (issue #148).
   const [mode, setMode] = useState('menu');
-  const [cards, setCards] = useState([]);
+  // Square owns the cards; the page keeps only the crew's print-copy overrides.
+  const [cardOverrides, setCardOverrides] = useState(() => loadCardOverrides());
   const [selectedCardId, setSelectedCardId] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const cards = useMemo(() => deriveBuildCards(items, cardOverrides), [items, cardOverrides]);
+  const activeCardKey = cards.some(c => c.key === selectedCardId) ? selectedCardId : (cards[0]?.key || '');
+
+  const loadMenu = async () => {
+    const [menuItems, menuSettings] = await Promise.all([
+      base44.entities.MenuItem.list(),
+      base44.entities.MenuSetting.list(),
+    ]);
+    setItems(menuItems || []);
+    setSettings((menuSettings || [])[0] || {});
+  };
 
   useEffect(() => {
     (async () => {
-      const [menuItems, menuSettings] = await Promise.all([
-        base44.entities.MenuItem.list(),
-        base44.entities.MenuSetting.list(),
-      ]);
-      setItems(menuItems || []);
-      setSettings((menuSettings || [])[0] || {});
+      await loadMenu();
       setLoading(false);
     })();
 
@@ -167,18 +176,11 @@ export default function AdminPrintMenu() {
     setConsolidatedSections({});
   };
 
-  // Build-card edits load on mount and persist on change, the same way the
-  // menu edits above do — one more localStorage record, no entity writes.
+  // Card overrides persist on change, the same way the menu edits above do —
+  // one more localStorage record, no entity writes.
   useEffect(() => {
-    const loaded = loadBuildCards();
-    setCards(loaded);
-    setSelectedCardId(loaded[0]?.id || '');
-  }, []);
-
-  useEffect(() => {
-    if (!cards.length) return;
-    saveBuildCards(cards);
-  }, [cards]);
+    saveCardOverrides(cardOverrides);
+  }, [cardOverrides]);
 
   // Cards print on 11 × 17. The rule lives only while cards mode is on, so menu
   // mode keeps its own page setup untouched.
@@ -198,73 +200,55 @@ export default function AdminPrintMenu() {
     return () => style.remove();
   }, [mode]);
 
-  const updateCard = (id, patch) =>
-    setCards(prev => prev.map(c => (c.id === id ? normalizeCard({ ...c, ...patch }) : c)));
+  // Print-copy overrides, keyed by square_item_id.
+  const setCardOverride = (key, field, value) =>
+    setCardOverrides(prev => {
+      const next = { ...(prev[key] || {}) };
+      if (value === undefined) delete next[field];
+      else next[field] = value;
+      return { ...prev, [key]: next };
+    });
 
-  const moveCardLine = (id, kind, index, dir) =>
-    setCards(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const lines = [...c[kind]];
-      const to = index + dir;
-      if (to < 0 || to >= lines.length) return c;
-      [lines[index], lines[to]] = [lines[to], lines[index]];
-      return { ...c, [kind]: lines };
-    }));
-
-  const moveCardInShake = (id, index, dir) => moveCardLine(id, 'in_shake', index, dir);
-  const moveCardTopping = (id, index, dir) => moveCardLine(id, 'toppings', index, dir);
-
-  const addCardLine = (id, kind) =>
-    setCards(prev => prev.map(c => (c.id === id ? { ...c, [kind]: [...c[kind], { text: '', optional: false }] } : c)));
-
-  const removeCardLine = (id, kind, index) =>
-    setCards(prev => prev.map(c => (c.id === id ? { ...c, [kind]: c[kind].filter((_, i) => i !== index) } : c)));
-
-  const addCardSize = (id) =>
-    setCards(prev => prev.map(c => (c.id === id ? { ...c, sizes: [...c.sizes, { label: '', upcharge: 0 }] } : c)));
-
-  const removeCardSize = (id, index) =>
-    setCards(prev => prev.map(c => (c.id === id ? { ...c, sizes: c.sizes.filter((_, i) => i !== index) } : c)));
-
-  const addCard = () => {
-    const id = `card-${Date.now()}`;
-    setCards(prev => [...prev, normalizeCard({
-      id,
-      name: 'New Build',
-      kicker: 'MILKSHAKE',
-      price: 5.99,
-      sizes: [{ label: '14 oz', upcharge: 0 }, { label: '20 oz', upcharge: 0.5 }],
-      accent_color: '#CC3300',
-      order: prev.length + 1,
-    })]);
-    setSelectedCardId(id);
-  };
-
-  const moveCard = (id, dir) =>
-    setCards(prev => {
-      const from = prev.findIndex(c => c.id === id);
-      const to = from + dir;
-      if (from === -1 || to < 0 || to >= prev.length) return prev;
-      const next = [...prev];
-      [next[from], next[to]] = [next[to], next[from]];
+  const resetCardCopy = (key) =>
+    setCardOverrides(prev => {
+      const next = { ...prev };
+      delete next[key];
       return next;
     });
 
-  const resetCards = () => {
-    const next = DEFAULT_BUILD_CARDS.map(normalizeCard);
-    setCards(next);
-    setSelectedCardId(next[0]?.id || '');
+  const editCardField = (key, field, value) => setCardOverride(key, field, value);
+
+  // Line order and visibility are stored per group, against the Square option ids.
+  const moveCardLine = (key, group, index, dir) => {
+    const card = cards.find(c => c.key === key);
+    const ids = card?.[group]?.map(line => line.id) || [];
+    const to = index + dir;
+    if (to < 0 || to >= ids.length) return;
+    [ids[index], ids[to]] = [ids[to], ids[index]];
+    setCardOverride(key, 'line_order', { ...(cardOverrides[key]?.line_order || {}), [group]: ids });
   };
 
-  const editCardField = (id, field, value) => updateCard(id, { [field]: value });
+  const toggleCardLine = (key, group, lineId) => {
+    const card = cards.find(c => c.key === key);
+    if (!card) return;
+    const hidden = card[group].filter(line => line.hidden).map(line => line.id);
+    const next = hidden.includes(lineId)
+      ? hidden.filter(id => id !== lineId)
+      : [...hidden, lineId];
+    setCardOverride(key, 'hidden_lines', { ...(cardOverrides[key]?.hidden_lines || {}), [group]: next });
+  };
 
-  const editCardLine = (id, kind, index, text) =>
-    setCards(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const lines = [...c[kind]];
-      lines[index] = { ...lines[index], text };
-      return { ...c, [kind]: lines };
-    }));
+  // Pull Square's catalog into MenuItem, then re-run the menu load so the cards,
+  // their lines, prices and availability all come back fresh.
+  const refreshFromSquare = async () => {
+    setRefreshing(true);
+    try {
+      await base44.functions.invoke('syncSquareCatalog', {});
+      await loadMenu();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const sections = useMemo(() => {
     if (!settings) return [];
@@ -352,7 +336,7 @@ export default function AdminPrintMenu() {
             </h1>
             <p className="text-sm text-muted-foreground">
               {mode === 'cards'
-                ? 'Build sheets for the shake station. Edit the lines, then print and post.'
+                ? 'Build sheets for the shake station. Square fills the lines — hide or reorder them, add the house portions, then print and post.'
                 : 'Edit the printed copy on the left or click any item text on the sheet to edit it in place, then print or save as PDF. Your online menu stays unchanged.'}
             </p>
           </div>
@@ -385,18 +369,14 @@ export default function AdminPrintMenu() {
             {mode === 'cards' ? (
               <BuildCardEditor
                 cards={cards}
-                selectedId={selectedCardId}
+                selectedId={activeCardKey}
                 onSelect={setSelectedCardId}
-                updateCard={updateCard}
-                moveCardInShake={moveCardInShake}
-                moveCardTopping={moveCardTopping}
-                addCardLine={addCardLine}
-                removeCardLine={removeCardLine}
-                addCardSize={addCardSize}
-                removeCardSize={removeCardSize}
-                addCard={addCard}
-                moveCard={moveCard}
-                resetCards={resetCards}
+                setOverride={setCardOverride}
+                moveLine={moveCardLine}
+                toggleLine={toggleCardLine}
+                resetCardCopy={resetCardCopy}
+                onRefresh={refreshFromSquare}
+                refreshing={refreshing}
               />
             ) : (
               <PrintMenuEditor
@@ -423,11 +403,7 @@ export default function AdminPrintMenu() {
 
           <div id="print-area">
             {mode === 'cards' ? (
-              <PrintableBuildCards
-                cards={cards}
-                onEditCard={editCardField}
-                onEditLine={editCardLine}
-              />
+              <PrintableBuildCards cards={cards} onEditCard={editCardField} />
             ) : (
               <PrintableMenu
                 sections={printSections}

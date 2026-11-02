@@ -59,42 +59,38 @@ function fitCard(card) {
   return { line, heading, name };
 }
 
-function LineList({ lines, onCommit, lineSize, placeholder }) {
+// Square owns every line: the crew can hide one, but the wording always comes from
+// the item's modifier group, so nothing here is editable or invented.
+function LineList({ lines, lineSize }) {
   return (
     <ul>
       {lines.map((line, i) => (
-        <li key={i} className="flex items-start gap-2" style={{ fontSize: px(lineSize), lineHeight: 1.25 }}>
+        <li key={line.id || i} className="flex items-start gap-2" style={{ fontSize: px(lineSize), lineHeight: 1.25 }}>
           <span
             className="flex-shrink-0"
             style={{ width: px(15), height: px(15), marginTop: px(7), backgroundColor: NAVY }}
           />
-          <Editable
-            className="flex-1 min-w-0"
-            value={line.text}
-            placeholder={placeholder}
-            onCommit={onCommit && (text => onCommit(i, text))}
-          />
-          {line.optional && (
-            <span className="italic flex-shrink-0" style={{ fontSize: px(lineSize * 0.66), color: '#6B7280' }}>
-              optional
-            </span>
-          )}
+          <span className="flex-1 min-w-0">{line.text}</span>
         </li>
       ))}
     </ul>
   );
 }
 
-export default function PrintableBuildCards({ cards, onEditCard, onEditLine }) {
+export default function PrintableBuildCards({ cards, onEditCard }) {
   return (
     <div id="print-sheet" className="bg-white text-black mx-auto print:shadow-none">
       <div className="overflow-x-auto print:overflow-visible">
-        {cards.map(card => {
-          const fit = fitCard(card);
+        {cards.filter(card => card.on_sheet !== false).map(card => {
+          // Hidden lines never print, and a card whose Square group is missing
+          // prints nothing in that column — never a placeholder on paper.
+          const inShake = card.in_shake.filter(line => !line.hidden);
+          const toppings = card.toppings.filter(line => !line.hidden);
+          const fit = fitCard({ ...card, in_shake: inShake, toppings });
           const sizes = card.sizes.filter(s => s.label || Number(s.upcharge) > 0);
           return (
             <section
-              key={card.id}
+              key={card.key}
               className="build-card-page bg-white text-black mx-auto mb-6 print:mb-0 shadow-float print:shadow-none"
               style={{ width: '11in' }}
             >
@@ -135,14 +131,14 @@ export default function PrintableBuildCards({ cards, onEditCard, onEditLine }) {
                           as="h2"
                           className="font-heading uppercase leading-none"
                           style={{ fontSize: px(fit.name), color: NAVY }}
-                          value={card.name}
-                          onCommit={onEditCard && (v => onEditCard(card.id, 'name', v))}
+                          value={card.print_name}
+                          onCommit={onEditCard && (v => onEditCard(card.key, 'print_name', v))}
                         />
                         <Editable
                           as="p"
                           style={{ fontSize: px(22), color: '#374151', marginTop: px(8) }}
                           value={card.tagline}
-                          onCommit={onEditCard && (v => onEditCard(card.id, 'tagline', v))}
+                          onCommit={onEditCard && (v => onEditCard(card.key, 'tagline', v))}
                         />
                       </div>
                       <div
@@ -187,12 +183,7 @@ export default function PrintableBuildCards({ cards, onEditCard, onEditLine }) {
                         >
                           In the shake
                         </div>
-                        <LineList
-                          lines={card.in_shake}
-                          lineSize={fit.line}
-                          placeholder="Add ingredient…"
-                          onCommit={onEditLine && ((i, text) => onEditLine(card.id, 'in_shake', i, text))}
-                        />
+                        <LineList lines={inShake} lineSize={fit.line} />
                       </div>
 
                       {/* ON TOP */}
@@ -223,12 +214,7 @@ export default function PrintableBuildCards({ cards, onEditCard, onEditLine }) {
                             </div>
                           </div>
                         ) : (
-                          <LineList
-                            lines={card.toppings}
-                            lineSize={fit.line}
-                            placeholder="Add topping…"
-                            onCommit={onEditLine && ((i, text) => onEditLine(card.id, 'toppings', i, text))}
-                          />
+                          <LineList lines={toppings} lineSize={fit.line} />
                         )}
                       </div>
                     </div>
