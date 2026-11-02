@@ -25,7 +25,7 @@ const DEFAULT_SETTING = {
   category_item_order: {},
   ordering_enabled: true,
   ordering_closed_message: 'Ordering is temporarily closed',
-  closing_time: '20:00',
+  closing_time: '19:00',
   delivery_cutoff_minutes: 30,
   pickup_cutoff_minutes: 15,
   delivery_fee: 0,

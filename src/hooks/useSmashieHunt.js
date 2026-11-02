@@ -8,7 +8,7 @@ import {
 
 const HUNT_REFRESH_EVENT = 'smashie-hunt-update';
 const DEFAULT_OPEN = 630;   // 10:30 AM when the store's hours aren't loaded
-const DEFAULT_CLOSE = 1200; // 8:00 PM when the store's hours aren't loaded
+const DEFAULT_CLOSE = 1140; // 7:00 PM when the store's hours aren't loaded
 
 // One hunt read is shared by every surface that shows a clue — the site banner,
 // the footer chip and the corner chip can all be on the same page, and each extra

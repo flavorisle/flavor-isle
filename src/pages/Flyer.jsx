@@ -179,7 +179,7 @@ export default function Flyer() {
               <Clock size={16} className="text-midnight-cherry flex-shrink-0 mt-0.5" />
               <div className="text-xs leading-snug">
                 <div className="font-heading text-sm">HOURS</div>
-                Open Daily<br />11 AM – 8 PM
+                Mon–Sat 10:30 AM – 7 PM<br />Sun 11 AM – 7 PM
               </div>
             </div>
             <div className="flex items-start gap-2">

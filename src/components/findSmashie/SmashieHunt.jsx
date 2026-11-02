@@ -98,7 +98,7 @@ export default function SmashieHunt() {
 
   const hours = state?.hours;
   const openM = hours ? minutesOfDay(hours.open) : 630;   // default 10:30 AM
-  const closeM = hours ? minutesOfDay(hours.close) : 1200; // default 8:00 PM
+  const closeM = hours ? minutesOfDay(hours.close) : 1140; // default 7:00 PM
   // Preview mode (admin setting): Smashie ignores open/close hours
   // so the game can be tested anytime. Turn OFF before the live
   // October launch. ?hunt-preview still overrides everything.

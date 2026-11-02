@@ -3,7 +3,7 @@ import { Clock, Save, Check, Truck, Car } from 'lucide-react';
 import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled, setCurbsideEnabled } from '@/lib/menuSettings';
 
 export default function OrderCutoffSettings() {
-  const [closingTime, setClosingTime] = useState('20:00');
+  const [closingTime, setClosingTime] = useState('19:00');
   const [deliveryCutoff, setDeliveryCutoff] = useState(30);
   const [pickupCutoff, setPickupCutoff] = useState(15);
   const [deliveryFee, setDeliveryFee] = useState(0);

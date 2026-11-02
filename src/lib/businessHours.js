@@ -11,13 +11,13 @@ export const DAY_SHORT = {
 };
 
 export const DEFAULT_BUSINESS_HOURS = {
-  monday: { open: '10:30', close: '20:00', closed: false },
-  tuesday: { open: '10:30', close: '20:00', closed: false },
-  wednesday: { open: '10:30', close: '20:00', closed: false },
-  thursday: { open: '10:30', close: '20:00', closed: false },
-  friday: { open: '10:30', close: '20:00', closed: false },
-  saturday: { open: '10:30', close: '20:00', closed: false },
-  sunday: { open: '11:00', close: '20:00', closed: false },
+  monday: { open: '10:30', close: '19:00', closed: false },
+  tuesday: { open: '10:30', close: '19:00', closed: false },
+  wednesday: { open: '10:30', close: '19:00', closed: false },
+  thursday: { open: '10:30', close: '19:00', closed: false },
+  friday: { open: '10:30', close: '19:00', closed: false },
+  saturday: { open: '10:30', close: '19:00', closed: false },
+  sunday: { open: '11:00', close: '19:00', closed: false },
 };
 
 export function formatTime12(t) {
@@ -33,7 +33,7 @@ export function dayHoursLabel(d) {
   return `${formatTime12(d.open)} – ${formatTime12(d.close)}`;
 }
 
-// Groups consecutive days with identical hours: [{days: 'Monday – Saturday', label: '10:30AM – 8PM'}]
+// Groups consecutive days with identical hours: [{days: 'Monday – Saturday', label: '10:30AM – 7PM'}]
 export function hoursGroups(hours, short = false) {
   const names = short ? DAY_SHORT : DAY_LABELS;
   const groups = [];
@@ -49,7 +49,7 @@ export function hoursGroups(hours, short = false) {
   }));
 }
 
-// Compact one-line summary, e.g. "Mon–Sat: 10:30AM – 8PM · Sun: 11AM – 8PM"
+// Compact one-line summary, e.g. "Mon–Sat: 10:30AM – 7PM · Sun: 11AM – 7PM"
 export function hoursSummary(hours) {
   return hoursGroups(hours, true).map(g => `${g.days}: ${g.label}`).join(' · ');
 }

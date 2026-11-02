@@ -16,7 +16,7 @@ const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 // Online ordering unlocks at 8:00 AM daily — earlier than the doors open — and
 // runs to the closing time. Mirrors src/lib/storeState.js on the website.
 const ORDER_OPEN_MINS = 8 * 60;
-const DEFAULT_CLOSE = '20:00';
+const DEFAULT_CLOSE = '19:00';
 
 export const ORDERING_CLOSED_DEFAULT = 'Ordering is temporarily closed';
 

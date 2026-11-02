@@ -12,7 +12,7 @@ export const ORDERING_CLOSED_DEFAULT = 'Ordering is temporarily closed';
 
 // Online ordering unlocks at 8:00 AM daily — earlier than the doors open.
 const ORDER_OPEN_MINS = 8 * 60;
-const DEFAULT_CLOSE = '20:00';
+const DEFAULT_CLOSE = '19:00';
 
 function toMins(time) {
   if (!time) return null;
