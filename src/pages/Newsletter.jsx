@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import NewsletterIssue from '@/components/newsletter/NewsletterIssue';
 
 // Dedicated newsletter signup page. Uses the same double opt-in flow as the
 // footer "Get Updates from the Isle" signup: creates a pending subscriber
@@ -95,6 +96,8 @@ export default function Newsletter() {
           )}
         </div>
       </section>
+
+      <NewsletterIssue />
 
       <Footer />
     </div>
