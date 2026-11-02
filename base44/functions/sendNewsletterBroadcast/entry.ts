@@ -47,7 +47,18 @@ export default async function (req: Request): Promise<Response> {
     }
 
     const subject = (body?.subject || '').trim();
-    const htmlBody = (body?.body || '').trim();
+    let htmlBody = (body?.body || '').trim();
+    let bodySource = htmlBody ? 'body' : 'none';
+    if (!htmlBody && typeof body?.body_url === 'string' && /^https:\/\//.test(body.body_url.trim())) {
+      try {
+        const r = await fetch(body.body_url.trim(), { headers: { 'User-Agent': 'FlavorIsleAgent/1.0' } });
+        if (!r.ok) return Response.json({ error: `body_url fetch failed (${r.status})` }, { status: 502 });
+        htmlBody = (await r.text()).trim();
+        bodySource = 'body_url';
+      } catch (e) {
+        return Response.json({ error: `body_url fetch failed: ${e.message}` }, { status: 502 });
+      }
+    }
     if (!subject || !htmlBody) return Response.json({ error: 'subject and body are required' }, { status: 400 });
 
     if (action === 'test') {
@@ -68,23 +79,25 @@ export default async function (req: Request): Promise<Response> {
     // Broadcast to all active subscribers.
     const bid = broadcastId(subject, htmlBody);
 
-    // The 4th positional argument of filter() is the record OFFSET, not the
-    // page number. Passing the page number re-read the same rows on every
-    // page (see incident 2026-11-02) and dedupe by id so an overlapping page
-    // can never queue the same subscriber twice.
+    // Cursor pagination. The offset form silently returned 746 of 1,003
+    // active rows (incident 2026-11-02) and the pre-fix version re-read the
+    // same rows on every page, which caused duplicate sends.
     const active = [];
     const queuedIds = new Set();
-    let page = 1;
-    while (page <= 40) {
-      const batch = await base44.asServiceRole.entities.EmailSubscriber.filter({ status: 'active' }, '-subscribed_at', 500, (page - 1) * 500);
-      if (!batch || batch.length === 0) break;
-      for (const sub of batch) {
+    let cursor = null;
+    for (let guard = 0; guard < 100; guard++) {
+      const pageRes = cursor
+        ? await base44.asServiceRole.entities.EmailSubscriber.filter({ status: 'active' }, { limit: 500, cursor })
+        : await base44.asServiceRole.entities.EmailSubscriber.filter({ status: 'active' }, { limit: 500 });
+      const items = Array.isArray(pageRes) ? pageRes : (pageRes?.items || []);
+      for (const sub of items) {
         if (queuedIds.has(sub.id)) continue;
         queuedIds.add(sub.id);
         active.push(sub);
       }
-      if (batch.length < 500) break;
-      page++;
+      if (Array.isArray(pageRes)) break;
+      if (!pageRes?.has_more || !pageRes?.next_cursor) break;
+      cursor = pageRes.next_cursor;
     }
 
     // Issue #93 (A2): blocked customers never receive a broadcast. The block
@@ -121,7 +134,7 @@ export default async function (req: Request): Promise<Response> {
         if (blockFilter.hasEmail(sub.email)) { withheld++; continue; }
         eligible++;
       }
-      return Response.json({ ok: true, count_only: true, eligible, withheld, total: active.length, broadcast_id: bid });
+      return Response.json({ ok: true, count_only: true, eligible, withheld, total: active.length, broadcast_id: bid, body_source: bodySource });
     }
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -143,7 +156,7 @@ export default async function (req: Request): Promise<Response> {
       alreadySent.add(sub.id);
     }
     console.log(`Newsletter broadcast ${bid}: ${sent} sent, ${skipped} skipped (${blocked} blocked), ${failed} failed of ${active.length} active`);
-    return Response.json({ ok: true, sent, skipped, blocked, failed, total: active.length, broadcast_id: bid });
+    return Response.json({ ok: true, sent, skipped, blocked, failed, total: active.length, broadcast_id: bid, body_source: bodySource });
   } catch (error) {
     console.error('sendNewsletterBroadcast error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
