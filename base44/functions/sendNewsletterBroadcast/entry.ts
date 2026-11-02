@@ -67,12 +67,22 @@ export default async function (req: Request): Promise<Response> {
 
     // Broadcast to all active subscribers.
     const bid = broadcastId(subject, htmlBody);
+
+    // The 4th positional argument of filter() is the record OFFSET, not the
+    // page number. Passing the page number re-read the same rows on every
+    // page (see incident 2026-11-02) and dedupe by id so an overlapping page
+    // can never queue the same subscriber twice.
     const active = [];
+    const queuedIds = new Set();
     let page = 1;
-    while (page <= 20) {
-      const batch = await base44.asServiceRole.entities.EmailSubscriber.filter({ status: 'active' }, '-subscribed_at', 500, page);
+    while (page <= 40) {
+      const batch = await base44.asServiceRole.entities.EmailSubscriber.filter({ status: 'active' }, '-subscribed_at', 500, (page - 1) * 500);
       if (!batch || batch.length === 0) break;
-      active.push(...batch);
+      for (const sub of batch) {
+        if (queuedIds.has(sub.id)) continue;
+        queuedIds.add(sub.id);
+        active.push(sub);
+      }
       if (batch.length < 500) break;
       page++;
     }
@@ -88,10 +98,16 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ ok: false, error: 'Block-list lookup failed; the broadcast was aborted before sending anything. Please retry.' }, { status: 503 });
     }
 
-    // Load any prior sends for this broadcast so we can skip already-sent
-    // subscribers in one pass (idempotency) instead of a query per recipient.
-    const priorSends = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: bid }, '-created_date', 500);
-    const alreadySent = new Set(priorSends.map((s) => s.subscriber_id));
+    // Load EVERY prior send for this broadcast (paginated) so a resumed or
+    // retried run skips subscribers who already received it. A single-page
+    // read silently lost everyone past the first 500 (incident 2026-11-02).
+    const alreadySent = new Set();
+    for (let p = 1; p <= 60; p++) {
+      const priorPage = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: bid }, '-created_date', 500, (p - 1) * 500);
+      if (!priorPage || priorPage.length === 0) break;
+      for (const s of priorPage) alreadySent.add(s.subscriber_id);
+      if (priorPage.length < 500) break;
+    }
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     let sent = 0, skipped = 0, failed = 0, blocked = 0;
@@ -109,6 +125,7 @@ export default async function (req: Request): Promise<Response> {
         sent++;
         try { await base44.asServiceRole.entities.NewsletterSend.create({ broadcast_id: bid, subscriber_id: sub.id, email: sub.email, status: 'sent', sent_at: now }); } catch {}
       }
+      alreadySent.add(sub.id);
     }
     console.log(`Newsletter broadcast ${bid}: ${sent} sent, ${skipped} skipped (${blocked} blocked), ${failed} failed of ${active.length} active`);
     return Response.json({ ok: true, sent, skipped, blocked, failed, total: active.length, broadcast_id: bid });
