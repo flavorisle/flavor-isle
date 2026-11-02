@@ -101,12 +101,27 @@ export default async function (req: Request): Promise<Response> {
     // Load EVERY prior send for this broadcast (paginated) so a resumed or
     // retried run skips subscribers who already received it. A single-page
     // read silently lost everyone past the first 500 (incident 2026-11-02).
+    const excludeBids = Array.isArray(body?.exclude_broadcast_ids)
+      ? body.exclude_broadcast_ids.filter((b) => typeof b === 'string' && b.trim())
+      : [];
     const alreadySent = new Set();
-    for (let p = 1; p <= 60; p++) {
-      const priorPage = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: bid }, '-created_date', 500, (p - 1) * 500);
-      if (!priorPage || priorPage.length === 0) break;
-      for (const s of priorPage) alreadySent.add(s.subscriber_id);
-      if (priorPage.length < 500) break;
+    for (const loadBid of [bid, ...excludeBids]) {
+      for (let p = 1; p <= 60; p++) {
+        const priorPage = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: loadBid }, '-created_date', 500, (p - 1) * 500);
+        if (!priorPage || priorPage.length === 0) break;
+        for (const s of priorPage) alreadySent.add(s.subscriber_id);
+        if (priorPage.length < 500) break;
+      }
+    }
+
+    if (body?.count_only === true) {
+      let eligible = 0, withheld = 0;
+      for (const sub of active) {
+        if (alreadySent.has(sub.id)) { withheld++; continue; }
+        if (blockFilter.hasEmail(sub.email)) { withheld++; continue; }
+        eligible++;
+      }
+      return Response.json({ ok: true, count_only: true, eligible, withheld, total: active.length, broadcast_id: bid });
     }
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
