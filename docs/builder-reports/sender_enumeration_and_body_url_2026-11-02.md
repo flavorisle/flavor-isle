@@ -103,3 +103,17 @@ No send path was executed: the build made no function invocation at all — no `
 ## Deployment note
 
 Saving the function updates the editor preview immediately; the published app keeps calling the last published version until the app is republished. Any dry run or send is a separate approved step and was not part of this build.
+
+## Post-build dry run (approved 2026-11-02, no send)
+
+`count_only: true`, `exclude_broadcast_ids: ["nl_1n6hrpt", "nl_16m11kd"]`:
+
+```json
+{ "ok": true, "count_only": true, "eligible": 244, "withheld": 756, "total": 1000, "broadcast_id": "nl_uidze7", "body_source": "body" }
+```
+
+- **`total: 1000`** — the full active list is enumerated. The pre-fix sender reported 746; the missing ~254 subscribers are visible again. A direct read of `EmailSubscriber` with `status: active` also returns 1,000.
+- **`eligible: 244`** — the audience for the full newsletter. Direct record analysis agrees: 517 already have the full copy, 239 have only the truncated copy, 244 have neither. (The issue said 245; the list has drifted by one since it was written.)
+- **`withheld: 756`** — 517 full-copy + 239 truncated-only, all withheld by the explicit exclude ids.
+- No email attempted and no `NewsletterSend` row written; `count_only` returns before the Resend client is constructed.
+- `broadcast_id: nl_uidze7` and `body_source: "body"` are artefacts of the probe: the count run carried a placeholder body purely to satisfy the required-field guard, because the count comes from the exclude ids and is independent of the body. **A real send must pass the original subject and approved body unchanged (so `broadcastId` resolves to `nl_1n6hrpt` and the 517 skip automatically), or keep `nl_1n6hrpt` in `exclude_broadcast_ids`.**
