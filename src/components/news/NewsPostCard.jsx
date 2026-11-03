@@ -25,10 +25,10 @@ export default function NewsPostCard({ post }) {
           <span className="text-xs text-muted-foreground font-body">{date}</span>
         </div>
         <h2 className="font-heading text-xl sm:text-2xl text-obsidian-roast leading-tight mb-2">{post.title}</h2>
-        {post.image_url && (
-          <img src={post.image_url} alt={post.title} className="w-full h-auto rounded-xl my-4 block" loading="lazy" />
-        )}
         <p className="font-body text-sm sm:text-base text-obsidian-roast leading-relaxed whitespace-pre-line">{post.body}</p>
+        {post.image_url && (
+          <img src={post.image_url} alt={post.title} className="w-full h-auto rounded-xl mt-4 block" loading="lazy" />
+        )}
       </div>
     </article>
   );
