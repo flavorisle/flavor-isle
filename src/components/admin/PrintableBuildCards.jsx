@@ -138,7 +138,8 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
         ) : (
           pages.map((pageCards, pageIndex) => {
             const cardH = pageHeight(pageCards);
-            const scale = Math.min(contentWidth / CARD_W, slotHeight / cardH);
+            // Width is fixed for every card; only the height it needs varies.
+            const scale = contentWidth / CARD_W;
             return (
               <section
                 key={pageIndex}
