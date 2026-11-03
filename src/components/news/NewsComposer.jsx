@@ -14,6 +14,7 @@ export default function NewsComposer({ onPosted }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [category, setCategory] = useState('diner_update');
+  const [mapHeader, setMapHeader] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const inputCls =
@@ -23,9 +24,10 @@ export default function NewsComposer({ onPosted }) {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
     setSaving(true);
-    await base44.entities.NewsPost.create({ title: title.trim(), body: body.trim(), category, is_published: true });
+    await base44.entities.NewsPost.create({ title: title.trim(), body: body.trim(), category, map_header: mapHeader, is_published: true });
     setTitle('');
     setBody('');
+    setMapHeader(false);
     setSaving(false);
     setOpen(false);
     onPosted?.();
@@ -46,6 +48,10 @@ export default function NewsComposer({ onPosted }) {
       <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
         {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
+      <label className="flex items-center gap-2 font-body text-sm text-obsidian-roast">
+        <input type="checkbox" checked={mapHeader} onChange={(e) => setMapHeader(e.target.checked)} className="w-4 h-4 accent-[var(--midnight-cherry)]" />
+        Add Stops &amp; Shops walking-map header
+      </label>
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="btn-cherry px-6 py-2.5 text-sm disabled:opacity-60">
           {saving ? 'Posting…' : 'Publish'}

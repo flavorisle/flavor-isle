@@ -6,7 +6,6 @@ import CartDrawer from '@/components/CartDrawer';
 import NewsPostCard from '@/components/news/NewsPostCard';
 import NewsComposer from '@/components/news/NewsComposer';
 import AskAdminForm from '@/components/news/AskAdminForm';
-import StopsShopsHeader from '@/components/news/StopsShopsHeader';
 import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -43,7 +42,6 @@ export default function CommunityNews() {
         <p className="text-sm sm:text-base text-muted-foreground font-body mt-3 max-w-xl mx-auto">
           Community events, restaurant updates, and local partnerships — straight from Smiths Grove.
         </p>
-        <StopsShopsHeader />
         {isAdmin && (
           <div className="mt-5">
             <NewsComposer onPosted={loadPosts} />

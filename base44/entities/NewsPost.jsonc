@@ -33,6 +33,11 @@
       "type": "boolean",
       "default": true,
       "description": "Only published posts show on the public news page"
+    },
+    "map_header": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the post card opens with the Stops & Shops walking-map header (Smiths Grove, Exit 38, the numbered 1-14 stops line, and the park-once caption) above the post's title."
     }
   },
   "required": [

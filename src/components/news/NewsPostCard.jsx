@@ -1,5 +1,6 @@
 import React from 'react';
 import { CalendarDays, Store, Handshake } from 'lucide-react';
+import StopsShopsHeader from '@/components/news/StopsShopsHeader';
 
 const CATEGORY_META = {
   community_event: { label: 'Community Event', Icon: CalendarDays, bg: 'bg-smashie-yellow', text: 'text-obsidian-roast' },
@@ -18,6 +19,11 @@ export default function NewsPostCard({ post }) {
   return (
     <article className="card-diner overflow-hidden">
       <div className="p-5 sm:p-6">
+        {post.map_header && (
+          <div className="mb-5 pb-5 border-b border-border">
+            <StopsShopsHeader />
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-3 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-heading tracking-widest uppercase ${meta.bg} ${meta.text}`}>
             <Icon size={12} /> {meta.label}
