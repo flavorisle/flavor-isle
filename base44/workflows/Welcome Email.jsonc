@@ -1,0 +1,43 @@
+{
+  "name": "Welcome Email",
+  "description": "Sends the branded Flavor Isle welcome email the first time a new user signs in.",
+  "trigger": {
+    "config": {
+      "trigger_type": "app_user_auth",
+      "events": [
+        "signup"
+      ]
+    },
+    "condition": null
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "welcome_email",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_welcome": {
+          "call": "send_email",
+          "with": {
+            "template_name": "Welcome",
+            "to": "${ .trigger.email }",
+            "category": "marketing",
+            "description": "Greets a new signup, introduces Star Rewards, and links to the menu to order.",
+            "variables": {
+              "first_name": "${ .trigger.full_name // \"friend\" }",
+              "cta_url": "https://flavor-isle.com/menu"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send welcome email",
+            "description": "Branded welcome to a new user"
+          }
+        }
+      }
+    ]
+  }
+}
