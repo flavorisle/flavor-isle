@@ -20,7 +20,7 @@ export default function SquareBuildCard({ card, height }) {
           ))}
         </div>
       </header>
-      <div style={{ columns: 2, columnGap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(groups.length, 3) || 1}, minmax(0, 1fr))`, gap: 12, alignItems: 'start' }}>
         {groups.map(group => <BuildCardModifierGroup key={group.key} group={group} />)}
       </div>
     </article>
