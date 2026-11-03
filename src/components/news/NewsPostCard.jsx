@@ -18,12 +18,12 @@ export default function NewsPostCard({ post }) {
 
   return (
     <article className="card-diner overflow-hidden">
+      {post.map_header && (
+        <div className="bg-vanilla-malt border-b border-border px-5 sm:px-6 pt-5 pb-4">
+          <StopsShopsHeader />
+        </div>
+      )}
       <div className="p-5 sm:p-6">
-        {post.map_header && (
-          <div className="mb-5 pb-5 border-b border-border">
-            <StopsShopsHeader />
-          </div>
-        )}
         <div className="flex items-center gap-3 mb-3 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-heading tracking-widest uppercase ${meta.bg} ${meta.text}`}>
             <Icon size={12} /> {meta.label}
