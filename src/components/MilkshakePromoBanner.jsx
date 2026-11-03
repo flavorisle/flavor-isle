@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 
 // Dynamic promo banner for the Shake Isle page. Pulls the live flavor count
 // and starting price from the milkshake menu items so the offer always
@@ -12,18 +13,37 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 //   variant="strip"    — horizontal card that replaces the shake category row on the menu
 export default function MilkshakePromoBanner({ variant = 'feature' }) {
   const [shakes, setShakes] = useState([]);
+  const [blissCount, setBlissCount] = useState(0);
   const { menuSetting } = useCart();
 
   useEffect(() => {
-    base44.entities.MenuItem
-      .filter({ square_category: 'Whirl & Twirl', is_hidden: false })
-      .then((items) => setShakes((items || []).filter((i) => i.is_available !== false)))
-      .catch(() => setShakes([]));
+    // The Bliss total comes from Square's "Blend & Bliss" category, so the
+    // advertised count follows the menu instead of a hardcoded number.
+    Promise.all([
+      base44.entities.MenuItem.filter({ square_category: 'Whirl & Twirl', is_hidden: false }),
+      base44.entities.MenuItem.list(),
+    ])
+      .then(([items, all]) => {
+        setShakes((items || []).filter((i) => i.is_available !== false));
+        const skip = new Set(SKIP_ITEM_NAMES.map((n) => String(n).trim().toLowerCase()));
+        setBlissCount(
+          (all || []).filter(
+            (i) =>
+              i.square_category === BLISS_CATEGORY &&
+              i.is_hidden !== true &&
+              !skip.has(String(i.name || '').trim().toLowerCase()),
+          ).length,
+        );
+      })
+      .catch(() => {
+        setShakes([]);
+        setBlissCount(0);
+      });
   }, []);
 
   const regularCount = shakes.filter((s) => !/malt/i.test(s.name || '')).length;
   const maltCount = shakes.filter((s) => /malt/i.test(s.name || '')).length;
-  const PREMIUM_COUNT = 7;
+  const PREMIUM_COUNT = blissCount;
   const totalCount = regularCount + maltCount + PREMIUM_COUNT;
 
   const fromPrice = (() => {

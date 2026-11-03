@@ -16,6 +16,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { base44 } from '@/api/base44Client';
+import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 
 // The Milkshakes page lists every individual milkshake item from Square's
@@ -26,13 +27,18 @@ export default function Milkshakes() {
   const [searchParams] = useSearchParams();
   const blissId = searchParams.get('bliss');
   const [shakes, setShakes] = useState([]);
+  const [blissCount, setBlissCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeShake, setActiveShake] = useState(null);
 
   useEffect(() => {
-    base44.entities.MenuItem
-      .filter({ square_category: 'Whirl & Twirl', is_hidden: false })
-      .then((items) => {
+    // The Bliss count comes from Square's "Blend & Bliss" category, so the Shake
+    // Isle total follows the menu instead of a hardcoded number.
+    Promise.all([
+      base44.entities.MenuItem.filter({ square_category: 'Whirl & Twirl', is_hidden: false }),
+      base44.entities.MenuItem.list(),
+    ])
+      .then(([items, all]) => {
         // Sort alphabetically by name for a consistent display order.
         // Removed (is_hidden) items are already excluded by the filter query.
         // Sold-out items stay visible so the Shake Isle reflects what's out
@@ -40,6 +46,18 @@ export default function Milkshakes() {
         const sorted = (items || [])
           .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         setShakes(sorted);
+
+        // Promote-only count: hidden items and the generic placeholder are out,
+        // sold-out flavors still count because they're still on the board.
+        const skip = new Set(SKIP_ITEM_NAMES.map((n) => String(n).trim().toLowerCase()));
+        setBlissCount(
+          (all || []).filter(
+            (i) =>
+              i.square_category === BLISS_CATEGORY &&
+              i.is_hidden !== true &&
+              !skip.has(String(i.name || '').trim().toLowerCase()),
+          ).length,
+        );
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -65,13 +83,12 @@ export default function Milkshakes() {
   const maltShakes = shakes.filter((s) => /malt/i.test(s.name || ''));
   const regularShakes = shakes.filter((s) => !/malt/i.test(s.name || ''));
 
-  // Total shake count includes the 5 premium Bliss shakes (shown in their own
-  // section) and the malt, so the hero reflects every shake we offer.
-  const PREMIUM_COUNT = 7;
-  const totalFlavors = regularShakes.length + maltShakes.length + PREMIUM_COUNT;
+  // Total shake count includes the Bliss shakes (shown in their own section) and
+  // the malt, so the hero reflects every shake we offer.
+  const totalFlavors = regularShakes.length + maltShakes.length + blissCount;
   const heroBreakdown = [
     regularShakes.length > 0 && `${regularShakes.length} originals`,
-    PREMIUM_COUNT > 0 && `${PREMIUM_COUNT} premium bliss`,
+    blissCount > 0 && `${blissCount} premium bliss`,
     maltShakes.length > 0 && 'malt',
   ].filter(Boolean).join(' · ');
 
