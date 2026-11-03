@@ -1,25 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { STOPS } from '@/components/news/stopsShopsStops';
+import StopDetailDialog from '@/components/news/StopDetailDialog';
 
 // "Stops & Shops" walking-map header for Smiths Grove's Main Street block.
-// Order follows the walk from the north end of Main south toward the interstate.
-const STOPS = [
-  { n: 1, name: "Boone's Antiques" },
-  { n: 2, name: 'Quarter Moon Antiques' },
-  { n: 3, name: 'Main Street Antiques & Collectibles' },
-  { n: 4, name: 'Pony Express Antiques & Collectibles' },
-  { n: 5, name: "Psycho Granny's Quilt & Fabric Shop" },
-  { n: 6, name: 'The Fox Hole' },
-  { n: 7, name: 'Marigold Vintage' },
-  { n: 8, name: 'Smalls' },
-  { n: 9, name: 'The Garden Patch on Main' },
-  { n: 10, name: 'Dixie Pharmacy' },
-  { n: 11, name: 'Flavor Isle' },
-  { n: 12, name: 'Smiths Grove Gun & Archery' },
-  { n: 13, name: "Grammie's Home Cookin'" },
-  { n: 14, name: 'Bank of Edmonson County' },
-];
-
+// Tapping a name in the key opens a short description of that stop.
 export default function StopsShopsHeader() {
+  const [selectedStop, setSelectedStop] = useState(null);
+
   return (
     <div className="pt-2">
       <p className="font-heading text-xs sm:text-sm tracking-[0.2em] uppercase text-midnight-cherry">
@@ -51,18 +38,24 @@ export default function StopsShopsHeader() {
         </div>
       </div>
 
-      <ol className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+      <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
         {STOPS.map((s) => (
-          <li key={s.n} className="flex items-baseline gap-2">
-            <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border border-obsidian-roast/50 flex items-center justify-center font-body text-[10px] leading-none text-obsidian-roast">
-              {s.n}
-            </span>
-            <span className="font-body text-[12px] sm:text-[13px] leading-snug text-obsidian-roast">
-              {s.name}
-            </span>
+          <li key={s.n}>
+            <button
+              type="button"
+              onClick={() => setSelectedStop(s)}
+              className="group flex items-baseline gap-2 w-full text-left py-1 -mx-1 px-1 rounded-lg hover:bg-obsidian-roast/5 transition-colors"
+            >
+              <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border border-obsidian-roast/50 flex items-center justify-center font-body text-[10px] leading-none text-obsidian-roast">
+                {s.n}
+              </span>
+              <span className="font-body text-[12px] sm:text-[13px] leading-snug text-obsidian-roast underline decoration-obsidian-roast/25 underline-offset-2 group-hover:decoration-obsidian-roast/70">
+                {s.name}
+              </span>
+            </button>
           </li>
         ))}
-      </ol>
+      </ul>
 
       <p className="font-body text-[11px] sm:text-xs tracking-[0.14em] uppercase text-obsidian-roast mt-4">
         Park once &amp; stroll
@@ -70,6 +63,8 @@ export default function StopsShopsHeader() {
       <p className="font-body text-[11px] text-muted-foreground mt-1">
         Walking map by @marigold.manor · flavor-isle.com
       </p>
+
+      <StopDetailDialog stop={selectedStop} onClose={() => setSelectedStop(null)} />
     </div>
   );
 }
