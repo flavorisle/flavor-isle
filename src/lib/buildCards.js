@@ -192,7 +192,10 @@ export function deriveBuildCards(items, overrides = {}) {
       // No standard toppings group means the build is served bare; the crew's
       // switch can force the same block when a group exists but shouldn't print.
       not_topped: ov.force_bare === true || !toppingsGroup,
-      on_sheet: ov.off_sheet === true ? false : item.is_available !== false,
+      // A card the crew has taken off the website (is_hidden) doesn't print
+      // either — otherwise off-season and placeholder stubs land on the sheet
+      // as bare "NOT TOPPED" cards.
+      on_sheet: ov.off_sheet === true ? false : item.is_hidden !== true && item.is_available !== false,
       accent_color: ov.accent_color || DEFAULT_ACCENT,
       house_portions: ov.house_portions || '',
       extra_in: customLines(ov.extra_in),

@@ -174,19 +174,31 @@ function BuildCard({ card, onEditCard }) {
               onCommit={onEditCard && (v => onEditCard(card.key, 'tagline', v))}
             />
           </div>
+          {/* Both sizes print with their own price — the base price alone reads
+              as the 20 oz price and gets sent back. A single-size card keeps the
+              one big price. */}
           <div
             className="flex-shrink-0"
             style={{
               fontFamily: ANTON,
-              fontSize: px(33),
-              lineHeight: 1,
+              fontSize: card.sizes.length > 1 ? px(26) : px(33),
+              lineHeight: 1.1,
               color: NAVY,
               backgroundColor: '#FBF2E2',
               padding: `${px(6)} ${px(12)}`,
               borderRadius: px(8),
             }}
           >
-            {`$${Number(card.price || 0).toFixed(2)}`}
+            {card.sizes.length > 1 ? (
+              card.sizes.map(size => (
+                <div key={size.label} style={{ display: 'flex', justifyContent: 'space-between', gap: px(14) }}>
+                  <span className="uppercase">{size.label}</span>
+                  <span>{`$${(Number(card.price || 0) + Number(size.upcharge || 0)).toFixed(2)}`}</span>
+                </div>
+              ))
+            ) : (
+              `$${Number(card.price || 0).toFixed(2)}`
+            )}
           </div>
         </div>
 
