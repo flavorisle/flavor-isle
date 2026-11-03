@@ -1,34 +1,39 @@
-// Build cards use the unfiltered Square catalog, not the customer-facing MenuItem projection.
-// No changes to Square or the online menu are made by this operation.
+// Build cards read the unfiltered Square catalog rather than the customer-menu projection.
+// Only ACTIVE Square groups are carried: a group the crew disabled on the item, or one whose
+// list was deleted in Square, is not part of that shake and must not print. Every option of an
+// active group is kept exactly as Square names and prices it — no renaming, no dedupe, no drops.
 export function squareBuildCardSource(categories, items, lists) {
   const categoryIds = new Set(categories
     .filter(object => String(object.category_data?.name || '').trim().toLowerCase() === 'blend & bliss')
     .map(object => object.id));
-  const listMap = new Map(lists.map(object => [object.id, object]));
+  const listMap = new Map(lists.filter(object => object.is_deleted !== true).map(object => [object.id, object]));
   const ordered = values => [...values].sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
   const overrideFlag = (value, fallback) => value === 'YES' ? true : value === 'NO' ? false : fallback;
 
+  // Returns null for a list Square no longer has (deleted) or a cycle, so the caller drops it.
   function resolveList(id, attachment = {}, ancestors = []) {
-    if (ancestors.includes(id)) throw new Error(`Square modifier list cycle: ${id}`);
+    if (ancestors.includes(id)) return null;
     const object = listMap.get(id);
-    if (!object) throw new Error(`Square modifier list ${id} could not be loaded. Cards were not refreshed.`);
-    const data = object.modifier_list_data;
+    if (!object) return null;
+    const data = object.modifier_list_data || {};
     const overrides = new Map((attachment.modifier_overrides || []).map(value => [value.modifier_id, value]));
     return {
-      id, name: data.name || '', enabled: attachment.enabled !== false,
-      modifier_type: data.modifier_type || 'LIST', selection_type: data.selection_type || '',
+      id, name: data.name || '', modifier_type: data.modifier_type || 'LIST',
+      selection_type: data.selection_type || '',
       hidden_from_customer: overrideFlag(attachment.hidden_from_customer_override, data.hidden_from_customer === true),
       modifiers: ordered((data.modifiers || []).map(modifier => ({ ...modifier.modifier_data, id: modifier.id })))
         .map(modifier => {
           const override = overrides.get(modifier.id) || {};
           return {
             id: modifier.id, name: modifier.name || '', price_money: modifier.price_money || null,
-            on_by_default: overrideFlag(override.on_by_default_override,
-              override.on_by_default_override == null ? (override.on_by_default ?? modifier.on_by_default ?? false) : (modifier.on_by_default ?? false)),
+            on_by_default: override.on_by_default_override == null
+              ? (override.on_by_default ?? modifier.on_by_default ?? false)
+              : overrideFlag(override.on_by_default_override, modifier.on_by_default === true),
             hidden_online: overrideFlag(override.hidden_online_override, modifier.hidden_online === true),
             sold_out: (modifier.location_overrides || []).some(value => value.sold_out === true),
             child_modifier_lists: (modifier.child_modifier_list_ids || [])
-              .map(childId => resolveList(childId, {}, [...ancestors, id])),
+              .map(childId => resolveList(childId, {}, [...ancestors, id]))
+              .filter(Boolean),
           };
         }),
     };
@@ -47,6 +52,8 @@ export function squareBuildCardSource(categories, items, lists) {
         sold_out: (variation.item_variation_data?.location_overrides || []).some(value => value.sold_out === true),
       }))),
       modifiers: ordered(object.item_data.modifier_list_info || [])
-        .map(attachment => resolveList(attachment.modifier_list_id, attachment)),
+        .filter(attachment => attachment.enabled !== false)
+        .map(attachment => resolveList(attachment.modifier_list_id, attachment))
+        .filter(Boolean),
     }));
 }

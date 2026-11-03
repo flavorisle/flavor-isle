@@ -3,10 +3,9 @@ import { squareMoney } from '@/lib/buildCardContent';
 
 export default function BuildCardModifierGroup({ group }) {
   return (
-    <section className="build-card-modifier-group border border-border rounded-lg bg-background p-2 mb-2" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+    <section className="build-card-modifier-group border border-border rounded-lg bg-background p-2 mb-2"
+      style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
       <h3 className="font-heading text-[21px] leading-tight break-words text-secondary">{group.name}</h3>
-      {group.enabled === false && <p className="text-[15px] font-bold text-primary">Disabled in Square</p>}
-      {group.hidden_from_customer && <p className="text-[14px] text-muted-foreground">Hidden from customer receipts</p>}
       <ul className="list-disc pl-4 mt-1 space-y-1">
         {group.modifiers.map(option => (
           <li key={option.key} data-square-modifier-id={option.id} className="text-[20px] leading-tight break-words">

@@ -8,6 +8,8 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { orderCards, paperSpec } from '@/lib/buildCards';
 import SquareBuildCard from '@/components/admin/SquareBuildCard';
+import PageFooterBand from '@/components/admin/PageFooterBand';
+import { footerGroupsFor } from '@/lib/buildCardContent';
 
 const PX = 96 / 150;
 const px = (value) => `${Math.round(value * PX * 100) / 100}px`;
@@ -91,10 +93,10 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
     return () => { active = false; observer.disconnect(); window.removeEventListener('beforeprint', measure); };
   }, [visible, paper, perPage]);
 
-  // One column of `per` equal slots under the header band and above the spec
-  // band. Cards on a page share the tallest card's height so they line up.
+  // One column of `per` equal slots under the header band and above the footer
+  // band, which carries the base and thickness shared by every Bliss.
   const contentWidth = spec.width - PAGE_PAD * 2;
-  const slotsHeight = spec.height - PAGE_PAD * 2 - spec.header - PAGE_GAP;
+  const slotsHeight = spec.height - PAGE_PAD * 2 - spec.header - PAGE_GAP * 2 - spec.spec;
   const slotHeight = (slotsHeight - SLOT_GAP * (per - 1)) / per;
   const pageHeight = pageCards => Math.max(CARD_H, ...pageCards.map(card => heights[card.key] || CARD_H));
 
@@ -187,7 +189,7 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
                   ))}
                 </div>
 
-
+                <PageFooterBand groups={footerGroupsFor(pageCards)} px={px} height={spec.spec} />
               </section>
             );
           })
