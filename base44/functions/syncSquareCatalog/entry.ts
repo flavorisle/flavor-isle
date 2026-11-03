@@ -1,30 +1,8 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
-
-const SQUARE_VERSION = '2026-09-16';
-
-async function squareFetch(accessToken, path) {
-  const res = await fetch(`https://connect.squareup.com/v2${path}`, {
-    headers: { 'Authorization': `Bearer ${accessToken}`, 'Square-Version': SQUARE_VERSION }
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Square API error on ${path}: ${JSON.stringify(data.errors)}`);
-  return data;
-}
-
-// Paginate through all catalog objects of given types
-async function fetchAllCatalog(accessToken, types) {
-  const objects = [];
-  let cursor = null;
-  do {
-    const url = `/catalog/list?types=${types}${cursor ? `&cursor=${cursor}` : ''}`;
-    const data = await squareFetch(accessToken, url);
-    objects.push(...(data.objects || []));
-    cursor = data.cursor || null;
-  } while (cursor);
-  return objects;
-}
+import { fetchAllCatalog } from '../../shared/squareCatalogRead.ts';
+import { squareBuildCardSource } from '../../shared/squareBuildCardSource.ts';
 
 export default async function (req) {
   try {
@@ -35,6 +13,19 @@ export default async function (req) {
     // throttled to one run per fifteen minutes — its own cadence — so an anonymous
     // caller cannot loop full catalog rewrites.
     const body = await req.json().catch(() => ({}));
+    // An admin-only, read-only projection for print. Do not run the customer-menu
+    // filters, synthetic sizes, recipe overrides, or database sync on this path.
+    if (body.build_cards_only === true) {
+      const user = await base44.auth.me().catch(error => error.status === 401 ? null : Promise.reject(error));
+      if (!user || user.role !== 'admin') return Response.json({ error: 'Admin access required' }, { status: 403 });
+      const { accessToken } = await base44.asServiceRole.connectors.getConnection('square');
+      const [categories, items, lists] = await Promise.all(
+        ['CATEGORY', 'ITEM', 'MODIFIER_LIST'].map(type => fetchAllCatalog(accessToken, type)),
+      );
+      const source = squareBuildCardSource(categories, items, lists);
+      console.log(`Build cards refreshed directly from Square: ${source.length} items`);
+      return Response.json({ success: true, source: 'square', fetched_at: new Date().toISOString(), items: source });
+    }
     const gate = await maintenanceGate(base44, req, body, {
       functionName: 'syncSquareCatalog',
       windowMs: 15 * 60 * 1000,

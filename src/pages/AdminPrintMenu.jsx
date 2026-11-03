@@ -10,6 +10,7 @@ import PrintableMenu from '@/components/admin/PrintableMenu';
 import PrintMenuEditor from '@/components/admin/PrintMenuEditor';
 import BuildCardEditor from '@/components/admin/BuildCardEditor';
 import PrintableBuildCards from '@/components/admin/PrintableBuildCards';
+import useSquareBuildCards from '@/hooks/useSquareBuildCards';
 import { deriveBuildCards, loadCardOverrides, saveCardOverrides, orderCards, paperSpec, sheetSettings, PAPER_OPTIONS } from '@/lib/buildCards';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
@@ -49,9 +50,9 @@ export default function AdminPrintMenu() {
   // Square owns the cards; the page keeps only the crew's print-copy overrides.
   const [cardOverrides, setCardOverrides] = useState(() => loadCardOverrides());
   const [selectedCardId, setSelectedCardId] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-
-  const cards = useMemo(() => deriveBuildCards(items, cardOverrides), [items, cardOverrides]);
+  const squareSource = useSquareBuildCards(mode === 'cards');
+  const refreshing = squareSource.isFetching;
+  const cards = useMemo(() => deriveBuildCards(squareSource.data?.items || [], cardOverrides), [squareSource.data, cardOverrides]);
   // Sheet settings ride in the same override record: paper, cards per page and
   // the crew's print order.
   const sheet = useMemo(() => sheetSettings(cardOverrides), [cardOverrides]);
@@ -195,7 +196,7 @@ export default function AdminPrintMenu() {
     const style = document.createElement('style');
     style.setAttribute('data-build-cards-print', 'true');
     style.textContent = `
-      @page { size: ${sheet.paper === 'tabloid' ? '11in 17in' : '8.5in 11in'}; margin: 0.25in; }
+      @page { size: ${sheet.paper === 'tabloid' ? '11in 17in' : '8.5in 11in'}; margin: 0; }
       @media print {
         body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .build-card-page { page-break-after: always; }
@@ -215,14 +216,6 @@ export default function AdminPrintMenu() {
       return { ...prev, [key]: next };
     });
 
-  const resetCardCopy = (key) =>
-    setCardOverrides(prev => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-
-  const editCardField = (key, field, value) => setCardOverride(key, field, value);
 
   // Sheet settings and the crew's print order sit on the same override record.
   const setSheetSetting = (field, value) =>
@@ -237,37 +230,8 @@ export default function AdminPrintMenu() {
     setSheetSetting('order', keys);
   };
 
-  // Line order and visibility are stored per group, against the Square option ids.
-  const moveCardLine = (key, group, index, dir) => {
-    const card = cards.find(c => c.key === key);
-    const ids = card?.[group]?.map(line => line.id) || [];
-    const to = index + dir;
-    if (to < 0 || to >= ids.length) return;
-    [ids[index], ids[to]] = [ids[to], ids[index]];
-    setCardOverride(key, 'line_order', { ...(cardOverrides[key]?.line_order || {}), [group]: ids });
-  };
-
-  const toggleCardLine = (key, group, lineId) => {
-    const card = cards.find(c => c.key === key);
-    if (!card) return;
-    const hidden = card[group].filter(line => line.hidden).map(line => line.id);
-    const next = hidden.includes(lineId)
-      ? hidden.filter(id => id !== lineId)
-      : [...hidden, lineId];
-    setCardOverride(key, 'hidden_lines', { ...(cardOverrides[key]?.hidden_lines || {}), [group]: next });
-  };
-
-  // Pull Square's catalog into MenuItem, then re-run the menu load so the cards,
-  // their lines, prices and availability all come back fresh.
-  const refreshFromSquare = async () => {
-    setRefreshing(true);
-    try {
-      await base44.functions.invoke('syncSquareCatalog', {});
-      await loadMenu();
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  // Refresh only the complete print source. The customer-facing menu is unchanged.
+  const refreshFromSquare = () => squareSource.refetch();
 
   const sections = useMemo(() => {
     if (!settings) return [];
@@ -355,7 +319,7 @@ export default function AdminPrintMenu() {
             </h1>
             <p className="text-sm text-muted-foreground">
               {mode === 'cards'
-                ? 'Build sheets for the shake station. Square fills the lines — hide or reorder them, add the house portions, then print and post.'
+                ? 'Direct from Square: every attached modifier group and option, with exact names and prices. Card content cannot be hidden or replaced locally.'
                 : 'Edit the printed copy on the left or click any item text on the sheet to edit it in place, then print or save as PDF. Your online menu stays unchanged.'}
             </p>
           </div>
@@ -404,8 +368,9 @@ export default function AdminPrintMenu() {
               </button>
             </div>
             <button
-              onClick={() => window.print()}
-              className="btn-cherry chrome-hover px-6 py-3 text-sm flex items-center gap-2"
+              onClick={async () => { await document.fonts.ready; window.print(); }}
+              disabled={mode === 'cards' && (refreshing || squareSource.isError || !squareSource.data)}
+              className="btn-cherry chrome-hover px-6 py-3 text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer size={16} /> {mode === 'cards' ? 'Print Build Cards' : 'Print Menu'}
             </button>
@@ -420,12 +385,11 @@ export default function AdminPrintMenu() {
                 selectedId={activeCardKey}
                 onSelect={setSelectedCardId}
                 setOverride={setCardOverride}
-                moveLine={moveCardLine}
-                toggleLine={toggleCardLine}
                 moveCard={moveCard}
-                resetCardCopy={resetCardCopy}
                 onRefresh={refreshFromSquare}
                 refreshing={refreshing}
+                sourceDate={squareSource.data?.fetched_at}
+                error={squareSource.error?.response?.data?.error || squareSource.error?.message}
               />
             ) : (
               <PrintMenuEditor
@@ -452,13 +416,9 @@ export default function AdminPrintMenu() {
 
           <div id="print-area">
             {mode === 'cards' ? (
-              <PrintableBuildCards
-                cards={cards}
-                order={sheet.order}
-                paper={sheet.paper}
-                perPage={sheet.perPage}
-                onEditCard={editCardField}
-              />
+              refreshing ? <p role="status" className="py-16 text-center text-muted-foreground">Pulling every Bliss modifier from Square…</p> :
+              squareSource.isError ? <p role="alert" className="py-16 text-center text-destructive">The Square pull failed. Refresh from Square before printing.</p> :
+              <PrintableBuildCards cards={cards} order={sheet.order} paper={sheet.paper} perPage={sheet.perPage} />
             ) : (
               <PrintableMenu
                 sections={printSections}
