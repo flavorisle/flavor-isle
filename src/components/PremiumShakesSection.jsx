@@ -6,41 +6,23 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
 import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import { optimizedImageUrl } from '@/lib/utils';
+import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 
-// The specialty "Bliss" shakes — standalone Square items with their own
-// pricing and a Size modifier. Displayed below the build-your-own flavor grid.
-// Hidden (is_hidden) entries stay listed here so re-activating a flavor in
-// Square needs no code change.
-const PREMIUM_SHAKE_IDS = [
-  '6a3e37fe23e413b185c3732a', // Banana Pudding Bliss
-  '6a3e3807f128347090f2090d', // Circus Cookie Bliss
-  '6a3e3805ff57925d93d080ba', // Southern Peach Crumble Bliss
-  '6a3e37fee8d7ba1372e2072f', // Banana Split Bliss
-  '6a7b92470796edccdb26af34', // Caramel Apple Bliss
-  '6ab2d3f6dfddfc7740e92cde', // Strawberry Crunch Bliss
-  '6adcb31da2a930a844ed2026', // Apple Pie Bliss
-  '6adcb69c70a34c9e1e47ee31', // Smores
-];
+// The specialty "Bliss" shakes ARE Square's "Blend & Bliss" items — the same
+// records the online menu and the print cards read. Nothing is listed by hand,
+// so a flavor added or renamed in Square shows up here with its own name,
+// price and modifier groups. Hidden (is_hidden) entries stay out until the crew
+// makes them available again.
+const badgeKey = (item) => item.name.replace(/\s*Milkshake$/i, '');
 
-// Special availability badges keyed by MenuItem id.
+// Optional marketing badges, keyed by the Square item name (not by id, so a
+// renamed or re-created item keeps its badge).
 const AVAILABILITY_BADGES = {
-  '6a3e3807f128347090f2090d': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
-  '6a7b92470796edccdb26af34': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
-  '6ab2d3f6dfddfc7740e92cde': { label: 'New', className: 'bg-patina-mint text-white' },
-  '6adcb31da2a930a844ed2026': { label: 'New', className: 'bg-patina-mint text-white' },
-  '6adcb69c70a34c9e1e47ee31': { label: 'New', className: 'bg-patina-mint text-white' },
-};
-
-// Short display names (strip the "Milkshake" suffix for the card title).
-const SHORT_NAMES = {
-  '6a3e37fe23e413b185c3732a': 'Banana Pudding Bliss',
-  '6a3e3807f128347090f2090d': 'Circus Cookie Bliss',
-  '6a3e3805ff57925d93d080ba': 'Peach Crumble Bliss',
-  '6a3e37fee8d7ba1372e2072f': 'Banana Split Bliss',
-  '6a7b92470796edccdb26af34': 'Caramel Apple Bliss',
-  '6ab2d3f6dfddfc7740e92cde': 'Strawberry Crunch Bliss',
-  '6adcb31da2a930a844ed2026': 'Apple Pie Bliss',
-  '6adcb69c70a34c9e1e47ee31': 'Smores',
+  'Circus Cookie Bliss': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
+  'Caramel Apple Bliss': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
+  'Strawberry Crunch Bliss': { label: 'New', className: 'bg-patina-mint text-white' },
+  'Apple Pie Bliss': { label: 'New', className: 'bg-patina-mint text-white' },
+  "S'more's Bliss": { label: 'New', className: 'bg-patina-mint text-white' },
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {
@@ -51,11 +33,17 @@ export default function PremiumShakesSection({ autoOpenId }) {
   const [addedId, setAddedId] = useState(null);
 
   useEffect(() => {
-    Promise.all(PREMIUM_SHAKE_IDS.map((id) => base44.entities.MenuItem.get(id).catch(() => null)))
-      .then((fetched) => {
-        // Removed (is_hidden) premium shakes are excluded entirely; sold-out
-        // ones stay visible as disabled "Sold Out" cards.
-        const visible = fetched.filter(Boolean).filter((i) => i.is_hidden !== true);
+    base44.entities.MenuItem.list()
+      .then((all) => {
+        // Every Square "Blend & Bliss" item, minus the ones the crew hid and the
+        // generic "Specialty Milkshakes" placeholder. Sold-out flavors stay
+        // visible as disabled "Sold Out" cards.
+        const skip = new Set(SKIP_ITEM_NAMES.map((n) => String(n).trim().toLowerCase()));
+        const visible = (all || [])
+          .filter((i) => i.square_category === BLISS_CATEGORY)
+          .filter((i) => i.is_hidden !== true)
+          .filter((i) => !skip.has(String(i.name || '').trim().toLowerCase()))
+          .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
         setItems(visible);
         // Deep-link from the Caramel Apple Bliss pop-up: auto-open the size
         // picker for the requested shake once it's loaded and still available.
@@ -121,8 +109,8 @@ export default function PremiumShakesSection({ autoOpenId }) {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {items.map((item) => {
-            const badge = AVAILABILITY_BADGES[item.id];
-            const shortName = SHORT_NAMES[item.id] || item.name.replace(/ Milkshake$/i, '');
+            const shortName = badgeKey(item);
+            const badge = AVAILABILITY_BADGES[shortName];
             const isAdded = addedId === item.id;
             const soldOut = item.is_available === false;
             return (
