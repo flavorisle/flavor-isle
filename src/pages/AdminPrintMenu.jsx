@@ -10,7 +10,7 @@ import PrintableMenu from '@/components/admin/PrintableMenu';
 import PrintMenuEditor from '@/components/admin/PrintMenuEditor';
 import BuildCardEditor from '@/components/admin/BuildCardEditor';
 import PrintableBuildCards from '@/components/admin/PrintableBuildCards';
-import { deriveBuildCards, loadCardOverrides, saveCardOverrides } from '@/lib/buildCards';
+import { deriveBuildCards, loadCardOverrides, saveCardOverrides, orderCards, paperSpec, sheetSettings, PAPER_OPTIONS } from '@/lib/buildCards';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 const STORAGE_KEY = 'flavorisle_print_menu_v2';
@@ -52,7 +52,12 @@ export default function AdminPrintMenu() {
   const [refreshing, setRefreshing] = useState(false);
 
   const cards = useMemo(() => deriveBuildCards(items, cardOverrides), [items, cardOverrides]);
-  const activeCardKey = cards.some(c => c.key === selectedCardId) ? selectedCardId : (cards[0]?.key || '');
+  // Sheet settings ride in the same override record: paper, cards per page and
+  // the crew's print order.
+  const sheet = useMemo(() => sheetSettings(cardOverrides), [cardOverrides]);
+  const paper = paperSpec(sheet.paper);
+  const orderedCards = useMemo(() => orderCards(cards, sheet.order), [cards, sheet.order]);
+  const activeCardKey = orderedCards.some(c => c.key === selectedCardId) ? selectedCardId : (orderedCards[0]?.key || '');
 
   const loadMenu = async () => {
     const [menuItems, menuSettings] = await Promise.all([
@@ -182,14 +187,15 @@ export default function AdminPrintMenu() {
     saveCardOverrides(cardOverrides);
   }, [cardOverrides]);
 
-  // Cards print on 11 × 17. The rule lives only while cards mode is on, so menu
-  // mode keeps its own page setup untouched.
+  // The card sheet prints on the paper the crew picked (8.5 × 11 by default, or
+  // 11 × 17). The rule lives only while cards mode is on, so menu mode keeps its
+  // own page setup untouched.
   useEffect(() => {
     if (mode !== 'cards') return;
     const style = document.createElement('style');
     style.setAttribute('data-build-cards-print', 'true');
     style.textContent = `
-      @page { size: 11in 17in; margin: 0.25in; }
+      @page { size: ${sheet.paper === 'tabloid' ? '11in 17in' : '8.5in 11in'}; margin: 0.25in; }
       @media print {
         body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .build-card-page { page-break-after: always; }
@@ -198,7 +204,7 @@ export default function AdminPrintMenu() {
     `;
     document.head.appendChild(style);
     return () => style.remove();
-  }, [mode]);
+  }, [mode, sheet.paper]);
 
   // Print-copy overrides, keyed by square_item_id.
   const setCardOverride = (key, field, value) =>
@@ -217,6 +223,19 @@ export default function AdminPrintMenu() {
     });
 
   const editCardField = (key, field, value) => setCardOverride(key, field, value);
+
+  // Sheet settings and the crew's print order sit on the same override record.
+  const setSheetSetting = (field, value) =>
+    setCardOverrides(prev => ({ ...prev, [field]: value }));
+
+  const moveCard = (key, dir) => {
+    const keys = orderedCards.map(card => card.key);
+    const from = keys.indexOf(key);
+    const to = from + dir;
+    if (from === -1 || to < 0 || to >= keys.length) return;
+    [keys[from], keys[to]] = [keys[to], keys[from]];
+    setSheetSetting('order', keys);
+  };
 
   // Line order and visibility are stored per group, against the Square option ids.
   const moveCardLine = (key, group, index, dir) => {
@@ -341,6 +360,35 @@ export default function AdminPrintMenu() {
             </p>
           </div>
           <div className="flex items-center">
+            {mode === 'cards' && (
+              <>
+                <div className="inline-flex gap-1 mr-2 rounded-xl bg-white border border-[#E5E7EB] p-1">
+                  {PAPER_OPTIONS.map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSheetSetting('paper', option.id)}
+                      aria-pressed={sheet.paper === option.id}
+                      className={`h-7 px-3 rounded-lg text-[12px] font-semibold tracking-[.02em] ${sheet.paper === option.id ? 'bg-obsidian-roast text-white' : 'text-obsidian-roast hover:bg-[#F7F3EE]'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="inline-flex gap-1 mr-3 rounded-xl bg-white border border-[#E5E7EB] p-1">
+                  {paper.perPage.map(count => (
+                    <button
+                      key={count}
+                      onClick={() => setSheetSetting('perPage', count)}
+                      aria-pressed={sheet.perPage === count}
+                      aria-label={`${count} card${count === 1 ? '' : 's'} per page`}
+                      className={`h-7 w-8 rounded-lg text-[12px] font-semibold ${sheet.perPage === count ? 'bg-obsidian-roast text-white' : 'text-obsidian-roast hover:bg-[#F7F3EE]'}`}
+                    >
+                      {count}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="inline-flex gap-2 mr-3 items-center">
               <button
                 onClick={() => setMode('menu')}
@@ -368,12 +416,13 @@ export default function AdminPrintMenu() {
           <div className="print:hidden">
             {mode === 'cards' ? (
               <BuildCardEditor
-                cards={cards}
+                cards={orderedCards}
                 selectedId={activeCardKey}
                 onSelect={setSelectedCardId}
                 setOverride={setCardOverride}
                 moveLine={moveCardLine}
                 toggleLine={toggleCardLine}
+                moveCard={moveCard}
                 resetCardCopy={resetCardCopy}
                 onRefresh={refreshFromSquare}
                 refreshing={refreshing}
@@ -403,7 +452,13 @@ export default function AdminPrintMenu() {
 
           <div id="print-area">
             {mode === 'cards' ? (
-              <PrintableBuildCards cards={cards} onEditCard={editCardField} />
+              <PrintableBuildCards
+                cards={cards}
+                order={sheet.order}
+                paper={sheet.paper}
+                perPage={sheet.perPage}
+                onEditCard={editCardField}
+              />
             ) : (
               <PrintableMenu
                 sections={printSections}

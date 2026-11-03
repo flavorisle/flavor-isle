@@ -1,9 +1,11 @@
-// The printed Build Cards poster (issue #148, PRE-PLAN v3.7): four cards to a
-// page on an 11 × 17 sheet, each card carrying its own 1–6 build steps, with a
-// shared base/thickness/milk band at the foot of every sheet. Section 6 of the
-// plan is measured at 150 px/in, while the browser lays out at 96 px/in, so
-// every measured value is multiplied by PX before use.
+// The printed Build Cards poster (issue #148, PRE-PLAN v4): the crew picks the
+// paper (8.5 × 11 or 11 × 17) and how many cards fit a sheet, and each card is
+// scaled as a fixed 1575 × 475 block — never re-flowed — into its slot. Cards
+// print in the crew's saved order; unchecked cards are skipped. Section sizes
+// are measured at 150 px/in, while the browser lays out at 96 px/in, so every
+// measured value is multiplied by PX before use.
 import React from 'react';
+import { orderCards, paperSpec } from '@/lib/buildCards';
 
 const PX = 96 / 150;
 const px = (value) => `${Math.round(value * PX * 100) / 100}px`;
@@ -21,6 +23,12 @@ const BARLOW = "'BarlowBold', 'Barlow', sans-serif";
 // the spec-band labels and small caps.
 const FONTS = "@import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@700&display=swap');";
 
+const CARD_W = 1575;
+const CARD_H = 475;
+const PAGE_PAD = 37;
+const PAGE_GAP = 22;
+const SLOT_GAP = 24;
+
 const BUILD_STEPS = [
   'Milk first — amounts below',
   'One pump of syrup',
@@ -29,8 +37,6 @@ const BUILD_STEPS = [
   'Mix it',
   'Add the toppings',
 ];
-
-const CARDS_PER_PAGE = 4;
 
 const SPEC_ROWS = [
   { label: 'BASE', value: 'Vanilla soft serve or chocolate soft serve' },
@@ -64,8 +70,9 @@ function Editable({ as: Tag = 'span', value, onCommit, className, placeholder, s
   );
 }
 
-// Square owns every line: the crew can hide one, but the wording always comes
-// from the item's modifier group, so nothing here is editable or invented.
+// Square owns the lines; the crew's added lines sit after them. Nothing here is
+// invented — every line either comes from the item's modifier group or from the
+// crew's print-only additions.
 function LineList({ lines }) {
   return (
     <ul>
@@ -114,17 +121,18 @@ function Panel({ title, children }) {
 }
 
 function BuildCard({ card, onEditCard }) {
-  // Hidden lines never print. A card with no topping group is served bare, so
-  // the ON TOP column always carries either the toppings or the bare block.
-  const inShake = card.in_shake.filter(line => !line.hidden);
-  const toppings = card.toppings.filter(line => !line.hidden);
+  // Hidden Square lines never print; crew additions always follow them.
+  const squareIn = card.in_shake.filter(line => !line.hidden);
+  const squareTop = card.not_topped ? [] : card.toppings.filter(line => !line.hidden);
+  const inShake = [...squareIn, ...(card.extra_in || [])];
+  const onTop = [...squareTop, ...(card.extra_top || [])];
 
   return (
     <article
       style={{
         display: 'flex',
-        width: px(1575),
-        height: px(475),
+        width: px(CARD_W),
+        height: px(CARD_H),
         backgroundColor: '#FFFDF7',
         border: `${px(4)} solid ${NAVY}`,
         borderRadius: px(18),
@@ -182,17 +190,17 @@ function BuildCard({ card, onEditCard }) {
             )}
           </Panel>
 
-          {/* ON TOP */}
+          {/* ON TOP — bare only when the card has no topping line at all. */}
           <Panel title="ON TOP">
-            {card.not_topped ? (
+            {onTop.length > 0 ? (
+              <LineList lines={onTop} />
+            ) : (
               <>
                 <div className="uppercase" style={{ fontFamily: ANTON, fontSize: px(34), lineHeight: 1, color: NAVY }}>
                   NOT TOPPED
                 </div>
                 <div style={{ fontSize: px(18), color: '#6B7688' }}>Serve it straight, no toppings.</div>
               </>
-            ) : (
-              <LineList lines={toppings} />
             )}
           </Panel>
         </div>
@@ -246,44 +254,71 @@ function BuildCard({ card, onEditCard }) {
   );
 }
 
-function SpecBand() {
+// The band shrinks with the paper, so every mark keeps its v3.7 proportions.
+function SheetHeader({ spec, contentWidth }) {
+  const k = Math.min(contentWidth / CARD_W, spec.header / 150);
+  return (
+    <div
+      className="relative flex flex-col justify-center"
+      style={{ height: px(spec.header), backgroundColor: NAVY, WebkitTextFillColor: '#ffffff', padding: `0 ${px(38 * k)}` }}
+    >
+      <span className="font-heading uppercase" style={{ fontSize: px(28 * k), letterSpacing: px(9 * k) }}>
+        Flavor Isle
+      </span>
+      <span style={{ fontFamily: ANTON, fontSize: px(66 * k), lineHeight: 0.85 }} className="uppercase">
+        Build Cards
+      </span>
+      <span className="uppercase" style={{ fontSize: px(22 * k), letterSpacing: px(2.4 * k) }}>
+        Shake station · 14 oz or 20 oz
+      </span>
+      <div className="absolute left-0 right-0 bottom-0" style={{ height: px(16 * k), backgroundColor: CHERRY }}>
+        <span className="absolute left-0 top-0 bottom-0" style={{ width: '33%', backgroundColor: GOLD }} />
+        <span className="absolute top-0 bottom-0" style={{ left: '50%', width: '16%', backgroundColor: GREEN }} />
+      </div>
+    </div>
+  );
+}
+
+function SpecBand({ spec, contentWidth }) {
+  const k = Math.min(contentWidth / CARD_W, spec.spec / 300);
   return (
     <div
       style={{
         position: 'relative',
-        width: px(1575),
-        height: px(300),
+        width: '100%',
+        height: px(spec.spec),
         backgroundColor: NAVY,
         color: CREAM,
-        padding: `${px(16)} ${px(30)} 0`,
-        marginTop: px(22),
+        padding: `${px(16 * k)} ${px(30 * k)} 0`,
+        marginTop: px(PAGE_GAP),
+        overflow: 'hidden',
       }}
     >
       <div
         className="uppercase"
-        style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(24), color: GOLD, marginBottom: px(8) }}
+        style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(24 * k), color: GOLD, marginBottom: px(8 * k) }}
       >
         BASE, THICKNESS AND MILK — EVERY BLISS SHAKE
       </div>
 
-      <div className="flex" style={{ gap: px(26) }}>
+      <div className="flex" style={{ gap: px(26 * k) }}>
         <div className="flex-1 min-w-0">
           {SPEC_ROWS.map(row => (
-            <div key={row.label} className="flex items-baseline" style={{ gap: px(14), marginBottom: px(8) }}>
+            <div key={row.label} className="flex items-baseline" style={{ gap: px(14 * k), marginBottom: px(8 * k) }}>
               <span
                 className="uppercase"
                 style={{
-                  minWidth: px(130),
+                  minWidth: px(130 * k),
                   fontFamily: BARLOW,
                   fontWeight: 700,
-                  fontSize: px(14),
-                  letterSpacing: px(2),
+                  fontSize: px(14 * k),
+                  letterSpacing: px(2 * k),
                   color: GOLD,
                 }}
               >
                 {row.label}
               </span>
-              <span style={{ fontSize: px(18), color: CREAM }}>{row.value}</span>
+              <span style={{ fontSize: px(18 * k), color: CREAM }}>{row.value}</span>
             </div>
           ))}
         </div>
@@ -291,10 +326,10 @@ function SpecBand() {
         <div
           className="flex-shrink-0"
           style={{
-            width: px(420),
+            width: px(420 * k),
             border: `${px(2)} dashed rgba(251,242,226,.45)`,
             borderRadius: px(10),
-            padding: `${px(8)} ${px(16)}`,
+            padding: `${px(8 * k)} ${px(16 * k)}`,
           }}
         >
           <div
@@ -303,8 +338,8 @@ function SpecBand() {
               gridTemplateColumns: '1fr 1fr 1fr 1fr',
               fontFamily: BARLOW,
               fontWeight: 700,
-              fontSize: px(14),
-              letterSpacing: px(1.6),
+              fontSize: px(14 * k),
+              letterSpacing: px(1.6 * k),
               color: GOLD,
             }}
           >
@@ -317,7 +352,7 @@ function SpecBand() {
             <div
               key={row.size}
               className="grid"
-              style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', fontSize: px(18), lineHeight: 1.3, color: CREAM }}
+              style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', fontSize: px(18 * k), lineHeight: 1.3, color: CREAM }}
             >
               <span>{row.size}</span>
               <span>{row.regular}</span>
@@ -327,7 +362,7 @@ function SpecBand() {
           ))}
           <div
             className="uppercase"
-            style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(15), color: GOLD, marginTop: px(6) }}
+            style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(15 * k), color: GOLD, marginTop: px(6 * k) }}
           >
             SYRUP · 1 PUMP
           </div>
@@ -340,9 +375,9 @@ function SpecBand() {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: px(10),
-          fontSize: px(15),
-          letterSpacing: px(1.2),
+          bottom: px(10 * k),
+          fontSize: px(15 * k),
+          letterSpacing: px(1.2 * k),
           color: CREAM,
         }}
       >
@@ -352,34 +387,22 @@ function SpecBand() {
   );
 }
 
-function SheetHeader() {
-  return (
-    <div
-      className="relative flex flex-col justify-center"
-      style={{ height: px(150), backgroundColor: NAVY, WebkitTextFillColor: '#ffffff', padding: `0 ${px(38)}` }}
-    >
-      <span className="font-heading uppercase" style={{ fontSize: px(28), letterSpacing: px(9) }}>
-        Flavor Isle
-      </span>
-      <span style={{ fontFamily: ANTON, fontSize: px(66), lineHeight: 0.85 }} className="uppercase">
-        Build Cards
-      </span>
-      <span className="uppercase" style={{ fontSize: px(22), letterSpacing: px(2.4) }}>
-        Shake station · 14 oz or 20 oz · four cards per sheet
-      </span>
-      <div className="absolute left-0 right-0 bottom-0" style={{ height: px(16), backgroundColor: CHERRY }}>
-        <span className="absolute left-0 top-0 bottom-0" style={{ width: '33%', backgroundColor: GOLD }} />
-        <span className="absolute top-0 bottom-0" style={{ left: '50%', width: '16%', backgroundColor: GREEN }} />
-      </div>
-    </div>
-  );
-}
+export default function PrintableBuildCards({ cards, order = [], paper = 'letter', perPage = 4, onEditCard }) {
+  const spec = paperSpec(paper);
+  const per = spec.perPage.includes(perPage) ? perPage : 4;
+  const visible = orderCards((cards || []).filter(card => card.on_sheet !== false), order);
 
-export default function PrintableBuildCards({ cards, onEditCard }) {
-  const visible = (cards || []).filter(card => card.on_sheet !== false);
+  // One column of `per` equal slots under the header band and above the spec
+  // band. Each card keeps its 1575 × 475 build and is scaled to fit its slot,
+  // centred, so a long card can never re-flow into a different design.
+  const contentWidth = spec.width - PAGE_PAD * 2;
+  const slotsHeight = spec.height - PAGE_PAD * 2 - spec.header - spec.spec - PAGE_GAP * 2;
+  const slotHeight = (slotsHeight - SLOT_GAP * (per - 1)) / per;
+  const scale = Math.min(contentWidth / CARD_W, slotHeight / CARD_H);
+
   const pages = [];
-  for (let i = 0; i < visible.length; i += CARDS_PER_PAGE) {
-    pages.push(visible.slice(i, i + CARDS_PER_PAGE));
+  for (let i = 0; i < visible.length; i += per) {
+    pages.push(visible.slice(i, i + per));
   }
 
   return (
@@ -389,7 +412,7 @@ export default function PrintableBuildCards({ cards, onEditCard }) {
         {pages.length === 0 ? (
           <section
             className="build-card-page bg-white text-black mx-auto mb-6 print:mb-0 shadow-float print:shadow-none"
-            style={{ width: px(1650), padding: px(37) }}
+            style={{ width: px(spec.width), height: px(spec.height), padding: px(PAGE_PAD), boxSizing: 'border-box' }}
           >
             <div style={{ fontSize: px(27), color: NAVY }}>No Bliss cards in Square right now.</div>
           </section>
@@ -398,24 +421,53 @@ export default function PrintableBuildCards({ cards, onEditCard }) {
             <section
               key={pageIndex}
               className="build-card-page bg-white text-black mx-auto mb-6 print:mb-0 shadow-float print:shadow-none"
-              style={{ width: px(1650), padding: px(37) }}
+              style={{
+                width: px(spec.width),
+                height: px(spec.height),
+                padding: px(PAGE_PAD),
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+              }}
             >
-              <SheetHeader />
+              <SheetHeader spec={spec} contentWidth={contentWidth} />
 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: px(1575),
-                  gap: px(24),
-                  marginTop: px(22),
+                  gridTemplateColumns: '1fr',
+                  rowGap: px(SLOT_GAP),
+                  marginTop: px(PAGE_GAP),
+                  height: px(slotsHeight),
                 }}
               >
                 {pageCards.map(card => (
-                  <BuildCard key={card.key} card={card} onEditCard={onEditCard} />
+                  <div
+                    key={card.key}
+                    style={{
+                      height: px(slotHeight),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ width: px(CARD_W * scale), height: px(CARD_H * scale), overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: px(CARD_W),
+                          height: px(CARD_H),
+                          transform: `scale(${scale})`,
+                          transformOrigin: 'top left',
+                        }}
+                      >
+                        <BuildCard card={card} onEditCard={onEditCard} />
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
 
-              <SpecBand />
+              <SpecBand spec={spec} contentWidth={contentWidth} />
             </section>
           ))
         )}

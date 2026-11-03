@@ -2,8 +2,8 @@
 // Square owns the cards — membership, name, price, sizes and every ingredient and
 // topping line. This panel edits the crew's print copy and the order/visibility of
 // the Square lines only. Print-only: nothing here touches the live menu.
-import React from 'react';
-import { ChevronUp, ChevronDown, RotateCcw, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronUp, ChevronDown, RotateCcw, RefreshCw, X } from 'lucide-react';
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-border bg-white text-sm';
 const labelCls = 'block text-[11px] uppercase tracking-[.08em] text-muted-foreground mb-1';
@@ -62,9 +62,79 @@ function LineRows({ lines, group, cardKey, dimmed, onMove, onToggle }) {
   );
 }
 
+// Crew-added lines: typed here, printed after the Square lines, stored in the
+// print overrides only — Square and the online menu never see them.
+function CustomLines({ lines, group, cardKey, onSet }) {
+  const [draft, setDraft] = useState('');
+
+  const commit = () => {
+    const text = draft.trim();
+    if (!text) return;
+    onSet(cardKey, group, [...lines, { id: `custom-${Date.now()}`, text }]);
+    setDraft('');
+  };
+
+  const move = (index, dir) => {
+    const to = index + dir;
+    if (to < 0 || to >= lines.length) return;
+    const next = [...lines];
+    [next[index], next[to]] = [next[to], next[index]];
+    onSet(cardKey, group, next);
+  };
+
+  const remove = (index) => {
+    const next = lines.filter((_, i) => i !== index);
+    onSet(cardKey, group, next.length ? next : undefined);
+  };
+
+  return (
+    <div className="space-y-1.5 mt-1.5">
+      {lines.map((line, i) => (
+        <div key={line.id || i} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-2 py-1.5">
+          <span className="text-[9px] font-bold tracking-[.08em] text-midnight-cherry border border-midnight-cherry/40 rounded px-1 py-0.5">
+            CUSTOM
+          </span>
+          <span className="flex-1 min-w-0 text-xs text-obsidian-roast truncate">{line.text}</span>
+          <button
+            onClick={() => move(i, -1)}
+            disabled={i === 0}
+            aria-label="Move added line up"
+            className="p-1 text-muted-foreground hover:text-midnight-cherry disabled:opacity-30"
+          >
+            <ChevronUp size={14} />
+          </button>
+          <button
+            onClick={() => move(i, 1)}
+            disabled={i === lines.length - 1}
+            aria-label="Move added line down"
+            className="p-1 text-muted-foreground hover:text-midnight-cherry disabled:opacity-30"
+          >
+            <ChevronDown size={14} />
+          </button>
+          <button
+            onClick={() => remove(i)}
+            aria-label={`Delete ${line.text}`}
+            className="p-1 text-muted-foreground hover:text-midnight-cherry"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <input
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+        placeholder="+ Add line — press Enter"
+        aria-label="Add a line"
+        className="w-full px-2 py-1.5 rounded-lg border border-dashed border-border bg-white text-xs"
+      />
+    </div>
+  );
+}
+
 export default function BuildCardEditor({
   cards, selectedId, onSelect,
-  setOverride, moveLine, toggleLine, resetCardCopy, onRefresh, refreshing,
+  setOverride, moveLine, toggleLine, moveCard, resetCardCopy, onRefresh, refreshing,
 }) {
   const card = cards.find(c => c.key === selectedId) || null;
 
@@ -82,15 +152,14 @@ export default function BuildCardEditor({
           </button>
         </div>
         <div className="space-y-2">
-          {cards.map(c => {
+          {cards.map((c, index) => {
             const selected = c.key === selectedId;
-            const inShake = c.in_shake.filter(l => !l.hidden).length;
-            const onTop = c.toppings.filter(l => !l.hidden).length;
+            const inShake = c.in_shake.filter(l => !l.hidden).length + c.extra_in.length;
+            const onTop = (c.not_topped ? 0 : c.toppings.filter(l => !l.hidden).length) + c.extra_top.length;
             return (
-              <button
+              <div
                 key={c.key}
-                onClick={() => onSelect(c.key)}
-                className={`relative w-full h-11 rounded-[10px] px-3 text-left bg-white border ${selected ? 'border-[#E5E7EB]' : 'border-border'}`}
+                className={`relative w-full h-11 rounded-[10px] pl-3 pr-1 bg-white border flex items-center gap-1 ${selected ? 'border-[#E5E7EB]' : 'border-border'}`}
               >
                 {selected && (
                   <span
@@ -98,15 +167,42 @@ export default function BuildCardEditor({
                     style={{ width: 3, backgroundColor: c.accent_color }}
                   />
                 )}
-                <span className="block text-[13px] font-semibold text-obsidian-roast truncate">{c.print_name}</span>
-                <span className="block text-[11px] text-muted-foreground truncate">
-                  {c.on_sheet === false
-                    ? 'OFF THE SHEET'
-                    : c.not_topped
-                      ? 'NOT TOPPED'
-                      : `${inShake} in the shake · ${onTop} on top`}
+                {/* Badge = print order, the same order the sheet prints in. */}
+                <span
+                  className="flex-shrink-0 w-4 text-[11px] font-bold text-muted-foreground"
+                  aria-label={`Print order ${index + 1}`}
+                >
+                  {index + 1}
                 </span>
-              </button>
+                <button onClick={() => onSelect(c.key)} className="flex-1 min-w-0 text-left">
+                  <span className="block text-[13px] font-semibold text-obsidian-roast truncate">{c.print_name}</span>
+                  <span className="block text-[11px] text-muted-foreground truncate">
+                    {c.on_sheet === false
+                      ? 'OFF THE SHEET'
+                      : onTop === 0
+                        ? 'NOT TOPPED'
+                        : `${inShake} in the shake · ${onTop} on top`}
+                  </span>
+                </button>
+                <span className="flex flex-col flex-shrink-0">
+                  <button
+                    onClick={() => moveCard(c.key, -1)}
+                    disabled={index === 0}
+                    aria-label={`Move ${c.print_name} up`}
+                    className="p-0.5 text-muted-foreground hover:text-midnight-cherry disabled:opacity-30"
+                  >
+                    <ChevronUp size={13} />
+                  </button>
+                  <button
+                    onClick={() => moveCard(c.key, 1)}
+                    disabled={index === cards.length - 1}
+                    aria-label={`Move ${c.print_name} down`}
+                    className="p-0.5 text-muted-foreground hover:text-midnight-cherry disabled:opacity-30"
+                  >
+                    <ChevronDown size={13} />
+                  </button>
+                </span>
+              </div>
             );
           })}
           {!cards.length && (
@@ -175,6 +271,12 @@ export default function BuildCardEditor({
               onMove={moveLine}
               onToggle={toggleLine}
             />
+            <CustomLines
+              lines={card.extra_in}
+              group="extra_in"
+              cardKey={card.key}
+              onSet={setOverride}
+            />
           </div>
 
           <div>
@@ -202,6 +304,12 @@ export default function BuildCardEditor({
               dimmed={card.not_topped}
               onMove={moveLine}
               onToggle={toggleLine}
+            />
+            <CustomLines
+              lines={card.extra_top}
+              group="extra_top"
+              cardKey={card.key}
+              onSet={setOverride}
             />
           </div>
 
