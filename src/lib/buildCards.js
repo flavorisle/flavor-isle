@@ -16,11 +16,11 @@ const DEFAULT_KICKER = 'MILKSHAKE';
 // the per-card print copy: paper size, cards per page, and the print order.
 // All sizes are measured at 150 px/in, the unit the printed build is drawn in.
 export const PAPER_OPTIONS = [
-  { id: 'letter', label: '8.5 × 11', width: 1275, height: 1650, header: 120, spec: 230, perPage: [1, 2, 3, 4] },
+  { id: 'letter', label: '8.5 × 11', width: 1275, height: 1650, header: 120, spec: 230, perPage: [1, 2, 3] },
   { id: 'tabloid', label: '11 × 17', width: 1650, height: 2550, header: 150, spec: 300, perPage: [1, 2, 3, 4, 8] },
 ];
 export const DEFAULT_PAPER = 'letter';
-export const DEFAULT_PER_PAGE = 4;
+export const DEFAULT_PER_PAGE = 3;
 
 export function paperSpec(paper) {
   return PAPER_OPTIONS.find(option => option.id === paper) || PAPER_OPTIONS[0];

@@ -397,9 +397,9 @@ function SpecBand({ spec, contentWidth }) {
   );
 }
 
-export default function PrintableBuildCards({ cards, order = [], paper = 'letter', perPage = 4, onEditCard }) {
+export default function PrintableBuildCards({ cards, order = [], paper = 'letter', perPage = 3, onEditCard }) {
   const spec = paperSpec(paper);
-  const per = spec.perPage.includes(perPage) ? perPage : 4;
+  const per = spec.perPage.includes(perPage) ? perPage : 3;
   const visible = orderCards((cards || []).filter(card => card.on_sheet !== false), order);
 
   // One column of `per` equal slots under the header band and above the spec
