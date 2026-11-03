@@ -10,6 +10,7 @@ import AdminModifierManager from '@/components/admin/AdminModifierManager';
 import { base44 } from '@/api/base44Client';
 import { optimizedImageUrl } from '@/lib/utils';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
+import { Switch } from '@/components/ui/switch';
 
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
@@ -171,6 +172,19 @@ export default function AdminMenu() {
     const pos = position || 'top';
     await base44.entities.MenuItem.update(item.id, { image_position: pos });
     setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, image_position: pos } : i));
+  };
+
+  // Trending badge: the switch turns it on, the label is what it says.
+  const setTrending = async (item, is_trending) => {
+    await base44.entities.MenuItem.update(item.id, { is_trending });
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, is_trending } : i));
+  };
+
+  const setTrendingLabel = async (item, trending_label) => {
+    const label = trending_label.trim();
+    if (label === (item.trending_label || '')) return;
+    await base44.entities.MenuItem.update(item.id, { trending_label: label });
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, trending_label: label } : i));
   };
 
   const grouped = {};
@@ -456,6 +470,22 @@ export default function AdminMenu() {
                             <BrandOption value="right">Right side</BrandOption>
                             <BrandOption value="none">No photo</BrandOption>
                           </BrandSelect>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground font-heading uppercase tracking-wider">Trending</span>
+                          <Switch
+                            checked={!!item.is_trending}
+                            onCheckedChange={(v) => setTrending(item, v)}
+                            aria-label={`Mark ${item.name} as trending`}
+                          />
+                          <input
+                            type="text"
+                            defaultValue={item.trending_label || ''}
+                            onBlur={(e) => setTrendingLabel(item, e.target.value)}
+                            placeholder="Trending on TikTok"
+                            disabled={!item.is_trending}
+                            className="flex-1 max-w-[220px] px-2.5 py-1.5 text-xs bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 disabled:opacity-50"
+                          />
                         </div>
                       </div>
 

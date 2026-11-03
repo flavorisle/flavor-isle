@@ -67,6 +67,15 @@
       "type": "number",
       "description": "Rank 1\u201310 among fan favorites (1 = best seller). Null when not a fan favorite."
     },
+    "is_trending": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true the menu card shows a trending badge (flame icon + trending_label) directly above the item name."
+    },
+    "trending_label": {
+      "type": "string",
+      "description": "Text shown in the trending badge, e.g. 'Trending on TikTok'. Falls back to 'Trending' when empty."
+    },
     "is_hidden": {
       "type": "boolean",
       "default": false

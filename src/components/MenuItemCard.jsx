@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Zap, Heart, Star, Clock } from 'lucide-react';
+import { Plus, Zap, Heart, Star, Clock, Flame } from 'lucide-react';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
@@ -86,14 +86,25 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   // the hero image, description, reviews, and add-to-cart — rather than the
   // quick customize modal. Fires the same GA4 select-item event used by the
   // add/combo actions. Sold-out items still open the page (viewing allowed).
+  // Trending cards report the click so the badge's pull can be measured.
+  const trackTrendingClick = () => {
+    if (!item.is_trending) return;
+    base44.analytics.track({
+      eventName: 'trending_item_clicked',
+      properties: { item_id: item.id, item_name: item.name },
+    });
+  };
+
   const handlePhotoClick = (e) => {
     e?.stopPropagation();
+    trackTrendingClick();
     trackSelectItem(foodItemToGa4(item));
     navigate(productPath(item));
   };
 
   const handleAdd = (e) => {
     e?.stopPropagation();
+    trackTrendingClick();
     if (!orderingEnabled) return;
     if (hasModifiers) {
       trackSelectItem(foodItemToGa4(item));
@@ -219,6 +230,11 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
           : 'bg-muted text-obsidian-roast hover:bg-midnight-cherry hover:text-white';
     return (
       <div className="p-4">
+        {item.is_trending && (
+          <div className="inline-flex items-center gap-1 mb-1.5 px-2.5 py-0.5 rounded-full bg-midnight-cherry text-white text-[10px] font-heading uppercase tracking-wider">
+            <Flame size={10} className="text-smashie-yellow" /> {item.trending_label || 'Trending'}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className={`font-heading text-base leading-tight ${light ? 'text-white' : 'text-obsidian-roast'}`}>{item.name}</h3>
           {isHappyHour && happyHourPrice !== null ? (
