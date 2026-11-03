@@ -414,6 +414,11 @@
     print-color-adjust: exact;
   }
 
+  /* Build card footer sits on a navy band: its type stays white on paper
+     instead of taking the sheet's black text. */
+  #print-sheet .build-card-footer,
+  #print-sheet .build-card-footer * { color: #ffffff !important; }
+
   .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
 }
 

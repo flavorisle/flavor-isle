@@ -8,15 +8,16 @@ export default function PageFooterBand({ groups, px, height }) {
 
   return (
     <div
+      className="build-card-footer"
       style={{
         marginTop: px(22), height: px(height), boxSizing: 'border-box', overflow: 'hidden',
-        backgroundColor: '#12233D', color: '#FBF2E2', padding: `${px(14)} ${px(28)}`,
+        backgroundColor: '#12233D', color: '#ffffff', padding: `${px(14)} ${px(28)}`,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}
     >
       <div
         className="uppercase"
-        style={{ fontFamily: "'BarlowBold', sans-serif", fontWeight: 700, fontSize: px(26), letterSpacing: px(3), color: '#E9A53F', marginBottom: px(8) }}
+        style={{ fontFamily: "'BarlowBold', sans-serif", fontWeight: 700, fontSize: px(26), letterSpacing: px(3), color: '#ffffff', marginBottom: px(8) }}
       >
         Every Bliss shake
       </div>
@@ -25,7 +26,7 @@ export default function PageFooterBand({ groups, px, height }) {
           <div key={group.key} style={{ flex: '1 1 0', minWidth: 0 }}>
             <div
               className="uppercase break-words"
-              style={{ fontFamily: "'BarlowBold', sans-serif", fontWeight: 700, fontSize: px(21), letterSpacing: px(2), color: '#E9A53F' }}
+              style={{ fontFamily: "'BarlowBold', sans-serif", fontWeight: 700, fontSize: px(21), letterSpacing: px(2), color: '#ffffff' }}
             >
               {group.name}
             </div>
