@@ -17,12 +17,22 @@ const badgeKey = (item) => item.name.replace(/\s*Milkshake$/i, '');
 
 // Optional marketing badges, keyed by the Square item name (not by id, so a
 // renamed or re-created item keeps its badge).
+const SIGNATURE = { label: 'Signature', className: 'bg-obsidian-roast text-white' };
+const NEW = { label: 'New', className: 'bg-patina-mint text-white' };
+const COMING_SOON = { label: 'Coming Soon', className: 'bg-smashie-yellow text-obsidian-roast' };
+
 const AVAILABILITY_BADGES = {
-  'Circus Cookie Bliss': { label: 'Until Supplies Last', className: 'bg-smashie-yellow text-obsidian-roast' },
-  'Caramel Apple Bliss': { label: 'Limited Time', className: 'bg-midnight-cherry text-white' },
-  'Strawberry Crunch Bliss': { label: 'New', className: 'bg-patina-mint text-white' },
-  'Apple Pie Bliss': { label: 'New', className: 'bg-patina-mint text-white' },
-  "S'more's Bliss": { label: 'New', className: 'bg-patina-mint text-white' },
+  'Banana Pudding Bliss': SIGNATURE,
+  'Banana Split Bliss': SIGNATURE,
+  'Strawberry Crunch Bliss': NEW,
+  'Caramel Apple Bliss': NEW,
+  'Apple Pie Bliss': NEW,
+  'Ginger Bread Bliss': NEW,
+  "S'more's Bliss": NEW,
+  'Pumpkin Pie Bliss': NEW,
+  'Snow Day Bliss': COMING_SOON,
+  'Christmas Orange Bliss': COMING_SOON,
+  'Peppermint Cinnamon Bliss': COMING_SOON,
 };
 
 export default function PremiumShakesSection({ autoOpenId }) {
