@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import MediaSlot from '@/components/news/MediaSlot';
 
 const CATEGORIES = [
   { value: 'community_event', label: 'Community Event' },
   { value: 'diner_update', label: 'Restaurant Update' },
   { value: 'local_partnership', label: 'Local Partnership' },
 ];
+
+const SLOTS = [
+  { placement: 'top', label: 'Top media' },
+  { placement: 'middle', label: 'Middle media' },
+  { placement: 'bottom', label: 'Bottom media' },
+];
+
+const EMPTY_MEDIA = { top: null, middle: null, bottom: null };
 
 // Admin-only quick composer for posting news to the community page.
 export default function NewsComposer({ onPosted }) {
@@ -15,6 +24,7 @@ export default function NewsComposer({ onPosted }) {
   const [body, setBody] = useState('');
   const [category, setCategory] = useState('diner_update');
   const [mapHeader, setMapHeader] = useState(false);
+  const [media, setMedia] = useState(EMPTY_MEDIA);
   const [saving, setSaving] = useState(false);
 
   const inputCls =
@@ -24,10 +34,21 @@ export default function NewsComposer({ onPosted }) {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
     setSaving(true);
-    await base44.entities.NewsPost.create({ title: title.trim(), body: body.trim(), category, map_header: mapHeader, is_published: true });
+    const attachments = SLOTS
+      .filter(({ placement }) => media[placement]?.url)
+      .map(({ placement }) => ({ ...media[placement], placement }));
+    await base44.entities.NewsPost.create({
+      title: title.trim(),
+      body: body.trim(),
+      category,
+      map_header: mapHeader,
+      media: attachments,
+      is_published: true,
+    });
     setTitle('');
     setBody('');
     setMapHeader(false);
+    setMedia(EMPTY_MEDIA);
     setSaving(false);
     setOpen(false);
     onPosted?.();
@@ -48,6 +69,16 @@ export default function NewsComposer({ onPosted }) {
       <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
         {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
+      <div className="space-y-2">
+        {SLOTS.map(({ placement, label }) => (
+          <MediaSlot
+            key={placement}
+            label={label}
+            media={media[placement]}
+            onChange={(value) => setMedia((prev) => ({ ...prev, [placement]: value }))}
+          />
+        ))}
+      </div>
       <label className="flex items-center gap-2 font-body text-sm text-obsidian-roast">
         <input type="checkbox" checked={mapHeader} onChange={(e) => setMapHeader(e.target.checked)} className="w-4 h-4 accent-[var(--midnight-cherry)]" />
         Add Stops &amp; Shops walking-map header

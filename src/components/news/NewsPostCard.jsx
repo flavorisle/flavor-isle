@@ -1,6 +1,7 @@
 import React from 'react';
 import { CalendarDays, Store, Handshake } from 'lucide-react';
 import StopsShopsHeader from '@/components/news/StopsShopsHeader';
+import NewsMedia from '@/components/news/NewsMedia';
 
 const CATEGORY_META = {
   community_event: { label: 'Community Event', Icon: CalendarDays, bg: 'bg-smashie-yellow', text: 'text-obsidian-roast' },
@@ -16,11 +17,24 @@ export default function NewsPostCard({ post }) {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 
+  const media = post.media || [];
+  const top = media.find((m) => m.placement === 'top');
+  const middle = media.find((m) => m.placement === 'middle');
+  const bottom = media.find((m) => m.placement === 'bottom');
+
+  const paragraphs = (post.body || '').split(/\n{2,}/).filter(Boolean);
+  const middleAfter = Math.ceil(paragraphs.length / 2) - 1;
+
   return (
     <article className="card-diner overflow-hidden">
       {post.map_header && (
         <div className="bg-vanilla-malt border-b border-border px-5 sm:px-6 pt-5 pb-4">
           <StopsShopsHeader />
+        </div>
+      )}
+      {top && (
+        <div className="px-5 sm:px-6 pt-5">
+          <NewsMedia media={top} />
         </div>
       )}
       <div className="p-5 sm:p-6">
@@ -31,10 +45,19 @@ export default function NewsPostCard({ post }) {
           <span className="text-xs text-muted-foreground font-body">{date}</span>
         </div>
         <h2 className="font-heading text-xl sm:text-2xl text-obsidian-roast leading-tight mb-2">{post.title}</h2>
-        <p className="font-body text-sm sm:text-base text-obsidian-roast leading-relaxed whitespace-pre-line">{post.body}</p>
+        <div className="space-y-3">
+          {paragraphs.map((paragraph, i) => (
+            <React.Fragment key={i}>
+              <p className="font-body text-sm sm:text-base text-obsidian-roast leading-relaxed whitespace-pre-line">{paragraph}</p>
+              {middle && i === middleAfter && <NewsMedia media={middle} />}
+            </React.Fragment>
+          ))}
+          {middle && paragraphs.length === 0 && <NewsMedia media={middle} />}
+        </div>
         {post.image_url && (
           <img src={post.image_url} alt={post.title} className="w-full h-auto rounded-xl mt-4 block" loading="lazy" />
         )}
+        {bottom && <NewsMedia media={bottom} className="mt-4" />}
       </div>
     </article>
   );

@@ -22,7 +22,48 @@
     },
     "image_url": {
       "type": "string",
-      "description": "Optional photo for the post"
+      "description": "Legacy single photo, shown at the end of the post. New posts use the media list instead."
+    },
+    "media": {
+      "type": "array",
+      "description": "Photos and videos attached to the post, each with its own placement: top (above the headline), middle (between the body paragraphs), or bottom (after the text). A post can carry up to one of each.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public URL of the uploaded photo or video"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "default": "image",
+            "description": "Whether this attachment is a still photo or a video"
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "top",
+              "middle",
+              "bottom"
+            ],
+            "default": "top",
+            "description": "Where the attachment sits relative to the post text"
+          },
+          "caption": {
+            "type": "string",
+            "description": "Optional caption shown under the photo or video"
+          }
+        },
+        "required": [
+          "url",
+          "placement"
+        ]
+      },
+      "default": []
     },
     "post_date": {
       "type": "string",
