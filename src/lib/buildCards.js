@@ -92,6 +92,33 @@ export function findToppingsGroup(modifiers) {
   return null;
 }
 
+// Add-ons the crew can still put on top for a few cents: the priced options of
+// the topping group ("Optional: Drizzle of Caramel" at $0.50) and any
+// add-a-topping group. They're not part of the build, so they print below the
+// standard toppings with their price instead of being dropped.
+export function findOptionalToppings(modifiers) {
+  const seen = new Set();
+  const lines = [];
+  groupsOf(modifiers)
+    .filter(g => /topping|add[- ]?on/i.test(groupName(g)))
+    .forEach(group => {
+      (Array.isArray(group?.modifiers) ? group.modifiers : []).forEach(option => {
+        if (!option || !option.name) return;
+        const priced = Number(option.price) > 0;
+        const flagged = /^\s*optional/i.test(option.name);
+        if (!priced && !flagged) return;
+        const text = titleCaseFirst(
+          String(option.name).replace(/^\s*optional\s*[:\-–]?\s*/i, '').trim(),
+        );
+        const key = text.toLowerCase();
+        if (!text || seen.has(key)) return;
+        seen.add(key);
+        lines.push({ id: option.id || text, text, price: Number(option.price) || 0 });
+      });
+    });
+  return lines;
+}
+
 export function findSizeGroup(modifiers) {
   return groupsOf(modifiers).find(g => /size/i.test(groupName(g))) || null;
 }
@@ -189,6 +216,9 @@ export function deriveBuildCards(items, overrides = {}) {
         ov.line_order?.toppings,
         ov.hidden_lines?.toppings,
       ),
+      // Paid add-ons from the topping groups, printed under the standard
+      // toppings with their upcharge.
+      optional_toppings: findOptionalToppings(item.modifiers),
       // No standard toppings group means the build is served bare; the crew's
       // switch can force the same block when a group exists but shouldn't print.
       not_topped: ov.force_bare === true || !toppingsGroup,

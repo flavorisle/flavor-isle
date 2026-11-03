@@ -122,7 +122,7 @@ function Panel({ title, children }) {
     >
       <div
         className="uppercase"
-        style={{ fontFamily: ANTON, fontSize: px(19), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(7) }}
+        style={{ fontFamily: ANTON, fontSize: px(23), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(7) }}
       >
         {title}
       </div>
@@ -162,7 +162,7 @@ function BuildCard({ card, height, onEditCard }) {
       >
         <div className="flex items-start justify-between" style={{ gap: px(20) }}>
           <div className="min-w-0">
-            <div className="uppercase" style={{ fontSize: px(18), letterSpacing: px(4), color: '#6B7688' }}>
+            <div className="uppercase" style={{ fontSize: px(22), letterSpacing: px(4), color: '#6B7688' }}>
               {card.kicker}
             </div>
             <Editable
@@ -213,7 +213,7 @@ function BuildCard({ card, height, onEditCard }) {
             {inShake.length > 0 ? (
               <LineList lines={inShake} />
             ) : (
-              <div style={{ fontSize: px(23), color: NAVY }}>See Square</div>
+              <div style={{ fontSize: px(26), color: NAVY }}>See Square</div>
             )}
           </Panel>
 
@@ -221,13 +221,48 @@ function BuildCard({ card, height, onEditCard }) {
           <Panel title="ON TOP">
             {onTop.length > 0 ? (
               <LineList lines={onTop} />
-            ) : (
+            ) : card.optional_toppings?.length ? null : (
               <>
                 <div className="uppercase" style={{ fontFamily: ANTON, fontSize: px(39), lineHeight: 1, color: NAVY }}>
                   NOT TOPPED
                 </div>
-                <div style={{ fontSize: px(21), color: '#6B7688' }}>Serve it straight, no toppings.</div>
+                <div style={{ fontSize: px(24), color: '#6B7688' }}>Serve it straight, no toppings.</div>
               </>
+            )}
+            {/* Add-ons the crew can still sell on top, with their upcharge. */}
+            {card.optional_toppings?.length > 0 && (
+              <div
+                style={{
+                  marginTop: onTop.length > 0 ? px(10) : 0,
+                  borderTop: onTop.length > 0 ? `${px(2)} dashed #E0D2BB` : 'none',
+                  paddingTop: onTop.length > 0 ? px(8) : 0,
+                }}
+              >
+                <div
+                  className="uppercase"
+                  style={{
+                    fontFamily: BARLOW,
+                    fontWeight: 700,
+                    fontSize: px(21),
+                    letterSpacing: px(2),
+                    color: '#8A5A1E',
+                    marginBottom: px(5),
+                  }}
+                >
+                  OPTIONAL ADD-ONS
+                </div>
+                {card.optional_toppings.map(option => (
+                  <div
+                    key={option.id}
+                    style={{ fontSize: px(24), lineHeight: 1.15, color: NAVY, marginBottom: px(2) }}
+                  >
+                    {option.text}{' '}
+                    <span style={{ color: CHERRY, fontWeight: 700 }}>
+                      {option.price > 0 ? `+$${option.price.toFixed(2)}` : 'optional'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </Panel>
         </div>
@@ -239,7 +274,7 @@ function BuildCard({ card, height, onEditCard }) {
             style={{
               fontFamily: BARLOW,
               fontWeight: 700,
-              fontSize: px(20),
+              fontSize: px(23),
               letterSpacing: px(3),
               color: '#8A5A1E',
               marginBottom: px(8),
@@ -251,21 +286,21 @@ function BuildCard({ card, height, onEditCard }) {
             {BUILD_STEPS.map((step, i) => (
               <div
                 key={step}
-                style={{ position: 'relative', paddingLeft: px(32), fontSize: px(22), lineHeight: 1.1, color: NAVY }}
+                style={{ position: 'relative', paddingLeft: px(34), fontSize: px(25), lineHeight: 1.15, color: NAVY }}
               >
                 <span
                   style={{
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    width: px(24),
-                    height: px(24),
+                    width: px(26),
+                    height: px(26),
                     borderRadius: '50%',
                     backgroundColor: CHERRY,
                     color: CREAM,
                     fontFamily: ANTON,
-                    fontSize: px(16),
-                    lineHeight: px(24),
+                    fontSize: px(18),
+                    lineHeight: px(26),
                     textAlign: 'center',
                   }}
                 >
