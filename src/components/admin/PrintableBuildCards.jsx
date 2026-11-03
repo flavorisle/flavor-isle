@@ -74,20 +74,30 @@ function Editable({ as: Tag = 'span', value, onCommit, className, placeholder, s
 // invented — every line either comes from the item's modifier group or from the
 // crew's print-only additions.
 function LineList({ lines }) {
+  // A long ingredient list breaks into two columns so the bigger type still
+  // fits the fixed card height.
   return (
-    <ul>
+    <ul style={{ columns: lines.length > 6 ? 2 : 1, columnGap: px(20) }}>
       {lines.map((line, i) => (
         <li
           key={line.id || i}
-          style={{ position: 'relative', paddingLeft: px(28), fontSize: px(27), lineHeight: 1, color: NAVY }}
+          style={{
+            position: 'relative',
+            paddingLeft: px(30),
+            marginBottom: px(2),
+            fontSize: px(31),
+            lineHeight: 1.05,
+            color: NAVY,
+            breakInside: 'avoid',
+          }}
         >
           <span
             style={{
               position: 'absolute',
               left: px(6),
-              top: px(10),
-              width: px(10),
-              height: px(10),
+              top: px(11),
+              width: px(11),
+              height: px(11),
               backgroundColor: CHERRY,
             }}
           />
@@ -111,7 +121,7 @@ function Panel({ title, children }) {
     >
       <div
         className="uppercase"
-        style={{ fontFamily: ANTON, fontSize: px(14), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(6) }}
+        style={{ fontFamily: ANTON, fontSize: px(16), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(7) }}
       >
         {title}
       </div>
@@ -147,19 +157,19 @@ function BuildCard({ card, onEditCard }) {
       >
         <div className="flex items-start justify-between" style={{ gap: px(20) }}>
           <div className="min-w-0">
-            <div className="uppercase" style={{ fontSize: px(16), letterSpacing: px(4), color: '#6B7688' }}>
+            <div className="uppercase" style={{ fontSize: px(18), letterSpacing: px(4), color: '#6B7688' }}>
               {card.kicker}
             </div>
             <Editable
               as="h2"
               className="uppercase"
-              style={{ fontFamily: ANTON, fontSize: px(60), lineHeight: 0.95, color: NAVY }}
+              style={{ fontFamily: ANTON, fontSize: px(64), lineHeight: 0.95, color: NAVY }}
               value={card.print_name}
               onCommit={onEditCard && (v => onEditCard(card.key, 'print_name', v))}
             />
             <Editable
               as="p"
-              style={{ fontSize: px(22), color: '#3C4A5E', marginTop: px(8) }}
+              style={{ fontSize: px(25), color: '#3C4A5E', marginTop: px(8) }}
               value={card.tagline}
               onCommit={onEditCard && (v => onEditCard(card.key, 'tagline', v))}
             />
@@ -168,7 +178,7 @@ function BuildCard({ card, onEditCard }) {
             className="flex-shrink-0"
             style={{
               fontFamily: ANTON,
-              fontSize: px(30),
+              fontSize: px(33),
               lineHeight: 1,
               color: NAVY,
               backgroundColor: '#FBF2E2',
@@ -186,7 +196,7 @@ function BuildCard({ card, onEditCard }) {
             {inShake.length > 0 ? (
               <LineList lines={inShake} />
             ) : (
-              <div style={{ fontSize: px(20), color: NAVY }}>See Square</div>
+              <div style={{ fontSize: px(23), color: NAVY }}>See Square</div>
             )}
           </Panel>
 
@@ -196,10 +206,10 @@ function BuildCard({ card, onEditCard }) {
               <LineList lines={onTop} />
             ) : (
               <>
-                <div className="uppercase" style={{ fontFamily: ANTON, fontSize: px(34), lineHeight: 1, color: NAVY }}>
+                <div className="uppercase" style={{ fontFamily: ANTON, fontSize: px(39), lineHeight: 1, color: NAVY }}>
                   NOT TOPPED
                 </div>
-                <div style={{ fontSize: px(18), color: '#6B7688' }}>Serve it straight, no toppings.</div>
+                <div style={{ fontSize: px(21), color: '#6B7688' }}>Serve it straight, no toppings.</div>
               </>
             )}
           </Panel>
@@ -212,7 +222,7 @@ function BuildCard({ card, onEditCard }) {
             style={{
               fontFamily: BARLOW,
               fontWeight: 700,
-              fontSize: px(13),
+              fontSize: px(15),
               letterSpacing: px(2.5),
               color: '#8A5A1E',
               marginBottom: px(6),
@@ -220,25 +230,25 @@ function BuildCard({ card, onEditCard }) {
           >
             BUILD IT — 1 TO 6
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: px(18), rowGap: px(4) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: px(18), rowGap: px(5) }}>
             {BUILD_STEPS.map((step, i) => (
               <div
                 key={step}
-                style={{ position: 'relative', paddingLeft: px(22), fontSize: px(13), lineHeight: 1.15, color: NAVY }}
+                style={{ position: 'relative', paddingLeft: px(24), fontSize: px(15.5), lineHeight: 1.15, color: NAVY }}
               >
                 <span
                   style={{
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    width: px(16),
-                    height: px(16),
+                    width: px(18),
+                    height: px(18),
                     borderRadius: '50%',
                     backgroundColor: CHERRY,
                     color: CREAM,
                     fontFamily: ANTON,
-                    fontSize: px(11),
-                    lineHeight: px(16),
+                    fontSize: px(12),
+                    lineHeight: px(18),
                     textAlign: 'center',
                   }}
                 >
@@ -262,13 +272,13 @@ function SheetHeader({ spec, contentWidth }) {
       className="relative flex flex-col justify-center"
       style={{ height: px(spec.header), backgroundColor: NAVY, WebkitTextFillColor: '#ffffff', padding: `0 ${px(38 * k)}` }}
     >
-      <span className="font-heading uppercase" style={{ fontSize: px(28 * k), letterSpacing: px(9 * k) }}>
+      <span className="font-heading uppercase" style={{ fontSize: px(31 * k), letterSpacing: px(9 * k) }}>
         Flavor Isle
       </span>
-      <span style={{ fontFamily: ANTON, fontSize: px(66 * k), lineHeight: 0.85 }} className="uppercase">
+      <span style={{ fontFamily: ANTON, fontSize: px(72 * k), lineHeight: 0.85 }} className="uppercase">
         Build Cards
       </span>
-      <span className="uppercase" style={{ fontSize: px(22 * k), letterSpacing: px(2.4 * k) }}>
+      <span className="uppercase" style={{ fontSize: px(25 * k), letterSpacing: px(2.4 * k) }}>
         Shake station · 14 oz or 20 oz
       </span>
       <div className="absolute left-0 right-0 bottom-0" style={{ height: px(16 * k), backgroundColor: CHERRY }}>
@@ -296,7 +306,7 @@ function SpecBand({ spec, contentWidth }) {
     >
       <div
         className="uppercase"
-        style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(24 * k), color: GOLD, marginBottom: px(8 * k) }}
+        style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(28 * k), color: GOLD, marginBottom: px(8 * k) }}
       >
         BASE, THICKNESS AND MILK — EVERY BLISS SHAKE
       </div>
@@ -311,14 +321,14 @@ function SpecBand({ spec, contentWidth }) {
                   minWidth: px(130 * k),
                   fontFamily: BARLOW,
                   fontWeight: 700,
-                  fontSize: px(14 * k),
+                  fontSize: px(17 * k),
                   letterSpacing: px(2 * k),
                   color: GOLD,
                 }}
               >
                 {row.label}
               </span>
-              <span style={{ fontSize: px(18 * k), color: CREAM }}>{row.value}</span>
+              <span style={{ fontSize: px(21 * k), color: CREAM }}>{row.value}</span>
             </div>
           ))}
         </div>
@@ -338,7 +348,7 @@ function SpecBand({ spec, contentWidth }) {
               gridTemplateColumns: '1fr 1fr 1fr 1fr',
               fontFamily: BARLOW,
               fontWeight: 700,
-              fontSize: px(14 * k),
+              fontSize: px(16 * k),
               letterSpacing: px(1.6 * k),
               color: GOLD,
             }}
@@ -352,7 +362,7 @@ function SpecBand({ spec, contentWidth }) {
             <div
               key={row.size}
               className="grid"
-              style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', fontSize: px(18 * k), lineHeight: 1.3, color: CREAM }}
+              style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', fontSize: px(21 * k), lineHeight: 1.3, color: CREAM }}
             >
               <span>{row.size}</span>
               <span>{row.regular}</span>
@@ -362,7 +372,7 @@ function SpecBand({ spec, contentWidth }) {
           ))}
           <div
             className="uppercase"
-            style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(15 * k), color: GOLD, marginTop: px(6 * k) }}
+            style={{ fontFamily: BARLOW, fontWeight: 700, fontSize: px(18 * k), color: GOLD, marginTop: px(6 * k) }}
           >
             SYRUP · 1 PUMP
           </div>
@@ -376,7 +386,7 @@ function SpecBand({ spec, contentWidth }) {
           left: 0,
           right: 0,
           bottom: px(10 * k),
-          fontSize: px(15 * k),
+          fontSize: px(17 * k),
           letterSpacing: px(1.2 * k),
           color: CREAM,
         }}
