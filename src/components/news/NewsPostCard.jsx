@@ -17,9 +17,6 @@ export default function NewsPostCard({ post }) {
 
   return (
     <article className="card-diner overflow-hidden">
-      {post.image_url && (
-        <img src={post.image_url} alt={post.title} className="w-full h-48 object-cover" loading="lazy" />
-      )}
       <div className="p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-3 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-heading tracking-widest uppercase ${meta.bg} ${meta.text}`}>
@@ -28,6 +25,9 @@ export default function NewsPostCard({ post }) {
           <span className="text-xs text-muted-foreground font-body">{date}</span>
         </div>
         <h2 className="font-heading text-xl sm:text-2xl text-obsidian-roast leading-tight mb-2">{post.title}</h2>
+        {post.image_url && (
+          <img src={post.image_url} alt={post.title} className="w-full h-auto rounded-xl my-4 block" loading="lazy" />
+        )}
         <p className="font-body text-sm sm:text-base text-obsidian-roast leading-relaxed whitespace-pre-line">{post.body}</p>
       </div>
     </article>
