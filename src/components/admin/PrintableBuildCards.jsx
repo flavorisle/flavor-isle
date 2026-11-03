@@ -1,10 +1,11 @@
 // The printed Build Cards poster (issue #148, PRE-PLAN v4): the crew picks the
-// paper (8.5 × 11 or 11 × 17) and how many cards fit a sheet, and each card is
-// scaled as a fixed 1575 × 475 block — never re-flowed — into its slot. Cards
+// paper (8.5 × 11 or 11 × 17) and how many cards fit a sheet. Each card keeps
+// its 1575-wide build, grows to whatever height its Square lines need (measured
+// off-screen), and is then scaled whole into its slot so nothing is cut off. Cards
 // print in the crew's saved order; unchecked cards are skipped. Section sizes
 // are measured at 150 px/in, while the browser lays out at 96 px/in, so every
 // measured value is multiplied by PX before use.
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { orderCards, paperSpec } from '@/lib/buildCards';
 
 const PX = 96 / 150;
@@ -75,17 +76,17 @@ function Editable({ as: Tag = 'span', value, onCommit, className, placeholder, s
 // crew's print-only additions.
 function LineList({ lines }) {
   // A long ingredient list breaks into two columns so the bigger type still
-  // fits the fixed card height.
+  // fits on the card.
   return (
-    <ul style={{ columns: lines.length > 6 ? 2 : 1, columnGap: px(20) }}>
+    <ul style={{ columns: lines.length > 6 ? 2 : 1, columnGap: px(22) }}>
       {lines.map((line, i) => (
         <li
           key={line.id || i}
           style={{
             position: 'relative',
-            paddingLeft: px(30),
-            marginBottom: px(2),
-            fontSize: px(31),
+            paddingLeft: px(34),
+            marginBottom: px(3),
+            fontSize: px(34),
             lineHeight: 1.05,
             color: NAVY,
             breakInside: 'avoid',
@@ -95,9 +96,9 @@ function LineList({ lines }) {
             style={{
               position: 'absolute',
               left: px(6),
-              top: px(11),
-              width: px(11),
-              height: px(11),
+              top: px(12),
+              width: px(12),
+              height: px(12),
               backgroundColor: CHERRY,
             }}
           />
@@ -121,7 +122,7 @@ function Panel({ title, children }) {
     >
       <div
         className="uppercase"
-        style={{ fontFamily: ANTON, fontSize: px(16), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(7) }}
+        style={{ fontFamily: ANTON, fontSize: px(19), letterSpacing: px(2), color: '#8A5A1E', marginBottom: px(7) }}
       >
         {title}
       </div>
@@ -130,7 +131,10 @@ function Panel({ title, children }) {
   );
 }
 
-function BuildCard({ card, onEditCard }) {
+// `height` (in measured units) is only set once the card is placed on a sheet;
+// left off while measuring, the card grows to whatever its lines need so a card
+// with a long Square list can never be cut off.
+function BuildCard({ card, height, onEditCard }) {
   // Hidden Square lines never print; crew additions always follow them.
   const squareIn = card.in_shake.filter(line => !line.hidden);
   const squareTop = card.not_topped ? [] : card.toppings.filter(line => !line.hidden);
@@ -142,7 +146,8 @@ function BuildCard({ card, onEditCard }) {
       style={{
         display: 'flex',
         width: px(CARD_W),
-        height: px(CARD_H),
+        minHeight: px(CARD_H),
+        height: height ? px(height) : 'auto',
         backgroundColor: '#FFFDF7',
         border: `${px(4)} solid ${NAVY}`,
         borderRadius: px(18),
@@ -228,39 +233,39 @@ function BuildCard({ card, onEditCard }) {
         </div>
 
         {/* BUILD IT — 1 TO 6 */}
-        <div style={{ marginTop: px(10), borderTop: `${px(2)} dashed #E0D2BB`, paddingTop: px(8) }}>
+        <div style={{ marginTop: px(12), borderTop: `${px(2)} dashed #E0D2BB`, paddingTop: px(10) }}>
           <div
             className="uppercase"
             style={{
               fontFamily: BARLOW,
               fontWeight: 700,
-              fontSize: px(15),
-              letterSpacing: px(2.5),
+              fontSize: px(20),
+              letterSpacing: px(3),
               color: '#8A5A1E',
-              marginBottom: px(6),
+              marginBottom: px(8),
             }}
           >
             BUILD IT — 1 TO 6
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: px(18), rowGap: px(5) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: px(22), rowGap: px(9) }}>
             {BUILD_STEPS.map((step, i) => (
               <div
                 key={step}
-                style={{ position: 'relative', paddingLeft: px(24), fontSize: px(15.5), lineHeight: 1.15, color: NAVY }}
+                style={{ position: 'relative', paddingLeft: px(32), fontSize: px(22), lineHeight: 1.1, color: NAVY }}
               >
                 <span
                   style={{
                     position: 'absolute',
                     left: 0,
                     top: 0,
-                    width: px(18),
-                    height: px(18),
+                    width: px(24),
+                    height: px(24),
                     borderRadius: '50%',
                     backgroundColor: CHERRY,
                     color: CREAM,
                     fontFamily: ANTON,
-                    fontSize: px(12),
-                    lineHeight: px(18),
+                    fontSize: px(16),
+                    lineHeight: px(24),
                     textAlign: 'center',
                   }}
                 >
@@ -414,13 +419,34 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
   const per = spec.perPage.includes(perPage) ? perPage : 3;
   const visible = orderCards((cards || []).filter(card => card.on_sheet !== false), order);
 
+  const measureRefs = useRef({});
+  const measured = useRef({});
+  const [heights, setHeights] = useState({});
+
+  // Every card is first drawn at full size off-screen so the sheet learns how
+  // tall its lines really are. That measured height — not a fixed guess — is
+  // what gets fitted to the page, so no ingredient line or build step is ever
+  // cut off at the bottom of a card.
+  useLayoutEffect(() => {
+    const next = {};
+    visible.forEach(card => {
+      const el = measureRefs.current[card.key];
+      next[card.key] = el
+        ? Math.max(CARD_H, Math.ceil(el.getBoundingClientRect().height / PX) + 2)
+        : CARD_H;
+    });
+    if (JSON.stringify(next) !== JSON.stringify(measured.current)) {
+      measured.current = next;
+      setHeights(next);
+    }
+  }, [visible, paper, perPage]);
+
   // One column of `per` equal slots under the header band and above the spec
-  // band. Each card keeps its 1575 × 475 build and is scaled to fit its slot,
-  // centred, so a long card can never re-flow into a different design.
+  // band. Cards on a page share the tallest card's height so they line up.
   const contentWidth = spec.width - PAGE_PAD * 2;
   const slotsHeight = spec.height - PAGE_PAD * 2 - spec.header - spec.spec - PAGE_GAP * 2;
   const slotHeight = (slotsHeight - SLOT_GAP * (per - 1)) / per;
-  const scale = Math.min(contentWidth / CARD_W, slotHeight / CARD_H);
+  const pageHeight = pageCards => Math.max(CARD_H, ...pageCards.map(card => heights[card.key] || CARD_H));
 
   const pages = [];
   for (let i = 0; i < visible.length; i += per) {
@@ -428,8 +454,27 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
   }
 
   return (
-    <div id="print-sheet" className="bg-white text-black mx-auto print:shadow-none">
+    <div id="print-sheet" className="bg-white text-black mx-auto print:shadow-none relative">
       <style>{FONTS}</style>
+      {/* Off-screen full-size pass used only to measure the cards. */}
+      <div
+        aria-hidden="true"
+        className="print:hidden"
+        style={{
+          position: 'absolute',
+          left: px(-100000),
+          top: 0,
+          width: px(CARD_W),
+          visibility: 'hidden',
+          pointerEvents: 'none',
+        }}
+      >
+        {visible.map(card => (
+          <div key={card.key} ref={el => { measureRefs.current[card.key] = el; }}>
+            <BuildCard card={card} />
+          </div>
+        ))}
+      </div>
       <div className="overflow-x-auto print:overflow-visible">
         {pages.length === 0 ? (
           <section
@@ -439,59 +484,63 @@ export default function PrintableBuildCards({ cards, order = [], paper = 'letter
             <div style={{ fontSize: px(27), color: NAVY }}>No Bliss cards in Square right now.</div>
           </section>
         ) : (
-          pages.map((pageCards, pageIndex) => (
-            <section
-              key={pageIndex}
-              className="build-card-page bg-white text-black mx-auto mb-6 print:mb-0 shadow-float print:shadow-none"
-              style={{
-                width: px(spec.width),
-                height: px(spec.height),
-                padding: px(PAGE_PAD),
-                boxSizing: 'border-box',
-                overflow: 'hidden',
-              }}
-            >
-              <SheetHeader spec={spec} contentWidth={contentWidth} />
-
-              <div
+          pages.map((pageCards, pageIndex) => {
+            const cardH = pageHeight(pageCards);
+            const scale = Math.min(contentWidth / CARD_W, slotHeight / cardH);
+            return (
+              <section
+                key={pageIndex}
+                className="build-card-page bg-white text-black mx-auto mb-6 print:mb-0 shadow-float print:shadow-none"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr',
-                  rowGap: px(SLOT_GAP),
-                  marginTop: px(PAGE_GAP),
-                  height: px(slotsHeight),
+                  width: px(spec.width),
+                  height: px(spec.height),
+                  padding: px(PAGE_PAD),
+                  boxSizing: 'border-box',
+                  overflow: 'hidden',
                 }}
               >
-                {pageCards.map(card => (
-                  <div
-                    key={card.key}
-                    style={{
-                      height: px(slotHeight),
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ width: px(CARD_W * scale), height: px(CARD_H * scale), overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: px(CARD_W),
-                          height: px(CARD_H),
-                          transform: `scale(${scale})`,
-                          transformOrigin: 'top left',
-                        }}
-                      >
-                        <BuildCard card={card} onEditCard={onEditCard} />
+                <SheetHeader spec={spec} contentWidth={contentWidth} />
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr',
+                    rowGap: px(SLOT_GAP),
+                    marginTop: px(PAGE_GAP),
+                    height: px(slotsHeight),
+                  }}
+                >
+                  {pageCards.map(card => (
+                    <div
+                      key={card.key}
+                      style={{
+                        height: px(slotHeight),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div style={{ width: px(CARD_W * scale), height: px(cardH * scale), overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: px(CARD_W),
+                            height: px(cardH),
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'top left',
+                          }}
+                        >
+                          <BuildCard card={card} height={cardH} onEditCard={onEditCard} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <SpecBand spec={spec} contentWidth={contentWidth} />
-            </section>
-          ))
+                <SpecBand spec={spec} contentWidth={contentWidth} />
+              </section>
+            );
+          })
         )}
       </div>
     </div>
