@@ -68,30 +68,28 @@ export function titleCaseFirst(s) {
   return String(s || '').replace(/\S+/g, word => word.charAt(0).toUpperCase() + word.slice(1));
 }
 
-// The item's ingredient group: named exactly "Ingredients"; else "What's in it";
-// else any group whose name mentions ingredients.
-export function findIngredientGroup(modifiers) {
+// Every ingredient group the item has: Square cards often carry more than one
+// ("Banana Split Main Ingredient" next to "Banana Split Bliss Ingredients"), and
+// each one holds real recipe lines, so all of them print.
+export function findIngredientGroups(modifiers) {
   const groups = groupsOf(modifiers);
-  return (
-    groups.find(g => groupName(g).trim().toLowerCase() === 'ingredients') ||
-    groups.find(g => /what['’]s in it/i.test(groupName(g))) ||
-    groups.find(g => /ingredient/i.test(groupName(g))) ||
-    null
-  );
+  const named = groups.filter(g => /ingredient/i.test(groupName(g)));
+  if (named.length) return named;
+  return groups.filter(g => /what['’]s in it/i.test(groupName(g)));
 }
 
-// The item's standard toppings group: its name mentions toppings AND every
-// option is free. That price rule is what keeps paid add-on groups such as
-// "ADD A TOPPING" (nuts, sprinkles, whipcream at $0.52) off the card.
+// The item's standard toppings: the first group whose name says toppings AND
+// that has a free option, limited to those free options. A group that also
+// sells add-ons (nuts, sprinkles at $0.52) still prints the house topping that
+// comes with the shake, and a paid-only group like "ADD A TOPPING" prints
+// nothing at all.
 export function findToppingsGroup(modifiers) {
-  const groups = groupsOf(modifiers);
-  return (
-    groups.find(g => {
-      if (!/topping/i.test(groupName(g))) return false;
-      const options = Array.isArray(g?.modifiers) ? g.modifiers : [];
-      return options.every(option => !Number(option?.price));
-    }) || null
-  );
+  const groups = groupsOf(modifiers).filter(g => /topping/i.test(groupName(g)));
+  for (const group of groups) {
+    const free = (Array.isArray(group?.modifiers) ? group.modifiers : []).filter(option => !Number(option?.price));
+    if (free.length) return { ...group, modifiers: free };
+  }
+  return null;
 }
 
 export function findSizeGroup(modifiers) {
@@ -117,10 +115,23 @@ function applyLineOverrides(lines, order, hidden) {
   return ordered.map(line => ({ ...line, hidden: hiddenIds.has(line.id) }));
 }
 
-const optionLines = (group) =>
-  (Array.isArray(group?.modifiers) ? group.modifiers : [])
-    .filter(option => option && option.name)
-    .map(option => ({ id: option.id || option.name, text: titleCaseFirst(option.name) }));
+// Lines from one or more Square groups, deduped by wording so a line Square
+// repeats across groups prints once.
+const optionLines = (groups) => {
+  const seen = new Set();
+  const lines = [];
+  (Array.isArray(groups) ? groups : [groups]).filter(Boolean).forEach(group => {
+    (Array.isArray(group?.modifiers) ? group.modifiers : []).forEach(option => {
+      if (!option || !option.name) return;
+      const text = titleCaseFirst(option.name);
+      const key = text.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      lines.push({ id: option.id || option.name, text });
+    });
+  });
+  return lines;
+};
 
 // Crew additions typed into the editor. They print after the Square lines and
 // live only in the print overrides — Square and the online menu never see them.
@@ -169,7 +180,7 @@ export function deriveBuildCards(items, overrides = {}) {
       price: Number(item.price) || 0,
       sizes: sizeLines(findSizeGroup(item.modifiers)),
       in_shake: applyLineOverrides(
-        optionLines(findIngredientGroup(item.modifiers)),
+        optionLines(findIngredientGroups(item.modifiers)),
         ov.line_order?.in_shake,
         ov.hidden_lines?.in_shake,
       ),
