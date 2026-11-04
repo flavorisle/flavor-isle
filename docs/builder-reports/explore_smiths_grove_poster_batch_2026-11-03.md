@@ -47,6 +47,12 @@ The first dispatch supplied wrong filenames for several existing cards. Eight ph
 
 Left untouched and verified: The Roost (`cd9fa76fa_roost-building.jpg`), 42171 & Co. (`9036d6038_roost-42171.jpg`), Mammoth Cave (`0c2f8476d_mammoth-cave.jpg`). Wordmark tiles remain only on Cinco de Mayo, Flavor Isle, Second Chances & Main Attractions, and Grammie’s Home Cookin’.
 
+## Correction — /reviews#traveler-log landing (2026-11-04)
+
+| # | File | Change | Line |
+|---|------|--------|------|
+| 034 | `src/components/reviews/HometownMap.jsx` | Replaced the single 150 ms `scrollIntoView` timeout with a stabilization loop in the same effect: only runs when `window.location.hash === '#traveler-log'`, resets `scrollY` to 0, then polls every 100 ms for up to 4000 ms and instant-scrolls the section to 88 px from the top until it has been within 4 px on two consecutive polls. `wheel`, `touchstart` (passive) and `keydown` cancel the loop on user input; the interval and all three listeners are removed on cancel and on unmount. Pin loading untouched. | 26–58 |
+
 ## Verification notes
 
 - `npm run build` → exit 0, no errors.
