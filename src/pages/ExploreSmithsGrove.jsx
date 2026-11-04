@@ -37,8 +37,8 @@ const SHOPS = [
     address: '124 W. 1st Street',
     handles: ['marigold.manor'],
     photo: M + '1cc60ccc6_marigold-manor.jpg',
-    alt: 'Marigold Manor antique shop in Smiths Grove, Kentucky',
-    copy: 'Antique and vintage wares — and a cozy library.',
+    alt: 'Marigold Manor in Smiths Grove, Kentucky',
+    copy: 'Antique & vintage wares & cozy library.',
     tile: 'photo',
   },
   {
@@ -47,8 +47,8 @@ const SHOPS = [
     address: '101 N. Main Street',
     handles: ['koblankenship'],
     photo: M + 'e1819dde1_psycho-granny.jpg',
-    alt: 'Psycho Granny’s Quilt Shop & More in Smiths Grove, Kentucky',
-    copy: 'Unique fabric, notions, and quilting supplies.',
+    alt: 'Psycho Granny’s Quilt Shop in Smiths Grove, Kentucky',
+    copy: 'Unique fabric & notions, original art & records too!',
     tile: 'photo',
   },
   {
@@ -58,7 +58,7 @@ const SHOPS = [
     handles: ['foxholeinthegrove'],
     photo: M + 'f625ae363_foxhole.jpg',
     alt: 'The Foxhole in Smiths Grove, Kentucky',
-    copy: 'Vintage finds and sly designs.',
+    copy: 'MCM/Vintage finds & sly designs.',
     tile: 'photo',
   },
   {
@@ -68,7 +68,7 @@ const SHOPS = [
     handles: ['smallsonmain'],
     photo: M + '4efdf27f4_smalls-on-main.jpg',
     alt: 'Smalls on Main in Smiths Grove, Kentucky',
-    copy: 'Mighty 80s, 90s and Y2K treasures.',
+    copy: 'Mighty 80s, 90s & Y2K treasures.',
     tile: 'photo',
   },
   {
@@ -78,7 +78,7 @@ const SHOPS = [
     handles: ['marigoldvintage_ky'],
     photo: M + '130a7bd40_marigold-vintage.jpg',
     alt: 'Marigold Vintage in Smiths Grove, Kentucky',
-    copy: 'Eclectic vintage mix from the 1940s through Y2K.',
+    copy: 'Eclectic vintage mix from 1940s-Y2K.',
     tile: 'photo',
   },
   {
@@ -102,13 +102,13 @@ const SHOPS = [
     tile: 'photo',
   },
   {
-    tag: 'Burgers & Shakes · You are here',
+    tag: 'You are here',
     name: 'Flavor Isle',
     address: '103 N. Main St.',
     handles: ['flavor_isle'],
     photo: null,
     alt: null,
-    copy: 'That’s us. Burgers, shakes, cones — and the reason you parked.',
+    copy: 'Burgers, shakes, cones... YUM.',
     tile: 'monoRed',
     cta: { to: '/menu', label: 'Order online' },
   },
@@ -119,7 +119,7 @@ const SHOPS = [
     handles: ['acecoffeecafe', 'indigofoxstylingstudio'],
     photo: M + '65b204ad6_ace-coffee-storefront.jpg',
     alt: 'Ace Coffee Indigo Fox in Smiths Grove, Kentucky',
-    copy: 'Delicious drinks and a curated meeting spot.',
+    copy: 'Delicious drinks & curated meeting spot.',
     tile: 'photo',
   },
   {
@@ -128,8 +128,8 @@ const SHOPS = [
     address: '108 E. 1st Street',
     handles: ['kentuckycardvault'],
     photo: M + 'd0dbcdb70_kentucky-card-vault.jpg',
-    alt: 'KY Card Vault in Smiths Grove, Kentucky',
-    copy: 'Trading and sports cards, memorabilia.',
+    alt: 'Kentucky Card Vault in Smiths Grove, Kentucky',
+    copy: 'Trading & sports cards, memorabilia.',
     tile: 'photo',
   },
   {
@@ -139,7 +139,7 @@ const SHOPS = [
     handles: [],
     photo: null,
     alt: null,
-    copy: 'Huge selection of clothing and more.',
+    copy: 'Huge selection of clothing & more.',
     tile: 'mono',
   },
   // Wesley asked for this listing with no contact details at all — no address,
@@ -161,7 +161,7 @@ const SHOPS = [
     handles: [],
     photo: M + '16b7ca316_superior-supply.jpg',
     alt: 'Superior Supply in Smiths Grove, Kentucky',
-    copy: 'Hardware, small engine repair, and a little nostalgia.',
+    copy: 'Hardware, small engine repair & nostalgia.',
     tile: 'photo',
   },
   {
@@ -170,8 +170,8 @@ const SHOPS = [
     address: null,
     handles: [],
     photo: M + 'c2781561c_pellys.jpg',
-    alt: 'Pelly’s Farm Fresh produce stand near Smiths Grove, Kentucky',
-    copy: 'Produce, plants and farm-fresh finds.',
+    alt: 'Pelly’s Farm Fresh in Smiths Grove, Kentucky',
+    copy: 'Local produce, fresh goods, and farm-to-table flavors straight from Smiths Grove.',
     tile: 'photo',
   },
 ];
@@ -396,7 +396,7 @@ export default function ExploreSmithsGrove() {
       <Navbar />
       <Seo
         title="Explore Smiths Grove | Shops, Coffee & Attractions off I-65 Exit 38"
-        description="A walkable block of antique shops, a coffee bar, a winery, a distillery, and Mammoth Cave 25 minutes away, all minutes from Flavor Isle at Exit 38."
+        description="A walkable block of antique shops, a coffee bar, a winery and a distillery in Smiths Grove, plus the National Corvette Museum and Mammoth Cave a short drive away. Minutes from Flavor Isle at Exit 38."
         path="/explore-smiths-grove"
       />
 
@@ -488,7 +488,7 @@ export default function ExploreSmithsGrove() {
         </h2>
         <div className="w-16 h-1 bg-smashie-yellow rounded-sm mx-auto mt-3.5" />
         <p className="mt-2 mx-auto max-w-[660px] text-[15px] font-semibold text-[#5b6b7a] text-center">
-          Green space, race day, old brick, and the biggest cave in the world. All in one exit.
+          Green space, race day, and old brick. All in town, all in one exit.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {ATTRACTIONS.map((stop) => (
@@ -531,14 +531,20 @@ export default function ExploreSmithsGrove() {
               to="/i65-exit-38"
               className="inline-block bg-white text-[#002244] font-extrabold tracking-[.06em] uppercase text-[13px] px-5 py-3 rounded-md"
             >
-              Plan your visit to Flavor Isle
+              Plan your stop at Exit 38
             </Link>
-            <a
-              href="#map"
-              className="inline-block bg-transparent text-white border-2 border-white/70 font-extrabold tracking-[.06em] uppercase text-[13px] px-5 py-3 rounded-md"
+            <Link
+              to="/mammoth-cave-dining"
+              className="inline-block bg-transparent text-white border-2 border-white/70 font-extrabold tracking-[.06em] uppercase text-[13px] px-5 py-3 rounded-md hover:bg-white hover:text-[#002244]"
+            >
+              Mammoth Cave dining
+            </Link>
+            <Link
+              to="/reviews#traveler-log"
+              className="inline-block bg-transparent text-white border-2 border-white/70 font-extrabold tracking-[.06em] uppercase text-[13px] px-5 py-3 rounded-md hover:bg-white hover:text-[#002244]"
             >
               Traveler Log · see where everyone’s from
-            </a>
+            </Link>
           </div>
         </div>
       </section>
