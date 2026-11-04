@@ -123,6 +123,8 @@ export default function MammothCaveDining() {
         <div className="mt-8 flex flex-wrap gap-3 justify-center text-sm">
           <Link to="/i65-exit-38" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">I-65 Exit 38 Guide</Link>
           <span className="text-muted-foreground">·</span>
+          <Link to="/explore-smiths-grove" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Explore Smiths Grove</Link>
+          <span className="text-muted-foreground">·</span>
           <Link to="/corvette-car-clubs" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Corvette Car Clubs</Link>
           <span className="text-muted-foreground">·</span>
           <Link to="/menu" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Full Menu</Link>
