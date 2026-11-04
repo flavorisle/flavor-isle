@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
+import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -96,6 +97,9 @@ export default function Order() {
             </button>
           ))}
         </div>
+
+        {/* Star Rewards — live balance + stars earned on recent orders */}
+        <OrderLoyaltySection />
 
         {/* What to expect — links to the full guide with a live wait preview */}
         <Link
