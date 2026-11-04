@@ -28,8 +28,29 @@ Reference: `explore-smiths-grove-poster-links-2026-11-03` @ `e3b1676`. Applied o
 | 022 | `src/components/NearbyAreas.jsx` | `ATTRACTIONS` entries gained `to`: Mammoth Cave → `/mammoth-cave-dining`, Corvette Museum → `/corvette-car-clubs`, Buc-ee’s → `/explore-smiths-grove#bucees`. | Lines 18–22 |
 | 023 | `src/components/NearbyAreas.jsx` | Each "Passing Through" tile is now a `<Link>` with the same visual box plus `hover:bg-white/10 hover:border-smashie-yellow/40 transition-colors` and the name turning `smashie-yellow` on hover. Everything else on /contact unchanged. | Lines 61–73 |
 
+## Correction — photo filenames only (2026-11-04)
+
+The first dispatch supplied wrong filenames for several existing cards. Eight photos 404'd and two real photos were dropped. Only the `photo`, `alt`, and `tile` values below changed; layout, copy, ordering, tile system, and anchor ids are untouched.
+
+| # | Card (SHOPS index) | Was | Now | Line |
+|---|--------------------|-----|-----|------|
+| 024 | Marigold Manor (3) | `photo: null`, `tile: 'mono'` | `M + '1cc60ccc6_marigold-manor.jpg'`, `alt: 'Marigold Manor antique shop in Smiths Grove, Kentucky'`, `tile: 'photo'` | 27–30 |
+| 025 | Psycho Granny’s Quilt Shop & More (4) | `313e8b9b4_psycho-grannys.jpg` (404) | `M + 'e1819dde1_psycho-granny.jpg'` | 37 |
+| 026 | The Foxhole (5) | `3da91d06c_foxhole.jpg` (404) | `M + 'f625ae363_foxhole.jpg'` | 47 |
+| 027 | Smalls on Main (6) | `b0fc0cd2d_smalls-on-main.jpg` (404) | `M + '4efdf27f4_smalls-on-main.jpg'` | 57 |
+| 028 | Marigold Vintage (7) | `7f7f6b0f6_marigold-vintage.jpg` (404) | `M + '130a7bd40_marigold-vintage.jpg'` | 67 |
+| 029 | Boone’s Antiques & The Garden Patch (9) | `e9e7ba5b1_boones.jpg` (404) | `M + '9119609d4_boones-gardenpatch.jpg'` | 87 |
+| 030 | Ace Coffee Indigo Fox (11) | `2f3a9b3ec_ace-coffee.jpg` (404) | `M + '65b204ad6_ace-coffee-storefront.jpg'` | 108 |
+| 031 | KY Card Vault (12) | `9c1d2a0d5_ky-card-vault.jpg` (404) | `M + 'd0dbcdb70_kentucky-card-vault.jpg'` | 118 |
+| 032 | Superior Supply (15) | `c5a6f2b18_superior-supply.jpg` (404) | `M + '16b7ca316_superior-supply.jpg'` | 150 |
+| 033 | Pelly’s Farm Fresh (16) | `photo: null`, `tile: 'mono'` | `M + 'c2781561c_pellys.jpg'`, `alt: 'Pelly’s Farm Fresh produce stand near Smiths Grove, Kentucky'`, `tile: 'photo'` | 160–163 |
+
+Left untouched and verified: The Roost (`cd9fa76fa_roost-building.jpg`), 42171 & Co. (`9036d6038_roost-42171.jpg`), Mammoth Cave (`0c2f8476d_mammoth-cave.jpg`). Wordmark tiles remain only on Cinco de Mayo, Flavor Isle, Second Chances & Main Attractions, and Grammie’s Home Cookin’.
+
 ## Verification notes
 
 - `npm run build` → exit 0, no errors.
+- All 13 photo URLs were fetched and returned HTTP 200 (12 shop/cave photos plus the Pelly’s and Marigold Manor restorations).
+- No card outside the four wordmark cards uses a non-photo tile.
 - The two uploads are referenced only from `SHOPS`; the 42171 photo no longer appears on The Roost card.
 - No hours, menu, pricing, ordering, checkout, POS, Pulse, phone/Smashie, or email template files were modified, and nothing was published.
