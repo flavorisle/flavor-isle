@@ -24,12 +24,44 @@ export default function HometownMap() {
   }
 
   // Deep links from the Explore Smiths Grove page land here (#traveler-log).
+  // The reviews page keeps growing after mount (cards above the map), so a
+  // one-shot scroll drifts away. Instead we settle the position over a short
+  // polling window and stand down the moment the visitor scrolls himself.
   useEffect(() => {
     if (window.location.hash !== '#traveler-log') return;
-    const timer = setTimeout(() => {
-      document.getElementById('traveler-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 150);
-    return () => clearTimeout(timer);
+
+    window.scrollTo(0, 0);
+
+    let onTarget = 0;
+    const startedAt = Date.now();
+
+    const stop = () => {
+      clearInterval(timer);
+      window.removeEventListener('wheel', stop);
+      window.removeEventListener('touchstart', stop);
+      window.removeEventListener('keydown', stop);
+    };
+
+    const timer = setInterval(() => {
+      const el = document.getElementById('traveler-log');
+      if (el) {
+        const desired = el.getBoundingClientRect().top + window.scrollY - 88;
+        if (Math.abs(window.scrollY - desired) > 4) {
+          window.scrollTo(0, desired);
+          onTarget = 0;
+        } else {
+          onTarget += 1;
+          if (onTarget >= 2) return stop();
+        }
+      }
+      if (Date.now() - startedAt >= 4000) stop();
+    }, 100);
+
+    window.addEventListener('wheel', stop, { passive: true });
+    window.addEventListener('touchstart', stop, { passive: true });
+    window.addEventListener('keydown', stop);
+
+    return stop;
   }, []);
 
   return (
