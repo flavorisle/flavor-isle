@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { MapPin, Navigation, Car, Mountain, Landmark, Store } from 'lucide-react';
 
 // Nearby towns Flavor Isle draws customers from, with approximate drive time
@@ -16,9 +17,9 @@ const NEARBY_TOWNS = [
 
 // I-65 traveler attractions nearby — for folks passing through.
 const ATTRACTIONS = [
-  { icon: Mountain, name: 'Mammoth Cave National Park', note: 'World-famous caves · ~30 min' },
-  { icon: Landmark, name: 'National Corvette Museum', note: 'Bowling Green · ~10 min' },
-  { icon: Store, name: "Buc-ee's", note: 'Right here in Smiths Grove · ~2 min' },
+  { icon: Mountain, name: 'Mammoth Cave National Park', note: 'World-famous caves · ~30 min', to: '/mammoth-cave-dining' },
+  { icon: Landmark, name: 'National Corvette Museum', note: 'Bowling Green · ~10 min', to: '/corvette-car-clubs' },
+  { icon: Store, name: "Buc-ee's", note: 'Right here in Smiths Grove · ~2 min', to: '/explore-smiths-grove#bucees' },
 ];
 
 const DIRECTIONS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
@@ -57,15 +58,19 @@ export default function NearbyAreas({ hideCta = false }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {ATTRACTIONS.map((a) => (
-              <div key={a.name} className="flex items-start gap-3 bg-white/5 rounded-2xl p-4 border border-white/10">
+              <Link
+                key={a.name}
+                to={a.to}
+                className="group flex items-start gap-3 bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 hover:border-smashie-yellow/40 transition-colors"
+              >
                 <div className="w-10 h-10 rounded-xl bg-smashie-yellow/15 flex items-center justify-center flex-shrink-0">
                   <a.icon size={18} className="text-smashie-yellow" />
                 </div>
                 <div>
-                  <p className="font-heading text-sm text-white leading-tight">{a.name}</p>
+                  <p className="font-heading text-sm text-white leading-tight group-hover:text-smashie-yellow transition-colors">{a.name}</p>
                   <p className="text-[11px] text-gray-300 mt-1">{a.note}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

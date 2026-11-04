@@ -1,118 +1,210 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 
+// Public media base for the Smiths Grove photos (issue #153).
+const M = 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/';
+
+// The poster order, stop 1 through 16 (issue #153). Wesley approved this exact
+// sequence so the page can be read beside the printed walking map.
 const SHOPS = [
-  {
-    tag: 'Quilts & Fabric',
-    name: 'Psycho Granny’s Quilt Shop',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/e1819dde1_psycho-granny.jpg',
-    alt: 'Psycho Granny’s Quilt Shop in Smiths Grove, Kentucky',
-    copy: 'Bold fabrics, handmade quilts, and a quirky personality that’s pure Smiths Grove.',
-    tile: 'photo',
-  },
-  {
-    tag: 'Cards & Collectibles',
-    name: 'Kentucky Card Vault',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/d0dbcdb70_kentucky-card-vault.jpg',
-    alt: 'Kentucky Card Vault in Smiths Grove, Kentucky',
-    copy: 'A must-stop for trading cards, collectibles, and hobby enthusiasts.',
-    tile: 'photo',
-  },
-  {
-    tag: 'Vintage Clothing',
-    name: 'Marigold Vintage',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/130a7bd40_marigold-vintage.jpg',
-    alt: 'Marigold Vintage in Smiths Grove, Kentucky',
-    copy: 'Curated vintage clothing and accessories with timeless style.',
-    tile: 'photo',
-  },
-  {
-    tag: 'Antique & Vintage',
-    name: 'Marigold Manor',
-    address: '124 W. 1st St',
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/1cc60ccc6_marigold-manor.jpg',
-    alt: 'Marigold Manor in Smiths Grove, Kentucky',
-    copy: 'Vintage and handmade marketplace in a two-story brick house, with a cozy library inside.',
-    tile: 'photo',
-  },
-  {
-    tag: 'Antiques',
-    name: 'The Foxhole',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f625ae363_foxhole.jpg',
-    alt: 'The Foxhole in Smiths Grove, Kentucky',
-    copy: 'A beloved antique store with curated vintage finds.',
-    tile: 'photo',
-  },
   {
     tag: 'Landmark Building',
     name: 'The Roost',
-    address: '131 N. Main St',
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/9036d6038_roost-42171.jpg',
-    alt: 'The Roost in Smiths Grove, Kentucky',
+    address: '131 N. Main Street',
+    handles: [],
+    photo: M + 'cd9fa76fa_roost-building.jpg',
+    alt: 'The Roost storefront on Main Street in Smiths Grove, Kentucky',
     copy: 'The Main Street building. The shop inside it is 42171 & Co.',
     tile: 'photo',
   },
   {
     tag: 'Antiques & Boutique',
     name: '42171 & Co.',
-    address: '131 N. Main St',
+    address: '131 N. Main Street',
+    handles: [],
+    photo: M + '9036d6038_roost-42171.jpg',
+    alt: '42171 & Co. shop inside The Roost in Smiths Grove, Kentucky',
+    copy: 'Antiques, boutique items, & much more!',
+    tile: 'photo',
+  },
+  {
+    tag: 'Antique & Vintage',
+    name: 'Marigold Manor',
+    address: '124 W. 1st Street',
+    handles: ['marigold.manor'],
     photo: null,
     alt: null,
-    copy: 'Antiques, boutique items, and much more, in the shop inside The Roost.',
+    copy: 'Antique and vintage wares — and a cozy library.',
     tile: 'mono',
+  },
+  {
+    tag: 'Quilts & Fabric',
+    name: 'Psycho Granny’s Quilt Shop & More',
+    address: '101 N. Main Street',
+    handles: ['koblankenship'],
+    photo: M + '313e8b9b4_psycho-grannys.jpg',
+    alt: 'Psycho Granny’s Quilt Shop & More in Smiths Grove, Kentucky',
+    copy: 'Unique fabric, notions, and quilting supplies.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Antiques',
+    name: 'The Foxhole',
+    address: '105 Main Street',
+    handles: ['foxholeinthegrove'],
+    photo: M + '3da91d06c_foxhole.jpg',
+    alt: 'The Foxhole in Smiths Grove, Kentucky',
+    copy: 'Vintage finds and sly designs.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Boutique',
+    name: 'Smalls on Main',
+    address: '105 S. Main Street',
+    handles: ['smallsonmain'],
+    photo: M + 'b0fc0cd2d_smalls-on-main.jpg',
+    alt: 'Smalls on Main in Smiths Grove, Kentucky',
+    copy: 'Mighty 80s, 90s and Y2K treasures.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Vintage Clothing',
+    name: 'Marigold Vintage',
+    address: '127 S. Main Street',
+    handles: ['marigoldvintage_ky'],
+    photo: M + '7f7f6b0f6_marigold-vintage.jpg',
+    alt: 'Marigold Vintage in Smiths Grove, Kentucky',
+    copy: 'Eclectic vintage mix from the 1940s through Y2K.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Mexican Food',
+    name: 'Cinco de Mayo',
+    address: '149 S. Main Street',
+    handles: [],
+    photo: null,
+    alt: null,
+    copy: 'Delicious Mexican food.',
+    tile: 'monoRed',
   },
   {
     tag: 'Antiques & Garden',
     name: 'Boone’s Antiques & The Garden Patch',
-    address: '204 N. Main St',
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/9119609d4_boones-gardenpatch.jpg',
+    address: '204 N. Main Street',
+    handles: [],
+    photo: M + 'e9e7ba5b1_boones.jpg',
     alt: 'Boone’s Antiques & The Garden Patch in Smiths Grove, Kentucky',
-    copy: 'Antiques, collectibles, plants, and garden items.',
+    copy: 'Antiques, collectibles, plants, garden items.',
     tile: 'photo',
   },
   {
-    tag: 'Hardware',
-    name: 'Superior Supply',
-    address: '133 S. Main St',
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/16b7ca316_superior-supply.jpg',
-    alt: 'Superior Supply in Smiths Grove, Kentucky',
-    copy: 'Hardware, small engine repair, and a little nostalgia. Open Monday through Saturday, 8am to 4pm.',
-    tile: 'photo',
+    tag: 'Burgers & Shakes · You are here',
+    name: 'Flavor Isle',
+    address: '103 N. Main St.',
+    handles: ['flavor_isle'],
+    photo: null,
+    alt: null,
+    copy: 'That’s us. Burgers, shakes, cones — and the reason you parked.',
+    tile: 'monoRed',
+    cta: { to: '/menu', label: 'Order online' },
   },
   {
     tag: 'Coffee',
     name: 'Ace Coffee Indigo Fox',
-    address: '114 E. 1st St',
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/65b204ad6_ace-coffee-storefront.jpg',
+    address: '114 E. 1st Street',
+    handles: ['acecoffeecafe', 'indigofoxstylingstudio'],
+    photo: M + '2f3a9b3ec_ace-coffee.jpg',
     alt: 'Ace Coffee Indigo Fox in Smiths Grove, Kentucky',
     copy: 'Delicious drinks and a curated meeting spot.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Cards & Collectibles',
+    name: 'KY Card Vault',
+    address: '108 E. 1st Street',
+    handles: ['kentuckycardvault'],
+    photo: M + '9c1d2a0d5_ky-card-vault.jpg',
+    alt: 'KY Card Vault in Smiths Grove, Kentucky',
+    copy: 'Trading and sports cards, memorabilia.',
+    tile: 'photo',
+  },
+  {
+    tag: 'Resale Clothing',
+    name: 'Second Chances & Main Attractions',
+    address: '115 E. 1st Street',
+    handles: [],
+    photo: null,
+    alt: null,
+    copy: 'Huge selection of clothing and more.',
+    tile: 'mono',
+  },
+  // Wesley asked for this listing with no contact details at all — no address,
+  // no phone, no Instagram, no maps link (issue #153).
+  {
+    tag: 'Home Cookin’',
+    name: 'Grammie’s Home Cookin’',
+    address: null,
+    handles: [],
+    photo: null,
+    alt: null,
+    copy: 'Where everyone has a seat at the table.',
+    tile: 'monoRed',
+  },
+  {
+    tag: 'Hardware',
+    name: 'Superior Supply',
+    address: '133 S. Main Street',
+    handles: [],
+    photo: M + 'c5a6f2b18_superior-supply.jpg',
+    alt: 'Superior Supply in Smiths Grove, Kentucky',
+    copy: 'Hardware, small engine repair, and a little nostalgia.',
     tile: 'photo',
   },
   {
     tag: 'Farm Fresh',
     name: 'Pelly’s Farm Fresh',
     address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c2781561c_pellys.jpg',
-    alt: 'Pelly’s Farm Fresh in Smiths Grove, Kentucky',
-    copy: 'Local produce, fresh goods, and farm-to-table flavors straight from Smiths Grove.',
-    tile: 'photo',
+    handles: [],
+    photo: null,
+    alt: null,
+    copy: 'Produce, plants and farm-fresh finds.',
+    tile: 'mono',
+  },
+];
+
+// The three out-of-town stops that anchor the Exit 38 trip (issue #153).
+const SURROUNDING = [
+  {
+    tag: 'Corvette · Bowling Green',
+    name: 'National Corvette Museum',
+    photo: null,
+    copy: 'Every Corvette in one building, including the sinkhole exhibit. Car clubs run down I-65 to us for lunch.',
+    map: 'https://www.google.com/maps/search/?api=1&query=National+Corvette+Museum+Bowling+Green+KY',
+    link: { to: '/corvette-car-clubs', label: 'Corvette club stop' },
+    distance: '15 min south on I-65',
   },
   {
-    tag: 'Boutique',
-    name: 'Smalls on Main',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/4efdf27f4_smalls-on-main.jpg',
-    alt: 'Smalls on Main in Smiths Grove, Kentucky',
-    copy: 'Boutique shopping with unique styles and small-town charm.',
-    tile: 'photo',
+    id: 'bucees',
+    tag: 'In Town · Exit 38',
+    name: 'Buc-ee’s',
+    photo: null,
+    copy: 'Right here in Smiths Grove. 120 pumps, brisket, fudge, and the cleanest restrooms on I-65. We’re 0.7 miles on into town when you want a hot burger and a real milkshake.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Buc-ee%27s+Smiths+Grove+KY',
+    link: { to: '/i65-exit-38', label: 'Exit 38 guide' },
+    distance: 'Smiths Grove · 0.7 mi from our door',
+  },
+  {
+    tag: 'National Park · Cave Country',
+    name: 'Mammoth Cave National Park',
+    photo: M + '0c2f8476d_mammoth-cave.jpg',
+    copy: 'The longest cave system on earth, about 25 minutes up I-65. Book a cave tour, then come eat.',
+    map: 'https://www.google.com/maps/search/?api=1&query=Mammoth+Cave+National+Park',
+    link: { to: '/mammoth-cave-dining', label: 'Mammoth Cave dining' },
+    distance: '25 min north on I-65',
   },
 ];
 
@@ -165,15 +257,6 @@ const ATTRACTIONS = [
     copy: 'Explore preserved architecture and small-town heritage.',
     tile: 'stripe',
   },
-  {
-    tag: 'National Park',
-    name: 'Mammoth Cave National Park',
-    address: null,
-    photo: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/0c2f8476d_mammoth-cave.jpg',
-    alt: 'Mammoth Cave National Park in Smiths Grove, Kentucky',
-    copy: 'The longest cave system on earth, about 25 minutes up the road. Book a tour, then come eat.',
-    tile: 'photo',
-  },
 ];
 
 function StopCard({ stop }) {
@@ -189,6 +272,11 @@ function StopCard({ stop }) {
           <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
         </div>
       )}
+      {stop.tile === 'monoRed' && (
+        <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#c93a10_0%,#CC3300_55%,#8f2400_100%)]">
+          <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-white text-center px-4">{stop.name}</span>
+        </div>
+      )}
       {stop.tile === 'stripe' && (
         <div className="aspect-[4/3] flex items-center justify-center bg-[repeating-linear-gradient(135deg,#003366,#003366_12px,#0a3d70_12px,#0a3d70_24px)]">
           <span className="font-heading text-[26px] tracking-[.06em] text-white/90 text-center px-[18px]">{stop.name}</span>
@@ -198,6 +286,21 @@ function StopCard({ stop }) {
         <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
         <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
+        {stop.handles && stop.handles.length > 0 && (
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {stop.handles.map((handle) => (
+              <a
+                key={handle}
+                href={`https://www.instagram.com/${handle}/`}
+                target="_blank"
+                rel="noopener"
+                className="text-[11.5px] font-black tracking-[.06em] text-[#6a7f93] hover:text-midnight-cherry"
+              >
+                @{handle}
+              </a>
+            ))}
+          </div>
+        )}
         {stop.address && (
           <a
             className="block text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] hover:text-midnight-cherry pt-0.5"
@@ -208,12 +311,86 @@ function StopCard({ stop }) {
             {stop.address}
           </a>
         )}
+        {stop.cta && (
+          <Link
+            to={stop.cta.to}
+            className="inline-block w-max mt-1 bg-midnight-cherry text-white font-extrabold tracking-[.06em] uppercase text-[12px] px-4 py-2 rounded-md hover:bg-[#a82a00]"
+          >
+            {stop.cta.label}
+          </Link>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function SurroundCard({ stop }) {
+  return (
+    <article
+      id={stop.id}
+      className="scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]"
+    >
+      {stop.photo ? (
+        <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
+          <img src={stop.photo} alt={stop.name} loading="lazy" className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
+          <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
+        </div>
+      )}
+      <div className="p-[18px_18px_20px] flex flex-col gap-2 flex-1">
+        <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
+        <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
+        <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
+        {stop.distance && (
+          <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">{stop.distance}</p>
+        )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
+          {stop.link && (
+            <Link to={stop.link.to} className="text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast">
+              {stop.link.label}
+            </Link>
+          )}
+          {stop.map && (
+            <a
+              href={stop.map}
+              target="_blank"
+              rel="noopener"
+              className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] hover:text-midnight-cherry"
+            >
+              Map
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );
 }
 
 export default function ExploreSmithsGrove() {
+  // The router scrolls to the hash before this lazily-mounted page exists, so
+  // deep links like /explore-smiths-grove#bucees need a second, patient pass.
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) return;
+    let tries = 0;
+    let timer;
+    const attempt = () => {
+      const target = document.getElementById(hash);
+      if (target) {
+        window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - 88), behavior: 'smooth' });
+        return;
+      }
+      if (tries < 40) {
+        tries += 1;
+        timer = setTimeout(attempt, 50);
+      }
+    };
+    attempt();
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div>
       <Navbar />
@@ -256,18 +433,34 @@ export default function ExploreSmithsGrove() {
         </div>
       </div>
 
-      {/* Local shops */}
+      {/* Shops & stops */}
       <section id="shops" className="py-14">
         <h2 className="font-heading text-[clamp(30px,4.4vw,44px)] tracking-[.02em] text-obsidian-roast m-0 text-center">
-          🛍️ Local Shops We Love
+          🛍️ Shops &amp; Stops We Love
         </h2>
         <div className="w-16 h-1 bg-smashie-yellow rounded-sm mx-auto mt-3.5" />
         <p className="mt-2 mx-auto max-w-[660px] text-[15px] font-semibold text-[#5b6b7a] text-center">
-          Walk out our front door and you’re in it. Twelve stops worth walking to, all within a few blocks.
+          Park once and stroll. Nearly every shop and eatery on the Smiths Grove map sits along one walkable block — listed here in the same order as the map.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {SHOPS.map((stop) => (
             <StopCard key={stop.name} stop={stop} />
+          ))}
+        </div>
+      </section>
+
+      {/* Surrounding area */}
+      <section className="py-14 bg-[#F5E9D2] border-y border-[rgba(0,51,102,.10)]">
+        <h2 className="font-heading text-[clamp(30px,4.4vw,44px)] tracking-[.02em] text-obsidian-roast m-0 text-center">
+          🧭 The Surrounding Area
+        </h2>
+        <div className="w-16 h-1 bg-smashie-yellow rounded-sm mx-auto mt-3.5" />
+        <p className="mt-2 mx-auto max-w-[660px] text-[15px] font-semibold text-[#5b6b7a] text-center">
+          Buc-ee’s sits right here at Exit 38. The Corvette Museum and Mammoth Cave are a straight shot down or up I-65 — each one has its own page here.
+        </p>
+        <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
+          {SURROUNDING.map((stop) => (
+            <SurroundCard key={stop.name} stop={stop} />
           ))}
         </div>
       </section>

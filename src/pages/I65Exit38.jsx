@@ -30,7 +30,7 @@ const ATTRACTIONS = [
   {
     icon: Mountain,
     name: 'Mammoth Cave National Park',
-    distance: '~30 min south on I-65',
+    distance: '~30 min north on I-65',
     blurb: "The world's longest known cave system. Ranger-led tours, hiking trails, and a visitor center — a must-do day trip from the Isle.",
     map: 'https://www.google.com/maps/search/?api=1&query=Mammoth+Cave+National+Park',
   },
@@ -202,6 +202,11 @@ export default function I65Exit38() {
             </div>
           ))}
         </div>
+        <div className="mt-8 text-center">
+          <Link to="/explore-smiths-grove" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">
+            Explore every stop in Smiths Grove <ArrowRight size={16} />
+          </Link>
+        </div>
       </section>
 
       {/* Fan favorites */}
@@ -258,6 +263,8 @@ export default function I65Exit38() {
         </Link>
         <a href="tel:+12705634618" className="btn-mint chrome-hover px-8 py-4 text-base font-heading inline-flex items-center gap-2 mt-6 ml-3"><Phone size={18} /> Call Us</a>
         <div className="mt-8 flex flex-wrap gap-3 justify-center text-sm">
+          <Link to="/explore-smiths-grove" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Explore Smiths Grove</Link>
+          <span className="text-muted-foreground">·</span>
           <Link to="/mammoth-cave-dining" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Mammoth Cave Dining</Link>
           <span className="text-muted-foreground">·</span>
           <Link to="/corvette-car-clubs" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Corvette Car Clubs</Link>
