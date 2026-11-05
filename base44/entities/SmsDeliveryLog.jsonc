@@ -32,18 +32,24 @@
     "status": {
       "type": "string"
     },
-    "message_sid": {
-      "type": "string"
-    },
-    "reason": {
-      "type": "string"
-    },
-    "error_code": {
-      "type": "string"
-    },
-    "status_at": {
+    "email_fallback": {
       "type": "string",
-      "format": "date-time"
+      "enum": [
+        "sending",
+        "sent",
+        "failed",
+        "skipped"
+      ],
+      "description": "Whether the milestone EMAIL went out in place of the text (Nov 4 2026 fallback). sending is the pre-send claim that stops two callers emailing the same milestone; sent means the email was delivered; failed means the email could not be sent; skipped means no email was attempted (no customer email, placeholder address, in-store order, or the milestone email already went out for this order). This row stays the record of the TEXT outcome; this flag records the email beside it."
+    },
+    "email_fallback_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the email fallback was claimed or last updated."
+    },
+    "email_fallback_note": {
+      "type": "string",
+      "description": "Human-readable note about the email fallback, e.g. 'Status email sent instead of a text' or the reason it was skipped."
     }
   },
   "required": [

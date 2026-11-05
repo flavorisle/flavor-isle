@@ -226,18 +226,31 @@ export default async function(req) {
       }
 
       // One text per order: 'ready', or 'confirmed' when that is the only
-      // milestone reached. No preparing or completed text, and no status email.
+      // milestone reached. Preparing and completed have no text — but the
+      // shared sender emails any milestone whose text did not go out, so every
+      // milestone that was actually reached is handed to it (Nov 4 2026).
       const customerEmail = order.customer_email;
       const orderNum = order.order_number || order.id.slice(-6).toUpperCase();
 
       const milestones = missedMilestones(prevStatus, newStatus);
       const reachedReady = milestones.includes('ready') || milestones.includes('completed');
       const textMilestone = reachedReady ? 'ready' : (milestones.includes('confirmed') ? 'confirmed' : null);
-      if (order.order_source !== 'in_store' && textMilestone) {
-        try {
-          await sendOrderStatusSms(base44, order, textMilestone, { settings: smashieSettings });
-        } catch (smsError) {
-          console.error(`Order ${order.order_number} ${textMilestone} SMS log failed:`, smsError.message);
+      if (order.order_source !== 'in_store') {
+        for (const reachedMilestone of ['preparing', 'ready', 'completed']) {
+          if (!milestones.includes(reachedMilestone)) continue;
+          try {
+            await sendOrderStatusSms(base44, order, reachedMilestone, { settings: smashieSettings });
+          } catch (smsError) {
+            console.error(`Order ${order.order_number} ${reachedMilestone} status send failed:`, smsError.message);
+          }
+        }
+        // The confirmed text only fires when nothing further was reached.
+        if (textMilestone === 'confirmed') {
+          try {
+            await sendOrderStatusSms(base44, order, 'confirmed', { settings: smashieSettings });
+          } catch (smsError) {
+            console.error(`Order ${order.order_number} confirmed SMS log failed:`, smsError.message);
+          }
         }
       }
 

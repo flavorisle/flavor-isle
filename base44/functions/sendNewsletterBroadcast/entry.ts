@@ -154,6 +154,30 @@ export default async function (req: Request): Promise<Response> {
 
     const bid = broadcastId(subject, htmlBody);
 
+    // ── Never-resend guard (permanent, runs before ANY send) ────────────────
+    // Any content whose subject+body hash already produced even one
+    // NewsletterSend row — sent, failed, skipped or bounced — is finished
+    // business and is never broadcast again. A cursor carrying this same
+    // broadcast_id is a legitimate continuation of a run still in flight;
+    // anything else is a would-be resend and is refused before a recipient is
+    // touched. This is a rule about CONTENT, not a flag for one newsletter.
+    const incomingCursor = payload?.cursor && typeof payload.cursor === 'object' ? payload.cursor : null;
+    if (incomingCursor?.broadcast_id && incomingCursor.broadcast_id !== bid) {
+      return Response.json({ ok: false, error: 'cursor belongs to a different broadcast — nothing sent' }, { status: 400 });
+    }
+    const priorForThisContent = await base44.asServiceRole.entities.NewsletterSend.filter({ broadcast_id: bid }, '-created_date', 1);
+    const alreadyBroadcast = (priorForThisContent || []).length > 0;
+    const resumingThisBroadcast = incomingCursor?.broadcast_id === bid;
+    const refuseAsResend = () => Response.json({
+      ok: false,
+      error: 'This newsletter was already broadcast. Old newsletters are never resent — compose a new one.',
+      broadcast_id: bid,
+    }, { status: 409 });
+    if (alreadyBroadcast && !resumingThisBroadcast) {
+      console.error(`Newsletter ${bid} refused — already broadcast. Old newsletters are never resent.`);
+      return refuseAsResend();
+    }
+
     // Cursor pagination. The offset form silently returned 746 of 1,003
     // active rows (incident 2026-11-02) and the pre-fix version re-read the
     // same rows on every page, which caused duplicate sends.
@@ -225,13 +249,17 @@ export default async function (req: Request): Promise<Response> {
     }
 
     // ── Batched, resumable send ─────────────────────────────────────────────
-    const incomingCursor = payload?.cursor && typeof payload.cursor === 'object' ? payload.cursor : null;
-    if (incomingCursor?.broadcast_id && incomingCursor.broadcast_id !== bid) {
-      return Response.json({ ok: false, error: 'cursor belongs to a different broadcast — nothing sent' }, { status: 400 });
-    }
     const startOffset = Number.isFinite(Number(incomingCursor?.offset)) && Number(incomingCursor?.offset) >= 0
       ? Math.min(Number(incomingCursor.offset), active.length)
       : 0;
+
+    // A continuation with nothing left to do means this broadcast already
+    // finished. Refuse it as a resend instead of re-entering a completed run.
+    if (alreadyBroadcast && countRemaining(startOffset) === 0) {
+      console.error(`Newsletter ${bid} resume refused — this broadcast already finished.`);
+      return refuseAsResend();
+    }
+
     const endOffset = Math.min(startOffset + BATCH_SIZE, active.length);
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));

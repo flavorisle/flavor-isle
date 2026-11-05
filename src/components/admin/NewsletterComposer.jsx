@@ -97,7 +97,11 @@ export default function NewsletterComposer() {
       setStatus(data.done ? 'success' : 'paused');
       loadStats();
     } catch (err) {
-      setResult({ error: err.message || 'Failed to send' });
+      // A refused send (e.g. 409 for content that already went out) carries its
+      // own explanation in the response body — show that, not the HTTP error.
+      const refusal = err?.response?.data;
+      setResult(refusal?.error ? refusal : { error: err.message || 'Failed to send' });
+      setJob(null);
       setStatus('error');
     }
   };
@@ -106,6 +110,8 @@ export default function NewsletterComposer() {
   const canSend = subject.trim() && body.trim();
   const activeCount = stats?.active ?? 0;
   const inProgress = job && job.done === false;
+  // The backend refuses, with 409, any content that has already been broadcast.
+  const alreadyBroadcast = /already broadcast/i.test(result?.error || '');
 
   return (
     <div className="card-diner p-6">
@@ -222,8 +228,15 @@ export default function NewsletterComposer() {
         <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
           <AlertCircle size={18} className="text-destructive flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-heading text-obsidian-roast">Nothing sent</p>
+            <p className="font-heading text-obsidian-roast">
+              {alreadyBroadcast ? 'Old newsletter — not sent' : 'Nothing sent'}
+            </p>
             <p className="text-muted-foreground">{result?.error || 'Something went wrong'}</p>
+            {alreadyBroadcast && (
+              <p className="text-muted-foreground mt-1">
+                This exact subject and message already went out once, so it can never be broadcast again. Write a new one — nobody gets an old newsletter twice.
+              </p>
+            )}
           </div>
         </div>
       )}
