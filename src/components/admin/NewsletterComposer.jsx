@@ -5,9 +5,20 @@ import { base44 } from '@/api/base44Client';
 // Admin newsletter composer for the "Get Updates from the Isle" list.
 // Subject + body editor, send-test-to-self, live active-subscriber count,
 // and a final confirm before broadcasting to active subscribers only.
-// Per-recipient delivery logging + content-hash idempotency are enforced
-// in the sendNewsletterBroadcast backend (a subscriber never gets the same
-// newsletter twice).
+//
+// Broadcasts run in batches: the backend handles a limited number of
+// recipients per call and returns a cursor, so the composer shows progress and
+// a Resume button until the whole list is done. Every call is signed with the
+// body's SHA-256 and length — if the content that arrives at the server is not
+// byte-for-byte what was composed here, the backend refuses before sending
+// anything (the 2026-11-02 truncated-body incident).
+const MIN_UNGUARDED_LENGTH = 400;
+
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export default function NewsletterComposer() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -15,6 +26,7 @@ export default function NewsletterComposer() {
   const [stats, setStats] = useState(null);
   const [status, setStatus] = useState('idle');
   const [result, setResult] = useState(null);
+  const [job, setJob] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const loadStats = async () => {
@@ -34,31 +46,66 @@ export default function NewsletterComposer() {
     })();
   }, []);
 
+  // Editing the newsletter starts a new broadcast — drop the old cursor so a
+  // stale resume can never send the previous content.
+  useEffect(() => {
+    setJob(null);
+    setStatus('idle');
+    setResult(null);
+    setConfirmOpen(false);
+  }, [subject, body]);
+
   const sendTest = async (e) => {
     e.preventDefault();
-    if (!subject.trim() || !body.trim() || !adminEmail.trim()) return;
+    if (!subject.trim() || !body.trim()) return;
     setStatus('sending'); setResult(null);
     try {
       const res = await base44.functions.invoke('sendNewsletterBroadcast', {
-        action: 'test', subject: subject.trim(), body: body.trim(), test_email: adminEmail.trim(),
+        action: 'test', subject: subject.trim(), body: body.trim(),
       });
       setResult(res.data); setStatus(res.data?.ok ? 'success' : 'error');
     } catch (err) { setResult({ error: err.message || 'Failed to send' }); setStatus('error'); }
   };
 
-  const sendAll = async () => {
-    setConfirmOpen(false); setStatus('sending'); setResult(null);
+  const sendBatch = async (cursor) => {
+    setConfirmOpen(false);
+    setStatus('sending'); setResult(null);
+    const subj = subject.trim();
+    const html = body.trim();
     try {
       const res = await base44.functions.invoke('sendNewsletterBroadcast', {
-        action: 'send', subject: subject.trim(), body: body.trim(),
+        action: 'send',
+        subject: subj,
+        body: html,
+        expected_body_sha256: await sha256Hex(`${subj}\n${html}`),
+        expected_body_length: html.length,
+        cursor: cursor || null,
       });
-      setResult(res.data); setStatus(res.data?.ok ? 'success' : 'error');
+      const data = res.data || {};
+      if (!data.ok) { setResult(data); setStatus('error'); setJob(null); return; }
+      setJob((prev) => ({
+        cursor: data.cursor,
+        done: data.done,
+        sent: (prev?.sent || 0) + (data.sent || 0),
+        skipped: (prev?.skipped || 0) + (data.skipped || 0),
+        failed: (prev?.failed || 0) + (data.failed || 0),
+        remaining: data.remaining ?? 0,
+        total: data.total_active ?? 0,
+        bodyLength: data.body_length,
+      }));
+      setResult(data);
+      setStatus(data.done ? 'success' : 'paused');
       loadStats();
-    } catch (err) { setResult({ error: err.message || 'Failed to send' }); setStatus('error'); }
+    } catch (err) {
+      setResult({ error: err.message || 'Failed to send' });
+      setStatus('error');
+    }
   };
 
+  const bodyLength = body.trim().length;
   const canSend = subject.trim() && body.trim();
   const activeCount = stats?.active ?? 0;
+  const inProgress = job && job.done === false;
 
   return (
     <div className="card-diner p-6">
@@ -92,7 +139,12 @@ export default function NewsletterComposer() {
             rows={6}
             className="w-full mt-1 px-4 py-2.5 rounded-xl border border-border bg-white text-obsidian-roast focus:outline-none focus:border-midnight-cherry resize-y"
           />
-          <p className="text-xs text-muted-foreground mt-1">Supports basic HTML (bold, links, etc.). Wrapped in the branded email shell automatically.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Supports basic HTML (bold, links, etc.). Wrapped in the branded email shell automatically.{' '}
+            <span className={bodyLength < MIN_UNGUARDED_LENGTH ? 'text-destructive font-semibold' : ''}>
+              {bodyLength} characters{bodyLength < MIN_UNGUARDED_LENGTH ? ` — at least ${MIN_UNGUARDED_LENGTH} needed to broadcast` : ''}.
+            </span>
+          </p>
         </div>
 
         {/* Test send to self */}
@@ -105,23 +157,36 @@ export default function NewsletterComposer() {
               className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-white text-obsidian-roast focus:outline-none focus:border-midnight-cherry"
             />
             <button
-              onClick={sendTest} disabled={!canSend || !adminEmail.trim() || status === 'sending'}
+              onClick={sendTest} disabled={!canSend || status === 'sending'}
               className="btn-mint px-5 py-2.5 text-sm font-heading flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
             >
               {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />} Test
             </button>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">A test always goes to your own signed-in address.</p>
         </div>
 
         {/* Broadcast to all active */}
         <div className="pt-3 border-t border-border">
-          {confirmOpen ? (
+          {inProgress ? (
+            <div className="p-4 rounded-xl bg-smashie-yellow/10 border border-smashie-yellow/30">
+              <p className="text-sm font-heading text-obsidian-roast mb-2">
+                Sending in batches — {job.sent || 0} sent{job.failed ? `, ${job.failed} failed` : ''}{job.skipped ? `, ${job.skipped} skipped` : ''}. {job.remaining} left of {job.total}.
+              </p>
+              <button
+                onClick={() => sendBatch(job.cursor)} disabled={status === 'sending'}
+                className="btn-cherry px-5 py-2.5 text-sm font-heading flex items-center gap-2 disabled:opacity-50"
+              >
+                {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Resume Sending
+              </button>
+            </div>
+          ) : confirmOpen ? (
             <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-obsidian-roast font-heading mb-3">
                 ⚠️ This will send to {activeCount} active subscriber{activeCount === 1 ? '' : 's'}. Are you sure?
               </p>
               <div className="flex gap-2">
-                <button onClick={sendAll} disabled={status === 'sending'} className="btn-cherry px-5 py-2.5 text-sm font-heading flex items-center gap-2">
+                <button onClick={() => sendBatch(null)} disabled={status === 'sending'} className="btn-cherry px-5 py-2.5 text-sm font-heading flex items-center gap-2">
                   {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Yes, Send to Everyone
                 </button>
                 <button onClick={() => setConfirmOpen(false)} className="px-5 py-2.5 text-sm font-heading rounded-full border border-border text-obsidian-roast hover:bg-muted transition-colors">
@@ -145,9 +210,11 @@ export default function NewsletterComposer() {
           <CheckCircle2 size={18} className="text-patina-mint flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-heading text-obsidian-roast">
-              {result.test ? `Test sent to ${result.recipient}` : `Sent — ${result.sent} delivered${result.skipped ? `, ${result.skipped} skipped (already received)` : ''}${result.failed ? `, ${result.failed} failed` : ''}`}
+              {result.test
+                ? `Test sent to ${result.recipient}`
+                : `Sent — ${job?.sent ?? result.sent} delivered${(job?.skipped ?? result.skipped) ? `, ${job?.skipped ?? result.skipped} skipped (already received)` : ''}${(job?.failed ?? result.failed) ? `, ${job?.failed ?? result.failed} failed` : ''}`}
             </p>
-            {!result.test && <p className="text-muted-foreground">of {result.total} active subscribers.</p>}
+            {!result.test && <p className="text-muted-foreground">0 remaining of {job?.total ?? result.total_active} active subscribers.</p>}
           </div>
         </div>
       )}
@@ -155,7 +222,7 @@ export default function NewsletterComposer() {
         <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-start gap-2">
           <AlertCircle size={18} className="text-destructive flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-heading text-obsidian-roast">Error</p>
+            <p className="font-heading text-obsidian-roast">Nothing sent</p>
             <p className="text-muted-foreground">{result?.error || 'Something went wrong'}</p>
           </div>
         </div>

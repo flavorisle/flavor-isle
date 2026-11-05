@@ -11,10 +11,11 @@
       "enum": [
         "pending",
         "active",
-        "unsubscribed"
+        "unsubscribed",
+        "bounced"
       ],
       "default": "pending",
-      "description": "pending = awaiting double opt-in confirmation; active = confirmed and receiving newsletters; unsubscribed = opted out via one-click link."
+      "description": "pending = awaiting double opt-in confirmation; active = confirmed and receiving newsletters; unsubscribed = opted out via one-click link; bounced = the mail provider reported a permanent delivery failure, so future broadcasts skip this address."
     },
     "confirm_token": {
       "type": "string",
@@ -34,6 +35,11 @@
       "type": "string",
       "format": "date-time",
       "description": "When the subscriber opted out via the one-click unsubscribe link."
+    },
+    "bounced_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the mail provider reported a permanent delivery failure for this address, which moved it to status bounced."
     },
     "unsubscribe_token": {
       "type": "string",

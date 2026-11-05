@@ -18,6 +18,18 @@
       "type": "string",
       "description": "Recipient email snapshot for admin delivery logs."
     },
+    "subject": {
+      "type": "string",
+      "description": "Subject line of the newsletter this row belongs to, snapshotted at send time so a delivered email can be identified without resolving the broadcast id."
+    },
+    "body_sha256": {
+      "type": "string",
+      "description": "SHA-256 of the exact subject+body content this recipient received. A row whose hash differs from the rest of its broadcast proves that recipient got different (for example truncated) content \u2014 the 2026-11-02 incident."
+    },
+    "body_length": {
+      "type": "number",
+      "description": "Character length of the newsletter body as sent to this recipient, kept beside the hash so a shortened send is visible at a glance."
+    },
     "status": {
       "type": "string",
       "enum": [
