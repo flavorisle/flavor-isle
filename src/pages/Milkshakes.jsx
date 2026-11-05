@@ -224,7 +224,10 @@ export default function Milkshakes() {
         </div>
       </section>
 
-      <ShakeIsleStory />
+      <ShakeIsleStory
+        originals={loading ? null : regularShakes.length}
+        bliss={loading ? null : blissCount}
+      />
 
       {/* CTA — closing line + cart */}
       <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">

@@ -1,8 +1,10 @@
 import React from 'react';
 
 // Story / brand block shown at the bottom of the Shake Isle (Milkshakes)
-// page. Purely editorial copy — no interactive elements.
-export default function ShakeIsleStory() {
+// page. Purely editorial copy — no interactive elements. The two flavor counts
+// come from the live menu (the same rules the page's hero counter uses).
+export default function ShakeIsleStory({ originals, bliss }) {
+  const countsReady = Number.isFinite(originals) && Number.isFinite(bliss);
   return (
     <section className="px-4 sm:px-6 py-16" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <div className="max-w-3xl mx-auto space-y-12">
@@ -15,7 +17,9 @@ export default function ShakeIsleStory() {
             When a shake is hand-spun, you taste the difference.
           </p>
           <p className="text-muted-foreground text-sm mb-3 leading-relaxed">
-            Choose from fourteen original flavors. Seven premium legends. Or build your own masterpiece from scratch — it's your craving.
+            {countsReady
+              ? `Choose from ${originals} original flavors. ${bliss} premium legends. Or build your own masterpiece from scratch — it's your craving.`
+              : null}
           </p>
           <p className="text-muted-foreground text-sm leading-relaxed">
             Every swirl hits cold, creamy, and crazy satisfying.

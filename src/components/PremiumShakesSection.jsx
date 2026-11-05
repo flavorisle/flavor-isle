@@ -7,6 +7,7 @@ import ModifierModal from './ModifierModal';
 import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import { optimizedImageUrl } from '@/lib/utils';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
+import { blissBadge } from '@/lib/blissBadge';
 
 // The specialty "Bliss" shakes ARE Square's "Blend & Bliss" items — the same
 // records the online menu and the print cards read. Nothing is listed by hand,
@@ -15,25 +16,8 @@ import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 // makes them available again.
 const badgeKey = (item) => item.name.replace(/\s*Milkshake$/i, '');
 
-// Optional marketing badges, keyed by the Square item name (not by id, so a
-// renamed or re-created item keeps its badge).
-const SIGNATURE = { label: 'Signature', className: 'bg-obsidian-roast text-white' };
-const NEW = { label: 'New', className: 'bg-patina-mint text-white' };
-const COMING_SOON = { label: 'Coming Soon', className: 'bg-smashie-yellow text-obsidian-roast' };
-
-const AVAILABILITY_BADGES = {
-  'Banana Pudding Bliss': SIGNATURE,
-  'Banana Split Bliss': SIGNATURE,
-  'Strawberry Crunch Bliss': NEW,
-  'Caramel Apple Bliss': NEW,
-  'Apple Pie Bliss': NEW,
-  'Ginger Bread Bliss': NEW,
-  "S'more's Bliss": NEW,
-  'Pumpkin Pie Bliss': NEW,
-  'Snow Day Bliss': COMING_SOON,
-  'Christmas Orange Bliss': COMING_SOON,
-  'Peppermint Cinnamon Bliss': COMING_SOON,
-};
+// The pill is computed from the item itself (sold out → trending label → added
+// in the last 45 days), so no flavor name appears in any badge logic.
 
 export default function PremiumShakesSection({ autoOpenId }) {
   const { addItem, setIsCartOpen, orderingEnabled, menuSetting } = useCart();
@@ -120,7 +104,7 @@ export default function PremiumShakesSection({ autoOpenId }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {items.map((item) => {
             const shortName = badgeKey(item);
-            const badge = AVAILABILITY_BADGES[shortName];
+            const badge = blissBadge(item);
             const isAdded = addedId === item.id;
             const soldOut = item.is_available === false;
             return (
