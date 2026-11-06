@@ -11,6 +11,7 @@ import { requireAdmin } from '../../shared/requireAdmin.ts';
 
 import { mapSquareFulfillmentStatus, advanceOrderStatus } from '../../shared/orderTrackingStatus.ts';
 import { CANCELABLE_STATUSES, mirrorPosCancellation, mirrorPosRefunds, listRecentSquareRefunds } from '../../shared/posOrderCancellation.ts';
+import { recordSquarePosItemRefunds } from '../../shared/itemRefund.ts';
 
 // Message consolidation (Oct 28 2026): the sync no longer sends any status
 // email. A status change now produces at most ONE customer text per order
@@ -305,14 +306,25 @@ export default async function(req) {
     // read paid, and an order still on the board had to be cancelled again on
     // the website. Read Square's refunds for the same window and settle up.
     let refunds = { recorded: 0, cancelled: 0, notified: 0 };
+    let squareRefunds = [];
     try {
-      const squareRefunds = await listRecentSquareRefunds(accessToken, locationId, since);
+      squareRefunds = await listRecentSquareRefunds(accessToken, locationId, since);
       refunds = await mirrorPosRefunds(base44, orderBySquareId, squareRefunds);
     } catch (refundError) {
       console.error('Refund mirror failed:', refundError.message);
     }
 
-    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length, refunds });
+    // Item-level refunds rung up at the register (issue #116, Part F). Its own
+    // try/catch: reading refunds can never break the milestone sync above, and
+    // a walk-in ticket with no Order record is skipped in silence.
+    let itemRefunds = { recorded: 0 };
+    try {
+      itemRefunds = await recordSquarePosItemRefunds(base44, orderBySquareId, squareRefunds);
+    } catch (itemRefundError) {
+      console.error('Register item refund detection failed:', itemRefundError.message);
+    }
+
+    return Response.json({ checked: squareOrders.length, updated, notified, profiles_synced: completedThisRun.length, refunds, item_refunds: itemRefunds });
   } catch (error) {
     console.error('syncSquareOrderStatus error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

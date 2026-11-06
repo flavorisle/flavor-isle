@@ -176,6 +176,48 @@
       "format": "date-time",
       "description": "When the Resend bounce alert for this order was sent to Wesley (issue #159, Part 4). Set once by resendBounceWebhook before the alert goes out, so one bounced order produces one alert and never another."
     },
+    "item_refunds": {
+      "type": "array",
+      "default": [],
+      "description": "Item-level refunds issued against this order without cancelling it (issue #116, Part F). One entry per refund: which item, how many, the exact amount that went back, which processor returned it, the processor's refund id and when. Written only by shared/itemRefund.ts, and read by the POS sync to skip a Square refund that is already recorded.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "processor": {
+            "type": "string"
+          },
+          "refund_id": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "refunded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "cash_back_needed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Issue #116, Part F: this item refund could not go back on a card, so the money has to be handed back by the crew. Set by shared/itemRefund.ts for cash orders, retired processors and the Helcim-era tickets; shown as a badge on the order card in Admin \u2192 Orders."
+    },
+    "item_refund_alerted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When Wesley was emailed that an item refund's amount did not match the ticket (issue #116, Part F). Stamped only by the amount guard in shared/itemRefund.ts, and only when it refused the refund."
+    },
     "payment_url": {
       "type": "string"
     },

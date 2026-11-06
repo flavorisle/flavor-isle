@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingBag, RefreshCw, Phone, Globe, Store, ChefHat, XCircle,
-  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer, Mail, MessageSquare, RotateCcw
+  MapPin, Clock, Search, ChevronDown, ChevronUp, Receipt, Shirt, Printer, Mail, MessageSquare, RotateCcw, Banknote
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { formatChicagoDateTime } from '@/lib/chicagoTime';
@@ -151,6 +151,35 @@ function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
           {order.cancellation_sms_sent_at && (
             <span className="inline-flex items-center gap-1 text-green-700">
               <MessageSquare size={12} /> Cancellation text sent {formatChicagoDateTime(order.cancellation_sms_sent_at)}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Item refunds (issue #116, Part F): what went back for a single item
+          without cancelling the ticket, and whether the crew still owes cash. */}
+      {((order.item_refunds || []).length > 0 || order.cash_back_needed) && (
+        <div className="px-5 pb-4">
+          <p className="text-[10px] font-heading uppercase tracking-wider text-muted-foreground mb-1">Item refunds</p>
+          <div className="space-y-0.5">
+            {(order.item_refunds || []).map((refund, i) => (
+              <div key={`${refund.refund_id || 'refund'}-${i}`} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-body text-obsidian-roast">
+                <span className="font-semibold">
+                  {refund.quantity > 1 ? `${refund.quantity}× ` : ''}{refund.item_name}
+                </span>
+                <span className="text-midnight-cherry font-semibold">${Number(refund.amount || 0).toFixed(2)}</span>
+                <span className="capitalize text-muted-foreground">
+                  {refund.method || 'card'}{refund.processor ? ` · ${refund.processor}` : ''}
+                </span>
+                {refund.refunded_at && (
+                  <span className="text-muted-foreground">{formatChicagoDateTime(refund.refunded_at)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          {order.cash_back_needed && (
+            <span className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+              <Banknote size={12} /> Cash back needed
             </span>
           )}
         </div>
