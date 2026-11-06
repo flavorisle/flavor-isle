@@ -17,8 +17,8 @@ const ALERT_TO = 'wesleyrbooker1@gmail.com';
 const ALERT_FROM = 'Wesley Booker <wesley@order.flavor-isle.com>';
 const LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000;
 
-function json(payload: any) {
-  return Response.json(payload, { status: 200 });
+function json(payload: any, status = 200) {
+  return Response.json(payload, { status });
 }
 
 function base64Bytes(value: string) {
