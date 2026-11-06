@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
+import { analyzeEmail } from '../../shared/emailValidation.ts';
 
 // Public newsletter subscription with double opt-in. Creates a pending
 // EmailSubscriber and sends a confirmation email with a one-time confirm
@@ -10,8 +11,6 @@ import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const APP_BASE = 'https://flavor-isle.com';
 
-function normalizeEmail(e) { return (e || '').toLowerCase().trim(); }
-function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function newToken() { return crypto.randomUUID() + Math.random().toString(36).slice(2); }
 
 async function sendConfirmation(email, confirmToken) {
@@ -35,9 +34,18 @@ export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const email = normalizeEmail(body?.email);
+    // Issue #159 — the address is stored normalized, and one whose ending cannot
+    // receive mail (gmail.clm, yahoo.con …) is refused with the fix named.
+    const emailCheck = analyzeEmail(body?.email);
+    const email = emailCheck.normalized;
     const source = body?.source || 'footer';
-    if (!isValidEmail(email)) return Response.json({ error: 'A valid email address is required.' }, { status: 400 });
+    if (emailCheck.code === 'malformed' || emailCheck.code === 'blocked_typo_tld') {
+      return Response.json({
+        error: emailCheck.suggestion
+          ? `That email ending can't receive mail. Please use ${emailCheck.suggestion}.`
+          : 'A valid email address is required.',
+      }, { status: 400 });
+    }
 
     const confirmToken = newToken();
     const existing = await base44.asServiceRole.entities.EmailSubscriber.filter({ email });

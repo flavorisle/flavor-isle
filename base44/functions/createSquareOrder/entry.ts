@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 import { isInternalCaller } from '../../shared/internalRelay.ts';
+import { normalizeEmail, analyzeEmail } from '../../shared/emailValidation.ts';
 
 export default async function(req) {
   try {
@@ -20,6 +21,14 @@ export default async function(req) {
     }
 
     const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, pickupMethod, vehicle } = body;
+
+    // Issue #159 — same typo guard as the web checkout. Nothing is created or
+    // pushed to Square with an address whose ending cannot receive mail.
+    const emailCheck = analyzeEmail(customer?.email);
+    if (emailCheck.code === 'blocked_typo_tld') {
+      return Response.json({ error: `That email ending can't receive mail. Please use ${emailCheck.suggestion}.` }, { status: 400 });
+    }
+
     const storedOrder = orderId ? await base44.asServiceRole.entities.Order.get(orderId) : null;
     const cashPickup = storedOrder?.pay_cash_on_pickup === true && storedOrder.order_type === 'pickup';
 
@@ -102,7 +111,7 @@ export default async function(req) {
     // Phone/chat orders taken without an email carry a placeholder so the
     // required field is satisfied — never match or create a Square customer
     // with it as if it were a real address. The phone still links the customer.
-    const rawEmail = (customer.email || '').toLowerCase().trim();
+    const rawEmail = normalizeEmail(customer.email || '');
     const normalizedEmail = rawEmail === 'phone-order@flavorisle.com' ? '' : rawEmail;
 
     const searchCustomer = async (filter) => {

@@ -11,6 +11,7 @@ import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { withTimeout } from '../../shared/withTimeout.ts';
+import { analyzeEmail } from '../../shared/emailValidation.ts';
 
 // The caller is waiting on the line, so link setup is bounded: a stalled
 // processor or SMS gateway falls through to the manual-pay reply with the total.
@@ -110,7 +111,17 @@ export default async function(req) {
     if (phoneDigits.length < 10) {
       return Response.json({ error: 'A valid customer_phone is required — the payment link is texted.' }, { status: 400 });
     }
-    const emailOk = !!customer_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email);
+    // Issue #159 — email typo guard. An address whose ending cannot receive mail
+    // (or that is malformed) is never stored; when the guard has a fix, the
+    // suggestion travels back in the response so Smashie can read it aloud.
+    const emailCheck = analyzeEmail(customer_email);
+    const emailOk = emailCheck.ok;
+    const emailNote = !emailOk && customer_email
+      ? (emailCheck.suggestion
+        ? `The customer's email can't receive mail — they may have meant ${emailCheck.suggestion}. Read it back and confirm it before placing another order.`
+        : `The customer's email did not look right, so no email is on this order. Read it back and confirm it.`)
+      : '';
+    if (emailNote) console.warn(`logPhoneOrder: unusable customer email for ${customer_phone}: ${customer_email} (${emailCheck.code}${emailCheck.suggestion ? `, suggestion ${emailCheck.suggestion}` : ''})`);
 
     // Channel evidence. The pay link is TEXTED to the number on the order, so a
     // caller that cannot show we hold a real inbound conversation with that number
@@ -174,7 +185,7 @@ export default async function(req) {
 
     // No placeholder address: a caller who gave no email leaves the field empty.
     // The order email helpers already treat a blank email as "no email".
-    const orderEmail = emailOk ? customer_email : '';
+    const orderEmail = emailOk ? emailCheck.normalized : '';
 
     // Every line must resolve to a live menu item (or an approved non-catalog
     // price). Smashie quotes live prices, but the values still arrive over the
@@ -398,7 +409,7 @@ export default async function(req) {
       paymentLinkEmailed ? 'emailed to ' + customer_email : null,
     ].filter(Boolean).join(' and ');
 
-    return Response.json({
+    const responseBody = ({
       success: true,
       order_number: orderNumber,
       order_id: order.id,
@@ -420,6 +431,10 @@ export default async function(req) {
         : `Order #${orderNumber} was saved for $${finalTotal.toFixed(2)} (tell the customer this total), but the pay link could not be sent to ${customer_phone}. Apologize, say the text did not go through, and offer to take this order as cash at pickup (pickup orders only) or pass the caller to the counter at (270) 563-4618. Never say the link is on its way, and do not claim the order is paid.`,
       payment_provider: paymentProvider,
     });
+    // Issue #159 — the guard's suggestion rides on the message so Smashie reads the
+    // correction back to the caller instead of repeating an address that bounces.
+    if (emailNote) responseBody.message = `${responseBody.message} ${emailNote}`;
+    return Response.json(responseBody);
   } catch (error) {
     console.error(`logPhoneOrder error for ${logPhone}:`, error.message);
     return Response.json({ error: error.message }, { status: 500 });

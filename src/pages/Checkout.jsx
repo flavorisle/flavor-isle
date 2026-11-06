@@ -23,6 +23,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
+import { analyzeEmail } from '@/lib/emailValidation';
 import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
@@ -75,6 +76,9 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  // Issue #159 — email typo guard: a domain typo is offered as a one-tap fix, and
+  // an ending that cannot receive mail blocks the order.
+  const emailCheck = useMemo(() => analyzeEmail(form.email), [form.email]);
   const [savedAddress, setSavedAddress] = useState(false);
   const nameRef = useRef(null);
 
@@ -268,7 +272,8 @@ export default function Checkout() {
     if (!form.firstName.trim()) errors.firstName = 'First name is required.';
     if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
     if (!form.email.trim()) errors.email = 'Your email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    else if (emailCheck.code === 'blocked_typo_tld') errors.email = `That email ending can't receive mail. Did you mean ${emailCheck.suggestion}?`;
+    else if (emailCheck.code === 'malformed') errors.email = 'Enter a valid email address.';
     if (orderType === 'delivery' && !form.address.trim()) errors.address = 'A delivery address is required.';
     else if (orderType === 'delivery' && deliveryQuote?.out_of_range) {
       errors.address = `Sorry, this address is outside our ${deliveryQuote.max_miles}-mile delivery range.`;
@@ -445,6 +450,21 @@ export default function Checkout() {
                       <input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={e => updateForm('email', e.target.value)} placeholder="jane@example.com"
                         className={`w-full px-3 py-2.5 bg-muted border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry ${fieldErrors.email ? 'border-destructive' : 'border-border'}`} />
                       {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
+                      {emailCheck.suggestion && (emailCheck.code === 'suggest_domain' || emailCheck.code === 'blocked_typo_tld') && (
+                        <p className={`text-xs mt-1 ${emailCheck.code === 'blocked_typo_tld' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                          Did you mean {emailCheck.suggestion}?{' '}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, email: emailCheck.suggestion }));
+                              setFieldErrors(prev => { const n = { ...prev }; delete n.email; return n; });
+                            }}
+                            className="underline font-semibold"
+                          >
+                            Use {emailCheck.suggestion}
+                          </button>
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Phone</label>

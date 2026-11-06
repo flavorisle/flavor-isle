@@ -5,6 +5,7 @@ import { validateRewardDiscount } from '../../shared/squareLoyalty.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
+import { analyzeEmail } from '../../shared/emailValidation.ts';
 
 // The website checkout's order creation.
 //
@@ -25,6 +26,15 @@ export default async function (req: Request) {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // Issue #159 — checkout email typo guard. An ending that cannot receive mail
+    // (gmail.clm, yahoo.con …) is refused before anything is created, so no Square
+    // order and no Order record is ever made with it. Everything else is stored
+    // normalized.
+    const emailCheck = analyzeEmail(customer?.email);
+    if (emailCheck.code === 'blocked_typo_tld') {
+      return Response.json({ error: `That email ending can't receive mail. Please use ${emailCheck.suggestion}.` }, { status: 400 });
     }
 
     // Blocked customers cannot complete an online checkout.
@@ -121,7 +131,7 @@ export default async function (req: Request) {
         direct_web_rewards_v2: true,
         total: pricing.total,
         customer_name: customer.name,
-        customer_email: customer.email,
+        customer_email: emailCheck.normalized,
         customer_phone: customer.phone || '',
         delivery_address: customer.address || '',
         special_instructions: instructions || '',
