@@ -171,6 +171,11 @@
       "format": "date-time",
       "description": "When the Google review request text was dispatched for this order. Doubles as the atomic claim that stops two overlapping scanner runs from texting the same order twice. Issue #37, step 2."
     },
+    "email_bounce_alerted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the Resend bounce alert for this order was sent to Wesley (issue #159, Part 4). Set once by resendBounceWebhook before the alert goes out, so one bounced order produces one alert and never another."
+    },
     "payment_url": {
       "type": "string"
     },
