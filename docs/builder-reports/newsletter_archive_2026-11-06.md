@@ -1,5 +1,12 @@
 # Newsletter archive — /newsletters and /newsletters/:slug
 
+> **SUPERSEDED, Nov 6 2026.** This shape was not approved. Wesley's approved wording is that the Winter
+> Bliss issue goes into the newsletter page as the newest entry with the November 2 issue kept underneath
+> it, and that there is no separate archive page. The three files below were deleted and both routes
+> removed; the newsletter page now carries the archive. The correction is recorded as
+> `newsletter_archive_2026-11-06` item "Corrected: archive lives on the newsletter page…" in BuilderReport.
+> Kept as a record of what was built and undone.
+
 **Approved by:** Wesley, Nov 5 2026 — the "community news post + Facebook and Instagram at 10 AM + newsletter archive" batch ("Approved all but Ashley order alerts"). This build is the archive, the last code piece of that item.
 **Build:** `npm run build` → **exit 0**
 **Sent:** no email. No newsletter was sent, resent, edited, re-broadcast or scheduled, and no news post was created, edited or published.

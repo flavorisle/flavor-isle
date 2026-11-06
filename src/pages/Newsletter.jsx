@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, Loader2, Sparkles, Newspaper } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import IssueWinterBliss from '@/components/newsletter/IssueWinterBliss';
 import NewsletterIssue from '@/components/newsletter/NewsletterIssue';
 
 // Dedicated newsletter signup page. Uses the same double opt-in flow as the
@@ -98,13 +98,13 @@ export default function Newsletter() {
         </div>
       </section>
 
-      <section className="max-w-xl mx-auto px-4 sm:px-6 pb-10">
-        <Link
-          to="/newsletters"
-          className="inline-flex items-center gap-2 font-heading text-sm text-patina-mint hover:text-midnight-cherry transition-colors"
-        >
-          <Newspaper size={16} /> Past issues
-        </Link>
+      <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-4">
+        <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Newsletter archive</h2>
+        <p className="text-sm text-muted-foreground font-body mt-2">Newest issue first.</p>
+      </section>
+
+      <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-8">
+        <IssueWinterBliss />
       </section>
 
       <NewsletterIssue />
