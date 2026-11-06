@@ -8,14 +8,9 @@ import { sendOrderPreparingEmail, sendOrderReadyEmail, sendOrderCompletedEmail }
 const ALLOWED_MILESTONES = new Set(['confirmed', 'ready', 'cancelled']);
 
 // Email fallback — GitHub issue #158, approved by Wesley Nov 5 2026 9:06 PM CT.
-// The email is a backup, not a second channel: it fires ONLY on a genuine
-// non-delivery (Twilio failure, no consent, no phone number, texts disabled in
-// settings), never for a milestone whose text was retired on purpose in the
-// Oct 28 2026 consolidation (preparing, completed) — that silence is not a
-// delivery failure. At most ONE status email per ORDER, so an order tops out at
-// the receipt plus one status email. Every caller (sendOrderReadyAlert,
-// fulfillOrder, syncSquareOrderStatus) gets this automatically because it lives
-// here, on the single path every status message takes.
+// Email is a backup, not a second channel: it fires only on a genuine
+// non-delivery (Twilio failure, no consent, no phone, texts disabled).
+// At most one status email per order; retired milestones never email.
 
 // Which email backs which milestone. Only a milestone that is still texted can
 // ever reach these — a retired milestone is refused before the lookup below.
@@ -129,7 +124,6 @@ async function sendStatusText(base44, order, milestone, options = {}) {
     }
     if (reason) {
       await base44.asServiceRole.entities.SmsDeliveryLog.update(log.id, { status: 'skipped', reason, status_at: new Date().toISOString() });
-      // No phone, no consent or texts switched off: the customer must still be emailed.
       return { sent: false, skipped: true, reason, log_id: log.id, fallback_eligible: true, fallback_reason: reason };
     }
     const sent = await sendSmashieSms(order.customer_phone, body, { base44, logId: log.id });

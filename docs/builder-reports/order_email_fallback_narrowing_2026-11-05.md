@@ -30,6 +30,15 @@ healthy and 4 during an outage; Wesley's cap is 2 per order (receipt + at most o
    and the `'Already sent for this order'` string is gone. The returned object still carries `sent`,
    `skipped`, `reason`, `log_id`, and gains `email_fallback` only when the fallback ran.
 
+## Exact final header comment
+
+```ts
+// Email fallback — GitHub issue #158, approved by Wesley Nov 5 2026 9:06 PM CT.
+// Email is a backup, not a second channel: it fires only on a genuine
+// non-delivery (Twilio failure, no consent, no phone, texts disabled).
+// At most one status email per order; retired milestones never email.
+```
+
 ## Exact final code — the three functions, verbatim
 
 ### `sendMilestoneEmailFallback`
@@ -120,7 +129,6 @@ async function sendStatusText(base44, order, milestone, options = {}) {
     }
     if (reason) {
       await base44.asServiceRole.entities.SmsDeliveryLog.update(log.id, { status: 'skipped', reason, status_at: new Date().toISOString() });
-      // No phone, no consent or texts switched off: the customer must still be emailed.
       return { sent: false, skipped: true, reason, log_id: log.id, fallback_eligible: true, fallback_reason: reason };
     }
     const sent = await sendSmashieSms(order.customer_phone, body, { base44, logId: log.id });
