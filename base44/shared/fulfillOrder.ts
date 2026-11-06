@@ -40,8 +40,8 @@ async function logSquareSyncAttempt(base44, order, status, squareOrderId = null,
 function referralBlockHtml(code: string) {
   return `<div style="background:#f5edd6;border-radius:12px;padding:22px 20px;margin:0 0 24px;text-align:center;">
     <img src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png" alt="Smashie" width="72" height="72" style="border-radius:50%;display:block;margin:0 auto 10px;object-fit:cover;border:2px solid #F5A623;" />
-    <h3 style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:19px;letter-spacing:1px;margin:0 0 8px;">SHARE THE ISLE, EARN 50 STARS</h3>
-    <p style="color:#141414;font-size:15px;line-height:1.5;margin:0 0 16px;">Send your link to a friend. When they place their first order, 50 bonus Stars land in your Star Rewards account.</p>
+    <h3 style="color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;font-size:19px;letter-spacing:1px;margin:0 0 8px;">SHARE THE ISLE, EARN 100 STARS</h3>
+    <p style="color:#141414;font-size:15px;line-height:1.5;margin:0 0 16px;">Send your link to a friend. When they place their first order, 100 bonus Stars land in your Star Rewards account — and 100 land in theirs.</p>
     <a href="https://flavor-isle.com/?ref=${code}" style="display:inline-block;background:#C0392B;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:999px;font-family:'Oswald',Arial,sans-serif;font-size:15px;letter-spacing:1px;">SEND YOUR LINK</a>
   </div>`;
 }

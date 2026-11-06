@@ -6,6 +6,18 @@
       "type": "string",
       "maxLength": 1000
     },
+    "bonus_side": {
+      "type": "string",
+      "enum": [
+        "referrer",
+        "referee"
+      ],
+      "enumColors": [
+        "blue",
+        "green"
+      ],
+      "description": "Which side of the referral this row records (Wesley, Nov 5 2026: \"So both get 100\"). referrer = the Stars the referrer earned for the friend's first order; referee = the welcome bonus the friend earned on that same order. Rows written before this field existed have no value and are referrer rows, so the portal counts a row as the referrer's unless it says 'referee'."
+    },
     "referrer_email": {
       "type": "string",
       "description": "Email of the customer who earned the referral bonus, matched from their customer profile by the referrer's phone at the moment the bonus was granted. Empty when no profile matches the phone; the row is keyed by referral_code either way."
@@ -20,16 +32,16 @@
     },
     "referral_code": {
       "type": "string",
-      "description": "The referral code the friend ordered with, uppercase. This is the referrer's own code, so it is what the referral portal queries on."
+      "description": "The referral code the friend ordered with, uppercase. This is the referrer's own code, so it is what the referral portal queries on \u2014 which is why bonus_side decides whose counter a row feeds."
     },
     "points_awarded": {
       "type": "number",
-      "description": "Stars actually granted to the referrer for this friend (50 today, matching the grant in shared/webOrderLoyaltyBonuses.ts)."
+      "description": "Stars actually granted on this side of the referral \u2014 REFERRAL_BONUS_STARS from shared/webOrderLoyaltyBonuses.ts (100 today, both sides). Older rows keep the value they recorded."
     },
     "awarded_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the referrer's Stars were granted. The referral portal lists these newest first."
+      "description": "When this side's Stars were granted. The referral portal lists the referrer's rows newest first."
     }
   },
   "required": [

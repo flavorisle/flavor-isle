@@ -5,11 +5,29 @@ import { phoneDigits } from './normalizePhone.ts';
 const COMPLETED_STATUSES = new Set(['completed', 'delivered']);
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-// Stars the referrer earns per friend whose first order completes (issue #83).
-// Raised from 50 to 100 by Wesley on Nov 5 2026. This constant is the only place
-// the amount lives — the grant, the audit row and the referral portal all read
-// it — and points already recorded on old ReferralBonus rows are untouched.
+// Stars a referral pays, per side (issue #83). A referral pays BOTH people: the
+// referrer earns this when the friend's first order completes, and the friend
+// earns this on that same first order — "So both get 100" (Wesley, Nov 5 2026).
+// This constant is the only place the amount lives: both awards, both audit rows
+// and the referral portal read it, and points already recorded on old
+// ReferralBonus rows are untouched.
 export const REFERRAL_BONUS_STARS = 100;
+
+// One side of a referral. The Stars go to that person's own Square loyalty
+// account, so someone with no account is skipped silently and never enrolled —
+// the same rule for the referrer and the friend. Returns the timestamp to stamp,
+// or null when that side earned nothing.
+async function awardReferralSide(phone: string, reason: string, idempotencyKey: string): Promise<string | null> {
+  const account = await searchLoyaltyAccountByPhone(phone).catch(() => null);
+  if (!account) return null;
+  await adjustLoyaltyPoints({
+    accountId: account.id,
+    points: REFERRAL_BONUS_STARS,
+    reason,
+    idempotencyKey,
+  });
+  return new Date().toISOString();
+}
 
 function isCompletedPaidWebOrder(order: any): boolean {
   return order?.direct_web_rewards_v2 === true &&
@@ -22,24 +40,26 @@ function sameMember(order: any, phone: string, email: string): boolean {
     (!phone && email && order.customer_email?.toLowerCase() === email);
 }
 
-// Referral bonus (issue #83, Part A): REFERRAL_BONUS_STARS to the referrer,
-// once per friend, ever. Returns the timestamp to stamp, or null when any guard
-// says no — a skipped grant leaves referral_bonus_granted_at unset so a later
-// run can retry.
+// Referral bonus (issue #83, Part A): REFERRAL_BONUS_STARS to the referrer AND
+// REFERRAL_BONUS_STARS to the friend, once per friend, ever. Returns a timestamp
+// per side — whichever side earned nothing comes back null, so its stamp stays
+// unset and a later run can retry. A skipped grant on one side never holds back
+// the other. Skips leave the matching order field unset.
 async function grantReferralBonus(
   base44: any,
   order: any,
   orderHistory: any[],
-): Promise<string | null> {
+): Promise<{ referrerAt: string | null; welcomeAt: string | null }> {
+  const skipped = { referrerAt: null, welcomeAt: null };
   const referrerPhone = await referralPhoneFromCode(order.referral_code);
   if (!referrerPhone) {
     console.warn(`Order ${order.order_number}: referral code ${order.referral_code} did not decode — no bonus`);
-    return null;
+    return skipped;
   }
 
   const friendPhone = toE164Phone(order.customer_phone);
   // Guard 1: a customer can't refer themselves.
-  if (referrerPhone === friendPhone) return null;
+  if (referrerPhone === friendPhone) return skipped;
 
   // Guard 2: the friend must be genuinely new — no earlier paid, completed
   // order on either the same phone or the same email. Their own order is
@@ -58,37 +78,66 @@ async function grantReferralBonus(
     return (friendPhone && toE164Phone(candidate.customer_phone) === friendPhone) ||
       (friendEmail && String(candidate.customer_email || '').toLowerCase() === friendEmail);
   });
-  if (friendHasOrderedBefore) return null;
+  if (friendHasOrderedBefore) return skipped;
 
-  // Guard 3: the referrer must already have a Square loyalty account — no
-  // account means the bonus is skipped silently, never auto-enrolled.
-  const account = await searchLoyaltyAccountByPhone(referrerPhone).catch(() => null);
-  if (!account) return null;
-
-  await adjustLoyaltyPoints({
-    accountId: account.id,
-    points: REFERRAL_BONUS_STARS,
-    reason: 'Referral bonus',
-    idempotencyKey: `referral:${referrerPhone}:${order.id}`,
-  });
-  console.log(`Referral bonus: ${REFERRAL_BONUS_STARS} Stars to ${referrerPhone} for order ${order.order_number}`);
-  const awardedAt = new Date().toISOString();
-
-  // Audit row for the referral portal (GitHub issue #95 follow-up). Additive
-  // only: the Stars above are already granted, so a failed insert must never
-  // break the grant or stop the timestamp from being stamped.
+  // Guard 3: each side is paid only through their own Square loyalty account —
+  // no account means that side is skipped silently, never auto-enrolled. The two
+  // awards run in their own try/catch so a failure on one side can never roll
+  // back or skip the other.
+  let referrerAt: string | null = null;
   try {
-    await recordReferralBonus(base44, order, referrerPhone, awardedAt);
+    referrerAt = await awardReferralSide(
+      referrerPhone,
+      'Referral bonus',
+      `referral:${referrerPhone}:${order.id}`,
+    );
+    if (referrerAt) {
+      console.log(`Referral bonus: ${REFERRAL_BONUS_STARS} Stars to ${referrerPhone} for order ${order.order_number}`);
+    }
+  } catch (referrerError: any) {
+    console.error(`Referral bonus failed for referrer ${referrerPhone} on order ${order.order_number}:`, referrerError?.message || referrerError);
+  }
+
+  let welcomeAt: string | null = null;
+  try {
+    if (friendPhone) {
+      welcomeAt = await awardReferralSide(
+        friendPhone,
+        'Referral welcome bonus',
+        `referral-welcome:${friendPhone}:${order.id}`,
+      );
+      if (welcomeAt) {
+        console.log(`Referral welcome bonus: ${REFERRAL_BONUS_STARS} Stars to ${friendPhone} for order ${order.order_number}`);
+      }
+    }
+  } catch (welcomeError: any) {
+    console.error(`Referral welcome bonus failed for ${friendPhone} on order ${order.order_number}:`, welcomeError?.message || welcomeError);
+  }
+
+  // Audit rows for the referral portal (GitHub issue #95 follow-up). Additive
+  // only: the Stars above are already granted, so a failed insert must never
+  // break the grants or stop the timestamps from being stamped.
+  try {
+    await recordReferralBonus(base44, order, referrerPhone, referrerAt, welcomeAt);
   } catch (auditError: any) {
     console.error(`Referral audit row failed for order ${order.order_number}:`, auditError?.message || auditError);
   }
-  return awardedAt;
+  return { referrerAt, welcomeAt };
 }
 
-// One ReferralBonus row per bonus actually granted. The referrer's email comes
-// from their customer profile matched by phone; the row is keyed by
-// referral_code regardless, so the portal finds it either way.
-async function recordReferralBonus(base44: any, order: any, referrerPhone: string, awardedAt: string) {
+// One ReferralBonus row per bonus actually granted — a referrer row and, when
+// the friend's welcome bonus landed, a second row with bonus_side 'referee'. The
+// referrer's email comes from their customer profile matched by phone (empty
+// when no profile matches); the rows are keyed by referral_code regardless, so
+// the portal finds them either way. `bonus_side` is what keeps a customer's own
+// welcome bonus out of their referral count.
+async function recordReferralBonus(
+  base44: any,
+  order: any,
+  referrerPhone: string,
+  referrerAt: string | null,
+  welcomeAt: string | null,
+) {
   let referrerEmail = '';
   const digits = phoneDigits(referrerPhone);
   if (digits) {
@@ -97,14 +146,29 @@ async function recordReferralBonus(base44: any, order: any, referrerPhone: strin
       .catch(() => []);
     referrerEmail = String(profiles?.[0]?.email || '').trim().toLowerCase();
   }
-  await base44.asServiceRole.entities.ReferralBonus.create({
+
+  const row = {
     referrer_email: referrerEmail,
     referee_email: String(order.customer_email || '').trim().toLowerCase(),
     referee_order_id: order.id,
     referral_code: String(order.referral_code || '').trim().toUpperCase(),
     points_awarded: REFERRAL_BONUS_STARS,
-    awarded_at: awardedAt,
-  });
+  };
+
+  if (referrerAt) {
+    await base44.asServiceRole.entities.ReferralBonus.create({
+      ...row,
+      bonus_side: 'referrer',
+      awarded_at: referrerAt,
+    });
+  }
+  if (welcomeAt) {
+    await base44.asServiceRole.entities.ReferralBonus.create({
+      ...row,
+      bonus_side: 'referee',
+      awarded_at: welcomeAt,
+    });
+  }
 }
 
 export async function grantCompletedWebOrderBonuses(
@@ -183,13 +247,15 @@ export async function grantCompletedWebOrderBonuses(
     if (granted) updates.loyalty_welcome_back_bonus_granted_at = new Date().toISOString();
   }
 
-  // Referral bonus — the friend's order completed, so their referrer earns
-  // REFERRAL_BONUS_STARS. Guests and signed-in customers alike (identity =
-  // order phone/email).
+  // Referral bonus — the friend's order completed, so the referrer earns
+  // REFERRAL_BONUS_STARS and the friend earns REFERRAL_BONUS_STARS as a welcome
+  // bonus. Each side stamps its own field, so whichever one landed stays paid.
+  // Guests and signed-in customers alike (identity = order phone/email).
   if (order.referral_code && !order.referral_bonus_granted_at) {
     try {
-      const referredAt = await grantReferralBonus(base44, order, orderHistory);
-      if (referredAt) updates.referral_bonus_granted_at = referredAt;
+      const { referrerAt, welcomeAt } = await grantReferralBonus(base44, order, orderHistory);
+      if (referrerAt) updates.referral_bonus_granted_at = referrerAt;
+      if (welcomeAt) updates.referral_welcome_bonus_granted_at = welcomeAt;
     } catch (referralErr) {
       console.error(`Referral bonus failed for order ${order.order_number}:`, referralErr.message);
     }

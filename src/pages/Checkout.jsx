@@ -658,11 +658,11 @@ export default function Checkout() {
                 ))}
               </div>
 
-              {/* Referred by a friend — the referrer gets 50 bonus Stars once
+              {/* Referred by a friend — both sides earn the referral bonus once
                   this order completes (issue #83). Never required. */}
               {referralCode && (
                 <p className="text-xs text-patina-mint mb-3">
-                  Referred by a friend — they'll get 50 bonus Stars when this order completes.
+                  Referred by a friend — you'll both get 100 bonus Stars when this order completes.
                 </p>
               )}
 

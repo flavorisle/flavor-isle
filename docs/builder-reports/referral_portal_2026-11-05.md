@@ -11,6 +11,31 @@
 > apart. Stars already recorded on existing `ReferralBonus` rows were not touched
 > and nothing was backfilled. Every `50` below is updated to the current value.
 
+> **Nov 5 2026, 11:22 PM CT — both sides now get 100.** Wesley: "So both get 100."
+> A referral used to pay only the referrer. It now pays the referrer **and** the
+> friend, each `REFERRAL_BONUS_STARS` (100) from the same constant, awarded
+> independently so one side failing can never skip or undo the other.
+>
+> - `grantReferralBonus` returns `{ referrerAt, welcomeAt }`; each side is its own
+>   account lookup + `adjustLoyaltyPoints` inside its own try/catch. The friend is
+>   the order's own customer (`toE164Phone(order.customer_phone)`) and is paid with
+>   reason `Referral welcome bonus` under idempotency key
+>   `referral-welcome:<phone>:<orderId>`. No Square loyalty account means that side
+>   is skipped silently and never enrolled — referrer and friend alike.
+> - The existing guards are unchanged and still gate both sides: the code must
+>   decode, a customer can't refer themselves, and the friend must be genuinely new.
+> - New `Order.referral_welcome_bonus_granted_at` is stamped only when the friend's
+>   award lands, beside the existing `referral_bonus_granted_at`; a skip leaves it
+>   unset exactly as before.
+> - New `ReferralBonus.bonus_side` (`referrer` | `referee`) separates the two audit
+>   rows. Rows written before the field existed have no value and are read as
+>   referrer rows, so nothing already recorded breaks.
+> - The portal counts only referrer rows for `stars_earned` and the friends list, and
+>   returns `stars_per_referral` + `stars_for_friend`, both 100.
+> - No backfill: past referrals grant the friend nothing retroactively and no
+>   existing point balance was touched. No test orders were placed and no points
+>   were granted during this build.
+
 ## The real reward constants — read first, quoted verbatim
 
 `base44/shared/referral.ts` (how a code is made):
@@ -579,8 +604,8 @@ imported by this page.
 
 - `npm run build` → exit 0.
 - `getMyReferralPortal` deployed and answered a POST:
-  `{"code":"84UG8IGW","share_url":"https://flavor-isle.com/?ref=84UG8IGW","stars_per_referral":100,"stars_earned":0,"referrals":[]}`
-  — re-run after the constant change; `stars_per_referral` is now `100`, read from
+  `{"code":"84UG8IGW","share_url":"https://flavor-isle.com/?ref=84UG8IGW","stars_per_referral":100,"stars_for_friend":100,"stars_earned":0,"referrals":[]}`
+  — re-run after the both-sides change; both rewards are `100`, read from
   `REFERRAL_BONUS_STARS`, which also proves the shared import resolves in the
   deployed function.
   — a real 8-character code derived from the caller's own profile phone, zero

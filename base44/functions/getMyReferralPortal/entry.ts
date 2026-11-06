@@ -14,8 +14,9 @@ import { REFERRAL_BONUS_STARS } from '../../shared/webOrderLoyaltyBonuses.ts';
 // is stored to "create" it. With no phone on the profile there is no code yet,
 // and the portal says so.
 
-// The reward quoted on the portal is the grant's own constant, imported so the
-// page can never drift from what the referrer is actually paid.
+// The rewards quoted on the portal are the grant's own constant, imported so the
+// page can never drift from what either side of a referral is actually paid —
+// both the referrer and the friend earn REFERRAL_BONUS_STARS.
 const SHARE_BASE = 'https://flavor-isle.com/?ref=';
 
 export default async function (req: Request) {
@@ -41,7 +42,12 @@ export default async function (req: Request) {
     const rawRows = await base44.asServiceRole.entities.ReferralBonus
       .filter(query)
       .catch(() => []);
+    // The referral count and the friends list are the REFERRER's only. A referee
+    // row is the friend's own welcome bonus on their first order, written with
+    // this same code, so counting it would inflate the referrer's number. Rows
+    // from before bonus_side existed carry no value and are referrer rows.
     const rows = (Array.isArray(rawRows) ? rawRows : rawRows?.items || [])
+      .filter((row: any) => row?.bonus_side !== 'referee')
       .slice()
       .sort((a: any, b: any) =>
         new Date(b?.awarded_at || b?.created_date || 0).getTime() -
@@ -80,6 +86,7 @@ export default async function (req: Request) {
       code: code || null,
       share_url: code ? `${SHARE_BASE}${code}` : '',
       stars_per_referral: REFERRAL_BONUS_STARS,
+      stars_for_friend: REFERRAL_BONUS_STARS,
       stars_earned: rows.reduce((sum: number, row: any) => sum + Number(row.points_awarded || 0), 0),
       referrals,
     });

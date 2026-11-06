@@ -6,7 +6,8 @@ import { formatChicagoDate } from '@/lib/chicagoTime';
 // Referral tab — the customer's own referral code, share link, Stars earned and
 // the friends they brought in (GitHub issue #95 follow-up). Everything shown
 // here comes from getMyReferralPortal; the reward line quotes the Stars that
-// function reports, which mirrors the grant in shared/webOrderLoyaltyBonuses.ts.
+// function reports for each side, which mirror the grants in
+// shared/webOrderLoyaltyBonuses.ts — both the referrer and the friend earn them.
 export default function ReferralPortal() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +79,7 @@ export default function ReferralPortal() {
   }
 
   const starsPerReferral = Number(data.stars_per_referral || 0);
+  const starsForFriend = Number(data.stars_for_friend || 0);
   const referrals = data.referrals || [];
 
   return (
@@ -88,9 +90,11 @@ export default function ReferralPortal() {
           <h2 className="font-heading text-2xl text-obsidian-roast">Your Referral Code</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
-          {starsPerReferral > 0
-            ? `Get ${starsPerReferral} Stars when a friend places their first order with your code.`
-            : 'Share your code and earn Stars when a friend places their first order.'}
+          {starsPerReferral > 0 && starsForFriend > 0
+            ? `You earn ${starsPerReferral} Stars once your friend's first order completes, and they get ${starsForFriend} Stars on that first order.`
+            : starsPerReferral > 0
+              ? `Get ${starsPerReferral} Stars when a friend places their first order with your code.`
+              : 'Share your code and earn Stars when a friend places their first order.'}
         </p>
 
         {data.code ? (

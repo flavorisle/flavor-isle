@@ -319,7 +319,12 @@
     "referral_bonus_granted_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the 50-Star referral bonus was granted to this order's referrer (issue #83, Part A). Once set, the bonus never grants again for this order."
+      "description": "When the referral bonus was granted to this order's referrer (issue #83, Part A). Stamped only when the referrer's award actually landed, so once set that half never grants again for this order."
+    },
+    "referral_welcome_bonus_granted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the friend's own referral welcome bonus was granted for this order \u2014 the same REFERRAL_BONUS_STARS the referrer gets, so both sides of a referral are paid (Wesley, Nov 5 2026: \"So both get 100\"). Stamped independently of referral_bonus_granted_at and only when the friend's award actually landed; left unset when the friend has no Square loyalty account or the award failed, so a later run can retry."
     },
     "arrival_details": {
       "type": "object",
