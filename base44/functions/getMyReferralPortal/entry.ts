@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { referralCodeForPhone } from '../../shared/referral.ts';
+import { REFERRAL_BONUS_STARS } from '../../shared/webOrderLoyaltyBonuses.ts';
 
 // The customer's own referral portal (GitHub issue #95 follow-up).
 //
@@ -13,11 +14,8 @@ import { referralCodeForPhone } from '../../shared/referral.ts';
 // is stored to "create" it. With no phone on the profile there is no code yet,
 // and the portal says so.
 
-// Stars a referrer earns per friend whose first order completes. This mirrors
-// the grant in shared/webOrderLoyaltyBonuses.ts --points: 50 -- and is the only
-// number the portal quotes.
-const STARS_PER_REFERRAL = 50;
-
+// The reward quoted on the portal is the grant's own constant, imported so the
+// page can never drift from what the referrer is actually paid.
 const SHARE_BASE = 'https://flavor-isle.com/?ref=';
 
 export default async function (req: Request) {
@@ -81,7 +79,7 @@ export default async function (req: Request) {
     return Response.json({
       code: code || null,
       share_url: code ? `${SHARE_BASE}${code}` : '',
-      stars_per_referral: STARS_PER_REFERRAL,
+      stars_per_referral: REFERRAL_BONUS_STARS,
       stars_earned: rows.reduce((sum: number, row: any) => sum + Number(row.points_awarded || 0), 0),
       referrals,
     });

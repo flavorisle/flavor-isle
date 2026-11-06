@@ -65,7 +65,7 @@ export default function Checkout() {
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
-  // carried on the order payload so the referrer earns their 50 Stars.
+  // carried on the order payload so the referrer earns their referral bonus.
   const [referralCode] = useState(() => getActiveReferralCode());
   // Allergy notification — when ticked, the allergy text is required and goes to
   // the top of the order notes prefixed "ALLERGY:".

@@ -5,6 +5,12 @@ import { phoneDigits } from './normalizePhone.ts';
 const COMPLETED_STATUSES = new Set(['completed', 'delivered']);
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
+// Stars the referrer earns per friend whose first order completes (issue #83).
+// Raised from 50 to 100 by Wesley on Nov 5 2026. This constant is the only place
+// the amount lives — the grant, the audit row and the referral portal all read
+// it — and points already recorded on old ReferralBonus rows are untouched.
+export const REFERRAL_BONUS_STARS = 100;
+
 function isCompletedPaidWebOrder(order: any): boolean {
   return order?.direct_web_rewards_v2 === true &&
     COMPLETED_STATUSES.has(order.status) &&
@@ -16,10 +22,10 @@ function sameMember(order: any, phone: string, email: string): boolean {
     (!phone && email && order.customer_email?.toLowerCase() === email);
 }
 
-// Referral bonus (issue #83, Part A): 50 Stars to the referrer, once per
-// friend, ever. Returns the timestamp to stamp, or null when any guard says
-// no — a skipped grant leaves referral_bonus_granted_at unset so a later run
-// can retry.
+// Referral bonus (issue #83, Part A): REFERRAL_BONUS_STARS to the referrer,
+// once per friend, ever. Returns the timestamp to stamp, or null when any guard
+// says no — a skipped grant leaves referral_bonus_granted_at unset so a later
+// run can retry.
 async function grantReferralBonus(
   base44: any,
   order: any,
@@ -61,11 +67,11 @@ async function grantReferralBonus(
 
   await adjustLoyaltyPoints({
     accountId: account.id,
-    points: 50,
+    points: REFERRAL_BONUS_STARS,
     reason: 'Referral bonus',
     idempotencyKey: `referral:${referrerPhone}:${order.id}`,
   });
-  console.log(`Referral bonus: 50 Stars to ${referrerPhone} for order ${order.order_number}`);
+  console.log(`Referral bonus: ${REFERRAL_BONUS_STARS} Stars to ${referrerPhone} for order ${order.order_number}`);
   const awardedAt = new Date().toISOString();
 
   // Audit row for the referral portal (GitHub issue #95 follow-up). Additive
@@ -96,7 +102,7 @@ async function recordReferralBonus(base44: any, order: any, referrerPhone: strin
     referee_email: String(order.customer_email || '').trim().toLowerCase(),
     referee_order_id: order.id,
     referral_code: String(order.referral_code || '').trim().toUpperCase(),
-    points_awarded: 50,
+    points_awarded: REFERRAL_BONUS_STARS,
     awarded_at: awardedAt,
   });
 }
@@ -177,8 +183,9 @@ export async function grantCompletedWebOrderBonuses(
     if (granted) updates.loyalty_welcome_back_bonus_granted_at = new Date().toISOString();
   }
 
-  // Referral bonus — the friend's order completed, so their referrer earns 50
-  // Stars. Guests and signed-in customers alike (identity = order phone/email).
+  // Referral bonus — the friend's order completed, so their referrer earns
+  // REFERRAL_BONUS_STARS. Guests and signed-in customers alike (identity =
+  // order phone/email).
   if (order.referral_code && !order.referral_bonus_granted_at) {
     try {
       const referredAt = await grantReferralBonus(base44, order, orderHistory);
