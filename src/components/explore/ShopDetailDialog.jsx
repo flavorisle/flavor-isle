@@ -63,6 +63,7 @@ function MapReady() {
 function DetailBody({ shop }) {
   const [interiorFailed, setInteriorFailed] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
 
   const usingInterior = !!shop.interior_photo_url && !interiorFailed;
   const heroUrl = usingInterior ? shop.interior_photo_url : photoFailed ? '' : shop.photo || '';
@@ -88,21 +89,28 @@ function DetailBody({ shop }) {
 
   return (
     <>
-      <div className="relative aspect-[4/3] bg-[#F5E9D2] overflow-hidden rounded-t-xl">
-        {heroUrl ? (
-          <img
-            src={heroUrl}
-            alt={heroAlt}
-            className="w-full h-full object-cover"
-            onError={() => (usingInterior ? setInteriorFailed(true) : setPhotoFailed(true))}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
-            <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">
-              {shop.name}
-            </span>
-          </div>
-        )}
+      <div className="relative h-[190px] sm:h-[240px] bg-[#F5E9D2] overflow-hidden rounded-t-xl">
+        <button
+          type="button"
+          onClick={() => heroUrl && setZoomed(true)}
+          aria-label={`Enlarge photo of ${shop.name}`}
+          className="block w-full h-full p-0 m-0 border-0 bg-transparent cursor-zoom-in"
+        >
+          {heroUrl ? (
+            <img
+              src={heroUrl}
+              alt={heroAlt}
+              className="w-full h-full object-cover"
+              onError={() => (usingInterior ? setInteriorFailed(true) : setPhotoFailed(true))}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
+              <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">
+                {shop.name}
+              </span>
+            </div>
+          )}
+        </button>
         <span className="absolute left-3 top-3 inline-block text-[10.5px] font-black tracking-[.14em] uppercase text-white bg-[rgba(0,51,102,.88)] rounded-full px-[10px] py-[3px]">
           Inside
         </span>
@@ -249,6 +257,31 @@ function DetailBody({ shop }) {
           </div>
         )}
       </div>
+
+      {zoomed && heroUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${shop.name} photo`}
+          onClick={() => setZoomed(false)}
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+        >
+          <button
+            type="button"
+            onClick={() => setZoomed(false)}
+            aria-label="Close enlarged photo"
+            className="absolute right-4 top-4 rounded-full bg-white/90 text-[#003366] w-9 h-9 flex items-center justify-center text-[18px] font-black leading-none"
+          >
+            ×
+          </button>
+          <img
+            src={heroUrl}
+            alt={heroAlt}
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-full max-w-full object-contain rounded-lg"
+          />
+        </div>
+      )}
     </>
   );
 }
