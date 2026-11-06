@@ -154,7 +154,7 @@ export default async function (req: Request) {
 
     const rawBody = await req.text();
     if (!(await signatureValid(req.headers, rawBody))) {
-      return json({ ok: false, stage: 'signature', error: 'Invalid signature' });
+      return json({ ok: false, stage: 'signature', error: 'Invalid signature' }, 401);
     }
 
     const event = JSON.parse(rawBody || '{}');
