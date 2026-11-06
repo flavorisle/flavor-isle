@@ -4,6 +4,13 @@
 **Build:** `npm run build` → exit 0
 **Emails sent:** none. No test account created, no bonus granted, nothing refunded.
 
+> **Nov 5 2026, 11:19 PM CT — reward raised to 100 Stars.** Wesley changed the
+> referral payout from 50 to 100. The grant now reads one exported constant,
+> `REFERRAL_BONUS_STARS = 100`, in `base44/shared/webOrderLoyaltyBonuses.ts`, and
+> the portal imports that same constant so the copy and the payout cannot drift
+> apart. Stars already recorded on existing `ReferralBonus` rows were not touched
+> and nothing was backfilled. Every `50` below is updated to the current value.
+
 ## The real reward constants — read first, quoted verbatim
 
 `base44/shared/referral.ts` (how a code is made):
@@ -37,11 +44,11 @@ actually granted:
 ```ts
   await adjustLoyaltyPoints({
     accountId: account.id,
-    points: 50,
+    points: REFERRAL_BONUS_STARS,
     reason: 'Referral bonus',
     idempotencyKey: `referral:${referrerPhone}:${order.id}`,
   });
-  console.log(`Referral bonus: 50 Stars to ${referrerPhone} for order ${order.order_number}`);
+  console.log(`Referral bonus: ${REFERRAL_BONUS_STARS} Stars to ${referrerPhone} for order ${order.order_number}`);
 ```
 
 Its three guards, verbatim from the comments in that function:
@@ -61,11 +68,11 @@ Its three guards, verbatim from the comments in that function:
   // account means the bonus is skipped silently, never auto-enrolled.
 ```
 
-**The number the portal states:** `50` Stars, once per friend, to the referrer,
+**The number the portal states:** `100` Stars, once per friend, to the referrer,
 on the friend's first completed paid web order. There is **no referee-side Stars
 or discount constant anywhere in the live referral code** — the friend is not
 granted anything by `grantReferralBonus` — so the portal says only the referrer
-reward ("Get 50 Stars when a friend places their first order with your code")
+reward ("Get 100 Stars when a friend places their first order with your code")
 rather than inventing a second number. It also never promises the Stars as
 guaranteed: the four conditions above still decide whether they land.
 
@@ -98,7 +105,7 @@ guaranteed: the four conditions above still decide whether they land.
     },
     "points_awarded": {
       "type": "number",
-      "description": "Stars actually granted to the referrer for this friend (50 today, matching the grant in shared/webOrderLoyaltyBonuses.ts)."
+      "description": "Stars actually granted to the referrer for this friend (100 today, from REFERRAL_BONUS_STARS in shared/webOrderLoyaltyBonuses.ts). Older rows keep the value they recorded."
     },
     "awarded_at": {
       "type": "string",
@@ -140,7 +147,7 @@ Exact diff of `base44/shared/webOrderLoyaltyBonuses.ts`:
 @@ -65,7 +66,39 @@ async function grantReferralBonus(
      idempotencyKey: `referral:${referrerPhone}:${order.id}`,
    });
-   console.log(`Referral bonus: 50 Stars to ${referrerPhone} for order ${order.order_number}`);
+   console.log(`Referral bonus: ${REFERRAL_BONUS_STARS} Stars to ${referrerPhone} for order ${order.order_number}`);
 -  return new Date().toISOString();
 +  const awardedAt = new Date().toISOString();
 +
@@ -172,7 +179,7 @@ Exact diff of `base44/shared/webOrderLoyaltyBonuses.ts`:
 +    referee_email: String(order.customer_email || '').trim().toLowerCase(),
 +    referee_order_id: order.id,
 +    referral_code: String(order.referral_code || '').trim().toUpperCase(),
-+    points_awarded: 50,
++    points_awarded: REFERRAL_BONUS_STARS,
 +    awarded_at: awardedAt,
 +  });
  }
@@ -191,6 +198,7 @@ failed audit write cannot break the grant or skip
 ```ts
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { referralCodeForPhone } from '../../shared/referral.ts';
+import { REFERRAL_BONUS_STARS } from '../../shared/webOrderLoyaltyBonuses.ts';
 
 // The customer's own referral portal (GitHub issue #95 follow-up).
 //
@@ -204,10 +212,8 @@ import { referralCodeForPhone } from '../../shared/referral.ts';
 // is stored to "create" it. With no phone on the profile there is no code yet,
 // and the portal says so.
 
-// Stars a referrer earns per friend whose first order completes. This mirrors
-// the grant in shared/webOrderLoyaltyBonuses.ts --points: 50 -- and is the only
-// number the portal quotes.
-const STARS_PER_REFERRAL = 50;
+// The reward quoted on the portal is the grant's own constant, imported so the
+// page can never drift from what the referrer is actually paid.
 
 const SHARE_BASE = 'https://flavor-isle.com/?ref=';
 
@@ -292,7 +298,7 @@ Notes on the contract:
   with the existing `referralCodeForPhone` helper; nothing new is stored. No
   phone on the profile → `code: null`, `share_url: ''`, and the component shows
   the "add your phone" state.
-- **`stars_per_referral: 50`** is returned so the component quotes one
+- **`stars_per_referral: 100`** is returned so the component quotes one
   server-side number instead of hardcoding it (additive field).
 - **Rows** are the caller's: their current code, plus rows carrying their email
   from an earlier phone number.
@@ -562,7 +568,7 @@ imported by this page.
   `createSquareWebCheckout` and `createWixWebCheckout`.
 - Bonus amounts and conditions: the only change in
   `grantCompletedWebOrderBonuses` / `grantReferralBonus` is the audit insert and
-  the single `awardedAt` timestamp; 50 Stars, the three guards, the idempotency
+  the single `awardedAt` timestamp; 100 Stars, the three guards, the idempotency
   key and the write order are byte-identical.
 - Every email: no template, sender or send path was changed, and nothing new is
   emailed. The referral mention in the existing confirmation flow is untouched.
@@ -572,8 +578,11 @@ imported by this page.
 ## Verification
 
 - `npm run build` → exit 0.
-- `getMyReferralPortal` deployed and answered a POST in 476 ms:
-  `{"code":"84UG8IGW","share_url":"https://flavor-isle.com/?ref=84UG8IGW","stars_per_referral":50,"stars_earned":0,"referrals":[]}`
+- `getMyReferralPortal` deployed and answered a POST:
+  `{"code":"84UG8IGW","share_url":"https://flavor-isle.com/?ref=84UG8IGW","stars_per_referral":100,"stars_earned":0,"referrals":[]}`
+  — re-run after the constant change; `stars_per_referral` is now `100`, read from
+  `REFERRAL_BONUS_STARS`, which also proves the shared import resolves in the
+  deployed function.
   — a real 8-character code derived from the caller's own profile phone, zero
   referrals because nothing has been earned yet, and no customer data besides.
 - No email was sent, no bonus granted, no test account created, and no
