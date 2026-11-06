@@ -1,0 +1,63 @@
+{
+  "name": "ReferralBonus",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "referrer_email": {
+      "type": "string",
+      "description": "Email of the customer who earned the referral bonus, matched from their customer profile by the referrer's phone at the moment the bonus was granted. Empty when no profile matches the phone; the row is keyed by referral_code either way."
+    },
+    "referee_email": {
+      "type": "string",
+      "description": "Email of the friend whose completed order triggered the bonus. Never shown to another customer: the referral portal returns only a first name."
+    },
+    "referee_order_id": {
+      "type": "string",
+      "description": "Id of the friend's completed order that triggered the bonus. Read by the referral portal to show the order number."
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "The referral code the friend ordered with, uppercase. This is the referrer's own code, so it is what the referral portal queries on."
+    },
+    "points_awarded": {
+      "type": "number",
+      "description": "Stars actually granted to the referrer for this friend (50 today, matching the grant in shared/webOrderLoyaltyBonuses.ts)."
+    },
+    "awarded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the referrer's Stars were granted. The referral portal lists these newest first."
+    }
+  },
+  "required": [
+    "referee_order_id",
+    "referral_code",
+    "points_awarded",
+    "awarded_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

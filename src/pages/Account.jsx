@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake } from 'lucide-react';
+import { User, ShoppingBag, Phone, MapPin, Mail, Edit2, Save, X, Car, RotateCcw, ChevronDown, ChevronUp, LogOut, LogIn, Bell, Heart, Gift, Zap, TrendingUp, Trash2, AlertTriangle, ClipboardList, CreditCard, Cake, Share2 } from 'lucide-react';
 import OrderLookup from '@/components/OrderLookup';
 
 import CommunicationPreferences from '@/components/account/CommunicationPreferences';
@@ -16,8 +16,8 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import OrderStatusTracker from '@/components/OrderStatusTracker';
 import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
-import LoyaltySummaryCard from '@/components/LoyaltySummaryCard';
 import StarRewardsPanel from '@/components/StarRewardsPanel';
+import ReferralPortal from '@/components/account/ReferralPortal';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/lib/AuthContext';
 import { optimizedImageUrl } from '@/lib/utils';
@@ -144,7 +144,7 @@ function LoggedInAccount({ user, logout }) {
   // lands directly on the relevant tab. Unknown/missing values fall back to
   // 'orders' exactly as before.
   const [searchParams] = useSearchParams();
-  const VALID_TABS = ['orders', 'track', 'rewards', 'favorites', 'profile'];
+  const VALID_TABS = ['orders', 'track', 'rewards', 'favorites', 'referral', 'profile'];
   const initialTab = (() => {
     const t = searchParams.get('tab');
     return t && VALID_TABS.includes(t) ? t : 'orders';
@@ -356,6 +356,7 @@ function LoggedInAccount({ user, logout }) {
             { key: 'orders', label: 'My Orders', icon: ShoppingBag },
             { key: 'track', label: 'Track Order', icon: ClipboardList },
             { key: 'favorites', label: 'Favorites', icon: Heart },
+            { key: 'referral', label: 'Referral', icon: Share2 },
             { key: 'rewards', label: 'Rewards', icon: Gift },
             { key: 'profile', label: 'Profile & Preferences', icon: User },
           ].map(({ key, label, icon: Icon }) => (
@@ -377,10 +378,6 @@ function LoggedInAccount({ user, logout }) {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-        {tab === 'orders' && (
-          <LoyaltySummaryCard status={starStatus} loading={starLoading} onOpenRewards={() => navigate('/rewards')} />
-        )}
-
         {tab === 'orders' && (
           <div className="space-y-6">
             {orders.length === 0 ? (
@@ -422,6 +419,10 @@ function LoggedInAccount({ user, logout }) {
             </div>
             <OrderLookup />
           </div>
+        )}
+
+        {tab === 'referral' && (
+          <ReferralPortal />
         )}
 
         {tab === 'rewards' && (

@@ -1,5 +1,6 @@
 import { adjustLoyaltyPoints, grantLoyaltyPointsByPhone, searchLoyaltyAccountByPhone, toE164Phone } from './squareLoyalty.ts';
 import { referralPhoneFromCode } from './referral.ts';
+import { phoneDigits } from './normalizePhone.ts';
 
 const COMPLETED_STATUSES = new Set(['completed', 'delivered']);
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
@@ -65,7 +66,39 @@ async function grantReferralBonus(
     idempotencyKey: `referral:${referrerPhone}:${order.id}`,
   });
   console.log(`Referral bonus: 50 Stars to ${referrerPhone} for order ${order.order_number}`);
-  return new Date().toISOString();
+  const awardedAt = new Date().toISOString();
+
+  // Audit row for the referral portal (GitHub issue #95 follow-up). Additive
+  // only: the Stars above are already granted, so a failed insert must never
+  // break the grant or stop the timestamp from being stamped.
+  try {
+    await recordReferralBonus(base44, order, referrerPhone, awardedAt);
+  } catch (auditError: any) {
+    console.error(`Referral audit row failed for order ${order.order_number}:`, auditError?.message || auditError);
+  }
+  return awardedAt;
+}
+
+// One ReferralBonus row per bonus actually granted. The referrer's email comes
+// from their customer profile matched by phone; the row is keyed by
+// referral_code regardless, so the portal finds it either way.
+async function recordReferralBonus(base44: any, order: any, referrerPhone: string, awardedAt: string) {
+  let referrerEmail = '';
+  const digits = phoneDigits(referrerPhone);
+  if (digits) {
+    const profiles = await base44.asServiceRole.entities.CustomerProfile
+      .filter({ phone: { $regex: digits, $options: 'i' } })
+      .catch(() => []);
+    referrerEmail = String(profiles?.[0]?.email || '').trim().toLowerCase();
+  }
+  await base44.asServiceRole.entities.ReferralBonus.create({
+    referrer_email: referrerEmail,
+    referee_email: String(order.customer_email || '').trim().toLowerCase(),
+    referee_order_id: order.id,
+    referral_code: String(order.referral_code || '').trim().toUpperCase(),
+    points_awarded: 50,
+    awarded_at: awardedAt,
+  });
 }
 
 export async function grantCompletedWebOrderBonuses(
