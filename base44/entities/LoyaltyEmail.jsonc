@@ -13,9 +13,10 @@
         "digest",
         "birthday",
         "day14_showcase",
-        "day45_nudge"
+        "day45_nudge",
+        "cart"
       ],
-      "description": "Which loyalty automation sent this email: winback (30-day lapsed customer), digest (monthly points summary), birthday (annual birthday treat), day14_showcase (issue #37 step 6 \u2014 three items the customer has not ordered, 14 days after their first order), day45_nudge (issue #37 step 6 \u2014 45 days after a first order with no repeat order). Every row doubles as the once-per-customer claim for its type."
+      "description": "Which loyalty automation sent this email: winback (30-day lapsed customer), digest (monthly points summary), birthday (annual birthday treat), day14_showcase (issue #37 step 6 \u2014 three items the customer has not ordered, 14 days after their first order), day45_nudge (issue #37 step 6 \u2014 45 days after a first order with no repeat order), cart (cart-abandonment reminder, issue #160 \u2014 one per cart and a hard 7-day ceiling). Every row doubles as the once-per-customer claim for its type."
     },
     "customer_email": {
       "type": "string",

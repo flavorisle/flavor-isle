@@ -33,6 +33,22 @@ const readSession = (key, fallback) => {
 const dropComboLines = (items) =>
   (items || []).filter(i => !i?.comboConfigId && !i?.comboComponents);
 
+// Stable serialization of what the customer actually chose: item id, quantity,
+// selected modifier ids and the order type. Hydration always builds a NEW array
+// (same contents), so comparing object identity made every page load look like
+// an edit and rewrote cart.savedAt — which re-triggered the reminder email
+// (issue #160). Two carts with the same contents serialize identically.
+const cartSnapshot = (items, type) =>
+  JSON.stringify({
+    type,
+    lines: (items || [])
+      .map(i => `${i.productId || i.id}|${i.quantity}|${(i.selectedModifiers || [])
+        .map(m => m.id || m.name)
+        .sort()
+        .join(',')}`)
+      .sort(),
+  });
+
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => dropComboLines(readSession('cartItems', [])));
   const [orderType, setOrderType] = useState(() => readSession('orderType', 'pickup')); // pickup | delivery | dine_in
@@ -72,6 +88,9 @@ export function CartProvider({ children }) {
   // keep the sessionStorage behavior above.
   const profileRef = useRef(null); // { email, id } once the profile is loaded
   const hydratedRef = useRef(false);
+  // Snapshot of the cart already saved to the profile — a load that changes
+  // nothing must not write, so savedAt stays put (issue #160).
+  const persistedSnapshotRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,10 +108,16 @@ export function CartProvider({ children }) {
         // Only hydrate from the server when this browser doesn't already have a
         // cart in progress, so we never clobber an order the user is actively building.
         const localHasItems = (readSession('cartItems', []) || []).length > 0;
+        let hydratedItems = dropComboLines(readSession('cartItems', []));
+        let hydratedType = readSession('orderType', 'pickup');
         if (saved && Array.isArray(saved.cartItems) && saved.cartItems.length > 0 && !localHasItems) {
-          setCartItems(dropComboLines(saved.cartItems));
-          setOrderType(saved.orderType || 'pickup');
+          hydratedItems = dropComboLines(saved.cartItems);
+          hydratedType = saved.orderType || 'pickup';
+          setCartItems(hydratedItems);
+          setOrderType(hydratedType);
         }
+        // What is already persisted: this page load must not look like an edit.
+        persistedSnapshotRef.current = cartSnapshot(hydratedItems, hydratedType);
       } catch { /* profile not available yet */ }
       finally {
         if (!cancelled) hydratedRef.current = true;
@@ -104,6 +129,9 @@ export function CartProvider({ children }) {
   // Debounced save back to the profile so other devices pick up the latest cart.
   useEffect(() => {
     if (!hydratedRef.current || !profileRef.current) return;
+    const snapshot = cartSnapshot(cartItems, orderType);
+    // Nothing actually changed (e.g. just hydration) — leave savedAt alone.
+    if (snapshot === persistedSnapshotRef.current) return;
     const timer = setTimeout(async () => {
       try {
         const payload = { cartItems, orderType, savedAt: Date.now() };
@@ -115,6 +143,7 @@ export function CartProvider({ children }) {
           const created = await base44.entities.CustomerProfile.create({ email, name: me?.full_name || email, cart: payload });
           if (created?.id) profileRef.current.id = created.id;
         }
+        persistedSnapshotRef.current = snapshot;
       } catch { /* offline or quota — sessionStorage still has it */ }
     }, 1500);
     return () => clearTimeout(timer);

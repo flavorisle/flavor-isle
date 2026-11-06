@@ -77,6 +77,10 @@
       "type": "string",
       "format": "date-time",
       "description": "When the last cart-abandonment reminder email was sent. Compared against cart.savedAt so a cart modified after a reminder becomes eligible for another reminder after one more hour."
+    },
+    "cart_reminder_cart_key": {
+      "type": "string",
+      "description": "Fingerprint of the exact cart a reminder was last sent for (sorted itemId|quantity|modifier ids). A later run only sends when the saved cart's fingerprint differs, so one abandoned cart gets one reminder (issue #160)."
     }
   },
   "required": [

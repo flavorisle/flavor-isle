@@ -2,7 +2,7 @@
 // automated loyalty email. A customer who ordered in the last 24 hours, or who
 // already received an automated marketing email in the last 7 days, is skipped
 // so the thank-you email is the only thing they hear from us after an order.
-const MARKETING_TYPES = ['birthday', 'winback', 'digest', 'showcase', 'nudge'];
+const MARKETING_TYPES = ['birthday', 'winback', 'digest', 'showcase', 'nudge', 'cart'];
 
 export async function canSendMarketingEmail(base44: any, email?: string) {
   if (!email) return { ok: false, reason: 'no email address' };
