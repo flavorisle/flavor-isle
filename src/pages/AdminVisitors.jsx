@@ -6,20 +6,47 @@ import VisitorActivityRow from '@/components/admin/VisitorActivityRow';
 
 const VIEW_LIMIT = 500;
 
+// Owner and crew (issue #161): their own browsing is never counted as a visitor.
+const STAFF_EMAILS = ['wesleyrbooker1@gmail.com', 'wesley@flavor-isle.com', 'ashleybooker29@gmail.com'];
+const STAFF_DOMAINS = ['@flavorisle.com', '@flavor-isle.com'];
+
+const isStaffEmail = (email, adminEmails) => {
+  const e = String(email || '').toLowerCase().trim();
+  if (!e) return false;
+  return STAFF_EMAILS.includes(e) || STAFF_DOMAINS.some((d) => e.endsWith(d)) || adminEmails.includes(e);
+};
+
+// Every row falls into exactly one bucket. Rows written before the classifier
+// existed carry no flag, so they are legacy — never human, never bot.
+const viewKind = (view, adminEmails) => {
+  if (view.classified !== true) return 'legacy';
+  if (view.is_bot === true) return 'bot';
+  return isStaffEmail(view.user_email, adminEmails) ? 'staff' : 'human';
+};
+
 // Groups page views into visitors: a signed-in visitor is one visitor across every
-// device, a guest is grouped by address.
-function groupVisitors(views) {
+// device, a guest is grouped by visit id (falling back to address), a bot by the
+// rule it matched.
+function groupViews(views, adminEmails) {
   const grouped = new Map();
 
   views.forEach((view) => {
-    const key = view.user_email
-      ? `user:${view.user_email.toLowerCase()}`
-      : `ip:${view.ip || 'unknown'}`;
+    const kind = viewKind(view, adminEmails);
+    let key;
+    if (kind === 'bot') key = `bot:${view.ip || 'unknown'}|${view.bot_reason || ''}`;
+    else if (view.user_email) key = `${kind}:user:${view.user_email.toLowerCase()}`;
+    else if (kind === 'human' && view.session_id) key = `human:sid:${view.session_id}`;
+    else key = `${kind}:ip:${view.ip || 'unknown'}`;
+
     if (!grouped.has(key)) {
       grouped.set(key, {
         key,
+        kind,
         isAccount: Boolean(view.user_email),
-        label: view.user_name || view.user_email || view.ip || 'Unknown visitor',
+        label: kind === 'bot'
+          ? (view.visitor_ua || view.user_agent || 'Automated request')
+          : (view.user_name || view.user_email || view.ip || 'Unknown visitor'),
+        botReason: kind === 'bot' ? (view.bot_reason || '') : '',
         ip: view.ip || 'unknown',
         views: [],
       });
@@ -37,16 +64,30 @@ function groupVisitors(views) {
   }));
 }
 
+const TABS = [
+  { key: 'humans', label: 'Humans' },
+  { key: 'bots', label: 'Bots' },
+  { key: 'everything', label: 'Everything' },
+];
+
 export default function AdminVisitors() {
   const [views, setViews] = useState([]);
+  const [adminEmails, setAdminEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState('humans');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.VisitorPageView.filter({}, { sort: '-created_date', limit: VIEW_LIMIT });
+      const [page, users] = await Promise.all([
+        base44.entities.VisitorPageView.filter({}, { sort: '-created_date', limit: VIEW_LIMIT }),
+        base44.entities.User.list().catch(() => []),
+      ]);
       setViews(page?.items || []);
+      setAdminEmails((users || [])
+        .filter((u) => u?.role === 'admin' && u?.email)
+        .map((u) => u.email.toLowerCase().trim()));
     } catch (err) {
       console.error('Failed to load visitor page views:', err);
     } finally {
@@ -56,28 +97,40 @@ export default function AdminVisitors() {
 
   useEffect(() => { load(); }, [load]);
 
-  const visitors = groupVisitors(views);
+  // Counted only from classified rows: a human is classified and not a bot.
+  const humanViews = views.filter((v) => v.classified === true && v.is_bot !== true);
+  const botViews = views.filter((v) => v.classified === true && v.is_bot === true);
+  const grouped = groupViews(views, adminEmails);
+  const humanVisitors = groupViews(humanViews, adminEmails).filter((v) => v.kind === 'human');
+  const signedInCount = new Set(
+    humanViews.filter((v) => v.user_email).map((v) => v.user_email.toLowerCase())
+  ).size;
+
+  const tabRows = tab === 'humans'
+    ? humanVisitors
+    : tab === 'bots'
+      ? grouped.filter((v) => v.kind === 'bot')
+      : grouped;
+
   const term = search.trim().toLowerCase();
   const shown = term
-    ? visitors.filter((visitor) =>
-        [visitor.label, visitor.ip, visitor.lastPath, ...visitor.views.map((v) => v.path)]
+    ? tabRows.filter((visitor) =>
+        [visitor.label, visitor.ip, visitor.lastPath, visitor.botReason, ...visitor.views.map((v) => v.path)]
           .join(' ')
           .toLowerCase()
           .includes(term)
       )
-    : visitors;
-
-  const accountCount = visitors.filter((v) => v.isAccount).length;
+    : tabRows;
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <AdminNav />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h1 className="font-heading text-3xl text-obsidian-roast">Visitors</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Every visitor's address, the account they are signed in as, the page they are on now, and every page they opened.
+              Real people by default. Crawlers, link previews and prerender probes are recorded separately, so the count you read is people.
               Showing the most recent {VIEW_LIMIT} page views.
             </p>
           </div>
@@ -86,16 +139,35 @@ export default function AdminVisitors() {
           </button>
         </div>
 
-        <div className="flex gap-2 flex-wrap mb-4 text-xs font-heading">
+        <div className="flex gap-2 flex-wrap mb-3 text-xs font-heading">
           <span className="px-3 py-1.5 rounded-full bg-white border border-border text-obsidian-roast">
-            {visitors.length} visitors
+            {humanVisitors.length} human visitors
           </span>
           <span className="px-3 py-1.5 rounded-full bg-white border border-border text-obsidian-roast">
-            {accountCount} signed in
+            {signedInCount} signed in
           </span>
           <span className="px-3 py-1.5 rounded-full bg-white border border-border text-obsidian-roast">
-            {views.length} page views
+            {humanViews.length} human page views
           </span>
+          <span className="px-3 py-1.5 rounded-full bg-white border border-border text-muted-foreground">
+            {botViews.length} bot requests filtered
+          </span>
+        </div>
+
+        <div className="flex gap-2 flex-wrap mb-4">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 rounded-full text-xs font-heading transition-colors ${
+                tab === t.key
+                  ? 'bg-midnight-cherry text-white'
+                  : 'bg-white border border-border text-obsidian-roast hover:bg-midnight-cherry/5'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         <div className="relative mb-4">
@@ -115,7 +187,9 @@ export default function AdminVisitors() {
           </div>
         ) : shown.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p className="font-heading text-lg">No visitors recorded yet</p>
+            <p className="font-heading text-lg">
+              {tab === 'bots' ? 'No bots recorded yet' : tab === 'humans' ? 'No human visitors recorded yet' : 'Nothing recorded yet'}
+            </p>
             <p className="text-sm mt-1">Page views start appearing here as soon as someone opens the site.</p>
           </div>
         ) : (

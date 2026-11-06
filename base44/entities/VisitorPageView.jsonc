@@ -29,6 +29,35 @@
     "user_agent": {
       "type": "string",
       "description": "Browser user-agent string, kept so two guests behind the same address can still be told apart."
+    },
+    "is_bot": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when logPageView matched an automation rule. Bots stay in the log but are never counted as visitors."
+    },
+    "bot_reason": {
+      "type": "string",
+      "description": "The first classification rule that matched, e.g. 'Googlebot', 'webdriver', 'no viewport' or 'no user agent'. Empty for a human."
+    },
+    "classified": {
+      "type": "boolean",
+      "description": "True on every row logPageView wrote after the issue #161 classifier. Rows without it predate it and are shown only under Everything as Unclassified."
+    },
+    "visitor_ua": {
+      "type": "string",
+      "description": "The user-agent the visitor's own browser reported, which a server-side caller cannot fake without also failing the other rules."
+    },
+    "viewport_w": {
+      "type": "number",
+      "description": "Window inner width reported by the visitor's browser; 0 on a server-side call."
+    },
+    "viewport_h": {
+      "type": "number",
+      "description": "Window inner height reported by the visitor's browser; 0 on a server-side call."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Random id created once per visit in the visitor's browser, used to group a guest's page views into one visit."
     }
   },
   "required": [
