@@ -133,6 +133,22 @@ export function reviewCtaHtml(orderId?: string) {
 
 // "What to expect" block — links to the live busyness guide so customers
 // waiting on their order can see the current kitchen level and wait times.
+// Lock-screen order alerts block — the one CTA in the confirmation email that
+// turns a phone into an order tracker without an app store install. iPhone
+// needs the site on the Home Screen first, which the landing page walks them
+// through step by step.
+export function orderAlertsHtml(orderNumber?: string) {
+  const path = orderNumber
+    ? `/order-alerts?order=${encodeURIComponent(String(orderNumber))}`
+    : '/order-alerts';
+  const url = trackedLink(path, 'order_alerts');
+  return `<div style="background:#1A3A5C;border-radius:12px;padding:18px 20px;margin:0 0 24px;">
+    <p style="margin:0 0 6px;color:#F5EDD6;font-family:'Oswald',Arial,sans-serif;font-size:14px;letter-spacing:1.5px;">WATCH IT FROM YOUR LOCK SCREEN</p>
+    <p style="margin:0 0 14px;color:#ffffff;font-size:14px;line-height:1.55;">Get a ping on your phone when we start cooking, and again the moment your order is ready. One tap, no app to download.</p>
+    <a href="${url}" style="display:inline-block;background:#F5A623;color:#1A3A5C;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:11px 22px;border-radius:999px;font-size:13px;font-weight:bold;">TURN ON ORDER ALERTS &rarr;</a>
+  </div>`;
+}
+
 export function whatToExpectHtml() {
   return `
   <div style="margin:18px 0 8px;border-radius:14px;padding:18px 20px;background:#EAF1F8;border:1px solid #C9D8E8;">

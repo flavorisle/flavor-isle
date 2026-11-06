@@ -35,6 +35,7 @@ import AccountNew from './pages/Account.jsx';
 
 const Checkout = lazy(() => import('./pages/Checkout'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const OrderAlerts = lazy(() => import('./pages/OrderAlerts'));
 const Contact = lazy(() => import('./pages/Contact'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminMenu = lazy(() => import('./pages/AdminMenu'));
@@ -215,6 +216,7 @@ const AuthenticatedApp = () => {
       <Route path="/gallery" element={<Gallery />} />
       <Route path="/social-reviews" element={<SocialReviews />} />
       <Route path="/order-status" element={<OrderStatus />} />
+      <Route path="/order-alerts" element={<OrderAlerts />} />
       <Route path="/community-news" element={<CommunityNews />} />
       <Route path="/flyer" element={<Flyer />} />
       <Route path="/i65-exit-38" element={<I65Exit38 />} />

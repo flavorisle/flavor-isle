@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignUpNudge from '@/components/SignUpNudge';
-import PushNotificationPrompt from '@/components/PushNotificationPrompt';
+import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
 import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
 import PostOrderFeedback from '@/components/PostOrderFeedback';
 import CheckoutSmsOptIn from '@/components/CheckoutSmsOptIn';
@@ -224,9 +224,10 @@ export default function OrderConfirmation() {
 
         <SignUpNudge variant="featured" />
 
-        {/* Push opt-in — best moment to ask, right after they place an order */}
+        {/* Lock-screen order alerts — best moment to ask, right after they
+            place an order (guests confirm with the email on the receipt). */}
         <div className="mt-6 text-left">
-          <PushNotificationPrompt />
+          <OrderAlertsOptIn orderNumber={orderNumber || undefined} />
         </div>
       </div>
 

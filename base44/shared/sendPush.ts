@@ -67,3 +67,22 @@ export async function broadcastPush(base44, payload) {
   const subs = await base44.asServiceRole.entities.PushSubscription.list();
   return sendPushToSubscriptions(base44, subs, payload);
 }
+// Records an order-milestone push in PushLog so a send can be verified later
+// (sent count, recipient count, failures) instead of guessed at.
+export async function logPushResult(base44, { title, body, url, result, recipientCount, note }) {
+  const errors = (result?.errors || []).length;
+  try {
+    await base44.asServiceRole.entities.PushLog.create({
+      title,
+      body,
+      url,
+      sent_count: result?.sent || 0,
+      recipient_count: recipientCount ?? 0,
+      error_count: errors,
+      status: (result?.sent || 0) > 0 ? (errors > 0 ? 'partial' : 'sent') : 'failed',
+      description: note || '',
+    });
+  } catch (logErr) {
+    console.warn('PushLog create failed:', logErr.message);
+  }
+}

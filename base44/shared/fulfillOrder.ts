@@ -1,9 +1,9 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { sendOrderStatusSms } from './sendOrderStatusSms.ts';
-import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser } from './sendOrderEmails.ts';
+import { brandedEmailHtml, merchPromoHtml, foodHeroHtml, starsEarnedHtml, accountCtaHtml, isRegisteredUser, orderAlertsHtml } from './sendOrderEmails.ts';
 import { accrueForOrder, redeemReward, toE164Phone } from './squareLoyalty.ts';
 import { referralCodeForPhone } from './referral.ts';
-import { sendPushToEmail } from './sendPush.ts';
+import { sendPushToEmail, logPushResult } from './sendPush.ts';
 import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
@@ -111,7 +111,9 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
         ${referralCode ? referralBlockHtml(referralCode) : ''}
 
-        <p style="color:#141414;font-size:17px;margin:0 0 10px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
+        <p style="color:#141414;font-size:17px;margin:0 0 18px;">You're all set — we'll hit you up the second it's ready. 🔔</p>
+
+        ${orderAlertsHtml(order.order_number)}
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
         ${await foodHeroHtml(base44)}
         ${loyalty && loyalty.pointsEarned > 0 ? starsEarnedHtml(loyalty) : ''}
@@ -474,14 +476,25 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
     }
   }
 
-  // Push notification — only for new pushes (tied to the Square push)
+  // Lock-screen order alert #1 — "we got your order". Only for new pushes
+  // (tied to the Square push), and only reaches devices that opted in.
   if (squarePushed && order.customer_email) {
+    const pushBody = `We've got order #${order.order_number || ''} and the crew is on it. We'll ping you again the moment it's ready.`;
+    const pushTitle = `Order #${order.order_number || ''} received`;
     try {
-      await sendPushToEmail(base44, order.customer_email, {
-        title: '🍔 Order locked in!',
-        body: `Hey ${order.customer_name || 'fam'}, order #${order.order_number || ''} is confirmed — the crew's firing up the grill. We'll ping you as it moves along!`,
+      const result = await sendPushToEmail(base44, order.customer_email, {
+        title: pushTitle,
+        body: pushBody,
         url: '/order-status',
         tag: `order-${order.id}`,
+      });
+      await logPushResult(base44, {
+        title: pushTitle,
+        body: pushBody,
+        url: '/order-status',
+        result,
+        recipientCount: (result?.sent || 0) + (result?.errors || []).length,
+        note: `order ${order.order_number} confirmed milestone`,
       });
     } catch (pushErr) {
       console.warn('Confirmed push failed:', pushErr.message);

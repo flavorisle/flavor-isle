@@ -23,6 +23,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
+import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -580,6 +581,11 @@ export default function Checkout() {
                     )}
                   </div>
                 </div>
+
+                {/* Lock-screen order alerts. Signed-in customers get the
+                    one-tap button; iPhone guests get the two Home Screen taps
+                    here, then the one-tap button once their order exists. */}
+                <OrderAlertsOptIn variant="compact" />
 
           </div>
 

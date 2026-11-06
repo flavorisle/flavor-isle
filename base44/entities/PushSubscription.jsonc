@@ -21,6 +21,14 @@
     "keys": {
       "type": "object",
       "description": "Browser push keys { p256dh, auth } needed to encrypt the payload"
+    },
+    "order_number": {
+      "type": "string",
+      "description": "Order number this device was subscribed from (guests prove ownership with it)"
+    },
+    "platform": {
+      "type": "string",
+      "description": "ios or other \u2014 where the subscription came from"
     }
   },
   "required": [

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { sendOrderStatusSms } from '../../shared/sendOrderStatusSms.ts';
 import { settleCashPickupPayment } from '../../shared/settleCashPickupPayment.ts';
-import { sendPushToEmail } from '../../shared/sendPush.ts';
+import { sendPushToEmail, logPushResult } from '../../shared/sendPush.ts';
 import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 import { accrueForOrder, hasAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { grantCompletedWebOrderBonuses } from '../../shared/webOrderLoyaltyBonuses.ts';
@@ -259,14 +259,26 @@ export default async function(req) {
       if (!customerEmail || isPlaceholderEmail) continue;
 
       if (newStatus === 'ready') {
+        const pushTitle = order.order_type === 'delivery'
+          ? `Order #${orderNum} is on its way`
+          : `Order #${orderNum} is ready for pickup`;
+        const pushBody = order.order_type === 'delivery'
+          ? `It just left the store. See you in a few minutes.`
+          : `Come on in — we'll have it hot at the counter.`;
         try {
-          await sendPushToEmail(base44, customerEmail, {
-            title: '✅ Order ready!',
-            body: order.order_type === 'delivery'
-              ? `Order #${orderNum} is ready and on its way!`
-              : `Order #${orderNum} is ready for pickup. See you soon!`,
+          const result = await sendPushToEmail(base44, customerEmail, {
+            title: pushTitle,
+            body: pushBody,
             url: '/order-status',
             tag: `order-${order.id}`,
+          });
+          await logPushResult(base44, {
+            title: pushTitle,
+            body: pushBody,
+            url: '/order-status',
+            result,
+            recipientCount: (result?.sent || 0) + (result?.errors || []).length,
+            note: `order ${order.order_number} ready milestone`,
           });
           notified++;
         } catch (pushError) {
