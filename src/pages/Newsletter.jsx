@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { Mail, CheckCircle2, Loader2, Sparkles, Newspaper } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -95,6 +96,15 @@ export default function Newsletter() {
             </form>
           )}
         </div>
+      </section>
+
+      <section className="max-w-xl mx-auto px-4 sm:px-6 pb-10">
+        <Link
+          to="/newsletters"
+          className="inline-flex items-center gap-2 font-heading text-sm text-patina-mint hover:text-midnight-cherry transition-colors"
+        >
+          <Newspaper size={16} /> Past issues
+        </Link>
       </section>
 
       <NewsletterIssue />

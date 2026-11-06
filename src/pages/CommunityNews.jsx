@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Newspaper } from 'lucide-react';
+import { Newspaper, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -42,6 +43,12 @@ export default function CommunityNews() {
         <p className="text-sm sm:text-base text-muted-foreground font-body mt-3 max-w-xl mx-auto">
           Community events, restaurant updates, and local partnerships — straight from Smiths Grove.
         </p>
+        <Link
+          to="/newsletters"
+          className="inline-flex items-center gap-1.5 mt-4 font-heading text-sm text-patina-mint hover:text-midnight-cherry transition-colors"
+        >
+          <Mail size={15} /> Past newsletters
+        </Link>
         {isAdmin && (
           <div className="mt-5">
             <NewsComposer onPosted={loadPosts} />
