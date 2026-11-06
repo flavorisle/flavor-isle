@@ -1,16 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import { base44 } from '@/api/base44Client';
+import ShopDetailDialog from '@/components/explore/ShopDetailDialog';
 
 // Public media base for the Smiths Grove photos (issue #153).
 const M = 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/';
 
 // The poster order, stop 1 through 16 (issue #153). Wesley approved this exact
 // sequence so the page can be read beside the printed walking map.
-const SHOPS = [
+const FALLBACK_SHOPS = [
   {
     tag: 'Landmark Building',
     name: 'The Roost',
@@ -177,7 +179,7 @@ const SHOPS = [
 ];
 
 // The three out-of-town stops that anchor the Exit 38 trip (issue #153).
-const SURROUNDING = [
+const FALLBACK_SURROUNDING = [
   {
     tag: 'Corvette · Bowling Green',
     name: 'National Corvette Museum',
@@ -208,7 +210,7 @@ const SURROUNDING = [
   },
 ];
 
-const FLAVOR = [
+const FALLBACK_FLAVOR = [
   {
     tag: 'Winery',
     name: 'Bluegrass Vineyard',
@@ -229,7 +231,7 @@ const FLAVOR = [
   },
 ];
 
-const ATTRACTIONS = [
+const FALLBACK_ATTRACTIONS = [
   {
     tag: 'Park',
     name: 'Ed Spear Park',
@@ -259,9 +261,63 @@ const ATTRACTIONS = [
   },
 ];
 
-function StopCard({ stop }) {
+// Each section falls back to its approved hand-built cards until Admin →
+// Explore Shops fills that section, so the page is never empty.
+const FALLBACKS = {
+  shops: FALLBACK_SHOPS,
+  surrounding: FALLBACK_SURROUNDING,
+  flavor: FALLBACK_FLAVOR,
+  attractions: FALLBACK_ATTRACTIONS,
+};
+
+// One ExploreShop row, shaped exactly like the props a card already takes, with
+// the panel's contact and walking fields carried alongside.
+function mapShop(row) {
+  const photo = row.photo_url || null;
+  return {
+    id: row.anchor_id || undefined,
+    tag: row.tag,
+    name: row.name,
+    address: row.address || null,
+    handles: Array.isArray(row.instagram) ? row.instagram : [],
+    photo,
+    alt: row.photo_alt || row.name,
+    copy: row.copy || '',
+    detail: row.detail || '',
+    // A photo tile with no photo would render a broken image.
+    tile: row.tile === 'photo' && !photo ? 'mono' : row.tile || 'photo',
+    cta: row.cta_to ? { to: row.cta_to, label: row.cta_label } : undefined,
+    link: row.link_to ? { to: row.link_to, label: row.link_label } : undefined,
+    distance: row.distance || null,
+    map: row.maps_query || null,
+    hours: row.hours || '',
+    phone: row.phone || '',
+    website: row.website || '',
+    interior_photo_url: row.interior_photo_url || '',
+    interior_photo_alt: row.interior_photo_alt || '',
+    interior_caption: row.interior_caption || '',
+    lat: row.lat,
+    lng: row.lng,
+    walk_miles: row.walk_miles,
+    walk_minutes: row.walk_minutes,
+    walk_steps: Array.isArray(row.walk_steps) ? row.walk_steps : [],
+    walk_polyline: row.walk_polyline || '',
+  };
+}
+
+function StopCard({ stop, onOpen }) {
   return (
-    <article className="bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(stop)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(stop);
+        }
+      }}
+      className="cursor-pointer bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
       {stop.tile === 'photo' && (
         <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
           <img src={stop.photo} alt={stop.alt} loading="lazy" className="w-full h-full object-cover" />
@@ -294,6 +350,8 @@ function StopCard({ stop }) {
                 href={`https://www.instagram.com/${handle}/`}
                 target="_blank"
                 rel="noopener"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
                 className="text-[11.5px] font-black tracking-[.06em] text-[#6a7f93] hover:text-midnight-cherry"
               >
                 @{handle}
@@ -307,6 +365,8 @@ function StopCard({ stop }) {
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.address + ' Smiths Grove KY 42171')}`}
             target="_blank"
             rel="noopener"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             {stop.address}
           </a>
@@ -314,6 +374,8 @@ function StopCard({ stop }) {
         {stop.cta && (
           <Link
             to={stop.cta.to}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
             className="inline-block w-max mt-1 bg-midnight-cherry text-white font-extrabold tracking-[.06em] uppercase text-[12px] px-4 py-2 rounded-md hover:bg-[#a82a00]"
           >
             {stop.cta.label}
@@ -324,11 +386,20 @@ function StopCard({ stop }) {
   );
 }
 
-function SurroundCard({ stop }) {
+function SurroundCard({ stop, onOpen }) {
   return (
     <article
       id={stop.id}
-      className="scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]"
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(stop)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(stop);
+        }
+      }}
+      className="cursor-pointer scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]"
     >
       {stop.photo ? (
         <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
@@ -348,7 +419,12 @@ function SurroundCard({ stop }) {
         )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
           {stop.link && (
-            <Link to={stop.link.to} className="text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast">
+            <Link
+              to={stop.link.to}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              className="text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast"
+            >
               {stop.link.label}
             </Link>
           )}
@@ -357,6 +433,8 @@ function SurroundCard({ stop }) {
               href={stop.map}
               target="_blank"
               rel="noopener"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
               className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] hover:text-midnight-cherry"
             >
               Map
@@ -369,6 +447,33 @@ function SurroundCard({ stop }) {
 }
 
 export default function ExploreSmithsGrove() {
+  // Live rows from Admin → Explore Shops, grouped by section. A section with no
+  // rows yet keeps its approved fallback cards, and any fetch failure leaves the
+  // whole page exactly as it shipped.
+  const [stops, setStops] = useState(FALLBACKS);
+  const [activeStop, setActiveStop] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    base44.entities.ExploreShop.list('sort_order')
+      .then((rows) => {
+        if (!live) return;
+        const grouped = { shops: [], surrounding: [], flavor: [], attractions: [] };
+        (rows || []).forEach((row) => {
+          if (!row || row.is_active === false || !grouped[row.section]) return;
+          grouped[row.section].push(mapShop(row));
+        });
+        setStops({
+          shops: grouped.shops.length ? grouped.shops : FALLBACK_SHOPS,
+          surrounding: grouped.surrounding.length ? grouped.surrounding : FALLBACK_SURROUNDING,
+          flavor: grouped.flavor.length ? grouped.flavor : FALLBACK_FLAVOR,
+          attractions: grouped.attractions.length ? grouped.attractions : FALLBACK_ATTRACTIONS,
+        });
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+
   // The router scrolls to the hash before this lazily-mounted page exists, so
   // deep links like /explore-smiths-grove#bucees need a second, patient pass.
   useEffect(() => {
@@ -443,8 +548,8 @@ export default function ExploreSmithsGrove() {
           Park once and stroll. Nearly every shop and eatery on the Smiths Grove map sits along one walkable block — listed here in the same order as the map.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
-          {SHOPS.map((stop) => (
-            <StopCard key={stop.name} stop={stop} />
+          {stops.shops.map((stop) => (
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
           ))}
         </div>
       </section>
@@ -459,8 +564,8 @@ export default function ExploreSmithsGrove() {
           Buc-ee’s sits right here at Exit 38. The Corvette Museum and Mammoth Cave are a straight shot down or up I-65 — each one has its own page here.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
-          {SURROUNDING.map((stop) => (
-            <SurroundCard key={stop.name} stop={stop} />
+          {stops.surrounding.map((stop) => (
+            <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
           ))}
         </div>
       </section>
@@ -475,8 +580,8 @@ export default function ExploreSmithsGrove() {
           Kentucky-made sips just up the road. Make an afternoon of it.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
-          {FLAVOR.map((stop) => (
-            <StopCard key={stop.name} stop={stop} />
+          {stops.flavor.map((stop) => (
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
           ))}
         </div>
       </section>
@@ -491,8 +596,8 @@ export default function ExploreSmithsGrove() {
           Green space, race day, and old brick. All in town, all in one exit.
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
-          {ATTRACTIONS.map((stop) => (
-            <StopCard key={stop.name} stop={stop} />
+          {stops.attractions.map((stop) => (
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
           ))}
         </div>
       </section>
@@ -548,6 +653,8 @@ export default function ExploreSmithsGrove() {
           </div>
         </div>
       </section>
+
+      <ShopDetailDialog shop={activeStop} onClose={() => setActiveStop(null)} />
 
       <Footer />
       <CartDrawer />
