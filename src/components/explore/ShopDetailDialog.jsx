@@ -130,7 +130,7 @@ function DetailBody({ shop }) {
           <DialogTitle className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast">
             {shop.name}
           </DialogTitle>
-          <DialogDescription className="m-0 text-[14.5px] font-semibold text-[#41556a]">
+          <DialogDescription className="m-0 whitespace-pre-line text-[14.5px] font-semibold text-[#41556a]">
             {shop.detail || shop.copy}
           </DialogDescription>
         </DialogHeader>
