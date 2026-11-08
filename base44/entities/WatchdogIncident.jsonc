@@ -1,0 +1,90 @@
+{
+  "name": "WatchdogIncident",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Stable identity of the condition this row tracks, e.g. sync_heartbeat, twilio, receipt_missing, square_sync_<signature>. One open row per key, so a repeat run updates the existing incident instead of filing a second one."
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "TIER_1",
+        "TIER_2"
+      ],
+      "enumColors": [
+        "red",
+        "yellow"
+      ],
+      "description": "TIER_1 only when a named paying customer is worse off within the hour (unalerted paid order, card failure, missing receipt, unnotified customer). Everything else is TIER_2."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "cleared"
+      ],
+      "enumColors": [
+        "red",
+        "green"
+      ],
+      "default": "open",
+      "description": "open = still being seen by the watchdog; cleared = the condition went away under that check's own clearing rule."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line, human-readable description of what is wrong right now."
+    },
+    "first_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this incident was opened."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last run that still saw the condition. Signature umbrellas clear once this is 24 quiet hours old."
+    },
+    "last_alert_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When Wesley was emailed about this incident. An open incident is never emailed twice."
+    },
+    "cleared_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the watchdog cleared this incident."
+    },
+    "detail": {
+      "type": "string",
+      "description": "Readable evidence for the incident (order numbers, error signatures, record ids). Text incidents end with an 'ids:' line so the next runs can clear them when those texts actually deliver."
+    }
+  },
+  "required": [
+    "key",
+    "tier",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

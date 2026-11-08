@@ -1,0 +1,74 @@
+{
+  "name": "WatchdogRun",
+  "type": "object",
+  "properties": {
+    "ran_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this sweep ran. The previous run's checks_run tells the sync-heartbeat check whether two consecutive runs have failed, and ran_at is the date guard that keeps the daily summary to one a day."
+    },
+    "checks_run": {
+      "type": "string",
+      "description": "Which checks ran and which flagged, e.g. 'ran:syncHeartbeat,...,twilioProbe; flagged:twilio'. The flagged list is what the next run reads to confirm a second consecutive heartbeat failure."
+    },
+    "opened": {
+      "type": "string",
+      "description": "Comma-separated incident keys this run opened. Empty when nothing new started."
+    },
+    "cleared": {
+      "type": "string",
+      "description": "Comma-separated incident keys this run cleared. Empty when nothing recovered."
+    },
+    "email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this run sent any email at all. A dry run always writes false."
+    },
+    "email_kind": {
+      "type": "string",
+      "enum": [
+        "none",
+        "alert",
+        "recovery",
+        "daily"
+      ],
+      "enumColors": [
+        "gray",
+        "red",
+        "green",
+        "blue"
+      ],
+      "default": "none",
+      "description": "none = no email; alert = new TIER_1 incident(s); recovery = TIER_1 incident(s) cleared; daily = the 9 AM summary. A row with daily doubles as the once-a-day guard for the summary."
+    },
+    "note": {
+      "type": "string",
+      "description": "Plain-language account of the run: what was seen, what stayed quiet, what was held back (informational push findings, pending second heartbeat confirmation)."
+    }
+  },
+  "required": [
+    "ran_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
