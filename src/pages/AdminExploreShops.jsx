@@ -59,6 +59,7 @@ const EMPTY = {
   distance: '',
   anchor_id: '',
   amenities: [],
+  building: '',
   sort_order: '',
   is_active: true,
 };
@@ -89,6 +90,7 @@ function toForm(rec) {
     distance: rec.distance || '',
     anchor_id: rec.anchor_id || '',
     amenities: Array.isArray(rec.amenities) ? rec.amenities : [],
+    building: rec.building || '',
     sort_order: rec.sort_order === undefined || rec.sort_order === null ? '' : String(rec.sort_order),
     is_active: rec.is_active !== false,
   };
@@ -233,6 +235,7 @@ export default function AdminExploreShops() {
         distance: form.distance.trim(),
         anchor_id: form.anchor_id.trim(),
         amenities: form.amenities,
+        building: form.building.trim(),
         sort_order: form.sort_order === '' ? records.length : Number(form.sort_order),
         is_active: form.is_active,
       };
@@ -490,6 +493,14 @@ export default function AdminExploreShops() {
                 <Label className="mb-1.5 block">Anchor id</Label>
                 <Input value={form.anchor_id} onChange={(e) => setField('anchor_id', e.target.value)} placeholder="bucees" />
               </div>
+            </div>
+
+            <div>
+              <Label className="mb-1.5 block">In building</Label>
+              <Input value={form.building} onChange={(e) => setField('building', e.target.value)} placeholder="The Roost" />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Type the name of the building card this shop sits inside, exactly as the card reads. The two cards link to each other.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">

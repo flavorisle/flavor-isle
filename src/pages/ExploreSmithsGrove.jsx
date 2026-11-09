@@ -273,10 +273,30 @@ const FALLBACKS = {
 
 // One ExploreShop row, shaped exactly like the props a card already takes, with
 // the panel's contact and walking fields carried alongside.
+// A card's anchor when the record has no anchor_id typed in: the name, folded
+// to something a URL and getElementById can both carry.
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Same 88px offset the deep-link handler uses, so a link lands where a hash would.
+function scrollToStop(id) {
+  if (!id) return;
+  const target = document.getElementById(id);
+  if (target) {
+    window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - 88), behavior: 'smooth' });
+  }
+}
+
 function mapShop(row) {
   const photo = row.photo_url || null;
   return {
-    id: row.anchor_id || undefined,
+    id: row.anchor_id || slugify(row.name) || undefined,
     tag: row.tag,
     amenities: Array.isArray(row.amenities) ? row.amenities : [],
     name: row.name,
@@ -285,6 +305,7 @@ function mapShop(row) {
     photo,
     alt: row.photo_alt || row.name,
     copy: row.copy || '',
+    building: row.building || '',
     detail: row.detail || '',
     // A photo tile with no photo would render a broken image.
     tile: row.tile === 'photo' && !photo ? 'mono' : row.tile || 'photo',
@@ -310,6 +331,7 @@ function mapShop(row) {
 function StopCard({ stop, onOpen }) {
   return (
     <article
+      id={stop.id}
       role="button"
       tabIndex={0}
       onClick={() => onOpen(stop)}
@@ -319,7 +341,7 @@ function StopCard({ stop, onOpen }) {
           onOpen(stop);
         }
       }}
-      className="cursor-pointer bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
+      className="cursor-pointer scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
       {stop.tile === 'photo' && (
         <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
           <img src={stop.photo} alt={stop.alt} loading="lazy" className="w-full h-full object-cover" />
@@ -352,6 +374,40 @@ function StopCard({ stop, onOpen }) {
         </div>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
         <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
+        {stop.tenants && stop.tenants.length > 0 && (
+          <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">
+            Shops inside:{' '}
+            {stop.tenants.map((tenant, index) => (
+              <span key={tenant.id || tenant.name}>
+                {index > 0 && ' \u00b7 '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    scrollToStop(tenant.id);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2"
+                >
+                  {tenant.name}
+                </button>
+              </span>
+            ))}
+          </p>
+        )}
+        {stop.building_name && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              scrollToStop(stop.building_id);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="w-max text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast pt-0.5"
+          >
+            Inside {stop.building_name}
+          </button>
+        )}
         {stop.handles && stop.handles.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {stop.handles.map((handle) => (
@@ -472,6 +528,21 @@ export default function ExploreSmithsGrove() {
         (rows || []).forEach((row) => {
           if (!row || row.is_active === false || !grouped[row.section]) return;
           grouped[row.section].push(mapShop(row));
+        });
+        // A shop that names its building gets the building's anchor and address,
+        // and the building card collects its shops. Matched by name inside the
+        // shops section, so a wrong name simply links nothing.
+        const byName = {};
+        grouped.shops.forEach((shop) => {
+          if (shop.name) byName[shop.name.trim().toLowerCase()] = shop;
+        });
+        grouped.shops.forEach((shop) => {
+          const home = shop.building ? byName[shop.building.trim().toLowerCase()] : null;
+          if (!home || home === shop) return;
+          shop.building_id = home.id;
+          shop.building_name = home.name;
+          shop.building_address = home.address || '';
+          home.tenants = (home.tenants || []).concat([{ id: shop.id, name: shop.name }]);
         });
         setStops({
           shops: grouped.shops.length ? grouped.shops : FALLBACK_SHOPS,
@@ -664,7 +735,14 @@ export default function ExploreSmithsGrove() {
         </div>
       </section>
 
-      <ShopDetailDialog shop={activeStop} onClose={() => setActiveStop(null)} />
+      <ShopDetailDialog
+        shop={activeStop}
+        onClose={() => setActiveStop(null)}
+        onJump={(id) => {
+          setActiveStop(null);
+          setTimeout(() => scrollToStop(id), 140);
+        }}
+      />
 
       <Footer />
       <CartDrawer />

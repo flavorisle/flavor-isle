@@ -61,7 +61,7 @@ function MapReady() {
   return null;
 }
 
-function DetailBody({ shop }) {
+function DetailBody({ shop, onJump }) {
   const [interiorFailed, setInteriorFailed] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -152,12 +152,38 @@ function DetailBody({ shop }) {
           </div>
         )}
 
-            {shop.amenities?.includes('Restroom') && (
-              <p className="flex items-center gap-1.5 m-0 text-[12px] font-black tracking-[.08em] uppercase text-[#6a7f93]">
-                <RestroomIcon size={13} strokeWidth={2.6} aria-hidden="true" />
-                Restroom available
-              </p>
-            )}
+        {shop.amenities?.includes('Restroom') && (
+          <p className="flex items-center gap-1.5 m-0 text-[12px] font-black tracking-[.08em] uppercase text-[#6a7f93]">
+            <RestroomIcon size={13} strokeWidth={2.6} aria-hidden="true" />
+            Restroom available
+          </p>
+        )}
+
+        {shop.building_name && (
+          <p className="m-0 text-[13px] text-[#41556a]">
+            <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] mr-1.5">Inside</span>
+            {shop.building_name}
+            {shop.building_address ? `, ${shop.building_address}` : ''}.
+          </p>
+        )}
+
+        {shop.tenants && shop.tenants.length > 0 && (
+          <p className="m-0 text-[13px] text-[#41556a]">
+            <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] mr-1.5">Shops inside</span>
+            {shop.tenants.map((tenant, index) => (
+              <span key={tenant.id || tenant.name}>
+                {index > 0 && ' \u00b7 '}
+                <button
+                  type="button"
+                  onClick={() => onJump && onJump(tenant.id)}
+                  className="font-semibold text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2"
+                >
+                  {tenant.name}
+                </button>
+              </span>
+            ))}
+          </p>
+        )}
 
         {shop.hours && (
           <p className="m-0 text-[13px] text-[#41556a]">
@@ -295,14 +321,14 @@ function DetailBody({ shop }) {
 }
 
 // One shop's full story, opened from a card on /explore-smiths-grove.
-export default function ShopDetailDialog({ shop, onClose }) {
+export default function ShopDetailDialog({ shop, onClose, onJump }) {
   return (
     <Dialog open={!!shop} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
         className="!p-0 !gap-0 w-[calc(100vw-2rem)] max-w-md max-h-[85vh] overflow-y-auto rounded-xl sm:rounded-xl"
         aria-describedby={undefined}
       >
-        {shop && <DetailBody key={shop.id || shop.name} shop={shop} />}
+        {shop && <DetailBody key={shop.id || shop.name} shop={shop} onJump={onJump} />}
       </DialogContent>
     </Dialog>
   );
