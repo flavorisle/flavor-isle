@@ -37,7 +37,7 @@
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
 import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
-import { isBundleLine, bundleDiscountForLines, FAMILY_BUNDLE_INCLUDED_OPTION_IDS } from './familyBundle.ts';
+import { bundleForLine, bundleDiscountForLines } from './familyBundle.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 import { getMenuSettingRecord } from './storeState.ts';
 import { isSmashieShake } from './findSmashiePrize.ts';
@@ -209,7 +209,7 @@ export async function verifyOrderPricing(base44: any, opts: {
   let freeShakeUnitPrice = 0;
   // Per bundle-line included money, grouped so each added bundle pays its fixed
   // price once. The discount is recomputed from the catalog below.
-  const bundleLines: Array<{ bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
+  const bundleLines: Array<{ bundleId?: string; bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
     const sqId = item.square_item_id || item.catalog_object_id;
@@ -224,6 +224,9 @@ export async function verifyOrderPricing(base44: any, opts: {
 
     let lineUnitPrice: number;
     let bundleExtras = 0;
+    // Which bundle (School Night Lifesaver / Weekend Party Pack) this line
+    // belongs to, when it belongs to one. Null for ordinary lines.
+    let bundle: any = null;
     if (menuItem) {
       // Authoritative base + authoritative catalog modifier prices. A catalog
       // item's modifiers MUST reference a real catalog option id — Deluxe
@@ -244,10 +247,11 @@ export async function verifyOrderPricing(base44: any, opts: {
       // Family bundle line: the priced options the bundle does NOT already
       // include (jalapeños, extra-level lettuce/tomato, drink flavor shots,
       // cake toppings) are the customer's paid extras and stay on top.
-      if (isBundleLine(item)) {
+      bundle = bundleForLine(item);
+      if (bundle) {
         bundleExtras = (item.selectedModifiers || []).reduce((sum: number, sm: any) => {
           if (!sm) return sum;
-          if (FAMILY_BUNDLE_INCLUDED_OPTION_IDS.has(sm.id)) return sum;
+          if (bundle.includedOptionIds.has(sm.id)) return sum;
           return sum + (sm.id && sm.id in modPriceMap ? modPriceMap[sm.id] : 0);
         }, 0);
       }
@@ -292,8 +296,8 @@ export async function verifyOrderPricing(base44: any, opts: {
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
 
-    if (isBundleLine(item)) {
-      bundleLines.push({ bundleGroup: item.bundleGroup, includedUnitPrice: round2(lineUnitPrice - bundleExtras), quantity: qty });
+    if (bundle) {
+      bundleLines.push({ bundleId: item.bundleId, bundleGroup: item.bundleGroup, includedUnitPrice: round2(lineUnitPrice - bundleExtras), quantity: qty });
     }
 
     // A bundle line is never also Happy-Hour discounted — the bundle price is
@@ -301,7 +305,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     // resolved by name uses the catalog item's own id here, so an eligible drink
     // still gets the discount the customer was shown.
     const effectiveSqId = sqId || menuItem?.square_item_id || '';
-    if (hhActive && pct > 0 && effectiveSqId && hhIds.has(effectiveSqId) && !isBundleLine(item)) {
+    if (hhActive && pct > 0 && effectiveSqId && hhIds.has(effectiveSqId) && !bundle) {
       serverHappyHour += lineTotal * pct;
     }
   }

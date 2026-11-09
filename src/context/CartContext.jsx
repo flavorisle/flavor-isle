@@ -213,7 +213,10 @@ export function CartProvider({ children }) {
           return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
         }
       }
-      return [...prev, { ...item, id, quantity: 1 }];
+      // initialQuantity lets a bundle add a multi-unit line (the Weekend Party
+      // Pack's twelve minis) as ONE line; everything else is a single unit.
+      const qty = Math.max(1, Math.floor(Number(item.initialQuantity) || 1));
+      return [...prev, { ...item, id, quantity: qty }];
     });
   }, []);
 

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { formatItemModifiers } from '../../shared/ticketFormat.ts';
+import { bundleLabelFor } from '../../shared/familyBundle.ts';
 import { isInternalCaller } from '../../shared/internalRelay.ts';
 import { normalizeEmail, analyzeEmail } from '../../shared/emailValidation.ts';
 
@@ -20,7 +21,7 @@ export default async function(req) {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, pickupMethod, vehicle } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, bundleId, pickupMethod, vehicle } = body;
 
     // Issue #159 — same typo guard as the web checkout. Nothing is created or
     // pushed to Square with an address whose ending cannot receive mail.
@@ -353,7 +354,11 @@ export default async function(req) {
       // shown as a POS sub-line (ad-hoc extras + the Deluxe label) are folded
       // into the name, so nothing prints twice.
       const displayMods = formatItemModifiers(item).filter((m: string) => !alreadyOnTicket.has(m));
-      const name = displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item');
+      // A bundle line prints its bundle name in front of the item, so the
+      // kitchen ticket reads "Weekend Party Pack — Mini Cheeseburger" while the
+      // line stays a normal catalog line. Never a discount or bundle price here.
+      const bundlePrefix = item.bundleName ? `${item.bundleName} — ` : '';
+      const name = bundlePrefix + (displayMods.length ? `${item.name || 'Item'} (${displayMods.join(', ')})` : (item.name || 'Item'));
 
       // base_price_money carries the FULL item price — every modifier upcharge
       // is already folded into it. Catalog modifiers are sent at $0 so the
@@ -410,7 +415,7 @@ export default async function(req) {
     if (bundleDiscount > 0) {
       orderDiscounts.push({
         uid: 'family-bundle',
-        name: 'School Night Lifesaver Bundle',
+        name: bundleLabelFor(bundleId) || 'School Night Lifesaver Bundle',
         type: 'FIXED_AMOUNT',
         amount_money: { amount: Math.round(bundleDiscount * 100), currency: 'USD' },
         scope: 'ORDER',

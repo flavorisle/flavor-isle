@@ -40,7 +40,7 @@ function Editable({ as: Tag = 'span', value, onCommit, className, placeholder, s
   );
 }
 
-export default function PrintableMenu({ sections, config, onEditItem, onEditSection, consolidatedSections }) {
+export default function PrintableMenu({ sections, config, onEditItem, onEditSection, consolidatedSections, packCard }) {
   const { title, subtitle, footer, columns, showDescriptions, showLogo, accountTitle, accountInfo } = config;
 
   return (
@@ -54,6 +54,19 @@ export default function PrintableMenu({ sections, config, onEditItem, onEditSect
           <h1 className="font-heading text-4xl tracking-widest leading-none">{title}</h1>
           {subtitle && <p className="text-[11px] tracking-[0.3em] mt-2 uppercase">{subtitle}</p>}
         </div>
+
+        {/* Weekend Party Pack — its own card above the sections, when the pack
+            is live. Name, price and contents, like any other item. */}
+        {packCard && (
+          <div className="mb-6 border-2 border-black px-3 py-2" style={{ breakInside: 'avoid' }}>
+            <div className="flex items-baseline gap-1">
+              <span className="font-heading text-xl tracking-wider uppercase">{packCard.name}</span>
+              <span className="flex-1 border-b border-dotted border-gray-400 translate-y-[-2px] min-w-[8px]" />
+              <span className="font-semibold text-[13px]">${Number(packCard.price).toFixed(2)}</span>
+            </div>
+            <p className="text-[10px] text-gray-700 leading-snug mt-1">{packCard.blurb}</p>
+          </div>
+        )}
 
         {/* Sections — CSS multi-column. Sections flow naturally across columns;
             only individual items avoid breaking mid-item. */}

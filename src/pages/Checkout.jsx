@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Bike, Utensils, AlertCircle, Clock, Pencil } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toCents, fromCents, salesTaxFor } from '@/lib/tax';
-import { getFamilyBundleDiscount } from '@/lib/familyBundle';
+import { getFamilyBundleDiscount, bundleLabelForCart } from '@/lib/familyBundle';
 import { SHAKE_CATEGORIES } from '@/lib/findSmashie';
 
 import { base44 } from '@/api/base44Client';
@@ -761,7 +761,7 @@ export default function Checkout() {
                 )}
                 {bundleDiscount > 0 && (
                   <div className="flex justify-between text-midnight-cherry font-semibold">
-                    <span>School Night Lifesaver bundle</span><span>−${bundleDiscount.toFixed(2)}</span>
+                    <span>{bundleLabelForCart(cartItems)}</span><span>−${bundleDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {rewardDiscount > 0 && (

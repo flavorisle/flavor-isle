@@ -13,6 +13,7 @@ import PrintableBuildCards from '@/components/admin/PrintableBuildCards';
 import useSquareBuildCards from '@/hooks/useSquareBuildCards';
 import { deriveBuildCards, loadCardOverrides, saveCardOverrides, orderCards, paperSpec, sheetSettings, PAPER_OPTIONS } from '@/lib/buildCards';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
+import { WEEKEND_PARTY_PACK, WEEKEND_PARTY_PACK_ENABLED } from '@/config/weekendPartyPack';
 
 const STORAGE_KEY = 'flavorisle_print_menu_v2';
 
@@ -296,6 +297,15 @@ export default function AdminPrintMenu() {
 
   const printSections = sections.filter(s => s.items.length > 0 || consolidatedSections[s.key]);
 
+  // The Weekend Party Pack prints as its own card above the sections — name,
+  // price and what's in it, the same way any other item reads. Hidden unless
+  // the pack's feature flag is on.
+  const packCard = WEEKEND_PARTY_PACK_ENABLED === true ? {
+    name: WEEKEND_PARTY_PACK.title,
+    price: WEEKEND_PARTY_PACK.price,
+    blurb: WEEKEND_PARTY_PACK.subtitle,
+  } : null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-vanilla-malt">
@@ -426,6 +436,7 @@ export default function AdminPrintMenu() {
                 onEditItem={setOverride}
                 onEditSection={setSectionTitle}
                 consolidatedSections={consolidatedSections}
+                packCard={packCard}
               />
             )}
           </div>

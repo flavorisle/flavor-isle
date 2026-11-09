@@ -89,6 +89,10 @@ export default async function (req: Request) {
     }
 
     const orderNumber = Date.now().toString().slice(-6);
+    // Which bundle this order bought, if any — the cart lines say so
+    // (school-night-lifesaver / weekend-party-pack). Recorded on the order so
+    // the Square discount is labelled for the right bundle.
+    const orderBundleId = items.map((i: any) => i.bundleId).find(Boolean) || '';
 
     // Customer link (issue #96, section A) — the same normalized phone + profile
     // id every other order-creation path writes.
@@ -116,7 +120,7 @@ export default async function (req: Request) {
         payment_provider: 'square',
         normalized_phone: customerLink.normalized_phone,
         customer_id: customerLink.customer_id,
-        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [], allergyNote: i.allergyNote || '' })),
+        items: items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity, image_url: i.image_url || '', selectedModifiers: i.selectedModifiers || [], catalog_object_id: i.catalog_object_id || '', square_item_id: i.square_item_id || '', isBuildShake: !!i.isBuildShake, deluxeLabel: i.deluxeLabel || '', deluxeToppings: i.deluxeToppings || [], allergyNote: i.allergyNote || '', bundleId: i.bundleId || '', bundleName: i.bundleName || '' })),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery_fee: pricing.deliveryFee,
@@ -124,7 +128,7 @@ export default async function (req: Request) {
         discount: pricing.discount,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
-        bundle_id: (pricing.bundleDiscount || 0) > 0 ? 'school-night-lifesaver' : '',
+        bundle_id: (pricing.bundleDiscount || 0) > 0 ? (orderBundleId || 'school-night-lifesaver') : '',
         redemption_id: redemptionId || '',
         loyalty_opt_in: loyaltyOptIn === true,
         referral_code: normalizeReferralCode(referralCode),

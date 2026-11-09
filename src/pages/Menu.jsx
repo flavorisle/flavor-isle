@@ -30,6 +30,7 @@ import MadeFreshBanner from '@/components/MadeFreshBanner';
 import RestaurantGuruBadge from '@/components/RestaurantGuruBadge';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import FamilyBundleCard from '@/components/family/FamilyBundleCard';
+import WeekendPartyPackCard from '@/components/packs/WeekendPartyPackCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
@@ -279,6 +280,11 @@ export default function Menu() {
                 hidden, and no MenuSetting field is touched. Renders nothing
                 while FAMILY_BUNDLE_ENABLED is false. */}
             <FamilyBundleCard items={items} />
+            {/* Weekend Party Pack — its own card above every category, next to
+                the family bundle. No category is moved, renamed, hidden or
+                reordered, and no MenuSetting field is touched. Renders nothing
+                while WEEKEND_PARTY_PACK_ENABLED is false. */}
+            <WeekendPartyPackCard items={items} />
             <CravingsBox items={items} />
           </>
         )}

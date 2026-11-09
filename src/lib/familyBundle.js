@@ -7,6 +7,16 @@
 // recomputes them from the catalog on the server.
 
 import { FAMILY_BUNDLE, FAMILY_BUNDLE_ENABLED } from '@/config/familyBundle';
+import { WEEKEND_PARTY_PACK } from '@/config/weekendPartyPack';
+
+// Every bundle's fixed price, keyed by the bundleId its cart lines carry. The
+// Weekend Party Pack rides the same discount math as the School Night
+// Lifesaver: lines keep their a-la-carte prices and each bundle group pays its
+// own fixed price once, so paid extras stay on top.
+const BUNDLE_PRICES = {
+  [FAMILY_BUNDLE.id]: FAMILY_BUNDLE.price,
+  [WEEKEND_PARTY_PACK.id]: WEEKEND_PARTY_PACK.price,
+};
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { flattenModifierWithNested, nestedSelectionsExtra } from '@/components/NestedModifierLists';
 
@@ -143,7 +153,7 @@ export function includedUnitPrice(line) {
 }
 
 export function isBundleLine(line) {
-  return line?.bundleId === FAMILY_BUNDLE.id;
+  return !!line?.bundleId && BUNDLE_PRICES[line.bundleId] != null;
 }
 
 // How much comes off the cart for the bundle lines it contains. Lines added
@@ -152,11 +162,21 @@ export function getFamilyBundleDiscount(cartItems) {
   const groups = {};
   for (const line of cartItems || []) {
     if (!isBundleLine(line)) continue;
-    const key = line.bundleGroup || FAMILY_BUNDLE.id;
-    groups[key] = (groups[key] || 0) + includedUnitPrice(line) * (Number(line.quantity) || 1);
+    const key = line.bundleGroup || line.bundleId;
+    const group = (groups[key] ||= { bundleId: line.bundleId, included: 0 });
+    group.included += includedUnitPrice(line) * (Number(line.quantity) || 1);
   }
-  const discount = Object.values(groups).reduce((sum, included) => sum + Math.max(0, included - FAMILY_BUNDLE.price), 0);
+  const discount = Object.values(groups)
+    .reduce((sum, group) => sum + Math.max(0, group.included - (BUNDLE_PRICES[group.bundleId] || 0)), 0);
   return round2(discount);
+}
+
+// The label the checkout total shows for the bundle discount.
+export function bundleLabelForCart(cartItems) {
+  const ids = new Set((cartItems || []).map((line) => line?.bundleId).filter(Boolean));
+  if (ids.has(WEEKEND_PARTY_PACK.id)) return WEEKEND_PARTY_PACK.title;
+  if (ids.has(FAMILY_BUNDLE.id)) return 'School Night Lifesaver bundle';
+  return 'Bundle savings';
 }
 
 // How much of a slot's selection is paid extras (charged on top of $37.74).
