@@ -1,5 +1,6 @@
 import React from 'react';
 import { Zap, TrendingUp, Star, Phone, Gift } from 'lucide-react';
+import StarTierProgress from '@/components/rewards/StarTierProgress';
 
 // Rewards tab — shows live Square "Flavor Isle Star Rewards" balance, lifetime
 // stars, accrual rule, and the reward tiers configured in the in-store Square
@@ -18,6 +19,10 @@ export default function StarRewardsPanel({ status, loading, onAddPhone }) {
   const lifetime = status?.lifetimePoints || 0;
   const tiers = status?.rewardTiers || [];
   const earnText = status?.earnText;
+  // Cheapest reward still out of reach — what the progress bar counts toward.
+  const nextTier = tiers
+    .filter((t) => Number(t.points) > balance)
+    .sort((a, b) => Number(a.points) - Number(b.points))[0] || null;
 
   if (!status || status.programStatus !== 'ACTIVE') {
     return (
@@ -69,6 +74,13 @@ export default function StarRewardsPanel({ status, loading, onAddPhone }) {
           </div>
         </div>
       </div>
+
+      {nextTier && (
+        <div className="card-diner p-6">
+          <h3 className="font-heading text-lg text-obsidian-roast mb-3">Next Reward</h3>
+          <StarTierProgress balance={balance} nextTier={nextTier} />
+        </div>
+      )}
 
       {status.needsPhone && (
         <div className="card-diner p-5 flex items-center gap-3 border-2 border-amber-200 bg-amber-50">
