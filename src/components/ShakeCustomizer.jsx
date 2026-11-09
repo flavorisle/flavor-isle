@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { resolveFlavorName, resolveFlavorEmoji, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
+import { resolveFlavorName, flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import FlavorPillButton, { getFlavorLevel, getFlavorNestedPrice } from '@/components/FlavorPillButton';
 import ShakeFlavorControl, { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
 import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
@@ -241,12 +241,10 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
                 {allExtraOpts.map((opt) => {
                   const selected = extraFlavors.some((s) => s.id === opt.id);
                   const name = resolveFlavorName(opt.id, opt.name, config);
-                  const emoji = resolveFlavorEmoji(opt.id, config);
                   return (
                     <FlavorPillButton
                       key={opt.id}
                       mod={{ id: opt.id, name, price: opt.price, child_modifier_lists: opt.child_modifier_lists }}
-                      leading={<span className="text-base leading-none">{emoji}</span>}
                       isSelected={selected}
                       onToggle={() => {
                         // Toggling the flavor off clears its Lite/Extra level too.
