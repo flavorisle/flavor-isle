@@ -1,0 +1,43 @@
+# Flavor Isle
+
+> Flavor Isle is a family-owned burger and shake diner at 103 N Main St, Smiths Grove, KY 42171, about 0.7 miles off I-65 Exit 38. Serving since 1964. Hand-patted burgers, fresh-cut fries and thick shakes, eaten at the counter, in the dining room or from the walk-up window. Delivery is paused: pickup, curbside and dine-in only.
+
+## Key facts
+
+- Name: Flavor Isle
+- Address: 103 N Main St, Smiths Grove, KY 42171
+- Highway: 0.7 miles from I-65 Exit 38, about 15 minutes north of Bowling Green
+- Hours: Monday-Saturday 10:30 AM - 7:00 PM; Sunday 11:00 AM - 7:00 PM; kitchen closes 30 minutes before close
+- Diner phone: (270) 563-4618
+- Phone ordering and texting (Smashie, the AI ordering line): (270) 563-7230
+- Order online: https://flavor-isle.com/menu
+- Fulfillment: pickup, curbside, dine-in, walk-up window. Delivery is paused.
+- Price range: $ (minis under $2, most burgers $5-$9)
+- Payment: card online and at the counter, cash accepted
+- Happy hour: 2:00-6:00 PM, half off drinks
+- Serves: burgers (single, double, bacon, mushroom Swiss, minis), chicken and handhelds, fries and curly fries, thick shakes and soft serve, combos and drinks
+- Family-owned since 1964. About 15 minutes from Mammoth Cave by way of Exit 38.
+- Parking: easy parking near the diner, room for trucks and trailers
+
+## Plain facts page
+
+- [Flavor Isle facts, hours and answers](https://flavor-isle.com/facts.html): the same information on one static page, no JavaScript
+
+## Main pages
+
+- [Menu and ordering](https://flavor-isle.com/menu)
+- [Milkshakes](https://flavor-isle.com/milkshakes)
+- [Combos](https://flavor-isle.com/combos)
+- [About Flavor Isle](https://flavor-isle.com/about)
+- [I-65 Exit 38 directions and parking](https://flavor-isle.com/i65-exit-38)
+- [Dining near Mammoth Cave](https://flavor-isle.com/mammoth-cave-dining)
+- [Corvette car clubs and the Corvette Museum](https://flavor-isle.com/corvette-car-clubs)
+- [What to expect: wait times and busyness](https://flavor-isle.com/what-to-expect)
+- [Reviews](https://flavor-isle.com/reviews)
+- [Rewards](https://flavor-isle.com/rewards)
+- [Frequently asked questions](https://flavor-isle.com/faq)
+- [Contact](https://flavor-isle.com/contact)
+
+## Not for indexing
+
+- /checkout, /order-confirmation, /merch-checkout, /account, /admin and the login and password pages are transactional or private.

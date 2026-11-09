@@ -7,7 +7,7 @@
 // │  Both sendReviewRequestEmail and trackReviewClick import this single   │
 // │  constant, so the real link only needs to be dropped in HERE.          │
 // └───────────────────────────────────────────────────────────────────────┘
-export const GOOGLE_REVIEW_URL = 'https://www.google.com/maps?cid=12490290050666246750';
+export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEBE/review';
 
 // The app secret can replace the canonical listing URL without a code update.
 export function googleReviewSecretUrl() {
