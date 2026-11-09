@@ -1,6 +1,6 @@
 {
   "name": "Welcome Email",
-  "description": "Sends the branded Flavor Isle welcome email the first time a new user signs in.",
+  "description": "Sends the branded Flavor Isle welcome email when a new account signs up.",
   "trigger": {
     "config": {
       "trigger_type": "app_user_auth",
@@ -14,27 +14,25 @@
     "document": {
       "dsl": "1.0.0",
       "name": "welcome_email",
-      "version": "1.0",
+      "version": "1.1",
       "namespace": "base44"
     },
     "do": [
       {
         "send_welcome": {
-          "call": "send_email",
+          "call": "invoke_backend_function",
           "with": {
-            "template_name": "Welcome",
-            "to": "${ .trigger.email }",
-            "category": "marketing",
-            "description": "Greets a new signup, introduces Star Rewards, and links to the menu to order.",
-            "variables": {
-              "first_name": "${ .trigger.full_name // \"friend\" }",
-              "cta_url": "https://flavor-isle.com/menu"
+            "function_name": "sendWelcomeEmail",
+            "args": {
+              "email": "${ .trigger.email }",
+              "full_name": "${ .trigger.full_name }",
+              "user_id": "${ .trigger.user_id }"
             }
           },
           "then": "end",
           "x-base44": {
             "title": "Send welcome email",
-            "description": "Branded welcome to a new user"
+            "description": "Branded welcome to a new signup"
           }
         }
       }
