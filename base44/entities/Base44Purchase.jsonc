@@ -2,6 +2,11 @@
   "name": "Base44Purchase",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this purchase, e.g. what was bought and how it was fulfilled."
+    },
     "checkoutSessionId": {
       "type": "string",
       "description": "Wix checkout session id; correlation key."

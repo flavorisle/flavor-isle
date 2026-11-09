@@ -2,6 +2,11 @@
   "name": "AdminActivity",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional notes about this admin's sign-in activity."
+    },
     "admin_email": {
       "type": "string",
       "description": "Email of the admin account this row is about \u2014 one row per admin."

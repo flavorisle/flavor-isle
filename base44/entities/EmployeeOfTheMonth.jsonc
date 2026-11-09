@@ -2,6 +2,11 @@
   "name": "EmployeeOfTheMonth",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this month's feature, e.g. what they are known for."
+    },
     "name": {
       "type": "string",
       "description": "Featured crew member's display name."

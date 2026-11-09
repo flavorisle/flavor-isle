@@ -2,6 +2,11 @@
   "name": "VisitorPageView",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this page view, e.g. why it was excluded from reporting."
+    },
     "ip": {
       "type": "string",
       "description": "The visitor's IP address as reported by the network edge on the request that recorded this page view."

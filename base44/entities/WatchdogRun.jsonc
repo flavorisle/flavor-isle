@@ -2,6 +2,11 @@
   "name": "WatchdogRun",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note describing what this sweep covered."
+    },
     "ran_at": {
       "type": "string",
       "format": "date-time",

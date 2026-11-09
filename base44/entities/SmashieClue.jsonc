@@ -2,6 +2,11 @@
   "name": "SmashieClue",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional crew note about this day's riddle pair."
+    },
     "game_date": {
       "type": "string",
       "description": "Hunt day this riddle pair belongs to, YYYY-MM-DD store local time (America/Chicago). One record per day: the crew's edited clue for a date replaces the built-in bank for that date."

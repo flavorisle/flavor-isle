@@ -2,6 +2,11 @@
   "name": "FindSmashieWinner",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional crew note about this win, e.g. how the prize was handed over."
+    },
     "game_date": {
       "type": "string",
       "description": "Hunt day this win belongs to, YYYY-MM-DD store local time (America/Chicago)."

@@ -2,6 +2,11 @@
   "name": "CardPaymentLog",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional crew note about this card attempt, e.g. what was done to resolve it."
+    },
     "order_number": {
       "type": "string",
       "description": "Order number the card attempt was made for, so the crew can open the order alongside the reason."

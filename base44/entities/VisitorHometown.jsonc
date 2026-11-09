@@ -2,6 +2,11 @@
   "name": "VisitorHometown",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note shown with this visitor's hometown pin."
+    },
     "city": {
       "type": "string",
       "maxLength": 100

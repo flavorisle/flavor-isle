@@ -2,6 +2,11 @@
   "name": "FanFavoriteSnapshot",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this snapshot, e.g. how the ranking was computed."
+    },
     "shake_rank": {
       "type": "number"
     },

@@ -8,10 +8,10 @@ import Seo from '@/components/Seo';
 import IssueWinterBliss from '@/components/newsletter/IssueWinterBliss';
 import NewsletterIssue from '@/components/newsletter/NewsletterIssue';
 
-// Dedicated newsletter signup page. Uses the same double opt-in flow as the
-// footer "Get Updates from the Isle" signup: creates a pending subscriber
-// and sends a confirmation email. Nothing is active until confirmed.
-export default function Newsletter() {
+// Newsletter signup page (plus the issue archive). Uses the same double opt-in
+// flow as the footer "Get Updates from the Isle" signup: creates a pending
+// subscriber and sends a confirmation email. Nothing is active until confirmed.
+export default function NewsletterSignup() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle | submitting | done | active | error
   const [error, setError] = useState('');

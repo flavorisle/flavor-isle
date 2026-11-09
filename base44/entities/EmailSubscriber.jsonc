@@ -2,6 +2,11 @@
   "name": "EmailSubscriber",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional admin notes about this subscriber, e.g. where they came from or how they opted in."
+    },
     "email": {
       "type": "string",
       "description": "Subscriber email address (lowercased, trimmed). Enforced unique by the subscribe backend."

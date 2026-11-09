@@ -2,6 +2,11 @@
   "name": "ExploreShop",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional short summary of this place for search engines and the Explore page card."
+    },
     "name": {
       "type": "string"
     },

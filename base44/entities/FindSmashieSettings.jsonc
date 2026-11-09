@@ -2,6 +2,11 @@
   "name": "FindSmashieSettings",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional notes about how the Find Smashie game is configured this season."
+    },
     "active": {
       "type": "boolean",
       "default": true,

@@ -2,6 +2,11 @@
   "name": "ContactMessage",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional notes about this contact message, e.g. how it was handled."
+    },
     "name": {
       "type": "string",
       "description": "Submitter display name"

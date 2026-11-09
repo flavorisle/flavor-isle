@@ -2,6 +2,11 @@
   "name": "BlockedContact",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional crew note about how this block came to be."
+    },
     "phone": {
       "type": "string",
       "description": "Blocked phone number. Matched on the last 10 digits, so any formatting (270) 555-1234 or +12705551234 works."

@@ -2,6 +2,11 @@
   "name": "CounterPassThrough",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about why this number ring-routes straight to the counter."
+    },
     "name": {
       "type": "string",
       "description": "Who the number belongs to, so the crew can recognize the entry (e.g. 'Wesley', 'Napkin supplier')."
