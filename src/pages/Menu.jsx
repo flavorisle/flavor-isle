@@ -27,6 +27,7 @@ import MenuCategoryChips from '@/components/MenuCategoryChips';
 import SignUpNudge from '@/components/SignUpNudge';
 import OrderAgainSection from '@/components/orderAgain/OrderAgainSection';
 import MadeFreshBanner from '@/components/MadeFreshBanner';
+import RestaurantGuruBadge from '@/components/RestaurantGuruBadge';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import FamilyBundleCard from '@/components/family/FamilyBundleCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
@@ -141,6 +142,11 @@ export default function Menu() {
       isShakeBanner: key === SHAKE_KEY,
     }));
   })();
+
+  // Restaurant Guru 2026 "Best burgers" badge goes on the first burger row only
+  // (Old-Fashioned Burgers, which leads the admin sort order). Matched on the
+  // category key, not the label, so an admin rename does not move it.
+  const burgerRowKey = (search ? null : (rows.find((r) => /burger/i.test(r.key)) || {}).key) || null;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -314,6 +320,11 @@ export default function Menu() {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-sm text-muted-foreground">{rowItems.length} item{rowItems.length !== 1 ? 's' : ''}</span>
                 </div>
+                {key === burgerRowKey && (
+                  <div className="flex justify-center mb-5">
+                    <RestaurantGuruBadge />
+                  </div>
+                )}
                 {!search && /crunch\s*&\s*munch/i.test(key) && (
                   <p className="text-sm text-muted-foreground -mt-3 mb-4">
                     Our sides aren’t salted — add salt packets at checkout if you’d like them.
