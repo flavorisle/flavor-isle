@@ -286,13 +286,14 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
               <p className="text-xs text-muted-foreground mt-0.5">{cartName}</p>
             </div>
           </div>
-          <AllergyNote compact />
-          <ShakeAllergyCheckbox
-            checked={allergy.flag}
-            note={allergy.note}
-            error={allergyError}
-            onChange={(next) => { setAllergy(next); setAllergyError(''); }}
-          />
+          <AllergyNote compact>
+            <ShakeAllergyCheckbox
+              checked={allergy.flag}
+              note={allergy.note}
+              error={allergyError}
+              onChange={(next) => { setAllergy(next); setAllergyError(''); }}
+            />
+          </AllergyNote>
           <button
             onClick={handleAddToCart}
             disabled={!size}

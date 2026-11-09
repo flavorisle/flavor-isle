@@ -19,7 +19,9 @@ export function isShakeItem(item) {
 }
 
 // compact — used inside a single shake's customization, above the add button.
-export default function AllergyNote({ compact = false, className = '' }) {
+// `children` are merged into the same card (below a divider), so the shake's
+// allergy flag and its note read as one block instead of two stacked boxes.
+export default function AllergyNote({ compact = false, className = '', children }) {
   if (compact) {
     return (
       <div className={`rounded-xl border border-smashie-yellow bg-smashie-yellow/10 px-3 py-2.5 ${className}`}>
@@ -28,6 +30,7 @@ export default function AllergyNote({ compact = false, className = '' }) {
           <p className="font-heading text-[11px] uppercase tracking-widest text-obsidian-roast">Allergy Note</p>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{SHAKE_ALLERGY_INSIDE_TEXT}</p>
+        {children && <div className="mt-2.5 pt-2.5 border-t border-smashie-yellow/60">{children}</div>}
       </div>
     );
   }

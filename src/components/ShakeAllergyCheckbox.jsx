@@ -8,7 +8,8 @@ import { AlertTriangle } from 'lucide-react';
 // allergic and how.
 export default function ShakeAllergyCheckbox({ checked, note, onChange, error }) {
   return (
-    <div className={`rounded-xl border-2 px-3 py-2.5 ${checked ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border bg-white'}`}>
+    // Rendered inside the Allergy Note card, so it brings no border of its own.
+    <div>
       <label className="flex items-start gap-2.5 cursor-pointer min-h-[44px]">
         <input
           type="checkbox"
