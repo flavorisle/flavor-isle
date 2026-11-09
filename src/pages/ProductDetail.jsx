@@ -20,6 +20,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { optimizedImageUrl } from '@/lib/utils';
+import ProductStructuredData from '@/components/schema/ProductStructuredData';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -252,6 +253,7 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ProductStructuredData item={item} />
       <Navbar />
       <CartDrawer />
 

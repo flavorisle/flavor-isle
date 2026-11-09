@@ -80,7 +80,13 @@ export function menuSchema(rows, renames = {}) {
       hasMenuItem: row.items.map((item) => ({
         '@type': 'MenuItem',
         name: item.name,
+        ...(item.description ? { description: item.description } : {}),
         ...(item.image_url_opt || item.image_url ? { image: item.image_url_opt || item.image_url } : {}),
+        // Real prices in the markup (Nov 9 2026, AI visibility). Nothing here
+        // invents a price: no price, no offer block.
+        ...(Number(item.price) > 0
+          ? { offers: { '@type': 'Offer', price: Number(item.price).toFixed(2), priceCurrency: 'USD' } }
+          : {}),
       })),
     }));
 

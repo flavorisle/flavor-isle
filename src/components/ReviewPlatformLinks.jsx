@@ -6,7 +6,7 @@ import React from 'react';
 import { Star, Facebook, Instagram, ExternalLink } from 'lucide-react';
 import ReviewNextSteps from '@/components/reviews/ReviewNextSteps';
 
-export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEAE/review';
+export const GOOGLE_REVIEW_URL = 'https://g.page/r/CV6yjuufbFatEBE/review';
 
 export const REVIEW_PLATFORMS = [
   {
