@@ -92,6 +92,8 @@ const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
 const ExploreSmithsGrove = lazy(() => import('./pages/ExploreSmithsGrove'));
 const NewsletterSignup = lazy(() => import('./pages/NewsletterSignup'));
+const NewsletterArchive = lazy(() => import('./pages/NewsletterArchive'));
+const MenuCategories = lazy(() => import('./pages/MenuCategories'));
 const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
 const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
@@ -226,6 +228,8 @@ const AuthenticatedApp = () => {
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<NewsletterSignup />} />
+      <Route path="/newsletter-archive" element={<NewsletterArchive />} />
+      <Route path="/menu-categories" element={<MenuCategories />} />
       <Route path="/confirm-subscription" element={<ConfirmSubscription />} />
       <Route path="/unsubscribe" element={<UnsubscribeEmail />} />
 

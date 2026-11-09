@@ -83,6 +83,18 @@ export default function Menu() {
     return () => clearTimeout(t);
   }, [focusItemId, loading, items.length]);
 
+  // Coming from /menu-categories: jump straight to the category that was tapped.
+  const categoryJump = location.state?.category || null;
+  useEffect(() => {
+    if (!categoryJump || loading || items.length === 0) return;
+    const id = `menu-cat-${categoryJump.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const t = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => clearTimeout(t);
+  }, [categoryJump, loading, items.length]);
+
   // Order-type tiles — curbside is a pickup variant (orderType 'pickup' +
   // pickupMethod 'curbside'), so its active/onClick differ from counter pickup.
   const orderTiles = [
