@@ -1,4 +1,9 @@
 // Restaurant Guru 2026 "Best burgers" ribbon award badge.
+// Vendor design (awards.infcdn.net, 2026 "circle v2" ribbon) rebuilt as JSX so the
+// markup stays React-owned: no dangerouslySetInnerHTML, and every link carries
+// target="_blank" + rel="noopener noreferrer" so the award cannot navigate the
+// menu tab. The vendor stylesheet only declares the three Akrobat @font-face
+// faces, so it is pulled in once, and only on a page that actually shows a badge.
 import React, { useEffect, useId } from 'react';
 
 const AWARD_CSS = 'https://awards.infcdn.net/2026_new/circle_v2.css';
@@ -15,6 +20,7 @@ export default function RestaurantGuruBadge() {
   const headingArc = `rg26-heading-arc-${uid}`;
   const subArc = `rg26-subheading-arc-${uid}`;
 
+  // Keep the vendor stylesheet to one per page no matter how many badges render.
   useEffect(() => {
     const id = 'rg26-award-css';
     if (document.getElementById(id)) return;
@@ -63,6 +69,7 @@ export default function RestaurantGuruBadge() {
         boxSizing: 'border-box',
       }}
     >
+      {/* Top arc: the "Best burgers" heading */}
       <div
         className="rg26-r-ribbon_ahead"
         style={{
@@ -154,6 +161,7 @@ export default function RestaurantGuruBadge() {
         Flavor Isle
       </a>
 
+      {/* Bottom arc: "Restaurant Guru" */}
       <div
         className="rg26-r-ribbon_ahead rg26-r-ribbon_ahead-bottom"
         style={{

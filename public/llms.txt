@@ -1,62 +1,53 @@
-# Flavor Isle — Smiths Grove, Kentucky
+# Flavor Isle
 
-Family-owned diner since 1964, just off I-65 Exit 38. Hand-patted burgers,
-thick shakes and crinkle fries, served at the walk-up window.
+> Flavor Isle is a family-owned burger and shake diner at 103 N Main St, Smiths Grove, KY 42171, about 0.7 miles off I-65 Exit 38. Serving since 1964. Hand-patted burgers, fresh-cut fries and thick shakes, eaten at the counter, in the dining room or from the walk-up window. Delivery is paused: pickup, curbside and dine-in only.
 
-## Name and address
+## Key facts
 
-Name: Flavor Isle
-Address: 103 N Main St, Smiths Grove, KY 42171
-
-## Phone numbers
-
-Store line, (270) 563-4618: orders and questions.
-Automated phone assistant line, (270) 563-7230: the assistant that answers
-calls and texts.
-
-## Hours
-
-Hours are store local time (Central). The kitchen closes 30 minutes before close.
-
-Monday: 10:30 AM – 7:00 PM
-Tuesday: 10:30 AM – 7:00 PM
-Wednesday: 10:30 AM – 7:00 PM
-Thursday: 10:30 AM – 7:00 PM
-Friday: 10:30 AM – 7:00 PM
-Saturday: 10:30 AM – 7:00 PM
-Sunday: 11:00 AM – 7:00 PM
-
-## What the diner serves
-
-Hand-patted burgers, thick shakes and crinkle fries, served at the walk-up
-window.
-
-Cuisine: Burgers, American, Ice Cream
-
-Price range: $1.13–$11.50
-
-Walk-up window: Pickup at the walk-up window.
-
-Parking for trucks and trailers: Yes — there is easy I-65 access and parking
-near the diner. The parking guide on our Exit 38 page shows the nearby marked
-spaces.
+- Name: Flavor Isle
+- Address: 103 N Main St, Smiths Grove, KY 42171
+- Highway: 0.7 miles from I-65 Exit 38, about 15 minutes north of Bowling Green
+- Hours: Monday-Saturday 10:30 AM - 7:00 PM; Sunday 11:00 AM - 7:00 PM; kitchen closes 30 minutes before close (store local time, Central)
+- Diner phone: (270) 563-4618
+- Phone ordering and texting (Smashie, the AI ordering line): (270) 563-7230
+- Order online: https://flavor-isle.com/menu
+- Fulfillment: pickup, curbside, dine-in, walk-up window. Delivery is paused.
+- Price range: $1.13–$11.50
+- Payment: card online and at the counter, cash accepted
+- Happy hour: 2:00-6:00 PM, half off drinks
+- Serves: burgers (single, double, bacon, mushroom Swiss, minis), chicken and handhelds, fries and curly fries, thick shakes and soft serve, combos and drinks
+- Family-owned since 1964.
+- Museum: National Corvette Museum about 15 minutes away
+- Parking: easy parking near the diner, room for trucks and trailers
 
 ## How far away
 
-I-65 Exit 38: 0.7 miles
-Mammoth Cave National Park: About 15 minutes to the Mammoth Cave park entrance, and about 25 minutes to the visitor center.
-National Corvette Museum: about 15 minutes
+- I-65 Exit 38: 0.7 miles
+- Mammoth Cave National Park: About 15 minutes to the Mammoth Cave park entrance, and about 25 minutes to the visitor center.
+- National Corvette Museum: about 15 minutes
 
 Flavor Isle, 103 N Main St, Smiths Grove, KY — 0.7 miles from I-65 Exit 38.
 
-## Pages
+## Plain facts page
 
-- https://flavor-isle.com — home: hours, what's on, how to order
-- https://flavor-isle.com/menu — the full menu and online ordering
-- https://flavor-isle.com/about — the diner's story and what to expect
-- https://flavor-isle.com/faq — answers about ordering, parking and visiting
-- https://flavor-isle.com/i65-exit-38 — directions and parking for interstate travelers
-- https://flavor-isle.com/explore-smiths-grove — what's around Smiths Grove
-- https://flavor-isle.com/mammoth-cave-dining — visiting from Mammoth Cave National Park
-- https://flavor-isle.com/corvette-car-clubs — visiting from the National Corvette Museum
-- https://flavor-isle.com/facts.html — these facts as a plain, script-free page
+- [Flavor Isle facts, hours and answers](https://flavor-isle.com/facts.html): the same information on one static page, no JavaScript
+
+## Main pages
+
+- [Menu and ordering](https://flavor-isle.com/menu)
+- [Milkshakes](https://flavor-isle.com/milkshakes)
+- [Combos](https://flavor-isle.com/combos)
+- [About Flavor Isle](https://flavor-isle.com/about)
+- [I-65 Exit 38 directions and parking](https://flavor-isle.com/i65-exit-38)
+- [Dining near Mammoth Cave](https://flavor-isle.com/mammoth-cave-dining)
+- [Corvette car clubs and the Corvette Museum](https://flavor-isle.com/corvette-car-clubs)
+- [Explore Smiths Grove](https://flavor-isle.com/explore-smiths-grove)
+- [What to expect: wait times and busyness](https://flavor-isle.com/what-to-expect)
+- [Reviews](https://flavor-isle.com/reviews)
+- [Rewards](https://flavor-isle.com/rewards)
+- [Frequently asked questions](https://flavor-isle.com/faq)
+- [Contact](https://flavor-isle.com/contact)
+
+## Not for indexing
+
+- /checkout, /order-confirmation, /merch-checkout, /account, /admin and the login and password pages are transactional or private.

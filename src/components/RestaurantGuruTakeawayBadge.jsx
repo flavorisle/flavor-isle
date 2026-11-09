@@ -1,4 +1,9 @@
 // Restaurant Guru 2026 "Best takeaway food in Smiths Grove" circular award badge.
+// Vendor design (awards.infcdn.net, delivery badge, 150px circle) rebuilt as JSX
+// so the markup stays React-owned and every link opens in a new tab with
+// rel="noopener noreferrer". The vendor stylesheet carries the layout for the
+// fixed #delivery_bage_circ id, so it is injected once and only on a page that
+// actually shows this badge.
 import React, { useEffect } from 'react';
 
 const AWARD_CSS = 'https://awards.infcdn.net/delivery_takeaway/delivery_circ_large.css';
