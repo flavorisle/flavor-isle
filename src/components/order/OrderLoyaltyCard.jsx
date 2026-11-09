@@ -81,18 +81,32 @@ export default function OrderLoyaltyCard() {
 
             {nextTier ? (
               <div className="mt-4">
-                <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                  <p className="text-xs text-white/85">
-                    <span className="font-heading text-sm text-smashie-yellow">{remaining.toLocaleString()}</span> more stars to{' '}
-                    {nextTier.name}
-                  </p>
-                  <p className="text-[11px] text-white/60 whitespace-nowrap">
-                    {balance.toLocaleString()} / {nextTier.points.toLocaleString()}
-                  </p>
+                <p className="text-xs text-white/85 mb-2">
+                  <span className="font-heading text-base text-smashie-yellow">{remaining.toLocaleString()}</span>{' '}
+                  more {remaining === 1 ? 'star' : 'stars'} to unlock{' '}
+                  <span className="text-white font-semibold">{nextTier.name}</span>
+                </p>
+                <div
+                  className="h-3 rounded-full bg-white/15 overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={nextTier.points}
+                  aria-valuenow={balance}
+                  aria-label={`${balance} of ${nextTier.points} stars toward ${nextTier.name}`}
+                >
+                  <div
+                    className="h-full rounded-full bg-smashie-yellow transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
-                <div className="h-2 rounded-full bg-white/15 overflow-hidden">
-                  <div className="h-full rounded-full bg-smashie-yellow transition-all" style={{ width: `${progress}%` }} />
+                <div className="flex items-center justify-between gap-3 mt-1.5 text-[11px] text-white/60">
+                  <span>{balance.toLocaleString()} stars</span>
+                  <span className="font-heading text-smashie-yellow">{progress}% of the way</span>
+                  <span>{nextTier.points.toLocaleString()} stars · {nextTier.name}</span>
                 </div>
+                {nextTier.description && (
+                  <p className="text-[11px] text-white/70 mt-2">{nextTier.description}</p>
+                )}
               </div>
             ) : (
               <p className="text-xs text-white/80 mt-4">
