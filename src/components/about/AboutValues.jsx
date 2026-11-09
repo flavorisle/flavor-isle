@@ -1,6 +1,7 @@
 import React from 'react';
 import { Beef, Flame, HeartHandshake, Milk } from 'lucide-react';
 import ChamberBadge from '@/components/about/ChamberBadge';
+import RestaurantGuruTakeawayBadge from '@/components/RestaurantGuruTakeawayBadge';
 
 const VALUES = [
   { icon: Beef, title: 'Fresh, Never Frozen', body: 'Our beef arrives fresh and gets hand-patted in our kitchen every morning. No freezer, no shortcuts, no exceptions.' },
@@ -30,8 +31,9 @@ export default function AboutValues() {
             </div>
           ))}
         </div>
-        <div className="mt-12 text-center">
+        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
           <ChamberBadge />
+          <RestaurantGuruTakeawayBadge />
         </div>
       </div>
     </section>
