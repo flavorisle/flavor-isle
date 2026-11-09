@@ -25,12 +25,12 @@ export default function AllergyNote({ compact = false, className = '', children 
   if (compact) {
     return (
       <div className={`rounded-xl border border-smashie-yellow bg-smashie-yellow/10 px-3 py-2.5 ${className}`}>
+        {children && <div className="mb-2.5 pb-2.5 border-b border-smashie-yellow/60">{children}</div>}
         <div className="flex items-center gap-1.5 mb-1">
           <AlertTriangle size={13} className="text-midnight-cherry flex-shrink-0" />
           <p className="font-heading text-[11px] uppercase tracking-widest text-obsidian-roast">Allergy Note</p>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{SHAKE_ALLERGY_INSIDE_TEXT}</p>
-        {children && <div className="mt-2.5 pt-2.5 border-t border-smashie-yellow/60">{children}</div>}
       </div>
     );
   }
