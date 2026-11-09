@@ -7,6 +7,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
+import Seo from '@/components/Seo';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -50,6 +51,11 @@ export default function Order() {
 
   return (
     <div className="min-h-screen bg-vanilla-malt flex flex-col">
+      <Seo
+        path="/order"
+        title="Order Online — Burgers, Shakes & Sides | Flavor Isle"
+        description="Order Flavor Isle online in seconds: hand-patted burgers, real-fruit milkshakes and hot sides. Pickup, curbside, delivery or dine-in in Smiths Grove, KY."
+      />
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-16">
         <div className="text-center mb-8">
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>

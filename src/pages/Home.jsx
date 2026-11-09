@@ -146,10 +146,10 @@ export default function Home() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
         path="/"
-        title="Flavor Isle | Burgers & Shakes off I-65 Exit 38, Smiths Grove KY"
-        description="Family-owned burgers & shakes spot since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
-        ogTitle="Flavor Isle | Burgers & Shakes off I-65 Exit 38, Smiths Grove KY"
-        ogDescription="Family-owned burgers & shakes spot since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering."
+        title="Flavor Isle | Diner Near I-65 Exit 38 — Burgers & Shakes, Smiths Grove KY"
+        description="Looking for food near me off I-65? Flavor Isle has hand-patted burgers and thick shakes in Smiths Grove, KY since 1964. Order online for pickup or dine-in."
+        ogTitle="Flavor Isle | Diner Near I-65 Exit 38 — Burgers & Shakes, Smiths Grove KY"
+        ogDescription="Looking for food near me off I-65? Flavor Isle has hand-patted burgers and thick shakes in Smiths Grove, KY since 1964. Order online for pickup or dine-in."
         ogImage="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1503a227d_IMG_0428.jpg"
         ogImageAlt="Flavor Isle burgers & shakes storefront in Smiths Grove, KY"
       />

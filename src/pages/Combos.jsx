@@ -21,8 +21,8 @@ export default function Combos() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
-        title="Combo Meals — Build Your Burger & Shake Combo | Flavor Isle"
-        description="Build your own Isle Combo: pick a hand-patted burger, add crinkle fries and a hand-spun shake, and save. Order combos online for pickup or delivery at Flavor Isle."
+        title="Burger & Shake Combo Meals — Build Your Own | Flavor Isle, Smiths Grove KY"
+        description="Build an Isle Combo and save: hand-patted burger, crinkle fries and a hand-spun shake in one meal. Order combo meals online for pickup or delivery in Smiths Grove, KY."
       />
       <Navbar />
       <CartDrawer />
