@@ -1,0 +1,45 @@
+{
+  "name": "Watchdog Sweep",
+  "description": "Runs the deterministic watchdog backend function every ten minutes during store hours. No agent step, so nothing is ever delivered to anyone's phone; the function itself decides whether one email is warranted.",
+  "trigger": {
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/10 6-22 * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    },
+    "condition": null
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "watchdog_sweep",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_sweep": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "watchdogRun",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Watchdog sweep",
+            "description": "Ten deterministic checks, read-only, email only when a named customer is caught"
+          }
+        }
+      }
+    ]
+  }
+}
