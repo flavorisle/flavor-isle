@@ -437,6 +437,9 @@ function StopCard({ stop, onOpen }) {
             {stop.address}
           </a>
         )}
+        {stop.distance && (
+          <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">{stop.distance}</p>
+        )}
         {stop.cta && (
           <Link
             to={stop.cta.to}
