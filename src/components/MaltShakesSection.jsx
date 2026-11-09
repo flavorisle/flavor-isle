@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Plus } from 'lucide-react';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Dedicated section for the malt milkshake on the Shake Isle page. Shows a
 // single centered malt tile above a short explainer of what a malt is.
@@ -11,6 +12,8 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
   const name = flavorNameFromItem(shake.name);
   const emoji = flavorEmojiByName(name);
   const soldOut = shake.is_available === false;
+  // Square's own photo for the malt, when the catalog has one.
+  const photo = shake.image_url_opt || shake.image_url;
 
   return (
     <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
@@ -25,23 +28,39 @@ export default function MaltShakesSection({ maltShakes, getFromPrice, onSelect }
           <button
             onClick={() => !soldOut && onSelect(shake)}
             disabled={soldOut}
-            className={`card-diner p-6 text-center group flex flex-col items-center justify-center w-full max-w-xs relative ${
+            className={`card-diner overflow-hidden p-0 text-center group flex flex-col items-center w-full max-w-xs relative ${
               soldOut ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
             {soldOut && (
-              <span className="absolute top-3 right-3 bg-obsidian-roast text-white text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="absolute z-10 top-3 right-3 bg-obsidian-roast text-white text-[10px] font-heading px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Sold Out
               </span>
             )}
-            <span className={`text-5xl mb-2 group-hover:scale-110 transition-transform ${soldOut ? 'grayscale' : ''}`}>{emoji}</span>
-            <p className="font-heading text-obsidian-roast text-lg leading-tight">{name}</p>
-            <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
-            <span className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading px-3 py-1.5 rounded-full ${
-              soldOut ? 'bg-muted text-muted-foreground' : 'bg-patina-mint text-white'
-            }`}>
-              {soldOut ? 'Sold Out' : <><Plus size={12} /> Customize</>}
-            </span>
+            <div className="w-full h-44 overflow-hidden flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
+              {photo ? (
+                <img
+                  src={optimizedImageUrl(photo, 500, 500)}
+                  alt={name}
+                  width="500"
+                  height="500"
+                  loading="lazy"
+                  decoding="async"
+                  className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale' : ''}`}
+                />
+              ) : (
+                <span className={`text-5xl group-hover:scale-110 transition-transform ${soldOut ? 'grayscale' : ''}`}>{emoji}</span>
+              )}
+            </div>
+            <div className="p-5 flex flex-col items-center w-full">
+              <p className="font-heading text-obsidian-roast text-lg leading-tight">{name}</p>
+              <p className="text-xs text-muted-foreground mt-1.5">from ${getFromPrice(shake)}</p>
+              <span className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading px-3 py-1.5 rounded-full ${
+                soldOut ? 'bg-muted text-muted-foreground' : 'bg-patina-mint text-white'
+              }`}>
+                {soldOut ? 'Sold Out' : <><Plus size={12} /> Customize</>}
+              </span>
+            </div>
           </button>
         </div>
 
