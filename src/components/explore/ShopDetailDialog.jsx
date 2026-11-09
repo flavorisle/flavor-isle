@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import RestroomIcon from '@/components/explore/RestroomIcon';
 
 // Flavor Isle's own pin, the origin of every walking route on this panel.
 const FLAVOR_ISLE = [37.0526542, -86.2082906];
@@ -150,6 +151,13 @@ function DetailBody({ shop }) {
             </a>
           </div>
         )}
+
+            {shop.amenities?.includes('Restroom') && (
+              <p className="flex items-center gap-1.5 m-0 text-[12px] font-black tracking-[.08em] uppercase text-[#6a7f93]">
+                <RestroomIcon size={13} strokeWidth={2.6} aria-hidden="true" />
+                Restroom available
+              </p>
+            )}
 
         {shop.hours && (
           <p className="m-0 text-[13px] text-[#41556a]">

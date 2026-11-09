@@ -118,6 +118,13 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "amenities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     }
   },
   "required": [

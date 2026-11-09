@@ -58,6 +58,7 @@ const EMPTY = {
   link_to: '',
   distance: '',
   anchor_id: '',
+  amenities: [],
   sort_order: '',
   is_active: true,
 };
@@ -87,6 +88,7 @@ function toForm(rec) {
     link_to: rec.link_to || '',
     distance: rec.distance || '',
     anchor_id: rec.anchor_id || '',
+    amenities: Array.isArray(rec.amenities) ? rec.amenities : [],
     sort_order: rec.sort_order === undefined || rec.sort_order === null ? '' : String(rec.sort_order),
     is_active: rec.is_active !== false,
   };
@@ -139,6 +141,14 @@ export default function AdminExploreShops() {
   const [form, setForm] = useState(EMPTY);
 
   const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  // Amenities are a plain list of strings on the record: ticking a box adds its
+  // name once, unticking removes it.
+  const toggleAmenity = (name, checked) => setForm((current) => ({
+    ...current,
+    amenities: checked
+      ? [...new Set([...current.amenities, name])]
+      : current.amenities.filter((a) => a !== name),
+  }));
 
   const load = async () => {
     setLoading(true);
@@ -222,6 +232,7 @@ export default function AdminExploreShops() {
         link_to: form.link_to.trim(),
         distance: form.distance.trim(),
         anchor_id: form.anchor_id.trim(),
+        amenities: form.amenities,
         sort_order: form.sort_order === '' ? records.length : Number(form.sort_order),
         is_active: form.is_active,
       };
@@ -399,6 +410,19 @@ export default function AdminExploreShops() {
                 onUpload={upload}
                 uploading={uploading}
               />
+            </div>
+
+            <div className="rounded-xl border border-border p-3 space-y-2">
+              <Label className="block">Amenities</Label>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[var(--midnight-cherry)]"
+                  checked={form.amenities.includes('Restroom')}
+                  onChange={(e) => toggleAmenity('Restroom', e.target.checked)}
+                />
+                <span className="text-sm text-obsidian-roast">Restroom</span>
+              </label>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

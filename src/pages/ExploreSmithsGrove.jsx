@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import RestroomIcon from '@/components/explore/RestroomIcon';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -277,6 +278,7 @@ function mapShop(row) {
   return {
     id: row.anchor_id || undefined,
     tag: row.tag,
+    amenities: Array.isArray(row.amenities) ? row.amenities : [],
     name: row.name,
     address: row.address || null,
     handles: Array.isArray(row.instagram) ? row.instagram : [],
@@ -339,7 +341,15 @@ function StopCard({ stop, onOpen }) {
         </div>
       )}
       <div className="p-[18px_18px_20px] flex flex-col gap-2 flex-1">
-        <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
+          {(stop.amenities || []).map((a) => (
+            <span key={a} className="inline-flex items-center gap-1 w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-white border border-[rgba(0,51,102,.22)] rounded-full px-[9px] py-[3px]">
+              {a === 'Restroom' && <RestroomIcon size={12} strokeWidth={2.6} aria-hidden="true" />}
+              {a}
+            </span>
+          ))}
+        </div>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
         <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
         {stop.handles && stop.handles.length > 0 && (
