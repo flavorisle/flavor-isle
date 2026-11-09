@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Gift, ChevronRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import StarTierProgress from '@/components/rewards/StarTierProgress';
 
 // Star Rewards on the order confirmation page: the customer's live in-store
 // balance and how many stars stand between them and their next reward tier.
@@ -41,8 +42,6 @@ export default function OrderLoyaltyCard() {
     .filter((t) => t.points > 0)
     .sort((a, b) => a.points - b.points);
   const nextTier = enrolled ? tiers.find((t) => t.points > balance) || null : null;
-  const remaining = nextTier ? nextTier.points - balance : 0;
-  const progress = nextTier ? Math.min(100, Math.round((balance / nextTier.points) * 100)) : 0;
 
   return (
     <div className="card-diner p-6 mb-8 bg-gradient-to-br from-patina-mint to-[#14304a] text-white overflow-hidden relative text-left">
@@ -81,32 +80,7 @@ export default function OrderLoyaltyCard() {
 
             {nextTier ? (
               <div className="mt-4">
-                <p className="text-xs text-white/85 mb-2">
-                  <span className="font-heading text-base text-smashie-yellow">{remaining.toLocaleString()}</span>{' '}
-                  more {remaining === 1 ? 'star' : 'stars'} to unlock{' '}
-                  <span className="text-white font-semibold">{nextTier.name}</span>
-                </p>
-                <div
-                  className="h-3 rounded-full bg-white/15 overflow-hidden"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={nextTier.points}
-                  aria-valuenow={balance}
-                  aria-label={`${balance} of ${nextTier.points} stars toward ${nextTier.name}`}
-                >
-                  <div
-                    className="h-full rounded-full bg-smashie-yellow transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3 mt-1.5 text-[11px] text-white/60">
-                  <span>{balance.toLocaleString()} stars</span>
-                  <span className="font-heading text-smashie-yellow">{progress}% of the way</span>
-                  <span>{nextTier.points.toLocaleString()} stars · {nextTier.name}</span>
-                </div>
-                {nextTier.description && (
-                  <p className="text-[11px] text-white/70 mt-2">{nextTier.description}</p>
-                )}
+                <StarTierProgress balance={balance} nextTier={nextTier} tone="dark" />
               </div>
             ) : (
               <p className="text-xs text-white/80 mt-4">

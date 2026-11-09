@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import BonusStars from '@/components/rewards/BonusStars';
+import StarTierProgress from '@/components/rewards/StarTierProgress';
 
 // Subtitle for a reward tier card — "Free item · item reward" for item-scoped
 // rewards, "{pct}% off · order reward" for percentage order rewards.
@@ -50,8 +51,7 @@ export default function Rewards() {
   // Progress toward the next unreached reward tier
   const sortedTiers = [...tiers].sort((a, b) => a.points - b.points);
   const nextTier = sortedTiers.find(t => t.points > balance);
-  const nextTierProgress = nextTier ? Math.min(100, Math.round((balance / nextTier.points) * 100)) : 100;
-  const starsToNext = nextTier ? Math.max(0, nextTier.points - balance) : 0;
+
 
   if (loading) {
     return (
@@ -427,25 +427,8 @@ export default function Rewards() {
         {/* Progress to next reward */}
         {status?.hasAccount && nextTier && (
           <div className="card-diner p-6 mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-heading text-lg text-obsidian-roast">Next Reward</h3>
-              <span className="text-sm text-muted-foreground">{Number(balance).toLocaleString()} / {Number(nextTier.points).toLocaleString()} stars</span>
-            </div>
-            <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
-              <div
-                className="h-full bg-gradient-to-r from-midnight-cherry to-smashie-yellow rounded-full transition-all duration-500"
-                style={{ width: `${nextTierProgress}%` }}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <Gift size={18} className="text-midnight-cherry flex-shrink-0" />
-              <p className="text-sm text-obsidian-roast flex-1">
-                <span className="font-heading">{nextTier.name}</span> — {nextTier.description}
-              </p>
-              <span className="text-sm font-heading text-midnight-cherry whitespace-nowrap">
-                {starsToNext > 0 ? `${starsToNext} to go` : 'Ready!'}
-              </span>
-            </div>
+            <h3 className="font-heading text-lg text-obsidian-roast mb-3">Next Reward</h3>
+            <StarTierProgress balance={balance} nextTier={nextTier} />
           </div>
         )}
 
