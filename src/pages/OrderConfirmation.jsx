@@ -10,6 +10,7 @@ import AppDroppingSoonBanner from '@/components/AppDroppingSoonBanner';
 import PostOrderFeedback from '@/components/PostOrderFeedback';
 import CheckoutSmsOptIn from '@/components/CheckoutSmsOptIn';
 import MerchPromoCard from '@/components/merch/MerchPromoCard';
+import OrderLoyaltyCard from '@/components/order/OrderLoyaltyCard';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { useCart } from '@/context/CartContext';
 
@@ -165,6 +166,9 @@ export default function OrderConfirmation() {
               </div>
             ))}
           </div>
+
+          {/* Star Rewards — their live balance and the next tier to reach */}
+          <OrderLoyaltyCard />
 
           {/* What to expect while you wait */}
           <Link
