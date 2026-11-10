@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, IceCream2, Snowflake, UtensilsCrossed, ArrowRight, Phone, Car, Accessibility } from 'lucide-react';
+import { Flame, IceCream2, CakeSlice, UtensilsCrossed, ArrowRight, Phone, Car, Accessibility } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -20,9 +20,9 @@ const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ac
 
 const FAVORITES = [
   { icon: Flame, title: 'Hand-Patted Burgers', desc: 'Fresh, never frozen — smashed and stacked to order.' },
-  { icon: UtensilsCrossed, title: 'Hand-Cut Fries', desc: 'Crispy crinkle fries, tots & loaded sides.' },
+  { icon: UtensilsCrossed, title: 'Hand-Cut Curly Fries', desc: 'Crispy spiral-cut fries, tots & loaded sides.' },
   { icon: IceCream2, title: 'Thick Milkshakes', desc: 'Hand-spun in custom flavors — banana pudding, caramel, more.' },
-  { icon: Snowflake, title: 'Soft-Serve', desc: 'Classic cones, sundaes & treats.' },
+  { icon: CakeSlice, title: 'Hot Fudge Cakes & Banana Splits', desc: 'Warm cake under hot fudge and soft serve, plus splits piled with pineapple and cherries.' },
 ];
 
 // The one visit page: directions and hours, what to expect, parking, the
