@@ -18,7 +18,9 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
-    { call: true, label: 'Call', icon: Phone },
+    // Crew takes call-ins by phone, so the call tab holds this slot instead of Merch.
+    // Tasty Threads still lives in the menu panel (Tasty Threads) and the header shirt button.
+    { tel: '+12705634618', label: 'Call', icon: Phone },
     { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
@@ -90,11 +92,11 @@ export default function BottomTabBar() {
             </span>
           );
 
-          if (tab.call) {
+          if (tab.tel) {
             return (
               <a
                 key="call"
-                href="tel:+12705634618"
+                href={`tel:${tab.tel}`}
                 className="tap-44 flex-1 flex items-center justify-center select-none"
                 aria-label="Call Flavor Isle at (270) 563-4618"
                 title="(270) 563-4618"
