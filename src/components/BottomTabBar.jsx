@@ -18,8 +18,6 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
-    // Crew takes call-ins by phone, so the call tab holds this slot instead of Merch.
-    // Tasty Threads still lives in the menu panel (Tasty Threads) and the header shirt button.
     { tel: '+12705634618', label: 'Call', icon: Phone },
     { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
