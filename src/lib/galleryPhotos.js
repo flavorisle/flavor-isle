@@ -60,7 +60,4 @@ export const GALLERY_PHOTOS = [
   { url: issue23Photos.diner0099, alt: 'Cheeseburger with tater tots', caption: 'Cheeseburger & tots', category: 'Food' },
   { url: issue23Photos.diner5507, alt: 'Fried chicken sandwich with waffle fries', caption: 'Chicken sandwich, made fresh', category: 'Food' },
   { url: issue23Photos.diner5250, alt: 'Close-up of a fried chicken sandwich', caption: 'Chicken sandwich, up close', category: 'Food' },
-  { url: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/10583e4c5_ecbf45a39_IMG_1604.jpg', alt: 'The Flavor Isle sign on Main Street with its palm tree and Coca-Cola circle', caption: 'The sign at 1st and Main', category: 'Our Restaurant' },
-  { url: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/0fdbbe350_170881d4f_IMG_1602.jpg', alt: 'Two burgers with curly fries and a bottle of hot sauce on paper plates', caption: 'Burgers and curly fries, hot sauce on the side', category: 'Food' },
-  { url: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c45ae457d_9e4704759_IMG_1601.jpg', alt: 'Cheeseburgers with tater tots, plus fried pickles on three paper plates', caption: 'Tots, burgers and fried pickles', category: 'Food' },
 ];
