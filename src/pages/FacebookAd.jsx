@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { Check, Copy, MapPin, Phone, ThumbsUp, Share, MessageCircle } from 'lucide-react';
 import { optimizedImageUrl } from '@/lib/utils';
+import { galleryImage } from '@/lib/galleryPhotos';
 
 const ORDER_URL = 'https://flavor-isle.com';
 const ADDRESS = '103 N Main St, Smiths Grove, KY 42171';
@@ -21,7 +22,7 @@ That's the Flavor Isle promise — fresh, never-frozen food served right in the 
 
 Open ${HOURS}. Come see us!`;
 
-const POST_IMAGE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/5dbcfe508_20260702_010942000_iOS.jpg';
+const POST_IMAGE = galleryImage('The sign at 1st and Main') || galleryImage('The sign at night');
 
 function CopyButton({ text, label }) {
   const [copied, setCopied] = useState(false);

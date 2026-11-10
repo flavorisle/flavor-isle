@@ -1,6 +1,7 @@
 import React from 'react';
 import { Printer, MapPin, Phone, Clock, Globe, UtensilsCrossed, IceCream2, Flame } from 'lucide-react';
 import { optimizedImageUrl } from '@/lib/utils';
+import { galleryImage } from '@/lib/galleryPhotos';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
@@ -116,13 +117,13 @@ export default function Flyer() {
                   name: 'Double Cheeseburger',
                   desc: 'Twice the patties, twice the cheese. Built fresh by hand, stacked high with big burger energy.',
                   price: '$9.50',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/1b6e0909b1fdbe33d4e2df41b1e87aee97b3f99a/original.jpeg',
+                  img: galleryImage('The Double, stacked right'),
                 },
                 {
                   name: 'French Fries',
                   desc: '(Crinkle-Cut) — Crisp crinkle edges with a fluffy center — the classic fry bite. (Original 1964)',
                   price: '$3.25',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/4e92f3bb902bfa24b9bc258513d0b8b7396edfa0/original.jpeg',
+                  img: galleryImage('Golden crinkle fries'),
                 },
                 {
                   name: 'Banana Pudding Bliss Milkshake',
