@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Zap, Calendar } from 'lucide-react';
 import { DAY_KEYS, DAY_LABELS, formatTime12 } from '@/lib/businessHours';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import { normalizeWait } from '@/lib/waitQuote';
 
 const SLOT_INTERVAL = 15;
 
@@ -10,7 +11,7 @@ const dateKeyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.ge
 const timeStr = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dayKeyFor = (d) => DAY_KEYS[(d.getDay() + 6) % 7]; // Sun(0) → 'sunday' at index 6
 
-export default function SchedulePicker({ onChange, prepMinutes = 20, compact = false }) {
+export default function SchedulePicker({ onChange, prepMinutes = normalizeWait(), compact = false }) {
   const businessHours = useBusinessHours();
   const [mode, setMode] = useState('asap');
   const [date, setDate] = useState(() => dateKeyOf(new Date()));

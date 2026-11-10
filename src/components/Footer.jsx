@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Clock, Instagram, Facebook, Twitter } from 'lucide-react';
+import { MapPin, Phone, Clock, Instagram, Facebook } from 'lucide-react';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
@@ -79,15 +79,6 @@ export default function Footer() {
               className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
             >
               <Facebook size={18} />
-            </a>
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Flavor Isle on Twitter"
-              className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
-            >
-              <Twitter size={18} />
             </a>
           </div>
         </div>

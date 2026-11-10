@@ -24,6 +24,7 @@ export default function useLiveStatus() {
   const closure = useStoreClosure();
   const [data, setData] = useState(null);
   const [orderingEnabled, setOrderingEnabled] = useState(true);
+  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
   const [effectiveClose, setEffectiveClose] = useState(null);
   const [openAllDayDate, setOpenAllDayDate] = useState('');
   const [openAllDayUntil, setOpenAllDayUntil] = useState('');
@@ -61,6 +62,7 @@ export default function useLiveStatus() {
       // (a one-day early close moves it for today only).
       const unified = computeUnifiedStoreState(s);
       setOrderingEnabled(unified.orderingEnabled);
+      setDeliveryEnabled(unified.deliveryEnabled);
       setEffectiveClose(unified.effectiveCloseToday);
       // Date-scoped 24/7 ordering override (MenuSetting.open_all_day_date, with
       // its optional open_all_day_until end) — fixed, so it expires on its own.
@@ -148,6 +150,7 @@ export default function useLiveStatus() {
     recovering: data?.recovering ?? false,
     activeCount: data?.activeCount ?? 0,
     orderingEnabled: orderingEnabled || adminOrdering,
+    deliveryEnabled,
     minutesUntilClose,
     closeTime: openAllDay || !(effectiveClose || todayHours.close) ? null : formatTime12(effectiveClose || todayHours.close),
     closureMessage: closure.message || data?.closure_message || '',

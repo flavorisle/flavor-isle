@@ -4,16 +4,16 @@ import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import PopularTimesCard from '@/components/PopularTimesCard';
-import HomeStats from '@/components/cinematic/HomeStats';
 
 export default function HomeOrderOptions() {
   const navigate = useNavigate();
   const { setOrderType } = useCart();
-  const { waitMin } = useLiveStatus();
+  const { waitMin, deliveryEnabled } = useLiveStatus();
   const options = [
-    { type: 'pickup', label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag },
-    { type: 'delivery', label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min`, Icon: Bike },
+    { type: 'pickup', label: 'Pickup', time: pickupQuote(waitMin), Icon: ShoppingBag },
+    { type: 'delivery', label: 'Delivery', time: deliveryEnabled ? deliveryQuote(waitMin) : 'Paused', Icon: Bike },
     { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
   ];
   const start = type => {
@@ -36,10 +36,6 @@ export default function HomeOrderOptions() {
         <div className="mt-8 rounded-2xl bg-[#1A3A5C] px-4 py-5 text-white">
           <div className="max-w-md mx-auto">
             <PopularTimesCard embedded />
-          </div>
-          <div className="mt-5 flex items-center justify-start gap-5 overflow-x-auto whitespace-nowrap sm:justify-around">
-            <HomeStats side="left" />
-            <HomeStats side="right" />
           </div>
         </div>
       </div>

@@ -25,6 +25,7 @@ import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSE
 import { getActiveReferralCode } from '@/lib/referral';
 import { analyzeEmail } from '@/lib/emailValidation';
 import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
+import { normalizeWait } from '@/lib/waitQuote';
 
 const ORDER_TYPE_LABELS = { pickup: 'Pickup', delivery: 'Delivery', dine_in: 'Dine-In' };
 const orderTypeLabel = (orderType, pickupMethod) =>
@@ -39,7 +40,7 @@ export default function Checkout() {
   // Kitchen prep estimate scales with the live busyness level so checkout
   // ready times match what the hero/status bar advertise. Uses the regressed
   // wait from the backend so it eases back to normal as inflow slows.
-  const prepMinutes = waitMin || 20;
+  const prepMinutes = normalizeWait(waitMin);
   const storeClosed = orderingEnabled && cutoffStatus.delivery && cutoffStatus.pickup && cutoffStatus.dine_in;
 
   // The order this customer already saved but has not paid yet — a declined card, or

@@ -33,14 +33,15 @@ import FamilyBundleCard from '@/components/family/FamilyBundleCard';
 import WeekendPartyPackCard from '@/components/packs/WeekendPartyPackCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Pickup / delivery estimates scale with the live kitchen load so the menu
 // matches the hero, status bar, and checkout everywhere times are shown.
-const ORDER_TYPE_CONFIG = (waitMin) => ({
-  pickup: { icon: ShoppingBag, label: 'Pickup', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
-  curbside: { icon: Car, label: 'Curbside', time: `${Math.max(10, waitMin - 5)}–${waitMin + 5} min` },
-  delivery: { icon: Bike, label: 'Delivery', time: `${waitMin + 15}–${waitMin + 25} min` },
+const ORDER_TYPE_CONFIG = (waitMin, deliveryEnabled) => ({
+  pickup: { icon: ShoppingBag, label: 'Pickup', time: pickupQuote(waitMin) },
+  curbside: { icon: Car, label: 'Curbside', time: pickupQuote(waitMin) },
+  delivery: { icon: Bike, label: 'Delivery', time: deliveryEnabled ? deliveryQuote(waitMin) : 'Paused' },
   dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
 });
 
@@ -55,8 +56,8 @@ export default function Menu() {
   const [itemOrder, setItemOrder] = useState({});
   const [activeShake, setActiveShake] = useState(null);
   const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
-  const { level } = useLiveStatus();
-  const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20);
+  const { level, deliveryEnabled } = useLiveStatus();
+  const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20, deliveryEnabled);
   const location = useLocation();
   const navigate = useNavigate();
 

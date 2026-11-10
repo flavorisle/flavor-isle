@@ -11,6 +11,7 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups } from '@/lib/businessHours';
 import { getMenuSetting } from '@/lib/menuSettings';
+import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 
 // Frequently asked questions (issue #37, step 5). Hours and delivery answers are
 // rendered from the live store settings, never hardcoded, and the same list
@@ -19,8 +20,6 @@ import { getMenuSetting } from '@/lib/menuSettings';
 export default function Faq() {
   const businessHours = useBusinessHours();
   const { waitMin } = useLiveStatus();
-  const pickupMin = waitMin || 20;
-  const deliveryMin = (waitMin || 20) + 20;
   const [storeSetting, setStoreSetting] = useState(null);
 
   useEffect(() => {
@@ -49,6 +48,10 @@ export default function Faq() {
     : deliveryFee > 0
     ? `a $${deliveryFee.toFixed(2)} delivery fee`
     : 'no delivery fee';
+  // Both quote lines come from lib/waitQuote so the FAQ is a range like every
+  // other estimate, and a paused delivery service gets no estimate at all.
+  const pickupQuoteText = pickupQuote(waitMin);
+  const deliveryQuoteText = deliveryQuote(waitMin);
   const deliveryAnswer = deliveryEnabled
     ? `Yes — we deliver locally through flavor-isle.com. Choose Delivery at checkout and enter your address; delivery orders need about ${deliveryCutoff} minutes of notice. Delivery is ${deliveryFeeText}. For catering and large orders, call (270) 563-7230.`
     : 'Delivery is paused right now, so ordering is pickup only through flavor-isle.com. For catering and large orders, call (270) 563-7230.';
@@ -139,7 +142,9 @@ export default function Faq() {
         },
         {
           q: 'How long does my order take?',
-          a: `Pickup orders are typically ready in about ~${pickupMin} minutes and delivery takes about ~${deliveryMin} minutes, depending on how busy the kitchen is. The live status bar at the top of every page shows our current kitchen load and estimated wait.`,
+          a: deliveryEnabled
+            ? `Pickup orders are typically ready in about ${pickupQuoteText}, and delivery in about ${deliveryQuoteText}, depending on how busy the kitchen is. The live status bar at the top of every page shows our current kitchen load and estimated wait.`
+            : `Pickup orders are typically ready in about ${pickupQuoteText}, depending on how busy the kitchen is. The live status bar at the top of every page shows our current kitchen load and estimated wait.`,
         },
         {
           q: 'How do I track my order?',

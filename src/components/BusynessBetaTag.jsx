@@ -1,11 +1,14 @@
 import React from 'react';
+import { useAuth } from '@/lib/AuthContext';
 
-// Shared "in testing" label for every public busyness / wait-time display, so
-// our estimates are never presented as exact. The phone-width status bar has no
-// room for the full phrase next to the live order CTA, so it shortens to
-// "In testing" there; the full wording ships from 640px up and is always in the
-// tooltip for screen readers and hover.
+// The "in testing" label belongs to the crew, not to customers. It is kept so
+// staff can still see which numbers are estimates while they work, and it
+// renders nothing at all for anyone else — no public page shows busyness
+// estimates as though they were still experimental.
 export default function BusynessBetaTag({ className = '' }) {
+  const { user } = useAuth();
+  if (user?.role !== 'admin') return null;
+
   return (
     <span
       title="In testing — estimates only"

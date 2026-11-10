@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
+import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
 
@@ -18,7 +19,7 @@ export default function Order() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
-  const { level, waitMin, isClosed, closingSoon, closeTime, preOpen, minutesUntilOpen, openTime } = useLiveStatus();
+  const { level, waitMin, deliveryEnabled, isClosed, closingSoon, closeTime, preOpen, minutesUntilOpen, openTime } = useLiveStatus();
   const businessHours = useBusinessHours();
 
   // Before the store opens for pickup, show "from {open}" instead of a minute
@@ -38,9 +39,9 @@ export default function Order() {
   }, [source]);
 
   const OPTIONS = [
-    { id: 'pickup', label: 'Pickup', time: openFromLabel || `${Math.max(10, waitMin - 5)}–${waitMin + 5} min`, Icon: ShoppingBag, blurb: 'Grab it hot off the grill.' },
+    { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), Icon: ShoppingBag, blurb: 'Grab it hot off the grill.' },
     { id: 'dine_in', label: 'Dine-In', time: openFromLabel || 'Seat yourself', Icon: Utensils, blurb: 'Pull up a seat and dig in.' },
-    { id: 'delivery', label: 'Delivery', time: openFromLabel || `${waitMin + 15}–${waitMin + 25} min`, Icon: Bike, blurb: 'We bring it to your door.' },
+    { id: 'delivery', label: 'Delivery', time: openFromLabel || (deliveryEnabled ? deliveryQuote(waitMin) : 'Paused'), Icon: Bike, blurb: 'We bring it to your door.' },
   ];
 
   const start = (type) => {

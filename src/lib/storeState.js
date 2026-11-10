@@ -44,7 +44,9 @@ export function earlyCloseToday(setting, todayKey = chicagoTodayKey()) {
   if (String(early.date).slice(0, 10) !== todayKey) return null;
   const closeTime = String(early.close_time).slice(0, 5);
   if (toMins(closeTime) == null) return null;
-  return { closeTime, message: String(early.message || '').trim() };
+  // `date` rides along so a banner can re-check that this is still today's
+  // close before it says anything.
+  return { date: String(early.date).slice(0, 10), closeTime, message: String(early.message || '').trim() };
 }
 
 // The closing time that actually applies today.

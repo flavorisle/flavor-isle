@@ -8,10 +8,8 @@ import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
-import ReviewSection from '@/components/ReviewSection';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
-import { islePhotos } from '@/components/cinematic/photos';
 import { optimizedImageUrl } from '@/lib/utils';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
@@ -23,15 +21,13 @@ import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 
 
-import SocialProofStrip from '@/components/SocialProofStrip';
 import DownloadAppBanner from '@/components/DownloadAppBanner';
-import WhyFlavorIsle from '@/components/WhyFlavorIsle';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
-import AdBannerStrip from '@/components/AdBannerStrip';
 import MerchPromo from '@/components/MerchPromo';
-import MilkshakePromoBanner from '@/components/MilkshakePromoBanner';
+import HomePromoStrip from '@/components/HomePromoStrip';
+import HomeReviews from '@/components/home/HomeReviews';
+import RewardsBand from '@/components/home/RewardsBand';
 import EarlyCloseNotice from '@/components/EarlyCloseNotice';
-import HappyHourBanner from '@/components/HappyHourBanner';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
 import ExpressPickupStrip from '@/components/ExpressPickupStrip';
@@ -64,12 +60,6 @@ const HOME_DINING_PHOTO = {
   url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
   alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
   caption: 'Pull up a seat. Stay a while.',
-};
-
-const HOME_AWARDS_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cfc62ca68_IMG_1046.jpeg',
-  alt: 'Flavor Isle dining room wall with framed local history and awards',
-  caption: 'Best Restaurant in Smiths Grove 2025. Come check the wall yourself.',
 };
 
 export default function Home() {
@@ -159,6 +149,8 @@ export default function Home() {
       <Navbar />
       <CartDrawer />
 
+      <HomePromoStrip />
+
       <EarlyCloseNotice />
 
       {/* ── COMMUNITY NEWS LINK (small, top of page) ── */}
@@ -177,14 +169,24 @@ export default function Home() {
       </div>
 
       {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero cityLine heading="Burgers & shakes in Smiths Grove since 1964." subtitle="Two minutes off I-65. Zero regrets." />
+      <CinematicHero
+        cityLine
+        heading="Burgers & shakes in Smiths Grove since 1964."
+        subtitle="Two minutes off I-65. Zero regrets."
+        actions={[
+          { label: 'Order for Pickup', to: '/menu', variant: 'primary' },
+          { label: 'See Menu', to: '/menu' },
+          { label: 'Get Directions', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
+        ]}
+        metaLine={`103 N Main St, Smiths Grove, KY 42171 · ${hoursSummary(businessHours)}`}
+      />
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
       <FindSmashiePromo />
 
+      {/* One photo chapter, not three: the story below reads as one beat before
+          the ordering options instead of three full-screen pauses. */}
       <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <PhotoChapter photo={HOME_AWARDS_PHOTO} heading="The wall says it all." />
-      <PhotoChapter photo={islePhotos.burger} heading="This is why they exit 38." action="Order Now" full />
       <HomeOrderOptions />
 
       <ExpressPickupStrip />
@@ -196,19 +198,11 @@ export default function Home() {
           </div>
         </section>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <MilkshakePromoBanner variant="strip" />
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <HappyHourBanner />
-      </div>
-      <AdBannerStrip placement="home" />
+      {/* ── REVIEWS (one block: three outside reviews + link to the wall) ── */}
+      <HomeReviews />
 
-      {/* ── REVIEWS (What people are saying) ── */}
-      <ReviewSection />
-
-      {/* ── WHY FLAVOR ISLE (incl. Star Rewards) ── */}
-      <WhyFlavorIsle />
+      {/* ── STAR REWARDS (compact band, replacing the tall Why Flavor Isle grid) ── */}
+      <RewardsBand />
 
       <HeritageBadges />
 

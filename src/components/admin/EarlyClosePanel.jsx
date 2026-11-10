@@ -2,15 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { CalendarClock, Save, Check, Trash2 } from 'lucide-react';
 import { getMenuSetting, setEarlyClose } from '@/lib/menuSettings';
 import { formatClock, chicagoTodayKey } from '@/lib/storeState';
+import { DAY_KEYS } from '@/lib/businessHours';
 
 // One-day early close. Honored only on its own date, so it expires at midnight on
 // its own — the weekly business hours are never edited by it. Ordering stops at
 // the time set here on both systems and Smashie tells callers we close early.
+//
+// An "early" close that is later than, or the same as, the regular closing time
+// on the chosen day is refused: it would quietly extend the day's hours and read
+// as a mistake to customers, so the panel explains why instead of saving it.
+const DEFAULT_CLOSE = '19:00';
+
+function minutesOf(time) {
+  const [h, m] = String(time || '').split(':').map(Number);
+  return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : null;
+}
+
+// The regular closing time for the day the admin picked in the date field.
+function regularCloseFor(date, setting) {
+  if (!date) return { close: null, closedAllDay: false };
+  const picked = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(picked.getTime())) return { close: null, closedAllDay: false };
+  const dayKey = DAY_KEYS[(picked.getDay() + 6) % 7];
+  const day = setting?.business_hours?.[dayKey] || {};
+  if (day.closed) return { close: null, closedAllDay: true };
+  return {
+    close: String(day.close || setting?.closing_time || DEFAULT_CLOSE).slice(0, 5),
+    closedAllDay: false,
+  };
+}
+
 export default function EarlyClosePanel() {
   const [date, setDate] = useState(chicagoTodayKey());
   const [closeTime, setCloseTime] = useState('17:00');
   const [message, setMessage] = useState('');
   const [active, setActive] = useState(null);
+  const [setting, setSetting] = useState(null);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +45,7 @@ export default function EarlyClosePanel() {
   useEffect(() => {
     getMenuSetting()
       .then((s) => {
+        setSetting(s || null);
         const early = s?.early_close;
         if (early?.date && early?.close_time) {
           setActive({ date: early.date, close_time: early.close_time, message: early.message || '' });
@@ -29,6 +57,18 @@ export default function EarlyClosePanel() {
       .catch(() => {});
   }, []);
 
+  const regular = regularCloseFor(date, setting);
+  const blockedReason = (() => {
+    if (regular.closedAllDay) return "We're closed that day, so there's no closing time to move earlier.";
+    const regularMins = minutesOf(regular.close);
+    const pickedMins = minutesOf(closeTime);
+    if (regularMins == null || pickedMins == null) return '';
+    if (pickedMins >= regularMins) {
+      return `That isn't earlier than our regular ${formatClock(regular.close)} close on that day, so it wouldn't change anything. Pick a time before ${formatClock(regular.close)}.`;
+    }
+    return '';
+  })();
+
   const flashSaved = () => {
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 1500);
@@ -36,6 +76,10 @@ export default function EarlyClosePanel() {
 
   const save = async () => {
     setError('');
+    if (blockedReason) {
+      setError(blockedReason);
+      return;
+    }
     setSaving(true);
     try {
       const updated = await setEarlyClose({ date, close_time: closeTime, message });
@@ -128,11 +172,14 @@ export default function EarlyClosePanel() {
           <div className="min-w-[220px]">
             <p className="text-xs text-muted-foreground">Smashie will say: we close at {formatClock(closeTime)} today.</p>
             <p className="text-xs text-muted-foreground mt-0.5">Self-expires at midnight — your weekly hours are never touched.</p>
+            {blockedReason && !error && (
+              <p className="text-xs text-midnight-cherry mt-1">{blockedReason}</p>
+            )}
             {error && <p role="alert" className="text-xs text-destructive mt-1">{error}</p>}
           </div>
           <button
             onClick={save}
-            disabled={saving || !date || !closeTime}
+            disabled={saving || !date || !closeTime || !!blockedReason}
             className="btn-mint chrome-hover px-5 py-3 text-sm font-heading flex items-center gap-2 disabled:opacity-60"
           >
             {savedFlash ? <Check size={15} /> : <Save size={15} />}

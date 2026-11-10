@@ -1,6 +1,6 @@
 import React from 'react';
 const stats = {
-  left: [['3.4M', 'Burgers served'], ['100%', 'Fresh, never-frozen beef']],
+  left: [['100%', 'Fresh, never-frozen beef']],
   right: [['1.8M', 'Shakes spun & still swirling'], ['0', 'Shortcuts. Ever.']],
 };
 export default function HomeStats({ side }) {
