@@ -18,7 +18,7 @@ export default function MenuShakeCard({ item, onSelect, orderingEnabled, overrid
       className="card-diner w-64 min-h-[190px] p-5 flex flex-col items-center justify-center text-center disabled:opacity-60 disabled:cursor-not-allowed"
       aria-label={`${name} — ${soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : 'Customize'}`}
     >
-      <span className="text-4xl mb-2" aria-hidden="true">{flavorEmojiByName(name)}</span>
+      <span className="w-14 h-14 mb-2 rounded-full bg-vanilla-malt flex items-center justify-center text-3xl" aria-hidden="true">{flavorEmojiByName(name)}</span>
       <span className="font-heading text-obsidian-roast text-base leading-tight">{name}</span>
       <span className="text-xs text-muted-foreground mt-1.5">from ${from.toFixed(2)}</span>
       <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-heading px-3 py-2 rounded-full bg-patina-mint text-white">

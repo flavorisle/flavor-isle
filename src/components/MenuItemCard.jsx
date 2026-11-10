@@ -19,6 +19,28 @@ const PLACEHOLDER_EMOJI = {
   Breakfast: '🍳', Chicken: '🍗', Specials: '⭐',
 };
 
+// Word-matched glyphs for the menu's own categories, so a card with no photo
+// shows its category mark instead of an empty area.
+const CATEGORY_GLYPHS = {
+  burger: '🍔', handheld: '🍔', chicken: '🍗', cluck: '🍗',
+  side: '🍟', crunch: '🍟', munch: '🍟', snack: '🍟', fry: '🍟',
+  shake: '🥤', twirl: '🥤', whirl: '🥤', bliss: '🥤', swirl: '🍦',
+  drink: '🧃', fizz: '🧃', float: '🥤', coke: '🥤',
+  breakfast: '🍳', special: '⭐', supreme: '⭐', seasonal: '⭐',
+  dessert: '🍰', sweet: '🍰', stacked: '🍰', cake: '🍰',
+  melt: '🧀', gooey: '🧀', grill: '🥪',
+  frank: '🌭', dog: '🌭', sauce: '🥫', condiment: '🥫',
+};
+
+function categoryGlyph(item) {
+  if (PLACEHOLDER_EMOJI[item.category]) return PLACEHOLDER_EMOJI[item.category];
+  const haystack = `${item.display_category || ''} ${item.square_category || ''} ${item.category || ''}`.toLowerCase();
+  for (const [word, glyph] of Object.entries(CATEGORY_GLYPHS)) {
+    if (haystack.includes(word)) return glyph;
+  }
+  return '⭐';
+}
+
 export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const isHappyHour = isHappyHourItem(item, menuSetting);
@@ -198,8 +220,8 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${soldOut ? 'grayscale opacity-60' : ''}`}
     />
   ) : (
-    <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-amber-50 to-orange-100">
-      {PLACEHOLDER_EMOJI[item.category] || '⭐'}
+    <div className="w-full h-full flex items-center justify-center bg-vanilla-malt">
+      <span className="text-5xl" aria-hidden="true">{categoryGlyph(item)}</span>
     </div>
   );
 
@@ -316,7 +338,9 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
             {showPhoto ? (
               <img src={optimizedImageUrl(imageUrl, 500, 500)} alt={item.name} width="500" height="500" loading="lazy" decoding="async" className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-obsidian-roast to-midnight-cherry" />
+              <div className="w-full h-full flex items-center justify-center bg-vanilla-malt">
+                <span className="text-5xl" aria-hidden="true">{categoryGlyph(item)}</span>
+              </div>
             )}
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10 pointer-events-none" />
