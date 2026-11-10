@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, UtensilsCrossed, User, ShoppingBag, Shirt, Bot } from 'lucide-react';
+import { Home, UtensilsCrossed, User, ShoppingBag, Phone, Bot } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { optimizedImageUrl } from '@/lib/utils';
 
@@ -18,7 +18,9 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
-    { to: '/merch', label: 'Merch', icon: Shirt },
+    // Crew takes call-ins by phone, so the call tab holds this slot instead of Merch.
+    // Tasty Threads still lives in the menu panel (Tasty Threads) and the header shirt button.
+    { tel: '+12705634618', label: 'Call', icon: Phone },
     { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
@@ -89,6 +91,20 @@ export default function BottomTabBar() {
               </span>
             </span>
           );
+
+          if (tab.tel) {
+            return (
+              <a
+                key="call"
+                href={`tel:${tab.tel}`}
+                className="tap-44 flex-1 flex items-center justify-center select-none"
+                aria-label="Call Flavor Isle at (270) 563-4618"
+                title="(270) 563-4618"
+              >
+                {content}
+              </a>
+            );
+          }
 
           if (tab.cart) {
             return (
