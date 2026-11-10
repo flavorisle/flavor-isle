@@ -90,7 +90,6 @@ const Flyer = lazy(() => import('./pages/Flyer'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
-const ExploreSmithsGrove = lazy(() => import('./pages/ExploreSmithsGrove'));
 const NewsletterSignup = lazy(() => import('./pages/NewsletterSignup'));
 const NewsletterArchive = lazy(() => import('./pages/NewsletterArchive'));
 const MenuCategories = lazy(() => import('./pages/MenuCategories'));
@@ -225,7 +224,9 @@ const AuthenticatedApp = () => {
       <Route path="/i65-exit-38" element={<I65Exit38 />} />
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
-      <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
+      {/* Explore Smiths Grove was consolidated into the Visit Us page; the hash
+          is carried so /explore-smiths-grove#bucees still lands on that stop. */}
+      <Route path="/explore-smiths-grove" element={<Navigate to={`/i65-exit-38${window.location.hash}`} replace />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<NewsletterSignup />} />

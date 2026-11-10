@@ -325,7 +325,6 @@ Deno.serve(async (req) => {
           order_source: 'in_store',
           // Register tickets land confirmed: the crew already has them in hand,
           // so nothing should wait on a confirm click (Wesley, Nov 9 2026).
-          // Web and phone imports keep the default mapping.
           status: mapSquareStatus(so.state, { inStore: true }),
           items,
           ...orderFields,

@@ -5,7 +5,6 @@
 // must not sit on /admin/orders waiting for somebody to confirm them. Web and
 // phone orders keep the default pending -> confirmed path, driven by payment.
 export function mapSquareStatus(squareState, { inStore = false } = {}) {
-  // Keep terminal states; only register tickets bypass pending.
   if (squareState === 'COMPLETED') return 'completed';
   if (squareState === 'CANCELED') return 'cancelled';
   return inStore ? 'confirmed' : 'pending';

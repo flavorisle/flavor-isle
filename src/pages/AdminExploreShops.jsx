@@ -496,9 +496,9 @@ export default function AdminExploreShops() {
             </div>
 
             <div>
-              <Label htmlFor="explore-building" className="mb-1.5 block">In building</Label>
-              <Input id="explore-building" type="text" aria-describedby="explore-building-help" className="min-h-11" value={form.building} onChange={(e) => setField('building', e.target.value)} placeholder="The Roost" />
-              <p id="explore-building-help" className="mt-1.5 text-xs text-muted-foreground">
+              <Label className="mb-1.5 block">In building</Label>
+              <Input value={form.building} onChange={(e) => setField('building', e.target.value)} placeholder="The Roost" />
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 Type the name of the building card this shop sits inside, exactly as the card reads. The two cards link to each other.
               </p>
             </div>
