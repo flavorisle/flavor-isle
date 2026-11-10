@@ -19,9 +19,9 @@ import HomeStructuredData from '@/components/schema/HomeStructuredData';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
+import { computeUnifiedStoreState } from '@/lib/storeState';
 
 
-import DownloadAppBanner from '@/components/DownloadAppBanner';
 import DailySpecialsSection from '@/components/DailySpecialsSection';
 import MerchPromo from '@/components/MerchPromo';
 import HomePromoStrip from '@/components/HomePromoStrip';
@@ -62,6 +62,16 @@ const HOME_DINING_PHOTO = {
   caption: 'Pull up a seat. Stay a while.',
 };
 
+// "19:00" → "7 PM", "18:30" → "6:30 PM". The hero's status line is read as a
+// sentence, so it uses plain speech rather than the schedule's clock format.
+function spokenClock(time) {
+  const [h, m] = String(time || '').split(':').map(Number);
+  if (!Number.isFinite(h)) return '';
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = ((h + 11) % 12) + 1;
+  return m ? `${hour12}:${String(m).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
+}
+
 export default function Home() {
   const { setOrderType } = useCart();
   const navigate = useNavigate();
@@ -71,6 +81,7 @@ export default function Home() {
   const [menuSchemaRows, setMenuSchemaRows] = useState([]);
   const [menuRenames, setMenuRenames] = useState({});
   const [shakeRank, setShakeRank] = useState(null);
+  const [storeSetting, setStoreSetting] = useState(null);
 
   // Load visible menu items so the Fan Favorites rail can show the real
   // top-10 best-sellers stamped by the refreshFanFavorites backend function.
@@ -123,6 +134,7 @@ export default function Home() {
           items: sortItemsInCategory(grouped.get(key), setting?.category_item_order?.[key] || []),
         })));
       setMenuRenames(setting?.category_renames || {});
+      setStoreSetting(setting || null);
     }).catch(() => {});
     return () => { active = false; };
   }, []);
@@ -131,6 +143,13 @@ export default function Home() {
     setOrderType(type);
     navigate('/menu');
   };
+
+  // The hero's address line answers "are you open right now?" — today's live
+  // close time while the store is open, the weekly hours summary otherwise.
+  const storeState = storeSetting ? computeUnifiedStoreState(storeSetting) : null;
+  const heroMetaLine = storeState?.open
+    ? `103 N Main St, Smiths Grove, KY 42171 · 0.7 mi off I-65 Exit 38 · Open today until ${spokenClock(storeState.effectiveCloseToday)}`
+    : `103 N Main St, Smiths Grove, KY 42171 · ${hoursSummary(businessHours)}`;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -149,10 +168,6 @@ export default function Home() {
       <Navbar />
       <CartDrawer />
 
-      <HomePromoStrip />
-
-      <EarlyCloseNotice />
-
       {/* ── COMMUNITY NEWS LINK (small, top of page) ── */}
       <div className="bg-vanilla-malt border-b border-midnight-cherry/15">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -168,6 +183,8 @@ export default function Home() {
         </div>
       </div>
 
+      <EarlyCloseNotice />
+
       {/* ── EXIT 38 PHOTO STORY ── */}
       <CinematicHero
         cityLine
@@ -178,7 +195,7 @@ export default function Home() {
           { label: 'See Menu', to: '/menu' },
           { label: 'Get Directions', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
         ]}
-        metaLine={`103 N Main St, Smiths Grove, KY 42171 · ${hoursSummary(businessHours)}`}
+        metaLine={heroMetaLine}
       />
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
@@ -198,19 +215,6 @@ export default function Home() {
           </div>
         </section>
       )}
-      {/* ── REVIEWS (one block: three outside reviews + link to the wall) ── */}
-      <HomeReviews />
-
-      {/* ── STAR REWARDS (compact band, replacing the tall Why Flavor Isle grid) ── */}
-      <RewardsBand />
-
-      <HeritageBadges />
-
-      {/* ── TASTY THREADS MERCH ── */}
-      <MerchPromo />
-
-      {/* ── DAILY SPECIALS ── */}
-      <DailySpecialsSection />
 
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
@@ -271,6 +275,22 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <HomePromoStrip />
+
+      {/* ── REVIEWS (one block: three outside reviews + link to the wall) ── */}
+      <HomeReviews />
+
+      {/* ── STAR REWARDS (compact band, replacing the tall Why Flavor Isle grid) ── */}
+      <RewardsBand />
+
+      <HeritageBadges />
+
+      {/* ── TASTY THREADS MERCH ── */}
+      <MerchPromo />
+
+      {/* ── DAILY SPECIALS ── */}
+      <DailySpecialsSection />
 
       {/* ── I-65 EXIT 38 WAYFINDING ── */}
       <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
@@ -344,9 +364,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── DOWNLOAD APP BANNER ── */}
-      <DownloadAppBanner />
 
       <StickyOrderBar />
 

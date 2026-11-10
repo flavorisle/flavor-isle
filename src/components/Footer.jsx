@@ -6,6 +6,7 @@ import { hoursGroups } from '@/lib/businessHours';
 import FooterSmsOptIn from '@/components/FooterSmsOptIn';
 import FooterEmailSignup from '@/components/FooterEmailSignup';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
+import DownloadAppBanner from '@/components/DownloadAppBanner';
 import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import { optimizedImageUrl } from '@/lib/utils';
 
@@ -159,6 +160,12 @@ export default function Footer() {
         >
           Just passing through? See traveler tips.
         </Link>
+      </div>
+
+      {/* App launch band — the app announcement lives with the footer's other
+          links instead of owning a section of its own on the home page. */}
+      <div className="border-t border-white/10">
+        <DownloadAppBanner />
       </div>
 
       {/* Bottom bar — Kentucky Tourism listing + legal */}

@@ -18,7 +18,7 @@ function todayStoreLocal() {
 // A banner only displays when is_active is true AND the current store-local
 // date falls within its [start_date, end_date) window. start_date is inclusive;
 // end_date is exclusive. Either field is optional.
-function isWithinDateWindow(banner) {
+export function isWithinDateWindow(banner) {
   const today = todayStoreLocal();
   if (banner.start_date && today < banner.start_date) return false;
   if (banner.end_date && today >= banner.end_date) return false;
@@ -26,7 +26,7 @@ function isWithinDateWindow(banner) {
 }
 
 // Renders the active promo banners for a given placement: 'home' | 'menu' | 'cart'
-export default function AdBannerStrip({ placement, compact = false }) {
+export default function AdBannerStrip({ placement, compact = false, limit = null }) {
   const [banners, setBanners] = useState([]);
 
   useEffect(() => {
@@ -38,9 +38,12 @@ export default function AdBannerStrip({ placement, compact = false }) {
 
   if (banners.length === 0) return null;
 
+  // `limit` caps how many banners show — the home promo strip shows one.
+  const shown = limit ? banners.slice(0, limit) : banners;
+
   return (
     <div className={compact ? 'space-y-2' : 'max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-4'}>
-      {banners.map(b => {
+      {shown.map(b => {
         const t = THEMES[b.theme] || THEMES.cherry;
         return (
           <div key={b.id} className={`${t.bg} rounded-3xl overflow-hidden flex items-center gap-4 ${compact ? 'p-3' : 'p-5 sm:p-6'}`}>
