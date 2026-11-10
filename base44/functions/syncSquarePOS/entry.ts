@@ -323,7 +323,9 @@ Deno.serve(async (req) => {
           customer_phone: sqPhone || profilePhone,
           customer_id: profileId,
           order_source: 'in_store',
-          status: mapSquareStatus(so.state),
+          // Register tickets land confirmed: the crew already has them in hand,
+          // so nothing should wait on a confirm click (Wesley, Nov 9 2026).
+          status: mapSquareStatus(so.state, { inStore: true }),
           items,
           ...orderFields,
           ...loyalty,
