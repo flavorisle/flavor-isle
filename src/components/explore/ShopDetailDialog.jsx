@@ -172,12 +172,8 @@ function DetailBody({ shop, onJump }) {
             <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] mr-1.5">Shops inside</span>
             {shop.tenants.map((tenant, index) => (
               <span key={tenant.id || tenant.name}>
-                {index > 0 && ' · '}
-                <button
-                  type="button"
-                  onClick={() => onJump && onJump(tenant.id)}
-                  className="font-semibold text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2"
-                >
+                {index > 0 && ' \u00b7 '}
+                <button type="button" onClick={() => onJump && onJump(tenant.id)} className="font-semibold text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2">
                   {tenant.name}
                 </button>
               </span>
