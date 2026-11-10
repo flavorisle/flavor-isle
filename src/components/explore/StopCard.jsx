@@ -2,9 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import RestroomIcon from '@/components/explore/RestroomIcon';
 
-export default function StopCard({ stop, onOpen }) {
+export default function StopCard({ stop, onOpen, onJump }) {
   return (
     <article
+      id={stop.id}
       role="button"
       tabIndex={0}
       onClick={() => onOpen(stop)}
@@ -14,7 +15,7 @@ export default function StopCard({ stop, onOpen }) {
           onOpen(stop);
         }
       }}
-      className="cursor-pointer bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
+      className="cursor-pointer scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
       {stop.tile === 'photo' && (
         <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
           <img src={stop.photo} alt={stop.alt} loading="lazy" className="w-full h-full object-cover" />
@@ -47,6 +48,40 @@ export default function StopCard({ stop, onOpen }) {
         </div>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
         <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
+        {stop.tenants && stop.tenants.length > 0 && (
+          <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">
+            Shops inside:{' '}
+            {stop.tenants.map((tenant, index) => (
+              <span key={tenant.id || tenant.name}>
+                {index > 0 && ' · '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onJump(tenant.id);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2"
+                >
+                  {tenant.name}
+                </button>
+              </span>
+            ))}
+          </p>
+        )}
+        {stop.building_name && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onJump(stop.building_id);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="w-max text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast pt-0.5"
+          >
+            Inside {stop.building_name}
+          </button>
+        )}
         {stop.handles && stop.handles.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {stop.handles.map((handle) => (
@@ -75,6 +110,9 @@ export default function StopCard({ stop, onOpen }) {
           >
             {stop.address}
           </a>
+        )}
+        {stop.distance && (
+          <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">{stop.distance}</p>
         )}
         {stop.cta && (
           <Link

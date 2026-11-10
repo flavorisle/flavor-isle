@@ -6,6 +6,15 @@ import StopCard from '@/components/explore/StopCard';
 import SurroundCard from '@/components/explore/SurroundCard';
 import { FALLBACKS, mapShop } from '@/components/explore/exploreFallbacks';
 
+// Same 88px offset the deep-link handler uses, so a link lands where a hash would.
+function scrollToStop(id) {
+  if (!id) return;
+  const target = document.getElementById(id);
+  if (target) {
+    window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - 88), behavior: 'smooth' });
+  }
+}
+
 // Everything around Flavor Isle: the walkable Main Street shops, the three
 // out-of-town stops, local flavor, in-town attractions and the walking map.
 // Lifted out of the old Explore page so the Visit Us page can carry it as one
@@ -26,6 +35,21 @@ export default function ExploreSections() {
         (rows || []).forEach((row) => {
           if (!row || row.is_active === false || !grouped[row.section]) return;
           grouped[row.section].push(mapShop(row));
+        });
+        // A shop that names its building gets the building's anchor and address,
+        // and the building card collects its shops. Matched by name inside the
+        // shops section, so a wrong name simply links nothing.
+        const byName = {};
+        grouped.shops.forEach((shop) => {
+          if (shop.name) byName[shop.name.trim().toLowerCase()] = shop;
+        });
+        grouped.shops.forEach((shop) => {
+          const home = shop.building ? byName[shop.building.trim().toLowerCase()] : null;
+          if (!home || home === shop) return;
+          shop.building_id = home.id;
+          shop.building_name = home.name;
+          shop.building_address = home.address || '';
+          home.tenants = (home.tenants || []).concat([{ id: shop.id, name: shop.name }]);
         });
         setStops({
           shops: grouped.shops.length ? grouped.shops : FALLBACKS.shops,
@@ -73,7 +97,7 @@ export default function ExploreSections() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.shops.map((stop) => (
-            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} onJump={scrollToStop} />
           ))}
         </div>
       </section>
@@ -105,7 +129,7 @@ export default function ExploreSections() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.flavor.map((stop) => (
-            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} onJump={scrollToStop} />
           ))}
         </div>
       </section>
@@ -121,7 +145,7 @@ export default function ExploreSections() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.attractions.map((stop) => (
-            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} onJump={scrollToStop} />
           ))}
         </div>
       </section>
@@ -178,7 +202,14 @@ export default function ExploreSections() {
         </div>
       </section>
 
-      <ShopDetailDialog shop={activeStop} onClose={() => setActiveStop(null)} />
+      <ShopDetailDialog
+        shop={activeStop}
+        onClose={() => setActiveStop(null)}
+        onJump={(id) => {
+          setActiveStop(null);
+          setTimeout(() => scrollToStop(id), 140);
+        }}
+      />
     </>
   );
 }

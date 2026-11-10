@@ -265,10 +265,21 @@ export const FALLBACKS = {
 
 // One ExploreShop row, shaped exactly like the props a card already takes, with
 // the panel's contact and walking fields carried alongside.
+// A card's anchor when the record has no anchor_id typed in: the name, folded
+// to something a URL and getElementById can both carry.
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export function mapShop(row) {
   const photo = row.photo_url || null;
   return {
-    id: row.anchor_id || undefined,
+    id: row.anchor_id || slugify(row.name) || undefined,
     tag: row.tag,
     amenities: Array.isArray(row.amenities) ? row.amenities : [],
     name: row.name,
@@ -277,6 +288,7 @@ export function mapShop(row) {
     photo,
     alt: row.photo_alt || row.name,
     copy: row.copy || '',
+    building: row.building || '',
     detail: row.detail || '',
     // A photo tile with no photo would render a broken image.
     tile: row.tile === 'photo' && !photo ? 'mono' : row.tile || 'photo',
