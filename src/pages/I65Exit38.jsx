@@ -1,20 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, IceCream2, Snowflake, UtensilsCrossed, Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain, Compass, Trees, Landmark, Camera } from 'lucide-react';
+import { Flame, IceCream2, Snowflake, UtensilsCrossed, ArrowRight, Phone, Car, Accessibility } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
-import useBusinessHours from '@/hooks/useBusinessHours';
-import { hoursGroups } from '@/lib/businessHours';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
-import { issue23Photos } from '@/lib/issue23Photos';
 import { optimizedImageUrl } from '@/lib/utils';
 import ParkingRules from '@/components/parking/ParkingRules';
+import { issue23Photos } from '@/lib/issue23Photos';
+import LocationHours from '@/components/visit/LocationHours';
+import WhatToExpect from '@/components/visit/WhatToExpect';
+import SnapAndShare from '@/components/visit/SnapAndShare';
+import ExploreSections from '@/components/explore/ExploreSections';
 
-const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
 const FAVORITES = [
@@ -24,137 +25,92 @@ const FAVORITES = [
   { icon: Snowflake, title: 'Soft-Serve', desc: 'Classic cones, sundaes & treats.' },
 ];
 
-// Nearby landmarks and activities around Smiths Grove, KY — merged from the
-// former Local Attractions page so the I-65 Exit 38 guide is one complete stop.
-const ATTRACTIONS = [
-  {
-    icon: Mountain,
-    name: 'Mammoth Cave National Park',
-    distance: '~30 min north on I-65',
-    blurb: "The world's longest known cave system. Ranger-led tours, hiking trails, and a visitor center — a must-do day trip from the Isle.",
-    map: 'https://www.google.com/maps/search/?api=1&query=Mammoth+Cave+National+Park',
-  },
-  {
-    icon: Car,
-    name: 'National Corvette Museum',
-    distance: '~15 min south in Bowling Green',
-    blurb: "Showcases of America's sports car, including the famous sinkhole exhibit. A quick, air-conditioned stop for car lovers.",
-    map: 'https://www.google.com/maps/search/?api=1&query=National+Corvette+Museum+Bowling+Green+KY',
-  },
-  {
-    icon: Compass,
-    name: 'Corvette Assembly Plant',
-    distance: '~15 min south in Bowling Green',
-    blurb: 'The only place Corvettes are built. Tours run seasonally — check ahead for availability and reserve early.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Bowling+Green+Assembly+Plant+KY',
-  },
-  {
-    icon: Trees,
-    name: 'Lost River Cave',
-    distance: '~15 min south in Bowling Green',
-    blurb: 'A guided underground boat tour through a natural cave, plus valley trails and a butterfly habitat. Great for families.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Lost+River+Cave+Bowling+Green+KY',
-  },
-  {
-    icon: Landmark,
-    name: 'Historic Railpark & Train Museum',
-    distance: '~15 min south in Bowling Green',
-    blurb: 'Restored 1925 L&N depot with railcars you can walk through and exhibits on Kentucky railroad history.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Historic+Railpark+Train+Museum+Bowling+Green+KY',
-  },
-  {
-    icon: Camera,
-    name: 'Riverview at Hobson Grove',
-    distance: '~15 min south in Bowling Green',
-    blurb: 'A restored 1860s Italianate mansion overlooking the Barren River. Guided tours tell the story of the Civil War era.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Riverview+at+Hobson+Grove+Bowling+Green+KY',
-  },
-  {
-    icon: Compass,
-    name: 'Beech Bend Park',
-    distance: '~15 min south in Bowling Green',
-    blurb: 'A classic amusement park with roller coasters, a water park, and a drag strip — seasonal hours, check before you go.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Beech+Bend+Park+Bowling+Green+KY',
-  },
-  {
-    icon: Landmark,
-    name: 'Smiths Grove Historic District',
-    distance: 'Walkable from Flavor Isle',
-    blurb: 'A quiet Main Street of antique shops, historic homes, and small-town charm — right outside our door at 103 N Main St.',
-    map: 'https://www.google.com/maps/search/?api=1&query=Smiths+Grove+KY+downtown',
-  },
-];
-
+// The one visit page: directions and hours, what to expect, parking, the
+// store's story, fan favorites, and every stop around Flavor Isle — merged
+// from the old Exit 38 guide, Explore Smiths Grove, and visit-us pages.
 export default function I65Exit38() {
-  const businessHours = useBusinessHours();
-
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Dining off I-65 Exit 38 — Flavor Isle, Smiths Grove KY"
-        description="Off I-65 Exit 38 in Smiths Grove — 15 min north of Bowling Green. Fresh hand-patted burgers, hand-cut fries, thick milkshakes & soft-serve since 1964. Order ahead online for pickup."
-        ogTitle="I-65 Exit 38 Food Stop — Flavor Isle | Smiths Grove, KY"
-        ogDescription="Skip the interstate chains. Flavor Isle is 0.7 miles off I-65 Exit 38 — hand-patted burgers, thick shakes, fast pickup for road trippers."
+        title="Visit Flavor Isle — I-65 Exit 38, Smiths Grove KY | Hours, Directions & What to Expect"
+        description="Off I-65 Exit 38 in Smiths Grove, 15 min north of Bowling Green. Hours, directions, parking, what to expect, plus the shops, wineries and attractions around us. Order online for pickup."
+        ogTitle="Visit Flavor Isle — Exit 38, Smiths Grove KY"
+        ogDescription="Location, hours, parking and what to expect at Flavor Isle — plus every shop, winery and attraction around Smiths Grove."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/b3c1594ee_card-i65.png"
-        ogImageAlt="Flavor Isle I-65 Exit 38 road-trip share card"
+        ogImageAlt="Flavor Isle Visit Us share card"
       />
       <Navbar />
 
-      <CinematicHero heading="Your stop at Exit 38 starts here." subtitle="Fresh burgers, thick shakes, and a warm welcome just off the interstate." />
-      <figure className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <img src={optimizedImageUrl(issue23Photos.parking, 800, 600, 'fit')} alt="Parking map for Flavor Isle at I-65 Exit 38" width="800" height="600" loading="lazy" decoding="async" className="w-full rounded-xl" />
-        <figcaption className="mt-2 text-sm text-muted-foreground">Where to park when you visit Flavor Isle</figcaption>
-        <ParkingRules className="mt-2" />
-      </figure>
-      <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
-      <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
-      <PhotoChapter photo={islePhotos.sketch} heading="A Smiths Grove original." />
-      <PhotoChapter photo={islePhotos.colonel} heading="You never know who you’ll run into at the Isle." />
+      <CinematicHero
+        heading="Visit us at Exit 38."
+        subtitle="Flavor Isle isn’t built for crowds — it’s built for moments. Fresh burgers, thick shakes, and a warm welcome just off the interstate."
+      />
 
-      {/* Directions */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
-            <Navigation size={16} /> HOW TO FIND US
+      {/* Quick order band */}
+      <section className="bg-patina-mint text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-5">
+          <div>
+            <h2 className="font-heading text-2xl sm:text-3xl">Thirsty? Let’s fix that.</h2>
+            <p className="text-white/80 text-sm mt-1">Order online for pickup, delivery, or dine-in. Hot food, fast.</p>
           </div>
-          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Right Off Exit 38</h2>
-          <p className="text-muted-foreground mt-2">103 N Main St, Smiths Grove, KY 42171</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card-diner p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-midnight-cherry/10 flex items-center justify-center">
-                <Navigation size={18} className="text-midnight-cherry" />
-              </div>
-              <h3 className="font-heading text-xl text-obsidian-roast">Northbound (toward Louisville)</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Take I-65 North to <strong>Exit 38 (Smiths Grove)</strong>. Turn right off the ramp onto US-31W / N Main St. Flavor Isle is just 0.7 miles ahead on the left at 103 N Main St.
-            </p>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/milkshakes" className="btn-yellow chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">
+              Build a Shake <ArrowRight size={16} />
+            </Link>
+            <Link to="/menu" className="btn-cherry chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">
+              Order Online <ArrowRight size={16} />
+            </Link>
           </div>
-          <div className="card-diner p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-midnight-cherry/10 flex items-center justify-center">
-                <Navigation size={18} className="text-midnight-cherry" />
-              </div>
-              <h3 className="font-heading text-xl text-obsidian-roast">Southbound (toward Nashville)</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Take I-65 South to <strong>Exit 38 (Smiths Grove)</strong>. Turn left off the ramp onto US-31W / N Main St. Flavor Isle is just 0.7 miles ahead on the left at 103 N Main St.
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 text-center">
-          <a
-            href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-patina-mint font-heading text-sm hover:text-midnight-cherry transition-colors"
-          >
-            <MapPin size={16} /> Open in Google Maps
-          </a>
         </div>
       </section>
+
+      <LocationHours />
+
+      <WhatToExpect />
+
+      {/* Parking & accessibility */}
+      <section id="parking" className="max-w-5xl mx-auto px-4 sm:px-6 py-14 scroll-mt-24">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
+            <Car size={16} /> PARKING
+          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Parking &amp; Accessibility</h2>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Parking is available behind us, across the street in the lot, and on Main Street — as long as you park in the flow of direction.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+          <figure>
+            <img
+              src={optimizedImageUrl(issue23Photos.parking, 800, 600, 'fit')}
+              alt="Parking map for Flavor Isle at I-65 Exit 38"
+              width="800"
+              height="600"
+              loading="lazy"
+              decoding="async"
+              className="w-full rounded-xl"
+            />
+            <figcaption className="mt-2 text-sm text-muted-foreground">Where to park when you visit Flavor Isle</figcaption>
+            <ParkingRules className="mt-2" />
+          </figure>
+          <div className="card-diner p-6">
+            <h3 className="font-heading text-xl text-obsidian-roast flex items-center gap-2">
+              <Accessibility size={18} className="text-midnight-cherry" /> Getting in
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+              Outdoor and indoor seating is wheelchair accessible. If you need a hand getting to the door, flag a team member — we’ll help.
+            </p>
+            <Link to="/what-to-expect" className="inline-flex items-center gap-1.5 text-sm font-heading text-midnight-cherry hover:text-patina-mint transition-colors mt-4">
+              More on what to expect <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <SnapAndShare />
+
+      <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
+      <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
 
       {/* Story */}
       <section className="bg-white border-y border-border">
@@ -164,48 +120,6 @@ export default function I65Exit38() {
           <p className="text-muted-foreground mt-4 leading-relaxed">
             Flavor Isle has been feeding I-65 travelers and Smiths Grove locals for three generations. What started as a small roadside burger stand is still the same family recipe today — hand-patted burgers, hand-cut fries, and thick milkshakes made to order. No freezers, no shortcuts. Just a quick, friendly stop worth pulling off for.
           </p>
-        </div>
-      </section>
-
-      {/* Nearby attractions — make a day of it */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
-            <Compass size={16} /> MAKE A DAY OF IT
-          </div>
-          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Nearby Attractions</h2>
-          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Grab a hand-patted burger and a thick shake, then explore what's around — all within about 30 minutes of our counter.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {ATTRACTIONS.map((a) => (
-            <div key={a.name} className="card-diner p-6 flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-midnight-cherry/10 flex items-center justify-center flex-shrink-0">
-                <a.icon size={22} className="text-midnight-cherry" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-heading text-xl text-obsidian-roast leading-tight">{a.name}</h3>
-                <p className="flex items-center gap-1.5 text-xs text-patina-mint font-heading tracking-wide uppercase mt-1">
-                  <Clock size={12} /> {a.distance}
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed mt-2">{a.blurb}</p>
-                <a
-                  href={a.map}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-heading text-midnight-cherry hover:text-patina-mint transition-colors mt-3"
-                >
-                  <Navigation size={14} /> Get directions <ArrowRight size={14} />
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-8 text-center">
-          <Link to="/explore-smiths-grove" className="btn-mint chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">
-            Explore every stop in Smiths Grove <ArrowRight size={16} />
-          </Link>
         </div>
       </section>
 
@@ -226,48 +140,50 @@ export default function I65Exit38() {
             </div>
           ))}
         </div>
-        <div className="mt-8 text-center">
-          <Link to="/menu" className="btn-cherry chrome-hover px-8 py-4 text-base font-heading inline-flex items-center gap-2">
-            See the Full Menu <ArrowRight size={18} />
-          </Link>
+      </section>
+
+      {/* Around Flavor Isle */}
+      <section className="bg-[linear-gradient(180deg,#fffdf7_0%,#F5E9D2_100%)] border-t border-[rgba(0,51,102,.10)]">
+        <div className="max-w-[1180px] mx-auto px-5 pt-14 pb-2 text-center">
+          <p className="text-xs font-extrabold tracking-[.22em] uppercase text-midnight-cherry mb-3">
+            Smiths Grove, Kentucky · Exit 38 off I-65
+          </p>
+          <h2 className="font-heading text-[clamp(36px,6vw,64px)] leading-[.94] tracking-[.01em] text-obsidian-roast mb-2">
+            Around Flavor Isle <span className="text-midnight-cherry">Beyond the Burger</span>
+          </h2>
+          <p className="max-w-[820px] mx-auto text-base font-semibold text-[#26405a]">
+            Flavor Isle is more than a meal. It’s a starting point. After you eat, take a stroll through Smiths Grove and discover the small businesses, local gems, and attractions that make our town one of a kind.{' '}
+            <strong className="font-black text-obsidian-roast">They’re not like us, but together we make Smiths Grove unforgettable.</strong>
+          </p>
+          <a
+            href="#shops"
+            className="inline-block mt-6 bg-transparent text-obsidian-roast border-2 border-obsidian-roast font-extrabold tracking-[.06em] uppercase text-[13px] px-5 py-3 rounded-md hover:bg-obsidian-roast hover:text-white"
+          >
+            See the Stops
+          </a>
         </div>
       </section>
 
-      {/* Hours */}
-      <section className="bg-patina-mint text-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 text-smashie-yellow font-heading text-sm tracking-widest mb-2">
-              <Clock size={16} /> HOURS
-            </div>
-            <h2 className="font-heading text-3xl sm:text-4xl">Open to Serve You</h2>
-          </div>
-          <div className="max-w-sm mx-auto space-y-2 text-sm">
-            {hoursGroups(businessHours).map((g) => (
-              <div key={g.days} className="flex justify-between gap-4 border-b border-white/15 pb-2">
-                <span className="text-white/85">{g.days}</span>
-                <span className="font-heading text-white">{g.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-white/70 mt-6">Kitchen closes 30 minutes before close. Order ahead to skip the wait.</p>
-        </div>
-      </section>
+      <ExploreSections />
 
       {/* Final CTA */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-14 text-center">
         <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Order Ahead &amp; Skip the Wait</h2>
         <p className="text-muted-foreground mt-3">Place your order online and pick it up on your way through.</p>
-        <Link to="/menu" className="btn-cherry chrome-hover px-10 py-4 text-base font-heading inline-flex items-center gap-2 mt-6">
-          Order Online <ArrowRight size={18} />
-        </Link>
-        <a href="tel:+12705634618" className="btn-mint chrome-hover px-8 py-4 text-base font-heading inline-flex items-center gap-2 mt-6 ml-3"><Phone size={18} /> Call Us</a>
+        <div className="mt-6 flex flex-wrap gap-3 justify-center">
+          <Link to="/menu" className="btn-cherry chrome-hover px-10 py-4 text-base font-heading inline-flex items-center gap-2">
+            Order Online <ArrowRight size={18} />
+          </Link>
+          <a href="tel:+12705634618" className="btn-mint chrome-hover px-8 py-4 text-base font-heading inline-flex items-center gap-2">
+            <Phone size={18} /> Call Us
+          </a>
+        </div>
         <div className="mt-8 flex flex-wrap gap-3 justify-center text-sm">
-          <Link to="/explore-smiths-grove" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Explore Smiths Grove</Link>
-          <span className="text-muted-foreground">·</span>
           <Link to="/mammoth-cave-dining" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Mammoth Cave Dining</Link>
           <span className="text-muted-foreground">·</span>
           <Link to="/corvette-car-clubs" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Corvette Car Clubs</Link>
+          <span className="text-muted-foreground">·</span>
+          <Link to="/gallery" className="text-patina-mint hover:text-midnight-cherry font-heading transition-colors">Photo Gallery</Link>
         </div>
       </section>
 

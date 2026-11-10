@@ -226,6 +226,7 @@ const AuthenticatedApp = () => {
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
+      <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<NewsletterSignup />} />
       <Route path="/newsletter-archive" element={<NewsletterArchive />} />
