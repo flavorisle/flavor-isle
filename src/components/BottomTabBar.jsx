@@ -18,7 +18,7 @@ export default function BottomTabBar() {
   const tabs = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
-    { tel: '+12705634618', label: 'Call', icon: Phone },
+    { call: true, label: 'Call', icon: Phone },
     { cart: true, label: 'Bag', icon: ShoppingBag },
     { smashie: true, label: 'Smashie', icon: Bot },
     { to: '/account', label: 'Account', icon: User },
@@ -90,11 +90,11 @@ export default function BottomTabBar() {
             </span>
           );
 
-          if (tab.tel) {
+          if (tab.call) {
             return (
               <a
                 key="call"
-                href={`tel:${tab.tel}`}
+                href="tel:+12705634618"
                 className="tap-44 flex-1 flex items-center justify-center select-none"
                 aria-label="Call Flavor Isle at (270) 563-4618"
                 title="(270) 563-4618"

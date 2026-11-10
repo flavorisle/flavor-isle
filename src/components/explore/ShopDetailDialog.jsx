@@ -161,21 +161,23 @@ function DetailBody({ shop, onJump }) {
 
         {shop.building_name && (
           <p className="m-0 text-[13px] text-[#41556a]">
-            <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] mr-1.5">Inside</span>
-            {shop.building_name}
+            Inside{' '}
+            <a href={`#${shop.building_id}`} onClick={(e) => { e.preventDefault(); onJump(shop.building_id); }} className="inline-flex min-h-11 items-center font-semibold text-primary underline">
+              {shop.building_name}
+            </a>
             {shop.building_address ? `, ${shop.building_address}` : ''}.
           </p>
         )}
 
         {shop.tenants && shop.tenants.length > 0 && (
           <p className="m-0 text-[13px] text-[#41556a]">
-            <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93] mr-1.5">Shops inside</span>
+            <span className="text-[11.5px] font-black tracking-[.08em] uppercase text-muted-foreground mr-1.5">Shops inside:</span>
             {shop.tenants.map((tenant, index) => (
               <span key={tenant.id || tenant.name}>
                 {index > 0 && ' \u00b7 '}
-                <button type="button" onClick={() => onJump && onJump(tenant.id)} className="font-semibold text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2">
+                <a href={`#${tenant.id}`} onClick={(e) => { e.preventDefault(); onJump(tenant.id); }} className="inline-flex min-h-11 items-center font-semibold text-primary hover:text-foreground underline decoration-1 underline-offset-2">
                   {tenant.name}
-                </button>
+                </a>
               </span>
             ))}
           </p>

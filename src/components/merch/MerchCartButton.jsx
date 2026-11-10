@@ -1,17 +1,20 @@
 // Tasty Threads floating cart trigger.
 import React from 'react';
 import { Shirt } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMerchCart } from '@/context/MerchCartContext';
 
 // Floating merch-cart trigger for the storefront. Separate from the food cart
 // emblem so the two order flows never collide.
 export default function MerchCartButton() {
   const { totalItems, setIsCartOpen } = useMerchCart();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   return (
     <button
-      onClick={() => setIsCartOpen(true)}
+      onClick={() => pathname === '/merch' ? setIsCartOpen(true) : navigate('/merch')}
       className="relative p-1 rounded-full hover:opacity-90 transition"
-      aria-label={`Tasty Threads cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}`}
+      aria-label={pathname === '/merch' ? `Tasty Threads cart, ${totalItems} item${totalItems !== 1 ? 's' : ''}` : 'Shop Tasty Threads'}
     >
       <Shirt size={26} className="text-obsidian-roast" />
       {totalItems > 0 && (

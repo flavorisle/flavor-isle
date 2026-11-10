@@ -36,20 +36,17 @@ export default function ExploreSections() {
           if (!row || row.is_active === false || !grouped[row.section]) return;
           grouped[row.section].push(mapShop(row));
         });
-        // A shop that names its building gets the building's anchor and address,
-        // and the building card collects its shops. Matched by name inside the
-        // shops section, so a wrong name simply links nothing.
-        const byName = {};
-        grouped.shops.forEach((shop) => {
-          if (shop.name) byName[shop.name.trim().toLowerCase()] = shop;
-        });
-        grouped.shops.forEach((shop) => {
-          const home = shop.building ? byName[shop.building.trim().toLowerCase()] : null;
-          if (!home || home === shop) return;
-          shop.building_id = home.id;
-          shop.building_name = home.name;
-          shop.building_address = home.address || '';
-          home.tenants = (home.tenants || []).concat([{ id: shop.id, name: shop.name }]);
+        // Resolve buildings only among visible rows in the same section.
+        Object.values(grouped).forEach((section) => {
+          const byName = new Map(section.map((shop) => [shop.name.trim().toLowerCase(), shop]));
+          section.forEach((shop) => {
+            const home = byName.get(shop.building.trim().toLowerCase());
+            if (!home || home === shop) return;
+            shop.building_id = home.id;
+            shop.building_name = home.name;
+            shop.building_address = home.address || '';
+            home.tenants = (home.tenants || []).concat([{ id: shop.id, name: shop.name }]);
+          });
         });
         setStops({
           shops: grouped.shops.length ? grouped.shops : FALLBACKS.shops,
@@ -113,7 +110,7 @@ export default function ExploreSections() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.surrounding.map((stop) => (
-            <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} onJump={scrollToStop} />
           ))}
         </div>
       </section>

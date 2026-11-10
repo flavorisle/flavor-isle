@@ -54,33 +54,35 @@ export default function StopCard({ stop, onOpen, onJump }) {
             {stop.tenants.map((tenant, index) => (
               <span key={tenant.id || tenant.name}>
                 {index > 0 && ' · '}
-                <button
-                  type="button"
+                <a
+                  href={`#${tenant.id}`}
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     onJump(tenant.id);
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
-                  className="font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast underline decoration-1 underline-offset-2"
+                  className="inline-flex min-h-11 items-center font-black tracking-[.08em] uppercase text-primary hover:text-foreground underline decoration-1 underline-offset-2"
                 >
                   {tenant.name}
-                </button>
+                </a>
               </span>
             ))}
           </p>
         )}
         {stop.building_name && (
-          <button
-            type="button"
+          <a
+            href={`#${stop.building_id}`}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onJump(stop.building_id);
             }}
             onKeyDown={(e) => e.stopPropagation()}
-            className="w-max text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast pt-0.5"
+            className="inline-flex min-h-11 items-center w-max text-[11.5px] font-black tracking-[.08em] uppercase text-primary hover:text-foreground pt-0.5"
           >
             Inside {stop.building_name}
-          </button>
+          </a>
         )}
         {stop.handles && stop.handles.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1">

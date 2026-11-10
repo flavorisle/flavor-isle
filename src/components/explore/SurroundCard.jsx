@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function SurroundCard({ stop, onOpen }) {
+export default function SurroundCard({ stop, onOpen, onJump }) {
   return (
     <article
       id={stop.id}
@@ -29,6 +29,24 @@ export default function SurroundCard({ stop, onOpen }) {
         <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
         <p className="m-0 text-[14.5px] font-semibold text-[#41556a] flex-1">{stop.copy}</p>
+        {stop.tenants?.length > 0 && (
+          <p className="m-0 text-xs text-muted-foreground">
+            Shops inside:{' '}
+            {stop.tenants.map((tenant, index) => (
+              <React.Fragment key={tenant.id}>
+                {index > 0 && ' · '}
+                <a href={`#${tenant.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJump(tenant.id); }} onKeyDown={(e) => e.stopPropagation()} className="inline-flex min-h-11 items-center font-bold text-primary underline">
+                  {tenant.name}
+                </a>
+              </React.Fragment>
+            ))}
+          </p>
+        )}
+        {stop.building_name && (
+          <a href={`#${stop.building_id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJump(stop.building_id); }} onKeyDown={(e) => e.stopPropagation()} className="inline-flex min-h-11 items-center w-max text-xs font-bold text-primary">
+            Inside {stop.building_name}
+          </a>
+        )}
         {stop.distance && (
           <p className="m-0 text-[11.5px] font-black tracking-[.08em] uppercase text-[#6a7f93]">{stop.distance}</p>
         )}
