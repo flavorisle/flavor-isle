@@ -4,7 +4,9 @@ import { optimizedImageUrl } from '@/lib/utils';
 import { galleryImage } from '@/lib/galleryPhotos';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
-const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
+// Flyer photography comes from the gallery only (Wesley's marketing rule), so the
+// storefront shot below is pulled through galleryImage rather than a separate asset.
+const STOREFRONT = galleryImage('The sign at 1st and Main');
 
 export default function Flyer() {
   return (
@@ -74,11 +76,11 @@ export default function Flyer() {
           {/* Building illustration */}
           <div className="bg-patina-mint/5 px-8 pt-8 pb-2 flex justify-center">
             <img
-              src={optimizedImageUrl(BUILDING, 800, 600, 'fit')}
-              alt="Flavor Isle roadside stand"
+              src={optimizedImageUrl(STOREFRONT, 800, 600, 'fit')}
+              alt="The Flavor Isle sign at 1st and Main in Smiths Grove"
               width="800"
               height="600"
-              className="w-full max-w-[5.5in] object-contain"
+              className="w-full max-w-[5.5in] max-h-[3.2in] object-cover rounded-2xl"
             />
           </div>
 
@@ -126,10 +128,10 @@ export default function Flyer() {
                   img: galleryImage('Golden crinkle fries'),
                 },
                 {
-                  name: 'Banana Pudding Bliss Milkshake',
-                  desc: 'Banana pudding turned shake — creamy, nostalgic comfort.',
-                  price: '$5.99',
-                  img: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/bc5ca3ebadbb5e4ac86c3782d0c4d4d58cc2d693/original.jpeg',
+                  name: 'Fried Pickle Chips',
+                  desc: 'Golden breaded pickle chips, fried to order. The basket that disappears first.',
+                  price: '$6.60',
+                  img: galleryImage('Fried pickles, hot out of the basket'),
                 },
               ].map((m) => (
                 <div key={m.name} className="rounded-2xl overflow-hidden border border-patina-mint/15 bg-patina-mint/5">
