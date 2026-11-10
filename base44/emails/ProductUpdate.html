@@ -1,70 +1,183 @@
 <mjml>
   <mj-head>
-    <mj-title>Diner Favorites, Fresh Off the Grill</mj-title>
-    <mj-preview>Plus a sweet little something waiting for you at the counter.</mj-preview>
+    <mj-title>Two new shirts, hot fudge cake, and 16 stops in Smiths Grove</mj-title>
+    <mj-preview>New Tasty Threads tees, the hot fudge cake everyone is posting, and the full Smiths Grove walking guide.</mj-preview>
     <mj-attributes>
       <mj-all font-family="Nunito, Helvetica, Arial, sans-serif" />
-      <mj-section background-color="#0f0818" padding="0 36px" />
+      <mj-section background-color="#fdf6e3" padding="0 28px" />
       <mj-column padding="0" />
-      <mj-text color="#ffffff" font-size="15px" line-height="1.6" padding="0" />
-      <mj-button background-color="#c74a05" color="#ffffff" border-radius="24px" font-size="15px" font-weight="700" inner-padding="14px 28px" padding="0" align="left" />
+      <mj-text color="#003366" font-size="16px" line-height="1.65" padding="0" />
+      <mj-button background-color="#cc2900" color="#ffffff" border-radius="24px" font-size="15px" font-weight="700" inner-padding="15px 30px" padding="0" align="left" />
       <mj-image padding="0" />
-      <mj-divider border-color="#e4ddcd" border-width="1px" padding="0" />
+      <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
       <mj-class name="h" font-family="'Bebas Neue', Helvetica, Arial, sans-serif" font-weight="700" />
-      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#c74a05" />
-      <mj-class name="muted" color="#cdbdac" />
+      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#cc2900" />
+      <mj-class name="muted" color="#6b7280" />
+      <mj-class name="card" background-color="#ffffff" border-radius="24px" padding="28px" />
     </mj-attributes>
     <mj-style>
-      @media (max-width:480px) { .hero-h div { font-size:32px !important; line-height:1.12 !important; } .offer-h div { font-size:48px !important; } }
+      @media (max-width:480px) {
+        .hero-h div { font-size: 33px !important; line-height: 1.1 !important; }
+        .big-h div { font-size: 34px !important; line-height: 1.1 !important; }
+      }
     </mj-style>
   </mj-head>
-  <mj-body background-color="#0f0818" width="600px">
-    <mj-wrapper padding="28px 12px" background-color="#0f0818">
-      <mj-section background-color="#c74a05" padding="22px 36px" border-radius="24px 24px 0 0">
+  <mj-body background-color="#fdf6e3" width="600px">
+    <mj-wrapper padding="0 0 32px" background-color="#fdf6e3">
+
+      <!-- Header band -->
+      <mj-section background-color="#cc2900" padding="20px 28px">
         <mj-column>
-          <mj-image src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b4a2a395c_logo.png" alt="Flavor Isle" width="36px" align="center" padding="0 0 10px" />
-          <mj-text align="center" font-size="12px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#ffffff">Flavor Isle</mj-text>
+          <mj-image src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b4a2a395c_logo.png" alt="Flavor Isle" width="40px" align="left" padding="0" />
+        </mj-column>
+        <mj-column vertical-align="middle">
+          <mj-text align="right" font-size="13px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#ffffff" padding="0">Flavor Isle</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section background-url="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1d645b3a6_generated_ce625212.jpg" background-size="cover" background-repeat="no-repeat" background-position="center center" background-color="#222222" padding="0">
-        <mj-column background-color="rgba(0,0,0,0.46)" padding="170px 36px 42px">
-          <mj-text font-size="11px" letter-spacing="3px" text-transform="uppercase" font-weight="700" color="#ffffff" align="left" padding="0 0 14px">New From Flavor Isle</mj-text>
-          <mj-text mj-class="h" css-class="hero-h" align="left" font-size="42px" line-height="1.04" color="#ffffff" padding="0 0 26px">Diner Favorites, Fresh Off the Grill</mj-text>
-          <mj-button href="{{cta_url}}" align="left" inner-padding="15px 32px">See the Menu</mj-button>
+
+      <!-- Hero -->
+      <mj-section background-url="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/10583e4c5_ecbf45a39_IMG_1604.jpg" background-size="cover" background-repeat="no-repeat" background-position="center center" background-color="#003366" padding="0">
+        <mj-column background-color="rgba(0,51,102,0.62)" padding="150px 32px 38px">
+          <mj-text font-size="11px" letter-spacing="3px" text-transform="uppercase" font-weight="700" color="#ffffff" padding="0 0 14px">New this week at the Isle</mj-text>
+          <mj-text mj-class="h" css-class="hero-h" font-size="44px" line-height="1.04" color="#ffffff" padding="0 0 22px">Two new shirts, hot fudge cake, and a whole town to walk</mj-text>
+          <mj-button href="https://flavor-isle.com/merch" align="left" inner-padding="15px 32px">Shop Tasty Threads</mj-button>
         </mj-column>
       </mj-section>
-      
-      <mj-section padding="44px 36px 12px">
+
+      <!-- Intro -->
+      <mj-section background-color="#ffffff" padding="40px 34px 8px">
         <mj-column>
-          <mj-text font-size="17px" line-height="1.65" color="#cdbdac">Come in for the classics you crave, from double cheeseburgers off the grill to hand-spun milkshakes, and see what&#x27;s new on the menu this week.</mj-text>
+          <mj-text>Three things landed this week and we could not pick a favorite. Two brand new Tasty Threads tees, the hot fudge cake our crew keeps posting about, and the full Explore Smiths Grove guide that walks you through all sixteen stops around our block. Have a look.</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section padding="16px 28px 12px">
-        <mj-column padding="0 8px 16px" inner-background-color="#1e0d16" inner-border-radius="24px">
-          <mj-text mj-class="h" font-size="28px" line-height="1" color="#c74a05" padding="22px 20px 14px">01</mj-text>
-          <mj-text mj-class="h" font-size="16px" line-height="1.35" padding="0 20px 6px">Classic Plates</mj-text>
-          <mj-text mj-class="muted" font-size="14px" padding="0 20px 22px">Cheeseburgers, chicken sandwiches, and baskets of crispy fries, made fresh every day.</mj-text>
-        </mj-column>
-        <mj-column padding="0 8px 16px" inner-background-color="#1e0d16" inner-border-radius="24px">
-          <mj-text mj-class="h" font-size="28px" line-height="1" color="#c74a05" padding="22px 20px 14px">02</mj-text>
-          <mj-text mj-class="h" font-size="16px" line-height="1.35" padding="0 20px 6px">Plan Your Visit</mj-text>
-          <mj-text mj-class="muted" font-size="14px" padding="0 20px 22px">Check gallery photos, read guest feedback, and browse all 41 pages of info before you walk in the door.</mj-text>
-        </mj-column>
-      </mj-section>
-      
-      <mj-section background-url="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/a7a49a6c4_generated_d0bd4c3c.jpg" background-size="cover" background-repeat="no-repeat" background-position="center center" background-color="#222222" padding="0">
-        <mj-column background-color="rgba(0,0,0,0.5)" padding="64px 40px">
-          <mj-text font-size="11px" letter-spacing="3px" text-transform="uppercase" font-weight="700" color="#ffffff" padding="0 0 14px">New From Flavor Isle</mj-text>
-          <mj-button href="{{cta_url}}" align="left" inner-padding="15px 32px">See the Menu</mj-button>
-        </mj-column>
-      </mj-section>
-      
-      <mj-section background-color="#c74a05" padding="30px 36px 34px" border-radius="0 0 24px 24px">
+
+      <!-- New merch -->
+      <mj-section background-color="#ffffff" padding="28px 34px 4px">
         <mj-column>
-          <mj-text mj-class="h" align="center" font-size="18px" color="#ffffff" padding="0 0 8px">Flavor Isle</mj-text>
-          <mj-text align="center" font-size="12px" color="#ffffff"><a href="{{unsubscribe_url}}" style="color:#ffffff;text-decoration:underline;">Unsubscribe</a></mj-text>
+          <mj-text mj-class="label" padding="0 0 10px">Tasty Threads, fresh print</mj-text>
+          <mj-text mj-class="h" css-class="big-h" font-size="38px" line-height="1.05" padding="0 0 12px">Wear the Isle</mj-text>
+          <mj-text mj-class="muted" font-size="15px" padding="0 0 4px">Two new tees, printed on demand and shipped to your door. Grab one for the road trip and one for the person who keeps asking where you ate.</mj-text>
         </mj-column>
       </mj-section>
+
+      <mj-section background-color="#ffffff" padding="16px 26px 8px">
+        <mj-group>
+          <mj-column padding="0 8px 12px">
+            <mj-image src="https://files.cdn.printful.com/files/b08/b08793c719f8ae7d6caa855cb589d00b_preview.png" alt="Frankly the Best in Town tee by Tasty Threads" border-radius="20px" padding="0 0 14px" />
+            <mj-text mj-class="h" font-size="22px" line-height="1.1" padding="0 0 8px">Frankly, the Best in Town</mj-text>
+            <mj-text mj-class="muted" font-size="14px" padding="0 0 16px">Our own brag, printed clean across the chest. Pull it on and let the shirt do the talking.</mj-text>
+            <mj-button href="https://flavor-isle.com/merch" font-size="14px" inner-padding="12px 22px">Shop the tee</mj-button>
+          </mj-column>
+          <mj-column padding="0 8px 12px">
+            <mj-image src="https://files.cdn.printful.com/files/45e/45e65e3aeee9d5d0eb3919f5f041a8b2_preview.png" alt="I just ate at Flavor Isle tee by Tasty Threads" border-radius="20px" padding="0 0 14px" />
+            <mj-text mj-class="h" font-size="22px" line-height="1.1" padding="0 0 8px">I Just Ate at Flavor Isle</mj-text>
+            <mj-text mj-class="muted" font-size="14px" padding="0 0 16px">The honest review, no typing required. Wear your lunch and settle every argument about where to stop.</mj-text>
+            <mj-button href="https://flavor-isle.com/merch" font-size="14px" inner-padding="12px 22px">Shop the tee</mj-button>
+          </mj-column>
+        </mj-group>
+      </mj-section>
+
+      <mj-section background-color="#ffffff" padding="4px 34px 36px">
+        <mj-column>
+          <mj-text mj-class="muted" font-size="13px" padding="0">Both tees are in the Tasty Threads shop alongside the caps, the Smiths Grove Landmark tee and the rest of the lineup.</mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="28px 0">
+        <mj-column>
+          <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
+        </mj-column>
+      </mj-section>
+
+      <!-- Hot fudge cake -->
+      <mj-section background-color="#ffffff" padding="0">
+        <mj-column padding="0">
+          <mj-image src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/bb9b490bf_IMG_0371.png" alt="Flavor Isle hot fudge cake with fudge and peanuts" padding="0" border-radius="0" />
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-color="#ffffff" padding="30px 34px 36px">
+        <mj-column>
+          <mj-text mj-class="label" padding="0 0 10px">Posted today by our marketing crew</mj-text>
+          <mj-text mj-class="h" font-size="34px" line-height="1.05" padding="0 0 12px">Hot fudge cake, still warm</mj-text>
+          <mj-text>A warm slice of fudge cake under hot fudge and peanuts, the dessert that turned into a whole conversation in the kitchen this morning. Rich enough to share, good enough that you will be glad you did not.</mj-text>
+          <mj-text mj-class="muted" font-size="14px" padding="14px 0 18px">Save room for it on your next order, or ask the counter about it when you walk in.</mj-text>
+          <mj-button href="https://flavor-isle.com/menu" inner-padding="15px 30px">Add it to your order</mj-button>
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="28px 0">
+        <mj-column>
+          <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
+        </mj-column>
+      </mj-section>
+
+      <!-- Explore Smiths Grove -->
+      <mj-section background-color="#ffffff" padding="0 34px 6px">
+        <mj-column>
+          <mj-text mj-class="label" padding="0 0 10px">Explore Smiths Grove</mj-text>
+          <mj-text mj-class="h" css-class="big-h" font-size="38px" line-height="1.05" padding="0 0 14px">One block, sixteen stops</mj-text>
+          <mj-text>Smiths Grove is small, walkable and full of surprises, and our corner sits right in the middle of it. The Explore Smiths Grove guide maps every stop in the order of our printed walking map, with a photo, the address, and directions that start at our front door.</mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-color="#ffffff" padding="18px 26px 4px">
+        <mj-group>
+          <mj-column padding="0 8px 12px">
+            <mj-image src="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/cd9fa76fa_roost-building.jpg" alt="The Roost on Main Street in Smiths Grove" border-radius="18px" padding="0 0 10px" />
+            <mj-text font-size="13px" color="#003366" padding="0"><span style="font-weight:700;">The Roost</span><br /><span style="color:#6b7280;">131 N. Main, with 42171 &amp; Co. inside</span></mj-text>
+          </mj-column>
+          <mj-column padding="0 8px 12px">
+            <mj-image src="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/e1819dde1_psycho-granny.jpg" alt="Psycho Granny's Quilt Shop in Smiths Grove" border-radius="18px" padding="0 0 10px" />
+            <mj-text font-size="13px" color="#003366" padding="0"><span style="font-weight:700;">Psycho Granny&#8217;s</span><br /><span style="color:#6b7280;">Quilts, fabric and records at 101 N. Main</span></mj-text>
+          </mj-column>
+        </mj-group>
+        <mj-group>
+          <mj-column padding="8px 8px 12px">
+            <mj-image src="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/65b204ad6_ace-coffee-storefront.jpg" alt="Ace Coffee Indigo Fox in Smiths Grove" border-radius="18px" padding="0 0 10px" />
+            <mj-text font-size="13px" color="#003366" padding="0"><span style="font-weight:700;">Ace Coffee Indigo Fox</span><br /><span style="color:#6b7280;">Drinks and a place to sit on E. 1st</span></mj-text>
+          </mj-column>
+          <mj-column padding="8px 8px 12px">
+            <mj-image src="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/130a7bd40_marigold-vintage.jpg" alt="Marigold Vintage in Smiths Grove" border-radius="18px" padding="0 0 10px" />
+            <mj-text font-size="13px" color="#003366" padding="0"><span style="font-weight:700;">Marigold Vintage</span><br /><span style="color:#6b7280;">1940s to Y2K finds at 127 S. Main</span></mj-text>
+          </mj-column>
+        </mj-group>
+      </mj-section>
+
+      <mj-section background-color="#ffffff" padding="16px 34px 8px">
+        <mj-column>
+          <mj-text font-size="12px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#cc2900" padding="0 0 10px">On Main and around the corner</mj-text>
+          <mj-text font-size="15px">42171 &amp; Co. and The Roost, Marigold Manor, Psycho Granny&#8217;s Quilt Shop &amp; More, The Foxhole, Smalls on Main, Marigold Vintage, Boone&#8217;s Antiques &amp; The Garden Patch, KY Card Vault, Second Chances &amp; Main Attractions, Ace Coffee Indigo Fox, Superior Supply, Pelly&#8217;s Farm Fresh, Cinco de Mayo and Grammie&#8217;s Home Cookin&#8217;.</mj-text>
+          <mj-text font-size="15px" padding="14px 0 0">Two more things worth a whole afternoon: Bluegrass Vineyard and Balance Distilling, both family owned and both doing tastings. Ed Spear Park and the Historic District are the slow, quiet end of the walk, and if you are making a day of it, the National Corvette Museum is fifteen minutes south, Mammoth Cave is twenty five minutes north, and Buc-ee&#8217;s is seven tenths of a mile from our door.</mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-url="https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/0c2f8476d_mammoth-cave.jpg" background-size="cover" background-repeat="no-repeat" background-position="center center" background-color="#003366" padding="0">
+        <mj-column background-color="rgba(0,51,102,0.55)" padding="70px 36px">
+          <mj-text mj-class="h" font-size="30px" line-height="1.1" color="#ffffff" padding="0 0 14px">Every stop, with directions from our door</mj-text>
+          <mj-button href="https://flavor-isle.com/explore-smiths-grove" align="left" inner-padding="15px 32px">Open the Smiths Grove guide</mj-button>
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-color="#ffffff" padding="34px 34px 40px">
+        <mj-column>
+          <mj-text mj-class="h" font-size="26px" line-height="1.1" padding="0 0 10px">Burgers first, then the walk</mj-text>
+          <mj-text mj-class="muted" font-size="15px" padding="0 0 18px">Order online for pickup, curbside or delivery, or just walk in. We are on the corner of Main and First, right in the middle of everything above.</mj-text>
+          <mj-button href="https://flavor-isle.com/menu" inner-padding="15px 32px">Order online</mj-button>
+        </mj-column>
+      </mj-section>
+
+      <!-- Footer -->
+      <mj-section background-color="#003366" padding="30px 34px 12px" border-radius="0 0 24px 24px">
+        <mj-column>
+          <mj-image src="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b4a2a395c_logo.png" alt="Flavor Isle" width="44px" align="center" padding="0 0 8px" />
+          <mj-text mj-class="h" align="center" font-size="18px" color="#ffffff" padding="0 0 6px">Flavor Isle</mj-text>
+          <mj-text align="center" font-size="13px" color="#ffffff" padding="0 0 6px">103 N Main St, Smiths Grove, KY 42171</mj-text>
+          <mj-text align="center" font-size="13px" color="#ffffff" padding="0 0 12px">(270) 563-4618 &#183; flavor-isle.com</mj-text>
+          <mj-text align="center" font-size="12px" color="#ffffff" padding="0"><a href="{{unsubscribe_url}}" style="color:#ffffff;text-decoration:underline;">Unsubscribe</a></mj-text>
+        </mj-column>
+      </mj-section>
+
     </mj-wrapper>
   </mj-body>
 </mjml>
