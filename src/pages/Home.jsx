@@ -232,7 +232,7 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                    <p className="text-sm">Kentucky, KY 42171</p>
+                    <p className="text-sm">Smiths Grove, KY 42171</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -335,7 +335,7 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                  <p className="text-sm text-muted-foreground">Kentucky, KY 42171 · 0.7 mi / ~2 min from I-65</p>
+                  <p className="text-sm text-muted-foreground">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
                 </div>
               </div>
               <a

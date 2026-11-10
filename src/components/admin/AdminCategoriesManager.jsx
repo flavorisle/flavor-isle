@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { EyeOff, Eye, ChevronUp, ChevronDown, Plus, Pencil, Check, X, Layers } from 'lucide-react';
-import { getMenuSetting, setHiddenCategories, setCategorySortOrder, setCategoryRenames } from '@/lib/menuSettings';
+import { getMenuSetting, setHiddenCategories, setCategorySortOrder, setCategoryRenames, setCategorySubtitles } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, sortCategories } from '@/lib/menuCategory';
 
 // Self-contained Categories tab: reorder, rename, hide/show, and add custom
@@ -10,6 +10,7 @@ export default function AdminCategoriesManager({ items = [] }) {
   const [hidden, setHidden] = useState([]);
   const [order, setOrder] = useState([]);
   const [renames, setRenames] = useState({});
+  const [subtitles, setSubtitles] = useState({});
   const [editingKey, setEditingKey] = useState(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [customName, setCustomName] = useState('');
@@ -21,6 +22,7 @@ export default function AdminCategoriesManager({ items = [] }) {
         setHidden(s.hidden_categories || []);
         setOrder(s.category_sort_order || []);
         setRenames(s.category_renames || {});
+        setSubtitles(s.category_subtitles || {});
       })
       .catch(() => {});
   }, []);
@@ -60,6 +62,16 @@ export default function AdminCategoriesManager({ items = [] }) {
     setEditingKey(null);
     setSaving(true);
     try { await setCategoryRenames(next); } finally { setSaving(false); }
+  };
+
+  // Plain label under the category name (issue #282). Saved on blur; an empty
+  // box removes the line entirely.
+  const saveSubtitle = async (key, value) => {
+    const next = { ...subtitles };
+    const text = String(value || '').trim();
+    if (text) next[key] = text; else delete next[key];
+    setSubtitles(next);
+    try { await setCategorySubtitles(next); } catch (e) { /* ignore */ }
   };
 
   const addCustom = async () => {
@@ -137,6 +149,19 @@ export default function AdminCategoriesManager({ items = [] }) {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground mt-0.5">{count} item{count !== 1 ? 's' : ''}{isHidden ? ' · hidden' : ''}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <label htmlFor={`plain-label-${key}`} className="text-xs text-muted-foreground whitespace-nowrap">Plain label</label>
+                      <input
+                        id={`plain-label-${key}`}
+                        type="text"
+                        value={subtitles[key] || ''}
+                        onChange={e => setSubtitles({ ...subtitles, [key]: e.target.value })}
+                        onBlur={e => saveSubtitle(key, e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                        placeholder="Line under the category name"
+                        className="flex-1 min-w-0 px-3 py-1.5 bg-white border border-border rounded-xl text-xs text-obsidian-roast focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
+                      />
+                    </div>
                   </div>
 
                   <button onClick={() => toggleVisible(key)}

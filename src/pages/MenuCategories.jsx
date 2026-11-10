@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import { getMenuSetting } from '@/lib/menuSettings';
-import { itemCategoryKey, categoryLabel, sortCategories } from '@/lib/menuCategory';
+import { itemCategoryKey, categoryLabel, categorySubtitle, sortCategories } from '@/lib/menuCategory';
 import { optimizedImageUrl } from '@/lib/utils';
 
 // Emoji per category, matched loosely so admin-defined categories still get an
@@ -79,6 +79,7 @@ export default function MenuCategories() {
       return {
         key,
         label: categoryLabel(key, renames),
+        subtitle: categorySubtitle(key, renames, setting.category_subtitles || {}),
         count: list.length,
         from: prices.length ? Math.min(...prices) : null,
         photo: withPhoto ? withPhoto.image_url_opt || withPhoto.image_url : null,
@@ -160,6 +161,9 @@ export default function MenuCategories() {
                       <span className="mr-2" aria-hidden="true">{cat.icon}</span>
                       {cat.label}
                     </h2>
+                    {cat.subtitle && (
+                      <p className="font-body text-[14px] sm:text-[15px] mt-1 text-[#6B7280]">{cat.subtitle}</p>
+                    )}
                     {cat.from !== null && (
                       <p className="text-sm text-muted-foreground">From ${cat.from.toFixed(2)}</p>
                     )}

@@ -25,6 +25,11 @@
       "description": "Map of category key -> display name shown to customers (e.g. { 'Burgers': 'Signature Burgers' }). Keys are the underlying Square/custom category; the label is what renders.",
       "default": {}
     },
+    "category_subtitles": {
+      "type": "object",
+      "description": "Map of category key -> plain label printed under that category's name on the menu and the Menu Categories page (e.g. { 'Old-Fashioned Burgers': 'Hamburgers and cheeseburgers' }). An empty or missing value shows no line.",
+      "default": {}
+    },
     "category_item_order": {
       "type": "object",
       "description": "Map of category key -> ordered list of MenuItem ids controlling item order within that category on the public menu.",

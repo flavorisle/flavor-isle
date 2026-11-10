@@ -12,6 +12,15 @@ export function categoryLabel(key, renames = {}) {
   return renames[key] || key;
 }
 
+// Plain label printed under a category's name (issue #282). Stored on the live
+// MenuSetting as category_subtitles keyed by the category key; a category with no
+// entry (Condiments, Chill & Thrill) shows no line at all. The display label is
+// checked too so an admin rename never hides a subtitle.
+export function categorySubtitle(key, renames = {}, subtitles = {}) {
+  const value = subtitles[key] ?? subtitles[categoryLabel(key, renames)];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 // Sort category keys by the admin-defined order; unknown ones append alphabetically.
 export function sortCategories(keys, order = []) {
   const known = order.filter(c => keys.includes(c));

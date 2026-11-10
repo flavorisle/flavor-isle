@@ -22,6 +22,7 @@ const DEFAULT_SETTING = {
   hidden_categories: [],
   category_sort_order: [],
   category_renames: {},
+  category_subtitles: {},
   category_item_order: {},
   ordering_enabled: true,
   ordering_closed_message: 'Ordering is temporarily closed',
@@ -197,6 +198,15 @@ export async function setEarlyClose(earlyClose) {
 export async function setCategoryRenames(renames) {
   const id = await requireSettingId();
   await base44.entities.MenuSetting.update(id, { category_renames: renames });
+  bustMenuSettingCache();
+  return id;
+}
+
+// Plain labels under category names (issue #282). One map, keyed by category
+// key; a blank string removes that category's line.
+export async function setCategorySubtitles(subtitles) {
+  const id = await requireSettingId();
+  await base44.entities.MenuSetting.update(id, { category_subtitles: subtitles });
   bustMenuSettingCache();
   return id;
 }

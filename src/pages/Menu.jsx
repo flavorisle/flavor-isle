@@ -15,7 +15,7 @@ import ShakeCustomizer from '@/components/ShakeCustomizer';
 import CravingsBox from '@/components/CravingsBox';
 import { useCart } from '@/context/CartContext';
 import { getMenuSetting } from '@/lib/menuSettings';
-import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
+import { itemCategoryKey, categoryLabel, categorySubtitle, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import ConversionNudgeBar from '@/components/ConversionNudgeBar';
@@ -51,6 +51,7 @@ export default function Menu() {
   const [hiddenCats, setHiddenCats] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [renames, setRenames] = useState({});
+  const [subtitles, setSubtitles] = useState({});
   const [itemOrder, setItemOrder] = useState({});
   const [activeShake, setActiveShake] = useState(null);
   const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
@@ -110,6 +111,7 @@ export default function Menu() {
       setHiddenCats(s.hidden_categories || []);
       setCategoryOrder(s.category_sort_order || []);
       setRenames(s.category_renames || []);
+      setSubtitles(s.category_subtitles || {});
       setItemOrder(s.category_item_order || {});
     } catch (e) {}
     try {
@@ -317,7 +319,14 @@ export default function Menu() {
           isShakeBanner ? (
             <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
               <div className="flex items-center gap-4 mb-5">
-                <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
+                <div>
+                  <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
+                  {categorySubtitle(SHAKE_KEY, renames, subtitles) && (
+                    <p className="font-body text-[14px] sm:text-[15px] mt-1" style={{ color: '#6B7280' }}>
+                      {categorySubtitle(SHAKE_KEY, renames, subtitles)}
+                    </p>
+                  )}
+                </div>
                 <div className="flex-1 h-px bg-border" />
               </div>
               <MilkshakePromoBanner variant="strip" />
@@ -332,9 +341,16 @@ export default function Menu() {
           ) : (
           <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
                 <div className="flex items-center gap-4 mb-5">
-                  <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
-                    {search ? 'Search Results' : categoryLabel(key, renames)}
-                  </h2>
+                  <div>
+                    <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
+                      {search ? 'Search Results' : categoryLabel(key, renames)}
+                    </h2>
+                    {!search && categorySubtitle(key, renames, subtitles) && (
+                      <p className="font-body text-[14px] sm:text-[15px] mt-1" style={{ color: '#6B7280' }}>
+                        {categorySubtitle(key, renames, subtitles)}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-sm text-muted-foreground">{rowItems.length} item{rowItems.length !== 1 ? 's' : ''}</span>
                 </div>
