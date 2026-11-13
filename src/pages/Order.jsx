@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ShoppingBag, Utensils, Bike, ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, Clock } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { base44 } from '@/api/base44Client';
 import useLiveStatus from '@/hooks/useLiveStatus';
@@ -9,6 +9,7 @@ import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
+import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -39,9 +40,9 @@ export default function Order() {
   }, [source]);
 
   const OPTIONS = [
-    { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), Icon: ShoppingBag, blurb: 'Grab it hot off the grill.' },
-    { id: 'dine_in', label: 'Dine-In', time: openFromLabel || 'Seat yourself', Icon: Utensils, blurb: 'Pull up a seat and dig in.' },
-    { id: 'delivery', label: 'Delivery', time: openFromLabel || (deliveryEnabled ? deliveryQuote(waitMin) : 'Paused'), Icon: Bike, blurb: 'We bring it to your door.' },
+    { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), art: ORDER_TYPE_IMAGES.pickup, blurb: 'Grab it hot off the grill.' },
+    { id: 'dine_in', label: 'Dine-In', time: openFromLabel || 'Seat yourself', art: ORDER_TYPE_IMAGES.dine_in, blurb: 'Pull up a seat and dig in.' },
+    { id: 'delivery', label: 'Delivery', time: openFromLabel || (deliveryEnabled ? deliveryQuote(waitMin) : 'Paused'), art: ORDER_TYPE_IMAGES.delivery, blurb: 'We bring it to your door.' },
   ];
 
   const start = (type) => {
@@ -84,14 +85,14 @@ export default function Order() {
 
         {/* Order type cards */}
         <div className="grid gap-4">
-          {OPTIONS.map(({ id, label, time, Icon, blurb }) => (
+          {OPTIONS.map(({ id, label, time, art, blurb }) => (
             <button
               key={id}
               onClick={() => start(id)}
               className="card-diner p-5 flex items-center gap-4 text-left tap-44 group"
             >
-              <div className="w-14 h-14 rounded-2xl bg-midnight-cherry/10 text-midnight-cherry flex items-center justify-center flex-shrink-0">
-                <Icon size={26} />
+              <div className="w-14 h-14 flex items-center justify-center flex-shrink-0">
+                <img src={art} alt={`Smashie ${label}`} width={52} height={52} className="w-[52px] h-[52px] object-contain" loading="lazy" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
