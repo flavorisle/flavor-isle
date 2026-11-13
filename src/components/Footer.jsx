@@ -29,6 +29,7 @@ const VISIT_LINKS = [
   { label: 'I-65 Exit 38 Stop', to: '/i65-exit-38' },
   { label: 'Mammoth Cave Dining', to: '/mammoth-cave-dining' },
   { label: 'Corvette Car Clubs', to: '/corvette-car-clubs' },
+  { label: 'Date Night', to: '/date-night' },
   { label: 'FAQ', to: '/faq' },
   { label: 'Contact Us', to: '/contact' },
   { label: 'Share Feedback', to: '/feedback' },
