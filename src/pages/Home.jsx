@@ -216,6 +216,56 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── DATE NIGHT ── */}
+      <section id="date-night" className="py-10 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast mb-6">
+            Flavor Isle: Date Night Milkshakes &amp; Eats Off I-65 in Smiths Grove, KY
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            <div className="space-y-4 text-muted-foreground leading-relaxed">
+              <p>
+                Flavor Isle is a Smiths Grove favorite and an easy stop on I-65. Take exit 38, and you are 2 minutes away. Build your own milkshake, split a basket of fries, and make it a night out.
+              </p>
+              <h3 className="font-heading text-xl text-obsidian-roast pt-2">A Date Night Worth the Drive</h3>
+              <p>
+                Mom and Dad, this one is for you. Couples drive in from Bowling Green, Scottsville and Glasgow for a laid-back night with no reservation needed. Pick your flavors, split a basket of fries, and take it to go or stay a while.
+              </p>
+              <h3 className="font-heading text-xl text-obsidian-roast pt-2">Easy to Reach From I-65</h3>
+              <div className="space-y-1">
+                <p>From Cave City: about 28 minutes south on I-65, exit 38</p>
+                <p>From Bowling Green: 15 minutes north on I-65, exit 38</p>
+                <p>Address: 103 N Main St, Smiths Grove, KY 42171. Hours: Mon–Thu 10:30 AM–7 PM, Fri–Sat 10:30 AM–8 PM, Sun 11 AM–7 PM</p>
+              </div>
+              <h3 className="font-heading text-xl text-obsidian-roast pt-2">What to Order</h3>
+              <p>Try the Shake Isle and our hand-patted burgers. Order online and skip the wait.</p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
+                  Order for Pickup
+                </Link>
+                <a
+                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-heading rounded-full border-2 border-patina-mint text-patina-mint hover:bg-patina-mint hover:text-white transition-colors"
+                >
+                  Get Directions
+                </a>
+              </div>
+            </div>
+            <img
+              src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/75533f8d0_IMG_8839.png', 800, 600)}
+              alt="Summer evenings on the patio at Flavor Isle"
+              width="800"
+              height="600"
+              loading="lazy"
+              decoding="async"
+              className="w-full aspect-[4/3] object-cover rounded-3xl shadow-float"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
         <div className="max-w-7xl mx-auto">
