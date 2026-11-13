@@ -140,13 +140,14 @@ export default function OrderCutoffSettings() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Closing Time</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Fallback Closing Time</label>
             <input
               type="time"
               value={closingTime}
               onChange={e => setClosingTime(e.target.value)}
               className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
             />
+            <p className="text-xs text-muted-foreground mt-1.5">Business Hours drive the real close time. This is only used for a day with no hours set.</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Delivery Cutoff (min before close)</label>

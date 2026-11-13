@@ -15,8 +15,8 @@ export const DEFAULT_BUSINESS_HOURS = {
   tuesday: { open: '10:30', close: '19:00', closed: false },
   wednesday: { open: '10:30', close: '19:00', closed: false },
   thursday: { open: '10:30', close: '19:00', closed: false },
-  friday: { open: '10:30', close: '19:00', closed: false },
-  saturday: { open: '10:30', close: '19:00', closed: false },
+  friday: { open: '10:30', close: '20:00', closed: false },
+  saturday: { open: '10:30', close: '20:00', closed: false },
   sunday: { open: '11:00', close: '19:00', closed: false },
 };
 
