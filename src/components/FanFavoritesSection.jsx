@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { productPath } from '@/lib/productSlug';
 import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
+import FavoritePhotoCard from '@/components/FavoritePhotoCard';
+import ShakeIslePhotoCard from '@/components/ShakeIslePhotoCard';
 
-const MAX_ROWS = 5;
+const MAX_ROWS = 10;
 
 export default function FanFavoritesSection({ items, shakeRank }) {
   const [shakeFlavors, setShakeFlavors] = useState(null);
@@ -42,26 +43,19 @@ export default function FanFavoritesSection({ items, shakeRank }) {
           Fan Favorites
         </h2>
         <div className="flex-1 h-px bg-border" />
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Top 5 best-sellers</span>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Top 10 best-sellers</span>
         <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap">View Menu <ArrowRight size={13} /></Link>
       </div>
-      <ul className="border-t border-border">
-        {favorites.map((item) => {
-          const to = item.shake ? '/milkshakes' : productPath(item);
-          const name = item.shake ? 'Shake Isle milkshakes' : item.name;
-          const right = item.shake ? (shakeFlavors ? `${shakeFlavors} flavors` : 'Flavors') : `$${Number(item.price || 0).toFixed(2)}`;
-          return (
-            <li key={item.id} className="border-b border-border">
-              <Link to={to} className="flex items-baseline gap-3 py-3.5 px-1 hover:bg-black/[0.03] focus-visible:outline-2 focus-visible:outline-primary" aria-label={`View ${name}`}>
-                <span className={`font-heading text-[15px] w-[26px] h-[26px] flex-none rounded-full inline-flex items-center justify-center self-center ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-vanilla-malt text-obsidian-roast'}`}>{item.rank}</span>
-                <span className="font-heading text-[22px] leading-tight text-obsidian-roast">{name}</span>
-                <span aria-hidden="true" className="flex-1 border-b-2 border-dotted border-border -translate-y-1 min-w-5" />
-                <span className="font-heading text-[21px] text-midnight-cherry whitespace-nowrap">{right}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="flex gap-6 overflow-x-auto snap-x pb-4 -mx-1 px-1">
+        {favorites.map((item) => (
+          <div key={item.id} className="relative flex-shrink-0 w-72 snap-start">
+            <span className={`absolute top-2 left-2 z-20 rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
+              TOP #{item.rank}
+            </span>
+            {item.shake ? <ShakeIslePhotoCard flavorCount={shakeFlavors} /> : <FavoritePhotoCard item={item} />}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
