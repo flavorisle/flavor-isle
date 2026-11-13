@@ -4,8 +4,9 @@ import { Star, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
-import FavoritePhotoCard from '@/components/FavoritePhotoCard';
-import ShakeIslePhotoCard from '@/components/ShakeIslePhotoCard';
+import { productPath } from '@/lib/productSlug';
+import { optimizedImageUrl } from '@/lib/utils';
+import { SHAKE_ISLE_IMAGE } from '@/components/ShakeIslePhotoCard';
 
 const MAX_ROWS = 10;
 
@@ -46,16 +47,29 @@ export default function FanFavoritesSection({ items, shakeRank }) {
         <span className="text-sm text-muted-foreground whitespace-nowrap">Top 10 best-sellers</span>
         <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap">View Menu <ArrowRight size={13} /></Link>
       </div>
-      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
-        {favorites.map((item) => (
-          <div key={item.id} className="snap-start flex-shrink-0 w-72 relative">
-            <span className={`absolute top-2 left-2 z-20 pointer-events-none rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
-              TOP #{item.rank}
-            </span>
-            {item.shake ? <ShakeIslePhotoCard flavorCount={shakeFlavors} /> : <FavoritePhotoCard item={item} />}
-          </div>
-        ))}
-      </div>
+      <ul className="border-t border-border">
+        {favorites.map((item) => {
+          const to = item.shake ? '/milkshakes' : productPath(item);
+          const name = item.shake ? 'Shake Isle milkshakes' : item.name;
+          const right = item.shake ? (shakeFlavors ? `${shakeFlavors} flavors` : 'Flavors') : `$${Number(item.price || 0).toFixed(2)}`;
+          const thumb = item.shake ? SHAKE_ISLE_IMAGE : (item.image_url_opt || item.image_url);
+          return (
+            <li key={item.id} className="border-b border-border">
+              <Link to={to} className="flex items-center gap-3 py-3 px-1 hover:bg-black/[0.03] focus-visible:outline-2 focus-visible:outline-primary" aria-label={`View ${name}`}>
+                <span className={`font-heading text-[15px] w-[26px] h-[26px] flex-none rounded-full inline-flex items-center justify-center ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-vanilla-malt text-obsidian-roast'}`}>{item.rank}</span>
+                {thumb ? (
+                  <img src={optimizedImageUrl(thumb, 160, 160)} alt="" aria-hidden="true" width="56" height="56" loading="lazy" decoding="async" className="flex-none w-14 h-14 rounded-lg object-cover border border-border" />
+                ) : (
+                  <span aria-hidden="true" className="flex-none w-14 h-14 rounded-lg bg-vanilla-malt border border-border" />
+                )}
+                <span className="font-heading text-[20px] leading-tight text-obsidian-roast">{name}</span>
+                <span aria-hidden="true" className="flex-1 border-b-2 border-dotted border-border min-w-4 self-end mb-2" />
+                <span className="font-heading text-[19px] text-midnight-cherry whitespace-nowrap">{right}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

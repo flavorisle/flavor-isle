@@ -6,7 +6,7 @@ import { optimizedImageUrl } from '@/lib/utils';
 // Isle entry in the Fan Favorites rail links to the milkshake menu instead of
 // opening a single product, so it gets its own photo card built like
 // FavoritePhotoCard.
-const SHAKE_ISLE_IMAGE = 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/a4d8b6451_menu-item-kse4vpwxpfh43ro5vmorgjxd-800x800.webp';
+export const SHAKE_ISLE_IMAGE = 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/a4d8b6451_menu-item-kse4vpwxpfh43ro5vmorgjxd-800x800.webp';
 
 export default function ShakeIslePhotoCard({ flavorCount }) {
   // Live count only — never a hardcoded number. Until it loads, just the name.
