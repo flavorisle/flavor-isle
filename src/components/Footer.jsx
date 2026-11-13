@@ -27,6 +27,7 @@ const VISIT_LINKS = [
   { label: 'What to Expect', to: '/what-to-expect' },
   { label: 'What People Are Saying', to: '/reviews' },
   { label: 'I-65 Exit 38 Stop', to: '/i65-exit-38' },
+  { label: 'Date Night', to: '/date-night' },
   { label: 'Mammoth Cave Dining', to: '/mammoth-cave-dining' },
   { label: 'Corvette Car Clubs', to: '/corvette-car-clubs' },
   { label: 'FAQ', to: '/faq' },

@@ -56,6 +56,7 @@ const TastyThreadsAd = lazy(() => import('./pages/TastyThreadsAd'));
 const Feedback = lazy(() => import('./pages/Feedback'));
 const Reviews = lazy(() => import('./pages/Reviews'));
 const Combos = lazy(() => import('./pages/Combos'));
+const DateNight = lazy(() => import('./pages/DateNight'));
 const DownloadApp = lazy(() => import('./pages/DownloadApp'));
 const SMSSignup = lazy(() => import('./pages/SMSSignup'));
 const BusynessGuide = lazy(() => import('./pages/BusynessGuide'));
@@ -226,6 +227,7 @@ const AuthenticatedApp = () => {
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
+      <Route path="/date-night" element={<DateNight />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<NewsletterSignup />} />
