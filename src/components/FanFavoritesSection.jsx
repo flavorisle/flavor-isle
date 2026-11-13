@@ -10,6 +10,14 @@ import { SHAKE_ISLE_IMAGE } from '@/components/ShakeIslePhotoCard';
 
 const MAX_ROWS = 10;
 
+const SHORT_DESCRIPTIONS = {
+  'Cheeseburger': 'Hand-patted beef with cheese, made to order',
+  'French Fries': 'Golden crinkle-cut fries, fresh out of the fryer',
+  'Tater Tots': 'Crisp tots, hot out of the fryer',
+  'Onion Rings': 'Crispy battered onion rings',
+  'Shake Isle': 'Thick hand-spun shakes, build your own flavors',
+};
+
 export default function FanFavoritesSection({ items, shakeRank }) {
   const [shakeFlavors, setShakeFlavors] = useState(null);
 
@@ -53,6 +61,9 @@ export default function FanFavoritesSection({ items, shakeRank }) {
           const name = item.shake ? 'Shake Isle milkshakes' : item.name;
           const right = item.shake ? (shakeFlavors ? `${shakeFlavors} flavors` : 'Flavors') : `$${Number(item.price || 0).toFixed(2)}`;
           const thumb = item.shake ? SHAKE_ISLE_IMAGE : (item.image_url_opt || item.image_url);
+          const desc = item.shake
+            ? SHORT_DESCRIPTIONS['Shake Isle']
+            : (String(item.description || '').trim() || SHORT_DESCRIPTIONS[name] || '');
           return (
             <li key={item.id} className="border-b border-border">
               <Link to={to} className="flex items-center gap-3 py-3 px-1 hover:bg-black/[0.03] focus-visible:outline-2 focus-visible:outline-primary" aria-label={`View ${name}`}>
@@ -62,9 +73,16 @@ export default function FanFavoritesSection({ items, shakeRank }) {
                 ) : (
                   <span aria-hidden="true" className="flex-none w-14 h-14 rounded-lg bg-vanilla-malt border border-border" />
                 )}
-                <span className="font-heading text-[20px] leading-tight text-obsidian-roast">{name}</span>
-                <span aria-hidden="true" className="flex-1 border-b-2 border-dotted border-border min-w-4 self-end mb-2" />
-                <span className="font-heading text-[19px] text-midnight-cherry whitespace-nowrap">{right}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-heading text-[20px] leading-tight text-obsidian-roast block">{name}</span>
+                    <span aria-hidden="true" className="flex-1 border-b-2 border-dotted border-border min-w-4" />
+                    <span className="font-heading text-[19px] text-midnight-cherry whitespace-nowrap">{right}</span>
+                  </div>
+                  {desc && (
+                    <span className="block text-[13px] leading-snug text-muted-foreground line-clamp-1 sm:line-clamp-2 mt-0.5">{desc}</span>
+                  )}
+                </div>
               </Link>
             </li>
           );
