@@ -24,6 +24,9 @@ export default function AboutStory() {
             <p>
               The sign has been repainted, the grill has gotten busier, and Smashie showed up to answer the phones. But the promise hasn't moved an inch: fresh ingredients, made to order, served to neighbors like family.
             </p>
+            <p>
+              Travelers looking for the best burgers in Kentucky usually find us by accident and come back on purpose.
+            </p>
           </div>
           <div className="mt-6"><KentuckyTourismBadge /></div>
         </div>
