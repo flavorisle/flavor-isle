@@ -224,6 +224,14 @@ export default function Menu() {
         </div>
       </div>
 
+      {/* Sits under the hero and above every category — says what the menu is and where it is. */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
+        <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast mb-3">Best Burgers in Smiths Grove, KY, Off I-65</h2>
+        <p className="text-muted-foreground max-w-3xl leading-relaxed">
+          Hand-patted since 1964 and called the best burgers in Kentucky by people who took the exit to find out. If you are hunting the best burger near I-65 in Kentucky, Exit 38 puts you in our parking lot two minutes after you leave the interstate.
+        </p>
+      </section>
+
       {!orderingEnabled &&
       <div className="bg-midnight-cherry text-white text-center text-sm font-heading py-3 px-4 tracking-wide animate-float-up">
           {orderingClosedMessage}

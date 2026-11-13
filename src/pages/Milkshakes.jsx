@@ -144,6 +144,14 @@ export default function Milkshakes() {
         </div>
       </section>
 
+      {/* Under the hero, above Pick Your Flavor. */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-10">
+        <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast mb-3">Best Milkshakes in Kentucky — Shake Isle</h2>
+        <p className="text-muted-foreground leading-relaxed">
+          The best milkshakes in Kentucky, hand-spun to order. Milkshakes near Glasgow, Bowling Green, Cave City, Scottsville, Brownsville and Westmoreland, TN — 15 to 40 minutes from the Exit 38 door.
+        </p>
+      </section>
+
       {/* Allergy note — sits above the flavors so the shared-equipment warning
           is read before a shake is ever built. */}
       <AllergyNote />

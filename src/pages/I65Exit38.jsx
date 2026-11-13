@@ -112,6 +112,14 @@ export default function I65Exit38() {
       <PhotoChapter photo={islePhotos.dining} heading="Step inside." text="Blue walls, good food, and the community board." />
       <PhotoChapter photo={islePhotos.awards} heading="Come check the wall yourself." />
 
+      {/* Where to eat off I-65 */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 py-14 text-center">
+        <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Where to eat off I-65 in Kentucky</h2>
+        <p className="text-muted-foreground mt-4 leading-relaxed">
+          Two minutes off Exit 38 in Smiths Grove, 15 minutes north of Bowling Green. Order ahead and the food is ready when you park.
+        </p>
+      </section>
+
       {/* Story */}
       <section className="bg-white border-y border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 text-center">
