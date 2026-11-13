@@ -46,10 +46,10 @@ export default function FanFavoritesSection({ items, shakeRank }) {
         <span className="text-sm text-muted-foreground whitespace-nowrap">Top 10 best-sellers</span>
         <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap">View Menu <ArrowRight size={13} /></Link>
       </div>
-      <div className="flex gap-6 overflow-x-auto snap-x pb-4 -mx-1 px-1">
+      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
         {favorites.map((item) => (
-          <div key={item.id} className="relative flex-shrink-0 w-72 snap-start">
-            <span className={`absolute top-2 left-2 z-20 rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
+          <div key={item.id} className="snap-start flex-shrink-0 w-72 relative">
+            <span className={`absolute top-2 left-2 z-20 pointer-events-none rounded-full px-3 py-1.5 text-xs font-heading shadow-float ${item.rank <= 3 ? 'bg-smashie-yellow text-accent-foreground' : 'bg-patina-mint text-white'}`}>
               TOP #{item.rank}
             </span>
             {item.shake ? <ShakeIslePhotoCard flavorCount={shakeFlavors} /> : <FavoritePhotoCard item={item} />}
