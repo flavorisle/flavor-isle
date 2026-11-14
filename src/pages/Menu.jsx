@@ -230,6 +230,23 @@ export default function Menu() {
         <p className="text-muted-foreground max-w-3xl leading-relaxed">
           Hand-patted since 1964 and called the best burgers in Kentucky by people who took the exit to find out. If you are hunting the best burger near I-65 in Kentucky, Exit 38 puts you in our parking lot two minutes after you leave the interstate.
         </p>
+        {/* Real Google reviews under the Kentucky burger copy. Approved by Wesley Nov 14, 2026 (issue #295). Additions only. */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            { label: 'A chef passing thru', quote: 'I’m a chef myself, absolutely TOP 3 burgers I’ve ever had in my life including ones I make myself. Mushroom swiss burger was to die for.' },
+            { label: 'Tony Houchens', quote: 'Best cheeseburgers and milkshakes in Kentucky!!!! ❤️' },
+            { label: 'Virginia Brown', quote: 'Best fries and cheeseburgers in Kentucky' },
+          ].map((review) => (
+            <figure key={review.label} className="rounded-xl border border-border bg-white/80 p-4">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-yellow-400 text-sm leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</span>
+                <span className="text-xs font-semibold text-obsidian-roast">{review.label}</span>
+              </div>
+              <blockquote className="mt-2 text-sm text-obsidian-roast leading-relaxed">{`“${review.quote}”`}</blockquote>
+              <figcaption className="mt-3 text-xs text-muted-foreground">Google review</figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
 
       {!orderingEnabled &&
