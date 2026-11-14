@@ -216,6 +216,23 @@ export default function OrderConfirmation() {
           <PostOrderFeedback orderId={orderNumber || sessionId} />
         </div>
 
+        {/* Traveler map — ask where they came from while the visit is fresh */}
+        <Link
+          to="/reviews#hometown"
+          className="block w-full text-left bg-muted rounded-2xl p-4 mt-6 hover:bg-gray-200 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <MapPin size={18} className="text-midnight-cherry" />
+            </div>
+            <div className="flex-1">
+              <p className="font-heading text-sm text-obsidian-roast">Where are you from?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Pin your hometown on our traveler map. Folks from Kentucky to England have stuck a pin, add yours.</p>
+            </div>
+            <ArrowRight size={16} className="text-midnight-cherry flex-shrink-0" />
+          </div>
+        </Link>
+
         {/* SMS opt-in capture — order updates + deals by text */}
         <div className="mt-6">
           <CheckoutSmsOptIn />

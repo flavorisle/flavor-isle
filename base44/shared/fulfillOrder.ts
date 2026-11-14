@@ -120,6 +120,11 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
         ${orderAlertsHtml(order.order_number)}
         <p style="color:#666;margin:0;font-size:14px;">— Smashie & The Flavor Isle Team 🍔</p>
+        <div style="background:#f5edd6;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
+          <p style="margin:0 0 4px;font-family:'Oswald',Arial,sans-serif;font-size:16px;color:#141414;">Where are you from?</p>
+          <p style="margin:0 0 10px;font-size:14px;color:#1A3A5C;line-height:1.5;">Pin your hometown on our traveler map, folks from Kentucky to England have already stuck one up.</p>
+          <a href="https://flavor-isle.com/reviews#hometown" style="color:#C0392B;font-weight:bold;font-size:14px;text-decoration:none;">Put your hometown on the map →</a>
+        </div>
         ${await foodHeroHtml(base44)}
         ${loyalty && loyalty.pointsEarned > 0 ? starsEarnedHtml(loyalty) : ''}
         ${hasAccount ? '' : accountCtaHtml()}
