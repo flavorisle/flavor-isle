@@ -586,6 +586,8 @@ export default function ExploreSmithsGrove() {
       <Seo
         title="Explore Smiths Grove | Shops, Coffee & Attractions off I-65 Exit 38"
         description="A walkable block of antique shops, a coffee bar, a winery and a distillery in Smiths Grove, plus the National Corvette Museum and Mammoth Cave a short drive away. Minutes from Flavor Isle at Exit 38."
+        ogImage="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/f63d7c28d_generated_image.png"
+        ogImageAlt="Explore Smiths Grove — shops and stops off I-65 Exit 38"
         path="/explore-smiths-grove"
       />
 
