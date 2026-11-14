@@ -64,9 +64,18 @@ export default function HometownMap() {
     return stop;
   }, []);
 
+  // Deep links from the order confirmation and review emails land here
+  // (#hometown). The map section itself keeps its #traveler-log anchor, so
+  // #hometown sits on the inner wrapper and both links keep working.
+  useEffect(() => {
+    if (window.location.hash === '#hometown') {
+      document.getElementById('hometown')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   return (
     <section id="traveler-log" className="scroll-mt-24 px-4 sm:px-6 py-20 bg-vanilla-malt" aria-labelledby="hometown-heading">
-      <div className="max-w-6xl mx-auto">
+      <div id="hometown" className="max-w-6xl mx-auto scroll-mt-24">
         <p className="font-heading uppercase tracking-widest text-sm text-midnight-cherry">Traveler Log</p>
         <h2 id="hometown-heading" className="font-heading text-4xl sm:text-5xl text-obsidian-roast mt-2">Where the Isle brings us together</h2>
         <p className="text-muted-foreground mt-2 mb-7">Visited Flavor Isle? Pin your hometown on the Traveler Log. Only your city center is shown — never your address.</p>

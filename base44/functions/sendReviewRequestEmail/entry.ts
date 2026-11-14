@@ -117,6 +117,7 @@ export default async function (req: Request) {
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${reviewLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Leave a Google review →</a>
       </div>
+      <p style="text-align:center;font-size:14px;color:#666;margin:22px 0 0;">Not a Google person? <a href="https://flavor-isle.com/reviews#hometown" style="color:#C0392B;font-weight:bold;text-decoration:none;">Pin your hometown on our traveler map →</a></p>
       <p style="color:#999;font-size:12px;margin:18px 0 0;line-height:1.5;">You're getting this because you ordered from Flavor Isle. Don't want these emails? <a href="mailto:unsubscribe@flavor-isle.com?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>.</p>
     `;
 

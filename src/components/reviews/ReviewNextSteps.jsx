@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Instagram } from 'lucide-react';
+import { MessageCircle, Instagram, MapPin } from 'lucide-react';
 
 export default function ReviewNextSteps() {
   return (
@@ -12,6 +12,9 @@ export default function ReviewNextSteps() {
         </Link>
         <Link to="/social-reviews" className="bg-white/10 text-white min-h-12 px-6 py-3 text-sm font-heading inline-flex items-center gap-2 rounded-full hover:bg-white/20 transition-colors">
           <Instagram size={16} /> Post & Earn Points
+        </Link>
+        <Link to="/reviews#hometown" className="bg-white/10 text-white min-h-12 px-6 py-3 text-sm font-heading inline-flex items-center gap-2 rounded-full hover:bg-white/20 transition-colors">
+          <MapPin size={16} /> Pin Your Hometown
         </Link>
       </div>
     </div>
