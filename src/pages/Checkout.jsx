@@ -220,16 +220,12 @@ export default function Checkout() {
     .map(([k]) => ({
       forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
     }[k]));
-  // Issue #300: each fries/tots line's salt answer prints on the kitchen ticket,
-  // named by item so the crew knows which side it belongs to.
-  const saltLines = cartItems
-    .filter(i => i.saltNote)
-    .map(i => `SALT: ${i.name} - ${i.saltNote === 'yes' ? 'yes, packets' : 'no salt'}`);
+  const saltLines = cartItems.filter(i => i.saltNote).map(i => `${i.name} — ${i.saltNote}`);
   const instructionsWithExtras = [
     hasAllergy && form.allergy.trim() ? `ALLERGY: ${form.allergy.trim()}` : '',
     form.instructions.trim(),
     extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
-    saltLines.join('\n'),
+    saltLines.length ? saltLines.join(' | ') : '',
   ].filter(Boolean).join('\n');
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();

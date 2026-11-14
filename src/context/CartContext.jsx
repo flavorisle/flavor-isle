@@ -197,12 +197,9 @@ export function CartProvider({ children }) {
       .join('|');
     // A customer's per-item allergy note joins the line key, so two of the same
     // shake with different allergies stay separate lines instead of merging.
-    const noteKey = item.allergyNote ? `a${item.allergyNote}` : '';
+    const noteKey = `${item.allergyNote ? `a${item.allergyNote}` : ''}${item.saltNote ? `s${item.saltNote}` : ''}`;
     const flavorKey = item.flavorLevel ? `|f${item.flavorLevel}` : '';
-    // Issue #300: the fries/tots salt answer joins the line key, so two fries
-    // with different answers stay separate lines instead of merging.
-    const saltKey = item.saltNote ? `|s${item.saltNote}` : '';
-    return mods || noteKey || flavorKey || saltKey ? `${item.id}__${noteKey}${flavorKey}${saltKey}${mods ? '|' : ''}${mods}` : item.id;
+    return mods || noteKey || flavorKey ? `${item.id}__${noteKey}${flavorKey}${mods ? '|' : ''}${mods}` : item.id;
   };
 
   const addItem = useCallback((item) => {

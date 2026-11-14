@@ -1,11 +1,16 @@
-import { itemCategoryKey } from '@/lib/menuCategory';
+// Sides are cooked unsalted (issue #300). The answer has to reach the kitchen,
+// so it is asked in the customization modal instead of living in page copy.
+const SALTED_SIDE = /fries|tots|potato|wedge/i;
 
-// Issue #300 (Wesley, Nov 14, 2026): fries and tots must carry a required salt
-// answer from the customization modal through the cart to the kitchen ticket.
-// Only Crunch & Munch potato sides ask the question — chili, cheese, sauces and
-// onion rings in that same category are left alone.
 export function isSaltQuestionItem(item) {
   if (!item) return false;
-  if (itemCategoryKey(item).trim().toLowerCase() !== 'crunch & munch') return false;
-  return /fries|tots|potato|waffle/i.test(item.name || '');
+  const cat = String(item.display_category || item.square_category || item.category || '');
+  if (!/crunch\s*&\s*munch/i.test(cat)) return false;
+  return SALTED_SIDE.test(String(item.name || ''));
+}
+
+export function saltNoteText(choice) {
+  if (choice === 'yes') return 'Salt: yes, packets';
+  if (choice === 'no') return 'Salt: no salt';
+  return '';
 }

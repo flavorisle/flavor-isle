@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, AlertTriangle } from 'lucide-react';
+import { Sparkles, AlertTriangle, Check } from 'lucide-react';
 import { buildDeluxeLabel } from '@/lib/deluxeLabel';
 import { isDeluxeEnabled, getDeluxePresets, presetTrackedToppings } from '@/lib/deluxeConfig';
 
@@ -9,11 +9,8 @@ import { isDeluxeEnabled, getDeluxePresets, presetTrackedToppings } from '@/lib/
 export default function CartItemModifiers({ modifiers, allergyNote, saltNote }) {
   const hasMods = Array.isArray(modifiers) && modifiers.length > 0;
   const note = (allergyNote || '').trim();
-  // Issue #300: the fries/tots salt answer shows as a neutral chip — it is a
-  // choice, not an allergy, so it never takes the allergy styling.
   const salt = (saltNote || '').trim();
-  const saltText = salt ? (salt === 'yes' ? 'Salt: yes, packets' : 'Salt: no salt') : '';
-  if (!hasMods && !note && !saltText) return null;
+  if (!hasMods && !note && !salt) return null;
   const labelPresets = getDeluxePresets().map((p) => ({
     name: p.name,
     trackedToppings: presetTrackedToppings(p),
@@ -42,15 +39,16 @@ export default function CartItemModifiers({ modifiers, allergyNote, saltNote }) 
           ))}
         </ul>
       )}
-      {saltText && (
-        <p className="inline-flex items-start gap-1 bg-muted text-muted-foreground text-xs font-semibold px-2 py-1 rounded-lg mt-1">
-          {saltText}
-        </p>
-      )}
       {note && (
         <p className="inline-flex items-start gap-1 bg-midnight-cherry/10 text-midnight-cherry text-xs font-semibold px-2 py-1 rounded-lg mt-1">
           <AlertTriangle size={11} className="mt-0.5 flex-shrink-0" />
           Allergy on this item: {note}
+        </p>
+      )}
+      {salt && (
+        <p className="inline-flex items-start gap-1 bg-patina-mint/10 text-patina-mint text-xs font-semibold px-2 py-1 rounded-lg mt-1">
+          <Check size={11} className="mt-0.5 flex-shrink-0" />
+          {salt}
         </p>
       )}
     </div>

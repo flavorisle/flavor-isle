@@ -13,7 +13,7 @@ import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
 import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { optimizedImageUrl } from '@/lib/utils';
-import { isSaltQuestionItem } from '@/lib/sideSalt';
+import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -150,7 +150,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
       allergyNote: allergyNote || undefined,
-      saltNote: saltNote || undefined,
+      saltNote: saltNoteText(saltNote) || undefined,
     });
     if (comboItems && comboItems.length > 0) {
       comboItems.forEach(ci => addItem(ci));

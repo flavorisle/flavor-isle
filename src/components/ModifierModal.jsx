@@ -18,7 +18,7 @@ import ShakeFlavorControl from './ShakeFlavorControl';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
-import { isSaltQuestionItem } from '@/lib/sideSalt';
+import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo, optionFilter, preset, confirmLabel }) {
   const { menuSetting } = useCart();
@@ -104,10 +104,8 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   const [allergy, setAllergy] = useState({ flag: false, note: '' });
   const [allergyError, setAllergyError] = useState('');
 
-  // Issue #300: fries and tots carry a required salt answer — "Yes, salt packets"
-  // or "No salt" — which travels with the line to the cart and the kitchen ticket.
-  const saltQuestion = isSaltQuestionItem(item);
-  const [saltAnswer, setSaltAnswer] = useState(null);
+  const [sideSalt, setSideSalt] = useState(null);
+  const needsSalt = isSaltQuestionItem(item);
 
   // Happy Hour pricing — eligible items show a struck-through base price and
   // discounted total so the modal matches what the cart will actually charge.
@@ -196,14 +194,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   const footerTotal = itemTotal;
 
   const handleConfirm = () => {
+    if (needsSalt && !sideSalt) return;
     // Flagged allergy with no explanation — the kitchen would get the alert with
     // nothing to act on, so ask for the details first.
     if (shakeItem && allergy.flag && !allergy.note.trim()) {
       setAllergyError('Tell us what the allergy is.');
       return;
     }
-    // The salt answer is required — the button is disabled until one is picked.
-    if (saltQuestion && !saltAnswer) return;
     const selectedMods = [];
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
@@ -218,7 +215,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     const { label, allToppings } = isDeluxeEnabled()
       ? buildFullDeluxeLabel(selectedMods.filter(m => !m.silent), labelPresets, item)
       : { label: null, allToppings: [] };
-    onConfirm(selectedMods, extraCost, label, allToppings, [], shakeItem && allergy.flag ? allergy.note.trim() : '', coreLevel, saltQuestion ? saltAnswer : '');
+    onConfirm(selectedMods, extraCost, label, allToppings, [], shakeItem && allergy.flag ? allergy.note.trim() : '', coreLevel, needsSalt ? sideSalt : null);
   };
 
   return createPortal(
@@ -259,33 +256,6 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
-          {saltQuestion && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">Salt</h4>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Required</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'yes', label: 'Yes, salt packets' },
-                  { key: 'no', label: 'No salt' },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setSaltAnswer(opt.key)}
-                    className={`min-h-[44px] px-3 py-3 rounded-xl border-2 font-body text-sm transition-all ${
-                      saltAnswer === opt.key
-                        ? 'border-midnight-cherry bg-red-50 text-obsidian-roast'
-                        : 'border-border bg-white text-obsidian-roast hover:border-gray-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
           {/* Flavor pills show − / + zones — say what they do whenever any
               flavor group is on screen. */}
@@ -427,13 +397,36 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                 ))}
               </div>
             ))
-          ) : saltQuestion ? null : (
+          ) : needsSalt ? null : (
             <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
           )}
         </div>
 
         {/* Footer */}
         <div className="p-5 border-t border-border flex-shrink-0 bg-white safe-bottom">
+          {needsSalt && (
+            <div className="mb-3">
+              <p className="font-heading text-sm text-obsidian-roast mb-2">Salt on your sides?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSideSalt('yes')}
+                  aria-pressed={sideSalt === 'yes'}
+                  className={`py-3 rounded-xl border text-sm font-heading transition-colors ${sideSalt === 'yes' ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'bg-white text-obsidian-roast border-border hover:border-midnight-cherry/50'}`}
+                >
+                  Yes, salt packets
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSideSalt('no')}
+                  aria-pressed={sideSalt === 'no'}
+                  className={`py-3 rounded-xl border text-sm font-heading transition-colors ${sideSalt === 'no' ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'bg-white text-obsidian-roast border-border hover:border-midnight-cherry/50'}`}
+                >
+                  No salt
+                </button>
+              </div>
+            </div>
+          )}
           {/* Every milkshake carries the allergy note — and the customer can flag
               this particular shake — right above the add button. */}
           {shakeItem && (
@@ -450,13 +443,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={soldOut || (saltQuestion && !saltAnswer)}
+            disabled={soldOut || (needsSalt && !sideSalt)}
             className={`w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${
-              soldOut ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'btn-cherry chrome-hover'
+              soldOut || (needsSalt && !sideSalt) ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'btn-cherry chrome-hover'
             }`}
           >
             <Plus size={16} />
-            {soldOut ? 'Sold Out' : confirmLabel ? `${confirmLabel} · $${footerTotal.toFixed(2)}` : `Add to Order — $${footerTotal.toFixed(2)}`}
+            {soldOut ? 'Sold Out' : needsSalt && !sideSalt ? 'Choose one to continue' : confirmLabel ? `${confirmLabel} · $${footerTotal.toFixed(2)}` : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>
