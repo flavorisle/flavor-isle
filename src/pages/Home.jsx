@@ -36,28 +36,6 @@ import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
-
-const SPECIALS_TICKER = [
-"🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
-"🥤 Thick Vanilla Malt — $5.49",
-"🍟 Loaded Cheese Fries — $4.99",
-"⭐ Today's Special: BLT Deluxe — $8.99",
-"🥧 Homemade Pie Slice — $3.99",
-"🍔 Fresh Hand-Patted Double Cheeseburger — $9.50",
-"🥤 Thick Vanilla Malt — $5.49",
-"🍟 Loaded Cheese Fries — $4.99",
-"⭐ Today's Special: BLT Deluxe — $8.99",
-"🥧 Homemade Pie Slice — $3.99"];
-
-
-// Issue #301 Part A: real Flavor Isle photos in place of emoji (44px round). No
-// pie photo exists in either source, so that tile is Fries & Rings.
-const FEATURES = [
-{ photo: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ff12a1c2b_IMG_0375.png', alt: 'Hand-patted double cheeseburger', label: 'Hand-Patted Burgers', desc: 'Fresh beef, never frozen' },
-{ photo: 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/e9eaa68c9_menu-item-x7cdlqz6gnjh6cwdm2nnk767-800x800.webp', alt: 'Strawberry milkshake', label: 'Thick Milkshakes', desc: 'Blended with real ice cream' },
-{ photo: 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/e033dfce5_menu-item-t5t77n5v6havb2m4br7voeos-752x800.webp', alt: 'Crispy chicken rings', label: 'Crispy Chicken', desc: 'Fried fresh to order' },
-{ photo: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c5a5ce796_IMG_0407.png', alt: 'Golden crinkle fries with onion rings', label: 'Fries & Rings', desc: 'Golden fries and crispy onion rings' }];
-
 const HOME_DINING_PHOTO = {
   url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
   alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
