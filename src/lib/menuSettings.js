@@ -14,6 +14,21 @@ const MENU_SETTING_ID = '6a619923321f89b8d1cf8b3f';
 let _cachedSetting = null;
 let _fetchPromise = null;
 
+// Issue #297 Part C — delivery availability and the sentence customers read
+// about it both come from the ONE admin setting (Store settings → Delivery).
+// Every surface calls deliveryStatus() so pausing delivery can never leave two
+// different sentences on the site again.
+export const DEFAULT_PAUSED_MESSAGE = 'Delivery is paused right now.';
+
+export function deliveryStatus(setting) {
+  const enabled = setting?.delivery_enabled !== false;
+  const written = String(setting?.delivery_paused_message || '').trim();
+  return {
+    enabled,
+    message: enabled ? '' : (written || DEFAULT_PAUSED_MESSAGE),
+  };
+}
+
 // Safe default used when the settings record can't be loaded (e.g. API rate
 // limit). Keeps the menu rendering with no hidden categories / default order
 // instead of crashing the page.
@@ -30,6 +45,7 @@ const DEFAULT_SETTING = {
   delivery_cutoff_minutes: 30,
   pickup_cutoff_minutes: 15,
   delivery_fee: 0,
+  delivery_paused_message: DEFAULT_PAUSED_MESSAGE,
   business_hours: null,
   closure: null,
   early_close: null,
@@ -121,8 +137,9 @@ export async function setCategorySortOrder(order) {
 }
 
 // Issue #297 Part A: the close time is never written from here — Business Hours
-// owns it. Only the wind-down cutoffs and the delivery fee are saved.
-export async function setOrderCutoffs({ deliveryCutoff, pickupCutoff, deliveryFee }) {
+// owns it. Only the wind-down cutoffs, the delivery fee and (Part C) the paused
+// delivery message are saved.
+export async function setOrderCutoffs({ deliveryCutoff, pickupCutoff, deliveryFee, deliveryPausedMessage }) {
   const setting = await getMenuSetting();
   const id = await requireSettingId();
   const updates = {
@@ -130,6 +147,7 @@ export async function setOrderCutoffs({ deliveryCutoff, pickupCutoff, deliveryFe
     pickup_cutoff_minutes: pickupCutoff,
   };
   if (typeof deliveryFee === 'number') updates.delivery_fee = deliveryFee;
+  if (typeof deliveryPausedMessage === 'string') updates.delivery_paused_message = deliveryPausedMessage.trim();
   await base44.entities.MenuSetting.update(id, updates);
   bustMenuSettingCache();
   return { ...setting, ...updates };

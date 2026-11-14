@@ -7,6 +7,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
+import { deliveryStatus } from '@/lib/menuSettings';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
@@ -16,7 +17,7 @@ import Seo from '@/components/Seo';
 // to order, it sets the order type and opens the menu. Kept out of the sitemap
 // and noindexed so /order stays the page that ranks for "order online".
 export default function SocialOrder() {
-  const { setOrderType } = useCart();
+  const { setOrderType, menuSetting } = useCart();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'social';
@@ -50,6 +51,10 @@ export default function SocialOrder() {
     document.head.appendChild(meta);
     return () => { document.head.removeChild(meta); };
   }, []);
+
+  // Issue #297 Part C: the delivery card keeps its short "Paused"; the admin's
+  // sentence sits on one line under the row of cards.
+  const deliveryPause = deliveryStatus(menuSetting).message;
 
   const OPTIONS = [
     { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), art: ORDER_TYPE_IMAGES.pickup, blurb: 'Grab it hot off the grill.' },
@@ -134,6 +139,9 @@ export default function SocialOrder() {
             </button>
           ))}
         </div>
+        {deliveryPause && (
+          <p className="mt-3 text-center text-sm text-muted-foreground">{deliveryPause}</p>
+        )}
 
         <OrderLoyaltySection />
 

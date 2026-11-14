@@ -8,6 +8,11 @@ import SmashieChat from '@/components/SmashieChat';
 import AppPhoneMockup from '@/components/AppPhoneMockup';
 import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
+import { APP_RELEASE, appIsLive } from '@/lib/appRelease';
+
+// Issue #297 Part D: the date and both store links live in src/lib/appRelease.js.
+// Until the app is live and both URLs are set, no store link is rendered at all.
+const RELEASE_BADGE = appIsLive() ? 'AVAILABLE NOW' : `Coming ${APP_RELEASE.dateLabel}`;
 
 const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/77ba3b486_IMG_9971.png'; // hands up
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
@@ -74,7 +79,9 @@ export default function DownloadApp() {
             <h1 className="font-heading text-5xl sm:text-7xl text-white leading-tight mb-4">
               GET THE<br />
               <span style={{ color: '#F5A623' }}>FLAVOR ISLE APP</span>
-              <span className="block text-3xl sm:text-4xl mt-2" style={{ color: '#F5A623' }}>DROPPING 12/16/2026</span>
+              <span className="block text-3xl sm:text-4xl mt-2" style={{ color: '#F5A623' }}>
+                {appIsLive() ? 'OUT NOW' : `Coming ${APP_RELEASE.dateLabel}`}
+              </span>
             </h1>
             <p className="text-gray-300 text-lg max-w-lg leading-relaxed mb-8">
               Order ahead, earn Star Rewards, track your food in real time, and chat with Smashie — all from your phone. Smashie says it's a no-brainer.
@@ -91,28 +98,51 @@ export default function DownloadApp() {
               />
               <div>
                 <div className="inline-flex items-center gap-2 bg-smashie-yellow/20 border border-smashie-yellow/40 text-smashie-yellow px-3 py-1 rounded-full text-xs font-heading mb-2">
-                  <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> DROPPING 12/16/2026
+                  <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" /> {RELEASE_BADGE}
                 </div>
                 <p className="text-gray-300 text-sm leading-snug max-w-xs">
-                  Launching on the App Store & Google Play December 16, 2026. Until then, order right here on the web.
+                  {appIsLive()
+                    ? 'Download it free on the App Store or Google Play — or order right here on the web.'
+                    : `Launching on the App Store & Google Play ${APP_RELEASE.dateLabel}. Until then, order right here on the web.`}
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-6">
-              <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
-                <Apple size={22} />
-                <span className="text-left leading-tight">
-                  <span className="block text-[10px] font-body font-semibold opacity-70">Coming to the</span>
-                  App Store
-                </span>
-              </span>
-              <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
-                <Play size={20} className="fill-current" />
-                <span className="text-left leading-tight">
-                  <span className="block text-[10px] font-body font-semibold opacity-70">Coming to</span>
-                  Google Play
-                </span>
-              </span>
+              {appIsLive() ? (
+                <>
+                  <a href={APP_RELEASE.iosUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-obsidian-roast font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 hover:bg-vanilla-malt transition-colors">
+                    <Apple size={22} />
+                    <span className="text-left leading-tight">
+                      <span className="block text-[10px] font-body font-semibold opacity-70">Get it on the</span>
+                      App Store
+                    </span>
+                  </a>
+                  <a href={APP_RELEASE.androidUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-obsidian-roast font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 hover:bg-vanilla-malt transition-colors">
+                    <Play size={20} className="fill-current" />
+                    <span className="text-left leading-tight">
+                      <span className="block text-[10px] font-body font-semibold opacity-70">Get it on</span>
+                      Google Play
+                    </span>
+                  </a>
+                </>
+              ) : (
+                <>
+                  <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
+                    <Apple size={22} />
+                    <span className="text-left leading-tight">
+                      <span className="block text-[10px] font-body font-semibold opacity-70">Coming {APP_RELEASE.dateLabel}</span>
+                      App Store
+                    </span>
+                  </span>
+                  <span className="bg-white/10 border border-white/20 text-gray-400 font-heading px-6 py-3.5 rounded-2xl text-sm flex items-center gap-3 cursor-not-allowed">
+                    <Play size={20} className="fill-current" />
+                    <span className="text-left leading-tight">
+                      <span className="block text-[10px] font-body font-semibold opacity-70">Coming {APP_RELEASE.dateLabel}</span>
+                      Google Play
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -171,12 +201,25 @@ export default function DownloadApp() {
               Download the app, sign in, and Smashie's right there in your pocket — ready to take your order, drop a recommendation, or just hype you up.
             </p>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
-                <Apple size={18} /> App Store · 12/16
-              </span>
-              <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
-                <Play size={16} className="fill-current" /> Google Play · 12/16
-              </span>
+              {appIsLive() ? (
+                <>
+                  <a href={APP_RELEASE.iosUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 hover:bg-vanilla-malt transition-colors">
+                    <Apple size={18} /> App Store
+                  </a>
+                  <a href={APP_RELEASE.androidUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 hover:bg-vanilla-malt transition-colors">
+                    <Play size={16} className="fill-current" /> Google Play
+                  </a>
+                </>
+              ) : (
+                <>
+                  <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
+                    <Apple size={18} /> App Store · Coming {APP_RELEASE.dateLabel}
+                  </span>
+                  <span className="bg-white/15 border border-white/30 text-white/70 font-heading px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-not-allowed">
+                    <Play size={16} className="fill-current" /> Google Play · Coming {APP_RELEASE.dateLabel}
+                  </span>
+                </>
+              )}
               <Link to="/menu" className="bg-white text-patina-mint font-heading px-6 py-3 rounded-full text-sm hover:bg-vanilla-malt transition-colors flex items-center gap-2">
                 Order on the Web <ArrowRight size={16} />
               </Link>

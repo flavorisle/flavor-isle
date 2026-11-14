@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Megaphone, Save, Check } from 'lucide-react';
 import { getMenuSetting, setSiteNotice, bustMenuSettingCache } from '@/lib/menuSettings';
 
@@ -11,10 +12,11 @@ const LEVELS = [
   { key: 'urgent', label: 'Urgent', desc: 'Ordering impacted', dot: 'bg-midnight-cherry' },
 ];
 
+// Issue #297 Part C: the two delivery presets were removed. Delivery has one
+// home — the switch and its message live in Store settings → Delivery, so a
+// delivery message typed here can no longer disagree with that switch.
 const PRESETS = [
-  'Delivery is paused today — no driver available. Pickup is still open!',
   'Short-staffed today — orders may take a little longer than usual. Thanks for your patience!',
-  'Delivery is temporarily stopped due to staff shortages. Pickup and dine-in are still available.',
   'Holiday hours — closing early today at 6 PM.',
 ];
 
@@ -120,6 +122,11 @@ export default function SiteNoticePanel() {
           rows={2}
           className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none"
         />
+
+        <p className="text-xs text-muted-foreground mt-2">
+          Pausing delivery? Set the pause and the message customers read in{' '}
+          <Link to="/admin/store-settings" className="text-midnight-cherry font-semibold underline underline-offset-2">Store settings → Delivery</Link>.
+        </p>
 
         {/* Quick presets */}
         <div className="mt-3">

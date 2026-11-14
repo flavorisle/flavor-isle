@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { getMenuSetting } from '@/lib/menuSettings';
+import { getMenuSetting, deliveryStatus } from '@/lib/menuSettings';
 import { useAuth } from '@/lib/AuthContext';
 import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
@@ -168,6 +168,10 @@ export function CartProvider({ children }) {
     ? { ...cutoffStatusRaw, delivery: false, pickup: false, dine_in: false }
     : cutoffStatusRaw;
 
+  // Issue #297 Part C: the pickup fallback carries the admin's own sentence, so
+  // a customer bounced back to pickup reads why in the store's words.
+  const deliveryPausedNotice = deliveryStatus(menuSetting).message;
+
   // If delivery is paused, move anyone already set to delivery back to pickup.
   useEffect(() => {
     if (menuSetting?.delivery_enabled === false && orderType === 'delivery') {
@@ -265,6 +269,7 @@ export function CartProvider({ children }) {
       totalItems, subtotal, deliveryFee, tax, total,
       orderingEnabled: adminOrdering || orderingEnabled, orderingClosedMessage,
       cutoffStatus,
+      deliveryPausedNotice,
       menuSetting,
       happyHourDiscount,
       bundleDiscount,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Save, Check, Truck, Car } from 'lucide-react';
-import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled, setCurbsideEnabled } from '@/lib/menuSettings';
+import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled, setCurbsideEnabled, DEFAULT_PAUSED_MESSAGE } from '@/lib/menuSettings';
 import { DAY_LABELS, formatTime12 } from '@/lib/businessHours';
 import { chicagoNow } from '@/lib/chicagoNow';
 
@@ -11,6 +11,7 @@ export default function OrderCutoffSettings() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryEnabled, setDeliveryEnabledState] = useState(true);
   const [togglingDelivery, setTogglingDelivery] = useState(false);
+  const [deliveryPausedMessage, setDeliveryPausedMessage] = useState('');
   const [curbsideEnabled, setCurbsideEnabledState] = useState(false);
   const [togglingCurbside, setTogglingCurbside] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,6 +25,7 @@ export default function OrderCutoffSettings() {
         if (s.pickup_cutoff_minutes != null) setPickupCutoff(s.pickup_cutoff_minutes);
         if (s.delivery_fee != null) setDeliveryFee(s.delivery_fee);
         if (s.delivery_enabled != null) setDeliveryEnabledState(s.delivery_enabled);
+        setDeliveryPausedMessage(s.delivery_paused_message || '');
         if (s.curbside_enabled != null) setCurbsideEnabledState(s.curbside_enabled);
       })
       .catch(() => {});
@@ -56,6 +58,7 @@ export default function OrderCutoffSettings() {
         deliveryCutoff: Math.max(0, parseInt(deliveryCutoff) || 0),
         pickupCutoff: Math.max(0, parseInt(pickupCutoff) || 0),
         deliveryFee: Math.max(0, parseFloat(deliveryFee) || 0),
+        deliveryPausedMessage,
       });
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
@@ -88,7 +91,8 @@ export default function OrderCutoffSettings() {
         {/* Delivery pause toggle — when off, the Delivery order type is hidden
             from customers regardless of hours, and anyone already on delivery
             is moved back to pickup. */}
-        <div className={`rounded-2xl border p-4 mb-4 flex items-center justify-between gap-4 ${deliveryEnabled ? 'bg-patina-mint/5 border-patina-mint/20' : 'bg-midnight-cherry/5 border-midnight-cherry/20'}`}>
+        <div className={`rounded-2xl border p-4 mb-4 ${deliveryEnabled ? 'bg-patina-mint/5 border-patina-mint/20' : 'bg-midnight-cherry/5 border-midnight-cherry/20'}`}>
+          <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${deliveryEnabled ? 'bg-patina-mint/10' : 'bg-midnight-cherry/10'}`}>
               <Truck size={18} className={deliveryEnabled ? 'text-patina-mint' : 'text-midnight-cherry'} />
@@ -114,6 +118,21 @@ export default function OrderCutoffSettings() {
           >
             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${deliveryEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
+          </div>
+
+          {/* Issue #297 Part C: the one sentence customers read wherever delivery
+              is paused — banner, order tiles, FAQ and cart. */}
+          <div className="mt-4">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Delivery paused message</label>
+            <textarea
+              value={deliveryPausedMessage}
+              onChange={e => setDeliveryPausedMessage(e.target.value)}
+              placeholder={DEFAULT_PAUSED_MESSAGE}
+              rows={2}
+              className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">Shown on the order tiles, the site banner, the FAQ and the cart while delivery is paused. Leave it blank to use “{DEFAULT_PAUSED_MESSAGE}”.</p>
+          </div>
         </div>
 
         {/* Curbside pause toggle (issue #122) — starts OFF. While off, the

@@ -27,6 +27,7 @@ export default function CartDrawer() {
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
+    deliveryPausedNotice,
     happyHourDiscount,
     menuSetting,
   } = useCart();
@@ -103,6 +104,11 @@ export default function CartDrawer() {
               );
             })}
           </div>
+          {/* Issue #297 Part C: when the store pauses delivery, a customer whose
+              order was moved back to pickup reads the admin's own sentence. */}
+          {deliveryPausedNotice && (
+            <p className="text-xs text-midnight-cherry mt-2">{deliveryPausedNotice}</p>
+          )}
         </div>
 
         {/* Promo banners */}

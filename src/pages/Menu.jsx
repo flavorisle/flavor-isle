@@ -34,6 +34,7 @@ import WeekendPartyPackCard from '@/components/packs/WeekendPartyPackCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
+import { deliveryStatus } from '@/lib/menuSettings';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Pickup / delivery estimates scale with the live kitchen load so the menu
@@ -58,6 +59,9 @@ export default function Menu() {
   const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { level, deliveryEnabled } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20, deliveryEnabled);
+  // Issue #297 Part C: the delivery tile keeps its short "Paused", and the
+  // admin's own sentence sits on one line under the row.
+  const deliveryPause = deliveryStatus(menuSetting).message;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -221,6 +225,9 @@ export default function Menu() {
             ))}
           </div>
           </div>
+          {deliveryPause && (
+            <p className="mt-3 text-center text-sm text-white/85">{deliveryPause}</p>
+          )}
         </div>
       </div>
 

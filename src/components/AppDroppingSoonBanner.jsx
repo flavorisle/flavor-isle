@@ -2,8 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { optimizedImageUrl } from '@/lib/utils';
+import { APP_RELEASE, appIsLive } from '@/lib/appRelease';
 
 const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
+
+// Issue #297 Part D: the date comes from src/lib/appRelease.js, never a literal.
+const RELEASE_HEADLINE = appIsLive() ? 'THE APP IS LIVE' : `COMING ${APP_RELEASE.dateLabel}`;
+const RELEASE_NOTE = appIsLive()
+  ? 'Order faster — now on the App Store & Google Play'
+  : 'Track orders faster — launching on the App Store & Google Play';
 
 // Shown while an order is being prepared — a high-visibility moment to plug
 // the upcoming native app launch.
@@ -15,9 +22,9 @@ export default function AppDroppingSoonBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-smashie-yellow rounded-full animate-pulse" />
-            <p className="font-heading text-white text-sm leading-none">THE APP DROPS 12/16/2026</p>
+            <p className="font-heading text-white text-sm leading-none">{RELEASE_HEADLINE}</p>
           </div>
-          <p className="text-white/70 text-[11px] mt-1 leading-snug">Track orders faster — launching on the App Store & Google Play</p>
+          <p className="text-white/70 text-[11px] mt-1 leading-snug">{RELEASE_NOTE}</p>
         </div>
         <Link
           to="/download"

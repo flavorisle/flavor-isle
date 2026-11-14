@@ -7,6 +7,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
+import { deliveryStatus } from '@/lib/menuSettings';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
@@ -16,7 +17,7 @@ import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 // who tap it from Google Maps/Search land on a focused, conversion-first
 // page instead of the full home page.
 export default function Order() {
-  const { setOrderType } = useCart();
+  const { setOrderType, menuSetting } = useCart();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
@@ -38,6 +39,10 @@ export default function Order() {
   useEffect(() => {
     base44.analytics.track({ eventName: 'order_landing_viewed', properties: { source } });
   }, [source]);
+
+  // Issue #297 Part C: the delivery card keeps its short "Paused"; the admin's
+  // sentence sits on one line under the row of cards.
+  const deliveryPause = deliveryStatus(menuSetting).message;
 
   const OPTIONS = [
     { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), art: ORDER_TYPE_IMAGES.pickup, blurb: 'Grab it hot off the grill.' },
@@ -105,6 +110,9 @@ export default function Order() {
             </button>
           ))}
         </div>
+        {deliveryPause && (
+          <p className="mt-3 text-center text-sm text-muted-foreground">{deliveryPause}</p>
+        )}
 
         {/* Star Rewards — live balance + stars earned on recent orders */}
         <OrderLoyaltySection />

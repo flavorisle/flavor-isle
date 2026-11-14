@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups, hoursSummary } from '@/lib/businessHours';
-import { getMenuSetting } from '@/lib/menuSettings';
+import { getMenuSetting, deliveryStatus } from '@/lib/menuSettings';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 
 // Frequently asked questions (issue #37, step 5). Hours and delivery answers are
@@ -52,9 +52,11 @@ export default function Faq() {
   // other estimate, and a paused delivery service gets no estimate at all.
   const pickupQuoteText = pickupQuote(waitMin);
   const deliveryQuoteText = deliveryQuote(waitMin);
+  // Issue #297 Part C: a paused delivery answers in the admin's own sentence
+  // (Store settings → Delivery), followed by the pickup-only line.
   const deliveryAnswer = deliveryEnabled
     ? `Yes — we deliver locally through flavor-isle.com. Choose Delivery at checkout and enter your address; delivery orders need about ${deliveryCutoff} minutes of notice. Delivery is ${deliveryFeeText}. For catering and large orders, call (270) 563-7230.`
-    : 'Delivery is paused right now, so ordering is pickup only through flavor-isle.com. For catering and large orders, call (270) 563-7230.';
+    : `${deliveryStatus(storeSetting).message} Ordering is pickup only through flavor-isle.com. For catering and large orders, call (270) 563-7230.`;
 
   const FAQS = [
     {
