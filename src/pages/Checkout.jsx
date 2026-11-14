@@ -220,10 +220,16 @@ export default function Checkout() {
     .map(([k]) => ({
       forks: 'Forks', ketchup: 'Ketchup packets', salt: 'Salt packets', napkins: 'Napkins',
     }[k]));
+  // Issue #300: each fries/tots line's salt answer prints on the kitchen ticket,
+  // named by item so the crew knows which side it belongs to.
+  const saltLines = cartItems
+    .filter(i => i.saltNote)
+    .map(i => `SALT: ${i.name} - ${i.saltNote === 'yes' ? 'yes, packets' : 'no salt'}`);
   const instructionsWithExtras = [
     hasAllergy && form.allergy.trim() ? `ALLERGY: ${form.allergy.trim()}` : '',
     form.instructions.trim(),
     extrasList.length ? `Please include: ${extrasList.join(', ')}.` : '',
+    saltLines.join('\n'),
   ].filter(Boolean).join('\n');
 
   const fullName = `${form.firstName} ${form.lastName}`.trim();
@@ -318,6 +324,7 @@ export default function Checkout() {
       comboConfigId: i.comboConfigId || '',
       comboComponents: i.comboComponents || [],
       allergyNote: i.allergyNote || '',
+      saltNote: i.saltNote || '',
     }));
 
     setLoading(true);
@@ -640,7 +647,7 @@ export default function Checkout() {
                   <div key={item.id} className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-heading text-sm text-obsidian-roast">{item.name} <span className="text-xs text-muted-foreground font-body">× {item.quantity}</span></p>
-                      <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} />
+                      <CartItemModifiers modifiers={item.selectedModifiers} allergyNote={item.allergyNote} saltNote={item.saltNote} />
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button

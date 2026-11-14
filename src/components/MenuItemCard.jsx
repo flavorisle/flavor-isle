@@ -13,6 +13,7 @@ import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
 import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { optimizedImageUrl } from '@/lib/utils';
+import { isSaltQuestionItem } from '@/lib/sideSalt';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -128,7 +129,8 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     e?.stopPropagation();
     trackTrendingClick();
     if (!orderingEnabled) return;
-    if (hasModifiers) {
+    // Fries and tots ask the required salt question even with zero modifiers.
+    if (hasModifiers || isSaltQuestionItem(item)) {
       trackSelectItem(foodItemToGa4(item));
       setShowModal(true);
     } else {
@@ -138,7 +140,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     }
   };
 
-  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel) => {
+  const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel, saltNote) => {
     addItem({
       ...item,
       name: withShakeFlavorLevel(item.name, coreLevel),
@@ -148,6 +150,7 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
       allergyNote: allergyNote || undefined,
+      saltNote: saltNote || undefined,
     });
     if (comboItems && comboItems.length > 0) {
       comboItems.forEach(ci => addItem(ci));

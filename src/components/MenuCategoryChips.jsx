@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { categoryLabel } from '@/lib/menuCategory';
+import { categoryLabel, categorySubtitle } from '@/lib/menuCategory';
 
 // Emoji icon per category — matched case-insensitively on the category key so
 // custom display categories fall back to a generic plate when unmapped.
@@ -32,7 +32,7 @@ const sectionId = (key) => `menu-cat-${slug(key)}`;
 // and scroll-spy keeps the highlight in sync as the user scrolls. The chip
 // row sticks below the sticky header and auto-scrolls horizontally to keep
 // the active pill visible on small screens.
-export default function MenuCategoryChips({ rows, renames }) {
+export default function MenuCategoryChips({ rows, renames, subtitles = {} }) {
   const [activeKey, setActiveKey] = useState(null);
   const [headerHeight, setHeaderHeight] = useState(0);
   const chipRowRef = useRef(null);
@@ -120,6 +120,7 @@ export default function MenuCategoryChips({ rows, renames }) {
       <div ref={chipRowRef} className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex gap-4 overflow-x-auto scrollbar-hide">
         {rows.map((row) => {
           const label = row.isShakeBanner ? 'Whirl & Twirl' : categoryLabel(row.key, renames);
+          const subtitle = row.isShakeBanner ? (subtitles['Whirl & Twirl'] || '') : categorySubtitle(row.key, renames, subtitles);
           const icon = row.isShakeBanner ? '🥤' : iconFor(row.key);
           const active = activeKey === row.key;
           return (
@@ -135,7 +136,7 @@ export default function MenuCategoryChips({ rows, renames }) {
               }`}
             >
               <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
-              <span>{label}</span>
+              <span className="flex flex-col text-left leading-tight"><span>{label}</span>{subtitle && <span className="font-body text-[11px] font-normal opacity-70 mt-0.5">{subtitle}</span>}</span>
             </button>
           );
         })}

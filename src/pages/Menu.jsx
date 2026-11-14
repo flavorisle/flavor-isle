@@ -261,7 +261,7 @@ export default function Menu() {
       <AdBannerStrip placement="menu" />
 
       {!search && !loading && rows.some((r) => r.isShakeBanner || r.items.length > 0) && (
-        <MenuCategoryChips rows={rows} renames={renames} />
+        <MenuCategoryChips rows={rows} renames={renames} subtitles={subtitles} />
       )}
 
       {/* Returning customers: what they ordered last time, one card per item */}
