@@ -1,0 +1,72 @@
+{
+  "name": "SquareOrderClaim",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this claim, e.g. why it was left uncommitted."
+    },
+    "square_order_id": {
+      "type": "string",
+      "description": "Square order id this claim is for. The claim is written BEFORE the Order row, so a second run sees it and never writes a duplicate."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "claimed",
+        "committed"
+      ],
+      "enumColors": [
+        "yellow",
+        "green"
+      ],
+      "default": "claimed",
+      "description": "claimed = a run is writing this order right now; committed = the Order row exists and its id is recorded."
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Random id of the sync run that took the claim."
+    },
+    "order_id": {
+      "type": "string",
+      "description": "The Order row this claim produced, written when the claim is committed."
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the claim was taken. An uncommitted claim older than the 15-minute lease window is treated as abandoned and may be retried."
+    },
+    "committed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the Order row was created and this claim was marked committed."
+    }
+  },
+  "required": [
+    "square_order_id",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

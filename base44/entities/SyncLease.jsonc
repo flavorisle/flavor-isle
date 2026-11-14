@@ -1,0 +1,64 @@
+{
+  "name": "SyncLease",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this lease, e.g. why it was left behind by a crashed run."
+    },
+    "holder": {
+      "type": "string",
+      "description": "Random id of the Square sync run that holds this lease."
+    },
+    "acquired_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this run took the lease. When two runs create one at the same moment, the oldest acquisition keeps it."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fifteen minutes after acquisition. Past this moment the lease is dead and the next run clears the row and takes over, so a crashed run can never jam the schedule."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "released"
+      ],
+      "enumColors": [
+        "green",
+        "gray"
+      ],
+      "default": "active",
+      "description": "active while the run holds it; released once the run is done."
+    }
+  },
+  "required": [
+    "holder",
+    "expires_at"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

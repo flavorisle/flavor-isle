@@ -5,7 +5,13 @@ import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { squareOrderFields } from '../../shared/squareOrderFields.ts';
 import { loadCustomerProfileIndex, ensureCustomerProfile } from '../../shared/customerLink.ts';
 import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
-import { isPlaceholderEmail } from '../../shared/emailSafety.ts';
+import {
+  isWebsiteSourced,
+  orderNeedsRelink,
+  newOrderIdentity,
+  planOrderSync,
+} from '../../shared/squareSyncPlan.ts';
+import { acquireSyncLock, releaseSyncLock, SYNC_LEASE_MINUTES } from '../../shared/squareSyncLock.ts';
 
 const SQUARE_VERSION = '2026-09-16';
 // Star Rewards lookups are one Square call each, so a run checks at most this
@@ -13,8 +19,28 @@ const SQUARE_VERSION = '2026-09-16';
 const LOYALTY_LOOKUP_CAP = 50;
 
 Deno.serve(async (req) => {
+  let base44: any = null;
+  let leaseId = '';
   try {
-    const base44 = createClientFromRequest(req);
+    base44 = createClientFromRequest(req);
+
+    // Issue #277 Part A: one sync run at a time. A run that finds a live lease
+    // leaves every record untouched and reports skipped: 'locked'. The lease
+    // expires after 15 minutes, so a crashed run can never jam the schedule.
+    const lock = await acquireSyncLock(base44, crypto.randomUUID());
+    if (!lock.acquired) {
+      console.warn('Square sync skipped — another run holds the lease');
+      return Response.json({
+        success: true,
+        skipped: 'locked',
+        squareOrdersPulled: 0,
+        newOrders: 0,
+        relinkedOrders: 0,
+        duplicates_removed: 0,
+      });
+    }
+    leaseId = lock.leaseId || '';
+
     const connection = await base44.asServiceRole.connectors.getConnection('square');
 
     if (!connection?.accessToken) {
@@ -214,14 +240,53 @@ Deno.serve(async (req) => {
     let unresolvedCustomerCount = 0;
     let loyaltyLookups = 0;
     const unresolvedCustomerIds = new Set();
+
+    // Issue #277 Part A: the in-flight guard. A SquareOrderClaim row is written
+    // for a square_order_id BEFORE its Order row, so an overlapping run sees a
+    // fresh claim and skips that order instead of creating a second copy. An
+    // uncommitted claim older than the lease window is abandoned and retried.
+    const runId = crypto.randomUUID();
+    const FRESH_CLAIM_MS = SYNC_LEASE_MINUTES * 60 * 1000;
+    const pendingClaims: any[] = [];
+    const touchedSquareIds = new Set<string>();
+    let websiteSkipped = 0;
+    let inFlightSkipped = 0;
+
+    // ONE read of the whole claim register for this run, so the in-flight check
+    // costs nothing per order. A claim another run took within the lease window
+    // means that order is being written right now — this run leaves it alone.
+    const freshClaims = await base44.asServiceRole.entities.SquareOrderClaim.filter({ status: 'claimed' });
+    const claimCutoff = Date.now() - FRESH_CLAIM_MS;
+    const inFlightSquareIds = new Set(
+      (freshClaims || [])
+        .filter((claim: any) => new Date(claim?.claimed_at || 0).getTime() > claimCutoff)
+        .map((claim: any) => claim.square_order_id)
+    );
+
     for (const so of squareOrders) {
       // Skip Square orders that were pushed from our website (online orders
       // we created via createSquareOrder). These have metadata.order_source
       // = 'flavor-isle-website'. Without this, a duplicate Square order (from
       // the double-push race) gets re-imported as a ghost in-store order,
       // inflating counts and revenue.
-      if (so.metadata?.order_source === 'flavor-isle-website') {
+      if (isWebsiteSourced(so)) {
+        websiteSkipped += 1;
         continue;
+      }
+
+      if (!existingBySquareId.has(so.id)) {
+        // Another run may already be writing this one — leave it to that run.
+        if (inFlightSquareIds.has(so.id)) {
+          inFlightSkipped += 1;
+          continue;
+        }
+        // Claimed in one batch below, still before any Order row exists.
+        pendingClaims.push({
+          square_order_id: so.id,
+          status: 'claimed',
+          run_id: runId,
+          claimed_at: new Date().toISOString(),
+        });
       }
 
       // Issue #123 C2: the ticket's own customer first, then the paying card's
@@ -255,8 +320,6 @@ Deno.serve(async (req) => {
       // user.email). Fall back to the Square email, then leave it empty — an
       // unknown email is never filled with an invented address.
       const linkedEmail = (sqPhone && phoneToEmail.get(normalizePhone(sqPhone))) || sqEmail || '';
-      const customerEmail = linkedEmail || '';
-      const customerName = sqName || 'Walk-In';
       const items = (so.line_items || []).map(item => ({
         name: item.name || 'Item',
         quantity: item.quantity ? parseInt(item.quantity) : 1,
@@ -295,12 +358,7 @@ Deno.serve(async (req) => {
       // Issue #135 D2: Order.customer_id is a CustomerProfile id on every other
       // path, so Square's own customer id now rides in square_customer_id and the
       // profile is resolved (or created) here.
-      const needsRelink = !!existing && (
-        isPlaceholderEmail(existing.customer_email) ||
-        !existing.customer_phone ||
-        !existing.customer_id ||
-        !existing.square_customer_id
-      );
+      const needsRelink = orderNeedsRelink(existing);
       let profileId = '';
       let profile: any = null;
       if (!existing || needsRelink) {
@@ -315,14 +373,34 @@ Deno.serve(async (req) => {
       const profileEmail = profile?.email ? String(profile.email).trim() : '';
       const profilePhone = profile?.phone ? String(profile.phone).trim() : '';
 
-      if (!existing) {
+      // Issue #277 Part A: the create/relink decision is the pure plan in
+      // shared/squareSyncPlan.ts, so these rules can be tested on their own.
+      const plan = planOrderSync({
+        squareOrder: so,
+        existing,
+        squareName: sqName,
+        squareEmail: sqEmail,
+        squarePhone: sqPhone,
+        profileEmail,
+        profilePhone,
+        profileId,
+        orderFields,
+        loyalty,
+      });
+
+      if (plan.action === 'create') {
+        touchedSquareIds.add(so.id);
         newOrders.push({
           order_number: so.reference_id || so.id.substring(0, 8),
           square_order_id: so.id,
-          customer_name: customerName,
-          customer_email: customerEmail || profileEmail,
-          customer_phone: sqPhone || profilePhone,
-          customer_id: profileId,
+          ...newOrderIdentity({
+            linkedEmail,
+            profileEmail,
+            squarePhone: sqPhone,
+            profilePhone,
+            profileId,
+            squareName: sqName,
+          }),
           order_source: 'in_store',
           // Register tickets land confirmed: the crew already has them in hand,
           // so nothing should wait on a confirm click (Wesley, Nov 9 2026).
@@ -331,45 +409,110 @@ Deno.serve(async (req) => {
           ...orderFields,
           ...loyalty,
         });
-      } else {
-        // Relink an already-synced order once Square can resolve who paid it:
-        // the old placeholder email, an empty phone, an empty customer id or an
-        // empty Square customer id. Only empty fields are filled; a real stored
-        // value is kept, and the placeholder rules are unchanged.
-        if (needsRelink) {
-          const patch: Record<string, any> = {};
-          const squareEmail = String(sqEmail || '').trim();
-          if (squareEmail) {
-            if (!existing.customer_email || isPlaceholderEmail(existing.customer_email)) {
-              patch.customer_email = squareEmail;
-            }
-          } else if (isPlaceholderEmail(existing.customer_email)) {
-            patch.customer_email = '';
-          } else if (!existing.customer_email && profileEmail) {
-            patch.customer_email = profileEmail;
-          }
-          // Both ids, each in its own field, only where the order has none.
-          if (profileId && !existing.customer_id) patch.customer_id = profileId;
-          if (orderFields.square_customer_id && !existing.square_customer_id) {
-            patch.square_customer_id = orderFields.square_customer_id;
-          }
-          const phoneToWrite = String(sqPhone || '').trim() || profilePhone;
-          if (phoneToWrite && !existing.customer_phone) patch.customer_phone = phoneToWrite;
-          if (orderFields.normalized_phone && !existing.normalized_phone) patch.normalized_phone = orderFields.normalized_phone;
-          if (square_name && square_name !== existing.customer_name) patch.customer_name = square_name;
-          if (loyalty.loyalty_accrued && !existing.loyalty_accrued) Object.assign(patch, loyalty);
-          if (Object.keys(patch).length > 0) {
-            updates.push(base44.asServiceRole.entities.Order.update(existing.id, patch));
-          }
-        }
+      } else if (plan.action === 'relink') {
+        // Relink an already-synced order once Square can resolve who paid it.
+        // Only empty fields are filled; a real stored value is kept.
+        touchedSquareIds.add(so.id);
+        updates.push(base44.asServiceRole.entities.Order.update(existing.id, plan.patch));
       }
     }
 
+    // Issue #277 Part A: this run's claims are written in ONE call, before any
+    // Order row exists. A second run reads them at its own start and skips those
+    // square_order_ids instead of writing a second copy.
+    const claimsBySquareId = new Map<string, string>();
+    if (pendingClaims.length > 0) {
+      const createdClaims = await base44.asServiceRole.entities.SquareOrderClaim.bulkCreate(pendingClaims);
+      const claimRows = Array.isArray(createdClaims) ? createdClaims : (createdClaims?.items || []);
+      claimRows.forEach((claim: any) => {
+        if (claim?.square_order_id && claim?.id) claimsBySquareId.set(claim.square_order_id, claim.id);
+      });
+    }
+
     if (newOrders.length > 0) {
-      await base44.asServiceRole.entities.Order.bulkCreate(newOrders);
+      const created = await base44.asServiceRole.entities.Order.bulkCreate(newOrders);
+      const createdRows = Array.isArray(created) ? created : (created?.items || []);
+      const orderIdBySquareId = new Map<string, string>();
+      createdRows.forEach((row: any) => {
+        if (row?.square_order_id && row?.id) orderIdBySquareId.set(row.square_order_id, row.id);
+      });
+
+      // Mark the claims committed with the Order row each one produced, so the
+      // next run reads that square_order_id as done rather than in flight.
+      const commits: any[] = [];
+      for (const [squareOrderId, claimId] of claimsBySquareId.entries()) {
+        let orderId = orderIdBySquareId.get(squareOrderId) || '';
+        if (!orderId) {
+          // bulkCreate did not hand the row back — read it rather than guess.
+          const rows = await base44.asServiceRole.entities.Order.filter({ square_order_id: squareOrderId });
+          orderId = (rows || [])[0]?.id || '';
+        }
+        if (!orderId) continue;
+        commits.push({
+          id: claimId,
+          status: 'committed',
+          order_id: orderId,
+          committed_at: new Date().toISOString(),
+        });
+      }
+      if (commits.length > 0) {
+        try {
+          await base44.asServiceRole.entities.SquareOrderClaim.bulkUpdate(commits);
+        } catch (claimError) {
+          console.error('Square claim commit failed:', (claimError as Error).message);
+        }
+      }
     }
     if (updates.length > 0) {
       await Promise.all(updates);
+    }
+
+    // Issue #277 Part A: re-count the square_order_ids this run touched. If two
+    // runs ever slipped through, the oldest Order row is kept and the newer
+    // copies are removed — but ONLY a row carrying this exact square_order_id.
+    // Read in chunks of 100 ids so the whole sweep costs a few calls, not one
+    // per order.
+    let duplicatesRemoved = 0;
+    const touched = [...touchedSquareIds];
+    for (let i = 0; i < touched.length; i += 100) {
+      const chunk = touched.slice(i, i + 100);
+      const rows = await base44.asServiceRole.entities.Order.filter({ square_order_id: { $in: chunk } });
+      const groups = new Map<string, any[]>();
+      (rows || []).forEach((row: any) => {
+        // Never group anything that does not share an exactly equal id.
+        if (!row?.square_order_id || !chunk.includes(row.square_order_id)) return;
+        const group = groups.get(row.square_order_id) || [];
+        group.push(row);
+        groups.set(row.square_order_id, group);
+      });
+
+      for (const [squareOrderId, group] of groups.entries()) {
+        if (group.length < 2) continue;
+        const ordered = group.slice().sort((a: any, b: any) =>
+          new Date(a.created_date || 0).getTime() - new Date(b.created_date || 0).getTime() ||
+          String(a.id).localeCompare(String(b.id))
+        );
+        const [keep, ...extra] = ordered;
+        for (const dup of extra) {
+          if (!dup.square_order_id || dup.square_order_id !== squareOrderId) continue;
+          await base44.asServiceRole.entities.Order.delete(dup.id);
+          duplicatesRemoved += 1;
+          try {
+            await base44.asServiceRole.entities.SquareSyncLog.create({
+              order_id: dup.id,
+              order_number: dup.order_number || '',
+              square_order_id: squareOrderId,
+              status: 'skipped',
+              customer_name: dup.customer_name || '',
+              customer_email: dup.customer_email || '',
+              total: dup.total ?? 0,
+              error_message: `Duplicate Order for the same Square order removed (kept ${keep.id}). Issue #277 Part A.`,
+            });
+          } catch (logError) {
+            console.error('Square duplicate log failed:', (logError as Error).message);
+          }
+        }
+      }
     }
 
     // Calculate hourly metrics for today in store-local (America/Chicago) time
@@ -426,6 +569,9 @@ Deno.serve(async (req) => {
       squareOrdersPulled: squareOrders.length,
       newOrders: newOrders.length,
       relinkedOrders: updates.length,
+      duplicates_removed: duplicatesRemoved,
+      skipped: websiteSkipped + inFlightSkipped,
+      skipped_detail: { website: websiteSkipped, in_flight: inFlightSkipped },
       unresolved_customers: unresolvedCustomerCount,
       ...(loyaltyUnauthorized ? { loyalty_lookup: 'unauthorized' } : {}),
       metricsUpdated: true
@@ -433,5 +579,9 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Square sync error:', error);
     return Response.json({ error: error.message }, { status: 500 });
+  } finally {
+    // The lease is always handed back, so the next run starts straight away
+    // instead of waiting for the 15-minute expiry.
+    await releaseSyncLock(base44, leaseId);
   }
 });
