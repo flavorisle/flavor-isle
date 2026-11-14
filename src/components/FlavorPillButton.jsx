@@ -11,7 +11,11 @@ import { Check } from 'lucide-react';
 export const FLAVOR_AMOUNT_LIST = 'Flavor Amount';
 
 export function isFlavorGroup(group) {
-  return /flavor/i.test(group?.name || '');
+  const name = group?.name || '';
+  // A cake flavor is a cake choice (vanilla or chocolate), not an amount.
+  // Lite cake and extra cake are not a thing, so those groups stay plain options.
+  if (/cake/i.test(name)) return false;
+  return /flavor/i.test(name);
 }
 
 // Fallback shape used only when a flavor carries NO child list: an id-less
