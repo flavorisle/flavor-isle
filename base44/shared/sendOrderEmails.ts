@@ -4,6 +4,7 @@ import { fetchStoreProducts } from './printful.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from './dessertPriority.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
 import { GOOGLE_REVIEW_URL } from './googleReviewUrl.ts';
+import { isEmailableCustomer } from './emailSafety.ts';
 
 const LOGO_URL = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -258,7 +259,10 @@ export function brandedEmailHtml(bodyHtml) {
 // SendEmail integration (which only reaches registered users) silently drops
 // their messages. Reach them here via Resend instead.
 export async function sendOrderStatusEmail(to, subject, body, fromName = 'Flavor Isle') {
-  if (!to) return false;
+  if (!isEmailableCustomer(to)) {
+    console.log('email_blocked_recipient', to);
+    return false;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   try {
     const { error } = await resend.emails.send({
@@ -323,7 +327,10 @@ function googleReviewPsHtml() {
 // Order-ready email — order status and fulfillment details. Reaches guest
 // emails via Resend (built-in SendEmail only delivers to registered app users).
 export async function sendOrderReadyEmail(order, base44?) {
-  if (!order.customer_email) return false;
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return false;
+  }
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
   const orderType = order.order_type;
@@ -423,7 +430,10 @@ async function sendBrandedHtml(to: string, subject: string, bodyHtml: string, fr
 // promo to cross-sell while the customer waits. `base44` is optional but
 // recommended — when passed, the email quotes the current dynamic wait.
 export async function sendOrderPreparingEmail(order: any, base44?: any) {
-  if (!order.customer_email) return false;
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return false;
+  }
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
 
@@ -456,7 +466,10 @@ export async function sendOrderPreparingEmail(order: any, base44?: any) {
 // Thank-you email — sent when the order is completed. Asks for a review and
 // promotes the merch line.
 export async function sendOrderCompletedEmail(order: any, base44?: any) {
-  if (!order.customer_email) return false;
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return false;
+  }
   const orderNum = order.order_number || (order.id ? order.id.slice(-6).toUpperCase() : '');
   const customerName = order.customer_name || 'friend';
   const body = `

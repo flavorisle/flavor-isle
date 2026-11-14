@@ -5,6 +5,7 @@ import { brandedEmailHtml, reviewCtaHtml, starsEarnedHtml } from '../../shared/s
 import { searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/dessertPriority.ts';
 import { findBlock } from '../../shared/blockedContacts.ts';
+import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 // Message consolidation (Oct 28 2026): this is now the customer's ONE
 // post-order email. It carries the thank-you subject, the Stars they earned
@@ -18,19 +19,16 @@ const FUNCTION_BASE = 'https://flavor-isle.com';
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Internal/test emails that should never receive a recommendation email.
-const SKIP_EMAILS = new Set([
-  'square-pos@flavorisle.com',
+const INTERNAL_EMAILS = new Set([
   'wesley@flavor-isle.com',
   'wesleyrbooker1@gmail.com',
   'test@example.com',
 ]);
 
 function isSkipEmail(email) {
-  if (!email) return true;
-  const e = email.toLowerCase().trim();
-  if (SKIP_EMAILS.has(e)) return true;
-  if (e.endsWith('@flavorisle.com')) return true;
-  return false;
+  const e = normalizeEmail(email);
+  if (!e || INTERNAL_EMAILS.has(e)) return true;
+  return !isEmailableCustomer(e);
 }
 
 // Bucket a menu item into MAIN / SIDE / DESSERT / DRINK / OTHER using its

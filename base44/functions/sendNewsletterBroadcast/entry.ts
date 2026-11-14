@@ -3,6 +3,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 // Admin-only newsletter broadcast. Three actions:
 //   stats      — live active/pending/unsubscribed/bounced counts for the composer.
@@ -271,6 +272,7 @@ export default async function (req: Request): Promise<Response> {
     for (; i < endOffset; i++) {
       const sub = active[i];
       if (alreadySent.has(sub.id)) { skipped++; continue; }
+      if (!isEmailableCustomer(sub.email)) { skipped++; continue; }
       // Issue #93 (A2): a blocked customer is skipped, never emailed.
       if (blockFilter.hasEmail(sub.email)) { blocked++; skipped++; continue; }
       // Leave the rest for the next invocation rather than risk a timeout

@@ -1,5 +1,6 @@
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from './sendOrderEmails.ts';
+import { isEmailableCustomer } from './emailSafety.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -44,6 +45,10 @@ function addressBlock(order) {
 
 // Order confirmation — sent the moment a Tasty Threads merch order is paid.
 export async function sendMerchConfirmationEmail(order) {
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   const html = brandedEmailHtml(`
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
@@ -72,6 +77,10 @@ export async function sendMerchConfirmationEmail(order) {
 
 // In production — sent the first time Printful reports the order is being printed.
 export async function sendMerchInProductionEmail(order) {
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   const html = brandedEmailHtml(`
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Heads up,</p>
@@ -100,6 +109,10 @@ export async function sendMerchInProductionEmail(order) {
 
 // Fulfilled — printing is done, order is being packed for shipment.
 export async function sendMerchFulfilledEmail(order) {
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   const html = brandedEmailHtml(`
     <p style="color:#666;margin:0 0 10px;font-size:16px;">Almost there,</p>
@@ -128,6 +141,10 @@ export async function sendMerchFulfilledEmail(order) {
 
 // Shipping notification — sent when Printful hands over tracking info.
 export async function sendMerchShippedEmail(order) {
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
   const trackBtn = order.tracking_url
     ? `<div style="text-align:center;margin:0 0 24px;">

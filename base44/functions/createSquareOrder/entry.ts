@@ -3,6 +3,7 @@ import { formatItemModifiers } from '../../shared/ticketFormat.ts';
 import { bundleLabelFor } from '../../shared/familyBundle.ts';
 import { isInternalCaller } from '../../shared/internalRelay.ts';
 import { normalizeEmail, analyzeEmail } from '../../shared/emailValidation.ts';
+import { isPlaceholderEmail } from '../../shared/emailSafety.ts';
 
 export default async function(req) {
   try {
@@ -113,7 +114,7 @@ export default async function(req) {
     // required field is satisfied — never match or create a Square customer
     // with it as if it were a real address. The phone still links the customer.
     const rawEmail = normalizeEmail(customer.email || '');
-    const normalizedEmail = rawEmail === 'phone-order@flavorisle.com' ? '' : rawEmail;
+    const normalizedEmail = isPlaceholderEmail(rawEmail) ? '' : rawEmail;
 
     const searchCustomer = async (filter) => {
       const res = await fetch('https://connect.squareup.com/v2/customers/search', {

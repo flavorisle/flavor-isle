@@ -3,22 +3,20 @@ import { Resend } from 'npm:resend@3.2.0';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
+import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
 // Internal/test emails that should never receive a promo broadcast.
-const SKIP_EMAILS = new Set([
-  'square-pos@flavorisle.com',
+const INTERNAL_EMAILS = new Set([
   'wesley@flavor-isle.com',
   'test@example.com',
 ]);
 
 function isSkipEmail(email) {
-  if (!email) return true;
-  const e = email.toLowerCase().trim();
-  if (SKIP_EMAILS.has(e)) return true;
-  if (e.endsWith('@flavorisle.com')) return true;
-  return false;
+  const e = normalizeEmail(email);
+  if (!e || INTERNAL_EMAILS.has(e)) return true;
+  return !isEmailableCustomer(e);
 }
 
 // Gather every unique customer email that has placed an online order.

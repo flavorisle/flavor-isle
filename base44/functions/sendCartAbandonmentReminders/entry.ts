@@ -3,6 +3,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
+import { isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 // Scans CustomerProfiles for saved carts that have sat untouched for more than
 // one hour and sends each customer one compelling reminder email. Invoked by the
@@ -142,6 +143,7 @@ export default async function (req) {
       const lastReminderMs = p.cart_reminder_sent_at ? new Date(p.cart_reminder_sent_at).getTime() : 0;
       // Skip if we already reminded for this (or a later) version of the cart.
       if (lastReminderMs && savedAt <= lastReminderMs) continue;
+      if (!isEmailableCustomer(p.email)) continue;
 
       const items = cart.cartItems;
       const subtotal = items.reduce(

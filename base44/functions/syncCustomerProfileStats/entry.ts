@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isPlaceholderEmail } from '../../shared/emailSafety.ts';
 
 // Keeps CustomerProfile.total_orders / total_spent in sync when an order
 // completes as paid. Invoked by the "Sync Customer Profile Stats" workflow
@@ -12,12 +13,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 //      for that email — not increment — so any drift self-heals.
 //   3. If no profile exists, create one (name + email + preferred_communication
 //      "email"), with the email normalized to lowercase.
-//   4. Skip square-pos@flavorisle.com, wesleyrbooker1@gmail.com,
-//      wesley@flavor-isle.com, test@example.com.
+//   4. Skip placeholder addresses (the walk-in and phone-order placeholders in
+//      both spellings, any @flavorisle.com address) and the internal addresses
+//      wesleyrbooker1@gmail.com, wesley@flavor-isle.com, test@example.com.
 //   5. Only count orders with status="completed" AND payment_status="paid".
 
 const SKIP_EMAILS = new Set([
-  'square-pos@flavorisle.com',
   'wesleyrbooker1@gmail.com',
   'wesley@flavor-isle.com',
   'test@example.com',
@@ -50,7 +51,7 @@ export default async function(req) {
       return Response.json({ skipped: true, reason: 'no_customer_email' });
     }
 
-    if (SKIP_EMAILS.has(emailKey)) {
+    if (SKIP_EMAILS.has(emailKey) || isPlaceholderEmail(emailKey)) {
       return Response.json({ skipped: true, reason: 'skip_email' });
     }
 

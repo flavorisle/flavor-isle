@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { pushOrderToSquareAndKitchen } from '../../shared/fulfillOrder.ts';
+import { isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 // Self-healing safety net for the order → Square sync.
 //
@@ -47,7 +48,7 @@ export default async function (req: Request) {
     // Phone/chat orders taken without an email carry a placeholder address —
     // there is no confirmation email to retry, so they must not stay in this
     // list forever (that re-processed them every few minutes).
-    const hasRealEmail = (o: any) => !!o.customer_email && o.customer_email !== 'phone-order@flavorisle.com';
+    const hasRealEmail = (o: any) => isEmailableCustomer(o.customer_email);
 
     const candidates = (orders || []).filter((o) =>
       o.status !== 'cancelled' &&

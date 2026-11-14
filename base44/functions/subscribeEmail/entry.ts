@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml } from '../../shared/sendOrderEmails.ts';
 import { analyzeEmail } from '../../shared/emailValidation.ts';
+import { isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 // Public newsletter subscription with double opt-in. Creates a pending
 // EmailSubscriber and sends a confirmation email with a one-time confirm
@@ -22,6 +23,10 @@ async function sendConfirmation(email, confirmToken) {
     <a href="${confirmLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:12px 26px;border-radius:999px;font-size:14px;font-weight:bold;">CONFIRM MY SUBSCRIPTION</a>
     <p style="color:#999;font-size:13px;margin:14px 0 0;">If you didn't sign up, you can ignore this email — nothing happens until you confirm.</p>`;
   try {
+    if (!isEmailableCustomer(email)) {
+      console.log('email_blocked_recipient', email);
+      return;
+    }
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     const { error } = await resend.emails.send({ from: FROM, to: email, subject: 'Confirm your Flavor Isle updates', html: brandedEmailHtml(bodyHtml) });
     if (error) console.error('subscribeEmail confirmation send error:', error);

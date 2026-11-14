@@ -5,6 +5,7 @@ import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
 import { getLoyaltyProgram, searchLoyaltyAccountByPhone } from '../../shared/squareLoyalty.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
+import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
@@ -13,19 +14,16 @@ function nextTier(balance, tiers) {
   return [...tiers].sort((a, b) => a.points - b.points).find(tier => balance < tier.points) || null;
 }
 
-const SKIP_EMAILS = new Set([
-  'square-pos@flavorisle.com',
+const INTERNAL_EMAILS = new Set([
   'wesley@flavor-isle.com',
   'wesleyrbooker1@gmail.com',
   'test@example.com',
 ]);
 
 function isSkipEmail(email) {
-  if (!email) return true;
-  const e = email.toLowerCase().trim();
-  if (SKIP_EMAILS.has(e)) return true;
-  if (e.endsWith('@flavorisle.com')) return true;
-  return false;
+  const e = normalizeEmail(email);
+  if (!e || INTERNAL_EMAILS.has(e)) return true;
+  return !isEmailableCustomer(e);
 }
 
 export default async function (req: Request) {

@@ -5,6 +5,7 @@ import { getAccrualEventForOrder } from '../../shared/squareLoyalty.ts';
 import { squareOrderFields } from '../../shared/squareOrderFields.ts';
 import { loadCustomerProfileIndex, ensureCustomerProfile } from '../../shared/customerLink.ts';
 import { todayChicago, chicagoParts } from '../../shared/busynessTime.ts';
+import { isPlaceholderEmail } from '../../shared/emailSafety.ts';
 
 const SQUARE_VERSION = '2026-09-16';
 // Star Rewards lookups are one Square call each, so a run checks at most this
@@ -295,7 +296,7 @@ Deno.serve(async (req) => {
       // path, so Square's own customer id now rides in square_customer_id and the
       // profile is resolved (or created) here.
       const needsRelink = !!existing && (
-        existing.customer_email === 'square-pos@flavorisle.com' ||
+        isPlaceholderEmail(existing.customer_email) ||
         !existing.customer_phone ||
         !existing.customer_id ||
         !existing.square_customer_id
@@ -339,10 +340,10 @@ Deno.serve(async (req) => {
           const patch: Record<string, any> = {};
           const squareEmail = String(sqEmail || '').trim();
           if (squareEmail) {
-            if (!existing.customer_email || existing.customer_email === 'square-pos@flavorisle.com') {
+            if (!existing.customer_email || isPlaceholderEmail(existing.customer_email)) {
               patch.customer_email = squareEmail;
             }
-          } else if (existing.customer_email === 'square-pos@flavorisle.com') {
+          } else if (isPlaceholderEmail(existing.customer_email)) {
             patch.customer_email = '';
           } else if (!existing.customer_email && profileEmail) {
             patch.customer_email = profileEmail;

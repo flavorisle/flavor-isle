@@ -8,6 +8,7 @@ import { checkSmsConsent, markSmsSent } from './smsConsent.ts';
 import { getSmashieSettings } from './smashieSettings.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
 import { relayKeyValue } from './internalRelay.ts';
+import { isEmailableCustomer } from './emailSafety.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -47,6 +48,10 @@ function referralBlockHtml(code: string) {
 }
 
 export async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
+  if (!isEmailableCustomer(order.customer_email)) {
+    console.log('email_blocked_recipient', order.customer_email);
+    return false;
+  }
   const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
   const hasAccount = await isRegisteredUser(base44, order.customer_email);
@@ -508,7 +513,7 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
 
   // Customer confirmation email — INDEPENDENT dedupe via confirmation_email_sent_at.
   // Fires exactly once regardless of whether this call did the Square push.
-  if (order.customer_email && order.customer_email !== 'phone-order@flavorisle.com') {
+  if (isEmailableCustomer(order.customer_email)) {
     await sendConfirmationWithDedupe(base44, order, loyalty);
   }
 }
