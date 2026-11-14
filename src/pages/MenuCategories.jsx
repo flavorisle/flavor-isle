@@ -11,9 +11,6 @@ import { itemCategoryKey, categoryLabel, categorySubtitle, sortCategories } from
 import { optimizedImageUrl } from '@/lib/utils';
 import { categoryPhoto } from '@/lib/categoryPhotos';
 
-// Issue #301 Part A: the category mark is a real Flavor Isle photo (same map the
-// menu chips use), never an emoji.
-
 // One card per menu category (burgers, shakes, sides…) so a customer can find
 // the section they want and jump straight to it on the menu. Grouping, renames,
 // hiding and sort order all follow the same MenuSetting the menu page uses.
@@ -65,6 +62,7 @@ export default function MenuCategories() {
         from: prices.length ? Math.min(...prices) : null,
         photo: withPhoto ? withPhoto.image_url_opt || withPhoto.image_url : null,
         icon: categoryPhoto(key, list),
+        cardPhoto: withPhoto ? (withPhoto.image_url_opt || withPhoto.image_url) : (categoryPhoto(key)?.url || null),
       };
     });
   }, [items, setting]);
@@ -119,20 +117,10 @@ export default function MenuCategories() {
                 className="card-diner overflow-hidden flex flex-col group"
               >
                 <div className="relative h-40 bg-patina-mint flex items-center justify-center overflow-hidden">
-                  {cat.photo ? (
+                  {cat.cardPhoto ? (
                     <img
-                      src={optimizedImageUrl(cat.photo, 600, 400, 'fit')}
+                      src={optimizedImageUrl(cat.cardPhoto, 600, 400, 'fit')}
                       alt={`${cat.label} at Flavor Isle`}
-                      width="600"
-                      height="400"
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : cat.icon ? (
-                    <img
-                      src={optimizedImageUrl(cat.icon.url, 600, 400, 'fit')}
-                      alt={cat.icon.alt}
                       width="600"
                       height="400"
                       loading="lazy"
@@ -147,17 +135,6 @@ export default function MenuCategories() {
                 <div className="p-5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="font-heading text-2xl text-obsidian-roast leading-tight truncate">
-                      {cat.icon && (
-                        <img
-                          src={optimizedImageUrl(cat.icon.url, 80, 80, 'fit')}
-                          alt=""
-                          width="26"
-                          height="26"
-                          loading="lazy"
-                          decoding="async"
-                          className="inline-block w-[26px] h-[26px] rounded-full object-cover mr-2 align-middle"
-                        />
-                      )}
                       {cat.label}
                     </h2>
                     {cat.subtitle && (
