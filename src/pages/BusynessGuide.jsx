@@ -18,11 +18,14 @@ const ORDER_TYPES = [
   { id: 'delivery', label: 'Delivery', Icon: Bike, tip: 'We bring it to your door.' },
 ];
 
+// Issue #297 Part B: one source for wait times — each blurb is a template filled
+// from that level's own BUSYNESS_STAGES waitRange, so this page can never quote
+// a wait that contradicts the level it is showing.
 const LEVEL_BLURBS = {
-  'Running Smooth': 'The board is clear and the grill is hot. Orders start right away and are typically ready in about 24 minutes.',
-  'A Little Busy': 'A steady stream of orders is coming in. Expect a 30–40 minute wait from the time you place your order.',
-  'Busy': 'The kitchen is cooking at full tilt. Plan on a 40–55 minute wait — scheduling ahead is a smart move.',
-  'Slammed': "We're in the weeds. Orders can take an hour or more. Schedule a later pickup time whenever you can.",
+  'Slammed': (range) => `We're in the weeds. Orders are running ${range}. Schedule a later pickup time whenever you can.`,
+  'Busy': (range) => `The kitchen is cooking at full tilt. Plan on ${range} — scheduling ahead is a smart move.`,
+  'A Little Busy': (range) => `A steady stream of orders is coming in. Expect a ${range} wait from the time you place your order.`,
+  'Running Smooth': (range) => `The board is clear and the grill is hot. Orders start right away — about ${range}.`,
 };
 
 export default function BusynessGuide() {
@@ -117,7 +120,7 @@ export default function BusynessGuide() {
                       <h3 className="font-heading text-lg text-obsidian-roast">{stage.level}</h3>
                       <span className="text-sm font-semibold text-patina-mint">{stage.waitRange}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{LEVEL_BLURBS[stage.level]}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{LEVEL_BLURBS[stage.level]?.(stage.waitRange)}</p>
                     {isCurrent && (
                       <span className="inline-block mt-2 text-xs font-heading text-midnight-cherry bg-midnight-cherry/10 px-2.5 py-1 rounded-full">
                         This is right now

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { categoryLabel, categorySubtitle } from '@/lib/menuCategory';
+import { categoryPhoto } from '@/lib/categoryPhotos';
+import { optimizedImageUrl } from '@/lib/utils';
 
 // Emoji icon per category — matched case-insensitively on the category key so
 // custom display categories fall back to a generic plate when unmapped.
@@ -122,6 +124,8 @@ export default function MenuCategoryChips({ rows, renames, subtitles = {} }) {
           const label = row.isShakeBanner ? 'Whirl & Twirl' : categoryLabel(row.key, renames);
           const subtitle = row.isShakeBanner ? (subtitles['Whirl & Twirl'] || '') : categorySubtitle(row.key, renames, subtitles);
           const icon = row.isShakeBanner ? '🥤' : iconFor(row.key);
+          // Issue #301 Part A: a real Flavor Isle photo replaces the emoji mark.
+          const photo = categoryPhoto(row.isShakeBanner ? 'Whirl & Twirl' : row.key, row.items);
           const active = activeKey === row.key;
           return (
             <button
@@ -135,7 +139,19 @@ export default function MenuCategoryChips({ rows, renames, subtitles = {} }) {
                   : 'bg-white text-obsidian-roast border-border hover:border-midnight-cherry/40 hover:bg-midnight-cherry hover:text-white'
               }`}
             >
-              <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
+              {photo ? (
+                <img
+                  src={optimizedImageUrl(photo.url, 80, 80, 'fit')}
+                  alt=""
+                  width="26"
+                  height="26"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-[26px] h-[26px] rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
+              )}
               <span className="flex flex-col text-left leading-tight"><span>{label}</span>{subtitle && <span className="font-body text-[11px] font-normal opacity-70 mt-0.5">{subtitle}</span>}</span>
             </button>
           );

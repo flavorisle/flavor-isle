@@ -2,6 +2,8 @@ import React from 'react';
 import { Printer, MapPin, Phone, Clock, Globe, UtensilsCrossed, IceCream2, Flame } from 'lucide-react';
 import { optimizedImageUrl } from '@/lib/utils';
 import { galleryImage } from '@/lib/galleryPhotos';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursGroups } from '@/lib/businessHours';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 // Flyer photography comes from the gallery only (Wesley's marketing rule), so the
@@ -9,6 +11,8 @@ const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ac
 const STOREFRONT = galleryImage('The sign at 1st and Main');
 
 export default function Flyer() {
+  const businessHours = useBusinessHours();
+  const flyerHours = hoursGroups(businessHours);
   return (
     <>
       <style>{`
@@ -182,7 +186,11 @@ export default function Flyer() {
               <Clock size={16} className="text-midnight-cherry flex-shrink-0 mt-0.5" />
               <div className="text-xs leading-snug">
                 <div className="font-heading text-sm">HOURS</div>
-                Mon–Thu 10:30 AM – 7 PM<br />Fri–Sat 10:30 AM – 8 PM<br />Sun 11 AM – 7 PM
+                {flyerHours.map((g) => (
+                  <React.Fragment key={g.days}>
+                    {g.days} {g.label}<br />
+                  </React.Fragment>
+                ))}
               </div>
             </div>
             <div className="flex items-start gap-2">

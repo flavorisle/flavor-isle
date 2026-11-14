@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Save, Check, Truck, Car } from 'lucide-react';
 import { getMenuSetting, setOrderCutoffs, setDeliveryEnabled, setCurbsideEnabled } from '@/lib/menuSettings';
+import { DAY_LABELS, formatTime12 } from '@/lib/businessHours';
+import { chicagoNow } from '@/lib/chicagoNow';
 
 export default function OrderCutoffSettings() {
-  const [closingTime, setClosingTime] = useState('19:00');
+  const [businessHours, setBusinessHoursState] = useState(null);
   const [deliveryCutoff, setDeliveryCutoff] = useState(30);
   const [pickupCutoff, setPickupCutoff] = useState(15);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -17,7 +19,7 @@ export default function OrderCutoffSettings() {
   useEffect(() => {
     getMenuSetting()
       .then(s => {
-        if (s.closing_time) setClosingTime(s.closing_time);
+        setBusinessHoursState(s.business_hours || null);
         if (s.delivery_cutoff_minutes != null) setDeliveryCutoff(s.delivery_cutoff_minutes);
         if (s.pickup_cutoff_minutes != null) setPickupCutoff(s.pickup_cutoff_minutes);
         if (s.delivery_fee != null) setDeliveryFee(s.delivery_fee);
@@ -51,7 +53,6 @@ export default function OrderCutoffSettings() {
     setSaving(true);
     try {
       await setOrderCutoffs({
-        closingTime,
         deliveryCutoff: Math.max(0, parseInt(deliveryCutoff) || 0),
         pickupCutoff: Math.max(0, parseInt(pickupCutoff) || 0),
         deliveryFee: Math.max(0, parseFloat(deliveryFee) || 0),
@@ -62,6 +63,14 @@ export default function OrderCutoffSettings() {
       setSaving(false);
     }
   };
+
+  // Issue #297 Part A: the close time lives in Business Hours only. This panel
+  // shows it read-only so there is no second field to disagree with the panel.
+  const todayKey = chicagoNow().dayKey;
+  const todayHours = businessHours?.[todayKey];
+  const todayCloseLabel = todayHours && !todayHours.closed && todayHours.close
+    ? `${DAY_LABELS[todayKey]} · ${formatTime12(todayHours.close)}`
+    : 'See Business Hours';
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-2">
@@ -140,14 +149,11 @@ export default function OrderCutoffSettings() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Fallback Closing Time</label>
-            <input
-              type="time"
-              value={closingTime}
-              onChange={e => setClosingTime(e.target.value)}
-              className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30"
-            />
-            <p className="text-xs text-muted-foreground mt-1.5">Business Hours drive the real close time. This is only used for a day with no hours set.</p>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Closing Time</label>
+            <div className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm text-obsidian-roast">
+              {todayCloseLabel}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">Set in Business Hours — the one place the close time lives.</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Delivery Cutoff (min before close)</label>

@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import useLiveStatus from '@/hooks/useLiveStatus';
+import { pickupQuote } from '@/lib/waitQuote';
 
 // Mobile-only fixed bottom bar that keeps the ORDER NOW action visible while
 // scrolling the homepage and menu. Sits above the BottomTabBar and respects
@@ -14,6 +16,7 @@ const ORDER_TYPES = [
 
 export default function StickyOrderBar() {
   const { orderType, setOrderType, pickupMethod, setPickupMethod, orderingEnabled, menuSetting } = useCart();
+  const { waitMin, isClosed } = useLiveStatus();
   const navigate = useNavigate();
 
   if (!orderingEnabled) return null;
@@ -46,7 +49,7 @@ export default function StickyOrderBar() {
           </div>
 
           <div className="flex items-center gap-1 text-xs text-patina-mint font-heading whitespace-nowrap flex-shrink-0">
-            <Clock size={12} /> ~15 min
+            <Clock size={12} /> {isClosed ? 'Closed' : pickupQuote(waitMin)}
           </div>
 
           <button

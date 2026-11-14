@@ -27,7 +27,9 @@ function regularCloseFor(date, setting) {
   const day = setting?.business_hours?.[dayKey] || {};
   if (day.closed) return { close: null, closedAllDay: true };
   return {
-    close: String(day.close || setting?.closing_time || DEFAULT_CLOSE).slice(0, 5),
+    // Issue #297 Part A: that day's regular close comes from Business Hours only.
+    // The legacy closing_time field is never consulted here.
+    close: String(day.close || DEFAULT_CLOSE).slice(0, 5),
     closedAllDay: false,
   };
 }

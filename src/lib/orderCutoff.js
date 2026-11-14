@@ -17,6 +17,9 @@ const toMins = (t) => {
 export function getCutoffStatus(setting) {
   const deliveryCutoff = setting?.delivery_cutoff_minutes ?? 30;
   const pickupCutoff = setting?.pickup_cutoff_minutes ?? 15;
+  // Issue #297 Part A: Business Hours is the one source of the close time. The
+  // legacy closing_time field is read only for a day that has no close of its
+  // own, so it can never override the panel.
   const closedFallback = toMins(setting?.closing_time) ?? toMins('19:00');
   // Admin can pause delivery entirely — it stays unavailable regardless of hours.
   const deliveryPaused = setting?.delivery_enabled === false;
@@ -69,7 +72,8 @@ export function getCutoffStatus(setting) {
   // A one-day early close (MenuSetting.early_close, honored only on its own
   // date) moves today's closing time — and every wind-down cutoff with it.
   const earlyClose = earlyCloseToday(setting, todayStr);
-  const closeMins = (earlyClose ? toMins(earlyClose.closeTime) : toMins(today.close)) ?? closedFallback;
+  const dayCloseMins = toMins(today.close);
+  const closeMins = toMins(earlyClose?.closeTime) ?? dayCloseMins ?? closedFallback;
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
   if (nowMins < unlockMins) return allClosed;   // before ordering unlocks — locked

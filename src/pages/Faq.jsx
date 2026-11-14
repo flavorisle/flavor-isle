@@ -9,7 +9,7 @@ import CinematicHero from '@/components/cinematic/CinematicHero';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
-import { hoursGroups } from '@/lib/businessHours';
+import { hoursGroups, hoursSummary } from '@/lib/businessHours';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 
@@ -91,7 +91,7 @@ export default function Faq() {
     },
     {
       q: 'Where should I eat off I-65 in Kentucky?',
-      a: 'Flavor Isle at I-65 Exit 38 in Smiths Grove, about 2 minutes from the ramp and 15 minutes north of Bowling Green. We open at 10:30 AM Monday through Saturday and 11:00 AM Sunday, closing at 7:00 PM Sunday through Thursday and 8:00 PM Friday and Saturday. Order online at flavor-isle.com and skip the wait.',
+      a: `Flavor Isle at I-65 Exit 38 in Smiths Grove, about 2 minutes from the ramp and 15 minutes north of Bowling Green. Our hours: ${hoursSummary(businessHours)}. Order online at flavor-isle.com and skip the wait.`,
     },
   ];
 

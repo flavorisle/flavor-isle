@@ -55,7 +55,10 @@ export function effectiveCloseTime(setting, now = chicagoNow(), todayKey = chica
   if (early) return early.closeTime;
   const dayHours = setting?.business_hours?.[now.dayKey] || {};
   if (dayHours.closed) return null;
-  const configured = dayHours.close || setting?.closing_time || DEFAULT_CLOSE;
+  // Issue #297 Part A: the day's own close from Business Hours wins. The legacy
+  // closing_time is only a fallback for a day that has no close of its own.
+  const dayClose = String(dayHours.close || '').slice(0, 5);
+  const configured = dayClose || setting?.closing_time || DEFAULT_CLOSE;
   return String(configured).slice(0, 5);
 }
 

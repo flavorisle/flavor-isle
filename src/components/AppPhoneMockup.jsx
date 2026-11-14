@@ -257,7 +257,7 @@ export default function AppPhoneMockup() {
               <div className="rounded-xl px-2.5 py-2 mb-3 text-white" style={{ backgroundColor: NAVY }}>
                 <div className="font-heading text-[10px]">ORDER #900812 · PICKUP</div>
                 <div className="text-[9px]" style={{ color: 'rgba(255,255,255,.75)' }}>
-                  {orderReady ? 'Ready for pickup' : 'Ready in about 8 minutes'}
+                  {orderReady ? 'Ready for pickup' : 'Fresh off the grill'}
                 </div>
               </div>
 

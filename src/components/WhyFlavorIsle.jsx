@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Sparkles } from 'lucide-react';
 
 const CARDS = [
-  { icon: '🥩', title: 'Fresh Every Day', body: "We never freeze our beef. Every patty is hand-patted fresh before it hits the grill — real quality in every bite." },
+  { photo: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/742efcb4d_IMG_0429.jpeg', alt: 'Hand-patted patties on the flat-top grill', title: 'Fresh Every Day', body: "We never freeze our beef. Every patty is hand-patted fresh before it hits the grill — real quality in every bite." },
   { icon: '🧑‍🍳', title: 'Made to Order', body: "Nothing sits under a heat lamp here. Your food is cooked fresh when you order it — every single time." },
   { icon: '❤️', title: 'Community Roots', body: "A neighborhood burger restaurant that knows its regulars by name — good food, fair prices, friendly faces." },
   { icon: '⚡', title: 'Hot & Fast', body: "Order online, pick up in minutes. We don't make you wait — we make you hungry." },
@@ -28,7 +28,19 @@ export default function WhyFlavorIsle() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {CARDS.map((c) => (
             <div key={c.title} className="bg-card rounded-2xl p-7 shadow-float">
-              <div className="text-3xl mb-3">{c.icon}</div>
+              {c.photo ? (
+                <img
+                  src={c.photo}
+                  alt={c.alt}
+                  width="44"
+                  height="44"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-11 h-11 rounded-full object-cover mb-3"
+                />
+              ) : (
+                <div className="text-3xl mb-3">{c.icon}</div>
+              )}
               <h3 className="font-heading uppercase text-xl mb-2 text-obsidian-roast">
                 {c.title}
               </h3>

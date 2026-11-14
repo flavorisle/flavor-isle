@@ -120,11 +120,12 @@ export async function setCategorySortOrder(order) {
   return id;
 }
 
-export async function setOrderCutoffs({ closingTime, deliveryCutoff, pickupCutoff, deliveryFee }) {
+// Issue #297 Part A: the close time is never written from here — Business Hours
+// owns it. Only the wind-down cutoffs and the delivery fee are saved.
+export async function setOrderCutoffs({ deliveryCutoff, pickupCutoff, deliveryFee }) {
   const setting = await getMenuSetting();
   const id = await requireSettingId();
   const updates = {
-    closing_time: closingTime,
     delivery_cutoff_minutes: deliveryCutoff,
     pickup_cutoff_minutes: pickupCutoff,
   };
@@ -144,9 +145,16 @@ export async function setDeliveryTiers(tiers) {
 export async function setBusinessHours(hours) {
   const setting = await getMenuSetting();
   const id = await requireSettingId();
-  await base44.entities.MenuSetting.update(id, { business_hours: hours });
+  const updates = { business_hours: hours };
+  // Issue #297 Part A: closing_time is the legacy field. Mirror the close of the
+  // day in effect so the old field can never disagree with Business Hours again.
+  const storeToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const todayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][storeToday.getDay()];
+  const todayClose = hours?.[todayKey]?.close;
+  if (todayClose) updates.closing_time = String(todayClose).slice(0, 5);
+  await base44.entities.MenuSetting.update(id, updates);
   bustMenuSettingCache();
-  return { ...setting, business_hours: hours };
+  return { ...setting, ...updates };
 }
 
 export async function setDeliveryEnabled(enabled) {

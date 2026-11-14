@@ -6,12 +6,15 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
 
 const PATIO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/75533f8d0_IMG_8839.png';
 const MAPS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
 
 // Date night lives on its own page. The home page keeps no date-night content.
 export default function DateNight() {
+  const businessHours = useBusinessHours();
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
@@ -49,7 +52,7 @@ export default function DateNight() {
               <div className="space-y-1">
                 <p>From Cave City: about 28 minutes south on I-65, exit 38</p>
                 <p>From Bowling Green: 15 minutes north on I-65, exit 38</p>
-                <p>Address: 103 N Main St, Smiths Grove, KY 42171. Hours: Mon–Thu 10:30 AM–7 PM, Fri–Sat 10:30 AM–8 PM, Sun 11 AM–7 PM</p>
+                <p>Address: 103 N Main St, Smiths Grove, KY 42171. Hours: {hoursSummary(businessHours)}</p>
               </div>
               <h3 className="font-heading text-xl text-obsidian-roast pt-2">What to Order</h3>
               <p>Try the Shake Isle and our hand-patted burgers. Order online and skip the wait.</p>

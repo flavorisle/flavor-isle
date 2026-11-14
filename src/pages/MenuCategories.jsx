@@ -9,29 +9,10 @@ import Seo from '@/components/Seo';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, categoryLabel, categorySubtitle, sortCategories } from '@/lib/menuCategory';
 import { optimizedImageUrl } from '@/lib/utils';
+import { categoryPhoto } from '@/lib/categoryPhotos';
 
-// Emoji per category, matched loosely so admin-defined categories still get an
-// icon instead of the generic plate.
-const CATEGORY_ICONS = {
-  burger: '🍔',
-  chicken: '🍗',
-  side: '🍟',
-  shake: '🥤',
-  drink: '🧃',
-  breakfast: '🍳',
-  special: '⭐',
-  dessert: '🍰',
-  combo: '🌯',
-  whirl: '🥤',
-};
-
-const iconFor = (key) => {
-  const k = (key || '').toLowerCase();
-  for (const [word, emoji] of Object.entries(CATEGORY_ICONS)) {
-    if (k.includes(word)) return emoji;
-  }
-  return '🍽️';
-};
+// Issue #301 Part A: the category mark is a real Flavor Isle photo (same map the
+// menu chips use), never an emoji.
 
 // One card per menu category (burgers, shakes, sides…) so a customer can find
 // the section they want and jump straight to it on the menu. Grouping, renames,
@@ -83,7 +64,7 @@ export default function MenuCategories() {
         count: list.length,
         from: prices.length ? Math.min(...prices) : null,
         photo: withPhoto ? withPhoto.image_url_opt || withPhoto.image_url : null,
-        icon: iconFor(key),
+        icon: categoryPhoto(key, list),
       };
     });
   }, [items, setting]);
@@ -148,9 +129,17 @@ export default function MenuCategories() {
                       decoding="async"
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                  ) : (
-                    <span className="text-6xl" aria-hidden="true">{cat.icon}</span>
-                  )}
+                  ) : cat.icon ? (
+                    <img
+                      src={optimizedImageUrl(cat.icon.url, 600, 400, 'fit')}
+                      alt={cat.icon.alt}
+                      width="600"
+                      height="400"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : null}
                   <span className="absolute top-3 left-3 bg-white/90 text-obsidian-roast rounded-full px-3 py-1 font-heading text-xs tracking-wide">
                     {cat.count} item{cat.count !== 1 ? 's' : ''}
                   </span>
@@ -158,7 +147,17 @@ export default function MenuCategories() {
                 <div className="p-5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="font-heading text-2xl text-obsidian-roast leading-tight truncate">
-                      <span className="mr-2" aria-hidden="true">{cat.icon}</span>
+                      {cat.icon && (
+                        <img
+                          src={optimizedImageUrl(cat.icon.url, 80, 80, 'fit')}
+                          alt=""
+                          width="26"
+                          height="26"
+                          loading="lazy"
+                          decoding="async"
+                          className="inline-block w-[26px] h-[26px] rounded-full object-cover mr-2 align-middle"
+                        />
+                      )}
                       {cat.label}
                     </h2>
                     {cat.subtitle && (
