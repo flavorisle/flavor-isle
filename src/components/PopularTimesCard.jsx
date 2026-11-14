@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchBusyness } from '@/lib/busynessCache';
 import { Activity, Clock } from 'lucide-react';
-import BusynessBetaTag from '@/components/BusynessBetaTag';
 
 const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -78,7 +77,6 @@ export default function PopularTimesCard({ embedded = false }) {
                 ? `Typical ${WEEKDAY_LABELS[weekday] || ''} traffic — the current hour is highlighted.`
                 : 'We learn our busy times from every order, in-store and online.'}
             </p>
-            <BusynessBetaTag />
           </div>
 
           {loading && !data ? (
