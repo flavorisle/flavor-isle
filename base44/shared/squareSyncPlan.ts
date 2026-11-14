@@ -92,16 +92,23 @@ export function relinkPatch({
   loyalty?: Record<string, any>;
 }): Record<string, any> {
   const patch: Record<string, any> = {};
+  const storedEmail = String(existing.customer_email || '');
   const srEmail = String(squareEmail || '').trim();
+  const profileMail = String(profileEmail || '').trim();
 
-  if (srEmail) {
-    if (!existing.customer_email || isPlaceholderEmail(existing.customer_email)) {
-      patch.customer_email = srEmail;
-    }
-  } else if (isPlaceholderEmail(existing.customer_email)) {
-    patch.customer_email = '';
-  } else if (!existing.customer_email && profileEmail) {
-    patch.customer_email = profileEmail;
+  // Issue #277: a patch carries only a value that CHANGES something. An order
+  // that already holds no email (a cash walk-in) used to be re-patched with ''
+  // on every single run, so it relinked forever and burned the entity-update
+  // budget — hundreds of no-op writes per sync.
+  let targetEmail: string | undefined;
+  if (srEmail && (!storedEmail || isPlaceholderEmail(storedEmail))) {
+    targetEmail = srEmail;
+  } else if (isPlaceholderEmail(storedEmail)) {
+    // A placeholder (or an address that cannot receive mail) is no email at all.
+    targetEmail = profileMail;
+  }
+  if (targetEmail !== undefined && targetEmail !== storedEmail) {
+    patch.customer_email = targetEmail;
   }
 
   // Both customer ids sit in their own fields, each only where the order has none.

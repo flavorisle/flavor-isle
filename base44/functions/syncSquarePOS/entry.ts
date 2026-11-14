@@ -413,7 +413,7 @@ Deno.serve(async (req) => {
         // Relink an already-synced order once Square can resolve who paid it.
         // Only empty fields are filled; a real stored value is kept.
         touchedSquareIds.add(so.id);
-        updates.push(base44.asServiceRole.entities.Order.update(existing.id, plan.patch));
+        updates.push({ id: existing.id, ...plan.patch });
       }
     }
 
@@ -463,8 +463,11 @@ Deno.serve(async (req) => {
         }
       }
     }
-    if (updates.length > 0) {
-      await Promise.all(updates);
+    // Issue #277: relinks go out as one bulkUpdate per 500 rows instead of one
+    // entity call per order. A wide window could otherwise write hundreds of
+    // orders in a minute and exhaust the entity-update rate limit.
+    for (let i = 0; i < updates.length; i += 500) {
+      await base44.asServiceRole.entities.Order.bulkUpdate(updates.slice(i, i + 500));
     }
 
     // Issue #277 Part A: re-count the square_order_ids this run touched. If two
@@ -540,17 +543,18 @@ Deno.serve(async (req) => {
       metricsMap[m.hour] = m.id;
     });
 
+    // Issue #277: 24 hours in two batched calls instead of 24 separate writes,
+    // so the metrics step can never be what exhausts the entity-update budget.
+    const metricUpdates = [];
+    const metricCreates = [];
     for (let hour = 0; hour < 24; hour++) {
       const count = hourlyMap[hour] || 0;
       const level = count >= 8 ? 'Expecting a Short Wait' : count >= 5 ? 'A Little Busy' : 'Running Smooth';
 
       if (metricsMap[hour]) {
-        await base44.asServiceRole.entities.HourlyMetrics.update(metricsMap[hour], {
-          order_count: count,
-          busyness_level: level
-        });
+        metricUpdates.push({ id: metricsMap[hour], order_count: count, busyness_level: level });
       } else {
-        await base44.asServiceRole.entities.HourlyMetrics.create({
+        metricCreates.push({
           hour,
           date: today,
           order_count: count,
@@ -558,6 +562,12 @@ Deno.serve(async (req) => {
           source: 'square_pos'
         });
       }
+    }
+    if (metricUpdates.length > 0) {
+      await base44.asServiceRole.entities.HourlyMetrics.bulkUpdate(metricUpdates);
+    }
+    if (metricCreates.length > 0) {
+      await base44.asServiceRole.entities.HourlyMetrics.bulkCreate(metricCreates);
     }
 
     if (unresolvedCustomerIds.size > 0) {
