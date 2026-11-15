@@ -50,7 +50,6 @@ const ORDER_PATH_KEYS = new Set([
   'menu_unavailable',
   'site_order_pages',
   'combo_unbuildable',
-  'payment_log_blind',
 ]);
 const REMIND_EVERY_MS = 60 * MIN;
 const MAX_REMINDERS = 3;
@@ -86,7 +85,7 @@ function rows(page) {
 
 function tierFor(key, fallback) {
   if (TIER_1_KEYS.has(key)) return 'TIER_1';
-  if (FULL_ORDER_ALERTS && ORDER_PATH_KEYS.has(key)) return 'TIER_1';
+  if (FULL_ORDER_ALERTS && (ORDER_PATH_KEYS.has(key) || String(key).startsWith('square_sync_'))) return 'TIER_1';
   return fallback || 'TIER_2';
 }
 
@@ -930,7 +929,7 @@ export default async function (req) {
     // ── the run record ───────────────────────────────────────────────────────
     const summaryLine = [
       dryRun ? 'DRY RUN (no incidents written, no email).' : '',
-      `${candidates.length} live finding${candidates.length === 1 ? '' : 's'}: ${candidates.map((c) => `${c.key} (${c.tier})`).join(', ') || 'none'}.`,
+      `${candidates.length} live finding${candidates.length === 1 ? '' : 's'}: ${candidates.map((c) => `${c.key} (${tierFor(c.key, c.tier)})`).join(', ') || 'none'}.`,
       openedKeys.length ? `Opened: ${openedKeys.join(', ')}.` : 'Opened: none.',
       clearedKeys.length ? `Cleared: ${clearedKeys.join(', ')}.` : 'Cleared: none.',
       `Email: ${emailNote}.`,
