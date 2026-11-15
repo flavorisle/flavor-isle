@@ -3,6 +3,7 @@
 // is correct regardless of the customer's device timezone.
 
 import { chicagoNow } from './chicagoNow';
+import { comboGroupStatus } from './comboIsle';
 
 // Default config used when the MenuSetting record has no happy_hour object yet.
 export const HAPPY_HOUR_DEFAULT = {
@@ -53,10 +54,14 @@ export function getHappyHourDiscount(cartItems, menuSetting) {
   const pct = (hh.discount_percent || 0) / 100;
   if (pct <= 0) return 0;
   const ids = hh.square_item_ids || [];
+  // A whole Combo Isle box is never also Happy-Hour discounted: the box price is
+  // the deal, and stacking both would undercut it (Wesley, 8:03 AM). A box that
+  // has broken is singles again, so its drink earns Happy Hour like any other.
+  const { complete } = comboGroupStatus(cartItems);
   return (cartItems || [])
     // A family-bundle line is never also Happy-Hour discounted: the bundle price
     // is already the deal, and stacking both would break its fixed price.
-    .filter(item => ids.includes(item.square_item_id) && !item.bundleId)
+    .filter(item => ids.includes(item.square_item_id) && !item.bundleId && !(item.comboGroup && complete.has(item.comboGroup)))
     .reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1) * pct, 0);
 }
 

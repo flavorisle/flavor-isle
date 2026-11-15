@@ -6,6 +6,7 @@ import { hydrateDeluxeConfig } from '@/lib/deluxeConfig';
 import { getCutoffStatus } from '@/lib/orderCutoff';
 import { getHappyHourDiscount } from '@/lib/happyHour';
 import { getFamilyBundleDiscount } from '@/lib/familyBundle';
+import { comboGroupStatus, dissolveLine } from '@/lib/comboIsle';
 import { toCents, fromCents, salesTaxCents } from '@/lib/tax';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
@@ -224,6 +225,19 @@ export function CartProvider({ children }) {
     });
   }, []);
 
+  // A box that lost an item is no longer a box (Wesley, Nov 15 2026, 8:03 AM):
+  // whatever is left of it goes back to being ordinary singles at their full
+  // Square price, with no box number for the kitchen to read.
+  const brokenBoxKey = Array.from(comboGroupStatus(cartItems).broken).sort().join('|');
+  useEffect(() => {
+    if (!brokenBoxKey) return;
+    setCartItems(prev => {
+      const { broken } = comboGroupStatus(prev);
+      if (!broken.size) return prev;
+      return prev.map(i => (i.comboGroup && broken.has(i.comboGroup) ? dissolveLine(i) : i));
+    });
+  }, [brokenBoxKey]);
+
   const removeItem = useCallback((itemId) => {
     setCartItems(prev => prev.filter(i => i.id !== itemId));
   }, []);
@@ -231,9 +245,20 @@ export function CartProvider({ children }) {
   const updateQuantity = useCallback((itemId, quantity) => {
     if (quantity <= 0) {
       setCartItems(prev => prev.filter(i => i.id !== itemId));
-    } else {
-      setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
+      return;
     }
+    setCartItems(prev => {
+      const line = prev.find(i => i.id === itemId);
+      // Changing the count of anything inside a Combo Isle box ends that box: a
+      // box is only ever made by the builder, so the rest sell as singles.
+      if (line?.comboGroup) {
+        const next = prev
+          .filter(i => i.id !== itemId)
+          .map(i => (i.comboGroup === line.comboGroup ? dissolveLine(i) : i));
+        return next;
+      }
+      return prev.map(i => i.id === itemId ? { ...i, quantity } : i);
+    });
   }, []);
 
   const clearCart = useCallback(() => { setCartItems([]); setAppliedReward(null); }, []);
