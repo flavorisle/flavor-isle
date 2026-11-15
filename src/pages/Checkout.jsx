@@ -62,7 +62,7 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '', heardAboutUs: '' });
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and
@@ -345,6 +345,7 @@ export default function Checkout() {
         smsTransactionalConsent: smsConsent,
         smsConsentDisclosure: TRANSACTIONAL_DISCLOSURE_TEXT,
         smsConsentVersion: SMS_CONSENT_VERSION,
+        heardAboutUs: form.heardAboutUs,
       };
 
       // The order is saved and repriced server-side first, with the tip chosen above
@@ -603,6 +604,26 @@ export default function Checkout() {
                         {fieldErrors.allergy && <p className="text-xs text-destructive mt-1">{fieldErrors.allergy}</p>}
                       </div>
                     )}
+                  </div>
+
+                  {/* Optional: how the customer found us. Never required, never a
+                      reason a checkout can fail. */}
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                      How did you find us? <span className="normal-case tracking-normal font-normal">(optional)</span>
+                    </label>
+                    <select value={form.heardAboutUs} onChange={e => updateForm('heardAboutUs', e.target.value)}
+                      className="w-full px-3 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry">
+                      <option value="">Prefer not to say</option>
+                      <option value="Google search">Google search</option>
+                      <option value="Drove by / saw the building">Drove by / saw the building</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Friend or family told me">Friend or family told me</option>
+                      <option value="I-65 / just traveling through">I-65 / just traveling through</option>
+                      <option value="Mammoth Cave or another local attraction">Mammoth Cave or another local attraction</option>
+                      <option value="Somewhere else">Somewhere else</option>
+                    </select>
                   </div>
                 </div>
 

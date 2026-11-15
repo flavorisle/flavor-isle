@@ -38,7 +38,7 @@ export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize, heardAboutUs } = body;
 
     // The owner's switch decides which system backs the website's payment page. If it
     // is not on the Base44 Payments path, this endpoint refuses rather than opening a
@@ -231,6 +231,7 @@ export default async function (req: Request) {
         delivery_address: customer.address || '',
         special_instructions: instructions || '',
         table_number: customer.table || '',
+        heard_about_us: typeof heardAboutUs === 'string' ? heardAboutUs.slice(0, 80) : '',
         scheduled_for: scheduledFor || '',
         estimated_time: typeof estimatedTime === 'number' ? estimatedTime : 20,
       });
