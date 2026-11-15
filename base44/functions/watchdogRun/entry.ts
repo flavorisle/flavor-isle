@@ -35,6 +35,28 @@ const RECEIPT_TO_MIN = 90;
 const ORDER_LOOKBACK = 6 * HOUR;
 const RUN_WINDOW_MS = 9 * MIN;
 
+// ── ORDER PATH: full alerts (Wesley, Nov 15 2026, issue #316) ────────────────
+// "turn watchdog on full alerts for any issues with customers placing orders ...
+// need to make sure everything works." One switch for the whole mode.
+const FULL_ORDER_ALERTS = true;
+const ORDER_PATH_KEYS = new Set([
+  'unalerted_paid',
+  'order_missing_square',
+  'card_failures',
+  'checkout_stalled',
+  'receipt_missing',
+  'customer_unnotified',
+  'sync_heartbeat',
+  'menu_unavailable',
+  'site_order_pages',
+  'combo_unbuildable',
+  'payment_log_blind',
+]);
+const REMIND_EVERY_MS = 60 * MIN;
+const MAX_REMINDERS = 3;
+const DAILY_RECEIPT_MINUTES = 19 * 60 + 30; // 7:30 PM store time, after close
+const SITE_PROBE_URLS = ['https://flavor-isle.com/menu', 'https://flavor-isle.com/checkout'];
+
 const CHECK_IDS = [
   'syncHeartbeat',
   'unalertedPaid',
@@ -60,6 +82,19 @@ const DELIVERY_CLEAR_KEYS = new Set(['sms_failed', 'sms_queued']);
 function rows(page) {
   if (!page) return [];
   return Array.isArray(page) ? page : page.items || [];
+}
+
+function tierFor(key, fallback) {
+  if (TIER_1_KEYS.has(key)) return 'TIER_1';
+  if (FULL_ORDER_ALERTS && ORDER_PATH_KEYS.has(key)) return 'TIER_1';
+  return fallback || 'TIER_2';
+}
+
+function remindersSent(incident) {
+  const first = Date.parse(incident?.first_seen_at || '') || 0;
+  const last = Date.parse(incident?.last_alert_at || '') || first;
+  if (!first || !last || last <= first) return 0;
+  return Math.max(0, Math.round((last - first) / REMIND_EVERY_MS));
 }
 
 function ctParts(at) {
@@ -263,6 +298,21 @@ export default async function (req) {
 
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
+
+    if (body?.test_alert === true) {
+      const sample = {
+        key: 'order_missing_square',
+        tier: 'TIER_1',
+        summary: 'Sample alert: 1 paid order never reached Square',
+        detail: 'Order #000000 · Test Customer · $18.74 · paid 14 minutes ago\nThis is a test. No incident was written, no order was touched, nothing is broken.',
+        first_seen_at: nowIso,
+      };
+      const ok = await sendMail(
+        'TEST: Flavor Isle order-path alert',
+        emailShell('Order path alert — this is a test', `${incidentBlock(sample, now)}<p style="margin:0;font-size:13px;color:#41556a;">This is the test you asked for. If it reached you, real order-path alerts will too.</p>`),
+      );
+      return Response.json({ ok: true, test_alert: true, email_sent: ok });
+    }
     const ct = ctParts(new Date(now));
     const db = base44.asServiceRole.entities;
 
@@ -476,6 +526,144 @@ export default async function (req) {
       }
     }
 
+    // ── g2. ORDER PATH CHECKS (issue #316) ───────────────────────────────────
+    const liveItems = rows(await db.MenuItem.filter({ is_available: true, is_hidden: false }, { limit: 400 })).filter(
+      (i) => i.square_item_id,
+    );
+    if (liveItems.length < 5 || menuSetting?.id !== LIVE_MENU_SETTING_ID) {
+      addCandidate(
+        'menu_unavailable',
+        'TIER_2',
+        `Only ${liveItems.length} item${liveItems.length === 1 ? '' : 's'} orderable on the site`,
+        `MenuItem available + visible + carrying a Square id: ${liveItems.length}\nLive MenuSetting record: ${menuSetting?.id || 'MISSING'}\nA customer on /menu cannot build an order right now.`,
+        'menuAvailability',
+      );
+    }
+
+    // Cart opened on the web, payment never completed — 10 to 60 minutes old only,
+    // so a week of abandoned carts never fires. In-store Square POS rows excluded.
+    const stuckCheckout = rows(
+      await db.Order.filter({ order_source: 'online', created_date: { $gte: since90 } }, { sort: '-created_date', limit: 100 }),
+    ).filter((o) => {
+      if (!o || ['cancelled', 'completed'].includes(String(o.status || ''))) return false;
+      if (!['pending', 'unpaid', 'requires_action'].includes(String(o.payment_status || ''))) return false;
+      const age = now - Date.parse(o.created_date || '');
+      return age >= 10 * MIN && age <= 60 * MIN;
+    });
+    if (stuckCheckout.length) {
+      addCandidate(
+        'checkout_stalled',
+        'TIER_2',
+        `${stuckCheckout.length} order${stuckCheckout.length === 1 ? '' : 's'} stuck on the payment step`,
+        stuckCheckout
+          .slice(0, 6)
+          .map((o) => `#${o.order_number || o.id} ${o.customer_name || 'guest'} $${Number(o.total || 0).toFixed(2)} — payment ${o.payment_status}, created ${ageLabel(o.created_date, now)} ago`)
+          .join('\n'),
+        'checkoutStalled',
+      );
+    }
+
+    // Paid on the web, but Square never got it, so the kitchen has no ticket.
+    const unalertedIds = new Set(unalerted.map((o) => o.id));
+    const missingSquare = rows(orders6hRes).filter(
+      (o) =>
+        o.order_source === 'online' &&
+        o.payment_status === 'paid' &&
+        !o.square_order_id &&
+        o.status !== 'cancelled' &&
+        !unalertedIds.has(o.id) &&
+        now - Date.parse(o.created_date || '') <= ORDER_LOOKBACK,
+    );
+    if (missingSquare.length) {
+      addCandidate(
+        'order_missing_square',
+        'TIER_2',
+        `${missingSquare.length} paid order${missingSquare.length === 1 ? '' : 's'} never reached Square`,
+        missingSquare
+          .slice(0, 6)
+          .map((o) => `#${o.order_number || o.id} ${o.customer_name || 'guest'} $${Number(o.total || 0).toFixed(2)} — paid ${ageLabel(o.created_date, now)} ago, no square_order_id`)
+          .join('\n'),
+        'orderMissingSquare',
+      );
+    }
+
+    // Do the order pages themselves answer? Two attempts 20 seconds apart, so one
+    // slow response never pages him. Both attempts must fail.
+    const probeFails = [];
+    for (const url of SITE_PROBE_URLS) {
+      let lastError = '';
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        lastError = '';
+        try {
+          const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(15000) });
+          const text = await res.text();
+          if (res.ok && text.length > 2000 && /Flavor Isle/i.test(text)) break;
+          lastError = `HTTP ${res.status}, ${text.length} bytes`;
+        } catch (err) {
+          lastError = String(err?.message || err).slice(0, 140);
+        }
+        if (attempt === 1) await new Promise((r) => setTimeout(r, 20000));
+      }
+      if (lastError) probeFails.push(`${url} — ${lastError}`);
+    }
+    if (probeFails.length) {
+      addCandidate(
+        'site_order_pages',
+        'TIER_2',
+        'The order pages did not answer',
+        probeFails.join('\n'),
+        'siteOrderPages',
+      );
+    }
+
+    // Combo Isle with an empty column would open with dead steps.
+    const comboSetting = rows(await db.ComboIsleSetting.filter({}, { sort: '-updated_date', limit: 3 }))[0] || null;
+    if (comboSetting && comboSetting.is_active !== false) {
+      const itemsIn = (cats) => liveItems.filter((i) => (Array.isArray(cats) ? cats : []).includes(i.square_category)).length;
+      const types = (Array.isArray(comboSetting.combo_types) ? comboSetting.combo_types : []).filter(
+        (t) => t && t.enabled !== false,
+      );
+      const emptyMains = types.filter((t) => {
+        const cats = Array.isArray(t.main_categories) && t.main_categories.length ? t.main_categories : comboSetting.main_categories;
+        return itemsIn(cats) === 0;
+      });
+      const problems = [];
+      if (types.length && emptyMains.length === types.length) problems.push('no mains resolve for any combo type');
+      else if (emptyMains.length) problems.push(`no mains for: ${emptyMains.map((t) => t.name).join(', ')}`);
+      if (itemsIn(comboSetting.side_categories) === 0) problems.push('no sides resolve');
+      if (itemsIn(comboSetting.drink_categories) === 0) problems.push('no drinks resolve');
+      if (problems.length) {
+        addCandidate(
+          'combo_unbuildable',
+          'TIER_2',
+          'Combo Isle has an empty column',
+          `${problems.join('\n')}\nTypes: ${types.map((t) => t.name).join(', ') || 'none'}`,
+          'comboUnbuildable',
+        );
+      }
+    }
+
+    // The old card-failure check reads CardPaymentLog, which has had no rows since
+    // Oct 21 (Helcim retired). Say so instead of pretending it is watching.
+    const cardRows7d = rows(
+      await db.CardPaymentLog.filter({ created_date: { $gte: new Date(now - 7 * DAY).toISOString() } }, { limit: 5 }),
+    );
+    const paidWeb7d = rows(
+      await db.Order.filter(
+        { order_source: 'online', payment_status: 'paid', created_date: { $gte: new Date(now - 7 * DAY).toISOString() } },
+        { limit: 5 },
+      ),
+    );
+    if (!cardRows7d.length && paidWeb7d.length) {
+      addCandidate(
+        'payment_log_blind',
+        'TIER_2',
+        'The card-failure log has stopped recording',
+        `CardPaymentLog rows in the last 7 days: 0, while paid web orders exist.\nCard declines are invisible to the log; checkout_stalled is the backstop that catches the customer stuck on the payment step.`,
+        'paymentLogBlind',
+      );
+    }
+
     // ── h. BULK SENDS ────────────────────────────────────────────────────────
     const bulkFails = rows(newsletterRes).filter((r) => r.status === 'failed' || String(r.error || '').trim());
     if (bulkFails.length) {
@@ -539,7 +727,7 @@ export default async function (req) {
     const openedIncidents = [];
 
     for (const candidate of candidates) {
-      const tier = TIER_1_KEYS.has(candidate.key) ? 'TIER_1' : candidate.tier || 'TIER_2';
+      const tier = tierFor(candidate.key, candidate.tier);
       const existing = openByKey.get(candidate.key);
       if (existing) {
         if (!dryRun) {
@@ -654,37 +842,86 @@ export default async function (req) {
         }
       }
 
-      // Daily summary: 9:00–10:00 AM store time, once a day, and never instead of
-      // an incident email in the same run (the next run inside the hour catches it).
-      if (!emailSent && ct.hour === 9) {
-        const dayStart = new Date(now - (ct.hour * 60 + ct.minute) * MIN).toISOString();
+      // Order-path reminders while something is still broken: 60 minutes apart,
+      // three at most, then one more if it somehow survives 24 hours.
+      if (!emailSent) {
+        const openOrderPath = rows(
+          await db.WatchdogIncident.filter({ status: 'open' }, { sort: '-first_seen_at', limit: 200 }),
+        ).filter((i) => ORDER_PATH_KEYS.has(i.key) && i.last_alert_at);
+        for (const incident of openOrderPath) {
+          if (newTier1.some((n) => n.key === incident.key)) continue; // the first alert just went
+          const first = Date.parse(incident.first_seen_at || '') || now;
+          const last = Date.parse(incident.last_alert_at || '') || first;
+          const sent = remindersSent(incident);
+          const dueReminder = sent < MAX_REMINDERS && now - last >= REMIND_EVERY_MS;
+          const dueAfterDay = sent >= MAX_REMINDERS && now - first >= DAY && now - last >= DAY - 2 * HOUR;
+          if (!dueReminder && !dueAfterDay) continue;
+          const subject = `Still broken: ${incident.summary || incident.key}`;
+          const inner = `${incidentBlock(
+            { ...incident, tier: 'TIER_1' },
+            now,
+          )}<p style="margin:0;font-size:13px;color:#41556a;">${
+            dueAfterDay ? 'Still broken after a day.' : `Reminder ${sent + 1} of ${MAX_REMINDERS}.`
+          } Nothing will repeat until it changes or the next hour comes round. An all-clear goes out the moment it recovers.</p>`;
+          const ok = await sendMail(subject, emailShell('Still broken', inner));
+          if (ok) {
+            emailSent = true;
+            emailKind = 'reminder';
+            emailNote = `reminder sent for ${incident.key}`;
+            await db.WatchdogIncident.update(incident.id, { last_alert_at: nowIso });
+          }
+          break;
+        }
+      }
+
+      // Daily order-path receipt: at 7:30 PM store time, one email, only on days
+      // that had orders or incidents. This replaces the old 9 AM summary.
+      if (!emailSent && ct.minutes >= DAILY_RECEIPT_MINUTES) {
+        const dayStart = new Date(now - ct.minutes * MIN).toISOString();
         const already = rows(await db.WatchdogRun.filter({ email_kind: 'daily' }, { sort: '-ran_at', limit: 5 })).some(
           (r) => Date.parse(r.ran_at || '') >= Date.parse(dayStart),
         );
         if (!already) {
+          const dayOrders = rows(
+            await db.Order.filter({ created_date: { $gte: dayStart } }, { sort: '-created_date', limit: 400 }),
+          ).filter((o) => o.order_source === 'online');
+          const paid = dayOrders.filter((o) => o.payment_status === 'paid');
+          const toKitchen = paid.filter((o) => o.square_order_id);
+          const receipts = paid.filter((o) => o.confirmation_email_sent_at);
+          const combos = paid.filter((o) =>
+            (Array.isArray(o.items) ? o.items : []).some((it) => it && (it.bundle_id || it.combo_group || it.combo_box)),
+          );
+          const failedCards = dayOrders.filter((o) => ['cancelled', 'pending'].includes(String(o.status || '')) && o.payment_status !== 'paid');
           const openNow = rows(await db.WatchdogIncident.filter({ status: 'open' }, { sort: '-first_seen_at', limit: 200 }));
-          const cleared24 = rows(
-            await db.WatchdogIncident.filter({ status: 'cleared' }, { sort: '-cleared_at', limit: 200 }),
-          ).filter((r) => Date.parse(r.cleared_at || '') >= now - DAY);
-
-          const inner = [
-            `<p style="margin:0 0 10px;">${openNow.length} open incident${openNow.length === 1 ? '' : 's'} right now.</p>`,
-            openNow.length
-              ? openNow.map((i) => incidentBlock(i, now)).join('')
-              : `<p style="margin:0 0 14px;color:#41556a;">Nothing open — every check is quiet.</p>`,
-            `<p style="margin:18px 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#6a7f93;">Recovered in the last 24 hours</p>`,
-            cleared24.length
-              ? cleared24.map((i) => `<p style="margin:0 0 8px;"><strong>${i.key}</strong> (${i.tier}) cleared ${ageLabel(i.cleared_at, now)} ago</p>`).join('')
-              : `<p style="margin:0;color:#41556a;">Nothing recovered.</p>`,
-          ].join('\n');
-
-          const sent = await sendMail('Flavor Isle watchdog: daily summary', emailShell('Daily watchdog summary', inner));
-          if (sent) {
-            emailSent = true;
-            emailKind = 'daily';
-            emailNote = 'daily summary sent';
-          } else {
-            emailNote = 'daily summary failed to send';
+          const openOrderPath = openNow.filter((i) => ORDER_PATH_KEYS.has(i.key));
+          if (dayOrders.length || openedKeys.length) {
+            const line = (label, value, ok) =>
+              `<tr><td style="padding:7px 8px;border-bottom:1px solid #eef1f4;">${label}</td><td style="padding:7px 8px;border-bottom:1px solid #eef1f4;">${value}</td><td style="padding:7px 8px;border-bottom:1px solid #eef1f4;color:${ok ? '#1f7a4d' : '#CC3300'};font-weight:bold;">${ok ? 'all clear' : 'needs a look'}</td></tr>`;
+            const inner = [
+              `<p style="margin:0 0 10px;">${dayOrders.length ? `Today: <strong>${dayOrders.length}</strong> web order${dayOrders.length === 1 ? '' : 's'}, <strong>${paid.length}</strong> paid.` : 'No web orders today.'}</p>`,
+              `<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e8e2d4;">${[
+                line('Orders placed', String(dayOrders.length), true),
+                line('Reached Square and the kitchen', `${toKitchen.length} of ${paid.length}`, toKitchen.length === paid.length),
+                line('Receipts sent', `${receipts.length} of ${paid.length}`, receipts.length === paid.length),
+                line('Stuck or failed payments', String(failedCards.length), failedCards.length === 0),
+                line('Combo boxes sold', String(combos.length), true),
+                line('Order-path issues open now', String(openOrderPath.length), openOrderPath.length === 0),
+              ].join('')}</table>`,
+              openOrderPath.length
+                ? `<p style="margin:14px 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#6a7f93;">Still open</p>${openOrderPath.map((i) => incidentBlock(i, now)).join('')}`
+                : `<p style="margin:14px 0 0;font-size:13px;color:#41556a;">Nothing on the order path needs you. Anything that crossed the line today already went out within ten minutes, not here.</p>`,
+            ].join('\n');
+            const sent = await sendMail(
+              `Order path today: ${toKitchen.length} of ${paid.length} paid orders reached the kitchen`,
+              emailShell('Order path, after close', inner),
+            );
+            if (sent) {
+              emailSent = true;
+              emailKind = 'daily';
+              emailNote = 'daily order-path receipt sent';
+            } else {
+              emailNote = 'daily receipt failed to send';
+            }
           }
         }
       }
@@ -752,7 +989,7 @@ export default async function (req) {
       },
       opened: openedKeys,
       cleared: clearedKeys,
-      findings: candidates.map((c) => ({ key: c.key, tier: TIER_1_KEYS.has(c.key) ? 'TIER_1' : 'TIER_2', summary: c.summary })),
+      findings: candidates.map((c) => ({ key: c.key, tier: tierFor(c.key, c.tier), summary: c.summary })),
       open_incidents: candidates.map((c) => c.key),
       notes,
       checks_run: checksRun,
