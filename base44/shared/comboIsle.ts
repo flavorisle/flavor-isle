@@ -2,6 +2,8 @@ export const COMBO_DISCOUNT_PERCENT = 9;
 export const COMBO_ROLES = ['main', 'side', 'drink'];
 const round2 = (n: number) => Math.round(((Number(n) || 0) + Number.EPSILON) * 100) / 100;
 export const comboBoxCharge = (fullTotal: number) => round2((Number(fullTotal) || 0) * (1 - COMBO_DISCOUNT_PERCENT / 100));
+
+// Group ids that still hold exactly one main, one side and one drink.
 export function completeComboGroups(items: any[]): Set<string> {
   const roles = new Map<string, string[]>();
   for (const item of items || []) {
@@ -15,6 +17,8 @@ export function completeComboGroups(items: any[]): Set<string> {
   roles.forEach((list, gid) => { if (list.length === 3 && new Set(list).size === 3) complete.add(gid); });
   return complete;
 }
+
+// 9% of every whole box, from catalog prices the caller already recomputed.
 export function comboDiscountForLines(lines: Array<{ comboGroup?: string; fullUnitPrice: number; quantity: number }>): number {
   const groups: Record<string, number> = {};
   for (const line of lines || []) {

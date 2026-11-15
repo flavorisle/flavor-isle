@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "is_active": {
-      "type": "boolean",
-      "description": "When false the Combo Isle builder shows its off state instead of the columns."
+      "type": "boolean"
     },
     "main_categories": {
       "type": "array",
