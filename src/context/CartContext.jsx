@@ -225,9 +225,8 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  // A box that lost a line (removed, or edited elsewhere) is no longer a box, so
-  // its remaining lines dissolve to singles. Keyed on the broken group ids so the
-  // effect doesn't run again once they're dissolved.
+  // A box that lost an item is no longer a box: whatever is left goes back to
+  // being ordinary singles at their full Square price, with no box number.
   const brokenBoxKey = Array.from(comboGroupStatus(cartItems).broken).sort().join('|');
   useEffect(() => {
     if (!brokenBoxKey) return;
@@ -243,21 +242,20 @@ export function CartProvider({ children }) {
   }, []);
 
   const updateQuantity = useCallback((itemId, quantity) => {
+    if (quantity <= 0) {
+      setCartItems(prev => prev.filter(i => i.id !== itemId));
+      return;
+    }
     setCartItems(prev => {
-      if (quantity <= 0) return prev.filter(i => i.id !== itemId);
-      const edited = prev.find(i => i.id === itemId);
-      // A Combo Isle line's count is part of its box: changing it means the box
-      // is no longer the box that was built, so every line in that group goes
-      // back to its full single price instead of half-discounting a broken box.
-      const group = edited?.comboGroup;
-      if (group) {
-        return prev.map(i => {
-          if (i.id === itemId) return { ...dissolveLine(i), quantity };
-          if (i.comboGroup === group) return dissolveLine(i);
-          return i;
-        });
+      const line = prev.find(i => i.id === itemId);
+      // Changing the count of anything inside a Combo Isle box ends that box: a
+      // box is only ever made by the builder, so the rest sell as singles.
+      if (line?.comboGroup) {
+        return prev
+          .filter(i => i.id !== itemId)
+          .map(i => (i.comboGroup === line.comboGroup ? dissolveLine(i) : i));
       }
-      return prev.map(i => (i.id === itemId ? { ...i, quantity } : i));
+      return prev.map(i => i.id === itemId ? { ...i, quantity } : i);
     });
   }, []);
 

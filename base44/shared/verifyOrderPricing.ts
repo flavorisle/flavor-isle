@@ -154,8 +154,10 @@ export async function verifyOrderPricing(base44: any, opts: {
     if (nameKey && !menuByName.has(nameKey)) menuByName.set(nameKey, mi);
   }
 
-  // Combo Isle: a box is a main + a side + a drink in one comboGroup. A group missing any of the three is not a box, so its lines price as singles.
+  // Combo Isle: a box is a main + a side + a drink in one comboGroup. A group
+  // missing any of the three is not a box, so its lines price as singles.
   const completeComboIds = completeComboGroups(items);
+
   // ── Recompute line prices + Happy Hour + family bundle ──
   let serverSubtotal = 0;
   let serverHappyHour = 0;
