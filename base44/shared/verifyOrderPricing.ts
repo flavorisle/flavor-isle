@@ -26,9 +26,7 @@
 //    matches a live MenuItem (same authoritative price and modifier rules as a
 //    line that carried the id), then from NONCATALOG_PRICES when an approved price
 //    is recorded (souvenir mug), and otherwise REJECTED — fail closed, because a
-//    client-supplied price is never authoritative. Build-Your-Combo line items are
-//    validated by recomputing from authoritative component MenuItems
-//    + the authoritative ComboConfig discount (comboComponents + comboConfigId).
+//    client-supplied price is never authoritative.
 //  - Reward discount: validated exactly against the Square Loyalty reward tier
 //    + account balance by validateRewardDiscount (called by createPaymentIntent
 //    before this runs); the authoritative exact discount is passed in as
@@ -38,6 +36,7 @@ import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
 import { getOptionPriceOverrides } from './modifierOverrides.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 import { bundleForLine, bundleDiscountForLines } from './familyBundle.ts';
+import { completeComboGroups, comboDiscountForLines } from './comboIsle.ts';
 import { toCents, fromCents, salesTaxCents } from './taxMath.ts';
 import { getMenuSettingRecord } from './storeState.ts';
 import { isSmashieShake } from './findSmashiePrize.ts';
@@ -82,58 +81,13 @@ function buildModifierPriceMap(
   return map;
 }
 
-// Validate a Build-Your-Combo line item by recomputing its price from
-// authoritative component MenuItems + the authoritative ComboConfig discount.
-// Each component must reference a real square_item_id with id'd modifiers; the
-// combo price = (sum of authoritative component totals) × (1 − discount%).
-async function validateComboItem(
-  base44: any,
-  item: any,
-  menuBySquareId: Map<string, any>,
-  optionPriceOverrides: Record<string, number> = {},
-): Promise<{ ok: boolean; error?: string; lineUnitPrice?: number }> {
-  const components = item.comboComponents as any[];
-  let originalTotal = 0;
-  for (const comp of components) {
-    const sqId = comp.square_item_id || comp.catalog_object_id;
-    if (!sqId) return { ok: false, error: `Combo component "${comp.name || 'unknown'}" is missing a catalog id. Please rebuild the combo and try again.` };
-    const mi = menuBySquareId.get(sqId);
-    if (!mi) return { ok: false, error: `Combo component "${comp.name || sqId}" is no longer available. Please rebuild the combo and try again.` };
-    let compTotal = Number(mi.price) || 0;
-    const modPriceMap = buildModifierPriceMap(mi, optionPriceOverrides);
-    for (const sm of (comp.selectedModifiers || [])) {
-      if (!sm) continue;
-      if (sm.id && sm.id in modPriceMap) {
-        compTotal += modPriceMap[sm.id];
-      } else {
-        return { ok: false, error: `Modifier "${sm.name || sm.id || 'unknown'}" is not a permitted selection for ${comp.name || 'this combo component'}. Please rebuild the combo and try again.` };
-      }
-    }
-    originalTotal += compTotal;
-  }
-  const comboConfigId = item.comboConfigId;
-  if (!comboConfigId) return { ok: false, error: 'Combo configuration is missing. Please rebuild the combo and try again.' };
-  let discountPercent = 0;
-  try {
-    const cfg = await base44.asServiceRole.entities.ComboConfig.get(comboConfigId);
-    if (!cfg || cfg.is_active === false) return { ok: false, error: 'This combo is no longer available. Please rebuild the combo and try again.' };
-    discountPercent = Number(cfg.discount_percent) || 0;
-  } catch (e) {
-    return { ok: false, error: 'Combo configuration could not be verified. Please rebuild the combo and try again.' };
-  }
-  const expectedComboPrice = round2(originalTotal * (1 - discountPercent / 100));
-  if (Math.abs((Number(item.price) || 0) - expectedComboPrice) > 0.01) {
-    return { ok: false, error: `Combo price mismatch for ${item.name || 'this combo'}: expected $${expectedComboPrice.toFixed(2)}. Please rebuild the combo and try again.` };
-  }
-  return { ok: true, lineUnitPrice: expectedComboPrice };
-}
-
 export interface PricingResult {
   ok: boolean;
   error?: string;
   subtotal?: number;
   happyHourDiscount?: number;
   bundleDiscount?: number;
+  comboDiscount?: number;
   tax?: number;
   deliveryFee?: number;
   discount?: number;
@@ -200,6 +154,8 @@ export async function verifyOrderPricing(base44: any, opts: {
     if (nameKey && !menuByName.has(nameKey)) menuByName.set(nameKey, mi);
   }
 
+  // Combo Isle: a box is a main + a side + a drink in one comboGroup. A group missing any of the three is not a box, so its lines price as singles.
+  const completeComboIds = completeComboGroups(items);
   // ── Recompute line prices + Happy Hour + family bundle ──
   let serverSubtotal = 0;
   let serverHappyHour = 0;
@@ -210,8 +166,10 @@ export async function verifyOrderPricing(base44: any, opts: {
   // Per bundle-line included money, grouped so each added bundle pays its fixed
   // price once. The discount is recomputed from the catalog below.
   const bundleLines: Array<{ bundleId?: string; bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
+  const comboLines: Array<{ comboGroup: string; fullUnitPrice: number; quantity: number }> = [];
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
+    const inCompleteCombo = !!(item.comboGroup && completeComboIds.has(item.comboGroup));
     const sqId = item.square_item_id || item.catalog_object_id;
     // Catalog id first. Without one, resolve by name so the line is still priced
     // from the menu rather than from the client's number.
@@ -260,15 +218,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       return { ok: false, error: `Menu item not found for square_item_id ${sqId}` };
     } else {
       // Noncatalog item (no square_item_id).
-      // Build-Your-Combo: validate by recomputing from authoritative component
-      // MenuItems + the authoritative ComboConfig discount (comboComponents +
-      // comboConfigId). Each component must reference a real square_item_id with
-      // id'd modifiers (same enforcement as a catalog item).
-      if (Array.isArray(item.comboComponents) && item.comboComponents.length > 0) {
-        const comboResult = await validateComboItem(base44, item, menuBySquareId, optionPrices);
-        if (!comboResult.ok) return comboResult;
-        lineUnitPrice = comboResult.lineUnitPrice!;
-      } else {
+      {
         const canonical = NONCATALOG_PRICES[normalizeItemName(item.name)];
         if (canonical != null) {
           if (Math.abs((Number(item.price) || 0) - canonical) > 0.01) {
@@ -295,6 +245,7 @@ export async function verifyOrderPricing(base44: any, opts: {
 
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
+    if (inCompleteCombo) comboLines.push({ comboGroup: item.comboGroup, fullUnitPrice: lineUnitPrice, quantity: qty });
 
     if (bundle) {
       bundleLines.push({ bundleId: item.bundleId, bundleGroup: item.bundleGroup, includedUnitPrice: round2(lineUnitPrice - bundleExtras), quantity: qty });
@@ -305,12 +256,13 @@ export async function verifyOrderPricing(base44: any, opts: {
     // resolved by name uses the catalog item's own id here, so an eligible drink
     // still gets the discount the customer was shown.
     const effectiveSqId = sqId || menuItem?.square_item_id || '';
-    if (hhActive && pct > 0 && effectiveSqId && hhIds.has(effectiveSqId) && !bundle) {
+    if (hhActive && pct > 0 && effectiveSqId && hhIds.has(effectiveSqId) && !bundle && !inCompleteCombo) {
       serverHappyHour += lineTotal * pct;
     }
   }
 
-  serverSubtotal = round2(serverSubtotal);
+  const serverComboDiscount = comboDiscountForLines(comboLines);
+  serverSubtotal = round2(serverSubtotal - serverComboDiscount);
   serverHappyHour = round2(serverHappyHour);
   const serverBundleDiscount = bundleDiscountForLines(bundleLines);
   const adjustedSubtotal = round2(serverSubtotal - serverHappyHour - serverBundleDiscount);
@@ -393,6 +345,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     subtotal: serverSubtotal,
     happyHourDiscount: serverHappyHour,
     bundleDiscount: serverBundleDiscount,
+    comboDiscount: serverComboDiscount,
     tax: serverTax,
     deliveryFee: serverDeliveryFee,
     discount: serverDiscount,

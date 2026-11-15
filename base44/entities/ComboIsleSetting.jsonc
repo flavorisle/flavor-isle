@@ -1,0 +1,81 @@
+{
+  "name": "ComboIsleSetting",
+  "type": "object",
+  "properties": {
+    "is_active": {
+      "type": "boolean",
+      "description": "When false the Combo Isle builder shows its off state instead of the columns."
+    },
+    "main_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "side_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "drink_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "shake_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allow_shake_substitution": {
+      "type": "boolean"
+    },
+    "hidden_item_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "item_quantities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "menu_item_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "is_active"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
