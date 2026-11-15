@@ -22,6 +22,7 @@ import CartDrawer from '@/components/CartDrawer';
 import { optimizedImageUrl } from '@/lib/utils';
 import ProductStructuredData from '@/components/schema/ProductStructuredData';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
+import SideSaltChoice from '@/components/SideSaltChoice';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -50,6 +51,9 @@ export default function ProductDetail() {
   const [combo, setCombo] = useState(null);
   const [comboOn, setComboOn] = useState(false);
   const [comboParts, setComboParts] = useState(null);
+  // Fries and tots are cooked unsalted; the question is asked here on the page,
+  // right above the quantity, instead of inside the modifier panel.
+  const [saltChoice, setSaltChoice] = useState(null);
 
   // The "What's on it" chips toggle the customization panel's own selection
   // state, so chips, list, price, and cart all stay in agreement.
@@ -107,6 +111,12 @@ export default function ProductDetail() {
     if (editingLine) setQuantity(editingLine.quantity);
     else if (reorderItem?.quantity) setQuantity(Math.min(20, Math.max(1, reorderItem.quantity)));
   }, [editingLine?.id, reorderItem?.quantity]);
+  // A bag line being edited, or a reorder, reopens with its salt answer set.
+  useEffect(() => {
+    const note = (editingLine || reorderItem)?.saltNote || '';
+    if (!note) return;
+    setSaltChoice(/no salt/i.test(note) ? 'no' : 'yes');
+  }, [editingLine?.id, reorderItem?.saltNote]);
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
   // Fries and tots ask the required salt question even with zero modifiers, so
@@ -236,7 +246,7 @@ export default function ProductDetail() {
 
   const comboSideReady = !(combo && comboOn) || !!comboParts?.ready;
   // A needed salt answer blocks the add, exactly as the modal does.
-  const saltMissing = !soldOut && orderingEnabled && !panelState.ready;
+  const saltMissing = needsSalt && !saltChoice && !soldOut && orderingEnabled;
   const canAdd = !soldOut && orderingEnabled && comboSideReady && !saltMissing;
   const addLabel = soldOut
     ? 'Sold Out'
@@ -386,6 +396,12 @@ export default function ProductDetail() {
                 onIceSizeChange={setChipIceSize}
               />
 
+              {/* Salt question — sides are cooked unsalted, so it sits right
+                  above the quantity. */}
+              {needsSalt && !soldOut && orderingEnabled && (
+                <SideSaltChoice value={saltChoice} onChange={setSaltChoice} />
+              )}
+
               {/* Quantity selector */}
               {!soldOut && orderingEnabled && (
                 <div className="flex items-center gap-3">
@@ -461,6 +477,7 @@ export default function ProductDetail() {
                   onConfirm={handlePanelConfirm}
                   onStateChange={setPanelState}
                   initialCartItem={editingLine || reorderItem}
+                  saltChoice={saltChoice}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

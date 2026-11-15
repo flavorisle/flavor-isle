@@ -11,7 +11,6 @@ import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './class
 import { restorePanelSelection } from '@/lib/restorePanelSelection';
 import { isShakeItem } from './AllergyNote';
 import ShakeFlavorControl from './ShakeFlavorControl';
-import SideSaltChoice from './SideSaltChoice';
 import { isSaltQuestionItem } from '@/lib/sideSalt';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
@@ -20,7 +19,7 @@ import { isSaltQuestionItem } from '@/lib/sideSalt';
 // (see ComboPicker), and the Add to Bag CTA.
 // The parent drives confirm() and reads live state via onStateChange.
 const ProductModifierPanel = forwardRef(function ProductModifierPanel(
-  { item, onConfirm, onStateChange, initialCartItem },
+  { item, onConfirm, onStateChange, initialCartItem, saltChoice },
   ref,
 ) {
   const { menuSetting } = useCart();
@@ -54,12 +53,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const [selections, setSelections] = useState(() => restored ? restored.selections : initSelections());
   const [nestedSelections, setNestedSelections] = useState(() => restored?.nested || {});
   const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
-  // A bag line being edited reopens with its salt answer already chosen.
-  const [saltChoice, setSaltChoice] = useState(() => {
-    const note = initialCartItem?.saltNote || '';
-    if (!note) return null;
-    return /no salt/i.test(note) ? 'no' : 'yes';
-  });
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const selectIceSize = (mod, level) => {
@@ -158,6 +151,8 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   }, 0) + nestedExtraCost;
 
   const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
+  // The salt question is asked on the page itself, so the answer arrives as a
+  // prop; the panel keeps gating the add on it.
   const ready = !soldOut && (!needsSalt || !!saltChoice);
 
   // Notify parent of live state so the left-column CTA can reflect it.
@@ -274,8 +269,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
       {/* The item's options are picked on the "What's on it" chips — this panel
           owns that selection, the Deluxe preset, and the add-to-bag flow. */}
-      {needsSalt && <SideSaltChoice value={saltChoice} onChange={setSaltChoice} />}
-
       {!hasModifiers && !isBurger && !needsSalt && (
         <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
       )}
