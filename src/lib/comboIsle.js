@@ -169,3 +169,81 @@ export function dissolveLine(line) {
   delete next.bundleName;
   return next;
 }
+
+// ── Combo types (Wesley, Nov 15 2026, approved 10:03 AM CT) ──
+//
+// A combo type is a named group of mains — "Burgers", "Chicken", "Sandwiches" —
+// that the customer picks from at the top of /combos. Sides, drinks and shakes
+// fall back to the record-level categories, so a new type only has to name its
+// mains. Nothing here touches pricing: the box price is still the three Square
+// prices with the 9% in COMBO_DISCOUNT_PERCENT, unchanged.
+
+export const TYPE_NAME_MAX = 24;
+
+export function cleanTypeName(value) {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, TYPE_NAME_MAX);
+}
+
+export function isDuplicateTypeName(types, name, exceptId) {
+  const key = cleanTypeName(name).toLowerCase();
+  if (!key) return false;
+  return (types || []).some((t) => t.id !== exceptId && cleanTypeName(t.name).toLowerCase() === key);
+}
+
+// The record field has always been allow_shake_substitution (the picker, the
+// cart and the admin write it); a record carrying the newer name wins.
+const shakeSubstitutionOn = (setting) =>
+  (setting?.allow_milkshake_substitution ?? setting?.allow_shake_substitution) !== false;
+
+// Enabled types in saved order, or one fallback type built from the record-level
+// categories so /combos can never render empty or broken.
+export function comboTypes(setting) {
+  const types = Array.isArray(setting?.combo_types) ? setting.combo_types : [];
+  const valid = types
+    .filter((t) => t && cleanTypeName(t.name))
+    .map((t, i) => ({
+      id: String(t.id || `type-${i}`),
+      name: cleanTypeName(t.name),
+      enabled: t.enabled !== false,
+      order: Number.isFinite(Number(t.order)) ? Number(t.order) : i,
+      main_categories: (t.main_categories || []).filter(Boolean),
+      side_categories: (t.side_categories || []).filter(Boolean),
+      drink_categories: (t.drink_categories || []).filter(Boolean),
+      shake_categories: (t.shake_categories || []).filter(Boolean),
+    }))
+    .sort((a, b) => a.order - b.order);
+  const enabled = valid.filter((t) => t.enabled && t.main_categories.length > 0);
+  if (enabled.length) return enabled;
+  return [{
+    id: 'default',
+    name: 'Combo Isle',
+    enabled: true,
+    order: 0,
+    main_categories: setting?.main_categories || [],
+    side_categories: setting?.side_categories || [],
+    drink_categories: setting?.drink_categories || [],
+    shake_categories: setting?.shake_categories || [],
+  }];
+}
+
+// A type's own categories win; an empty type list inherits the record-level list,
+// so a new combo type only has to name its mains.
+export function typeCategories(setting, type, role) {
+  const own = type?.[`${role}_categories`] || [];
+  const shared = setting?.[`${role}_categories`] || [];
+  const list = own.length ? own : shared;
+  // Drinks always include the shake categories so a large milkshake can stand in.
+  if (role === 'drink' && shakeSubstitutionOn(setting)) {
+    const shakes = type?.shake_categories?.length ? type.shake_categories : (setting?.shake_categories || []);
+    return Array.from(new Set([...list, ...shakes]));
+  }
+  return list;
+}
+
+export function typeById(types, id) {
+  return (types || []).find((t) => t.id === id) || (types || [])[0] || null;
+}

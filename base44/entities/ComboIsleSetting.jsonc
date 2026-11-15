@@ -6,33 +6,82 @@
       "type": "boolean",
       "description": "When false the Combo Isle builder shows its off state instead of the columns."
     },
+    "combo_types": {
+      "type": "array",
+      "description": "Named combo types in customer-facing order. Each type carries its own main categories; sides, drinks and shakes fall back to the record-level categories when the type leaves them empty. Empty array means the whole page falls back to a single combo named Combo Isle built from the record-level categories.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "number"
+          },
+          "main_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "side_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "drink_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "shake_categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "show_combo_name_on_ticket": {
+      "type": "boolean",
+      "description": "When true the kitchen ticket line reads 'Box 1 \u2014 Burgers \u2014 Cheeseburger'. Default false: 'Box 1 \u2014 Cheeseburger'. Leave false unless Wesley asks."
+    },
     "main_categories": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Square category names that fill the Main column (a MenuItem matches on display_category, square_category or category)."
+      "description": "Square category names that fill the Main column (a MenuItem matches on display_category, square_category or category). Also the fallback main set for a combo with no types."
     },
     "side_categories": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Square category names that fill the Side column."
+      "description": "Square category names that fill the Side column, and the shared side set every combo type inherits when its own list is empty."
     },
     "drink_categories": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Square category names that fill the Drink column."
+      "description": "Square category names that fill the Drink column, and the shared drink set every combo type inherits when its own list is empty."
     },
     "shake_categories": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Square category names offered when a large milkshake stands in for the large drink."
+      "description": "Square category names offered when a large milkshake stands in for the large drink. Also the shared shake set every combo type inherits."
     },
     "allow_shake_substitution": {
       "type": "boolean",
