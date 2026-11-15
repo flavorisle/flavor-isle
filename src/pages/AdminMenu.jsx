@@ -36,15 +36,9 @@ export default function AdminMenu() {
   const [itemOrder, setItemOrder] = useState({});
   const [catSort, setCatSort] = useState([]);
 
-  // Combo state
-  const [combos, setCombos] = useState([]);
-  const [comboForm, setComboForm] = useState({ name: '', description: '', main_category: '', side_category: '', drink_category: '', discount_percent: 12, is_active: true });
-  const [savingCombo, setSavingCombo] = useState(false);
-
   useEffect(() => {
     loadItems();
     loadSpecials();
-    loadCombos();
     loadMenuSetting();
   }, []);
 
@@ -67,11 +61,6 @@ export default function AdminMenu() {
   const loadSpecials = async () => {
     const data = await base44.entities.DailySpecial.list();
     setSpecials(data || []);
-  };
-
-  const loadCombos = async () => {
-    const data = await base44.entities.ComboConfig.list();
-    setCombos(data || []);
   };
 
   const saveSpecial = async () => {
@@ -99,26 +88,7 @@ export default function AdminMenu() {
     setSpecials((prev) => prev.map((x) => x.id === s.id ? { ...x, is_active: !s.is_active } : x));
   };
 
-  const saveCombo = async () => {
-    if (!comboForm.name || !comboForm.main_category || !comboForm.side_category || !comboForm.drink_category) return;
-    setSavingCombo(true);
-    await base44.entities.ComboConfig.create({ ...comboForm, discount_percent: Number(comboForm.discount_percent) || 12 });
-    setComboForm({ name: '', description: '', main_category: '', side_category: '', drink_category: '', discount_percent: 12, is_active: true });
-    await loadCombos();
-    setSavingCombo(false);
-  };
-
-  const deleteCombo = async (id) => {
-    await base44.entities.ComboConfig.delete(id);
-    setCombos((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  const toggleCombo = async (c) => {
-    await base44.entities.ComboConfig.update(c.id, { is_active: !c.is_active });
-    setCombos((prev) => prev.map((x) => x.id === c.id ? { ...x, is_active: !c.is_active } : x));
-  };
-
-  // All category keys for the combo builder + per-item selector: effective
+  // All category keys for the per-item selector: effective
   // keys (incl. custom display_category) plus any custom categories the
   // admin created in the Categories tab (tracked via category_sort_order).
   const allCategoryKeys = sortCategories(Array.from(new Set([...items.map(itemCategoryKey), ...catSort])), catSort);
@@ -223,7 +193,7 @@ export default function AdminMenu() {
         </div>
         {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-2 mt-6 overflow-x-auto scrollbar-hide">
-          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'combos', label: 'Combo Builder', Icon: Package }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'modifiers', label: 'Modifiers', Icon: SlidersHorizontal }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
+          {[{ id: 'menu', label: 'Menu Items', Icon: Tag }, { id: 'categories', label: 'Categories', Icon: SlidersHorizontal }, { id: 'specials', label: 'Daily Specials', Icon: Star }, { id: 'deluxe', label: 'Deluxe Preset', Icon: Sparkles }, { id: 'shakes', label: 'Milkshakes', Icon: IceCream }, { id: 'modifiers', label: 'Modifiers', Icon: SlidersHorizontal }, { id: 'promos', label: 'Promos', Icon: Gift }].map((t) =>
           <button key={t.id} onClick={() => setTab(t.id)}
           className={`flex items-center gap-2 px-5 py-2 rounded-full font-heading text-sm transition-all flex-shrink-0 whitespace-nowrap ${tab === t.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               <t.Icon size={14} />{t.label}
@@ -295,95 +265,6 @@ export default function AdminMenu() {
                       {s.is_active ? 'Active' : 'Inactive'}
                     </button>
                     <button onClick={() => deleteSpecial(s.id)} className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-            )}
-            </div>
-          </div>
-        }
-
-        {/* ── COMBO BUILDER TAB ── */}
-        {tab === 'combos' &&
-        <div className="space-y-8">
-            <div className="card-diner p-6">
-              <h2 className="font-heading text-lg text-obsidian-roast mb-2">Add a Combo</h2>
-              <p className="text-sm text-muted-foreground mb-5">Pick which category covers the main, side, and drink — these include any custom categories you put together in the Categories tab. Customers get a bundle discount when they pick all three.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Combo Name *</label>
-                  <input type="text" placeholder="e.g. Classic Combo" value={comboForm.name}
-                onChange={(e) => setComboForm((p) => ({ ...p, name: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Main Category *</label>
-                  <BrandSelect
-                    value={comboForm.main_category || ''}
-                    onValueChange={(v) => setComboForm((p) => ({ ...p, main_category: v }))}
-                    placeholder="Select category…"
-                  >
-                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
-                  </BrandSelect>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Side Category *</label>
-                  <BrandSelect
-                    value={comboForm.side_category || ''}
-                    onValueChange={(v) => setComboForm((p) => ({ ...p, side_category: v }))}
-                    placeholder="Select category…"
-                  >
-                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
-                  </BrandSelect>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Drink Category *</label>
-                  <BrandSelect
-                    value={comboForm.drink_category || ''}
-                    onValueChange={(v) => setComboForm((p) => ({ ...p, drink_category: v }))}
-                    placeholder="Select category…"
-                  >
-                    {allCategoryKeys.map((c) => <BrandOption key={c} value={c}>{categoryLabel(c, renames)}</BrandOption>)}
-                  </BrandSelect>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Discount %</label>
-                  <input type="number" min="0" max="100" placeholder="12" value={comboForm.discount_percent}
-                    onChange={(e) => setComboForm((p) => ({ ...p, discount_percent: e.target.value }))}
-                    className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Description (optional)</label>
-                  <input type="text" placeholder="Short tagline shown to customers…" value={comboForm.description}
-                onChange={(e) => setComboForm((p) => ({ ...p, description: e.target.value }))}
-                className="w-full px-4 py-3 bg-muted border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30" />
-                </div>
-              </div>
-              <button onClick={saveCombo} disabled={savingCombo || !comboForm.name || !comboForm.main_category || !comboForm.side_category || !comboForm.drink_category}
-            className="btn-cherry chrome-hover px-6 py-3 text-sm font-heading flex items-center gap-2 disabled:opacity-50">
-                <Plus size={15} /> {savingCombo ? 'Saving…' : 'Create Combo'}
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {combos.length === 0 ?
-            <p className="text-muted-foreground text-center py-8">No combos yet. Create one above.</p> :
-            combos.map((c) =>
-            <div key={c.id} className={`card-diner p-4 flex items-center gap-4 ${!c.is_active ? 'opacity-50' : ''}`}>
-                  <div className="w-10 h-10 bg-midnight-cherry/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Package size={18} className="text-midnight-cherry" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-heading text-sm text-obsidian-roast">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.main_category} + {c.side_category} + {c.drink_category}</p>
-                    <p className="text-xs text-patina-mint font-heading mt-0.5">{c.discount_percent || 12}% off when bundled</p>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => toggleCombo(c)} className={`px-3 py-1.5 rounded-xl text-xs font-heading transition-colors ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {c.is_active ? 'Active' : 'Inactive'}
-                    </button>
-                    <button onClick={() => deleteCombo(c.id)} className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors">
                       <Trash2 size={15} />
                     </button>
                   </div>
