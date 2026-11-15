@@ -21,6 +21,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import { optimizedImageUrl } from '@/lib/utils';
 import ProductStructuredData from '@/components/schema/ProductStructuredData';
+import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 
 const PLACEHOLDER_EMOJI = {
   Burgers: '🍔', Shakes: '🥤', Sides: '🍟', Drinks: '🧃',
@@ -108,12 +109,15 @@ export default function ProductDetail() {
   }, [editingLine?.id, reorderItem?.quantity]);
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
+  // Fries and tots ask the required salt question even with zero modifiers, so
+  // they always open the panel.
+  const needsSalt = item ? isSaltQuestionItem(item) : false;
   const soldOut = item?.is_available === false;
   const imageUrl = item?.image_url_opt || item?.image_url;
   const isHappyHour = item ? isHappyHourItem(item, menuSetting) : false;
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
   const displayPrice = isHappyHour && happyHourPrice !== null ? happyHourPrice : item?.price;
-  const showPanel = hasModifiers || isBurger;
+  const showPanel = hasModifiers || isBurger || needsSalt;
 
   useEffect(() => {
     if (!user?.id || !item) return;
@@ -150,7 +154,7 @@ export default function ProductDetail() {
     setTimeout(() => setAdded(false), 1200);
   };
 
-  const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, coreLevel) => {
+  const handlePanelConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, coreLevel, saltNote) => {
     const baseItem = {
       ...item,
       name: withShakeFlavorLevel(item.name, coreLevel),
@@ -160,6 +164,7 @@ export default function ProductDetail() {
       selectedModifiers: selectedMods,
       deluxeLabel: deluxeLabel || undefined,
       deluxeToppings: deluxeToppings || [],
+      saltNote: saltNoteText(saltNote) || undefined,
     };
     if (editingLine) removeItem(editingLine.id);
     for (let i = 0; i < quantity; i++) addItem(baseItem);
@@ -230,16 +235,20 @@ export default function ProductDetail() {
   };
 
   const comboSideReady = !(combo && comboOn) || !!comboParts?.ready;
-  const canAdd = !soldOut && orderingEnabled && comboSideReady;
+  // A needed salt answer blocks the add, exactly as the modal does.
+  const saltMissing = !soldOut && orderingEnabled && !panelState.ready;
+  const canAdd = !soldOut && orderingEnabled && comboSideReady && !saltMissing;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
         ? editingLine ? 'Bag Updated!' : 'Added to Bag!'
-        : comboSideReady
-          ? editingLine ? 'Update Bag' : 'Add to Bag'
-          : 'Pick a side & drink';
+        : saltMissing
+          ? 'Choose a salt option'
+          : comboSideReady
+            ? editingLine ? 'Update Bag' : 'Add to Bag'
+            : 'Pick a side & drink';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
     : added

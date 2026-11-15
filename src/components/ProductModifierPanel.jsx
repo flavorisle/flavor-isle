@@ -11,6 +11,8 @@ import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './class
 import { restorePanelSelection } from '@/lib/restorePanelSelection';
 import { isShakeItem } from './AllergyNote';
 import ShakeFlavorControl from './ShakeFlavorControl';
+import SideSaltChoice from './SideSaltChoice';
+import { isSaltQuestionItem } from '@/lib/sideSalt';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
 // modifiers, Deluxe presets, and Happy Hour pricing — rendered inline (no
@@ -30,6 +32,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
   const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
+  // Fries and tots are cooked unsalted, so they ask the required salt question
+  // here exactly as they do in the quick customize modal.
+  const needsSalt = isSaltQuestionItem(item);
 
   // Initialize selections: SINGLE → null, MULTIPLE → []
   const initSelections = () => {
@@ -49,6 +54,12 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const [selections, setSelections] = useState(() => restored ? restored.selections : initSelections());
   const [nestedSelections, setNestedSelections] = useState(() => restored?.nested || {});
   const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
+  // A bag line being edited reopens with its salt answer already chosen.
+  const [saltChoice, setSaltChoice] = useState(() => {
+    const note = initialCartItem?.saltNote || '';
+    if (!note) return null;
+    return /no salt/i.test(note) ? 'no' : 'yes';
+  });
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const selectIceSize = (mod, level) => {
@@ -147,7 +158,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   }, 0) + nestedExtraCost;
 
   const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
-  const ready = !soldOut;
+  const ready = !soldOut && (!needsSalt || !!saltChoice);
 
   // Notify parent of live state so the left-column CTA can reflect it.
   // The selected option ids and nested Lite/Extra levels are reported too, so
@@ -192,7 +203,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   const handleConfirm = () => {
     const { selectedMods, label, allToppings } = buildSelection();
-    onConfirm(selectedMods, extraCost, label, allToppings, coreLevel);
+    onConfirm(selectedMods, extraCost, label, allToppings, coreLevel, needsSalt ? saltChoice : null);
   };
 
   useImperativeHandle(ref, () => ({
@@ -263,7 +274,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
       {/* The item's options are picked on the "What's on it" chips — this panel
           owns that selection, the Deluxe preset, and the add-to-bag flow. */}
-      {!hasModifiers && !isBurger && (
+      {needsSalt && <SideSaltChoice value={saltChoice} onChange={setSaltChoice} />}
+
+      {!hasModifiers && !isBurger && !needsSalt && (
         <p className="text-sm text-muted-foreground text-center py-4">No customizations available.</p>
       )}
 

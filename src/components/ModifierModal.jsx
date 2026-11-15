@@ -19,6 +19,7 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
+import SideSaltChoice from '@/components/SideSaltChoice';
 
 export default function ModifierModal({ item, onClose, onConfirm, autoCombo, optionFilter, preset, confirmLabel }) {
   const { menuSetting } = useCart();
@@ -406,25 +407,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
         <div className="p-5 border-t border-border flex-shrink-0 bg-white safe-bottom">
           {needsSalt && (
             <div className="mb-3">
-              <p className="font-heading text-sm text-obsidian-roast mb-2">Salt on your sides?</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSideSalt('yes')}
-                  aria-pressed={sideSalt === 'yes'}
-                  className={`py-3 rounded-xl border text-sm font-heading transition-colors ${sideSalt === 'yes' ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'bg-white text-obsidian-roast border-border hover:border-midnight-cherry/50'}`}
-                >
-                  Yes, salt packets
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSideSalt('no')}
-                  aria-pressed={sideSalt === 'no'}
-                  className={`py-3 rounded-xl border text-sm font-heading transition-colors ${sideSalt === 'no' ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'bg-white text-obsidian-roast border-border hover:border-midnight-cherry/50'}`}
-                >
-                  No salt
-                </button>
-              </div>
+              <SideSaltChoice value={sideSalt} onChange={setSideSalt} />
             </div>
           )}
           {/* Every milkshake carries the allergy note — and the customer can flag
