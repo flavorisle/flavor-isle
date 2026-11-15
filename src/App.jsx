@@ -40,6 +40,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminMenu = lazy(() => import('./pages/AdminMenu'));
 const AdminPrintMenu = lazy(() => import('./pages/AdminPrintMenu'));
+const AdminComboIsle = lazy(() => import('./pages/AdminComboIsle'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
 const Milkshakes = lazy(() => import('./pages/Milkshakes'));
@@ -264,6 +265,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
         <Route path="/admin/print-menu" element={<AdminPrintMenu />} />
+        <Route path="/admin/combo-isle" element={<AdminComboIsle />} />
         <Route path="/admin/explore-shops" element={<AdminExploreShops />} />
 
         <Route path="/admin/orders" element={<AdminOrders />} />

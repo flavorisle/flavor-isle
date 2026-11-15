@@ -8,6 +8,7 @@ const VIEW_LABELS = {
   '/admin': 'Admin Dashboard',
   '/admin/menu': 'Menu Manager',
   '/admin/print-menu': 'Print Menu',
+  '/admin/combo-isle': 'Combo Isle',
   '/admin/orders': 'Orders',
   '/admin/store-settings': 'Store Settings',
   '/admin/reviews': 'Reviews',
