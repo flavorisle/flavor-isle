@@ -16,7 +16,7 @@ import { Resend } from 'npm:resend@3.2.0';
 import { maintenanceCaller, maintenanceGate } from '../../shared/maintenanceGate.ts';
 
 const OWNER_EMAIL = 'wesleyrbooker1@gmail.com';
-const FROM_ADDRESS = 'Wesley Booker <wesley@order.flavor-isle.com>';
+const FROM_ADDRESS = 'Flavor Isle Watchdog <smashie@flavor-isle.com>';
 const USER_AGENT = 'FlavorIsleAgent/1.0';
 const STORE_TZ = 'America/Chicago';
 // The menu setting the store actually edits. Read by id out of a newest-first
