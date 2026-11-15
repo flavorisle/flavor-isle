@@ -95,6 +95,7 @@ export default function AdminComboIsle() {
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -188,8 +189,12 @@ export default function AdminComboIsle() {
       }],
     }));
 
-  const deleteType = (id) =>
+  const confirmDeleteType = () => {
+    const id = pendingDelete?.id;
+    setPendingDelete(null);
+    if (!id) return;
     setDraft((d) => ({ ...d, combo_types: (d.combo_types || []).filter((t) => t.id !== id) }));
+  };
 
   const moveType = (id, direction) =>
     setDraft((d) => {
@@ -296,7 +301,7 @@ export default function AdminComboIsle() {
                     onChange={(patch) => updateType(type.id, patch)}
                     onMove={(direction) => moveType(type.id, direction)}
                     onDuplicate={() => duplicateType(type)}
-                    onDelete={() => deleteType(type.id)}
+                    onDelete={() => setPendingDelete({ id: type.id, name: type.name })}
                   />
                 ))}
               </div>
@@ -408,6 +413,19 @@ export default function AdminComboIsle() {
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
+          </div>
+        )}
+
+        {pendingDelete && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+              <p className="font-heading text-lg text-obsidian-roast mb-2">Delete {pendingDelete.name}?</p>
+              <p className="text-sm text-muted-foreground mb-5">Boxes already in a customer's cart keep their items and price. This only removes the combo from /combos.</p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setPendingDelete(null)} className="px-4 py-2 rounded-xl border border-border font-heading text-sm">Cancel</button>
+                <button onClick={confirmDeleteType} className="px-4 py-2 rounded-xl bg-midnight-cherry text-white font-heading text-sm">Delete</button>
+              </div>
+            </div>
           </div>
         )}
       </div>
