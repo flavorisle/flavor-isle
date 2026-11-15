@@ -8,8 +8,6 @@ import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ProductModifierPanel from '@/components/ProductModifierPanel';
 import { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
-import ComboPicker from '@/components/ComboPicker';
-import { loadComboData, comboForItem, comboPricing, round2 } from '@/lib/comboConfig';
 import ProductSuggestions from '@/components/ProductSuggestions';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
@@ -48,9 +46,6 @@ export default function ProductDetail() {
   const [savingFavorite, setSavingFavorite] = useState(false);
   const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true, selectedIds: [], nestedSelections: {} });
   const panelRef = useRef(null);
-  const [combo, setCombo] = useState(null);
-  const [comboOn, setComboOn] = useState(false);
-  const [comboParts, setComboParts] = useState(null);
   // Fries and tots are cooked unsalted; the question is asked here on the page,
   // right above the quantity, instead of inside the modifier panel.
   const [saltChoice, setSaltChoice] = useState(null);
@@ -84,17 +79,6 @@ export default function ProductDetail() {
     window.scrollTo({ top: 0 });
     return () => { cancelled = true; };
   }, [slug, navigate]);
-
-  // The combo offered for this item: the item must sit in the combo's main slot
-  // and the combo must be switched on. No combo resolves, no section renders.
-  useEffect(() => {
-    if (!item?.square_item_id) return;
-    let cancelled = false;
-    loadComboData()
-      .then(({ usable }) => { if (!cancelled) setCombo(comboForItem(usable, item)); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [item]);
 
   // The bag line being edited, when the cart's Edit button opened this page.
   // Every item opens this way — the modifier panel restores the choices the
@@ -182,58 +166,12 @@ export default function ProductDetail() {
     flashAdded();
   };
 
-  // Combo price preview: raw component totals (no Happy Hour) × the combo's
-  // discount — the same recomputation verifyOrderPricing does server-side.
-  const comboComponents = combo && comboParts?.sideComponent && comboParts?.drinkComponent
-    ? [
-        { name: item.name, square_item_id: item.square_item_id, total: round2(item.price + panelState.extraCost) },
-        comboParts.sideComponent,
-        comboParts.drinkComponent,
-      ]
-    : null;
-  const comboPreview = combo && comboComponents ? comboPricing(combo, comboComponents) : null;
-
-  // Add the combo as ONE cart line: the line carries no catalog id (so the
-  // server reprices it from the components), keeps the burger's chosen
-  // modifiers, and lists the picked items in selectedModifiers so the cart,
-  // the POS ticket, and the kitchen ticket all show what was chosen.
-  const addComboItem = (selection) => {
-    if (!comboPreview) return;
-    const displayMods = [
-      { name: item.name, price: 0 },
-      ...selection.selectedMods.map((m) => ({ name: m.name, price: 0, silent: m.silent })),
-      { name: comboParts.sideComponent.name, price: 0 },
-      { name: comboParts.drinkComponent.name, price: 0 },
-    ];
-    for (let i = 0; i < quantity; i++) {
-      addItem({
-        name: combo.name,
-        image_url: imageUrl,
-        category: item.category,
-        price: comboPreview.price,
-        alwaysUnique: true,
-        comboParentId: item.id,
-        comboConfigId: combo.id,
-        comboComponents,
-        selectedModifiers: displayMods,
-        deluxeLabel: selection.label || undefined,
-        deluxeToppings: selection.allToppings || [],
-      });
-    }
-  };
-
   const handleAddToBag = () => {
     if (!orderingEnabled || soldOut) return;
     if (showPanel) {
       if (!panelRef.current?.isReady()) return;
-      if (combo && comboOn && !comboParts?.ready) return;
       trackSelectItem(foodItemToGa4(item));
-      if (combo && comboOn) {
-        addComboItem(panelRef.current.getSelection());
-        flashAdded();
-      } else {
-        panelRef.current.confirm();
-      }
+      panelRef.current.confirm();
     } else {
       trackSelectItem(foodItemToGa4(item));
       // An edited line with nothing to customize is replaced, not added again —
@@ -244,10 +182,9 @@ export default function ProductDetail() {
     }
   };
 
-  const comboSideReady = !(combo && comboOn) || !!comboParts?.ready;
   // A needed salt answer blocks the add, exactly as the modal does.
   const saltMissing = needsSalt && !saltChoice && !soldOut && orderingEnabled;
-  const canAdd = !soldOut && orderingEnabled && comboSideReady && !saltMissing;
+  const canAdd = !soldOut && orderingEnabled && !saltMissing;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
@@ -256,19 +193,15 @@ export default function ProductDetail() {
         ? editingLine ? 'Bag Updated!' : 'Added to Bag!'
         : saltMissing
           ? 'Choose a salt option'
-          : comboSideReady
-            ? editingLine ? 'Update Bag' : 'Add to Bag'
-            : 'Pick a side & drink';
+          : editingLine ? 'Update Bag' : 'Add to Bag';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
     : added
       ? 'bg-patina-mint text-white'
       : 'btn-cherry chrome-hover';
-  const liveTotal = comboPreview
-    ? comboPreview.price * quantity
-    : showPanel
-      ? panelState.total * quantity
-      : (displayPrice || 0) * quantity;
+  const liveTotal = showPanel
+    ? panelState.total * quantity
+    : (displayPrice || 0) * quantity;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -467,9 +400,6 @@ export default function ProductDetail() {
 
             {/* Right column — modifiers + reviews */}
             <div id="product-modifiers" className="space-y-8">
-              {combo && orderingEnabled && !soldOut && (
-                <ComboPicker combo={combo} active={comboOn} onToggle={setComboOn} onChange={setComboParts} />
-              )}
               {showPanel ? (
                 <ProductModifierPanel
                   ref={panelRef}
