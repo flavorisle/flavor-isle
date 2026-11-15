@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Package, Check, X, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
-import { itemCategoryKey } from '@/lib/menuCategory';
-import { resolveCombos } from '@/lib/comboConfig';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { optimizedImageUrl } from '@/lib/utils';
+import {
+  DEFAULT_COMBO_SETTING,
+  boxCharge,
+  boxTotal,
+  boxLabel,
+  loadComboSetting,
+  itemsForRole,
+  shakesForSubstitution,
+  requiredQuantity,
+  allocateBoxUnitCharges,
+  nextBoxNumber,
+  round2,
+} from '@/lib/comboIsle';
 
 function ModifierModal({ item, onClose, onConfirm, overrides }) {
   // Admin modifier controls apply to combo components too, so a combo's main,
@@ -115,96 +126,101 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
 }
 
 export default function ComboBuilderSection() {
-  const [combos, setCombos] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [selectedCombo, setSelectedCombo] = useState(null);
-  const [picks, setPicks] = useState({ main: null, side: null, drink: null });
+  const [setting, setSetting] = useState(DEFAULT_COMBO_SETTING);
+  const [loading, setLoading] = useState(true);
+  const [picks, setPicks] = useState({ main: null, side: null, drink: null, shake: null });
+  const [shakeInstead, setShakeInstead] = useState(false);
   const [added, setAdded] = useState(false);
-  const [modifierModal, setModifierModal] = useState(null); // { item, slot }
-  const { addItem, setIsCartOpen, menuSetting } = useCart();
+  const [modifierModal, setModifierModal] = useState(null);
+  const { addItem, cartItems, setIsCartOpen, menuSetting } = useCart();
   const overrides = menuSetting?.modifier_overrides;
 
   useEffect(() => {
+    let alive = true;
     Promise.all([
-      base44.entities.ComboConfig.filter({ is_active: true }),
-      base44.entities.MenuItem.filter({ is_available: true, is_hidden: false }),
-    ]).then(([c, m]) => {
-      // Only catalog-backed items can be combo components (the server reprices
-      // each one), and a combo whose side or drink slot resolves to nothing is
-      // hidden rather than rendered with an empty column.
-      const catalog = (m || []).filter((i) => i.square_item_id);
-      const { usable } = resolveCombos(c || [], catalog);
-      setCombos(usable);
-      setMenuItems(catalog);
-      if (usable.length > 0) setSelectedCombo(usable[0]);
-    });
+      base44.entities.MenuItem.filter({ is_available: true, is_hidden: false }, '-name', 500),
+      loadComboSetting(),
+    ])
+      .then(([rows, saved]) => {
+        if (!alive) return;
+        setMenuItems((rows || []).filter((i) => i.square_item_id));
+        setSetting(saved || DEFAULT_COMBO_SETTING);
+      })
+      .catch(() => { if (alive) setMenuItems([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, []);
 
-  if (combos.length === 0) return null;
+  const mains = useMemo(() => itemsForRole(menuItems, setting, 'main'), [menuItems, setting]);
+  const sides = useMemo(() => itemsForRole(menuItems, setting, 'side'), [menuItems, setting]);
+  const drinks = useMemo(() => itemsForRole(menuItems, setting, 'drink'), [menuItems, setting]);
+  const shakes = useMemo(() => shakesForSubstitution(menuItems, setting), [menuItems, setting]);
 
-  const itemsForCategory = (cat) =>
-    menuItems.filter(i => itemCategoryKey(i).toLowerCase() === (cat || '').toLowerCase());
-
-  const mainItems = selectedCombo ? itemsForCategory(selectedCombo.main_category) : [];
-  const sideItems = selectedCombo ? itemsForCategory(selectedCombo.side_category) : [];
-  const drinkItems = selectedCombo ? itemsForCategory(selectedCombo.drink_category) : [];
-
-  const originalTotal = (picks.main?.price || 0) + (picks.side?.price || 0) + (picks.drink?.price || 0);
-  const discount = selectedCombo ? (selectedCombo.discount_percent || 12) / 100 : 0.12;
-  const comboPrice = Math.round(originalTotal * (1 - discount) * 100) / 100;
-  const allPicked = picks.main && picks.side && picks.drink;
+  const drinkChoices = shakeInstead ? shakes : drinks;
+  const drinkPick = shakeInstead ? picks.shake : picks.drink;
+  const components = [picks.main, picks.side, drinkPick].filter(Boolean);
+  const total = boxTotal(components);
+  const price = boxCharge(total);
+  const allPicked = Boolean(picks.main && picks.side && drinkPick);
+  const canBuild = mains.length > 0 && sides.length > 0 && (drinks.length > 0 || shakes.length > 0);
 
   const handleSelectItem = (item, slot) => {
+    const quantity = requiredQuantity(setting, item);
     if (applyModifierOverrides(item.modifiers, overrides).length > 0) {
-      setModifierModal({ item, slot });
+      setModifierModal({ item, slot, quantity });
     } else {
-      setPicks(p => ({ ...p, [slot]: { ...item, selectedModifiers: [] } }));
+      setPicks((p) => ({ ...p, [slot]: { ...item, quantity, selectedModifiers: [] } }));
     }
   };
 
   const handleModifierConfirm = (selectedMods, extraCost) => {
-    const { item, slot } = modifierModal;
-    setPicks(p => ({ ...p, [slot]: { ...item, price: item.price + extraCost, selectedModifiers: selectedMods } }));
+    const { item, slot, quantity } = modifierModal;
+    setPicks((p) => ({
+      ...p,
+      [slot]: { ...item, quantity, price: round2((item.price || 0) + extraCost), selectedModifiers: selectedMods },
+    }));
     setModifierModal(null);
   };
 
+  // One box goes in as its real Square items in a numbered group. The lines carry
+  // the box price between them — so nothing reads as a discount anywhere — and
+  // each keeps its full Square price so a broken box can go back to singles.
   const handleAddCombo = () => {
     if (!allPicked) return;
-    const name = `${selectedCombo.name}: ${picks.main.name} + ${picks.side.name} + ${picks.drink.name}`;
-    const modSummary = [picks.main, picks.side, picks.drink]
-      .flatMap(p => p.selectedModifiers || [])
-      .filter(m => m.name && !m.silent).map(m => m.name).join(', ');
-    addItem({
-      id: `combo-${Date.now()}`,
-      name,
-      description: modSummary || undefined,
-      price: comboPrice,
-      quantity: 1,
-      selectedModifiers: [picks.main, picks.side, picks.drink].flatMap(p => p.selectedModifiers || []),
-      comboConfigId: selectedCombo.id,
-      comboComponents: [picks.main, picks.side, picks.drink].map(p => ({
-        name: p.name,
-        square_item_id: p.square_item_id || '',
-        selectedModifiers: p.selectedModifiers || [],
-      })),
+    const chosen = [picks.main, picks.side, drinkPick];
+    const roles = ['main', 'side', 'drink'];
+    const units = allocateBoxUnitCharges(chosen);
+    const comboGroup = `box-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const boxNumber = nextBoxNumber(cartItems);
+    chosen.forEach((pick, i) => {
+      addItem({
+        ...pick,
+        productId: pick.id,
+        selectedModifiers: pick.selectedModifiers || [],
+        price: units[i],
+        comboFullPrice: round2(pick.price || 0),
+        initialQuantity: pick.quantity || 1,
+        comboGroup,
+        comboRole: roles[i],
+        comboBox: boxNumber,
+        alwaysUnique: true,
+        bundleName: boxLabel(boxNumber),
+      });
     });
     setAdded(true);
     setIsCartOpen(true);
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const handleComboChange = (combo) => {
-    setSelectedCombo(combo);
-    setPicks({ main: null, side: null, drink: null });
-  };
-
-  const ItemPicker = ({ label, items, selected, slot }) => (
+  const ItemPicker = ({ label, sub, items, selected, slot }) => (
     <div>
-      <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-3">{label}</p>
+      <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-1">{label}</p>
+      <p className="text-[11px] text-muted-foreground mb-3">{sub}</p>
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">No items in this category</p>
       ) : (
-        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
           {items.map(item => {
             const isSelected = selected?.id === item.id;
             const hasModifiers = applyModifierOverrides(item.modifiers, overrides).length > 0;
@@ -220,8 +236,14 @@ export default function ComboBuilderSection() {
                   <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-heading text-xs text-obsidian-roast truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">${item.price?.toFixed(2)}</p>
+                  <p className="font-heading text-xs text-obsidian-roast truncate">
+                    {requiredQuantity(setting, item) > 1 ? `${requiredQuantity(setting, item)} × ${item.name}` : item.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {requiredQuantity(setting, item) > 1
+                      ? `$${((item.price || 0) * requiredQuantity(setting, item)).toFixed(2)}`
+                      : `$${(item.price || 0).toFixed(2)}`}
+                  </p>
                   {hasModifiers && !isSelected && (
                     <p className="text-xs text-patina-mint mt-0.5">Customizable</p>
                   )}
@@ -263,33 +285,55 @@ export default function ComboBuilderSection() {
             <p className="text-gray-400 text-sm">Pick a main, a side, and a drink.</p>
           </div>
 
-          {combos.length > 1 && (
-            <div className="flex flex-wrap gap-2 justify-center mb-8">
-              {combos.map(c => (
-                <button key={c.id} onClick={() => handleComboChange(c)}
-                  className={`px-5 py-2 rounded-full font-heading text-sm transition-all ${selectedCombo?.id === c.id ? 'bg-midnight-cherry text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          )}
-
           <div className="bg-white rounded-3xl p-6 md:p-8">
-            {selectedCombo?.description && (
-              <p className="text-muted-foreground text-sm text-center mb-6">{selectedCombo.description}</p>
-            )}
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <ItemPicker label={`Main — ${selectedCombo?.main_category}`} items={mainItems} selected={picks.main} slot="main" />
-              <ItemPicker label={`Side — ${selectedCombo?.side_category}`} items={sideItems} selected={picks.side} slot="side" />
-              <ItemPicker label={`Drink — ${selectedCombo?.drink_category}`} items={drinkItems} selected={picks.drink} slot="drink" />
+              <ItemPicker label="Main" sub="Burgers, sandwiches and more" items={mains} selected={picks.main} slot="main" />
+              <ItemPicker label="Side" sub="Fries, tots and crunchy things" items={sides} selected={picks.side} slot="side" />
+              <div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-1">Drink</p>
+                  {shakes.length > 0 && (
+                    <button
+                      onClick={() => setShakeInstead((v) => !v)}
+                      className={`text-[11px] font-heading px-2 py-1 rounded-full border transition-colors ${shakeInstead ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'border-border text-muted-foreground hover:border-midnight-cherry/40'}`}
+                    >
+                      {shakeInstead ? 'Milkshake' : 'Large milkshake instead'}
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mb-3">{shakeInstead ? 'Thick shake, same box' : 'Sodas, teas and floats'}</p>
+                {drinkChoices.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Nothing available in this column right now.</p>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {drinkChoices.map((item) => {
+                      const isSelected = drinkPick?.id === item.id;
+                      const qty = requiredQuantity(setting, item);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleSelectItem(item, shakeInstead ? 'shake' : 'drink')}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${isSelected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40 bg-white'}`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-heading text-xs text-obsidian-roast truncate">{qty > 1 ? `${qty} × ${item.name}` : item.name}</p>
+                            <p className="text-xs text-muted-foreground">{qty > 1 ? `$${((item.price || 0) * qty).toFixed(2)}` : `$${(item.price || 0).toFixed(2)}`}</p>
+                          </div>
+                          {isSelected && <Check size={16} className="text-midnight-cherry flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className={`border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity ${allPicked ? 'opacity-100' : 'opacity-50'}`}>
               <div>
                 {allPicked ? (
                   <div className="space-y-0.5">
-                    <p className="font-heading text-3xl text-midnight-cherry">${comboPrice.toFixed(2)} <span className="text-sm font-body text-patina-mint">combo price</span></p>
+                    <p className="font-heading text-3xl text-midnight-cherry">${price.toFixed(2)} <span className="text-sm font-body text-patina-mint">combo price</span></p>
+                    <p className="text-xs text-muted-foreground">{picks.main.name} + {picks.side.name} + {drinkPick.name}</p>
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-sm">Pick one from each column to see your combo price</p>
@@ -297,7 +341,7 @@ export default function ComboBuilderSection() {
               </div>
               <button
                 onClick={handleAddCombo}
-                disabled={!allPicked}
+                disabled={!allPicked || !canBuild}
                 className="btn-cherry chrome-hover px-8 py-3.5 text-sm font-heading disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {added ? <><Check size={16} /> Added!</> : 'Add Combo to Order'}
