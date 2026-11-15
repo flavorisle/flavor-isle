@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import RestroomIcon from '@/components/explore/RestroomIcon';
 import Navbar from '@/components/Navbar';
@@ -7,6 +7,8 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
 import ShopDetailDialog from '@/components/explore/ShopDetailDialog';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { shopStatus, statusFromBusinessHours, formatMinutes } from '@/lib/shopHours';
 
 // Public media base for the Smiths Grove photos (issue #153).
 const M = 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/';
@@ -328,7 +330,44 @@ function mapShop(row) {
   };
 }
 
-function StopCard({ stop, onOpen }) {
+// The clock behind the Open / Closed pill. One tick a minute, so a card flips on its
+// own at closing time without a reload.
+function useNowMinute() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+// Open or Closed on the card face, read from the shop's own Hours line. Flavor Isle's
+// own card reads the admin panel instead, because the panel is the only source of truth
+// for our hours. No hours on file means no pill at all, never a guess. (issue #319)
+function ShopStatusPill({ stop, now, flavorIsleStatus }) {
+  const status = stop.name === 'Flavor Isle' && flavorIsleStatus
+    ? flavorIsleStatus
+    : shopStatus(stop.hours, now);
+  if (!status || status.state === 'unknown') return null;
+  const open = status.state === 'open';
+  const label = open ? 'Open now' : 'Closed';
+  const detail = open && status.until !== null
+    ? `, closes at ${formatMinutes(status.until)}`
+    : !open && status.opensAt !== null
+      ? `, opens at ${formatMinutes(status.opensAt)}`
+      : '';
+  return (
+    <span
+      aria-label={`${label}${detail}`}
+      className={`absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-black tracking-[.14em] uppercase text-white ${open ? 'bg-[#1E7A46]' : 'bg-[#5B6B7A]'}`}
+    >
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-white/90" />
+      {label}
+    </span>
+  );
+}
+
+function StopCard({ stop, onOpen, now, flavorIsleStatus }) {
   return (
     <article
       id={stop.id}
@@ -342,26 +381,29 @@ function StopCard({ stop, onOpen }) {
         }
       }}
       className="cursor-pointer scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]">
-      {stop.tile === 'photo' && (
-        <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
-          <img src={stop.photo} alt={stop.alt} loading="lazy" className="w-full h-full object-cover" />
-        </div>
-      )}
-      {stop.tile === 'mono' && (
-        <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
-          <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
-        </div>
-      )}
-      {stop.tile === 'monoRed' && (
-        <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#c93a10_0%,#CC3300_55%,#8f2400_100%)]">
-          <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-white text-center px-4">{stop.name}</span>
-        </div>
-      )}
-      {stop.tile === 'stripe' && (
-        <div className="aspect-[4/3] flex items-center justify-center bg-[repeating-linear-gradient(135deg,#003366,#003366_12px,#0a3d70_12px,#0a3d70_24px)]">
-          <span className="font-heading text-[26px] tracking-[.06em] text-white/90 text-center px-[18px]">{stop.name}</span>
-        </div>
-      )}
+      <div className="relative">
+        {stop.tile === 'photo' && (
+          <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
+            <img src={stop.photo} alt={stop.alt} loading="lazy" className="w-full h-full object-cover" />
+          </div>
+        )}
+        {stop.tile === 'mono' && (
+          <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
+            <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
+          </div>
+        )}
+        {stop.tile === 'monoRed' && (
+          <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#c93a10_0%,#CC3300_55%,#8f2400_100%)]">
+            <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-white text-center px-4">{stop.name}</span>
+          </div>
+        )}
+        {stop.tile === 'stripe' && (
+          <div className="aspect-[4/3] flex items-center justify-center bg-[repeating-linear-gradient(135deg,#003366,#003366_12px,#0a3d70_12px,#0a3d70_24px)]">
+            <span className="font-heading text-[26px] tracking-[.06em] text-white/90 text-center px-[18px]">{stop.name}</span>
+          </div>
+        )}
+        <ShopStatusPill stop={stop} now={now} flavorIsleStatus={flavorIsleStatus} />
+      </div>
       <div className="p-[18px_18px_20px] flex flex-col gap-2 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
@@ -455,7 +497,7 @@ function StopCard({ stop, onOpen }) {
   );
 }
 
-function SurroundCard({ stop, onOpen }) {
+function SurroundCard({ stop, onOpen, now, flavorIsleStatus }) {
   return (
     <article
       id={stop.id}
@@ -470,15 +512,18 @@ function SurroundCard({ stop, onOpen }) {
       }}
       className="cursor-pointer scroll-mt-24 bg-white border border-[rgba(0,51,102,.12)] rounded-xl overflow-hidden flex flex-col shadow-[0_2px_0_rgba(0,51,102,.05)] transition-transform duration-150 hover:-translate-y-[3px] hover:shadow-[0_12px_24px_rgba(0,51,102,.12)]"
     >
-      {stop.photo ? (
-        <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
-          <img src={stop.photo} alt={stop.name} loading="lazy" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
-          <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
-        </div>
-      )}
+      <div className="relative">
+        {stop.photo ? (
+          <div className="aspect-[4/3] bg-[#F5E9D2] overflow-hidden">
+            <img src={stop.photo} alt={stop.name} loading="lazy" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="aspect-[4/3] flex items-center justify-center bg-[radial-gradient(120%_120%_at_30%_20%,#0a3d70_0%,#003366_55%,#002244_100%)]">
+            <span className="font-heading text-[30px] leading-[.95] tracking-[.06em] text-[#F2A22B] text-center px-4">{stop.name}</span>
+          </div>
+        )}
+        <ShopStatusPill stop={stop} now={now} flavorIsleStatus={flavorIsleStatus} />
+      </div>
       <div className="p-[18px_18px_20px] flex flex-col gap-2 flex-1">
         <span className="inline-block w-max text-[10.5px] font-black tracking-[.14em] uppercase text-obsidian-roast bg-[rgba(242,162,43,.24)] rounded-full px-[10px] py-[3px]">{stop.tag}</span>
         <h3 className="font-heading text-[26px] tracking-[.02em] leading-[1.05] text-obsidian-roast m-0">{stop.name}</h3>
@@ -521,6 +566,10 @@ export default function ExploreSmithsGrove() {
   // whole page exactly as it shipped.
   const [stops, setStops] = useState(FALLBACKS);
   const [activeStop, setActiveStop] = useState(null);
+  const now = useNowMinute();
+  // Our own card follows the admin panel, not a typed line.
+  const flavorIsleHours = useBusinessHours();
+  const flavorIsleStatus = useMemo(() => statusFromBusinessHours(flavorIsleHours, now), [flavorIsleHours, now]);
 
   useEffect(() => {
     let live = true;
@@ -635,7 +684,7 @@ export default function ExploreSmithsGrove() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.shops.map((stop) => (
-            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} now={now} flavorIsleStatus={flavorIsleStatus} />
           ))}
         </div>
       </section>
@@ -651,7 +700,7 @@ export default function ExploreSmithsGrove() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.surrounding.map((stop) => (
-            <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} now={now} flavorIsleStatus={flavorIsleStatus} />
           ))}
         </div>
       </section>
@@ -667,7 +716,7 @@ export default function ExploreSmithsGrove() {
         </p>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.flavor.map((stop) => (
-            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} />
+            <StopCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} now={now} flavorIsleStatus={flavorIsleStatus} />
           ))}
         </div>
       </section>
