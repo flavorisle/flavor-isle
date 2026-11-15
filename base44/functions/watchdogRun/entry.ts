@@ -305,6 +305,10 @@ export default async function (req) {
         detail: 'Order #000000 · Test Customer · $18.74 · paid 14 minutes ago\nThis is a test. No incident was written, no order was touched, nothing is broken.',
         first_seen_at: nowIso,
       };
+      const html = emailShell(
+        'Order path alert — this is a test',
+        `${incidentBlock(sample, now)}<p style="margin:0;font-size:13px;color:#41556a;">This is the test you asked for. If it reached you, real order-path alerts will too.</p>`,
+      );
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (!apiKey) return Response.json({ ok: false, test_alert: true, reason: 'RESEND_API_KEY is not set in this app' });
       try {
