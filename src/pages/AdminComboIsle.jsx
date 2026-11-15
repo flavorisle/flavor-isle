@@ -34,9 +34,14 @@ const withMiniDefaults = (rows, menu) => {
 
 const draftFrom = (saved, menu) => {
   const base = { ...DEFAULT_COMBO_SETTING, ...(saved || {}) };
+  // No saved types yet: open with the approved three so Wesley edits real cards
+  // instead of a blank list, and the first Save writes them into the record.
+  const seedTypes = (Array.isArray(base.combo_types) && base.combo_types.length)
+    ? base.combo_types
+    : DEFAULT_COMBO_SETTING.combo_types;
   return {
     is_active: base.is_active !== false,
-    combo_types: (Array.isArray(base.combo_types) ? base.combo_types : [])
+    combo_types: seedTypes
       .map((t, i) => ({
         id: String(t.id || `type-${i}`),
         name: String(t.name || ''),

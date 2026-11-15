@@ -22,6 +22,11 @@ export const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 10
 // Used when the admin record has not been saved yet, so the page is never blank.
 export const DEFAULT_COMBO_SETTING = {
   is_active: true,
+  combo_types: [
+    { id: 'burgers', name: 'Burgers', enabled: true, order: 0, main_categories: ['Old-Fashioned Burgers'] },
+    { id: 'chicken', name: 'Chicken', enabled: true, order: 1, main_categories: ['Crisp & Cluck'] },
+    { id: 'sandwiches', name: 'Sandwiches', enabled: true, order: 2, main_categories: ['Handheld Classics', 'Grilled & Gooey', 'Seasonal & Supreme'] },
+  ],
   main_categories: ['Old-Fashioned Burgers', 'Handheld Classics', 'Crisp & Cluck', 'Grilled & Gooey', 'Frankly Delicious', 'Golden Crisp & Savory', 'Seasonal & Supreme'],
   side_categories: ['Crunch & Munch', 'Snack & Munch'],
   drink_categories: ['Flow & Fizz'],
@@ -29,6 +34,7 @@ export const DEFAULT_COMBO_SETTING = {
   allow_shake_substitution: true,
   hidden_item_ids: [],
   item_quantities: [],
+  show_combo_name_on_ticket: false,
 };
 
 const norm = (s) => String(s || '').trim().toLowerCase();
