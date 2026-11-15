@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups, hoursSummary } from '@/lib/businessHours';
-import { getMenuSetting, deliveryStatus } from '@/lib/menuSettings';
+import { getMenuSetting } from '@/lib/menuSettings';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 
 // Frequently asked questions (issue #37, step 5). Hours and delivery answers are
@@ -56,7 +56,7 @@ export default function Faq() {
   // (Store settings → Delivery), followed by the pickup-only line.
   const deliveryAnswer = deliveryEnabled
     ? `Yes — we deliver locally through flavor-isle.com. Choose Delivery at checkout and enter your address; delivery orders need about ${deliveryCutoff} minutes of notice. Delivery is ${deliveryFeeText}. For catering and large orders, call (270) 563-7230.`
-    : `${deliveryStatus(storeSetting).message} Ordering is pickup only through flavor-isle.com. For catering and large orders, call (270) 563-7230.`;
+    : 'For catering and large orders, call (270) 563-7230. Online ordering is pickup, curbside or dine-in.';
 
   const FAQS = [
     {
@@ -69,7 +69,9 @@ export default function Faq() {
     },
     {
       q: 'Does Flavor Isle take online orders?',
-      a: 'Yes — order ahead at flavor-isle.com for pickup or delivery. Visit 103 N Main St, Smiths Grove, KY 42171, or call (270) 563-7230.',
+      a: deliveryEnabled
+        ? 'Yes — order ahead at flavor-isle.com for pickup or delivery. Visit 103 N Main St, Smiths Grove, KY 42171, or call (270) 563-7230.'
+        : 'Yes — order ahead at flavor-isle.com for pickup, curbside or dine-in. Visit 103 N Main St, Smiths Grove, KY 42171, or call (270) 563-7230.',
     },
     {
       q: 'Is there parking for trucks/trailers?',
@@ -84,7 +86,7 @@ export default function Faq() {
       a: `${hoursText}. The kitchen closes 30 minutes before close.`,
     },
     {
-      q: 'Does Flavor Isle deliver or take catering?',
+      q: deliveryEnabled ? 'Does Flavor Isle deliver or take catering?' : 'Does Flavor Isle take catering?',
       a: deliveryAnswer,
     },
     {
@@ -144,7 +146,9 @@ export default function Faq() {
       faqs: [
         {
           q: 'How do I place an order online?',
-          a: "Browse the Menu page, add items to your cart, and hit Checkout. Choose pickup, delivery, or dine-in, enter your info, and pay securely with your card. You'll get an order number and a confirmation email right away.",
+          a: deliveryEnabled
+            ? "Browse the Menu page, add items to your cart, and hit Checkout. Choose pickup, delivery, or dine-in, enter your info, and pay securely with your card. You'll get an order number and a confirmation email right away."
+            : "Browse the Menu page, add items to your cart, and hit Checkout. Choose pickup, curbside, or dine-in, enter your info, and pay securely with your card. You'll get an order number and a confirmation email right away.",
         },
         {
           q: 'How long does my order take?',

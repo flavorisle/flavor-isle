@@ -1,5 +1,6 @@
 import React from 'react';
 import { Receipt, CheckCircle2, Flame, ShoppingBag, PartyPopper } from 'lucide-react';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 // Explains what happens at each stage of an order's lifecycle so customers
 // watching the order tracker know what each status means and what to do next.
@@ -52,6 +53,11 @@ const STAGES = [
 ];
 
 export default function OrderStatusStages() {
+  // Issue #309: the Ready stage stops mentioning delivery while it is paused.
+  const { deliveryEnabled } = useLiveStatus();
+  const READY = deliveryEnabled
+    ? { desc: "It's done and bagged up. For pickup, head on over — for delivery, it's heading out.", expect: 'Pickup: come grab it hot. Delivery: your driver is on the way.' }
+    : { desc: "It's done and bagged up. Come grab it hot at the counter, or we'll walk it out to your car.", expect: 'Pull up in the curbside spot and we bring it out.' };
   return (
     <div>
       <h2 className="font-heading text-xl text-obsidian-roast mb-1">What to expect at each stage</h2>
@@ -61,6 +67,8 @@ export default function OrderStatusStages() {
       <ol className="relative space-y-4 pl-6 border-l-2 border-border">
         {STAGES.map((stage, idx) => {
           const Icon = stage.Icon;
+          const desc = stage.id === 'ready' ? READY.desc : stage.desc;
+          const expect = stage.id === 'ready' ? READY.expect : stage.expect;
           return (
             <li key={stage.id} className="relative">
               {/* Stage dot */}
@@ -72,8 +80,8 @@ export default function OrderStatusStages() {
                   <span className="text-xs font-heading text-muted-foreground">STEP {idx + 1}</span>
                   <h3 className="font-heading text-base text-obsidian-roast">{stage.label}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">{stage.desc}</p>
-                <p className="text-sm text-patina-mint font-semibold mt-1.5">What to expect: {stage.expect}</p>
+                <p className="text-sm text-muted-foreground">{desc}</p>
+                <p className="text-sm text-patina-mint font-semibold mt-1.5">What to expect: {expect}</p>
               </div>
             </li>
           );

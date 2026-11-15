@@ -24,6 +24,7 @@ import { optimizedImageUrl } from '@/lib/utils';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
 
@@ -172,6 +173,7 @@ function LoggedInAccount({ user, logout }) {
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleting, setDeleting] = useState(false);
   const { addItem, setOrderType, setIsCartOpen } = useCart();
+  const { deliveryEnabled } = useLiveStatus();
 
   const refreshStarStatus = async () => {
     setStarLoading(true);
@@ -556,7 +558,9 @@ function LoggedInAccount({ user, logout }) {
               </div>
             </div>
 
-            {/* Delivery Preferences */}
+            {/* Delivery Preferences — Issue #309: hidden entirely while delivery
+                is paused. Anything already saved stays saved. */}
+            {deliveryEnabled && (
             <div className="card-diner p-6">
               <h3 className="font-heading text-lg text-obsidian-roast mb-4">Delivery Preferences</h3>
               <div className="space-y-4">
@@ -587,6 +591,7 @@ function LoggedInAccount({ user, logout }) {
                 )}
               </div>
             </div>
+            )}
 
             {/* Pickup Preferences */}
             <div className="card-diner p-6">

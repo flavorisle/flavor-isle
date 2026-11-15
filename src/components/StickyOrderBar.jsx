@@ -16,7 +16,7 @@ const ORDER_TYPES = [
 
 export default function StickyOrderBar() {
   const { orderType, setOrderType, pickupMethod, setPickupMethod, orderingEnabled, menuSetting } = useCart();
-  const { waitMin, isClosed } = useLiveStatus();
+  const { waitMin, isClosed, deliveryEnabled } = useLiveStatus();
   const navigate = useNavigate();
 
   if (!orderingEnabled) return null;
@@ -34,7 +34,8 @@ export default function StickyOrderBar() {
       >
         <div className="flex items-center gap-2 px-3 py-2">
           <div className="flex gap-0.5 bg-muted rounded-full p-0.5 flex-shrink-0">
-            {ORDER_TYPES.map(opt => (
+            {/* Issue #309: no Delivery pill at all while delivery is paused. */}
+            {ORDER_TYPES.filter(opt => opt.orderType !== 'delivery' || deliveryEnabled).map(opt => (
               <button
                 key={opt.key}
                 onClick={() => { setOrderType(opt.orderType); if (opt.method) setPickupMethod(opt.method); }}

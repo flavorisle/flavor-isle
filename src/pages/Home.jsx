@@ -8,6 +8,7 @@ import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
+import useLiveStatus from '@/hooks/useLiveStatus';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { optimizedImageUrl } from '@/lib/utils';
@@ -54,6 +55,7 @@ function spokenClock(time) {
 
 export default function Home() {
   const { setOrderType } = useCart();
+  const { deliveryEnabled } = useLiveStatus();
   const navigate = useNavigate();
   const businessHours = useBusinessHours();
   const { pull, refreshing } = usePullToRefresh(() => window.location.reload());
@@ -316,7 +318,7 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
-                <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup & delivery — answers to the things folks ask us most.</p>
+                <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup {deliveryEnabled ? '& delivery' : '& dine-in'} — answers to the things folks ask us most.</p>
               </div>
               <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
                 View FAQs <ArrowRight size={16} />

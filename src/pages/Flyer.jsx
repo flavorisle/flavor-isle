@@ -3,6 +3,7 @@ import { Printer, MapPin, Phone, Clock, Globe, UtensilsCrossed, IceCream2, Flame
 import { optimizedImageUrl } from '@/lib/utils';
 import { galleryImage } from '@/lib/galleryPhotos';
 import useBusinessHours from '@/hooks/useBusinessHours';
+import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups } from '@/lib/businessHours';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
@@ -11,6 +12,7 @@ const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ac
 const STOREFRONT = galleryImage('The sign at 1st and Main');
 
 export default function Flyer() {
+  const { deliveryEnabled } = useLiveStatus();
   const businessHours = useBusinessHours();
   const flyerHours = hoursGroups(businessHours);
   return (
@@ -165,7 +167,7 @@ export default function Flyer() {
           <div className="mx-8 bg-midnight-cherry text-white rounded-2xl px-6 py-5 flex items-center justify-between">
             <div>
               <div className="font-heading text-2xl leading-none">ORDER ONLINE</div>
-              <div className="text-sm text-white/90 mt-1">Pickup &middot; Delivery &middot; Dine-In</div>
+              <div className="text-sm text-white/90 mt-1">Pickup &middot; {deliveryEnabled ? 'Delivery' : 'Curbside'} &middot; Dine-In</div>
             </div>
             <div className="text-right">
               <div className="font-heading text-xl text-smashie-yellow leading-none">flavor-isle.com</div>

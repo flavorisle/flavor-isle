@@ -9,6 +9,7 @@ import AppPhoneMockup from '@/components/AppPhoneMockup';
 import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
 import { APP_RELEASE, appIsLive } from '@/lib/appRelease';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 // Issue #297 Part D: the date and both store links live in src/lib/appRelease.js.
 // Until the app is live and both URLs are set, no store link is rendered at all.
@@ -18,9 +19,9 @@ const SMASHIE_HERO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f
 const SMASHIE_POSE = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1332ef4b2_IMG_9978.png'; // waving
 const APP_ICON = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
-const FEATURES = [
-  { icon: Zap, title: 'Order Ahead', desc: 'Skip the wait. Build your order and grab it hot — pickup, delivery, or dine-in.' },
-  { icon: Truck, title: 'Every Way to Get It', desc: 'Counter pickup, curbside, delivery to your door, or dine-in at your table.' },
+const FEATURES = (deliveryEnabled) => [
+  { icon: Zap, title: 'Order Ahead', desc: deliveryEnabled ? 'Skip the wait. Build your order and grab it hot — pickup, delivery, or dine-in.' : 'Skip the wait. Build your order and grab it hot — pickup, curbside, or dine-in.' },
+  { icon: Truck, title: 'Every Way to Get It', desc: deliveryEnabled ? 'Counter pickup, curbside, delivery to your door, or dine-in at your table.' : 'Counter pickup, curbside to your car, or dine-in at your table.' },
   { icon: Calendar, title: 'Schedule for Later', desc: 'Order for ASAP or lock in a time that fits your day — we cook it when you want it.' },
   { icon: Clock, title: 'Live Order Tracking', desc: 'Watch your order move from confirmed to preparing to ready, in real time.' },
   { icon: Bell, title: 'Order Ready Alerts', desc: 'We ping you the second your food is ready. No guessing, no waiting around.' },
@@ -43,6 +44,7 @@ const FEATURES = [
 ];
 
 export default function DownloadApp() {
+  const { deliveryEnabled } = useLiveStatus();
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Seo
@@ -176,7 +178,7 @@ export default function DownloadApp() {
           <h2 className="font-heading text-4xl text-obsidian-roast">Everything Smashie Loves, On Tap</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map(f => {
+          {FEATURES(deliveryEnabled).map(f => {
             const Icon = f.icon;
             return (
               <div key={f.title} className="card-diner p-7 text-center">

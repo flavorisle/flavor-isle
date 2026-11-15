@@ -28,7 +28,7 @@ const LEVEL_BLURBS = {
 };
 
 export default function BusynessGuide() {
-  const { level, waitMin, isClosed, closingSoon, closeTime } = useLiveStatus();
+  const { level, waitMin, isClosed, closingSoon, closeTime, deliveryEnabled } = useLiveStatus();
 
   useEffect(() => {
     base44.analytics.track({ eventName: 'busyness_guide_viewed' });
@@ -141,7 +141,9 @@ export default function BusynessGuide() {
             Lunch (11:30a–1p) and dinner (5–7p) are our peak windows. Ordering just before or after beats the line.
           </TipCard>
           <TipCard Icon={ShoppingBag} title="Pickup is fastest">
-            Pickup gets you food the quickest. Delivery adds drive time on top of the kitchen wait.
+            {deliveryEnabled
+              ? 'Pickup gets you food the quickest. Delivery adds drive time on top of the kitchen wait.'
+              : 'Pickup gets you food the quickest. Curbside is the same order, walked out to your car.'}
           </TipCard>
           <TipCard Icon={Info} title="Fresh, never frozen">
             Every burger is hand-patted to order and every shake is spun fresh — that's why wait times flex with how many orders are on the board.
@@ -151,7 +153,7 @@ export default function BusynessGuide() {
         {/* Order type explainer */}
         <h2 className="font-heading text-xl text-obsidian-roast mb-4">How to order</h2>
         <div className="grid gap-3 mb-10">
-          {ORDER_TYPES.map(({ id, label, Icon, tip }) => (
+          {ORDER_TYPES.filter(t => t.id !== 'delivery' || deliveryEnabled).map(({ id, label, Icon, tip }) => (
             <div key={id} className="card-diner p-4 flex items-center gap-4">
               <div className="w-11 h-11 rounded-2xl bg-midnight-cherry/10 text-midnight-cherry flex items-center justify-center flex-shrink-0">
                 <Icon size={22} />

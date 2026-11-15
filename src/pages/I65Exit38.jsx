@@ -15,6 +15,7 @@ import LocationHours from '@/components/visit/LocationHours';
 import WhatToExpect from '@/components/visit/WhatToExpect';
 import SnapAndShare from '@/components/visit/SnapAndShare';
 import ExploreSections from '@/components/explore/ExploreSections';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -29,6 +30,7 @@ const FAVORITES = [
 // store's story, fan favorites, and every stop around Flavor Isle — merged
 // from the old Exit 38 guide, Explore Smiths Grove, and visit-us pages.
 export default function I65Exit38() {
+  const { deliveryEnabled } = useLiveStatus();
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
@@ -51,7 +53,7 @@ export default function I65Exit38() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-5">
           <div>
             <h2 className="font-heading text-2xl sm:text-3xl">Thirsty? Let’s fix that.</h2>
-            <p className="text-white/80 text-sm mt-1">Order online for pickup, delivery, or dine-in. Hot food, fast.</p>
+            <p className="text-white/80 text-sm mt-1">Order online for {deliveryEnabled ? 'pickup, delivery, or dine-in' : 'pickup, curbside, or dine-in'}. Hot food, fast.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to="/milkshakes" className="btn-yellow chrome-hover px-6 py-3 text-sm font-heading inline-flex items-center gap-2">

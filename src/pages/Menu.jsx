@@ -34,7 +34,6 @@ import WeekendPartyPackCard from '@/components/packs/WeekendPartyPackCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
-import { deliveryStatus } from '@/lib/menuSettings';
 import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Pickup / delivery estimates scale with the live kitchen load so the menu
@@ -59,9 +58,6 @@ export default function Menu() {
   const { orderType, setOrderType, pickupMethod, setPickupMethod, setIsCartOpen, totalItems, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const { level, deliveryEnabled } = useLiveStatus();
   const ORDER_TYPES = ORDER_TYPE_CONFIG(level?.waitMin || 20, deliveryEnabled);
-  // Issue #297 Part C: the delivery tile keeps its short "Paused", and the
-  // admin's own sentence sits on one line under the row.
-  const deliveryPause = deliveryStatus(menuSetting).message;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -106,7 +102,8 @@ export default function Menu() {
   const orderTiles = [
     { key: 'pickup', label: ORDER_TYPES.pickup.label, time: ORDER_TYPES.pickup.time, img: ORDER_TYPE_IMAGES.pickup, onSelect: () => { setOrderType('pickup'); setPickupMethod('counter'); }, isActive: orderType === 'pickup' && pickupMethod !== 'curbside' },
     { key: 'curbside', label: ORDER_TYPES.curbside.label, time: ORDER_TYPES.curbside.time, img: ORDER_TYPE_IMAGES.curbside, onSelect: () => { setOrderType('pickup'); setPickupMethod('curbside'); }, isActive: orderType === 'pickup' && pickupMethod === 'curbside' },
-    { key: 'delivery', label: ORDER_TYPES.delivery.label, time: ORDER_TYPES.delivery.time, img: ORDER_TYPE_IMAGES.delivery, onSelect: () => setOrderType('delivery'), isActive: orderType === 'delivery' },
+    // Issue #309: no Delivery tile at all while delivery is paused.
+    ...(deliveryEnabled ? [{ key: 'delivery', label: ORDER_TYPES.delivery.label, time: ORDER_TYPES.delivery.time, img: ORDER_TYPE_IMAGES.delivery, onSelect: () => setOrderType('delivery'), isActive: orderType === 'delivery' }] : []),
     { key: 'dine_in', label: ORDER_TYPES.dine_in.label, time: ORDER_TYPES.dine_in.time, img: ORDER_TYPE_IMAGES.dine_in, onSelect: () => setOrderType('dine_in'), isActive: orderType === 'dine_in' },
   ];
 
@@ -194,7 +191,7 @@ export default function Menu() {
 
           {/* Order type switcher */}
           <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-stretch">
-          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-xl w-full">
+          <div className={`grid ${deliveryEnabled ? 'grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 max-w-xl w-full`}>
             {orderTiles.map(t => (
               <button
                 key={t.key}
@@ -225,9 +222,6 @@ export default function Menu() {
             ))}
           </div>
           </div>
-          {deliveryPause && (
-            <p className="mt-3 text-center text-sm text-white/85">{deliveryPause}</p>
-          )}
         </div>
       </div>
 

@@ -5,19 +5,15 @@ import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
-import { deliveryStatus } from '@/lib/menuSettings';
 import PopularTimesCard from '@/components/PopularTimesCard';
 
 export default function HomeOrderOptions() {
   const navigate = useNavigate();
-  const { setOrderType, menuSetting } = useCart();
+  const { setOrderType } = useCart();
   const { waitMin, deliveryEnabled } = useLiveStatus();
-  // Issue #297 Part C: the tile keeps its short "Paused"; the admin's sentence
-  // sits on one line under the row.
-  const deliveryPause = deliveryStatus(menuSetting).message;
   const options = [
     { type: 'pickup', label: 'Pickup', time: pickupQuote(waitMin), Icon: ShoppingBag },
-    { type: 'delivery', label: 'Delivery', time: deliveryEnabled ? deliveryQuote(waitMin) : 'Paused', Icon: Bike },
+    ...(deliveryEnabled ? [{ type: 'delivery', label: 'Delivery', time: deliveryQuote(waitMin), Icon: Bike }] : []),
     { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
   ];
   const start = type => {
@@ -37,9 +33,6 @@ export default function HomeOrderOptions() {
           ))}
           <a href="tel:+12705634618" className="min-h-12 inline-flex items-center gap-2 border-2 border-white px-5 py-3 rounded-full font-heading"><Phone size={16} aria-hidden="true" />Call Us</a>
         </div>
-        {deliveryPause && (
-          <p className="mt-3 text-center text-sm text-white/85">{deliveryPause}</p>
-        )}
         <div className="mt-8 rounded-2xl bg-[#1A3A5C] px-4 py-5 text-white">
           <div className="max-w-md mx-auto">
             <PopularTimesCard embedded />

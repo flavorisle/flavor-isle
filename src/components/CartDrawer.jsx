@@ -8,6 +8,7 @@ import CartDessertUpsell from './CartDessertUpsell';
 import CartFallingLeaves from './CartFallingLeaves';
 import { optimizedImageUrl } from '@/lib/utils';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import useLiveStatus from '@/hooks/useLiveStatus';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
@@ -27,10 +28,10 @@ export default function CartDrawer() {
     subtotal, deliveryFee, tax, total, totalItems,
     orderingEnabled, orderingClosedMessage,
     cutoffStatus,
-    deliveryPausedNotice,
     happyHourDiscount,
     menuSetting,
   } = useCart();
+  const { deliveryEnabled } = useLiveStatus();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,8 +83,9 @@ export default function CartDrawer() {
         {/* Order Type Selector */}
         <div className="p-4 bg-white border-b border-border">
           <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-widest">Order Type</p>
-          <div className="grid grid-cols-4 gap-2">
-            {ORDER_OPTIONS.map(opt => {
+          <div className={`grid ${deliveryEnabled ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
+            {/* Issue #309: no Delivery pill at all while delivery is paused. */}
+            {ORDER_OPTIONS.filter(opt => opt.orderType !== 'delivery' || deliveryEnabled).map(opt => {
               const disabled = cutoffStatus[opt.orderType] || (opt.method === 'curbside' && menuSetting?.curbside_enabled !== true);
               const active = orderType === opt.orderType && (!opt.method || pickupMethod === opt.method);
               return (
@@ -104,11 +106,6 @@ export default function CartDrawer() {
               );
             })}
           </div>
-          {/* Issue #297 Part C: when the store pauses delivery, a customer whose
-              order was moved back to pickup reads the admin's own sentence. */}
-          {deliveryPausedNotice && (
-            <p className="text-xs text-midnight-cherry mt-2">{deliveryPausedNotice}</p>
-          )}
         </div>
 
         {/* Promo banners */}

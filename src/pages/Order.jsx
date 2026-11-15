@@ -7,7 +7,6 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
-import { deliveryStatus } from '@/lib/menuSettings';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
@@ -17,7 +16,7 @@ import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 // who tap it from Google Maps/Search land on a focused, conversion-first
 // page instead of the full home page.
 export default function Order() {
-  const { setOrderType, menuSetting } = useCart();
+  const { setOrderType } = useCart();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const source = params.get('source') || 'google';
@@ -40,14 +39,11 @@ export default function Order() {
     base44.analytics.track({ eventName: 'order_landing_viewed', properties: { source } });
   }, [source]);
 
-  // Issue #297 Part C: the delivery card keeps its short "Paused"; the admin's
-  // sentence sits on one line under the row of cards.
-  const deliveryPause = deliveryStatus(menuSetting).message;
-
   const OPTIONS = [
     { id: 'pickup', label: 'Pickup', time: openFromLabel || pickupQuote(waitMin), art: ORDER_TYPE_IMAGES.pickup, blurb: 'Grab it hot off the grill.' },
     { id: 'dine_in', label: 'Dine-In', time: openFromLabel || 'Seat yourself', art: ORDER_TYPE_IMAGES.dine_in, blurb: 'Pull up a seat and dig in.' },
-    { id: 'delivery', label: 'Delivery', time: openFromLabel || (deliveryEnabled ? deliveryQuote(waitMin) : 'Paused'), art: ORDER_TYPE_IMAGES.delivery, blurb: 'We bring it to your door.' },
+    // Issue #309: the Delivery card is not rendered while delivery is paused.
+    ...(deliveryEnabled ? [{ id: 'delivery', label: 'Delivery', time: openFromLabel || deliveryQuote(waitMin), art: ORDER_TYPE_IMAGES.delivery, blurb: 'We bring it to your door.' }] : []),
   ];
 
   const start = (type) => {
@@ -110,10 +106,6 @@ export default function Order() {
             </button>
           ))}
         </div>
-        {deliveryPause && (
-          <p className="mt-3 text-center text-sm text-muted-foreground">{deliveryPause}</p>
-        )}
-
         {/* Star Rewards — live balance + stars earned on recent orders */}
         <OrderLoyaltySection />
 
