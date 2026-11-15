@@ -46,7 +46,6 @@ const ORDER_PATH_KEYS = new Set([
   'checkout_stalled',
   'receipt_missing',
   'customer_unnotified',
-  'sync_heartbeat',
   'menu_unavailable',
   'site_order_pages',
   'combo_unbuildable',
