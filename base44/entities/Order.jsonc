@@ -124,6 +124,11 @@
     "table_number": {
       "type": "string"
     },
+    "heard_about_us": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Optional answer to the checkout question 'How did you find us?'. Stored exactly as chosen. Printed as a note on the kitchen ticket and shown on the admin order card."
+    },
     "estimated_time": {
       "type": "number"
     },

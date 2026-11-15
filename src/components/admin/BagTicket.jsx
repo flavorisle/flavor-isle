@@ -101,11 +101,20 @@ export default function BagTicket({ order }) {
         })}
       </div>
 
-      {/* Special instructions — big and readable, boxed */}
-      {order.special_instructions && (
+      {/* Special instructions and the found-us note — big and readable, boxed.
+          The note prints only when the customer answered the checkout question,
+          and the box prints when either one is present. */}
+      {(order.special_instructions || order.heard_about_us) && (
         <div style={{ border: '2px solid #000', padding: '6px', marginBottom: '6px' }}>
           <div style={{ fontFamily: '"Bebas Neue", Arial, sans-serif', fontSize: '12px', letterSpacing: '1px' }}>SPECIAL INSTRUCTIONS</div>
-          <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '2px' }}>{order.special_instructions}</div>
+          {order.special_instructions && (
+            <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '2px' }}>{order.special_instructions}</div>
+          )}
+          {order.heard_about_us && (
+            <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>
+              HOW THEY FOUND US: {order.heard_about_us}
+            </div>
+          )}
         </div>
       )}
 

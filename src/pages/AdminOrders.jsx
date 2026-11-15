@@ -190,6 +190,9 @@ function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
           {order.special_instructions && (
             <p className="text-xs italic text-patina-mint mb-3">"{order.special_instructions}"</p>
           )}
+          {order.heard_about_us && (
+            <p className="text-xs text-obsidian-roast mb-3">Found us: {order.heard_about_us}</p>
+          )}
           <div className="space-y-1 mb-3">
             {items.length === 0 ? (
               <p className="text-sm text-muted-foreground">No items recorded.</p>
