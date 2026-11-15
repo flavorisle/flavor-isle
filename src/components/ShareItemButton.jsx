@@ -10,7 +10,9 @@ export default function ShareItemButton({ itemId, url: sharedUrl, variant = 'ico
   const [copied, setCopied] = useState(false);
   if (!itemId) return null;
 
-  const url = sharedUrl || `${window.location.origin}/menu?item=${itemId}`;
+  // Always share the live host, never whatever host the page happens to be served from (issue #317).
+  const APP_ORIGIN = 'https://flavor-isle.com';
+  const url = sharedUrl || `${APP_ORIGIN}/menu?item=${itemId}`;
 
   const handleShare = async (e) => {
     e?.stopPropagation();

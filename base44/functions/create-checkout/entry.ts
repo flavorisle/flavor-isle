@@ -18,17 +18,24 @@ import { createClientFromRequest } from "npm:@base44/sdk";
 
 const CONSTRUCT_URL = "https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct";
 
-// The app's public base URL for the buyer's return links. Use the platform-injected
-// `X-Base44-App-Url` header (server-set from app state — correct behind custom domains), then the
-// server-owned `WIX_CHECKOUT_APP_URL` secret. We do NOT fall back to the request `Origin`: it's
-// caller-controlled, so a spoofed Origin would make Wix send the paid buyer to an attacker page
-// (open redirect). Both sources above are always present for a connected payments app.
+// Any base URL that cannot be trusted falls back to the live site, never to a dead host.
+const SAFE_APP_URL = 'https://flavor-isle.com';
+function isRetiredHost(url: string): boolean {
+  try {
+    return new URL(url).host.toLowerCase().replace(/^www\./, '') === 'order.flavor-isle.com';
+  } catch {
+    return false;
+  }
+}
+
 function resolveAppUrl(req: Request): string {
-  return (
-    req.headers.get("x-base44-app-url") ||
-    Deno.env.get("WIX_CHECKOUT_APP_URL") ||
-    ""
-  );
+  const candidate = (
+    req.headers.get('x-base44-app-url') ||
+    Deno.env.get('WIX_CHECKOUT_APP_URL') ||
+    ''
+  ).trim().replace(/\/$/, '');
+  if (!candidate || isRetiredHost(candidate)) return SAFE_APP_URL;
+  return candidate;
 }
 
 Deno.serve(async (req: Request) => {

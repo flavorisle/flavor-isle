@@ -30,13 +30,26 @@ export function wixCheckoutConfigured(): boolean {
 export const WIX_NOT_CONFIGURED =
   'Secure card payments are not set up yet, so no secure payment page was created.';
 
+// Any base URL that cannot be trusted falls back to the live site, never to a dead host.
+const SAFE_APP_URL = 'https://flavor-isle.com';
+function isRetiredHost(url: string): boolean {
+  try {
+    return new URL(url).host.toLowerCase().replace(/^www\./, '') === 'order.flavor-isle.com';
+  } catch {
+    return false;
+  }
+}
+
 // The app's public base URL for the buyer's return links. The platform-injected
 // header first (correct behind custom domains), then the server-owned secret. Never
 // the request Origin: it is caller-controlled, so a spoofed Origin would send the paid
-// buyer to an attacker page.
+// buyer to an attacker page. order.flavor-isle.com is retired and returns nothing, so a
+// stale header or secret pointing there resolves to the live site instead. (issue #317)
 export function resolveAppUrl(req: any): string {
   const header = req?.headers?.get?.('x-base44-app-url') || '';
-  return String(header || Deno.env.get('WIX_CHECKOUT_APP_URL') || '').trim().replace(/\/$/, '');
+  const candidate = String(header || Deno.env.get('WIX_CHECKOUT_APP_URL') || '').trim().replace(/\/$/, '');
+  if (!candidate || isRetiredHost(candidate)) return SAFE_APP_URL;
+  return candidate;
 }
 
 // Our own page for one order, wherever the customer came from. The link carries only

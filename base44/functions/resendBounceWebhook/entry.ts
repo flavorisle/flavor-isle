@@ -14,7 +14,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // try/catch and the response names the last `stage` reached.
 
 const ALERT_TO = 'wesleyrbooker1@gmail.com';
-const ALERT_FROM = 'Wesley Booker <wesley@order.flavor-isle.com>';
+const ALERT_FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 const LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000;
 
 function json(payload: any, status = 200) {

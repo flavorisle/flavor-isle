@@ -17,7 +17,7 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 const INBOX = 'hello@flavor-isle.com';
 // Issue #93 (A16): a message from a blocked sender goes to the crew's flagged
 // inbox with a visibly flagged subject instead of arriving as normal customer mail.
-const FLAGGED_INBOX = 'hello@order.flavor-isle.com';
+const FLAGGED_INBOX = 'hello@flavor-isle.com';
 const RATE_LIMIT_PER_HOUR = 5;
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 

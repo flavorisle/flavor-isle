@@ -5,7 +5,8 @@ import { Download, QrCode } from 'lucide-react';
 // scannable QR image so it can be downloaded and submitted to Twilio /
 // printed for the counter.
 export default function SmsQrCode() {
-  const target = `${window.location.origin}/sms-signup`;
+  // The printed QR code must always point at the live host (issue #317).
+  const target = 'https://flavor-isle.com/sms-signup';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&color=003366&data=${encodeURIComponent(target)}`;
 
   return (
