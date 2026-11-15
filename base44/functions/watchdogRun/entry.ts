@@ -305,11 +305,29 @@ export default async function (req) {
         detail: 'Order #000000 · Test Customer · $18.74 · paid 14 minutes ago\nThis is a test. No incident was written, no order was touched, nothing is broken.',
         first_seen_at: nowIso,
       };
-      const ok = await sendMail(
-        'TEST: Flavor Isle order-path alert',
-        emailShell('Order path alert — this is a test', `${incidentBlock(sample, now)}<p style="margin:0;font-size:13px;color:#41556a;">This is the test you asked for. If it reached you, real order-path alerts will too.</p>`),
-      );
-      return Response.json({ ok: true, test_alert: true, email_sent: ok });
+      const apiKey = Deno.env.get('RESEND_API_KEY');
+      if (!apiKey) return Response.json({ ok: false, test_alert: true, reason: 'RESEND_API_KEY is not set in this app' });
+      try {
+        const resend = new Resend(apiKey);
+        const { data, error } = await resend.emails.send({
+          from: FROM_ADDRESS,
+          to: OWNER_EMAIL,
+          subject: 'TEST: Flavor Isle order-path alert',
+          html,
+          headers: { 'User-Agent': USER_AGENT },
+        });
+        return Response.json({
+          ok: !error,
+          test_alert: true,
+          email_sent: !error,
+          from: FROM_ADDRESS,
+          to: OWNER_EMAIL,
+          resend_id: data?.id || null,
+          resend_error: error || null,
+        });
+      } catch (err) {
+        return Response.json({ ok: false, test_alert: true, email_sent: false, thrown: String(err?.message || err) });
+      }
     }
     const ct = ctParts(new Date(now));
     const db = base44.asServiceRole.entities;
