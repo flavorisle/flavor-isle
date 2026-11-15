@@ -22,8 +22,8 @@ export default function BoxItemList({ items, setting, types, quantityOf, onQuant
     const rows = ['main', 'side', 'drink']
       .flatMap((role) => itemsForRole(items, effective, role))
       .filter((item) => {
-        if (seen.has(item.id)) return false;
-        seen.add(item.id);
+        if (seen.has(item.square_item_id)) return false;
+        seen.add(item.square_item_id);
         return true;
       });
     return { type, rows };

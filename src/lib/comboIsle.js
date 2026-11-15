@@ -86,10 +86,15 @@ export function itemsForRole(items, setting, role) {
       ? setting?.side_categories
       : setting?.drink_categories;
   const hidden = new Set((setting?.hidden_item_ids || []).filter(Boolean));
+  // The MenuItem table holds duplicate rows for one Square item (same
+  // square_item_id, different record ids), so a column must collapse them to
+  // one card — otherwise a customer could add the same Square item twice.
+  const seen = new Set();
   return (items || [])
     .filter((i) => i && i.square_item_id && !hidden.has(i.id))
     .filter((i) => inAnyCategory(i, categories))
-    .sort(byPriceThenName);
+    .sort(byPriceThenName)
+    .filter((i) => { if (seen.has(i.square_item_id)) return false; seen.add(i.square_item_id); return true; });
 }
 
 // The shakes offered when a large milkshake stands in for the large drink.
