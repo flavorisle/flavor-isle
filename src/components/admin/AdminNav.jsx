@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned, Package } from 'lucide-react';
+import { Package, LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned } from 'lucide-react';
 import AdminPresenceTracker from '@/components/admin/AdminPresenceTracker';
 
 const LINKS = [

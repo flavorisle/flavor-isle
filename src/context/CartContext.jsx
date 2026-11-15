@@ -225,8 +225,9 @@ export function CartProvider({ children }) {
     });
   }, []);
 
-  // A box that lost an item is no longer a box: whatever is left goes back to
-  // being ordinary singles at their full Square price, with no box number.
+  // A box that lost an item is no longer a box (Wesley, Nov 15 2026, 8:03 AM):
+  // whatever is left of it goes back to being ordinary singles at their full
+  // Square price, with no box number for the kitchen to read.
   const brokenBoxKey = Array.from(comboGroupStatus(cartItems).broken).sort().join('|');
   useEffect(() => {
     if (!brokenBoxKey) return;
@@ -251,9 +252,10 @@ export function CartProvider({ children }) {
       // Changing the count of anything inside a Combo Isle box ends that box: a
       // box is only ever made by the builder, so the rest sell as singles.
       if (line?.comboGroup) {
-        return prev
+        const next = prev
           .filter(i => i.id !== itemId)
           .map(i => (i.comboGroup === line.comboGroup ? dissolveLine(i) : i));
+        return next;
       }
       return prev.map(i => i.id === itemId ? { ...i, quantity } : i);
     });

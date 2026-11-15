@@ -3,43 +3,51 @@
   "type": "object",
   "properties": {
     "is_active": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "When false the Combo Isle builder shows its off state instead of the columns."
     },
     "main_categories": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Square category names that fill the Main column (a MenuItem matches on display_category, square_category or category)."
     },
     "side_categories": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Square category names that fill the Side column."
     },
     "drink_categories": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Square category names that fill the Drink column."
     },
     "shake_categories": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Square category names offered when a large milkshake stands in for the large drink."
     },
     "allow_shake_substitution": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Offer a large milkshake in place of the large drink."
     },
     "hidden_item_ids": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "MenuItem ids hidden from the picker even though their category is chosen (sauces, condiments, placeholder rows)."
     },
     "item_quantities": {
       "type": "array",
+      "description": "How many of one item make a single box slot. Minis are 2; everything else defaults to 1.",
       "items": {
         "type": "object",
         "properties": {

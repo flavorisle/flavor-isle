@@ -27,6 +27,9 @@
 //    line that carried the id), then from NONCATALOG_PRICES when an approved price
 //    is recorded (souvenir mug), and otherwise REJECTED — fail closed, because a
 //    client-supplied price is never authoritative.
+//  - Combo Isle boxes: each line prices as the catalog item it is; a group that
+//    holds a main + a side + a drink is a box and gives back 9% of its own catalog
+//    total (see comboIsle.ts), and no line of a whole box takes Happy Hour.
 //  - Reward discount: validated exactly against the Square Loyalty reward tier
 //    + account balance by validateRewardDiscount (called by createPaymentIntent
 //    before this runs); the authoritative exact discount is passed in as
@@ -87,6 +90,7 @@ export interface PricingResult {
   subtotal?: number;
   happyHourDiscount?: number;
   bundleDiscount?: number;
+  // The 9% taken off complete Combo Isle boxes — already deducted from subtotal.
   comboDiscount?: number;
   tax?: number;
   deliveryFee?: number;
@@ -168,6 +172,7 @@ export async function verifyOrderPricing(base44: any, opts: {
   // Per bundle-line included money, grouped so each added bundle pays its fixed
   // price once. The discount is recomputed from the catalog below.
   const bundleLines: Array<{ bundleId?: string; bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
+  // Catalog money in each complete Combo Isle box, so the 9% is recomputed here.
   const comboLines: Array<{ comboGroup: string; fullUnitPrice: number; quantity: number }> = [];
   for (const item of items) {
     const qty = Number(item.quantity) || 1;
@@ -219,7 +224,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       // square_item_id present but not in our catalog — reject (unknown item).
       return { ok: false, error: `Menu item not found for square_item_id ${sqId}` };
     } else {
-      // Noncatalog item (no square_item_id).
+      // Noncatalog item (no square_item_id): an approved fixed price or nothing.
       {
         const canonical = NONCATALOG_PRICES[normalizeItemName(item.name)];
         if (canonical != null) {
@@ -263,6 +268,9 @@ export async function verifyOrderPricing(base44: any, opts: {
     }
   }
 
+  // The 9% comes off each whole box, from the catalog prices above. The client
+  // sends the box price spread across its lines, so its subtotal is this same
+  // number and nothing here is taken from the browser.
   const serverComboDiscount = comboDiscountForLines(comboLines);
   serverSubtotal = round2(serverSubtotal - serverComboDiscount);
   serverHappyHour = round2(serverHappyHour);

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Package, Check, X, Plus } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, X, Plus, Package } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
@@ -18,18 +18,28 @@ import {
   round2,
 } from '@/lib/comboIsle';
 
+// Combo Isle is a picker, not a catalogue of prebuilt combos (Wesley, Nov 15 2026).
+// The customer picks one main, one side and one drink from the live Square menu,
+// and the three real items go into the cart as themselves — so the kitchen ticket,
+// the Square order and the price verification all see ordinary catalog items.
+// The total is Square's three prices added. There is no discount anywhere here.
+
+// What is a main, what is a side and what is a drink is an admin setting now
+// (/admin/combo-isle), so these columns come from the saved record, not from a
+// list in this file. A row without a square_item_id is never offered: every line
+// is repriced from Square on the server.
+
 function ModifierModal({ item, onClose, onConfirm, overrides }) {
-  // Admin modifier controls apply to combo components too, so a combo's main,
-  // side, and drink respect the same hidden groups/options and site prices.
+  // A combo component keeps the same Square modifier choices and prices it has
+  // everywhere else on the site.
   const groups = applyModifierOverrides(item.modifiers, overrides);
 
   const initSelections = () => {
     if (!groups.length) return {};
     return groups.reduce((acc, group) => {
-      // Size groups default to the first option so every item carries a size.
       acc[group.name] = group.selection_type === 'MULTIPLE'
         ? []
-        : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
+        : (group.name === 'Size' ? (group.modifiers.find((m) => !m.sold_out) || group.modifiers[0]) : null);
       return acc;
     }, {});
   };
@@ -37,14 +47,19 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
   const [selections, setSelections] = useState(initSelections);
 
   const toggleSingle = (groupName, mod) =>
-    // Size is required — tapping the selected size keeps it instead of clearing it.
-    setSelections(prev => ({ ...prev, [groupName]: prev[groupName]?.id === mod.id ? (groupName === 'Size' ? mod : null) : mod }));
+    setSelections((prev) => ({
+      ...prev,
+      [groupName]: prev[groupName]?.id === mod.id ? (groupName === 'Size' ? mod : null) : mod,
+    }));
 
   const toggleMultiple = (groupName, mod) =>
-    setSelections(prev => {
+    setSelections((prev) => {
       const current = prev[groupName] || [];
-      const exists = current.find(m => m.id === mod.id);
-      return { ...prev, [groupName]: exists ? current.filter(m => m.id !== mod.id) : [...current, mod] };
+      const exists = current.find((m) => m.id === mod.id);
+      return {
+        ...prev,
+        [groupName]: exists ? current.filter((m) => m.id !== mod.id) : [...current, mod],
+      };
     });
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
@@ -57,8 +72,8 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
     const selectedMods = [];
     for (const [groupName, sel] of Object.entries(selections)) {
       if (!sel) continue;
-      if (Array.isArray(sel)) sel.forEach(m => selectedMods.push({ id: m.id, group: groupName, name: m.name, price: m.price }));
-        else selectedMods.push({ id: sel.id, group: groupName, name: sel.name, price: sel.price });
+      if (Array.isArray(sel)) sel.forEach((m) => selectedMods.push({ id: m.id, group: groupName, name: m.name, price: m.price }));
+      else selectedMods.push({ id: sel.id, group: groupName, name: sel.name, price: sel.price });
     }
     onConfirm(selectedMods, extraCost);
   };
@@ -77,7 +92,7 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {groups.map(group => (
+          {groups.map((group) => (
             <div key={group.name}>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
@@ -86,16 +101,16 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
                 </span>
               </div>
               <div className={group.modifiers.length > 10 ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
-                {group.modifiers.map(mod => {
+                {group.modifiers.map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple
-                    ? (selections[group.name] || []).some(m => m.id === mod.id)
+                    ? (selections[group.name] || []).some((m) => m.id === mod.id)
                     : selections[group.name]?.id === mod.id;
                   return (
                     <button
                       key={mod.id}
                       disabled={mod.sold_out}
-                      onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
+                      onClick={() => (isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod))}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${mod.sold_out ? 'border-border bg-muted opacity-50 cursor-not-allowed' : isSelected ? 'border-midnight-cherry bg-red-50' : 'border-border hover:border-gray-300 bg-white'}`}
                     >
                       <div className="flex items-center gap-3">
@@ -117,7 +132,7 @@ function ModifierModal({ item, onClose, onConfirm, overrides }) {
 
         <div className="p-6 border-t border-border">
           <button onClick={handleConfirm} className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2">
-            <Plus size={16} /> Confirm — ${(item.price + extraCost).toFixed(2)}
+            <Plus size={16} /> Confirm — ${round2(item.price + extraCost).toFixed(2)}
           </button>
         </div>
       </div>
@@ -144,6 +159,7 @@ export default function ComboBuilderSection() {
     ])
       .then(([rows, saved]) => {
         if (!alive) return;
+        // Only catalog-backed items: the server reprices every line from Square.
         setMenuItems((rows || []).filter((i) => i.square_item_id));
         setSetting(saved || DEFAULT_COMBO_SETTING);
       })
@@ -157,8 +173,10 @@ export default function ComboBuilderSection() {
   const drinks = useMemo(() => itemsForRole(menuItems, setting, 'drink'), [menuItems, setting]);
   const shakes = useMemo(() => shakesForSubstitution(menuItems, setting), [menuItems, setting]);
 
+  // The drink column swaps to shakes when the customer takes the substitution.
   const drinkChoices = shakeInstead ? shakes : drinks;
   const drinkPick = shakeInstead ? picks.shake : picks.drink;
+
   const components = [picks.main, picks.side, drinkPick].filter(Boolean);
   const total = boxTotal(components);
   const price = boxCharge(total);
@@ -183,9 +201,10 @@ export default function ComboBuilderSection() {
     setModifierModal(null);
   };
 
-  // One box goes in as its real Square items in a numbered group. The lines carry
-  // the box price between them — so nothing reads as a discount anywhere — and
-  // each keeps its full Square price so a broken box can go back to singles.
+  // One box goes in as its real Square items, in a numbered group. The lines carry
+  // the box's charged price between them — so nothing on the page, in the cart, or
+  // on the ticket ever reads as a discount — and each keeps its full Square price
+  // so a broken box can go back to being singles at that price.
   const handleAddCombo = () => {
     if (!allPicked) return;
     const chosen = [picks.main, picks.side, drinkPick];
@@ -218,12 +237,16 @@ export default function ComboBuilderSection() {
       <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-1">{label}</p>
       <p className="text-[11px] text-muted-foreground mb-3">{sub}</p>
       {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">No items in this category</p>
+        <p className="text-xs text-muted-foreground italic">
+          Nothing available in this column right now.
+        </p>
       ) : (
         <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-          {items.map(item => {
+          {items.map((item) => {
             const isSelected = selected?.id === item.id;
             const hasModifiers = applyModifierOverrides(item.modifiers, overrides).length > 0;
+            const showMods = isSelected && selected.selectedModifiers?.length > 0;
+            const quantity = requiredQuantity(setting, item);
             return (
               <button
                 key={item.id}
@@ -233,23 +256,30 @@ export default function ComboBuilderSection() {
                 }`}
               >
                 {(item.image_url_opt || item.image_url) && (
-                  <img src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)} alt={item.name} width="200" height="200" loading="lazy" decoding="async" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                  <img
+                    src={optimizedImageUrl(item.image_url_opt || item.image_url, 200, 200)}
+                    alt={item.name}
+                    width="200"
+                    height="200"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                  />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-xs text-obsidian-roast truncate">
-                    {requiredQuantity(setting, item) > 1 ? `${requiredQuantity(setting, item)} × ${item.name}` : item.name}
+                    {quantity > 1 ? `${quantity} × ${item.name}` : item.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {requiredQuantity(setting, item) > 1
-                      ? `$${((item.price || 0) * requiredQuantity(setting, item)).toFixed(2)}`
-                      : `$${(item.price || 0).toFixed(2)}`}
+                    {quantity > 1 ? `$${((item.price || 0) * quantity).toFixed(2)}` : `$${(item.price || 0).toFixed(2)}`}
                   </p>
-                  {hasModifiers && !isSelected && (
+                  {showMods ? (
+                    <p className="text-xs text-patina-mint mt-0.5 truncate">
+                      {selected.selectedModifiers.filter((m) => m.name && !m.silent).map((m) => m.name).join(', ')}
+                    </p>
+                  ) : hasModifiers ? (
                     <p className="text-xs text-patina-mint mt-0.5">Customizable</p>
-                  )}
-                  {isSelected && selected.selectedModifiers?.length > 0 && (
-                    <p className="text-xs text-patina-mint mt-0.5 truncate">{selected.selectedModifiers.filter(m => m.name && !m.silent).map(m => m.name).join(', ')}</p>
-                  )}
+                  ) : null}
                 </div>
                 {isSelected ? (
                   <Check size={16} className="text-midnight-cherry flex-shrink-0" />
@@ -275,79 +305,106 @@ export default function ComboBuilderSection() {
         />
       )}
 
-      <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
+      <section id="combo-builder" className="py-16 px-4 sm:px-6 bg-obsidian-roast">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-midnight-cherry text-white px-4 py-1.5 rounded-full text-xs font-heading uppercase tracking-widest mb-3">
-              <Package size={12} /> Combo Builder
+            <div className="inline-flex items-center gap-2 bg-smashie-yellow text-obsidian-roast px-4 py-1.5 rounded-full text-xs font-heading uppercase tracking-widest mb-3">
+              <Package size={12} /> Build It Now
             </div>
             <h2 className="font-heading text-4xl text-white mb-2">Build Your Combo</h2>
             <p className="text-gray-400 text-sm">Pick a main, a side, and a drink.</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 md:p-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <ItemPicker label="Main" sub="Burgers, sandwiches and more" items={mains} selected={picks.main} slot="main" />
-              <ItemPicker label="Side" sub="Fries, tots and crunchy things" items={sides} selected={picks.side} slot="side" />
-              <div>
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-1">Drink</p>
-                  {shakes.length > 0 && (
-                    <button
-                      onClick={() => setShakeInstead((v) => !v)}
-                      className={`text-[11px] font-heading px-2 py-1 rounded-full border transition-colors ${shakeInstead ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'border-border text-muted-foreground hover:border-midnight-cherry/40'}`}
-                    >
-                      {shakeInstead ? 'Milkshake' : 'Large milkshake instead'}
-                    </button>
+          {!canBuild ? (
+            <div className="bg-white rounded-3xl p-8 text-center">
+              <p className="font-heading text-lg text-obsidian-roast mb-2">The combo builder is off right now</p>
+              <p className="text-muted-foreground text-sm">
+                {loading
+                  ? 'Loading the menu\u2026'
+                  : 'One of the three columns has nothing available, so there is no combo to build. Everything is still on the menu.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 md:p-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <ItemPicker label="Main" sub="Burgers, chicken, dogs and sandwiches" items={mains} selected={picks.main} slot="main" />
+                <ItemPicker label="Side" sub="Fries, tots, rings and munchies" items={sides} selected={picks.side} slot="side" />
+
+                <div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-heading text-sm uppercase tracking-widest text-obsidian-roast mb-1">Drink</p>
+                    {shakes.length > 0 && (
+                      <button
+                        onClick={() => setShakeInstead((v) => !v)}
+                        className={`text-[11px] font-heading px-2 py-1 rounded-full border transition-colors ${
+                          shakeInstead ? 'bg-midnight-cherry text-white border-midnight-cherry' : 'border-border text-muted-foreground hover:border-midnight-cherry/40'
+                        }`}
+                      >
+                        {shakeInstead ? 'Milkshake' : 'Large milkshake instead'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    {shakeInstead ? 'Thick shake, same box' : 'Sodas, teas and floats'}
+                  </p>
+                  {drinkChoices.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Nothing available in this column right now.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {drinkChoices.map((item) => {
+                        const selected = drinkPick;
+                        const isSelected = selected?.id === item.id;
+                        const quantity = requiredQuantity(setting, item);
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleSelectItem(item, shakeInstead ? 'shake' : 'drink')}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                              isSelected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40 bg-white'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-heading text-xs text-obsidian-roast truncate">
+                                {quantity > 1 ? `${quantity} × ${item.name}` : item.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {quantity > 1 ? `$${((item.price || 0) * quantity).toFixed(2)}` : `$${(item.price || 0).toFixed(2)}`}
+                              </p>
+                            </div>
+                            {isSelected && <Check size={16} className="text-midnight-cherry flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mb-3">{shakeInstead ? 'Thick shake, same box' : 'Sodas, teas and floats'}</p>
-                {drinkChoices.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Nothing available in this column right now.</p>
-                ) : (
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {drinkChoices.map((item) => {
-                      const isSelected = drinkPick?.id === item.id;
-                      const qty = requiredQuantity(setting, item);
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => handleSelectItem(item, shakeInstead ? 'shake' : 'drink')}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${isSelected ? 'border-midnight-cherry bg-midnight-cherry/5' : 'border-border hover:border-midnight-cherry/40 bg-white'}`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-heading text-xs text-obsidian-roast truncate">{qty > 1 ? `${qty} × ${item.name}` : item.name}</p>
-                            <p className="text-xs text-muted-foreground">{qty > 1 ? `$${((item.price || 0) * qty).toFixed(2)}` : `$${(item.price || 0).toFixed(2)}`}</p>
-                          </div>
-                          {isSelected && <Check size={16} className="text-midnight-cherry flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
-            </div>
 
-            <div className={`border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity ${allPicked ? 'opacity-100' : 'opacity-50'}`}>
-              <div>
-                {allPicked ? (
-                  <div className="space-y-0.5">
-                    <p className="font-heading text-3xl text-midnight-cherry">${price.toFixed(2)} <span className="text-sm font-body text-patina-mint">combo price</span></p>
-                    <p className="text-xs text-muted-foreground">{picks.main.name} + {picks.side.name} + {drinkPick.name}</p>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm">Pick one from each column to see your combo price</p>
-                )}
+              <div className={`border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity ${allPicked ? 'opacity-100' : 'opacity-60'}`}>
+                <div>
+                  {allPicked ? (
+                    <div className="space-y-0.5">
+                      <p className="font-heading text-3xl text-midnight-cherry">${price.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {picks.main.name} + {picks.side.name} + {drinkPick.name}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Pick one from each column to see your total</p>
+                  )}
+                </div>
+                <button
+                  onClick={handleAddCombo}
+                  disabled={!allPicked}
+                  className="btn-cherry chrome-hover px-8 py-3.5 text-sm font-heading disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {added ? <><Check size={16} /> Added!</> : 'Add Combo to Order'}
+                </button>
               </div>
-              <button
-                onClick={handleAddCombo}
-                disabled={!allPicked || !canBuild}
-                className="btn-cherry chrome-hover px-8 py-3.5 text-sm font-heading disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {added ? <><Check size={16} /> Added!</> : 'Add Combo to Order'}
-              </button>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </>
