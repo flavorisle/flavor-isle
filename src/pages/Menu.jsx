@@ -8,6 +8,7 @@ import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import Seo from '@/components/Seo';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
+import ComboIsleAnnouncement from '@/components/ComboIsleAnnouncement';
 import { optimizedImageUrl } from '@/lib/utils';
 import MenuItemCard from '@/components/MenuItemCard';
 import MenuShakeCard from '@/components/MenuShakeCard';
@@ -427,6 +428,7 @@ export default function Menu() {
       }
 
       <FindSmashieClueChip />
+      <ComboIsleAnnouncement />
       <Footer />
       <ShakeCustomizer open={!!activeShake} onClose={() => setActiveShake(null)} shakeItem={activeShake} />
     </div>);
