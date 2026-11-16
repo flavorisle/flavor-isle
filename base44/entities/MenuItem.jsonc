@@ -108,6 +108,22 @@
           "selection_type": {
             "type": "string"
           },
+          "modifier_type": {
+            "type": "string",
+            "description": "Square modifier list type: LIST means pick options, TEXT means free text."
+          },
+          "max_length": {
+            "type": "number",
+            "description": "TEXT lists only: Square's maximum characters."
+          },
+          "min_selected": {
+            "type": "number",
+            "description": "Square's minimum selections for this group on this item. Absent or 0 means no minimum."
+          },
+          "max_selected": {
+            "type": "number",
+            "description": "Square's maximum selections for this group on this item. Absent or -1 means no maximum."
+          },
           "modifiers": {
             "type": "array",
             "items": {
@@ -125,6 +141,14 @@
                 "sold_out": {
                   "type": "boolean"
                 },
+                "on_by_default": {
+                  "type": "boolean",
+                  "description": "Square preselects this option when the item opens."
+                },
+                "hidden_online": {
+                  "type": "boolean",
+                  "description": "Square hides this option from online ordering."
+                },
                 "child_modifier_lists": {
                   "type": "array",
                   "description": "Square nested modifier lists revealed when this modifier is selected. Resolved recursively up to 3 levels deep by syncSquareCatalog.",
@@ -139,6 +163,22 @@
                       },
                       "selection_type": {
                         "type": "string"
+                      },
+                      "modifier_type": {
+                        "type": "string",
+                        "description": "Square modifier list type: LIST means pick options, TEXT means free text."
+                      },
+                      "max_length": {
+                        "type": "number",
+                        "description": "TEXT lists only: Square's maximum characters."
+                      },
+                      "min_selected": {
+                        "type": "number",
+                        "description": "Square's minimum selections for this group on this item. Absent or 0 means no minimum."
+                      },
+                      "max_selected": {
+                        "type": "number",
+                        "description": "Square's maximum selections for this group on this item. Absent or -1 means no maximum."
                       },
                       "modifiers": {
                         "type": "array",
@@ -156,6 +196,14 @@
                             },
                             "sold_out": {
                               "type": "boolean"
+                            },
+                            "on_by_default": {
+                              "type": "boolean",
+                              "description": "Square preselects this option when the item opens."
+                            },
+                            "hidden_online": {
+                              "type": "boolean",
+                              "description": "Square hides this option from online ordering."
                             }
                           }
                         }
