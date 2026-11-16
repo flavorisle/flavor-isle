@@ -16,6 +16,7 @@ import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
 import ShakeFlavorControl from './ShakeFlavorControl';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { seedValue, ruleBadge, atMax, firstUnsatisfied } from '@/lib/modifierRules';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
@@ -42,14 +43,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // Options a caller wants pre-selected (the bundle's approved defaults).
   const presetOptionIds = new Set(preset?.selectionIds || []);
 
-  // Initialize selections: SINGLE → null, MULTIPLE → []
+  // Initialize selections from Square: a single-choice group opens on the
+  // option Square marks default, a multi-choice group opens with every default
+  // ticked. The synthetic Size group keeps the first available size.
   const initSelections = () => {
     if (!hasModifiers) return {};
     const base = groups.reduce((acc, group) => {
-      // Size groups default to the first option so every item carries a size.
-      acc[group.name] = group.selection_type === 'MULTIPLE'
-        ? []
-        : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
+      acc[group.name] = seedValue(group);
       return acc;
     }, {});
     if (presetOptionIds.size > 0) {
@@ -145,6 +145,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       if (exists) {
         return { ...prev, [groupName]: current.filter(m => m.id !== mod.id) };
       }
+      // Square's maximum: once the group holds as many picks as Square allows,
+      // one more tap cannot add another.
+      const group = groups.find(g => g.name === groupName);
+      if (group && atMax(group, current)) return prev;
       if (isExclusive) {
         return { ...prev, [groupName]: [mod] };
       }
@@ -194,8 +198,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
   const footerTotal = itemTotal;
 
+  // Square's rules: the first group still short of its minimum keeps the add
+  // button shut and says how many picks are missing.
+  const pendingRule = firstUnsatisfied(groups, selections);
+
   const handleConfirm = () => {
     if (needsSalt && !sideSalt) return;
+    if (pendingRule) return;
     // Flagged allergy with no explanation — the kitchen would get the alert with
     // nothing to act on, so ask for the details first.
     if (shakeItem && allergy.flag && !allergy.note.trim()) {
@@ -294,7 +303,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                    {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+                    {ruleBadge(group)}
                   </span>
                 </div>
                 {getPreferenceTriplet(group) ? (
@@ -426,13 +435,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={soldOut || (needsSalt && !sideSalt)}
+            disabled={soldOut || (needsSalt && !sideSalt) || !!pendingRule}
             className={`w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${
-              soldOut || (needsSalt && !sideSalt) ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'btn-cherry chrome-hover'
+              soldOut || (needsSalt && !sideSalt) || !!pendingRule ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'btn-cherry chrome-hover'
             }`}
           >
             <Plus size={16} />
-            {soldOut ? 'Sold Out' : needsSalt && !sideSalt ? 'Choose one to continue' : confirmLabel ? `${confirmLabel} · $${footerTotal.toFixed(2)}` : `Add to Order — $${footerTotal.toFixed(2)}`}
+            {soldOut ? 'Sold Out' : pendingRule ? `Choose ${pendingRule.missing} more to continue` : needsSalt && !sideSalt ? 'Choose one to continue' : confirmLabel ? `${confirmLabel} · $${footerTotal.toFixed(2)}` : `Add to Order — $${footerTotal.toFixed(2)}`}
           </button>
         </div>
       </div>

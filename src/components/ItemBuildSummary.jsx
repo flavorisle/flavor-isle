@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Plus } from 'lucide-react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
+import { ruleBadge } from '@/lib/modifierRules';
 import PreferencePillButton, { getPreferenceList } from '@/components/PreferencePillButton';
 import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/PreferenceGroupPill';
 import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
@@ -88,13 +89,13 @@ export default function ItemBuildSummary({
           {hasAmountPills && <FlavorAmountLegend align="left" className="mb-3" />}
           <div className="space-y-4">
             {groups.map((group) => {
-              const multiple = group.selection_type === 'MULTIPLE';
+              const rule = ruleBadge(group);
               return (
                 <div key={group.id || group.name}>
                   <div className="flex items-baseline justify-between gap-2 mb-2">
                     <p className="font-heading text-sm text-obsidian-roast">{groupLabel(group.name)}</p>
                     <span className="text-[11px] uppercase tracking-wider text-muted-foreground flex-shrink-0">
-                      {multiple ? 'Pick any' : 'Pick one'}
+                      {rule}
                     </span>
                   </div>
                   {/* Plain option chips read as before; the wider Lite/Extra

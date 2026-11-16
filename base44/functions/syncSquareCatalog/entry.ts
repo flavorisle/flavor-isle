@@ -61,11 +61,19 @@ export default async function (req) {
         id: obj.id,
         name: obj.modifier_list_data?.name || '',
         selection_type: obj.modifier_list_data?.selection_type || 'SINGLE',
+        // Square's own rule for the list: LIST means pick options, TEXT means
+        // the customer types something in. max_length is TEXT-only.
+        modifier_type: obj.modifier_list_data?.modifier_type || 'LIST',
+        max_length: obj.modifier_list_data?.max_length ?? null,
         modifiers: (obj.modifier_list_data?.modifiers || []).map(m => ({
           id: m.id,
           name: m.modifier_data?.name || '',
           price: m.modifier_data?.price_money ? m.modifier_data.price_money.amount / 100 : 0,
           sold_out: (m.modifier_data?.location_overrides || []).some(o => o.sold_out === true),
+          // Square preselects these options and may hide them from online
+          // ordering; both live on the option and were dropped until now.
+          on_by_default: m.modifier_data?.on_by_default === true,
+          hidden_online: m.modifier_data?.hidden_online === true,
           child_modifier_list_ids: m.modifier_data?.child_modifier_list_ids || [],
         })),
       };
@@ -77,26 +85,54 @@ export default async function (req) {
     // picking a sauce reveals lite/regular/extra). Square supports up to 3
     // levels of nesting depth. All modifier lists were fetched above, so child
     // lists are resolved from the same map without extra API calls.
-    function resolveList(listId, depth = 0) {
+    // Per-item overrides Square stores on the attachment itself: this item may
+    // default or hide an option differently from the list's own setting.
+    function overrideFor(attachment, modifierId) {
+      const overrides = attachment?.modifier_overrides || [];
+      return overrides.find(o => o.modifier_id === modifierId) || null;
+    }
+
+    function overrideFlag(value, fallback) {
+      if (value === 'YES' || value === true) return true;
+      if (value === 'NO' || value === false) return false;
+      return fallback;
+    }
+
+    function resolveList(listId, attachment = null, depth = 0) {
       if (depth > 3) return null;
       const list = modifierListMap[listId];
       if (!list) return null;
+      // The item's own minimum and maximum, straight from Square. -1 or absent
+      // means no maximum; absent or 0 means no minimum.
+      const minSelected = Number(attachment?.min_selected_modifiers);
+      const maxSelected = Number(attachment?.max_selected_modifiers);
       return {
         id: list.id,
         name: list.name,
         selection_type: list.selection_type,
-        modifiers: list.modifiers.map(m => {
-          const childLists = (m.child_modifier_list_ids || [])
-            .map(cid => resolveList(cid, depth + 1))
-            .filter(Boolean);
-          return {
-            id: m.id,
-            name: m.name,
-            price: m.price,
-            sold_out: m.sold_out,
-            ...(childLists.length > 0 ? { child_modifier_lists: childLists } : {}),
-          };
-        }),
+        modifier_type: list.modifier_type,
+        ...(list.max_length != null ? { max_length: list.max_length } : {}),
+        ...(Number.isInteger(minSelected) && minSelected > 0 ? { min_selected: minSelected } : {}),
+        ...(Number.isInteger(maxSelected) && maxSelected >= 0 ? { max_selected: maxSelected } : {}),
+        modifiers: list.modifiers
+          .map(m => {
+            const override = overrideFor(attachment, m.id);
+            const childLists = (m.child_modifier_list_ids || [])
+              .map(cid => resolveList(cid, null, depth + 1))
+              .filter(Boolean);
+            return {
+              id: m.id,
+              name: m.name,
+              price: m.price,
+              sold_out: m.sold_out,
+              on_by_default: overrideFlag(override?.on_by_default_override ?? override?.on_by_default, m.on_by_default),
+              hidden_online: overrideFlag(override?.hidden_online_override ?? override?.hidden_online, m.hidden_online),
+              ...(childLists.length > 0 ? { child_modifier_lists: childLists } : {}),
+            };
+          })
+          // Square's "hidden online" options are not offered on a website, so
+          // they are not carried into the menu at all.
+          .filter(m => m.hidden_online !== true),
       };
     }
 
@@ -135,7 +171,7 @@ export default async function (req) {
         for (const mli of itemData.modifier_list_info) {
           if (!mli.enabled) continue;
           if (mli.hidden_from_customer) continue;
-          const resolved = resolveList(mli.modifier_list_id);
+          const resolved = resolveList(mli.modifier_list_id, mli);
           if (resolved && resolved.modifiers.length > 0) {
             modifiers.push(resolved);
           }

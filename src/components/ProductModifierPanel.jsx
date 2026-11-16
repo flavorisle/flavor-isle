@@ -7,6 +7,7 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { seedValue, atMax, firstUnsatisfied } from '@/lib/modifierRules';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './classicDrinkIce';
 import { restorePanelSelection } from '@/lib/restorePanelSelection';
 import { isShakeItem } from './AllergyNote';
@@ -35,13 +36,13 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // here exactly as they do in the quick customize modal.
   const needsSalt = isSaltQuestionItem(item);
 
-  // Initialize selections: SINGLE → null, MULTIPLE → []
+  // Initialize selections from Square: a single-choice group opens on the
+  // option Square marks default, a multi-choice group opens with every default
+  // ticked. The synthetic Size group keeps the first available size.
   const initSelections = () => {
     if (!hasModifiers) return {};
     return groups.reduce((acc, group) => {
-      acc[group.name] = group.selection_type === 'MULTIPLE'
-        ? []
-        : (group.name === 'Size' ? (group.modifiers.find(m => !m.sold_out) || group.modifiers[0]) : null);
+      acc[group.name] = seedValue(group);
       return acc;
     }, {});
   };
@@ -100,6 +101,10 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       if (exists) {
         return { ...prev, [groupName]: current.filter(m => m.id !== mod.id) };
       }
+      // Square's maximum: once the group holds as many picks as Square allows,
+      // one more tap cannot add another.
+      const group = groups.find(g => g.name === groupName);
+      if (group && atMax(group, current)) return prev;
       if (isExclusive) {
         // Plain / No Sauce clears everything else in the group
         return { ...prev, [groupName]: [mod] };
@@ -153,7 +158,11 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const itemTotal = isHappyHour ? (item.price + extraCost) * (1 - hhPct) : item.price + extraCost;
   // The salt question is asked on the page itself, so the answer arrives as a
   // prop; the panel keeps gating the add on it.
-  const ready = !soldOut && (!needsSalt || !!saltChoice);
+  // Square's rules: a group short of its minimum keeps the bag button shut,
+  // exactly as an unanswered salt question does.
+  const pendingRule = firstUnsatisfied(groups, selections);
+  const ruleMissing = pendingRule ? pendingRule.missing : 0;
+  const ready = !soldOut && (!needsSalt || !!saltChoice) && !pendingRule;
 
   // Notify parent of live state so the left-column CTA can reflect it.
   // The selected option ids and nested Lite/Extra levels are reported too, so
@@ -170,10 +179,11 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
       deluxeLabel,
       burgerModsLabel,
       ready,
+      ruleMissing,
       selectedIds: selectedIdKey ? selectedIdKey.split(',') : [],
       nestedSelections,
     });
-  }, [itemTotal, extraCost, deluxeLabel, burgerModsLabel, ready, selectedIdKey, nestedSelections, onStateChange]);
+  }, [itemTotal, extraCost, deluxeLabel, burgerModsLabel, ready, ruleMissing, selectedIdKey, nestedSelections, onStateChange]);
 
   // The customer's configuration for this item. Used by confirm(), and — when a
   // combo is being built — by the product page, which needs the burger's own

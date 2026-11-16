@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import { ruleBadge } from '@/lib/modifierRules';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
 // when a parent modifier is selected. For example, selecting a soda reveals
@@ -48,7 +49,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
           <div className="flex items-center justify-between">
             <h4 className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{list.name}</h4>
             <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {list.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+              {ruleBadge(list)}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">

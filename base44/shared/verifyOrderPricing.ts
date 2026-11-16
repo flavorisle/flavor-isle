@@ -37,6 +37,7 @@
 
 import { getHappyHourConfig, isHappyHourActive } from './happyHour.ts';
 import { getOptionPriceOverrides } from './modifierOverrides.ts';
+import { modifierRuleFailures } from './modifierRules.ts';
 import { NONCATALOG_PRICES } from './noncatalogPrices.ts';
 import { bundleForLine, bundleDiscountForLines } from './familyBundle.ts';
 import { completeComboGroups, comboDiscountForLines } from './comboIsle.ts';
@@ -208,6 +209,18 @@ export async function verifyOrderPricing(base44: any, opts: {
         } else {
           return { ok: false, error: `Modifier "${sm.name || sm.id || 'unknown'}" is not a permitted selection for ${item.name || 'this item'}. Please refresh the menu and try again.` };
         }
+      }
+      // Square's selection rules (minimum and maximum per group) are part of
+      // the catalog, so they are enforced here and not only in the browser. A
+      // bundle or combo line offers a deliberately trimmed list, so its
+      // minimum is skipped: a rule cannot be met for options never shown.
+      const ruleProblems = modifierRuleFailures(
+        menuItem,
+        (item.selectedModifiers || []).map((sm: any) => sm?.id).filter(Boolean),
+        { skipMinimums: !!(item.bundleId || item.bundleGroup || item.comboGroup) },
+      );
+      if (ruleProblems.length > 0) {
+        return { ok: false, error: `${item.name || 'This item'}: ${ruleProblems[0].message}. Please refresh the menu and try again.` };
       }
       // Family bundle line: the priced options the bundle does NOT already
       // include (jalapeños, extra-level lettuce/tomato, drink flavor shots,

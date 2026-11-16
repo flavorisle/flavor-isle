@@ -44,7 +44,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingFavorite, setSavingFavorite] = useState(false);
-  const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true, selectedIds: [], nestedSelections: {} });
+  const [panelState, setPanelState] = useState({ total: 0, extraCost: 0, deluxeLabel: null, burgerModsLabel: null, ready: true, ruleMissing: 0, selectedIds: [], nestedSelections: {} });
   const panelRef = useRef(null);
   // Fries and tots are cooked unsalted; the question is asked here on the page,
   // right above the quantity, instead of inside the modifier panel.
@@ -184,16 +184,21 @@ export default function ProductDetail() {
 
   // A needed salt answer blocks the add, exactly as the modal does.
   const saltMissing = needsSalt && !saltChoice && !soldOut && orderingEnabled;
-  const canAdd = !soldOut && orderingEnabled && !saltMissing;
+  // Square's modifier rules: the panel reports how many picks a group is still
+  // short of, and that shortfall shuts the bag exactly as the salt answer does.
+  const ruleMissing = showPanel ? (panelState.ruleMissing || 0) : 0;
+  const canAdd = !soldOut && orderingEnabled && !saltMissing && ruleMissing === 0;
   const addLabel = soldOut
     ? 'Sold Out'
     : !orderingEnabled
       ? 'Ordering Closed'
       : added
         ? editingLine ? 'Bag Updated!' : 'Added to Bag!'
-        : saltMissing
-          ? 'Choose a salt option'
-          : editingLine ? 'Update Bag' : 'Add to Bag';
+        : ruleMissing > 0
+          ? `Choose ${ruleMissing} more to continue`
+          : saltMissing
+            ? 'Choose a salt option'
+            : editingLine ? 'Update Bag' : 'Add to Bag';
   const addBtnClass = (soldOut || !orderingEnabled)
     ? 'bg-muted text-muted-foreground cursor-not-allowed'
     : added

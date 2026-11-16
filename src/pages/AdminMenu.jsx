@@ -11,6 +11,7 @@ import { base44 } from '@/api/base44Client';
 import { optimizedImageUrl } from '@/lib/utils';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { Switch } from '@/components/ui/switch';
+import { ruleBadge } from '@/lib/modifierRules';
 
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
@@ -427,7 +428,7 @@ export default function AdminMenu() {
                             <div className="flex items-center gap-2 mb-2">
                               <p className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{group.name}</p>
                               <span className="text-xs text-muted-foreground bg-white px-2 py-0.5 rounded-full border border-border">
-                                {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+                                {ruleBadge(group)}
                               </span>
                             </div>
                             <div className="flex flex-wrap gap-2">
