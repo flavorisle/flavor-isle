@@ -282,7 +282,7 @@ export default async function (req) {
     const updated = toUpdate.length;
 
     console.log(`Sync complete: ${created} created, ${updated} updated. Categories: ${[...new Set(menuItems.map(i => i.square_category).filter(Boolean))].join(', ')}`);
-    return Response.json({ success: true, total: menuItems.length, created, updated });
+    return Response.json({ success: true, total: menuItems.length, created, updated, modifier_rules_version: '320' });
 
   } catch (error) {
     console.error('Sync error:', error.message);
