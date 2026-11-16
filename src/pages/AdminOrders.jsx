@@ -12,6 +12,7 @@ import PhoneOrderSetup from '@/components/admin/PhoneOrderSetup';
 import MerchOrdersList from '@/components/admin/MerchOrdersList';
 import BagTicketPrintModal from '@/components/admin/BagTicketPrintModal';
 import CancelOrderDialog from '@/components/admin/CancelOrderDialog';
+import RefundItemDialog from '@/components/admin/RefundItemDialog';
 import PhonePaymentActions from '@/components/admin/PhonePaymentActions';
 import { getOrderSource } from '@/lib/orderSource';
 
@@ -72,7 +73,7 @@ function StatCard({ label, value, Icon, tone }) {
   );
 }
 
-function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
+function OrderCard({ order, onAdvance, onRequestCancel, onRequestRefund, onPrintBagTicket }) {
   const [expanded, setExpanded] = useState(false);
   const source = getOrderSource(order);
   const badge = SOURCE_BADGE[source];
@@ -80,6 +81,9 @@ function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
   const canAdvance = !!NEXT_STATUS[order.status];
   const isActive = ACTIVE_STATUSES.includes(order.status);
   const isOnline = source === 'online';
+  // Anything that was actually paid can give a single item back, without the
+  // ticket being cancelled. Unpaid and cancelled orders have nothing to return.
+  const canRefund = order.payment_status === 'paid' && order.status !== 'cancelled';
 
   return (
     <div className="card-diner overflow-hidden">
@@ -121,16 +125,27 @@ function OrderCard({ order, onAdvance, onRequestCancel, onPrintBagTicket }) {
         </div>
       </button>
 
-      {/* Cancel sits outside the expand toggle so it is always one tap away,
-          and runs the full cancel: Square, refund, customer notice. */}
-      {isActive && (
-        <div className="px-5 pb-4 flex justify-end">
-          <button
-            onClick={() => onRequestCancel(order)}
-            className="inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-full border-2 border-destructive/40 text-destructive font-heading text-sm hover:bg-destructive hover:text-white transition-colors"
-          >
-            <XCircle size={15} /> Cancel order
-          </button>
+      {/* Refund and cancel sit outside the expand toggle so both are one tap away.
+          Refund gives one line back and leaves the ticket alone; cancel runs the
+          full cancel: Square, whole refund, customer notice. */}
+      {(isActive || canRefund) && (
+        <div className="px-5 pb-4 flex flex-wrap justify-end gap-2">
+          {canRefund && (
+            <button
+              onClick={() => onRequestRefund(order)}
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-full border-2 border-patina-mint/40 text-patina-mint font-heading text-sm hover:bg-patina-mint hover:text-white transition-colors"
+            >
+              <RotateCcw size={15} /> Refund item
+            </button>
+          )}
+          {isActive && (
+            <button
+              onClick={() => onRequestCancel(order)}
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 px-4 rounded-full border-2 border-destructive/40 text-destructive font-heading text-sm hover:bg-destructive hover:text-white transition-colors"
+            >
+              <XCircle size={15} /> Cancel order
+            </button>
+          )}
         </div>
       )}
 
@@ -264,6 +279,7 @@ export default function AdminOrders() {
   const [search, setSearch] = useState('');
   const [bagTicketOrder, setBagTicketOrder] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [refundTarget, setRefundTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -481,7 +497,7 @@ export default function AdminOrders() {
           ) : (
             <div className="space-y-3">
               {filtered.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={advance} onRequestCancel={setCancelTarget} onPrintBagTicket={setBagTicketOrder} />
+                <OrderCard key={order.id} order={order} onAdvance={advance} onRequestCancel={setCancelTarget} onRequestRefund={setRefundTarget} onPrintBagTicket={setBagTicketOrder} />
               ))}
             </div>
           )}
@@ -499,6 +515,13 @@ export default function AdminOrders() {
         open={!!cancelTarget}
         onClose={() => setCancelTarget(null)}
         onCancelled={() => { setCancelTarget(null); load(); }}
+      />
+      <RefundItemDialog
+        key={`refund-${refundTarget?.id || 'none'}`}
+        order={refundTarget}
+        open={!!refundTarget}
+        onClose={() => setRefundTarget(null)}
+        onRefunded={() => { setRefundTarget(null); load(); }}
       />
     </div>
   );
