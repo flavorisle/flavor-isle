@@ -282,7 +282,10 @@ export default async function (req) {
     const updated = toUpdate.length;
 
     console.log(`Sync complete: ${created} created, ${updated} updated. Categories: ${[...new Set(menuItems.map(i => i.square_category).filter(Boolean))].join(', ')}`);
-    return Response.json({ success: true, total: menuItems.length, created, updated, modifier_rules_version: '320' });
+    const sampleItem = menuItems.find(i => i.name === 'Banana Split Bliss Milkshake');
+    const sampleGroups = (sampleItem?.modifiers || []).slice(0, 2).map(g => ({ name: g.name, modifier_type: g.modifier_type, min_selected: g.min_selected ?? null, options: (g.modifiers || []).slice(0, 2).map(m => ({ name: m.name, on_by_default: m.on_by_default, hidden_online: m.hidden_online })) }));
+    console.log('SAMPLE ' + JSON.stringify(sampleGroups));
+    return Response.json({ success: true, total: menuItems.length, created, updated, modifier_rules_version: '320', debug_sample: sampleGroups });
 
   } catch (error) {
     console.error('Sync error:', error.message);
