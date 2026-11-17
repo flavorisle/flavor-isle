@@ -24,6 +24,8 @@ export default function Faq() {
   const { waitMin } = useLiveStatus();
   const [storeSetting, setStoreSetting] = useState(null);
   const [priceText, setPriceText] = useState('');
+  // Live menu size, so the variety answer quotes what is really on the menu.
+  const [menuStats, setMenuStats] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -36,7 +38,14 @@ export default function Faq() {
   useEffect(() => {
     let active = true;
     getAvailableItems()
-      .then((items) => { if (active) setPriceText(priceLine(items)); })
+      .then((items) => {
+        if (!active) return;
+        setPriceText(priceLine(items));
+        setMenuStats({
+          count: items.length,
+          burgers: items.filter((i) => /burger/i.test(i.name)).length,
+        });
+      })
       .catch(() => {});
     return () => { active = false; };
   }, []);
@@ -73,6 +82,14 @@ export default function Faq() {
     {
       q: 'Where can I get classic diner food pickup near me?',
       a: `Flavor Isle, at 103 N Main St in Smiths Grove, KY 42171, is a classic roadside diner that takes pickup orders direct from its own site — no third-party delivery app needed. We sit 0.7 miles off I-65 Exit 38 and about 15 minutes from Mammoth Cave, and we serve fresh, never-frozen hand-patted burgers, chicken, fries, onion rings, hand-spun milkshakes and daily specials. Pickup orders are usually ready in about ${pickupQuoteText}: order ahead at flavor-isle.com or call (270) 563-4618. Hours: ${hoursText}. The kitchen closes 30 minutes before close.${priceText ? ` Prices today: ${priceText}.` : ''} Pay by card or cash at the counter, and there is room in the lot for trucks and trailers.`,
+    },
+    {
+      q: 'How many items are on the Flavor Isle menu?',
+      a: `More than a burger-and-fries list: ${menuStats?.count ? `about ${menuStats.count} items` : 'about 100 items'} across 15 categories, including ${menuStats?.burgers || 15} burgers (single, double, bacon, mushroom Swiss, minis, melts and the Backyard BBQ), chicken and hot dogs, french fries, hand-cut curly fries, tots and onion rings, more than 30 shake and soft-serve builds, combo meals and drinks. The online menu syncs with the restaurant, so a sold-out item is hidden until it is back.${priceText ? ` Prices today: ${priceText}.` : ''}`,
+    },
+    {
+      q: 'How long will my order take?',
+      a: `Every online checkout shows a live wait estimate recalculated from how busy the kitchen is, and it is quoted as a range rather than a single minute — pickup is currently about ${pickupQuoteText}. Ordering ahead means the food starts before you arrive: choose pickup, curbside, dine-in or the walk-up window. Lunch (11:30 AM to 1:00 PM) and dinner (5:00 to 7:00 PM) are the peaks; 2:00 to 4:00 PM is the quietest stretch.`,
     },
     {
       q: 'Where to eat near Mammoth Cave?',

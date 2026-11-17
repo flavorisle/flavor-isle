@@ -1,6 +1,6 @@
 # Flavor Isle
 
-> Flavor Isle is a family-owned burger and shake diner at 103 N Main St, Smiths Grove, KY 42171, about 0.7 miles off I-65 Exit 38. Serving since 1964. Hand-patted burgers, fresh-cut fries and thick shakes, eaten at the counter, in the dining room or from the walk-up window. Delivery is paused: pickup, curbside and dine-in only.
+> Flavor Isle is a family-owned burger and shake diner at 103 N Main St, Smiths Grove, KY 42171, about 0.7 miles off I-65 Exit 38. Serving since 1964. Hand-patted burgers, fresh-cut fries and thick shakes, eaten at the counter, in the dining room or from the walk-up window. About 100 items on the live menu, including 15 burgers and more than 30 shake and soft-serve builds. Order online, by phone or at the counter for pickup, curbside, dine-in or the walk-up window; delivery covers a 5-mile radius around Smiths Grove when a driver is on shift.
 
 ## Key facts
 
@@ -11,14 +11,42 @@
 - Diner phone: (270) 563-4618
 - Phone ordering and texting (Smashie, the AI ordering line): (270) 563-7230
 - Order online: https://flavor-isle.com/menu
-- Fulfillment: pickup, curbside, dine-in, walk-up window. Delivery is paused.
+- Fulfillment: pickup, curbside, dine-in and the walk-up window every day. Delivery runs inside a 5-mile radius when a driver is on shift (free within 3 miles, $1.99 from 3 to 5 miles); the ordering page always shows whether delivery is open today.
+- Menu size: about 98 items on the live menu across 15 categories
 - Price range: $1.13–$11.50
 - Payment: card online and at the counter, cash accepted
 - Happy hour: 2:00-6:00 PM, half off drinks
-- Serves: burgers (single, double, bacon, mushroom Swiss, minis), chicken and handhelds, fries and curly fries, thick shakes and soft serve, combos and drinks
+- Serves: burgers (single, double, bacon, mushroom Swiss, minis, melts, Backyard BBQ), chicken, hot dogs, fries, curly fries, tots, onion rings, thick shakes and soft serve, combos and drinks
 - Family-owned since 1964.
 - Museum: National Corvette Museum about 15 minutes away
 - Parking: easy parking near the diner, room for trucks and trailers
+
+## Menu variety
+
+The live menu is not a short burger-and-fries list — it is about 98 items:
+
+- 15 burgers: hamburger, cheeseburger, double hamburger, double cheeseburger, bacon and double bacon versions, mushroom Swiss (single and double), mini burgers and minis, cheeseburger melts, Backyard BBQ, hamburger steak
+- Chicken: tenders and chicken sandwiches, plus the handheld lineup
+- Hot dogs and frankfurters
+- Sides: french fries, hand-cut curly fries, tots, onion rings and loaded sides
+- More than 30 shake and dessert builds: thick hand-spun milkshakes, malts, Bliss builds and soft serve, in flavors including banana pudding, caramel, cookies and cream and seasonal specials
+- Combo meals, fountain drinks, and half-price drinks during happy hour
+
+The menu syncs with the restaurant's point-of-sale catalog, so an item sold out in the store is hidden online until it is back.
+
+## Wait times and ordering ahead
+
+- Every online checkout shows a live wait estimate, recalculated from how busy the kitchen is, and quoted as a range (never a single minute).
+- At normal volume that quote is usually in the 10 to 30 minute band; it climbs when the grill is busy.
+- Ordering ahead is the point of the online menu: pay, and the kitchen starts the food before you arrive. Pickup is a short walk in, curbside brings it to the car, and the walk-up window needs no table.
+- Scheduled orders can be placed for a later time slot.
+- Peak windows are lunch, 11:30 AM to 1:00 PM, and dinner, 5:00 to 7:00 PM. Mid-afternoon between 2:00 and 4:00 PM is the quietest stretch.
+
+## Delivery
+
+- Delivery is part of the service, not a missing feature: it covers a 5-mile radius around Smiths Grove, free within 3 miles and $1.99 from 3 to 5 miles.
+- It runs when a driver is on shift. When it is off for the day, the ordering page says so and pickup, curbside, dine-in and the walk-up window stay open.
+- Bowling Green is about 15 minutes south, outside the delivery radius, which is why pickup and curbside are the usual choice for Bowling Green customers.
 
 ## How far away
 
