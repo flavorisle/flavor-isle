@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Flame, IceCream2, CakeSlice, UtensilsCrossed, ArrowRight, Phone, Car, Accessibility } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -16,6 +16,11 @@ import WhatToExpect from '@/components/visit/WhatToExpect';
 import SnapAndShare from '@/components/visit/SnapAndShare';
 import ExploreSections from '@/components/explore/ExploreSections';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import useBusinessHours from '@/hooks/useBusinessHours';
+import { hoursSummary } from '@/lib/businessHours';
+import { pickupQuote } from '@/lib/waitQuote';
+import { getAvailableItems } from '@/lib/menuCache';
+import { priceLine } from '@/lib/menuPriceSamples';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -30,17 +35,60 @@ const FAVORITES = [
 // store's story, fan favorites, and every stop around Flavor Isle — merged
 // from the old Exit 38 guide, Explore Smiths Grove, and visit-us pages.
 export default function I65Exit38() {
-  const { deliveryEnabled } = useLiveStatus();
+  const { deliveryEnabled, waitMin } = useLiveStatus();
+  const businessHours = useBusinessHours();
+  const [priceText, setPriceText] = useState('');
+
+  // Today's prices, so the Bowling Green answers quote real numbers.
+  useEffect(() => {
+    let active = true;
+    getAvailableItems()
+      .then((items) => { if (active) setPriceText(priceLine(items)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const pickupQuoteText = pickupQuote(waitMin);
+  const hoursText = hoursSummary(businessHours);
+
+  // Answers for "burgers near Bowling Green KY". The same list feeds the
+  // FAQPage structured data so the markup can't drift from the page.
+  const FAQS = [
+    {
+      q: 'Where can I get a burger near Bowling Green, KY?',
+      a: `Flavor Isle is a family-owned burger stand 15 minutes north of Bowling Green at 103 N Main St, Smiths Grove, KY 42171 — take I-65 North to Exit 38 and we are 0.7 miles off the ramp. Every burger is fresh, never frozen, hand-patted and cooked to order, with hand-cut fries, thick hand-spun milkshakes and daily specials alongside.${priceText ? ` Prices today: ${priceText}.` : ''} Order ahead at flavor-isle.com or call (270) 563-4618; pickup orders are usually ready in about ${pickupQuoteText}. Hours: ${hoursText}, and the kitchen closes 30 minutes before close.`,
+    },
+    {
+      q: 'How far is Flavor Isle from Bowling Green?',
+      a: 'About 15 minutes. Head north on I-65 and take Exit 38 for Smiths Grove, then turn left off the ramp — the diner is 0.7 miles ahead on the left at 103 N Main St. Parking is free at the door, behind us, and across the street.',
+    },
+    {
+      q: 'Is it worth the drive from Bowling Green for a burger?',
+      a: `Yes — it is a straight shot up I-65 and built as a quick stop: order online before you leave Bowling Green, choose pickup, and it is usually ready in about ${pickupQuoteText}. The dining room is open too, and we have been feeding I-65 travelers from this same roadside stand since 1964. Hours: ${hoursText}.`,
+    },
+  ];
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Visit Flavor Isle — I-65 Exit 38, Smiths Grove KY | Hours, Directions & What to Expect"
-        description="Off I-65 Exit 38 in Smiths Grove, 15 min north of Bowling Green. Hours, directions, parking, what to expect, plus the shops, wineries and attractions around us. Order online for pickup."
+        title="Burgers Near Bowling Green, KY — Flavor Isle at I-65 Exit 38"
+        description="Burgers near Bowling Green, KY: Flavor Isle is 15 minutes north at I-65 Exit 38 in Smiths Grove — fresh, never-frozen hand-patted burgers, hand-cut fries and thick shakes. Hours, directions, parking and online pickup."
         ogTitle="Visit Flavor Isle — Exit 38, Smiths Grove KY"
         ogDescription="Location, hours, parking and what to expect at Flavor Isle — plus every shop, winery and attraction around Smiths Grove."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/b3c1594ee_card-i65.png"
         ogImageAlt="Flavor Isle Visit Us share card"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <Navbar />
 
       <CinematicHero
@@ -120,6 +168,25 @@ export default function I65Exit38() {
         <p className="text-muted-foreground mt-4 leading-relaxed">
           Two minutes off Exit 38 in Smiths Grove, 15 minutes north of Bowling Green. Order ahead and the food is ready when you park.
         </p>
+      </section>
+
+      {/* Bowling Green questions — plain headings and answers, so the text sits
+          in the page itself for readers and for search/AI crawlers. */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-14">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
+            <UtensilsCrossed size={16} /> FROM BOWLING GREEN
+          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Burgers Near Bowling Green, KY</h2>
+        </div>
+        <div className="space-y-4">
+          {FAQS.map(({ q, a }) => (
+            <div key={q} className="card-diner p-5 sm:p-6">
+              <h3 className="font-heading text-xl text-obsidian-roast">{q}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">{a}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Story */}
