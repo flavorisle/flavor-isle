@@ -74,8 +74,8 @@ export async function getMenuSetting() {
         _cachedSetting = record;
         return record;
       }
-      const list = await base44.entities.MenuSetting.list();
-      const existing = (list || [])[0];
+      const list = await base44.entities.MenuSetting.list({ limit: 1 });
+      const existing = list?.items?.[0];
       if (existing) {
         _cachedSetting = existing;
         return existing;

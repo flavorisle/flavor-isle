@@ -20,8 +20,9 @@ export default function FindSmashiePanel() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const list = await base44.entities.FindSmashieSettings.list();
-      const s = list[0] || null;
+      // Only the single settings record is needed — one bounded page.
+      const settingsPage = await base44.entities.FindSmashieSettings.list({ limit: 1 });
+      const s = settingsPage?.items?.[0] || null;
       if (!cancelled) setSettings(s || {
         active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
         win_limit_per_customer: 1, preview_mode: true,

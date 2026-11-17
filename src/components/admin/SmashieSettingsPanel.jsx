@@ -25,7 +25,9 @@ export default function SmashieSettingsPanel() {
       // Pinned to the single live record; the first record is only a fallback for
       // the case where that id is gone. Nothing here creates a record.
       const pinned = await base44.entities.SmashieSettings.get(SMASHIE_SETTINGS_ID).catch(() => null);
-      const all = pinned ? [pinned] : await base44.entities.SmashieSettings.list();
+      const all = pinned
+        ? [pinned]
+        : ((await base44.entities.SmashieSettings.list({ limit: 1 }))?.items || []);
       if (all && all.length > 0) {
         setSettings({ ...all[0], knowledge_topics: all[0].knowledge_topics ?? INITIAL_TOPICS });
       } else {

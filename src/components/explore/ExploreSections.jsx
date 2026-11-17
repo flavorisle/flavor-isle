@@ -5,6 +5,7 @@ import ShopDetailDialog from '@/components/explore/ShopDetailDialog';
 import StopCard from '@/components/explore/StopCard';
 import SurroundCard from '@/components/explore/SurroundCard';
 import { FALLBACKS, mapShop } from '@/components/explore/exploreFallbacks';
+import { readAllRecords } from '@/lib/readAll';
 
 // Same 88px offset the deep-link handler uses, so a link lands where a hash would.
 function scrollToStop(id) {
@@ -28,7 +29,7 @@ export default function ExploreSections() {
 
   useEffect(() => {
     let live = true;
-    base44.entities.ExploreShop.list('sort_order')
+    readAllRecords((options) => base44.entities.ExploreShop.list({ ...options, sort: 'sort_order' }))
       .then((rows) => {
         if (!live) return;
         const grouped = { shops: [], surrounding: [], flavor: [], attractions: [] };

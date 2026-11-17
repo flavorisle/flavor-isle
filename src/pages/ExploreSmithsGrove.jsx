@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import { base44 } from '@/api/base44Client';
+import { readAllRecords } from '@/lib/readAll';
 import ShopDetailDialog from '@/components/explore/ShopDetailDialog';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { shopStatus, statusFromBusinessHours, formatMinutes } from '@/lib/shopHours';
@@ -573,7 +574,7 @@ export default function ExploreSmithsGrove() {
 
   useEffect(() => {
     let live = true;
-    base44.entities.ExploreShop.list('sort_order')
+    readAllRecords((options) => base44.entities.ExploreShop.list({ ...options, sort: 'sort_order' }))
       .then((rows) => {
         if (!live) return;
         const grouped = { shops: [], surrounding: [], flavor: [], attractions: [] };

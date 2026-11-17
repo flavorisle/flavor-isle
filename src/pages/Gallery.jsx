@@ -12,6 +12,7 @@ import { GALLERY_PHOTOS, GALLERY_CATEGORIES } from '@/lib/galleryPhotos';
 import CinematicHero from '@/components/cinematic/CinematicHero';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import { base44 } from '@/api/base44Client';
+import { readAllRecords } from '@/lib/readAll';
 
 const SQUARE_PHOTO_NAMES = ['Mini Cheeseburger', 'Cheeseburger', 'French Fries', 'Curly Fries', 'Tater Tots', 'Onion Rings', 'Double Cheeseburger', 'Hamburger', 'Bacon Cheeseburger', 'Sundae'];
 
@@ -24,7 +25,7 @@ export default function Gallery() {
 
   useEffect(() => {
     let active = true;
-    base44.entities.MenuItem.list().then((items) => {
+    readAllRecords((options) => base44.entities.MenuItem.list(options)).then((items) => {
       if (!active) return;
       setSquarePhotos(SQUARE_PHOTO_NAMES.map((name) => {
         const item = items.find((row) => row.name?.trim().toLowerCase() === name.toLowerCase() && row.image_url && !row.is_hidden && row.is_available !== false);

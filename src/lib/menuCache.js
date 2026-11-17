@@ -6,6 +6,7 @@
 // use Promise.all(...).then(...), so swapping the call keeps them intact.
 
 import { base44 } from '@/api/base44Client';
+import { readAllRecords } from '@/lib/readAll';
 
 const TTL_MS = 5 * 60 * 1000;
 const entries = new Map();
@@ -37,7 +38,8 @@ function read(key, fetcher) {
 }
 
 export function getMenuItems() {
-  return read('menu:all', () => base44.entities.MenuItem.list());
+  // The whole menu, paged in so a large catalog is never cut off at one page.
+  return read('menu:all', () => readAllRecords((options) => base44.entities.MenuItem.list(options)));
 }
 
 export function getShakeItems() {
