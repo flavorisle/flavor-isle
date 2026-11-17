@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getShakeItems, getMenuItems } from '@/lib/menuCache';
 import { isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 import { productPath } from '@/lib/productSlug';
@@ -24,8 +25,8 @@ export default function FanFavoritesSection({ items, shakeRank }) {
   useEffect(() => {
     let active = true;
     Promise.all([
-      base44.entities.MenuItem.filter({ square_category: 'Whirl & Twirl', is_hidden: false }),
-      base44.entities.MenuItem.list(),
+      getShakeItems(),
+      getMenuItems(),
     ]).then(([shakes, all]) => {
       if (!active) return;
       const skip = new Set(SKIP_ITEM_NAMES.map((n) => String(n).trim().toLowerCase()));

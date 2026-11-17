@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, UtensilsCrossed, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getMenuItems } from '@/lib/menuCache';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
@@ -28,7 +29,7 @@ export default function MenuCategories() {
         // A missing settings record just means default order and no renames.
       }
       try {
-        const data = await base44.entities.MenuItem.list();
+        const data = await getMenuItems();
         setItems((data || []).filter((i) => !i.is_hidden));
       } catch (e) {
         // Falls through to the empty state.

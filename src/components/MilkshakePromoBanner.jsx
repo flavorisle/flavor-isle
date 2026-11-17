@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getShakeItems, getMenuItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
@@ -20,8 +21,8 @@ export default function MilkshakePromoBanner({ variant = 'feature' }) {
     // The Bliss total comes from Square's "Blend & Bliss" category, so the
     // advertised count follows the menu instead of a hardcoded number.
     Promise.all([
-      base44.entities.MenuItem.filter({ square_category: 'Whirl & Twirl', is_hidden: false }),
-      base44.entities.MenuItem.list(),
+      getShakeItems(),
+      getMenuItems(),
     ])
       .then(([items, all]) => {
         setShakes((items || []).filter((i) => i.is_available !== false));

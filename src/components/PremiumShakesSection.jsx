@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Check, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getMenuItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ModifierModal from './ModifierModal';
@@ -27,7 +28,7 @@ export default function PremiumShakesSection({ autoOpenId }) {
   const [addedId, setAddedId] = useState(null);
 
   useEffect(() => {
-    base44.entities.MenuItem.list()
+    getMenuItems()
       .then((all) => {
         // Every Square "Blend & Bliss" item, minus the ones the crew hid and the
         // generic "Specialty Milkshakes" placeholder. Sold-out flavors stay

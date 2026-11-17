@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { getMenuItems } from '@/lib/menuCache';
 
 // Product page URLs use the item's name instead of an opaque id:
 //   /product/backyard-bbq-burger  (instead of /product/6ab2d3f6dfddfc7740e92cde)
@@ -43,7 +44,7 @@ export async function findMenuItem(param) {
   }
 
   const wanted = value.toLowerCase();
-  const items = await base44.entities.MenuItem.list();
+  const items = await getMenuItems();
   const matches = (items || []).filter((item) => productSlug(item) === wanted);
   // Retired Square catalog records often keep the same name as the live item, so
   // always resolve the name to the record customers can actually order.

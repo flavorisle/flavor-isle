@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ShoppingBag, AlertCircle, Shirt, Clock, Truck } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getMerchProducts } from '@/lib/merchCache';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Seo from '@/components/Seo';
@@ -17,7 +18,7 @@ import { trackViewItemList, merchItemToGa4 } from '@/lib/ga4Ecommerce';
 
 const UNGROUPED = 'Other';
 
-export default function Merch() {
+export default function Merch({ active = true }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -33,11 +34,11 @@ export default function Merch() {
     setError('');
     try {
       const [prodRes, cats, assigns] = await Promise.all([
-        base44.functions.invoke('getPrintfulProducts', {}),
+        getMerchProducts(),
         base44.entities.MerchCategory.list('-sort_order', 200).catch(() => []),
         base44.entities.MerchProductAssignment.list('-sort_order', 500).catch(() => []),
       ]);
-      const loaded = prodRes.data?.products || [];
+      const loaded = prodRes?.products || [];
       setProducts(loaded);
       trackViewItemList(loaded.map(merchItemToGa4), { item_list_id: 'merch', item_list_name: 'Tasty Threads' });
       setCategories(cats || []);
@@ -55,7 +56,7 @@ export default function Merch() {
     }
   }, []);
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { if (active) reload(); }, [active, reload]);
   const { pull, refreshing } = usePullToRefresh(reload);
 
   // Resolve grouping for each product.

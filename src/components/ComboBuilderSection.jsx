@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Package } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getAvailableItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ComboTypeTabs from '@/components/combo/ComboTypeTabs';
@@ -47,7 +48,7 @@ export default function ComboBuilderSection() {
   useEffect(() => {
     let alive = true;
     Promise.all([
-      base44.entities.MenuItem.filter({ is_available: true, is_hidden: false }, '-name', 500),
+      getAvailableItems(),
       loadComboSetting(),
     ])
       .then(([rows, saved]) => {

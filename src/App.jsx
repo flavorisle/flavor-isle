@@ -100,7 +100,7 @@ const MenuCategories = lazy(() => import('./pages/MenuCategories'));
 const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
 const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
 import { MerchCartProvider } from '@/context/MerchCartContext';
-import MerchCartDrawer from '@/components/merch/MerchCartDrawer';
+const MerchCartDrawer = lazy(() => import('@/components/merch/MerchCartDrawer'));
 import RestaurantSchema from './components/RestaurantSchema';
 import CanonicalLink from './components/CanonicalLink';
 import ReferralCapture from './components/ReferralCapture';
@@ -180,7 +180,7 @@ const AuthenticatedApp = () => {
         <Menu />
       </div>
       <div className={location.pathname === '/merch' ? '' : 'hidden'} aria-hidden={location.pathname !== '/merch'}>
-        <Merch />
+        <Merch active={location.pathname === '/merch'} />
       </div>
       <div className={location.pathname === '/account' ? '' : 'hidden'} aria-hidden={location.pathname !== '/account'}>
         <AccountNew />
@@ -312,7 +312,7 @@ function AppShell() {
               <HalloweenTheme />
               <SmashieHunt />
               <SmashieChat />
-              <MerchCartDrawer />
+              <Suspense fallback={null}><MerchCartDrawer /></Suspense>
             </Router>
             <Toaster />
           </MerchCartProvider>

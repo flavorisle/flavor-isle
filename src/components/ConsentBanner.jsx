@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Cookie, X } from 'lucide-react';
+import { loadMetaPixel } from '@/lib/metaPixel';
 
 const STORAGE_KEY = 'flavor_isle_consent_v1';
 
@@ -16,6 +17,9 @@ function applyConsent(granted) {
       ad_personalization: value,
       analytics_storage: value,
     });
+  }
+  if (granted) {
+    loadMetaPixel();
   }
   if (typeof window.fbq === 'function') {
     window.fbq('consent', granted ? 'grant' : 'revoke');

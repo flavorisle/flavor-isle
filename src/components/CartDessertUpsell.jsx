@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Cookie, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getRecentlyUpdatedItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
 import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '@/lib/dessertPromo';
@@ -35,7 +36,7 @@ export default function CartDessertUpsell() {
     let cancelled = false;
     (async () => {
       try {
-        const items = await base44.entities.MenuItem.list('-updated_date', 500);
+        const items = await getRecentlyUpdatedItems();
         if (cancelled) return;
         // Exclude malts/sundaes entirely; sort by fan-favorite rank; rotate by
         // Chicago calendar date (stable within a day, varies across days).

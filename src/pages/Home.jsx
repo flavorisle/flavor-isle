@@ -15,6 +15,7 @@ import { optimizedImageUrl } from '@/lib/utils';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
+import { getFanFavorites, getMenuItems } from '@/lib/menuCache';
 import Seo from '@/components/Seo';
 import HomeStructuredData from '@/components/schema/HomeStructuredData';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
@@ -73,7 +74,7 @@ export default function Home() {
       for (let attempt = 0; attempt < 3 && active; attempt++) {
         try {
           const [data, snapshots] = await Promise.all([
-            base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10),
+            getFanFavorites(),
             base44.entities.FanFavoriteSnapshot.list('-computed_at', 1),
           ]);
           const visible = (data || []).filter((i) => !i.is_hidden);
@@ -98,7 +99,7 @@ export default function Home() {
   useEffect(() => {
     let active = true;
     Promise.all([
-      base44.entities.MenuItem.list(),
+      getMenuItems(),
       getMenuSetting().catch(() => ({})),
     ]).then(([allItems, setting]) => {
       if (!active) return;

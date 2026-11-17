@@ -5,18 +5,22 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { optimizedImageUrl } from '@/lib/utils';
+import { getMerchProducts } from '@/lib/merchCache';
+import useInView from '@/hooks/useInView';
 
 export default function MerchPromoCard() {
+  const [cardRef, inView] = useInView();
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!inView) return undefined;
     let cancelled = false;
     (async () => {
       try {
-        const res = await base44.functions.invoke('getPrintfulProducts', {});
+        const data = await getMerchProducts();
         if (cancelled) return;
-        const products = (res.data?.products || []).filter(p => p.thumbnail_url);
+        const products = (data.products || []).filter(p => p.thumbnail_url);
         setPreviews(products.slice(0, 12));
       } catch (err) {
         // Silent fail — the promo still renders without previews.
@@ -25,10 +29,10 @@ export default function MerchPromoCard() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [inView]);
 
   return (
-    <div className="bg-midnight-cherry rounded-2xl p-5 text-left">
+    <div ref={cardRef} className="bg-midnight-cherry rounded-2xl p-5 text-left">
       {/* Tasty Threads brand logo */}
       <img
         src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/cc3a8ab5c_Copilot_20250829_140545.png', 400, 300, 'fit')}

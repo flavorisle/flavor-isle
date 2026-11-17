@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { getMenuItems } from '@/lib/menuCache';
 import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -118,7 +119,7 @@ export default function Menu() {
       setItemOrder(s.category_item_order || {});
     } catch (e) {}
     try {
-      const data = await base44.entities.MenuItem.list();
+      const data = await getMenuItems();
       const visible = (data || []).filter((i) => !i.is_hidden);
       setItems(visible);
       trackViewItemList(visible.map(foodItemToGa4), { item_list_id: 'menu', item_list_name: 'Menu' });

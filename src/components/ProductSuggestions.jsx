@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getRecentlyUpdatedItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { bucketItem } from '@/lib/itemBuckets';
 import ModifierModal from './ModifierModal';
@@ -30,7 +31,7 @@ export default function ProductSuggestions({ item }) {
   useEffect(() => {
     if (!applicable) { setSuggestions([]); return; }
     let cancelled = false;
-    base44.entities.MenuItem.list('-updated_date', 500)
+    getRecentlyUpdatedItems()
       .then(items => {
         if (cancelled) return;
         const pool = (items || []).filter(m =>

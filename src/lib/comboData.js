@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { getMenuItemsByName } from '@/lib/menuCache';
 
 // Flat discount applied when a burger is built as an Isle Combo (side +
 // shake/drink bundled). Shared by the modifier modal and the menu card's
@@ -29,7 +30,7 @@ export function getComboData() {
   if (pending) return pending;
   pending = (async () => {
     try {
-      const items = await base44.entities.MenuItem.list('-name', 200);
+      const items = await getMenuItemsByName();
       const sides = SIDE_NAMES
         .map((n) => items.find((i) => i.name === n && i.is_available && !i.is_hidden))
         .filter(Boolean);

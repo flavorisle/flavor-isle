@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Wifi, BatteryFull, Search, Receipt, ShoppingBag, Star, ChevronLeft, Home, Bell } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getFanFavorites } from '@/lib/menuCache';
 import { optimizedImageUrl } from '@/lib/utils';
 
 const LOGO = optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png', 160, 160, 'fit');
@@ -66,7 +67,7 @@ export default function AppPhoneMockup() {
     let active = true;
     (async () => {
       try {
-        const rows = await base44.entities.MenuItem.filter({ is_fan_favorite: true }, 'fan_favorite_rank', 10);
+        const rows = await getFanFavorites();
         const visible = (rows || []).filter((i) => !i.is_hidden && i.price != null);
         if (active && visible.length) {
           setItems(visible.map((i, idx) => ({

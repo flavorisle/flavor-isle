@@ -16,6 +16,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { base44 } from '@/api/base44Client';
+import { getShakeItems, getMenuItems } from '@/lib/menuCache';
 import { BLISS_CATEGORY, SKIP_ITEM_NAMES } from '@/lib/buildCards';
 import { flavorNameFromItem, flavorEmojiByName } from '@/lib/shakeConfig';
 import { optimizedImageUrl } from '@/lib/utils';
@@ -36,8 +37,8 @@ export default function Milkshakes() {
     // The Bliss count comes from Square's "Blend & Bliss" category, so the Shake
     // Isle total follows the menu instead of a hardcoded number.
     Promise.all([
-      base44.entities.MenuItem.filter({ square_category: 'Whirl & Twirl', is_hidden: false }),
-      base44.entities.MenuItem.list(),
+      getShakeItems(),
+      getMenuItems(),
     ])
       .then(([items, all]) => {
         // Sort alphabetically by name for a consistent display order.

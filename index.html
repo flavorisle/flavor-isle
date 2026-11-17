@@ -180,21 +180,7 @@
       gtag('config', 'G-SHXK97DNTD');
     </script>
 
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('consent', 'revoke');
-      fbq('init', '2006793429980228');
-      fbq('track', 'PageView');
-    </script>
-    <!-- End Meta Pixel Code -->
+    <!-- Meta Pixel moved to src/lib/metaPixel.js and now loads only after a visitor grants marketing consent (issue #322). -->
     <!-- FAQ answers in the raw HTML (Nov 9 2026, AI visibility). Crawlers that do not
          run JavaScript only read this head, so the real answers ship here too. Static
          on purpose: if hours or delivery change, update this block with /faq. -->

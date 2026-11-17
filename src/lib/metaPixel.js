@@ -92,3 +92,48 @@ export function fbqPurchase(items, value) {
     content_type: 'product',
   });
 }
+
+// ── Loader (issue #322) ──
+//
+// The pixel snippet used to sit in index.html and load fbevents.js (97 KB)
+// on every visit, while consent already defaulted to "revoke" — so it was
+// downloaded only to be told to do nothing. Now the script is created only
+// when a visitor actually grants marketing consent. The event helpers above
+// are unchanged and keep gating on the same stored choice.
+
+const PIXEL_ID = '2006793429980228';
+const SRC = 'https://connect.facebook.net/en_US/fbevents.js';
+
+let loading = false;
+let loaded = false;
+
+export function loadMetaPixel() {
+  if (typeof window === 'undefined' || loaded || loading) return;
+  loading = true;
+
+  // Standard Meta stub, created here instead of in index.html.
+  const fbqStub = function (...args) {
+    if (fbqStub.callMethod) {
+      fbqStub.callMethod.apply(fbqStub, args);
+    } else {
+      fbqStub.queue.push(args);
+    }
+  };
+  if (!window._fbq) window._fbq = fbqStub;
+  fbqStub.push = fbqStub;
+  fbqStub.loaded = true;
+  fbqStub.version = '2.0';
+  fbqStub.queue = [];
+  window.fbq = fbqStub;
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = SRC;
+  document.head.appendChild(script);
+
+  window.fbq('consent', 'grant');
+  window.fbq('init', PIXEL_ID);
+  window.fbq('track', 'PageView');
+
+  loaded = true;
+}

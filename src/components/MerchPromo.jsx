@@ -3,18 +3,22 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shirt, ArrowRight, Clock } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getMerchProducts } from '@/lib/merchCache';
+import useInView from '@/hooks/useInView';
 
 export default function MerchPromo() {
+  const [promoRef, inView] = useInView();
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!inView) return undefined;
     let cancelled = false;
     (async () => {
       try {
-        const res = await base44.functions.invoke('getPrintfulProducts', {});
+        const data = await getMerchProducts();
         if (cancelled) return;
-        const products = (res.data?.products || []).filter(p => p.thumbnail_url);
+        const products = (data.products || []).filter(p => p.thumbnail_url);
         setPreviews(products.slice(0, 2));
       } catch (err) {
         // Silent fail — the promo still renders without previews.
@@ -23,10 +27,10 @@ export default function MerchPromo() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [inView]);
 
   return (
-    <section className="py-10 px-4 sm:px-6 bg-patina-mint">
+    <section ref={promoRef} className="py-10 px-4 sm:px-6 bg-patina-mint">
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8">
         {/* Live product previews */}
         <div className="flex gap-3 flex-shrink-0">
