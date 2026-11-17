@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned } from 'lucide-react';
+import { Package, LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned, Images } from 'lucide-react';
 import AdminPresenceTracker from '@/components/admin/AdminPresenceTracker';
 
 const LINKS = [
@@ -21,6 +21,7 @@ const LINKS = [
   { label: 'Visitors', to: '/admin/visitors', Icon: Globe },
   { label: 'Kitchen', to: '/admin/kitchen', Icon: Flame },
   { label: 'Analytics', to: '/admin-analytics', Icon: BarChart3 },
+  { label: 'Ad Photos', to: '/admin/ad-photos', Icon: Images },
 ];
 
 export default function AdminNav() {
