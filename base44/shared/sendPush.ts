@@ -1,6 +1,11 @@
 import * as webpushModule from 'npm:web-push@3.6.7';
 import { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } from './vapidKeys.ts';
 import { readAllRecords } from './readAll.ts';
+import { createReadCache } from './readCache.ts';
+
+// The subscriber list is the same for every broadcast, so it is read once a
+// minute rather than paged in again for each one.
+const cachedSubscriptions = createReadCache();
 
 // Deno's CommonJS interop can expose web-push either as named exports on the
 // namespace or nested under `.default`. Resolve both shapes defensively.
@@ -65,8 +70,9 @@ export async function sendPushToEmail(base44, email, payload) {
 
 // Broadcasts a push to every stored subscription (used for promo blasts).
 export async function broadcastPush(base44, payload) {
-  const subs = await readAllRecords((options) =>
-    base44.asServiceRole.entities.PushSubscription.list(options));
+  const subs = await cachedSubscriptions(() =>
+    readAllRecords((options) =>
+      base44.asServiceRole.entities.PushSubscription.list(options)));
   return sendPushToSubscriptions(base44, subs, payload);
 }
 // Records an order-milestone push in PushLog so a send can be verified later

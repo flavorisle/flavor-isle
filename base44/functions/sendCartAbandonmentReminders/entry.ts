@@ -4,6 +4,10 @@ import { buildCartReminderHtml } from '../../shared/cartReminderEmail.ts';
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 import { isEmailableCustomer } from '../../shared/emailSafety.ts';
+import { createReadCache } from '../../shared/readCache.ts';
+
+// Profiles with saved carts are the same records on every run: one read a minute.
+const cachedProfiles = createReadCache();
 
 // Scans CustomerProfiles for saved carts that have sat untouched for more than
 // one hour and sends each customer one compelling reminder email. Invoked by the
@@ -54,7 +58,8 @@ export default async function (req) {
     // Carts are only saved for authenticated users, and every cart change bumps
     // updated_date, so the most-recently-updated profiles hold every active or
     // recently-abandoned cart. 500 is plenty for a single-location restaurant.
-    const profiles = await base44.asServiceRole.entities.CustomerProfile.list('-updated_date', 500);
+    const profiles = await cachedProfiles(() =>
+      base44.asServiceRole.entities.CustomerProfile.list('-updated_date', 500));
 
     // Issue #93 (A13): blocked customers are never reminded. This flow sends
     // email only — there is no SMS reminder step to filter. The block list is

@@ -9,6 +9,10 @@
 //   • pass-through applies only while the store is OPEN, so a closed store
 //     still runs the normal closed flow.
 import { normalizePhone } from './blockedContacts.ts';
+import { createReadCache } from './readCache.ts';
+
+// Read on every inbound call, edited rarely: one read a minute serves them all.
+const cachedPassThrough = createReadCache();
 
 // Returns the matching active pass-through record, or null. Matched on the
 // last 10 digits, exactly like the block list.
@@ -16,7 +20,8 @@ export async function findPassThrough(base44, phone) {
   const want = normalizePhone(phone);
   if (!want) return null;
 
-  const rows = await base44.asServiceRole.entities.CounterPassThrough.filter({ is_active: true });
+  const rows = await cachedPassThrough(() =>
+    base44.asServiceRole.entities.CounterPassThrough.filter({ is_active: true }));
   return (rows || []).find((row) => normalizePhone(row.phone) === want) || null;
 }
 

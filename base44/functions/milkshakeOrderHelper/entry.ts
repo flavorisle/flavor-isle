@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { createReadCache } from '../../shared/readCache.ts';
+
+// The shake menu changes only when the crew edits it, so every caller in the
+// same minute is served from one read.
+const cachedMenuItems = createReadCache();
 
 // Milkshake order helper for Smashie.
 //
@@ -51,11 +56,12 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const request = norm(body?.request || '');
 
-    const items = await base44.asServiceRole.entities.MenuItem.filter(
-      { is_available: true },
-      '-created_date',
-      300
-    );
+    const items = await cachedMenuItems(() =>
+      base44.asServiceRole.entities.MenuItem.filter(
+        { is_available: true },
+        '-created_date',
+        300
+      ));
 
     const visibleItems = items.filter((it) => it.is_hidden !== true);
     const shakes = visibleItems.filter(

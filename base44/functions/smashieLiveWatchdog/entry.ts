@@ -19,12 +19,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { waitUntil } from 'base44:runtime';
 import { MAX_CALL_MS } from '../../shared/smashieLiveSession.ts';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
+import { createReadCache } from '../../shared/readCache.ts';
 
 // A call the app has written nothing for in this long has lost its worker.
 const STALE_MS = 20000;
 // A probe or an attach newer than this means a re-attach for that call is already
 // in flight, so this run leaves it alone.
 const PROBE_MARKER_MS = 10000;
+
+// A sweep every four minutes never needs a second read of the same list.
+const cachedActiveCalls = createReadCache();
 
 function lastEntryNamed(log, name) {
   return [...log].reverse().find((entry) => entry?.name === name) || null;
@@ -60,11 +64,12 @@ export default async function (req) {
     const counterPhone = Deno.env.get('COUNTER_PHONE_NUMBER') || '';
     const now = Date.now();
 
-    const active = await base44.asServiceRole.entities.SmsConversation.filter(
-      { channel: 'voice', status: 'active' },
-      '-last_message_at',
-      50,
-    );
+    const active = await cachedActiveCalls(() =>
+      base44.asServiceRole.entities.SmsConversation.filter(
+        { channel: 'voice', status: 'active' },
+        '-last_message_at',
+        50,
+      ));
 
     const probed = [];
     const finalized = [];

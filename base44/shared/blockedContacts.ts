@@ -2,6 +2,12 @@
 // the crew has blocked; every ordering surface (voice, SMS, website chat, and
 // online checkout) checks it before taking an order.
 
+import { createReadCache } from './readCache.ts';
+
+// The block list is the same records for every caller and only changes when the
+// crew edits it, so it is read once a minute instead of on every check.
+const cachedActiveBlocks = createReadCache();
+
 // Phone numbers are compared on their last 10 digits so the same person is
 // caught whether they call from +1 (270) 555-1234 or 2705551234.
 export function normalizePhone(value) {
@@ -19,7 +25,8 @@ export async function findBlock(base44, { phone, email } = {}) {
   const wantEmail = normalizeEmail(email);
   if (!wantPhone && !wantEmail) return null;
 
-  const blocks = await base44.asServiceRole.entities.BlockedContact.filter({ is_active: true });
+  const blocks = await cachedActiveBlocks(() =>
+    base44.asServiceRole.entities.BlockedContact.filter({ is_active: true }));
   return (blocks || []).find((block) => {
     const blockPhone = normalizePhone(block.phone);
     const blockEmail = normalizeEmail(block.email);

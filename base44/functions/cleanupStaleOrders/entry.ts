@@ -1,6 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { isPhoneOrder } from '../../shared/phoneOrderPricing.ts';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
+import { createReadCache } from '../../shared/readCache.ts';
+
+// The abandoned-checkout candidates are the same records on every run: one read
+// a minute. Every candidate is still verified against its processor below
+// before anything is closed.
+const cachedPendingOrders = createReadCache();
 
 // End-of-night cleanup for abandoned checkouts.
 //
@@ -49,11 +55,12 @@ export default async function (req: Request) {
     // Anything still unpaid and pending is an abandoned attempt: a real payment
     // flips payment_status to paid within seconds, via the webhook or the
     // client-side fallback.
-    const orders = await base44.asServiceRole.entities.Order.filter(
-      { status: 'pending', payment_status: 'pending' },
-      '-created_date',
-      200,
-    );
+    const orders = await cachedPendingOrders(() =>
+      base44.asServiceRole.entities.Order.filter(
+        { status: 'pending', payment_status: 'pending' },
+        '-created_date',
+        200,
+      ));
 
     const closed = [];
     const kept = [];

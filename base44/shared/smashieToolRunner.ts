@@ -5,11 +5,16 @@ import { getSmashieSettings } from './smashieSettings.ts';
 import { relayKeyValue } from './internalRelay.ts';
 import { abilityEnabled } from './smashieAdminContext.ts';
 import { searchMenu } from './smashieMenuSearch.ts';
+import { createReadCache } from './readCache.ts';
+
+// Smashie searches the same available menu on every turn of every call.
+const cachedAvailableItems = createReadCache();
 
 // The explicit limit matters: without one, only the first page of the menu is
 // searched and later items would read as "not on the menu".
 async function lookupMenu(base44, args) {
-  const items = await base44.asServiceRole.entities.MenuItem.filter({ is_available: true }, '-created_date', 500);
+  const items = await cachedAvailableItems(() =>
+    base44.asServiceRole.entities.MenuItem.filter({ is_available: true }, '-created_date', 500));
   return { output: JSON.stringify(searchMenu(items, args)) };
 }
 

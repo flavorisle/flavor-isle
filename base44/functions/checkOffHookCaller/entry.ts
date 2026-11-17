@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createReadCache } from '../../shared/readCache.ts';
 
 // Called by the "Off-Hook Caller Alert" workflow whenever Smashie answers a new
 // voice call. If the same number called within the last 15 minutes, it likely
@@ -6,6 +7,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // admins so someone can check. Alerts only on the 2nd call in the window so a
 // stream of redials doesn't flood the inbox.
 const WINDOW_MINUTES = 15;
+
+// The admin list changes only when someone is promoted, so every alert in the
+// same minute shares one read instead of loading the same accounts again.
+const cachedAdmins = createReadCache();
 
 export default async function (req) {
   try {
@@ -37,7 +42,7 @@ export default async function (req) {
     // 2nd call within the window — alert the admins.
     const current = recentCalls.find((c) => c.id === conversation_id);
     const callerName = current?.customer_name || priorCalls[0]?.customer_name || 'Unknown caller';
-    const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
+    const admins = await cachedAdmins(() => base44.asServiceRole.entities.User.filter({ role: 'admin' }));
 
     const timesList = [current, ...priorCalls]
       .filter(Boolean)
