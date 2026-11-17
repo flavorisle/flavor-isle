@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Navigation, ArrowRight, Clock, Phone, MapPin, Car, Mountain } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -7,7 +7,11 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { optimizedImageUrl } from '@/lib/utils';
-import { hoursGroups } from '@/lib/businessHours';
+import { hoursGroups, hoursSummary } from '@/lib/businessHours';
+import useLiveStatus from '@/hooks/useLiveStatus';
+import { pickupQuote } from '@/lib/waitQuote';
+import { getAvailableItems } from '@/lib/menuCache';
+import { priceLine } from '@/lib/menuPriceSamples';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { islePhotos } from '@/components/cinematic/photos';
 
@@ -15,17 +19,58 @@ const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629b
 
 export default function MammothCaveDining() {
   const businessHours = useBusinessHours();
+  const { waitMin } = useLiveStatus();
+  const [priceText, setPriceText] = useState('');
+
+  // Today's menu prices, so the answers below quote real numbers.
+  useEffect(() => {
+    let active = true;
+    getAvailableItems()
+      .then((items) => { if (active) setPriceText(priceLine(items)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const pickupQuoteText = pickupQuote(waitMin);
+
+  // Answers for travelers searching "diner near Mammoth Cave". The same list
+  // feeds the FAQPage structured data so the markup can't drift from the page.
+  const FAQS = [
+    {
+      q: 'Where can I find a diner near Mammoth Cave?',
+      a: `Flavor Isle is a family-owned classic diner 15 minutes from Mammoth Cave National Park: take I-65 North to Exit 38 (Smiths Grove) and we are 0.7 miles off the ramp at 103 N Main St, Smiths Grove, KY 42171. We serve fresh, never-frozen hand-patted burgers, chicken, crinkle fries, onion rings, hand-spun milkshakes and daily specials, for dine-in or pickup. Hours: ${hoursSummary(businessHours)}, and the kitchen closes 30 minutes before close. Order ahead at flavor-isle.com or call (270) 563-4618 — pickup orders are usually ready in about ${pickupQuoteText}.${priceText ? ` Prices today: ${priceText}.` : ''} Parking is free at the door, with room for trucks, RVs and trailers.`,
+    },
+    {
+      q: 'How far is the diner from Mammoth Cave?',
+      a: 'About 15 minutes by car. Head north from the park on the Mammoth Cave Parkway to I-65 North, take Exit 38 for Smiths Grove, and Flavor Isle is 0.7 miles off the exit on the left at 103 N Main St.',
+    },
+    {
+      q: 'Can we eat there on the way to or from the caves?',
+      a: `Yes — it is a straight shot up I-65 from the park, built for a quick stop. Order at flavor-isle.com before you leave, choose pickup, and it is usually ready in about ${pickupQuoteText}; the dining room is open too. We are open ${hoursSummary(businessHours)}, and the kitchen closes 30 minutes before close.`,
+    },
+  ];
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
 
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="Mammoth Cave Dining — Flavor Isle, Smiths Grove KY"
-        description="15 minutes from Mammoth Cave on I-65 Exit 38 — hand-patted burgers, thick shakes, and crinkle fries the kids will love. Order ahead online and eat on your way to or from the caves."
-        ogTitle="Mammoth Cave Restaurants — Eat at Flavor Isle | Smiths Grove, KY"
-        ogDescription="Visiting Mammoth Cave National Park? Flavor Isle is about 30 minutes away in Smiths Grove — burgers, shakes and quick pickup for cave-bound travelers."
+        title="Diner Near Mammoth Cave — Flavor Isle, 15 Min via I-65 Exit 38"
+        description="Diner near Mammoth Cave National Park: Flavor Isle at I-65 Exit 38 in Smiths Grove, KY 42171 — hand-patted burgers, crinkle fries and thick shakes, 15 minutes from the park, open daily for dine-in or pickup."
+        ogTitle="Diner Near Mammoth Cave — Flavor Isle | Smiths Grove, KY"
+        ogDescription="Visiting Mammoth Cave National Park? Flavor Isle is 15 minutes away off I-65 Exit 38 — burgers, shakes, hours, prices and quick pickup for cave-bound travelers."
         ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/e14074219_card-mammoth.png"
         ogImageAlt="Flavor Isle Mammoth Cave dining share card"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <Navbar />
 
       {/* Hero */}
@@ -110,6 +155,25 @@ export default function MammothCaveDining() {
             ))}
           </div>
           <p className="text-center text-xs text-white/70 mt-6">Kitchen closes 30 minutes before close. Order ahead to skip the wait.</p>
+        </div>
+      </section>
+
+      {/* Traveler questions — plain headings and answers, so the text is in the
+          page itself for readers and for search/AI crawlers. */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
+            <Mountain size={16} /> TRAVELERS ASK
+          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Diner Near Mammoth Cave</h2>
+        </div>
+        <div className="space-y-4">
+          {FAQS.map(({ q, a }) => (
+            <div key={q} className="card-diner p-5 sm:p-6">
+              <h3 className="font-heading text-xl text-obsidian-roast">{q}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">{a}</p>
+            </div>
+          ))}
         </div>
       </section>
 

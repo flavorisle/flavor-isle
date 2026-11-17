@@ -13,18 +13,7 @@ import { hoursGroups, hoursSummary } from '@/lib/businessHours';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import { getAvailableItems } from '@/lib/menuCache';
-
-// The everyday items quoted in the pickup answer, priced from the live menu so
-// the numbers can't drift from what the customer is charged.
-const PRICE_SAMPLES = ['Hamburger', 'Cheeseburger', 'French Fries', 'Onion Rings', 'Malt'];
-
-function priceLine(items) {
-  const byName = new Map((items || []).map((item) => [item.name, Number(item.price)]));
-  return PRICE_SAMPLES
-    .filter((name) => byName.get(name) > 0)
-    .map((name) => `${name.toLowerCase()} $${byName.get(name).toFixed(2)}`)
-    .join(', ');
-}
+import { priceLine } from '@/lib/menuPriceSamples';
 
 // Frequently asked questions (issue #37, step 5). Hours and delivery answers are
 // rendered from the live store settings, never hardcoded, and the same list
