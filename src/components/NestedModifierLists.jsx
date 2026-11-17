@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import { ruleBadge } from '@/lib/modifierRules';
+import { ruleBadge, atMax } from '@/lib/modifierRules';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
 // when a parent modifier is selected. For example, selecting a soda reveals
@@ -31,15 +31,17 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
     });
   };
 
-  const toggleMultiple = (listName, mod) => {
+  const toggleMultiple = (list, mod) => {
     const cur = nestedSelections || {};
-    const arr = cur[listName] || [];
-    onChange({
-      ...cur,
-      [listName]: arr.find(m => m.id === mod.id)
-        ? arr.filter(m => m.id !== mod.id)
-        : [...arr, mod],
-    });
+    const arr = cur[list.name] || [];
+    if (arr.find(m => m.id === mod.id)) {
+      onChange({ ...cur, [list.name]: arr.filter(m => m.id !== mod.id) });
+      return;
+    }
+    // Square's maximum for this list: once it holds that many picks, one more
+    // tap cannot add another.
+    if (atMax(list, arr)) return;
+    onChange({ ...cur, [list.name]: [...arr, mod] });
   };
 
   return (
@@ -64,7 +66,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
                   key={mod.id}
                   type="button"
                   disabled={mod.sold_out}
-                  onClick={() => isMultiple ? toggleMultiple(list.name, mod) : toggleSingle(list.name, mod)}
+                  onClick={() => isMultiple ? toggleMultiple(list, mod) : toggleSingle(list.name, mod)}
                   className={`px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold ${
                     mod.sold_out
                       ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
