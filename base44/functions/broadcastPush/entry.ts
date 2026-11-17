@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { sendPushToSubscriptions } from '../../shared/sendPush.ts';
+import { readAllRecords } from '../../shared/readAll.ts';
 
 export default async function(req) {
   try {
@@ -11,7 +12,9 @@ export default async function(req) {
     const { title, body, url } = await req.json();
     if (!body) return Response.json({ error: 'Missing message body' }, { status: 400 });
 
-    const subs = await base44.asServiceRole.entities.PushSubscription.list();
+    // A broadcast must reach every subscriber, so page through the whole table.
+    const subs = await readAllRecords((options) =>
+      base44.asServiceRole.entities.PushSubscription.list(options));
     const diagnostics = [];
 
     const result = await sendPushToSubscriptions(base44, subs, {

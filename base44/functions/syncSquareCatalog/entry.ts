@@ -3,6 +3,7 @@ import { optimizeItemImage } from '../../shared/optimizeItemImage.ts';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 import { fetchAllCatalog } from '../../shared/squareCatalogRead.ts';
 import { squareBuildCardSource } from '../../shared/squareBuildCardSource.ts';
+import { readAllRecords } from '../../shared/readAll.ts';
 
 export default async function (req) {
   try {
@@ -230,7 +231,10 @@ export default async function (req) {
     }
 
     // 4. Upsert into MenuItem entity
-    const existing = await base44.asServiceRole.entities.MenuItem.list();
+    // The sync matches every Square item against the existing menu, so the whole
+    // table is paged in rather than one capped read.
+    const existing = await readAllRecords((options) =>
+      base44.asServiceRole.entities.MenuItem.list(options));
     const existingBySquareId = {};
     for (const e of existing) {
       if (e.square_item_id) existingBySquareId[e.square_item_id] = e;

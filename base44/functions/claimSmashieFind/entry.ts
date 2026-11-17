@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     const { prize_choice } = await req.json().catch(() => ({}));
     const { dateStr, month, minutes } = storeNow();
 
-    const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
+    const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list('-created_date', 1))[0] || {
       active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE,
       win_limit_per_customer: 1, preview_mode: true,
     };
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     // Only claims count during open hours.
     let hours = null;
     try {
-      const ms = (await base44.asServiceRole.entities.MenuSetting.list())[0];
+      const ms = (await base44.asServiceRole.entities.MenuSetting.list('-created_date', 1))[0];
       const dayIdx = new Date().toLocaleDateString('en-US', { timeZone: TZ, weekday: 'long' }).toLowerCase();
       const bh = ms?.business_hours?.[dayIdx];
       if (bh && !bh.closed) hours = bh;

@@ -11,6 +11,7 @@ import {
 } from '@/lib/deluxeConfig';
 import { matchScore } from '@/lib/deluxeLabel';
 import { getMenuSetting, setDeluxeConfig } from '@/lib/menuSettings';
+import { readAllRecords } from '@/lib/readAll';
 
 const norm = (s) => (s || '').trim().toLowerCase();
 
@@ -28,7 +29,7 @@ export default function AdminDeluxeManager() {
   useEffect(() => {
     Promise.all([
       getMenuSetting(),
-      base44.entities.MenuItem.list().catch(() => []),
+      readAllRecords((options) => base44.entities.MenuItem.list(options)).catch(() => []),
     ]).then(([setting, data]) => {
       const cfg = normalizeDeluxeConfig(setting?.deluxe);
       setEnabled(cfg.enabled);

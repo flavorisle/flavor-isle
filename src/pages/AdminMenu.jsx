@@ -9,6 +9,7 @@ import AdminShakeManager from '@/components/admin/AdminShakeManager';
 import AdminModifierManager from '@/components/admin/AdminModifierManager';
 import { base44 } from '@/api/base44Client';
 import { optimizedImageUrl } from '@/lib/utils';
+import { readAllRecords } from '@/lib/readAll';
 import BrandSelect, { BrandOption } from '@/components/BrandSelect';
 import { Switch } from '@/components/ui/switch';
 import { ruleBadge } from '@/lib/modifierRules';
@@ -54,13 +55,13 @@ export default function AdminMenu() {
 
   const loadItems = async () => {
     setLoading(true);
-    const data = await base44.entities.MenuItem.list();
+    const data = await readAllRecords((options) => base44.entities.MenuItem.list(options));
     setItems(data || []);
     setLoading(false);
   };
 
   const loadSpecials = async () => {
-    const data = await base44.entities.DailySpecial.list();
+    const data = await readAllRecords((options) => base44.entities.DailySpecial.list(options));
     setSpecials(data || []);
   };
 

@@ -22,7 +22,7 @@ function storeNow() {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list())[0] || {
+    const settings = (await base44.asServiceRole.entities.FindSmashieSettings.list('-created_date', 1))[0] || {
       active: true, start_date: HUNT_START_DATE, end_date: HUNT_END_DATE, preview_mode: true,
     };
     const { dateStr, minutes } = storeNow();
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     // Today's business hours from the store settings.
     let hours = null;
     try {
-      const ms = (await base44.asServiceRole.entities.MenuSetting.list())[0];
+      const ms = (await base44.asServiceRole.entities.MenuSetting.list('-created_date', 1))[0];
       const dayIdx = new Date().toLocaleDateString('en-US', { timeZone: TZ, weekday: 'long' }).toLowerCase();
       const bh = ms?.business_hours?.[dayIdx];
       if (bh && !bh.closed) hours = { open: bh.open, close: bh.close };

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Printer } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import AdminNav from '@/components/admin/AdminNav';
+import { readAllRecords } from '@/lib/readAll';
 import PrintableMenu from '@/components/admin/PrintableMenu';
 import PrintMenuEditor from '@/components/admin/PrintMenuEditor';
 import BuildCardEditor from '@/components/admin/BuildCardEditor';
@@ -63,11 +64,11 @@ export default function AdminPrintMenu() {
 
   const loadMenu = async () => {
     const [menuItems, menuSettings] = await Promise.all([
-      base44.entities.MenuItem.list(),
-      base44.entities.MenuSetting.list(),
+      readAllRecords((options) => base44.entities.MenuItem.list(options)),
+      base44.entities.MenuSetting.list({ limit: 1 }),
     ]);
     setItems(menuItems || []);
-    setSettings((menuSettings || [])[0] || {});
+    setSettings((menuSettings?.items || [])[0] || {});
   };
 
   useEffect(() => {

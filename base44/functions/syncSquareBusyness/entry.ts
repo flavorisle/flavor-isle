@@ -106,7 +106,8 @@ export default async function(req) {
     // ---- Rebuild the weekday x hour profile (full mode only) ----
     let profileWritten = 0;
     if (mode === 'full') {
-      const existingP = await base44.asServiceRole.entities.BusynessProfile.filter({});
+      // The profile is one row per weekday x hour (168 in all), read in one bounded page.
+      const existingP = await base44.asServiceRole.entities.BusynessProfile.filter({}, '-created_date', 500);
       const pIds = {};
       (existingP || []).forEach(p => { pIds[p.weekday + '-' + p.hour] = p.id; });
       const pUp = [];

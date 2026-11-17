@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
+import { readAllRecords } from '../../shared/readAll.ts';
 
 // Aggregates the top 10 best-selling items across ALL Square order sources
 // (online + in-store POS) from COMPLETED, PAID orders in the last 7 days,
@@ -149,7 +150,9 @@ export default async function (req) {
 
   // Load all MenuItem records, EXCLUDE hidden items BEFORE ranking, and map
   // by square_item_id (dedup: keep the first visible item per square_item_id).
-  const allItems = await base44.asServiceRole.entities.MenuItem.list();
+  // Every item is ranked (and every item stamps its flag), so page the whole table.
+  const allItems = await readAllRecords((options) =>
+    base44.asServiceRole.entities.MenuItem.list(options));
   const visibleBySquareId = new Map();
   for (const item of (allItems || [])) {
     if (item.is_hidden) continue;
@@ -217,7 +220,7 @@ export default async function (req) {
   if (toUpdate.length > 0) {
     await base44.asServiceRole.entities.MenuItem.bulkUpdate(toUpdate);
   }
-  const snapshots = await base44.asServiceRole.entities.FanFavoriteSnapshot.list();
+  const snapshots = await base44.asServiceRole.entities.FanFavoriteSnapshot.list('-created_date', 1);
   const snapshot = { shake_rank: ranked.find((r) => r.bucket === 'shake')?.rank || null, ranked, lookback_days: LOOKBACK_DAYS, computed_at: new Date().toISOString() };
   if (snapshots[0]) await base44.asServiceRole.entities.FanFavoriteSnapshot.update(snapshots[0].id, snapshot);
   else await base44.asServiceRole.entities.FanFavoriteSnapshot.create(snapshot);
