@@ -12,6 +12,19 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups, hoursSummary } from '@/lib/businessHours';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
+import { getAvailableItems } from '@/lib/menuCache';
+
+// The everyday items quoted in the pickup answer, priced from the live menu so
+// the numbers can't drift from what the customer is charged.
+const PRICE_SAMPLES = ['Hamburger', 'Cheeseburger', 'French Fries', 'Onion Rings', 'Malt'];
+
+function priceLine(items) {
+  const byName = new Map((items || []).map((item) => [item.name, Number(item.price)]));
+  return PRICE_SAMPLES
+    .filter((name) => byName.get(name) > 0)
+    .map((name) => `${name.toLowerCase()} $${byName.get(name).toFixed(2)}`)
+    .join(', ');
+}
 
 // Frequently asked questions (issue #37, step 5). Hours and delivery answers are
 // rendered from the live store settings, never hardcoded, and the same list
@@ -21,11 +34,20 @@ export default function Faq() {
   const businessHours = useBusinessHours();
   const { waitMin } = useLiveStatus();
   const [storeSetting, setStoreSetting] = useState(null);
+  const [priceText, setPriceText] = useState('');
 
   useEffect(() => {
     let active = true;
     getMenuSetting()
       .then((setting) => { if (active) setStoreSetting(setting || null); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getAvailableItems()
+      .then((items) => { if (active) setPriceText(priceLine(items)); })
       .catch(() => {});
     return () => { active = false; };
   }, []);
@@ -59,6 +81,10 @@ export default function Faq() {
     : 'For catering and large orders, call (270) 563-7230. Online ordering is pickup, curbside or dine-in.';
 
   const FAQS = [
+    {
+      q: 'Where can I get classic diner food pickup near me?',
+      a: `Flavor Isle, at 103 N Main St in Smiths Grove, KY 42171, is a classic roadside diner that takes pickup orders direct from its own site — no third-party delivery app needed. We sit 0.7 miles off I-65 Exit 38 and about 15 minutes from Mammoth Cave, and we serve fresh, never-frozen hand-patted burgers, chicken, fries, onion rings, hand-spun milkshakes and daily specials. Pickup orders are usually ready in about ${pickupQuoteText}: order ahead at flavor-isle.com or call (270) 563-4618. Hours: ${hoursText}. The kitchen closes 30 minutes before close.${priceText ? ` Prices today: ${priceText}.` : ''} Pay by card or cash at the counter, and there is room in the lot for trucks and trailers.`,
+    },
     {
       q: 'Where to eat near Mammoth Cave?',
       a: 'Flavor Isle is a family-owned diner at 103 N Main St, Smiths Grove, KY 42171, about 15 minutes from Mammoth Cave by way of I-65 Exit 38.',
@@ -187,10 +213,10 @@ export default function Faq() {
   return (
     <div className="min-h-screen bg-vanilla-malt">
       <Seo
-        title="FAQ | Flavor Isle — Smiths Grove, KY (I-65 Exit 38)"
-        description="Find Flavor Isle near Mammoth Cave and I-65 Exit 38, order online, check truck and trailer parking, and plan a family-friendly stop in Smiths Grove."
-        ogTitle="FAQ | Flavor Isle — Smiths Grove, KY (I-65 Exit 38)"
-        ogDescription="Where to eat near Mammoth Cave, online ordering, truck and trailer parking, and family-friendly dining off I-65 Exit 38."
+        title="FAQ | Flavor Isle — Classic Diner Food Pickup in Smiths Grove, KY"
+        description="Classic diner food pickup at Flavor Isle, 103 N Main St, Smiths Grove, KY 42171 — burgers, fries and shakes, 0.7 miles off I-65 Exit 38 near Mammoth Cave."
+        ogTitle="FAQ | Flavor Isle — Classic Diner Food Pickup in Smiths Grove, KY"
+        ogDescription="Classic diner food pickup near I-65 Exit 38 and Mammoth Cave: burgers, fries, shakes, hours, prices and directions for Flavor Isle in Smiths Grove, KY."
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <Navbar />
@@ -200,7 +226,9 @@ export default function Faq() {
 
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <div className="card-diner p-5 sm:p-7">
-          <Accordion type="single" collapsible className="w-full">
+          {/* The first answer opens on load so its text is in the page for
+              readers and for search/AI crawlers that don't click accordions. */}
+          <Accordion type="single" collapsible defaultValue={FAQS[0].q} className="w-full">
             {FAQS.map(({ q, a }) => (
               <AccordionItem key={q} value={q}>
                 <AccordionTrigger className="text-left font-heading text-obsidian-roast">{q}</AccordionTrigger>
