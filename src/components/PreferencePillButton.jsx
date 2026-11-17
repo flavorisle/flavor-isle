@@ -1,5 +1,9 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import { getModifierPhoto } from '@/lib/modifierPhotos';
+
+// Issue #324 — the option's real photo (when it has one) rides as a 22px round
+// image inside the middle zone, just before its name.
 
 const norm = (s) => (s || '').toString().toLowerCase().trim();
 const PREFERENCE_WORDS = new Set(['lite', 'light', 'regular', 'normal', 'extra']);
@@ -57,6 +61,7 @@ export default function PreferencePillButton({
 
   const label = mod.name;
   const totalPrice = (mod.price || 0) + (currentPref?.price || 0);
+  const photo = getModifierPhoto(mod.name);
 
   const handleLite = () => {
     if (!lite) return;
@@ -105,7 +110,31 @@ export default function PreferencePillButton({
         }`}
       >
         {isSelected && <Check size={13} className="inline flex-shrink-0" />}
-        <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">{label}</span>
+        <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">
+          {photo?.url ? (
+            <img
+              src={photo.url}
+              alt=""
+              aria-hidden="true"
+              width={22}
+              height={22}
+              loading="lazy"
+              decoding="async"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 9999,
+                objectFit: 'cover',
+                border: '1px solid #e6d9c3',
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginRight: 7,
+                flexShrink: 0,
+              }}
+            />
+          ) : null}
+          {label}
+        </span>
         {totalPrice > 0 && (
           <span className={`whitespace-nowrap text-[11px] sm:text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
             +${totalPrice.toFixed(2)}

@@ -297,6 +297,11 @@
           "description": "Map of modifier option id -> site price in USD. Overrides the Square catalog price in the menu, the cart, and checkout."
         }
       }
+    },
+    "modifier_photos": {
+      "type": "object",
+      "description": "Issue #324 \u2014 the real photo shown on a modifier button, keyed by the option name as the menu spells it (e.g. { \"Bacon\": { \"url\": \"https://\u2026\", \"alt\": \"Bacon\" } }). Merged over the built-in photo map (src/lib/modifierPhotos.js) at render time, so a photo added in Admin \u2192 Modifier photos wins with no build. An entry with an empty url means the photo was cleared, including a built-in one. The Square catalog sync never writes MenuSetting, so this survives every sync.",
+      "default": {}
     }
   },
   "required": [],

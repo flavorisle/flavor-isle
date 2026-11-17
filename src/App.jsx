@@ -86,6 +86,7 @@ const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
 const AdminEmployeeOfMonth = lazy(() => import('./pages/AdminEmployeeOfMonth'));
 const AdminExploreShops = lazy(() => import('./pages/AdminExploreShops'));
 const AdminAdPhotos = lazy(() => import('./pages/AdminAdPhotos'));
+const AdminModifierPhotos = lazy(() => import('./pages/admin/AdminModifierPhotos'));
 const PaySquare = lazy(() => import('./pages/PaySquare'));
 const PayCard = lazy(() => import('./pages/PayCard'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
@@ -269,6 +270,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/combo-isle" element={<AdminComboIsle />} />
         <Route path="/admin/explore-shops" element={<AdminExploreShops />} />
         <Route path="/admin/ad-photos" element={<AdminAdPhotos />} />
+        <Route path="/admin/modifier-photos" element={<AdminModifierPhotos />} />
 
         <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />

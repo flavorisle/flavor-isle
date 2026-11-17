@@ -9,6 +9,7 @@ import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
+import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 
 // The product page's "What's on it" box: the item description followed by
 // selectable chips for every option the item offers.
@@ -46,6 +47,9 @@ export default function ItemBuildSummary({
   onNestedChange,
   onIceSizeChange,
 }) {
+  // Issue #324 — the same photo an option shows in the modifier modal rides on
+  // its chip here, so a topping reads the same everywhere on the page.
+  refreshModifierPhotos(menuSetting);
   const groups = applyModifierOverrides(item?.modifiers, getModifierOverrides(menuSetting))
     .map((group) => ({
       ...group,
@@ -148,6 +152,7 @@ export default function ItemBuildSummary({
                       }
 
                       const extra = Number(mod.price) > 0;
+                      const photo = getModifierPhoto(mod.name);
                       return (
                         <button
                           key={mod.id}
@@ -164,6 +169,18 @@ export default function ItemBuildSummary({
                             <Check size={13} className="flex-shrink-0" />
                           ) : (
                             <Plus size={13} className="text-midnight-cherry flex-shrink-0" />
+                          )}
+                          {photo?.url && (
+                            <img
+                              src={photo.url}
+                              alt=""
+                              aria-hidden="true"
+                              width={22}
+                              height={22}
+                              loading="lazy"
+                              decoding="async"
+                              style={{ width: 22, height: 22, borderRadius: 9999, objectFit: 'cover', border: '1px solid #e6d9c3', flexShrink: 0 }}
+                            />
                           )}
                           <span>{mod.name}</span>
                           {extra && (

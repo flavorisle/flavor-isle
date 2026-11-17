@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getMenuSetting, setModifierOverrides } from '@/lib/menuSettings';
 import { collectModifierGroups, getModifierOverrides, overrideCount, EMPTY_OVERRIDES } from '@/lib/modifierOverrides';
 import ModifierGroupCard from './ModifierGroupCard';
@@ -90,6 +91,15 @@ export default function AdminModifierManager({ items }) {
           Price overrides apply to the item price and to checkout; hiding and sold-out shape what customers can pick.
           Modifier groups come from Square — use “Sync from Square” to pull in new ones.
         </p>
+        {/* Issue #324 — the photos that sit on the modifier buttons live on
+            their own page, so every option can be found without scrolling a
+            group. */}
+        <Link
+          to="/admin/modifier-photos"
+          className="inline-flex items-center gap-1.5 mt-4 text-sm font-heading text-midnight-cherry hover:underline"
+        >
+          Modifier photos — a real photo on every sauce, topping and flavor →
+        </Link>
       </div>
 
       {loading ? (

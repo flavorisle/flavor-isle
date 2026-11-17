@@ -1,5 +1,10 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import { getModifierPhoto } from '@/lib/modifierPhotos';
+
+// Issue #324 — when the flavor has a real photo, a small round photo rides in
+// the pill just before its name and the emoji is dropped. With no photo the
+// pill renders exactly as before, emoji and all.
 
 // Flavors get the same three zones the burger sauces use: Lite left, Extra right.
 // When Square attaches its own "- / + Flavors" child list to the flavor, the
@@ -86,6 +91,7 @@ export default function FlavorPillButton({
   const price = Number(mod.price) || 0;
   const nestedPrice = getFlavorNestedPrice(nestedSelection);
   const totalPrice = price + nestedPrice;
+  const photo = getModifierPhoto(mod.name);
 
   const handleLite = () => {
     if (!isSelected) onToggle?.();
@@ -134,9 +140,31 @@ export default function FlavorPillButton({
       >
         {isSelected && <Check size={13} className="inline flex-shrink-0" />}
         {/* The emoji rides inside the label so the name wraps at its own space
-            in a narrow phone cell instead of being squeezed beside it. */}
+            in a narrow phone cell instead of being squeezed beside it. A real
+            photo replaces the emoji when the flavor has one. */}
         <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">
-          {leading ? <span className="mr-1 inline-block">{leading}</span> : null}
+          {photo?.url ? (
+            <img
+              src={photo.url}
+              alt=""
+              aria-hidden="true"
+              width={22}
+              height={22}
+              loading="lazy"
+              decoding="async"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 9999,
+                objectFit: 'cover',
+                border: '1px solid #e6d9c3',
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginRight: 7,
+                flexShrink: 0,
+              }}
+            />
+          ) : leading ? <span className="mr-1 inline-block">{leading}</span> : null}
           {isLite ? `Lite ${mod.name}` : isExtra ? `Extra ${mod.name}` : mod.name}
         </span>
         {totalPrice > 0 && (
