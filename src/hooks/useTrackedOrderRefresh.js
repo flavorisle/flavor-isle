@@ -21,7 +21,9 @@ export default function useTrackedOrderRefresh(orderNumber, setOrder) {
         busy = false;
       }
     };
-    const interval = setInterval(refresh, 15000);
+    // Poll every 30s instead of 15s — the caller stops passing an order number
+    // once the order is finished, and focus/visibility still refresh instantly.
+    const interval = setInterval(refresh, 30000);
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {

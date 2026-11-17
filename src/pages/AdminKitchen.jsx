@@ -51,13 +51,17 @@ export default function AdminKitchen() {
 
   useEffect(() => {
     loadOrders();
-    const interval = setInterval(loadOrders, 20000);
+    // Order changes arrive as entity events below, so the board no longer polls
+    // on a timer. Coming back to the tab refreshes once to catch anything that
+    // happened while this screen was in the background.
+    const onVisible = () => { if (document.visibilityState === 'visible') loadOrders(); };
+    document.addEventListener('visibilitychange', onVisible);
     const unsubscribe = base44.entities.Order.subscribe(() => {
       // Debounce — refresh at most once per 3 seconds when events stream in.
       if (refreshTimer.current) return;
       refreshTimer.current = setTimeout(() => { loadOrders(); refreshTimer.current = null; }, 3000);
     });
-    return () => { clearInterval(interval); unsubscribe(); if (refreshTimer.current) clearTimeout(refreshTimer.current); };
+    return () => { document.removeEventListener('visibilitychange', onVisible); unsubscribe(); if (refreshTimer.current) clearTimeout(refreshTimer.current); };
   }, []);
 
   const receivedCount = orders.filter(o => o.square_order_id).length;
