@@ -1,3 +1,4 @@
+import IssueProductUpdate from '@/components/newsletter/IssueProductUpdate';
 import IssueWinterBliss from '@/components/newsletter/IssueWinterBliss';
 import IssueNovember2026 from '@/components/newsletter/IssueNovember2026';
 
@@ -5,6 +6,15 @@ import IssueNovember2026 from '@/components/newsletter/IssueNovember2026';
 // after writing its component and it appears on /newsletter-archive with no other
 // change needed.
 export const NEWSLETTER_ISSUES = [
+  {
+    slug: 'product-update-november-10-2026',
+    date: 'November 10, 2026',
+    title: 'New Tasty Threads tees, hot fudge cake, and Main Street to walk',
+    summary: 'Three things worth the trip to the Isle this week.',
+    image: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/10583e4c5_ecbf45a39_IMG_1604.jpg',
+    imageAlt: 'Flavor Isle burgers and Tasty Threads tees',
+    Component: IssueProductUpdate,
+  },
   {
     slug: 'winter-bliss',
     date: 'November 5, 2026',
