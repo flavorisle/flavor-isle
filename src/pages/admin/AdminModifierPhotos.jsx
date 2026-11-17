@@ -99,7 +99,7 @@ export default function AdminModifierPhotos() {
     return getModifierPhoto(name)?.url || '';
   };
 
-  const useUrl = (name, rawUrl) => {
+  const saveUrl = (name, rawUrl) => {
     const url = String(rawUrl || '').trim();
     if (url && !/^https?:\/\//i.test(url)) {
       toast({ title: 'That is not a photo address', description: 'Paste a full https:// link.' });
@@ -240,12 +240,12 @@ export default function AdminModifierPhotos() {
                           onKeyDown={(e) => {
                             if (e.key !== 'Enter') return;
                             e.preventDefault();
-                            useUrl(name, e.target.value);
+                            saveUrl(name, e.target.value);
                             setDrafts((prev) => { const next = { ...prev }; delete next[rowKey]; return next; });
                           }}
                           onBlur={(e) => {
                             if (drafts[rowKey] === undefined) return;
-                            useUrl(name, e.target.value);
+                            saveUrl(name, e.target.value);
                             setDrafts((prev) => { const next = { ...prev }; delete next[rowKey]; return next; });
                           }}
                           placeholder="Paste a photo URL"
