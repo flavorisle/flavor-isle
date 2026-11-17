@@ -22,7 +22,9 @@ export type RuleProblem = {
   message: string;
 };
 
-// Square sends -1 / nothing for "no maximum" and 0 / nothing for "no minimum".
+// Square sends -1 / 0 / nothing for "no maximum" and 0 / nothing for "no
+// minimum". A stored 0 maximum is never a real limit — it would mean the group
+// could not be used at all — so it reads as "no maximum", same as the browser.
 function ruleOf(group: any): GroupRule {
   const rawMin = Number(group?.min_selected);
   const rawMax = Number(group?.max_selected);
@@ -31,7 +33,7 @@ function ruleOf(group: any): GroupRule {
     name: group?.name || 'Options',
     multiple: group?.selection_type === 'MULTIPLE',
     min: Number.isInteger(rawMin) && rawMin > 0 ? rawMin : 0,
-    max: Number.isInteger(rawMax) && rawMax >= 0 ? rawMax : null,
+    max: Number.isInteger(rawMax) && rawMax > 0 ? rawMax : null,
   };
 }
 

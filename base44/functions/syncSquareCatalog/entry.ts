@@ -103,8 +103,8 @@ export default async function (req) {
       if (depth > 3) return null;
       const list = modifierListMap[listId];
       if (!list) return null;
-      // The item's own minimum and maximum, straight from Square. -1 or absent
-      // means no maximum; absent or 0 means no minimum.
+      // The item's own minimum and maximum, straight from Square. -1, 0 or
+      // absent means no maximum; absent or 0 means no minimum.
       const minSelected = Number(attachment?.min_selected_modifiers);
       const maxSelected = Number(attachment?.max_selected_modifiers);
       return {
@@ -114,7 +114,7 @@ export default async function (req) {
         modifier_type: list.modifier_type,
         ...(list.max_length != null ? { max_length: list.max_length } : {}),
         ...(Number.isInteger(minSelected) && minSelected > 0 ? { min_selected: minSelected } : {}),
-        ...(Number.isInteger(maxSelected) && maxSelected >= 0 ? { max_selected: maxSelected } : {}),
+        ...(Number.isInteger(maxSelected) && maxSelected > 0 ? { max_selected: maxSelected } : {}),
         modifiers: list.modifiers
           .map(m => {
             const override = overrideFor(attachment, m.id);

@@ -10,13 +10,14 @@
 // customer and enforced, so the site asks for exactly what the register asks
 // for. Square stays the only place a rule is set.
 
-// Square sends -1 (or nothing) for "no maximum" and 0 (or nothing) for
-// "no minimum". Both become null / 0 here so every reader sees one shape.
+// Square sends -1, 0 (or nothing) for "no maximum" and 0 (or nothing) for
+// "no minimum". Both become null / 0 here so every reader sees one shape — a
+// maximum of 0 is never a real limit (it would mean the group cannot be used).
 export function groupRule(group) {
   const rawMin = Number(group?.min_selected);
   const rawMax = Number(group?.max_selected);
   const min = Number.isInteger(rawMin) && rawMin > 0 ? rawMin : 0;
-  const max = Number.isInteger(rawMax) && rawMax >= 0 ? rawMax : null;
+  const max = Number.isInteger(rawMax) && rawMax > 0 ? rawMax : null;
   return {
     min,
     max,
