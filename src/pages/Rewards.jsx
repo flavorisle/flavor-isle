@@ -9,6 +9,8 @@ import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import BonusStars from '@/components/rewards/BonusStars';
 import StarTierProgress from '@/components/rewards/StarTierProgress';
+import LocalLoyaltyAnswer from '@/components/rewards/LocalLoyaltyAnswer';
+import RewardsFaqStructuredData from '@/components/schema/RewardsFaqStructuredData';
 
 // Subtitle for a reward tier card — "Free item · item reward" for item-scoped
 // rewards, "{pct}% off · order reward" for percentage order rewards.
@@ -191,26 +193,42 @@ export default function Rewards() {
       q: 'Is automatic card recognition at the register the same as signing in online?',
       a: 'Nope — it\u2019s a convenience so your stars track in-store without extra steps. Signing in to your account on this website is how you manage your profile, see your balance, and update your info. They work together, but they\u2019re not the same thing.',
     },
+    {
+      q: 'Is Star Rewards free, and do I need an app or a card?',
+      a: 'It\u2019s free to join and there is no membership fee or monthly subscription. You give your phone number at checkout, or add it once to your flavor-isle.com account. No app to download and no plastic card to carry — sign in here to see your live balance and available rewards.',
+    },
+    {
+      q: 'What rewards can I get, and how many Stars do they cost?',
+      a: 'Star Rewards currently costs 50 Stars for a free medium 14 oz drink, 100 Stars for a free 8 oz ice cream cup or side, 150 Stars for a free cheeseburger or 14 oz shake, and 175 Stars for 10% off the whole sale. The star costs come live from our point-of-sale program and are listed above, so they always match what the register and online checkout will honor.',
+    },
+    {
+      q: 'Where is Flavor Isle, and when is it open?',
+      a: '103 N Main St, Smiths Grove, KY 42171 — right off I-65 Exit 38, about 15 minutes north of Bowling Green. Open Monday to Saturday 10:30 AM to 7:00 PM and Sunday 11:00 AM to 7:00 PM. Call (270) 563-4618 or order at flavor-isle.com.',
+    },
   ];
 
+  // Each question is a real heading (not just a summary label) and the same
+  // array feeds the FAQPage structured data, so AI answers and the visible page
+  // can never disagree.
   const RewardsFAQ = () => (
-    <div className="mt-10 mb-6">
+    <section className="mt-10 mb-6">
+      <RewardsFaqStructuredData faqs={FAQS} />
       <div className="flex items-center gap-2 mb-4">
         <HelpCircle size={20} className="text-midnight-cherry" />
-        <h3 className="font-heading text-xl text-obsidian-roast">Star Rewards FAQ</h3>
+        <h2 className="font-heading text-2xl text-obsidian-roast">Star Rewards questions</h2>
       </div>
       <div className="space-y-3">
         {FAQS.map((f, i) => (
           <details key={i} className="card-diner p-4 group">
-            <summary className="font-heading text-sm text-obsidian-roast cursor-pointer list-none flex items-center justify-between gap-3">
-              <span>{f.q}</span>
+            <summary className="cursor-pointer list-none flex items-center justify-between gap-3">
+              <h3 className="font-heading text-sm text-obsidian-roast">{f.q}</h3>
               <ChevronRight size={16} className="text-muted-foreground transition-transform group-open:rotate-90 flex-shrink-0" />
             </summary>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
           </details>
         ))}
       </div>
-    </div>
+    </section>
   );
 
   // ── Terms & Conditions — collapsible, shown on both views ──
@@ -271,10 +289,10 @@ export default function Rewards() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
         <Seo
-          title="Star Rewards — Earn Points on Every Order | Flavor Isle"
-          description="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food at the register."
-          ogTitle="Star Rewards — Earn Points on Every Order | Flavor Isle"
-          ogDescription="Join Star Rewards and earn points on every Flavor Isle order. Sign up online, order ahead, and redeem points for free food."
+          title="Restaurant Loyalty Program Near Bowling Green, KY | Flavor Isle Star Rewards"
+          description="Flavor Isle in Smiths Grove, 15 minutes north of Bowling Green at I-65 Exit 38, runs Star Rewards: 1 Star per $1, free drinks from 50 Stars, a free cheeseburger at 150. Free to join, no app or card."
+          ogTitle="Restaurant Loyalty Program Near Bowling Green, KY | Flavor Isle"
+          ogDescription="A local restaurant loyalty program: Star Rewards at Flavor Isle in Smiths Grove — 1 Star per $1, free food from 50 Stars, free to join."
           ogImage="https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/3121a3df2_card-rewards.png"
           ogImageAlt="Flavor Isle Star Rewards share card"
         />
@@ -309,6 +327,8 @@ export default function Rewards() {
               </div>
             </div>
           </div>
+
+          <LocalLoyaltyAnswer />
 
           <HowItWorks />
           <BonusStars />

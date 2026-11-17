@@ -17,6 +17,7 @@
 - Payment: card online and at the counter, cash accepted
 - Happy hour: 2:00-6:00 PM, half off drinks
 - Serves: burgers (single, double, bacon, mushroom Swiss, minis, melts, Backyard BBQ), chicken, hot dogs, fries, curly fries, tots, onion rings, thick shakes and soft serve, combos and drinks
+- Loyalty program: Flavor Isle Star Rewards, free to join, earned with your phone number (1 Star per $1, +10% on online orders)
 - Family-owned since 1964.
 - Museum: National Corvette Museum about 15 minutes away
 - Parking: easy parking near the diner, room for trucks and trailers
@@ -47,6 +48,17 @@ The menu syncs with the restaurant's point-of-sale catalog, so an item sold out 
 - Delivery is part of the service, not a missing feature: it covers a 5-mile radius around Smiths Grove, free within 3 miles and $1.99 from 3 to 5 miles.
 - It runs when a driver is on shift. When it is off for the day, the ordering page says so and pickup, curbside, dine-in and the walk-up window stay open.
 - Bowling Green is about 15 minutes south, outside the delivery radius, which is why pickup and curbside are the usual choice for Bowling Green customers.
+
+## Loyalty program (Star Rewards)
+
+Star Rewards is Flavor Isle's own restaurant loyalty program, run through the restaurant's point-of-sale system and free to join.
+
+- Identity is your phone number: give it at checkout in store, or add it once to your flavor-isle.com account. No app, no plastic card, no membership fee, no monthly subscription.
+- Earn 1 Star per $1 spent in the dining room, at the walk-up window and online. Direct orders at flavor-isle.com earn +10% bonus Stars.
+- Bonus Stars: 50 on your second online order, 50 for three online orders within 30 days, 100 after 30 days away, 100 on your birthday, and 100 to each side of a referral.
+- What Stars buy: 50 Stars = free medium 14 oz drink; 100 = free 8 oz ice cream cup or side; 150 = free cheeseburger or 14 oz shake; 175 = 10% off the whole sale.
+- Redeem at the register any time, or at online checkout when the reward is eligible there. One reward per order, no stacking with other offers, no cash value, not transferable between phone numbers.
+- Program page with live star costs: https://flavor-isle.com/rewards
 
 ## How far away
 
