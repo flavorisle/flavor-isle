@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
+import IssueProductUpdate from '@/components/newsletter/IssueProductUpdate';
 import IssueWinterBliss from '@/components/newsletter/IssueWinterBliss';
 import NewsletterIssue from '@/components/newsletter/NewsletterIssue';
 
@@ -101,6 +102,10 @@ export default function NewsletterSignup() {
       <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-4">
         <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">Newsletter archive</h2>
         <p className="text-sm text-muted-foreground font-body mt-2">Newest issue first.</p>
+      </section>
+
+      <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-8">
+        <IssueProductUpdate />
       </section>
 
       <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-8">
