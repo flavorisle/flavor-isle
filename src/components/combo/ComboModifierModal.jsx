@@ -88,7 +88,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                   : selections[group.name]?.id === mod.id)}
                 onToggle={(mod) => (group.selection_type === 'MULTIPLE' ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod))}
               />
-              <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
+              <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
                 {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple

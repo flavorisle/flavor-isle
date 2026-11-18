@@ -120,7 +120,7 @@ export default function ItemBuildSummary({
                     isSelected={(mod) => selected.has(mod.id)}
                     onToggle={(mod) => onToggle?.(group.name, mod)}
                   />
-                  <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
+                  <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
                     {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
                       const isSelected = selected.has(mod.id);
 

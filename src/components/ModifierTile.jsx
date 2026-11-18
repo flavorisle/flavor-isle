@@ -45,8 +45,8 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
         boxSizing: 'border-box',
         background: '#ffffff',
         border: `2px solid ${active ? '#CC3300' : '#cfc9b8'}`,
-        borderRadius: 15,
-        padding: 5,
+        borderRadius: 13,
+        padding: 4,
         opacity: disabled ? 0.55 : 1,
         pointerEvents: disabled ? 'none' : 'auto',
       }}
