@@ -15,17 +15,3 @@ export function findShakeFlavorOption(item) {
     || options.find((option) => normalizeShakeFlavor(option.name) === normalizeShakeFlavor(name))
     || null;
 }
-
-// The flavor itself is included in the shake price. Only its actual Square
-// amount option is added, retaining its catalog id and any Square upcharge.
-export function includedFlavorModifiers(item, level) {
-  const flavor = findShakeFlavorOption(item);
-  if (!flavor || !level) return [];
-  return Object.entries(nestedForLevel(flavor, level)).map(([group, option]) => ({
-    id: option.id, group, name: '', price: Number(option.price) || 0, silent: true,
-  }));
-}
-
-export function includedFlavorExtra(item, level) {
-  return includedFlavorModifiers(item, level).reduce((sum, option) => sum + option.price, 0);
-}

@@ -26,16 +26,23 @@ export function restorePanelSelection(groups = [], cartItem) {
   // Square nests follow-up lists up to three levels deep — walk them all, so a
   // reopened item shows every choice it was ordered with. The panel keeps them
   // flat under the top-level option's id, keyed by list name.
-  const restoreChildLists = (parentId, lists) => {
+  const readChildLists = (parentId, lists) => {
+    const restored = {};
     for (const list of lists || []) {
-      const picks = (list.modifiers || []).filter((option) => savedIds.has(option.id));
-      if (picks.length === 0) continue;
-      nested[parentId] = {
-        ...(nested[parentId] || {}),
-        [list.name]: list.selection_type === 'MULTIPLE' ? picks : picks[0],
-      };
-      picks.forEach((option) => restoreChildLists(parentId, option.child_modifier_lists));
+      const picks = (list.modifiers || []).filter((option) => savedModifiers.some((entry) =>
+        entry.id === option.id && (!entry.parent_modifier_id || entry.parent_modifier_id === parentId)));
+      if (!picks.length) continue;
+      const options = picks.map((option) => {
+        const children = readChildLists(option.id, option.child_modifier_lists);
+        return Object.keys(children).length ? { ...option, nestedSelections: children } : option;
+      });
+      restored[list.name] = list.selection_type === 'MULTIPLE' ? options : options[0];
     }
+    return restored;
+  };
+  const restoreChildLists = (parentId, lists) => {
+    const restored = readChildLists(parentId, lists);
+    if (Object.keys(restored).length) nested[parentId] = restored;
   };
 
   for (const group of groups) {
