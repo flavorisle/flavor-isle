@@ -162,6 +162,16 @@ export const MODIFIER_PHOTOS = {
   "WHIP CREAM": "https://items-images-production.s3.us-west-2.amazonaws.com/files/219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg",
   "WHIPCREAM": "https://items-images-production.s3.us-west-2.amazonaws.com/files/219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg",
   "WHITE CHOCOLATE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/0eb479f39_generated_image.png",
+  // Shake and drink cup sizes — a plain white Dart 14 oz and 20 oz styrofoam
+  // cup, so the size tiles show the actual cup rather than a letter.
+  "14OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/6da475a80_generated_image.png",
+  "14 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/6da475a80_generated_image.png",
+  "S 14 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/6da475a80_generated_image.png",
+  "SMALL": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/6da475a80_generated_image.png",
+  "20OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
+  "20 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
+  "L 20 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
+  "LARGE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
 };
 
 // Uppercase, trimmed, whitespace collapsed. The suffix is NOT dropped here so
