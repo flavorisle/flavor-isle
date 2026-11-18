@@ -1,9 +1,8 @@
 import React from 'react';
 import { ruleBadge, atMax } from '@/lib/modifierRules';
-import ModifierTile from '@/components/ModifierTile';
+import NestedModifierOption from '@/components/NestedModifierOption';
 import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
-import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
 // when a parent modifier is selected. For example, selecting a soda reveals
@@ -67,30 +66,15 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
             onToggle={(mod) => (list.selection_type === 'MULTIPLE' ? toggleMultiple(list, mod) : toggleSingle(list.name, mod))}
           />
           <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-            {(list.modifiers || []).filter((mod) => !isPillOption(mod.name, list.name)).map(mod => {
-              const isMultiple = list.selection_type === 'MULTIPLE';
-              const sel = nestedSelections?.[list.name];
-              const isSelected = isMultiple
-                ? (sel || []).some(m => m.id === mod.id)
-                : sel?.id === mod.id;
-              return (
-                <ModifierTile
-                  key={mod.id}
-                  levels={false}
-                  name={mod.name}
-                  price={mod.price}
-                  photo={getModifierPhoto(mod.name)}
-                  disabled={mod.sold_out}
-                  state={isSelected ? 'reg' : null}
-                  onSelect={(next) => {
-                    const on = next != null;
-                    if (on === isSelected) return;
-                    if (isMultiple) toggleMultiple(list, mod);
-                    else toggleSingle(list.name, mod);
-                  }}
-                />
-              );
-            })}
+            {(list.modifiers || []).filter((mod) => !isPillOption(mod.name, list.name)).map(mod => (
+              <NestedModifierOption
+                key={mod.id}
+                mod={mod}
+                list={list}
+                selections={nestedSelections || {}}
+                onChange={onChange}
+              />
+            ))}
           </div>
         </div>
       ))}
@@ -105,7 +89,7 @@ const norm = (s) => (s || '').toString().toLowerCase().trim();
 // showing as a confusing standalone "Extra" entry. Lists with descriptive
 // options like "Light Ice" / "Extra Ice" are NOT preference lists — those
 // options are already self-descriptive and stay as separate entries.
-const PREFERENCE_WORDS = new Set(['lite', 'light', 'regular', 'normal', 'extra']);
+const PREFERENCE_WORDS = new Set(['lite', 'light', 'reg', 'regular', 'normal', 'extra']);
 
 function isPreferenceList(list) {
   const names = (list.modifiers || []).map(m => norm(m.name));
@@ -114,10 +98,8 @@ function isPreferenceList(list) {
 }
 
 function pushAddOn(addOns, listName, sel) {
-  if (Array.isArray(sel)) {
-    sel.forEach(m => addOns.push({ group: listName, name: m.name, price: m.price, id: m.id }));
-  } else if (sel) {
-    addOns.push({ group: listName, name: sel.name, price: sel.price, id: sel.id });
+  for (const mod of Array.isArray(sel) ? sel : sel ? [sel] : []) {
+    addOns.push(...flattenModifierWithNested(mod, listName, mod.nestedSelections));
   }
 }
 
@@ -140,20 +122,20 @@ export function mergeNestedIntoParent(parentMod, nested) {
     // Check the selection name directly so this works even when the child
     // list has non-preference options that prevent isPreferenceList() from
     // matching.
-    if (n === 'regular' || n === 'normal') {
-      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
+    if (n === 'reg' || n === 'regular' || n === 'normal') {
+      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true, parent_modifier_id: parentMod.id });
       continue;
     }
     if (n === 'extra') {
       mergedName = `Extra ${mergedName}`;
       mergedPrice += selPrice;
-      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
+      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true, parent_modifier_id: parentMod.id });
       continue;
     }
     if (n === 'lite' || n === 'light') {
       mergedName = `${selName} ${mergedName}`;
       mergedPrice += selPrice;
-      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true });
+      if (selId) silentEntries.push({ group: listName, name: '', price: 0, id: selId, silent: true, parent_modifier_id: parentMod.id });
       continue;
     }
     pushAddOn(addOns, listName, sel);
@@ -195,7 +177,8 @@ export function flattenNestedSelections(nested) {
 export function nestedSelectionsExtra(nested) {
   return Object.values(nested || {}).reduce((sum, sel) => {
     if (!sel) return sum;
-    if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
-    return sum + (sel.price || 0);
+    const options = Array.isArray(sel) ? sel : [sel];
+    return sum + options.reduce((total, mod) => total + (Number(mod.price) || 0)
+      + nestedSelectionsExtra(mod.nestedSelections), 0);
   }, 0);
 }

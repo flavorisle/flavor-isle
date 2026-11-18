@@ -1,11 +1,12 @@
 import React from 'react';
 import FlavorPillButton, { getFlavorLevel } from '@/components/FlavorPillButton';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
-import { nestedForLevel, supportsLevels } from '@/lib/modifierLevels';
+import { nestedForLevel, modifierLevelOptions } from '@/lib/modifierLevels';
+import { findShakeFlavorOption } from '@/lib/shakeFlavor';
 import { flavorNameFromItem } from '@/lib/shakeConfig';
 
 export function withShakeFlavorLevel(name, level) {
-  return level ? `${level === 'lite' ? 'Lite' : 'Extra'} ${name}` : name;
+  return level === 'lite' ? `Lite ${name}` : level === 'extra' ? `Extra ${name}` : name;
 }
 
 // The shake's own included flavor, as a tile. Its Lite / Reg / Ex strip is
@@ -13,26 +14,12 @@ export function withShakeFlavorLevel(name, level) {
 // reports it to Square as a catalog modifier. When the catalog has no such
 // list, the tile carries no strip: a level Square does not define is never
 // invented on the site.
-function findFlavorOption(item, flavorName) {
-  const want = String(flavorName || '').trim().toLowerCase();
-  for (const group of item.modifiers || []) {
-    for (const mod of group.modifiers || []) {
-      if (String(mod.name || '').trim().toLowerCase() === want) return mod;
-    }
-  }
-  return null;
-}
-
 export default function ShakeFlavorControl({ item, level, onChange }) {
   const name = flavorNameFromItem(item.name);
-  const real = findFlavorOption(item, name);
-  const mod = {
-    id: real?.id || item.id,
-    name,
-    price: 0,
-    child_modifier_lists: real?.child_modifier_lists || [],
-  };
-  const canLevel = supportsLevels(mod);
+  const real = findShakeFlavorOption(item);
+  const mod = { ...real, id: real?.id || item.id, name, price: 0 };
+  const levels = modifierLevelOptions(mod);
+  const canLevel = levels.length > 0;
 
   return (
     <div>
@@ -42,7 +29,7 @@ export default function ShakeFlavorControl({ item, level, onChange }) {
         <FlavorPillButton
           mod={mod}
           isSelected
-          levels={canLevel}
+          levels={levels}
           onToggle={() => {}}
           nestedSelection={canLevel ? nestedForLevel(mod, level) : {}}
           onNestedChange={nested => onChange(getFlavorLevel(nested))}

@@ -8,7 +8,8 @@
 // Matching those option ids back to the catalog groups is what restores both
 // the chosen options and their child-list picks — for any item, not just drinks.
 export function restorePanelSelection(groups = [], cartItem) {
-  const savedIds = new Set((cartItem?.selectedModifiers || []).map((entry) => entry.id).filter(Boolean));
+  const savedModifiers = cartItem?.selectedModifiers || [];
+  const savedIds = new Set(savedModifiers.map((entry) => entry.id).filter(Boolean));
 
   const selections = Object.fromEntries(
     groups.map((group) => [

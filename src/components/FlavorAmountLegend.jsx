@@ -18,7 +18,7 @@ export default function FlavorAmountLegend({ align = 'center', tone = 'light', c
       <span className={`inline-flex items-center justify-center h-5 px-2 rounded-full font-heading text-[10px] uppercase tracking-wide ${chip}`}>
         Extra
       </span>
-      <span>Tap the name for regular.</span>
+      <span>Choose Lite, Reg, or Extra where offered.</span>
     </div>
   );
 }

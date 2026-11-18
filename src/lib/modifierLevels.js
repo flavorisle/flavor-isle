@@ -8,7 +8,7 @@
 const norm = (s) => String(s || '').trim().toLowerCase();
 const LITE = /^(lite|light)$/;
 const EXTRA = /^extra$/;
-const PREF_ONLY = new Set(['lite', 'light', 'regular', 'normal', 'extra']);
+const PREF_ONLY = new Set(['lite', 'light', 'reg', 'regular', 'normal', 'extra']);
 
 // The child list that carries this option's amount, or null when it has none.
 export function levelChildList(mod) {
@@ -29,13 +29,24 @@ export function levelChildList(mod) {
   }) || null;
 }
 
-// An ice cream base ("VANILLA ICE CREAM", "SWIRL ICE CREAM") is a choice of
-// base, never an amount, so it never carries the strip even if a list is there.
-const BASE_OPTION = /\bice cream\b/i;
-
+// Square's actual child list decides support, never the option's name.
 export function supportsLevels(mod) {
-  if (BASE_OPTION.test(String(mod?.name || ''))) return false;
   return !!levelChildList(mod);
+}
+
+export function modifierLevelOptions(mod) {
+  const names = (levelChildList(mod)?.modifiers || []).map((option) => norm(option.name));
+  return ['lite', 'reg', 'extra'].filter((key) => names.some((name) =>
+    key === 'lite' ? LITE.test(name) : key === 'extra' ? EXTRA.test(name) : /^(reg|regular|normal)$/.test(name)));
+}
+
+// Changing an amount must not discard the option's other follow-up choices.
+export function withModifierLevel(mod, nested, level) {
+  const list = levelChildList(mod);
+  if (!list) return nested || {};
+  const next = { ...nested };
+  delete next[list.name];
+  return { ...next, ...nestedForLevel(mod, level) };
 }
 
 // 'lite' | 'extra' | null, read from a nested selection object.

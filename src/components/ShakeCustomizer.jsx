@@ -9,6 +9,9 @@ import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import AllergyNote from '@/components/AllergyNote';
 import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
+import { supportsLevels } from '@/lib/modifierLevels';
+import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { findShakeFlavorOption } from '@/lib/shakeFlavor';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
 // with AdminShakeManager, which still manages flavor name/emoji overrides
@@ -19,7 +22,7 @@ export const MILKSHAKE_ITEM_ID = '6a3e25598a5d91912096d635';
 // base, and extra flavors before adding to the cart. All options come live
 // from the item's own Square modifier lists.
 export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
-  const { addItem, setIsCartOpen } = useCart();
+  const { addItem, setIsCartOpen, menuSetting } = useCart();
   const [size, setSize] = useState(null);
   const [base, setBase] = useState(null);
   const [extraFlavors, setExtraFlavors] = useState([]);
@@ -51,7 +54,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
 
   if (!open || !shakeItem) return null;
 
-  const groups = shakeItem.modifiers || [];
+  const groups = applyModifierOverrides(shakeItem.modifiers, menuSetting?.modifier_overrides);
+  const effectiveItem = { ...shakeItem, modifiers: groups };
+  const includedFlavor = findShakeFlavorOption(effectiveItem);
   const findGroup = (kw) => groups.find((g) => (g.name || '').toLowerCase().includes(kw));
   const sizeOpts = (findGroup('size')?.modifiers || []).filter((m) => !m.sold_out);
   const baseOpts = (findGroup('base')?.modifiers || []).filter((m) => !m.sold_out);
@@ -64,17 +69,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const flavorName = flavorNameFromItem(shakeItem.name);
   const flavorEmoji = flavorEmojiByName(flavorName);
 
-  // Same-flavor matching ignores the "Real Fruit"/"Crushed" wording, since all
-  // our fruit is real fruit — a Banana shake must not also charge for
-  // "Real Fruit Banana".
-  const coreFlavor = (n) =>
-    (n || '').toLowerCase().replace(/\b(real fruit|crushed)\b/g, '').replace(/\s+/g, ' ').trim();
-
-  // Extra flavor options from the "Add as many flavors" list, excluding the
-  // shake's own flavor (you're already getting it).
-  const allExtraOpts = flavorOpts.filter(
-    (m) => coreFlavor(resolveFlavorName(m.id, m.name, config)) !== coreFlavor(flavorName)
-  );
+  // The included flavor is matched to its real Square option, even when the
+  // item says Banana and Square calls its flavor REAL FRUIT BANANA.
+  const allExtraOpts = flavorOpts.filter((option) => option.id !== includedFlavor?.id);
 
   const basePrice = shakeItem.price ?? 5;
 
@@ -208,7 +205,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
           </div>
 
           {/* The included flavor has its own no-upcharge amount control. */}
-          <ShakeFlavorControl item={shakeItem} level={coreLevel} onChange={setCoreLevel} />
+          <ShakeFlavorControl item={effectiveItem} level={coreLevel} onChange={setCoreLevel} />
 
           {/* Ice Cream Base */}
           {baseOpts.length > 0 && (
@@ -240,7 +237,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Add Another Flavor</p>
               {/* − is Lite, + is Extra on each flavor pill. */}
-              <FlavorAmountLegend align="left" className="mb-2.5" />
+              {allExtraOpts.some(supportsLevels) && <FlavorAmountLegend align="left" className="mb-2.5" />}
               <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
                 {allExtraOpts.map((opt) => {
                   const selected = extraFlavors.some((s) => s.id === opt.id);
@@ -248,7 +245,7 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
                   return (
                     <FlavorPillButton
                       key={opt.id}
-                      mod={{ id: opt.id, name, price: opt.price, child_modifier_lists: opt.child_modifier_lists }}
+                      mod={{ ...opt, name }}
                       isSelected={selected}
                       onToggle={() => {
                         // Square's maximum: no extra flavor can be added once the

@@ -12,7 +12,7 @@ import ModifierTile from './ModifierTile';
 import PlainOptionPills from './PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
-import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { supportsLevels, modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
@@ -43,6 +43,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       .filter((group) => group.modifiers.length > 0)
     : allGroups;
   const hasModifiers = groups.length > 0;
+  const effectiveItem = { ...item, modifiers: groups };
   // The Lite / Reg / Ex strip is only drawn on options whose Square child list
   // defines those amounts — the legend is shown only when one is on screen.
   const anyLevels = groups.some((g) => (g.modifiers || []).some((m) => supportsLevels(m)));
@@ -218,7 +219,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // Only an option that carries its own Lite / Extra child list gets the
   // strip — a cup size or a plain topping has no such list, so no strip shows
   // and no level is recorded for it.
-  const levelsApply = (mod) => supportsLevels(mod);
+  const levelsApply = (mod) => modifierLevelOptions(mod);
 
   // A tile's Lite / Reg / Ex lands on the very selection the pill used, so the
   // price, the cart and the kitchen ticket are untouched: Reg selects the
@@ -250,7 +251,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     }
     setNestedSelections((prev) => ({
       ...prev,
-      [mod.id]: next === 'reg' || !levelsApply(mod) ? {} : nestedForLevel(mod, next),
+      [mod.id]: withModifierLevel(mod, prev[mod.id], next),
     }));
   };
 
@@ -328,7 +329,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
 
         {/* Modifier Groups */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-6">
-          {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
+          {shakeItem && <ShakeFlavorControl item={effectiveItem} level={coreLevel} onChange={setCoreLevel} />}
           {/* Flavor pills show − / + zones — say what they do whenever any
               flavor group is on screen. */}
           {anyLevels && <FlavorAmountLegend align="left" />}

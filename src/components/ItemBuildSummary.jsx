@@ -9,7 +9,7 @@ import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
-import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { supportsLevels, modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 
 // The product page's "What's on it" box: the item description followed by a
 // tile for every option the item offers.
@@ -84,7 +84,7 @@ export default function ItemBuildSummary({
     if (!isSelected) onToggle?.(group.name, mod);
     // Only an option with its own Lite / Extra child list records a level —
     // a cup size or a plain topping has none, so it gets no strip and none.
-    onNestedChange?.(mod.id, next === 'reg' || !supportsLevels(mod) ? {} : nestedForLevel(mod, next));
+    onNestedChange?.(mod.id, withModifierLevel(mod, nestedSelections[mod.id], next));
   };
 
   return (
@@ -142,7 +142,7 @@ export default function ItemBuildSummary({
                           price={mod.price}
                           photo={getModifierPhoto(mod.name)}
                           state={isSelected ? (levelFromNested(nestedSelections[mod.id]) || 'reg') : null}
-                          levels={supportsLevels(mod)}
+                          levels={modifierLevelOptions(mod)}
                           onSelect={(next) => setTileLevel(group, mod, next)}
                         />
                       );

@@ -30,6 +30,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // this panel always matches what the admin set — hidden options are gone,
   // sold-out ones can't be picked, and overridden prices are shown and charged.
   const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
+  const effectiveItem = { ...item, modifiers: groups };
   const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
   // Fries and tots are cooked unsalted, so they ask the required salt question
@@ -230,7 +231,7 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   return (
     <div className="space-y-6">
-      {isShakeItem(item) && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
+      {isShakeItem(item) && <ShakeFlavorControl item={effectiveItem} level={coreLevel} onChange={setCoreLevel} />}
       {/* Happy Hour badge */}
       {isHappyHour && (
         <div className="inline-flex items-center gap-1.5 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">

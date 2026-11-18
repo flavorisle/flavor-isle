@@ -24,7 +24,7 @@ import React from 'react';
 const SEGMENTS = [
   { key: 'lite', label: 'Lite', spoken: 'Lite' },
   { key: 'reg', label: 'Reg', spoken: 'Regular' },
-  { key: 'extra', label: 'Ex', spoken: 'Extra' },
+  { key: 'extra', label: 'Extra', spoken: 'Extra' },
 ];
 
 const FONT = 'Arial, Helvetica, sans-serif';
@@ -36,6 +36,9 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
   const active = state != null;
   const initial = String(name || '').trim().charAt(0).toUpperCase();
   const hasPrice = Number(price) > 0;
+  const segments = Array.isArray(levels)
+    ? SEGMENTS.filter((segment) => levels.includes(segment.key))
+    : levels ? SEGMENTS : [];
 
   const pick = (next) => {
     if (disabled) return;
@@ -138,7 +141,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
         </span>
       </button>
 
-      {levels && (
+      {segments.length > 0 && (
       <div
         role="group"
         aria-label={`${name} amount`}
@@ -152,7 +155,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
           overflow: 'hidden',
         }}
       >
-        {SEGMENTS.map((segment, i) => {
+        {segments.map((segment, i) => {
           const on = state === segment.key;
           return (
             <button
