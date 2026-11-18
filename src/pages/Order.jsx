@@ -9,6 +9,7 @@ import { DAY_KEYS, formatTime12 } from '@/lib/businessHours';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
+import OnDutyNow from '@/components/OnDutyNow';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 
 // Dedicated order-start landing page — the destination URL to list on the
@@ -83,6 +84,8 @@ export default function Order() {
             <span className="text-sm font-semibold text-midnight-cherry">Closing soon · {closeTime}</span>
           )}
         </div>
+
+        <OnDutyNow open={!isClosed} variant="inline" />
 
         {/* Order type cards */}
         <div className="grid gap-4">

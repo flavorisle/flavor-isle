@@ -37,6 +37,7 @@ import HeritageBadges from '@/components/HeritageBadges';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
+import OnDutyNow from '@/components/OnDutyNow';
 
 const HOME_DINING_PHOTO = {
   url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
@@ -180,6 +181,8 @@ export default function Home() {
         ]}
         metaLine={heroMetaLine}
       />
+
+      <OnDutyNow open={!!storeState?.open} />
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
       <FindSmashiePromo />

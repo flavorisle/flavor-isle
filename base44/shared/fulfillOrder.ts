@@ -47,6 +47,39 @@ function referralBlockHtml(code: string) {
   </div>`;
 }
 
+// PART 3 of the approved plan: one warm line in the order confirmation naming the
+// crew on the floor right now. Only when the live crew answer comes back fresh.
+// Hard 2 second timeout, never throws, never blocks or fails the email.
+async function crewOnFloorHtml(): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch('https://flavor-isle.com/functions/getCrewOnDuty', {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return '';
+    const data = await res.json();
+    const crew = Array.isArray(data?.crew) ? data.crew : [];
+    const asOf = data?.as_of ? new Date(data.as_of).getTime() : 0;
+    if (!crew.length || !asOf || Date.now() - asOf > 10 * 60 * 1000) return '';
+    const names = crew.map((p: any) => String(p?.first_name || '').trim()).filter(Boolean);
+    if (!names.length) return '';
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const list = names.length === 1
+      ? names[0]
+      : names.length === 2
+        ? `${names[0]} and ${names[1]}`
+        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+    const verb = names.length === 1 ? 'is' : 'are';
+    const has = names.length === 1 ? 'has' : 'have';
+    return `<p style="margin:0 0 12px;font-size:15px;color:#003366"><strong>${esc(list)}</strong> ${verb} on the floor right now, and ${has} your ticket.</p>`;
+  } catch {
+    return '';
+  }
+}
+
 export async function sendOrderConfirmationEmail(base44, order, loyalty = null) {
   if (!isEmailableCustomer(order.customer_email)) {
     console.log('email_blocked_recipient', order.customer_email);
@@ -80,11 +113,14 @@ export async function sendOrderConfirmationEmail(base44, order, loyalty = null) 
 
   const referrerPhone = toE164Phone(order.customer_phone);
   const referralCode = referrerPhone ? await referralCodeForPhone(referrerPhone) : null;
+  const crewLine = await crewOnFloorHtml();
 
   const html = brandedEmailHtml(`
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey fam,</p>
         <h2 style="color:#141414;font-family:'Oswald',Arial,sans-serif;font-size:22px;margin:0 0 4px;">${order.customer_name} — your order is locked in. 🎉</h2>
         <p style="color:#141414;font-size:17px;line-height:1.5;margin:6px 0 24px;">Everything's lined up just how you like it, and the crew's already firing up the grill. 🔥</p>
+
+        ${crewLine}
 
         <div style="background:#1A3A5C;color:white;border-radius:12px;padding:14px 20px;margin-bottom:24px;text-align:center;letter-spacing:3px;font-family:'Oswald',Arial,sans-serif;font-size:15px;font-weight:bold;">
           ORDER CONFIRMED · #${order.order_number || ''}
