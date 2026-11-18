@@ -9,8 +9,6 @@ import { levelChildList, levelFromNested, nestedForLevel, supportsLevels } from 
 // ship with no photo (a finished milkshake is not a flavor), so each one shows
 // its first letter until a real syrup shot is added in Admin → Modifier photos.
 
-export const FLAVOR_AMOUNT_LIST = 'Flavor Amount';
-
 export function isFlavorGroup(group) {
   const name = group?.name || '';
   // A cake flavor is a cake choice (vanilla or chocolate), not an amount.
@@ -19,28 +17,18 @@ export function isFlavorGroup(group) {
   return /flavor/i.test(name);
 }
 
-// Fallback shape used only when a flavor carries NO child list: an id-less
-// placeholder so the level can still ride as a name prefix, never sent to
-// Square as a modifier of its own.
-export function flavorAmountNested(level) {
-  if (!level) return {};
-  return { [FLAVOR_AMOUNT_LIST]: { name: level === 'lite' ? 'Lite' : 'Extra', price: 0 } };
-}
-
 // The child list that carries a flavor's amount, when it has one.
 export function flavorChildList(mod) {
   return levelChildList(mod);
 }
 
 // Records the real nested amount option (its catalog id AND price) for a
-// Lite/Extra level. Falls back to the id-less Flavor Amount row only when the
-// flavor has no such list at all.
+// Lite/Extra level. Nothing is recorded when Square has no such list.
 export function flavorNestedForLevel(mod, level) {
   return nestedForLevel(mod, level);
 }
 
-// Reads the level from ANY nested list — the real "- / + Flavors" list or the
-// synthetic Flavor Amount row.
+// Reads the level from the flavor's real amount list.
 export function getFlavorLevel(nestedSelection) {
   return levelFromNested(nestedSelection);
 }

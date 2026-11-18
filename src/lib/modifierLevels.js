@@ -44,16 +44,15 @@ export function levelFromNested(nested) {
   return null;
 }
 
-// The nested selection for a level. The real option (catalog id + price) is
-// recorded when the option has an amount list, so Square receives it as a
-// catalog modifier; with no list the amount rides as a name prefix.
+// The nested selection for a level: always the REAL Square option (its catalog
+// id and price), so the order reports the modifier to Square instead of an
+// ad-hoc text line. An option whose Square list has no Lite/Extra records
+// nothing at all — a level Square does not define is never invented here.
 export function nestedForLevel(mod, level) {
   if (!level || level === 'reg') return {};
   const list = levelChildList(mod);
   const want = level === 'lite' ? LITE : EXTRA;
   const opt = (list?.modifiers || []).find((m) => want.test(norm(m.name)));
-  if (list && opt) {
-    return { [list.name]: { id: opt.id, name: opt.name, price: Number(opt.price) || 0 } };
-  }
-  return { 'Flavor Amount': { name: level === 'lite' ? 'Lite' : 'Extra', price: 0 } };
+  if (!list || !opt) return {};
+  return { [list.name]: { id: opt.id, name: opt.name, price: Number(opt.price) || 0 } };
 }
