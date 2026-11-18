@@ -22,15 +22,33 @@
         "ready",
         "completed",
         "review_request",
-        "cancelled"
+        "cancelled",
+        "item_refund"
       ],
-      "description": "Which customer text this is. review_request is the post-order Google review ask (issue #37, step 2) and doubles as its 90-day per-phone frequency cap. cancelled is the order-cancellation notice sent by the cancelOrder backend function, gated on the same transactional consent as the other order texts."
+      "description": "Which customer text this is. review_request is the post-order Google review ask (issue #37, step 2) and doubles as its 90-day per-phone frequency cap. cancelled is the order-cancellation notice sent by the cancelOrder backend function, gated on the same transactional consent as the other order texts. item_refund is the item-level refund notice written by shared/itemRefund.ts."
     },
     "body": {
       "type": "string"
     },
     "status": {
       "type": "string"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why the text was skipped or failed \u2014 no customer phone, texts switched off, consent missing, Twilio credentials missing, or Twilio's own delivery error message. Read back on the admin Order Status Texts list so the crew can see why a customer never got a text."
+    },
+    "status_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the row's status last changed (created, queued, sent, delivered, undelivered, failed, skipped). The admin Order Status Texts list sorts by this field, falling back to created_date on older rows that never got one."
+    },
+    "message_sid": {
+      "type": "string",
+      "description": "Twilio message SID for the text, written by the send and the delivery-status callback. Matching the callback back to its row is how a delivery update lands on the right order."
+    },
+    "error_code": {
+      "type": "string",
+      "description": "Twilio's error code when the carrier refused or the text could not be delivered, as reported by the delivery-status callback."
     },
     "email_fallback": {
       "type": "string",
