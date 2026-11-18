@@ -5,7 +5,7 @@ import { galleryImage } from '@/lib/galleryPhotos';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups } from '@/lib/businessHours';
-import { themeOf, qrUrl, PRINT_CSS } from '@/lib/printAds';
+import { themeOf, qrUrl } from '@/lib/printAds';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 const STOREFRONT = galleryImage('The sign at 1st and Main');
@@ -364,7 +364,6 @@ export default function PrintAdSheet({ ad, sheetId = 'ad-sheet' }) {
   if (!ad) return null;
   return (
     <>
-      <style>{PRINT_CSS}</style>
       <style>{FONTS}</style>
       {ad.layout === 'classic'
         ? <ClassicSheet ad={ad} sheetId={sheetId} />

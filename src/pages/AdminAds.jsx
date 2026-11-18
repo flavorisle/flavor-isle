@@ -6,6 +6,7 @@ import AdminNav from '@/components/admin/AdminNav';
 import PrintAdSheet from '@/components/ads/PrintAdSheet';
 import AdEditor from '@/components/ads/AdEditor';
 import { blankPoster, SEED_ADS } from '@/lib/printAds';
+import useAdOutput from '@/hooks/useAdOutput';
 import { Printer, FileDown, Plus, Copy, Trash2, Save, Loader2, Megaphone } from 'lucide-react';
 
 const btn = 'inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-heading tracking-wide transition-colors';
@@ -20,6 +21,7 @@ export default function AdminAds() {
   const [busy, setBusy] = useState('');
   const [note, setNote] = useState('');
   const seeded = useRef(false);
+  const { outputBusy, pdfDownload, printAd, downloadPdf } = useAdOutput(draft, setNote);
 
   const load = async () => {
     const rows = await base44.entities.PrintAd.list('sort_order', 100);
@@ -107,110 +109,6 @@ export default function AdminAds() {
     }
   };
 
-  // The sheet is one letter page, so print asks for letter with no margins and
-  // puts the sheet at the top corner. Written into the head last, after the
-  // app's A3 print-menu page setup, so it wins; removed when the dialog closes.
-  const print = () => {
-    const style = document.createElement('style');
-    style.setAttribute('data-ad-print', 'true');
-    style.textContent = '@page { size: 8.5in 11in; margin: 0; }';
-    document.head.appendChild(style);
-    const done = () => {
-      style.remove();
-      window.removeEventListener('afterprint', done);
-    };
-    window.addEventListener('afterprint', done);
-    window.print();
-    window.setTimeout(done, 120000);
-  };
-
-  const downloadPdf = async () => {
-    const el = document.getElementById('ad-sheet');
-    if (!el) return;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    // An iPhone has no Downloads folder, and Safari blocks a window opened after
-    // the wait for the photos. So the tab is opened here, on the tap itself, and
-    // pointed at the finished PDF: Safari shows it with a Share button, and
-    // Share > Save to Files keeps it.
-    const iosTab = isIOS ? window.open('', '_blank') : null;
-    setBusy('pdf');
-    try {
-      const [{ default: html2canvas }, jsPDFmod] = await Promise.all([import('html2canvas'), import('jspdf')]);
-      // Fetch every photo first. Nothing downloads until all of them are in hand.
-      const imgs = Array.from(el.querySelectorAll('img'));
-      const local = new Map();
-      for (const img of imgs) {
-        const src = img.currentSrc || img.src;
-        if (!src || src.startsWith('data:') || local.has(src)) continue;
-        const res = await fetch(src, { mode: 'cors' });
-        if (!res.ok) throw new Error('photo');
-        const blob = await res.blob();
-        const dataUrl = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(r.result);
-          r.onerror = reject;
-          r.readAsDataURL(blob);
-        });
-        local.set(src, dataUrl);
-      }
-      if (document.fonts?.ready) await document.fonts.ready;
-      const canvas = await html2canvas(el, {
-        scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
-        onclone: (doc) => {
-          doc.querySelectorAll('#ad-sheet img').forEach((img) => {
-            const d = local.get(img.currentSrc || img.src);
-            if (d) img.src = d;
-          });
-        },
-      });
-      const { jsPDF } = jsPDFmod;
-      const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11);
-      const fileName = `${(draft?.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
-      const blob = pdf.output('blob');
-
-      if (isIOS) {
-        const url = pdf.output('bloburl');
-        if (iosTab && !iosTab.closed) {
-          iosTab.location.href = url;
-          flash('Tap Share, then Save to Files to keep the PDF.');
-          return;
-        }
-        // No tab could be opened (it was blocked): hand the file to the share
-        // sheet instead, which offers Save to Files on its own.
-        const file = new File([blob], fileName, { type: 'application/pdf' });
-        if (navigator.canShare?.({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: fileName });
-            flash('Tap Save to Files to keep the PDF.');
-          } catch (err) {
-            if (err?.name !== 'AbortError') throw err;
-          }
-          return;
-        }
-        window.location.href = url;
-        return;
-      }
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-      flash('PDF downloaded.');
-    } catch (e) {
-      if (iosTab && !iosTab.closed) iosTab.close();
-      flash('A photo did not load, so the PDF was not made. Try again in a moment.');
-    } finally {
-      setBusy('');
-    }
-  };
-
   const activeAds = useMemo(() => ads.filter((a) => a.is_active !== false), [ads]);
 
   return (
@@ -243,7 +141,7 @@ export default function AdminAds() {
           </div>
 
           {note ? (
-            <div className="mb-4 rounded-xl border border-midnight-cherry/20 bg-white px-4 py-2 text-sm text-obsidian-roast">{note}</div>
+            <div role="status" aria-live="polite" className="mb-4 rounded-xl border border-midnight-cherry/20 bg-white px-4 py-2 text-sm text-obsidian-roast">{note}</div>
           ) : null}
 
           {loading ? (
@@ -284,10 +182,19 @@ export default function AdminAds() {
                         <button className={btnMain} onClick={save} disabled={busy === 'save'}>
                           {busy === 'save' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
                         </button>
-                        <button className={btnGhost} onClick={print}><Printer size={14} /> Print</button>
-                        <button className={btnGhost} onClick={downloadPdf} disabled={busy === 'pdf'}>
-                          {busy === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />} Download PDF
+                        <button className={btnGhost} onClick={printAd} disabled={!!outputBusy}>
+                          {outputBusy === 'print' ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+                          {outputBusy === 'print' ? 'Preparing…' : 'Print'}
                         </button>
+                        <button className={btnGhost} onClick={downloadPdf} disabled={!!outputBusy}>
+                          {outputBusy === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
+                          {outputBusy === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}
+                        </button>
+                        {pdfDownload ? (
+                          <a className={btnMain} href={pdfDownload.url} download={pdfDownload.fileName} target="_blank" rel="noopener noreferrer">
+                            <FileDown size={14} /> Save PDF
+                          </a>
+                        ) : null}
                       </div>
                     </>
                   ) : (
@@ -311,7 +218,7 @@ export default function AdminAds() {
                     </div>
                   </div>
                   <p className="mt-2 text-[11px] text-obsidian-roast/50">
-                    Print or Download PDF prints the sheet alone, at full size. On an iPhone the PDF opens in a new tab &mdash; tap Share, then Save to Files.
+                    Print opens the ad alone in a new tab. Download PDF makes a single letter-size page. On an iPhone, tap Share, then Save to Files.
                   </p>
                 </div>
               </div>
