@@ -12,7 +12,7 @@ import ModifierTile from './ModifierTile';
 import PlainOptionPills from './PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
-import { levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
@@ -43,6 +43,9 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       .filter((group) => group.modifiers.length > 0)
     : allGroups;
   const hasModifiers = groups.length > 0;
+  // The Lite / Reg / Ex strip is only drawn on options whose Square child list
+  // defines those amounts — the legend is shown only when one is on screen.
+  const anyLevels = groups.some((g) => (g.modifiers || []).some((m) => supportsLevels(m)));
   const soldOut = item.is_available === false;
 
   // Options a caller wants pre-selected (the bundle's approved defaults).
@@ -212,10 +215,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // used, so the price, the cart and the kitchen ticket are unchanged. Only a
   // drink size picker keeps its own control.
   //
-  // Every option takes a level. Square carries a separate amount list for some
-  // (toppings on desserts, flavors, sauces) and charges for the Extra there;
-  // for the rest — burger toppings, most sauces — the level rides as a name
-  // prefix instead of being dropped, so the strip is never a dead control.
+  // Only an option that carries its own Lite / Extra child list gets the
+  // strip — a cup size or a plain topping has no such list, so no strip shows
+  // and no level is recorded for it.
+  const levelsApply = (mod) => supportsLevels(mod);
 
   // A tile's Lite / Reg / Ex lands on the very selection the pill used, so the
   // price, the cart and the kitchen ticket are untouched: Reg selects the
@@ -247,7 +250,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     }
     setNestedSelections((prev) => ({
       ...prev,
-      [mod.id]: next === 'reg' ? {} : nestedForLevel(mod, next),
+      [mod.id]: next === 'reg' || !levelsApply(mod) ? {} : nestedForLevel(mod, next),
     }));
   };
 
@@ -328,7 +331,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
           {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
           {/* Flavor pills show − / + zones — say what they do whenever any
               flavor group is on screen. */}
-          {hasModifiers && <FlavorAmountLegend align="left" />}
+          {anyLevels && <FlavorAmountLegend align="left" />}
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
             return (
@@ -399,6 +402,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                         price={mod.price}
                         photo={getModifierPhoto(mod.name)}
                         state={tileState(group, mod)}
+                        levels={levelsApply(mod)}
                         disabled={mod.sold_out}
                         onSelect={(next) => selectTileLevel(group, mod, next)}
                       />

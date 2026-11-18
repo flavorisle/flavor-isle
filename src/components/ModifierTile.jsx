@@ -11,6 +11,11 @@ import React from 'react';
 // or without a price), and the footer is exactly 19px. A long name or a price
 // can therefore never push a tile taller than its neighbour.
 //
+// The Lite / Reg / Ex strip shows ONLY when `levels` is passed: an option that
+// carries its own child modifier list with Lite and Extra. A cup size or a
+// plain topping has no such list, so it gets no strip at all rather than a
+// control that cannot do anything.
+//
 // state is the option's current level ("lite" | "reg" | "extra"), or null when
 // it isn't on the order. Tapping the photo or the name means Reg; tapping a
 // segment sets that level; tapping the segment that is already active clears the
@@ -27,7 +32,7 @@ const TILE_WIDTH = 120;
 const NAME_BOX = 21;
 const FOOTER = 19;
 
-export default function ModifierTile({ name, price, state, photo, onSelect, disabled, levels = true }) {
+export default function ModifierTile({ name, price, state, photo, onSelect, disabled, levels = false }) {
   const active = state != null;
   const initial = String(name || '').trim().charAt(0).toUpperCase();
   const hasPrice = Number(price) > 0;

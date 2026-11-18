@@ -20,6 +20,7 @@ export default function ShakeFlavorControl({ item, level, onChange }) {
         <FlavorPillButton
           mod={{ id: item.id, name, price: 0 }}
           isSelected
+          levels
           onToggle={() => {}}
           nestedSelection={flavorAmountNested(level)}
           onNestedChange={nested => onChange(getFlavorLevel(nested))}

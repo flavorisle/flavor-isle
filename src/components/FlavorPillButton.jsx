@@ -1,7 +1,7 @@
 import React from 'react';
 import ModifierTile from '@/components/ModifierTile';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
-import { levelChildList, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { levelChildList, levelFromNested, nestedForLevel, supportsLevels } from '@/lib/modifierLevels';
 
 // Issue #324 — flavors are tiles now, exactly like toppings and sauces. The
 // tile's Lite / Reg / Ex strip writes the same nested selection the old pill
@@ -57,6 +57,7 @@ export default function FlavorPillButton({
   onToggle,
   nestedSelection,
   onNestedChange,
+  levels,
 }) {
   if (!mod) return null;
 
@@ -82,6 +83,7 @@ export default function FlavorPillButton({
       price={mod.price}
       photo={photo}
       state={isSelected ? (level || 'reg') : null}
+      levels={levels ?? supportsLevels(mod)}
       onSelect={select}
     />
   );

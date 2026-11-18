@@ -3,7 +3,7 @@ import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
 import { atMax, ruleBadge } from '@/lib/modifierRules';
-import { levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
@@ -112,6 +112,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                       photo={getModifierPhoto(mod.name)}
                       disabled={mod.sold_out}
                       state={isSelected ? (levelFromNested(nested[mod.id]) || 'reg') : null}
+                      levels={supportsLevels(mod)}
                       onSelect={(next) => {
                         // Tapping the active option's photo or name takes it off;
                         // tapping a level on it only changes the amount.
@@ -126,7 +127,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                           if (isMultiple) toggleMultiple(group.name, mod);
                           else toggleSingle(group.name, mod);
                         }
-                        setNested((prev) => ({ ...prev, [mod.id]: next === 'reg' ? {} : nestedForLevel(mod, next) }));
+                        setNested((prev) => ({ ...prev, [mod.id]: next === 'reg' || !supportsLevels(mod) ? {} : nestedForLevel(mod, next) }));
                       }}
                     />
                   );

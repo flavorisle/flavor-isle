@@ -72,6 +72,7 @@ export default function PreferencePillButton({
       price={mod.price}
       photo={getModifierPhoto(mod.name)}
       state={isSelected ? (level || 'reg') : null}
+      levels
       onSelect={select}
     />
   );
