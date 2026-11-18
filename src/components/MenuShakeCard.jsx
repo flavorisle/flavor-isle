@@ -24,13 +24,14 @@ export default function MenuShakeCard({ item, onSelect, orderingEnabled, overrid
     >
       {photo ? (
         <img
-          src={optimizedImageUrl(photo, 400, 300)}
+          src={optimizedImageUrl(photo, 400, 400, 'fit')}
           alt={name}
           width="400"
-          height="300"
+          height="400"
           loading="lazy"
           decoding="async"
           className="w-full h-32 object-cover rounded-2xl mb-3"
+          style={{ objectPosition: 'center 25%' }}
         />
       ) : (
         <span className="w-14 h-14 mb-2 rounded-full bg-vanilla-malt flex items-center justify-center text-3xl" aria-hidden="true">{flavorEmojiByName(name)}</span>
