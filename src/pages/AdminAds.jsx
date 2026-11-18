@@ -145,7 +145,34 @@ export default function AdminAds() {
       const { jsPDF } = jsPDFmod;
       const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11);
-      pdf.save(`${(draft?.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`);
+      const fileName = `${(draft?.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
+      const blob = pdf.output('blob');
+
+      // iPhone and iPad have no download folder: Safari opens the file and the
+      // share sheet's "Save to Files" is the way to keep it. Sharing the file
+      // itself is the only route that offers that, so it is tried first.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      if (isIOS && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: fileName });
+          flash('Choose Save to Files to keep the PDF.');
+        } catch (err) {
+          if (err?.name !== 'AbortError') throw err;
+        }
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
       flash('PDF downloaded.');
     } catch (e) {
       flash('A photo did not load, so the PDF was not made. Try again in a moment.');
