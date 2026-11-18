@@ -44,9 +44,9 @@ export const MODIFIER_PHOTOS = {
   "SWIRL ICE CREAM": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/46a6c02a8_generated_image.png",
   "VANILLA ICE CREAM": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9051dcd81_generated_image.png",
   // The cake flavors in the dessert shakes' "CAKE FLAVOR" groups — one square
-  // 3 in x 3 in piece of layer cake, the way the cake comes out of the pan.
-  "VANILLA CAKE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7201ad2a5_generated_image.png",
-  "CHOCOLATE CAKE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/adb4dbdb8_generated_image.png",
+  // 3 in x 3 in piece of cake, one layer, no icing.
+  "VANILLA CAKE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/0cac6cfc5_generated_image.png",
+  "CHOCOLATE CAKE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/1f7600122_generated_image.png",
   "AMERICAN": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f1cc08734_generated_image.png",
   "AMERICAN CHEESE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f1cc08734_generated_image.png",
   "BACON": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/789c51ce1_generated_image.png",
