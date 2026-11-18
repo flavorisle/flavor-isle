@@ -267,7 +267,7 @@
     },
     "modifier_overrides": {
       "type": "object",
-      "description": "Admin modifier controls from Admin \u2192 Menu Manager \u2192 Modifiers, applied to the Square modifier catalog at render time (and to prices at checkout). Square stays the source of truth, so these survive every catalog sync. hidden_groups holds group keys (a Square modifier list id, or 'name:<list name>' for the synthetic Size group), hidden_options/sold_out_options hold modifier option ids, and option_prices maps an option id to the site price in USD.",
+      "description": "Admin modifier controls from Admin \u2192 Menu Manager \u2192 Modifiers, applied to the Square modifier catalog at render time (and to prices at checkout). Square stays the source of truth, so these survive every catalog sync. hidden_groups holds group keys (a Square modifier list id, or 'name:<list name>' for the synthetic Size group), hidden_options/sold_out_options hold modifier option ids, option_prices maps an option id to the site price in USD, default_options holds option ids the site preselects (Ranch on the Zesty Bacon Ranch Fries), and group_limits maps a group key to how many options may be picked (one sauce, one cheese).",
       "default": {},
       "properties": {
         "hidden_groups": {
@@ -295,6 +295,19 @@
           "type": "object",
           "default": {},
           "description": "Map of modifier option id -> site price in USD. Overrides the Square catalog price in the menu, the cart, and checkout."
+        },
+        "default_options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Modifier option ids the site preselects when an item opens, even when Square does not mark them default. Only affects the items that actually carry the option."
+        },
+        "group_limits": {
+          "type": "object",
+          "default": {},
+          "description": "Map of group key (Square modifier list id, or 'name:<list name>' for the synthetic Size group) -> the most options a customer may pick in that group. Overrides Square's max_selected so a one-of group stays one-of."
         }
       }
     },

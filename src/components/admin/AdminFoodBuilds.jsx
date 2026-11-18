@@ -1,17 +1,37 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { deriveFoodBuilds } from '@/lib/foodBuilds';
+import { getMenuSetting } from '@/lib/menuSettings';
+import { applyModifierOverrides, getModifierOverrides, EMPTY_OVERRIDES } from '@/lib/modifierOverrides';
 import FoodBuildCard from '@/components/admin/FoodBuildCard';
 
 // Food Builds tab: the loaded fries the crew builds by stacking Square
-// modifiers on the base fries.
+// modifiers on the base fries. The store's modifier overrides are applied here
+// too, so a preselected option (Ranch) and a one-of cap (one sauce) show exactly
+// as the customer's picker will.
 export default function AdminFoodBuilds({ items = [] }) {
-  const builds = useMemo(() => deriveFoodBuilds(items), [items]);
+  const [overrides, setOverrides] = useState(EMPTY_OVERRIDES);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMenuSetting()
+      .then((setting) => { if (!cancelled) setOverrides(getModifierOverrides(setting)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const builds = useMemo(
+    () => deriveFoodBuilds(items).map((build) => ({
+      ...build,
+      groups: applyModifierOverrides(build.groups, overrides),
+    })),
+    [items, overrides],
+  );
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
         Each card starts with the base fries, then stacks that item's own Square modifier groups on top.
-        Options, prices, defaults and selection rules print exactly as Square holds them.
+        Ticked tiles are the options the store preselects. Options, prices, defaults and selection rules print exactly as Square holds them.
       </p>
 
       {builds.map((build) => build.loaded ? (

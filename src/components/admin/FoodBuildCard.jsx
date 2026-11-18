@@ -1,9 +1,52 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 import { ruleBadge } from '@/lib/modifierRules';
+import { getModifierPhoto } from '@/lib/modifierPhotos';
 import { optimizedImageUrl } from '@/lib/utils';
 
+// One option on the card: the same photo tile a customer sees, with the options
+// the store preselects shown ticked so the crew builds it the house way.
+function OptionTile({ option }) {
+  const photo = getModifierPhoto(option.name);
+  const selected = option.on_by_default === true;
+  const initial = String(option.name || '').trim().charAt(0).toUpperCase();
+
+  return (
+    <div
+      className={`w-[120px] rounded-[13px] border-2 bg-white p-1 ${selected ? 'border-midnight-cherry' : 'border-border'}`}
+    >
+      <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-muted">
+        {photo ? (
+          <img
+            src={optimizedImageUrl(photo.url, 240, 240, 'fit')}
+            alt={photo.alt || option.name}
+            width="240"
+            height="240"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <span className="w-full h-full flex items-center justify-center font-heading text-2xl text-muted-foreground">
+            {initial}
+          </span>
+        )}
+        {selected ? (
+          <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-midnight-cherry text-white flex items-center justify-center shadow">
+            <Check size={12} strokeWidth={3} />
+          </span>
+        ) : null}
+      </div>
+      <div className="px-1 pt-1 pb-0.5">
+        <p className="text-[10.5px] leading-tight font-bold text-obsidian-roast line-clamp-2">{option.name}</p>
+        {option.price > 0 ? <p className="text-[10px] text-patina-mint font-semibold">+${option.price.toFixed(2)}</p> : null}
+      </div>
+    </div>
+  );
+}
+
 // One food build card: the loaded item's real Square photo and price, the base
-// fries it starts from, and every stacked modifier group with its options.
+// fries it starts from, and every stacked modifier group as photo tiles.
 export default function FoodBuildCard({ build }) {
   const { loaded, base, groups } = build;
   const photo = loaded?.image_url_opt || loaded?.image_url || base?.image_url_opt || base?.image_url || '';
@@ -47,14 +90,7 @@ export default function FoodBuildCard({ build }) {
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(group.modifiers || []).map((option) => (
-                    <span
-                      key={option.id || option.name}
-                      className="bg-white border border-border rounded-xl px-2.5 py-1 text-xs text-obsidian-roast"
-                    >
-                      {option.name}
-                      {option.price > 0 ? <span className="text-patina-mint ml-1">+${option.price.toFixed(2)}</span> : null}
-                      {option.on_by_default ? <span className="text-muted-foreground ml-1">(default)</span> : null}
-                    </span>
+                    <OptionTile key={option.id || option.name} option={option} />
                   ))}
                 </div>
               </div>

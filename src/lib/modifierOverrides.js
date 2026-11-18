@@ -20,6 +20,8 @@ export const EMPTY_OVERRIDES = {
   hidden_options: [],
   sold_out_options: [],
   option_prices: {},
+  default_options: [],
+  group_limits: {},
 };
 
 // Fill in any missing key so a partially stored override object can never crash
@@ -31,6 +33,8 @@ function normalize(overrides) {
     hidden_options: Array.isArray(o.hidden_options) ? o.hidden_options : [],
     sold_out_options: Array.isArray(o.sold_out_options) ? o.sold_out_options : [],
     option_prices: o.option_prices && typeof o.option_prices === 'object' ? o.option_prices : {},
+    default_options: Array.isArray(o.default_options) ? o.default_options : [],
+    group_limits: o.group_limits && typeof o.group_limits === 'object' ? o.group_limits : {},
   };
 }
 
@@ -50,7 +54,8 @@ export function groupKey(group) {
 export function overrideCount(overrides) {
   const o = normalize(overrides);
   return o.hidden_groups.length + o.hidden_options.length
-    + o.sold_out_options.length + Object.keys(o.option_prices).length;
+    + o.sold_out_options.length + Object.keys(o.option_prices).length
+    + o.default_options.length + Object.keys(o.group_limits).length;
 }
 
 // Effective groups for one menu item: hidden groups/options removed, sold-out
@@ -66,24 +71,33 @@ export function applyModifierOverrides(groups, overrides) {
   const hiddenOptions = new Set(o.hidden_options);
   const soldOutOptions = new Set(o.sold_out_options);
   const prices = o.option_prices;
+  const defaultOptions = new Set(o.default_options);
+  const limits = o.group_limits;
 
-  const mapList = (list) => ({
-    ...list,
-    modifiers: (list.modifiers || [])
-      .filter((m) => !(m?.id && hiddenOptions.has(m.id)))
-      .map((m) => {
-        const next = { ...m };
-        if (m?.id && prices[m.id] != null) next.price = Number(prices[m.id]) || 0;
-        if (m?.id && soldOutOptions.has(m.id)) next.sold_out = true;
-        const children = (m?.child_modifier_lists || [])
-          .filter((l) => !hiddenGroups.has(groupKey(l)))
-          .map(mapList)
-          .filter((l) => l.modifiers.length > 0);
-        if (children.length > 0) next.child_modifier_lists = children;
-        else delete next.child_modifier_lists;
-        return next;
-      }),
-  });
+  const mapList = (list) => {
+    const limit = Number(limits[groupKey(list)]);
+    return {
+      ...list,
+      // A store-set cap (one sauce, one cheese) rides on the group itself, so
+      // every picker that already reads Square's rule obeys it.
+      ...(Number.isFinite(limit) && limit > 0 ? { max_selected: limit } : {}),
+      modifiers: (list.modifiers || [])
+        .filter((m) => !(m?.id && hiddenOptions.has(m.id)))
+        .map((m) => {
+          const next = { ...m };
+          if (m?.id && prices[m.id] != null) next.price = Number(prices[m.id]) || 0;
+          if (m?.id && soldOutOptions.has(m.id)) next.sold_out = true;
+          if (m?.id && defaultOptions.has(m.id)) next.on_by_default = true;
+          const children = (m?.child_modifier_lists || [])
+            .filter((l) => !hiddenGroups.has(groupKey(l)))
+            .map(mapList)
+            .filter((l) => l.modifiers.length > 0);
+          if (children.length > 0) next.child_modifier_lists = children;
+          else delete next.child_modifier_lists;
+          return next;
+        }),
+    };
+  };
 
   return groups
     .filter((g) => !hiddenGroups.has(groupKey(g)))
