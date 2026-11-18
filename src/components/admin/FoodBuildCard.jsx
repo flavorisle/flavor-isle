@@ -6,14 +6,14 @@ import { optimizedImageUrl } from '@/lib/utils';
 
 // One option on the card: the same photo tile a customer sees, with the options
 // the store preselects shown ticked so the crew builds it the house way.
-function OptionTile({ option }) {
+function OptionTile({ option, compact }) {
   const photo = getModifierPhoto(option.name);
   const selected = option.on_by_default === true;
   const initial = String(option.name || '').trim().charAt(0).toUpperCase();
 
   return (
     <div
-      className={`w-[120px] rounded-[13px] border-2 bg-white p-1 ${selected ? 'border-midnight-cherry' : 'border-border'}`}
+      className={`${compact ? 'w-[92px]' : 'w-[120px]'} rounded-[13px] border-2 bg-white p-1 ${selected ? 'border-midnight-cherry' : 'border-border'}`}
     >
       <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-muted">
         {photo ? (
@@ -47,13 +47,13 @@ function OptionTile({ option }) {
 
 // One food build card: the loaded item's real Square photo and price, the base
 // fries it starts from, and every stacked modifier group as photo tiles.
-export default function FoodBuildCard({ build }) {
+export default function FoodBuildCard({ build, compact = false }) {
   const { loaded, base, groups } = build;
   const photo = loaded?.image_url_opt || loaded?.image_url || base?.image_url_opt || base?.image_url || '';
 
   return (
     <article className="card-diner overflow-hidden">
-      <div className="flex flex-col sm:flex-row gap-5 p-5">
+      <div className={`flex flex-col sm:flex-row ${compact ? 'gap-4 p-4' : 'gap-5 p-5'}`}>
         {photo ? (
           <img
             src={optimizedImageUrl(photo, 480, 480)}
@@ -62,7 +62,7 @@ export default function FoodBuildCard({ build }) {
             height="480"
             loading="lazy"
             decoding="async"
-            className="w-full sm:w-44 h-44 object-cover rounded-2xl flex-shrink-0"
+            className={`w-full ${compact ? 'sm:w-32 h-32' : 'sm:w-44 h-44'} object-cover rounded-2xl flex-shrink-0`}
           />
         ) : null}
 
@@ -79,18 +79,18 @@ export default function FoodBuildCard({ build }) {
             {loaded ? ` · Square item: ${loaded.name}` : ''}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${compact ? 'gap-2 mt-3' : 'gap-3 mt-4'}`}>
             {groups.map((group) => (
-              <div key={group.id || group.name} className="bg-muted/60 border border-border rounded-2xl p-3">
+              <div key={group.id || group.name} className={`bg-muted/60 border border-border rounded-2xl ${compact ? 'p-2' : 'p-3'}`}>
                 <div className="flex items-baseline gap-2 mb-2 flex-wrap">
                   <p className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{group.name}</p>
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {ruleBadge(group)}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
                   {(group.modifiers || []).map((option) => (
-                    <OptionTile key={option.id || option.name} option={option} />
+                    <OptionTile key={option.id || option.name} option={option} compact={compact} />
                   ))}
                 </div>
               </div>
