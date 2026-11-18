@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Check, X, Plus } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
+import ModifierTile from '@/components/ModifierTile';
+import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // A combo component keeps the same Square modifier choices and prices it has
 // everywhere else on the site.
@@ -74,29 +76,29 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                   {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
                 </span>
               </div>
-              <div className={group.modifiers.length > 10 ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
+              {/* Combo components pick their Square options with the same tile
+                  every other ordering surface uses. */}
+              <div className="grid grid-cols-2 gap-2">
                 {group.modifiers.map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple
                     ? (selections[group.name] || []).some((m) => m.id === mod.id)
                     : selections[group.name]?.id === mod.id;
                   return (
-                    <button
+                    <ModifierTile
                       key={mod.id}
+                      name={mod.name}
+                      price={mod.price}
+                      photo={getModifierPhoto(mod.name)}
                       disabled={mod.sold_out}
-                      onClick={() => (isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod))}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${mod.sold_out ? 'border-border bg-muted opacity-50 cursor-not-allowed' : isSelected ? 'border-midnight-cherry bg-red-50' : 'border-border hover:border-gray-300 bg-white'}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'}`}>
-                          {isSelected && <Check size={12} className="text-white" />}
-                        </div>
-                        <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
-                      </div>
-                      {mod.sold_out ? (
-                        <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
-                      ) : mod.price > 0 && <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>}
-                    </button>
+                      state={isSelected ? 'reg' : null}
+                      onSelect={(next) => {
+                        const on = next != null;
+                        if (on === isSelected) return;
+                        if (isMultiple) toggleMultiple(group.name, mod);
+                        else toggleSingle(group.name, mod);
+                      }}
+                    />
                   );
                 })}
               </div>
