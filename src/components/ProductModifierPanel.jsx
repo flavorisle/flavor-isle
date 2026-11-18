@@ -10,8 +10,7 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { seedValue, atMax, firstUnsatisfied } from '@/lib/modifierRules';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './classicDrinkIce';
 import { restorePanelSelection } from '@/lib/restorePanelSelection';
-import { isShakeItem } from './AllergyNote';
-import ShakeFlavorControl from './ShakeFlavorControl';
+
 import { isSaltQuestionItem } from '@/lib/sideSalt';
 
 // Inline modifier selection panel for the two-column ProductDetail page:
@@ -20,7 +19,7 @@ import { isSaltQuestionItem } from '@/lib/sideSalt';
 // (see ComboPicker), and the Add to Bag CTA.
 // The parent drives confirm() and reads live state via onStateChange.
 const ProductModifierPanel = forwardRef(function ProductModifierPanel(
-  { item, onConfirm, onStateChange, initialCartItem, saltChoice },
+  { item, onConfirm, onStateChange, initialCartItem, saltChoice, flavorLevel },
   ref,
 ) {
   const { menuSetting } = useCart();
@@ -30,7 +29,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   // this panel always matches what the admin set — hidden options are gone,
   // sold-out ones can't be picked, and overridden prices are shown and charged.
   const groups = applyModifierOverrides(item.modifiers, menuSetting?.modifier_overrides);
-  const effectiveItem = { ...item, modifiers: groups };
   const hasModifiers = groups.length > 0;
   const soldOut = item.is_available === false;
   // Fries and tots are cooked unsalted, so they ask the required salt question
@@ -54,7 +52,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   const restored = initialCartItem ? restorePanelSelection(groups, initialCartItem) : null;
   const [selections, setSelections] = useState(() => restored ? restored.selections : initSelections());
   const [nestedSelections, setNestedSelections] = useState(() => restored?.nested || {});
-  const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
+  // The shake's own flavor amount is picked above the description (ProductDetail
+  // owns it) and arrives here, so the price and the bag line always match it.
+  const coreLevel = flavorLevel !== undefined ? flavorLevel : (initialCartItem?.flavorLevel || null);
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const selectIceSize = (mod, level) => {
@@ -231,7 +231,6 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
 
   return (
     <div className="space-y-6">
-      {isShakeItem(item) && <ShakeFlavorControl item={effectiveItem} level={coreLevel} onChange={setCoreLevel} />}
       {/* Happy Hour badge */}
       {isHappyHour && (
         <div className="inline-flex items-center gap-1.5 bg-midnight-cherry text-white text-xs font-heading px-3 py-1 rounded-full">

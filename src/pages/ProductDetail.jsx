@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
 import { trackViewItem, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ProductModifierPanel from '@/components/ProductModifierPanel';
-import { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
+import ShakeFlavorControl, { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
+import { isShakeItem } from '@/components/AllergyNote';
 import ProductSuggestions from '@/components/ProductSuggestions';
 import ItemRatings from '@/components/ItemRatings';
 import ShareItemButton from '@/components/ShareItemButton';
@@ -49,6 +50,9 @@ export default function ProductDetail() {
   // Fries and tots are cooked unsalted; the question is asked here on the page,
   // right above the quantity, instead of inside the modifier panel.
   const [saltChoice, setSaltChoice] = useState(null);
+  // A shake's included flavor amount — shown above the description, and handed
+  // to the panel so its price and the bag line carry the same choice.
+  const [coreLevel, setCoreLevel] = useState(null);
 
   // The "What's on it" chips toggle the customization panel's own selection
   // state, so chips, list, price, and cart all stay in agreement.
@@ -101,6 +105,11 @@ export default function ProductDetail() {
     if (!note) return;
     setSaltChoice(/no salt/i.test(note) ? 'no' : 'yes');
   }, [editingLine?.id, reorderItem?.saltNote]);
+  // Reopening a bag line or a past order brings its flavor amount back with it.
+  useEffect(() => {
+    setCoreLevel((editingLine || reorderItem)?.flavorLevel || null);
+  }, [editingLine?.id, reorderItem?.flavorLevel]);
+  const shakeItem = item ? isShakeItem(item) : false;
   const hasModifiers = item?.modifiers && item.modifiers.length > 0;
   const isBurger = item ? /burger/i.test(item.name) : false;
   // Fries and tots ask the required salt question even with zero modifiers, so
@@ -321,6 +330,10 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* A shake's flavor amount sits above the description, not with
+                  the customization options further down the page. */}
+              {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
+
               {/* Description + the selectable "What's on it" chips — the chips
                   drive the modifier panel's selection so price and cart agree. */}
               <ItemBuildSummary
@@ -413,6 +426,7 @@ export default function ProductDetail() {
                   onStateChange={setPanelState}
                   initialCartItem={editingLine || reorderItem}
                   saltChoice={saltChoice}
+                  flavorLevel={coreLevel}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
