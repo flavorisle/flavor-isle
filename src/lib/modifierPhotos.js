@@ -63,7 +63,9 @@ export const MODIFIER_PHOTOS = {
   "CARAMEL SAUCE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/6ad6a1a0c_generated_image.png",
   "CARAMEL SYRUP": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/6ad6a1a0c_generated_image.png",
   "CHERRIES": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/dcff3d73c_generated_image.png",
-  "CHERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/dcff3d73c_generated_image.png",
+  // Plain "Cherry" is the syrup the shakes get; the real fruit cherries are
+  // their own option and keep the real-cherry photo.
+  "CHERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f59b2fea3_generated_image.png",
   "CHERRY SAUCE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f59b2fea3_generated_image.png",
   "CHERRY SYRUP": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f59b2fea3_generated_image.png",
   "CHERRY TOPPING": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f59b2fea3_generated_image.png",
@@ -144,6 +146,8 @@ export const MODIFIER_PHOTOS = {
   "REAL BANANAS": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/e66a53d84_generated_image.png",
   "REAL FRUIT BANANA": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/e66a53d84_generated_image.png",
   "REAL FRUIT BLUEBERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/baa246d8e_generated_image.png",
+  "REAL FRUIT CHERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/dcff3d73c_generated_image.png",
+  "REAL FRUIT CHERRIES": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/dcff3d73c_generated_image.png",
   "REAL FRUIT CRUSHED PINEAPPLE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c38b33420_generated_image.png",
   "REAL FRUIT PEACH": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/8301df29e_generated_image.png",
   "REAL FRUIT RASPBERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/726996759_generated_image.png",
