@@ -65,25 +65,25 @@ function PosterSheet({ ad, sheetId }) {
       </div>
 
       {/* hero */}
-      <div style={{ position: 'relative', padding: '14px 30px 0' }}>
+      <div style={{ position: 'relative', padding: '6px 30px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: t.accent, fontSize: 10.5, fontWeight: 900, letterSpacing: '.26em' }}>
           <span style={{ height: 2, background: t.accent, flex: 1, opacity: 0.55 }} />
           <span style={{ whiteSpace: 'nowrap' }}>{ad.kicker || ''}</span>
           <span style={{ height: 2, background: t.accent, flex: 1, opacity: 0.55 }} />
         </div>
         <div style={{ marginTop: 0 }}>
-          <div className="ad-bebas" style={{ fontSize: 150, height: 128, lineHeight: '128px', color: t.ink, letterSpacing: '.005em', whiteSpace: 'nowrap' }}>{ad.title || ''}</div>
+          <div className="ad-bebas" style={{ fontSize: 150, height: 112, lineHeight: '112px', color: t.ink, letterSpacing: '.005em', whiteSpace: 'nowrap' }}>{ad.title || ''}</div>
           <div
             className="ad-bebas"
             style={{
-              fontSize: 150, height: 128, lineHeight: '128px', color: t.accent, letterSpacing: '.005em', whiteSpace: 'nowrap',
+              fontSize: 150, height: 112, lineHeight: '112px', color: t.accent, letterSpacing: '.005em', whiteSpace: 'nowrap',
               textShadow: `3px 3px 0 ${t.ink}`,
             }}
           >
             {ad.title_accent || ''}
           </div>
         </div>
-        <p style={{ marginTop: 12, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
+        <p style={{ marginTop: 22, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
           {hiAt >= 0 ? (
             <>
               {sub.slice(0, hiAt)}
@@ -111,7 +111,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* flavors + price */}
       {(chips.length > 0 || ad.price_line) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 30px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 30px 0', flexShrink: 0 }}>
           {chips.map((c, i) => (
             <div
               key={`${c}-${i}`}
@@ -144,7 +144,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* three item cards */}
       {items.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: 10, padding: '14px 30px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: 10, padding: '14px 30px 0', flexShrink: 0 }}>
           {items.map((m, i) => (
             <div key={`${m.name}-${i}`} style={{ borderRadius: 12, overflow: 'hidden', background: '#ffffff', border: `1.5px solid ${t.ink}28`, display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '1.15in', overflow: 'hidden' }}>
@@ -163,7 +163,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* three one-liners */}
       {lines.length > 0 && (
-        <div style={{ margin: '12px 30px 0', background: t.ink, color: t.paper, borderRadius: 12, padding: '11px 18px', display: 'grid', gridTemplateColumns: `repeat(${lines.length}, 1fr)`, gap: 14 }}>
+        <div style={{ margin: '12px 30px 0', background: t.ink, color: t.paper, borderRadius: 12, padding: '11px 18px', display: 'grid', gridTemplateColumns: `repeat(${lines.length}, 1fr)`, gap: 14, flexShrink: 0 }}>
           {lines.map((l, i) => (
             <div key={i} style={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }}>
               <span style={{ display: 'block', fontSize: 9, fontWeight: 900, letterSpacing: '.2em', color: t.gold, marginBottom: 4 }}>{l.label}</span>
