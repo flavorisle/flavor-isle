@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 import { readAllRecords } from '../../shared/readAll.ts';
 
