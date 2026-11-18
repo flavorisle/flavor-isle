@@ -55,7 +55,11 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const findGroup = (kw) => groups.find((g) => (g.name || '').toLowerCase().includes(kw));
   const sizeOpts = (findGroup('size')?.modifiers || []).filter((m) => !m.sold_out);
   const baseOpts = (findGroup('base')?.modifiers || []).filter((m) => !m.sold_out);
-  const flavorOpts = (findGroup('flavor')?.modifiers || []).filter((m) => !m.sold_out);
+  const flavorGroup = findGroup('flavor');
+  const flavorOpts = (flavorGroup?.modifiers || []).filter((m) => !m.sold_out);
+  // Square's cap on the flavor list, when it sets one, counts the extras taken
+  // here so the shake can never carry more flavors than Square allows.
+  const flavorMax = Number(flavorGroup?.max_selected) > 0 ? Number(flavorGroup.max_selected) : null;
 
   const flavorName = flavorNameFromItem(shakeItem.name);
   const flavorEmoji = flavorEmojiByName(flavorName);
@@ -247,6 +251,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
                       mod={{ id: opt.id, name, price: opt.price, child_modifier_lists: opt.child_modifier_lists }}
                       isSelected={selected}
                       onToggle={() => {
+                        // Square's maximum: no extra flavor can be added once the
+                        // shake already holds as many as the flavor list allows.
+                        if (!selected && flavorMax && extraFlavors.length >= flavorMax) return;
                         // Toggling the flavor off clears its Lite/Extra level too.
                         if (selected) setFlavorNesteds((prev) => { const next = { ...prev }; delete next[opt.id]; return next; });
                         toggleMulti(extraFlavors, setExtraFlavors, opt);

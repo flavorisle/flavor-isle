@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
+import { atMax, ruleBadge } from '@/lib/modifierRules';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
@@ -30,14 +31,17 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
       [groupName]: prev[groupName]?.id === mod.id ? (groupName === 'Size' ? mod : null) : mod,
     }));
 
+  // Square's maximum carries into the Combo Isle exactly as it does everywhere
+  // else: once the group holds as many picks as Square allows, one more tap
+  // cannot add another. Taking an option off is always allowed.
   const toggleMultiple = (groupName, mod) =>
     setSelections((prev) => {
       const current = prev[groupName] || [];
       const exists = current.find((m) => m.id === mod.id);
-      return {
-        ...prev,
-        [groupName]: exists ? current.filter((m) => m.id !== mod.id) : [...current, mod],
-      };
+      if (exists) return { ...prev, [groupName]: current.filter((m) => m.id !== mod.id) };
+      const group = groups.find((g) => g.name === groupName);
+      if (group && atMax(group, current)) return prev;
+      return { ...prev, [groupName]: [...current, mod] };
     });
 
   const extraCost = Object.values(selections).reduce((sum, sel) => {
@@ -75,7 +79,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {group.selection_type === 'MULTIPLE' ? 'Choose any' : 'Choose one'}
+                  {ruleBadge(group)}
                 </span>
               </div>
               {/* Combo components pick their Square options with the same tile

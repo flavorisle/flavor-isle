@@ -66,6 +66,14 @@ export default async function (req) {
         // the customer types something in. max_length is TEXT-only.
         modifier_type: obj.modifier_list_data?.modifier_type || 'LIST',
         max_length: obj.modifier_list_data?.max_length ?? null,
+        // The list's own cap, used when an item attaches it without its own.
+        // Square: a value of 0 or less means no maximum.
+        max_selected: Number(obj.modifier_list_data?.max_selected_modifiers) > 0
+          ? Number(obj.modifier_list_data.max_selected_modifiers)
+          : null,
+        min_selected: Number(obj.modifier_list_data?.min_selected_modifiers) > 0
+          ? Number(obj.modifier_list_data.min_selected_modifiers)
+          : null,
         modifiers: (obj.modifier_list_data?.modifiers || []).map(m => ({
           id: m.id,
           name: m.modifier_data?.name || '',
@@ -104,9 +112,14 @@ export default async function (req) {
       const list = modifierListMap[listId];
       if (!list) return null;
       // The item's own minimum and maximum, straight from Square. -1, 0 or
-      // absent means no maximum; absent or 0 means no minimum.
-      const minSelected = Number(attachment?.min_selected_modifiers);
-      const maxSelected = Number(attachment?.max_selected_modifiers);
+      // absent means no maximum; absent or 0 means no minimum. When the
+      // attachment sets no maximum, the modifier list's own maximum applies —
+      // that is how Square itself resolves the two, and it is the only way a
+      // nested child list (resolved without an attachment) keeps its cap.
+      const attachMin = Number(attachment?.min_selected_modifiers);
+      const attachMax = Number(attachment?.max_selected_modifiers);
+      const minSelected = attachMin > 0 ? attachMin : (list.min_selected || 0);
+      const maxSelected = attachMax > 0 ? attachMax : (list.max_selected || 0);
       return {
         id: list.id,
         name: list.name,
