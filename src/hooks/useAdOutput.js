@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createAdFrame, initializeAdDocument, mountAdSheet, snapshotAdSheet } from '@/lib/adOutputDocument';
 import { embedAdPhotos, offerAdPdf } from '@/lib/adOutputAssets';
+import { AD_PAPER, AD_PLACEMENT } from '@/lib/adPageGeometry';
 
 function withinOutputLimit(operation) {
   let timer;
@@ -40,11 +41,13 @@ export default function useAdOutput(draft, onNote) {
       button.type = 'button';
       button.textContent = 'Print ad';
       button.onclick = () => { tab.focus(); tab.print(); };
-      controls.appendChild(button);
+      const settings = tab.document.createElement('p');
+      settings.textContent = 'Letter paper, portrait, 100% scale. Narrow 0.25-inch side margins are built into this layout. Turn off headers and footers; do not use Fit to page or add extra margins.';
+      controls.append(button, settings);
       tab.document.body.prepend(controls);
       tab.focus();
       tab.print();
-      onNote('The ad is ready in its own tab. You can also use Print ad there.');
+      onNote('Ready on one Letter page with narrow 0.25-inch side margins. Choose 100% scale and turn off headers and footers in the print dialog.');
     } catch (error) {
       console.error('Ad print failed:', error);
       onNote(error.message || 'The ad could not be prepared for printing.');
@@ -76,14 +79,18 @@ export default function useAdOutput(draft, onNote) {
       const [{ default: html2canvas }, { jsPDF }] = await withinOutputLimit(Promise.all([
         import('html2canvas'),
         import('jspdf'),
-        embedAdPhotos(sheet).then(() => mountAdSheet(frame.contentDocument, sheet)),
+        embedAdPhotos(sheet).then(() => mountAdSheet(frame.contentDocument, sheet, { printPage: false })),
       ]));
       const canvas = await withinOutputLimit(html2canvas(sheet, {
         scale: 2, width: 816, height: 1056, windowWidth: 816, windowHeight: 1056,
         scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', logging: false,
       }));
       const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11);
+      pdf.viewerPreferences({ PrintScaling: 'None', PickTrayByPDFSize: true });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG',
+        AD_PLACEMENT.x, AD_PLACEMENT.y, AD_PLACEMENT.width, AD_PLACEMENT.height);
+      pdf.setProperties({ title: selectedAd.name || 'Flavor Isle ad',
+        subject: `${AD_PAPER.width} x ${AD_PAPER.height} inch Letter ad, 0.25-inch side margins, print at 100%` });
       const fileName = `${(selectedAd.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
       const result = offerAdPdf(pdf.output('blob'), fileName, iosTab);
       if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current);

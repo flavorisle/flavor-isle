@@ -13,10 +13,10 @@ const STOREFRONT = galleryImage('The sign at 1st and Main');
 // NOTE: no quotes inside these CSS strings. The markup is escaped when React writes a
 // style tag, so a quoted font name arrives as &#x27; and the rule dies.
 const FONTS = `
-#ad-sheet, #ad-sheet * { box-sizing: border-box; }
-#ad-sheet :is(h1, h2, h3, h4, p, figure, blockquote, ul, ol) { margin: 0; padding: 0; }
-#ad-sheet { font-family: Nunito, ui-sans-serif, system-ui, sans-serif; }
-#ad-sheet .ad-bebas { font-family: Bebas Neue, ui-sans-serif, system-ui, sans-serif; }
+[data-ad-artwork], [data-ad-artwork] * { box-sizing: border-box; }
+[data-ad-artwork] :is(h1, h2, h3, h4, p, figure, blockquote, ul, ol) { margin: 0; padding: 0; }
+[data-ad-artwork] { font-family: Nunito, ui-sans-serif, system-ui, sans-serif; }
+[data-ad-artwork] .ad-bebas { font-family: Bebas Neue, ui-sans-serif, system-ui, sans-serif; }
 `;
 
 function HoursLines({ groups, size = 10.5 }) {
@@ -48,6 +48,7 @@ function PosterSheet({ ad, sheetId }) {
   return (
     <div
       id={sheetId}
+      data-ad-artwork=""
       style={{
         width: '8.5in', height: '11in', overflow: 'hidden', background: t.paper, color: t.ink,
         display: 'flex', flexDirection: 'column', position: 'relative',
@@ -232,6 +233,7 @@ function ClassicSheet({ ad, sheetId }) {
   return (
     <div
       id={sheetId}
+      data-ad-artwork=""
       className="bg-white overflow-hidden flex flex-col"
       style={{ width: '8.5in', minHeight: '11in', height: '11in' }}
     >

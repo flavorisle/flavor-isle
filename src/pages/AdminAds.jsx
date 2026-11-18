@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import AdminNav from '@/components/admin/AdminNav';
 import PrintAdSheet from '@/components/ads/PrintAdSheet';
+import AdPaperPreview from '@/components/ads/AdPaperPreview';
 import AdEditor from '@/components/ads/AdEditor';
 import { blankPoster, SEED_ADS } from '@/lib/printAds';
 import useAdOutput from '@/hooks/useAdOutput';
@@ -214,11 +215,11 @@ export default function AdminAds() {
                         marginRight: -816 * 0.56, marginBottom: -1056 * 0.56,
                       }}
                     >
-                      <PrintAdSheet ad={draft} sheetId="ad-sheet-preview" />
+                      <AdPaperPreview ad={draft} />
                     </div>
                   </div>
                   <p className="mt-2 text-[11px] text-obsidian-roast/50">
-                    Print opens the ad alone in a new tab. Download PDF makes a single letter-size page. On an iPhone, tap Share, then Save to Files.
+                    Letter, portrait, with narrow 0.25-inch side margins. Print at 100% scale with headers and footers off. The PDF uses the same page size and margins. On an iPhone, tap Share, then Save to Files.
                   </p>
                 </div>
               </div>
