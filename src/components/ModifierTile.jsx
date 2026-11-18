@@ -53,9 +53,9 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
     >
       <button
         type="button"
-        onClick={() => pick('reg')}
+        onClick={() => pick(active ? null : 'reg')}
         disabled={disabled}
-        aria-label={`${name} Regular`}
+        aria-label={active ? `${name} remove` : `${name} Regular`}
         aria-pressed={active}
         style={{
           display: 'block',
