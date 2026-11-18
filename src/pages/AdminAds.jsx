@@ -115,14 +115,40 @@ export default function AdminAds() {
     setBusy('pdf');
     try {
       const [{ default: html2canvas }, jsPDFmod] = await Promise.all([import('html2canvas'), import('jspdf')]);
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+      // Fetch every photo first. Nothing downloads until all of them are in hand.
+      const imgs = Array.from(el.querySelectorAll('img'));
+      const local = new Map();
+      for (const img of imgs) {
+        const src = img.currentSrc || img.src;
+        if (!src || src.startsWith('data:') || local.has(src)) continue;
+        const res = await fetch(src, { mode: 'cors' });
+        if (!res.ok) throw new Error('photo');
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
+        local.set(src, dataUrl);
+      }
+      if (document.fonts?.ready) await document.fonts.ready;
+      const canvas = await html2canvas(el, {
+        scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+        onclone: (doc) => {
+          doc.querySelectorAll('#ad-sheet img').forEach((img) => {
+            const d = local.get(img.currentSrc || img.src);
+            if (d) img.src = d;
+          });
+        },
+      });
       const { jsPDF } = jsPDFmod;
       const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11);
       pdf.save(`${(draft?.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`);
       flash('PDF downloaded.');
     } catch (e) {
-      flash('PDF did not build. Use Print and choose Save as PDF.');
+      flash('A photo did not load, so the PDF was not made. Try again in a moment.');
     } finally {
       setBusy('');
     }

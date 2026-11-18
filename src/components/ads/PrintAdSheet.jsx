@@ -70,19 +70,19 @@ function PosterSheet({ ad, sheetId }) {
           <span style={{ whiteSpace: 'nowrap' }}>{ad.kicker || ''}</span>
           <span style={{ height: 2, background: t.accent, flex: 1, opacity: 0.55 }} />
         </div>
-        <div style={{ marginTop: 6 }}>
-          <div className="ad-bebas" style={{ fontSize: 172, lineHeight: 0.82, color: t.ink, letterSpacing: '.005em' }}>{ad.title || ''}</div>
+        <div style={{ marginTop: 0 }}>
+          <div className="ad-bebas" style={{ fontSize: 150, height: 128, lineHeight: '128px', color: t.ink, letterSpacing: '.005em', whiteSpace: 'nowrap' }}>{ad.title || ''}</div>
           <div
             className="ad-bebas"
             style={{
-              fontSize: 172, lineHeight: 0.82, color: t.accent, letterSpacing: '.005em',
+              fontSize: 150, height: 128, lineHeight: '128px', color: t.accent, letterSpacing: '.005em', whiteSpace: 'nowrap',
               textShadow: `3px 3px 0 ${t.ink}`,
             }}
           >
             {ad.title_accent || ''}
           </div>
         </div>
-        <p style={{ marginTop: 12, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
+        <p style={{ marginTop: 14, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
           {hiAt >= 0 ? (
             <>
               {sub.slice(0, hiAt)}
@@ -174,11 +174,11 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* bottom band */}
       {(ad.strip_headline || ad.strip_photo_wide) && (
-        <div style={{ position: 'relative', marginTop: 14, height: '1.25in', flex: 'none', display: 'flex', background: t.ink, overflow: 'hidden' }}>
+        <div style={{ position: 'relative', marginTop: 14, minHeight: '1.25in', flex: 'none', display: 'flex', background: t.ink, overflow: 'hidden' }}>
           <div style={{ flex: '0 0 46%', padding: '0 16px 0 30px', alignSelf: 'center', color: t.paper }}>
             <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '.26em', color: t.gold }}>{ad.strip_kicker || ''}</div>
-            <div className="ad-bebas" style={{ fontSize: 29, lineHeight: 0.95, marginTop: 4 }}>{ad.strip_headline || ''}</div>
-            <div style={{ fontSize: 9.5, fontWeight: 800, marginTop: 7, opacity: 0.9, lineHeight: 1.4, whiteSpace: 'pre-line' }}>{ad.strip_note || ''}</div>
+            <div className="ad-bebas" style={{ fontSize: 27, lineHeight: '27px', marginTop: 4 }}>{ad.strip_headline || ''}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 800, marginTop: 8, paddingBottom: 6, opacity: 0.9, lineHeight: 1.4, whiteSpace: 'pre-line' }}>{ad.strip_note || ''}</div>
           </div>
           <div style={{ flex: '1 1 auto', display: 'flex', minWidth: 0 }}>
             <div style={{ flex: '1 1 60%', minWidth: 0 }}>
