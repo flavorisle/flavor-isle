@@ -11,7 +11,7 @@ import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra }
 import { isFlavorGroup } from './FlavorPillButton';
 import ModifierTile from './ModifierTile';
 import PlainOptionPills from './PlainOptionPills';
-import { isPlainOption } from '@/lib/plainOption';
+import { isPillOption } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
@@ -368,6 +368,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     modifier amount. */}
                 <PlainOptionPills
                   options={group.modifiers}
+                  groupName={group.name}
                   isSelected={(mod) => (group.selection_type === 'MULTIPLE'
                     ? (selections[group.name] || []).some((m) => m.id === mod.id)
                     : selections[group.name]?.id === mod.id)}
@@ -376,7 +377,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     : toggleSingle(group.name, mod))}
                 />
                 <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
-                  {group.modifiers.filter((mod) => !isPlainOption(mod.name)).map((mod) => {
+                  {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
                     if (iceContext && group.name === iceContext.sizeGroup.name) {
                       return (
                         <ClassicDrinkIceSize

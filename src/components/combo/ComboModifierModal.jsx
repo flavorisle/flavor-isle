@@ -4,7 +4,7 @@ import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
-import { isPlainOption } from '@/lib/plainOption';
+import { isPillOption } from '@/lib/plainOption';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // A combo component keeps the same Square modifier choices and prices it has
@@ -82,13 +82,14 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                   every other ordering surface uses. */}
               <PlainOptionPills
                 options={group.modifiers}
+                groupName={group.name}
                 isSelected={(mod) => (group.selection_type === 'MULTIPLE'
                   ? (selections[group.name] || []).some((m) => m.id === mod.id)
                   : selections[group.name]?.id === mod.id)}
                 onToggle={(mod) => (group.selection_type === 'MULTIPLE' ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod))}
               />
               <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
-                {group.modifiers.filter((mod) => !isPlainOption(mod.name)).map((mod) => {
+                {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple
                     ? (selections[group.name] || []).some((m) => m.id === mod.id)

@@ -1,17 +1,18 @@
 import React from 'react';
-import { isPlainOption } from '@/lib/plainOption';
+import { isPillOption } from '@/lib/plainOption';
 
 // Issue #324 — removal options ("No cheese", "No topping", "No sauce",
-// "Plain") are pills, not tiles: one compact chip each, wrapping in a row, so
-// the removals never take a photo-sized cell away from the toppings that
-// actually go on the item. Tapping a pill selects it; tapping it again clears
-// it, the same way a tile behaves.
+// "Plain") and the shake thickness group ("Thick, Thin, or Regular Thickness")
+// are pills, not tiles: one compact chip each, wrapping in a row, so they never
+// take a photo-sized cell away from the toppings that actually go on the item.
+// Tapping a pill selects it; tapping it again clears it, the same way a tile
+// behaves.
 //
 // Controlled component: isSelected(mod) and onToggle(mod) are the caller's.
 const FONT = 'Arial, Helvetica, sans-serif';
 
-export default function PlainOptionPills({ options = [], isSelected, onToggle }) {
-  const pills = (options || []).filter((mod) => isPlainOption(mod.name));
+export default function PlainOptionPills({ options = [], groupName, isSelected, onToggle }) {
+  const pills = (options || []).filter((mod) => isPillOption(mod.name, groupName));
   if (pills.length === 0) return null;
 
   return (
