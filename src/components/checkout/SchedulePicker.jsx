@@ -11,6 +11,49 @@ const dateKeyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.ge
 const timeStr = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const dayKeyFor = (d) => DAY_KEYS[(d.getDay() + 6) % 7]; // Sun(0) → 'sunday' at index 6
 
+// The open window for one calendar day, or null when that day is closed.
+function openWindow(day, businessHours) {
+  const dh = businessHours[dayKeyFor(day)];
+  if (!dh || dh.closed || !dh.open || !dh.close) return null;
+  const [oh, om] = dh.open.split(':').map(Number);
+  const [ch, cm] = dh.close.split(':').map(Number);
+  const open = new Date(day); open.setHours(oh, om, 0, 0);
+  const close = new Date(day); close.setHours(ch, cm, 0, 0);
+  return { open, close };
+}
+
+// Inside means open ≤ t < close: the closing moment itself is already closed.
+const insideWindow = (t, win) => !!win && t >= win.open && t < win.close;
+
+// First opening moment after `from`, walking up to two weeks ahead.
+function nextOpening(from, businessHours) {
+  for (let i = 0; i < 14; i++) {
+    const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
+    const win = openWindow(day, businessHours);
+    if (win && win.open > from) return win.open;
+  }
+  return null;
+}
+
+// "10:30 AM" — the real clock time, spelled the way the button copy reads.
+function clockLabel(d) {
+  const h = d.getHours();
+  const ap = h >= 12 ? 'PM' : 'AM';
+  return `${((h + 11) % 12) + 1}:${pad(d.getMinutes())} ${ap}`;
+}
+
+// "Opens 10:30 AM" today, "Tomorrow 10:30 AM", else "Thu 10:30 AM".
+function openingLabel(when, now) {
+  const days = Math.round(
+    (new Date(when.getFullYear(), when.getMonth(), when.getDate()) -
+      new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000
+  );
+  const time = clockLabel(when);
+  if (days <= 0) return `Opens ${time}`;
+  if (days === 1) return `Tomorrow ${time}`;
+  return `${DAY_LABELS[dayKeyFor(when)].slice(0, 3)} ${time}`;
+}
+
 export default function SchedulePicker({ onChange, prepMinutes = normalizeWait(), compact = false }) {
   const businessHours = useBusinessHours();
   const [mode, setMode] = useState('asap');
@@ -34,16 +77,16 @@ export default function SchedulePicker({ onChange, prepMinutes = normalizeWait()
     return arr;
   }, [businessHours]);
 
-  // Time slots for the selected date, bounded by business hours.
+  // Time slots for the selected date, bounded by business hours. The last slot is
+  // one interval before closing, so no pickup is ever offered at or after the
+  // moment we close — 6:45 PM on a 7 PM day. Closed days have no slots at all.
   // For today, the earliest slot is now + prepMinutes (rounded up to the next interval).
   const slots = useMemo(() => {
     const sel = new Date(date + 'T00:00:00');
-    const dh = businessHours[dayKeyFor(sel)];
-    if (!dh || dh.closed) return [];
-    const [oh, om] = dh.open.split(':').map(Number);
-    const [ch, cm] = dh.close.split(':').map(Number);
-    const start = new Date(sel); start.setHours(oh, om, 0, 0);
-    const end = new Date(sel); end.setHours(ch, cm, 0, 0);
+    const win = openWindow(sel, businessHours);
+    if (!win) return [];
+    const start = win.open;
+    const last = new Date(win.close.getTime() - SLOT_INTERVAL * 60000);
 
     const today = new Date();
     let earliest;
@@ -57,11 +100,27 @@ export default function SchedulePicker({ onChange, prepMinutes = normalizeWait()
     }
 
     const list = [];
-    for (let t = new Date(start); t <= end; t = new Date(t.getTime() + SLOT_INTERVAL * 60000)) {
+    for (let t = new Date(start); t <= last; t = new Date(t.getTime() + SLOT_INTERVAL * 60000)) {
       if (t >= earliest) list.push(timeStr(t));
     }
     return list;
   }, [date, businessHours, prepMinutes]);
+
+  // ASAP never promises a time we are not open. If now + prep falls outside open
+  // hours — before opening, at or after closing, or a closed day — the order rolls
+  // forward to the next opening, and the button says that real time instead of
+  // "ASAP" (the server refuses any time outside these hours).
+  const asapPlan = useMemo(() => {
+    const now = new Date();
+    const ready = new Date(now.getTime() + prepMinutes * 60000);
+    const today = openWindow(now, businessHours);
+    if (insideWindow(now, today) && insideWindow(ready, today)) {
+      return { scheduledFor: ready, label: 'ASAP' };
+    }
+    const opening = nextOpening(now, businessHours);
+    if (!opening) return { scheduledFor: ready, label: 'ASAP' };
+    return { scheduledFor: opening, label: openingLabel(opening, now) };
+  }, [businessHours, prepMinutes]);
 
   // Keep a valid slot whenever the selected day's slot list changes
   useEffect(() => {
@@ -72,16 +131,11 @@ export default function SchedulePicker({ onChange, prepMinutes = normalizeWait()
   useEffect(() => {
     const n = new Date();
     if (mode === 'asap') {
-      let ready = new Date(n.getTime() + prepMinutes * 60000);
-      // Orders placed before the store opens are ready at opening, not before.
-      const dh = businessHours[dayKeyFor(n)];
-      if (dh && !dh.closed) {
-        const [oh, om] = dh.open.split(':').map(Number);
-        const storeOpen = new Date(n); storeOpen.setHours(oh, om, 0, 0);
-        if (ready < storeOpen) ready = storeOpen;
-      }
+      // Now + prep when that moment is inside open hours; otherwise the next
+      // opening, never a time we are closed.
+      const ready = asapPlan.scheduledFor;
       const est = Math.max(prepMinutes, Math.round((ready - n) / 60000));
-      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: est, label: 'ASAP' });
+      onChange?.({ mode: 'asap', scheduledFor: ready.toISOString(), estimatedTime: est, label: asapPlan.label });
     } else if (slot) {
       const ready = new Date(date + 'T' + slot + ':00');
       onChange?.({
@@ -93,7 +147,7 @@ export default function SchedulePicker({ onChange, prepMinutes = normalizeWait()
     } else {
       onChange?.({ mode: 'schedule', scheduledFor: '', estimatedTime: prepMinutes, label: '' });
     }
-  }, [mode, date, slot, onChange, prepMinutes]);
+  }, [mode, date, slot, onChange, prepMinutes, asapPlan]);
 
   return (
     <div>
@@ -114,7 +168,7 @@ export default function SchedulePicker({ onChange, prepMinutes = normalizeWait()
             mode === 'asap' ? 'border-midnight-cherry bg-midnight-cherry text-white' : 'border-border text-obsidian-roast hover:border-midnight-cherry/40'
           }`}
         >
-          <Zap size={16} /> ASAP
+          <Zap size={16} /> {asapPlan.label}
         </button>
         <button
           type="button"

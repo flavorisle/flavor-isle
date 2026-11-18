@@ -6,6 +6,7 @@ import { findBlock } from '../../shared/blockedContacts.ts';
 import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { analyzeEmail } from '../../shared/emailValidation.ts';
+import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
 
 // The website checkout's order creation.
 //
@@ -26,6 +27,14 @@ export default async function (req: Request) {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
+    }
+
+    // Issue #330 — a pickup time outside our open hours (or on a closed day) is
+    // refused before anything is created, so no order and no charge can carry a
+    // time the kitchen cannot honor. Hours come from the live MenuSetting record.
+    if (!(await pickupTimeAllowed(base44, scheduledFor))) {
+      console.warn('createSquareWebCheckout: refused — pickup time outside open hours:', scheduledFor);
+      return Response.json({ error: PICKUP_HOURS_ERROR }, { status: 400 });
     }
 
     // Issue #159 — checkout email typo guard. An ending that cannot receive mail

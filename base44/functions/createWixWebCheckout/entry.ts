@@ -9,6 +9,7 @@ import { getSmashieSettings, webPaymentProvider } from '../../shared/smashieSett
 import { todaysMilkshakePrize } from '../../shared/findSmashiePrize.ts';
 import { openWixCheckoutSession, resolveAppUrl, wixCheckoutConfigured } from '../../shared/wixCheckout.ts';
 import { openSquareFallbackForOrder } from '../../shared/checkoutFallback.ts';
+import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
 
 // The website's secure card checkout on Base44 Payments (Wix) — the primary path
 // (issue #116, Part A step 2). This is createSquareWebCheckout's twin and keeps the
@@ -39,6 +40,14 @@ export default async function (req: Request) {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize, heardAboutUs } = body;
+
+    // Issue #330 — a pickup time outside our open hours (or on a closed day) is
+    // refused before anything is created, so no order and no charge can carry a
+    // time the kitchen cannot honor. Hours come from the live MenuSetting record.
+    if (!(await pickupTimeAllowed(base44, scheduledFor))) {
+      console.warn('createWixWebCheckout: refused — pickup time outside open hours:', scheduledFor);
+      return Response.json({ error: PICKUP_HOURS_ERROR }, { status: 400 });
+    }
 
     // The owner's switch decides which system backs the website's payment page. If it
     // is not on the Base44 Payments path, this endpoint refuses rather than opening a
