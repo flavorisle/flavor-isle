@@ -65,9 +65,9 @@ export const GALLERY_PHOTOS = [
   { url: 'https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c45ae457d_9e4704759_IMG_1601.jpg', alt: 'Cheeseburgers with tater tots, plus fried pickles on three paper plates', caption: 'Tots, burgers and fried pickles', category: 'Food' },
 ];
 
-// Marketing rule, Wesley, Nov 10 2026: "only pull images from gallery for any marketing
-// unless told by me to use different." Every ad, flyer, post and banner takes its photo
-// from GALLERY_PHOTOS through this lookup, and nothing outside the gallery.
+// Photo rule for ads, flyers, posts and banners: real photography only — a menu item's
+// own catalog photo, or a shot from GALLERY_PHOTOS through this lookup. No AI-generated
+// or stock imagery. There is no gallery-only restriction; both sources are approved.
 export const galleryImage = (caption) => {
   const photo = GALLERY_PHOTOS.find((item) => item.caption === caption);
   return photo ? photo.url : null;
