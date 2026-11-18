@@ -6,7 +6,7 @@ import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
-import { isPillOption } from '@/lib/plainOption';
+import { isPillOption, groupHeading, isSideChoiceGroup } from '@/lib/plainOption';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
@@ -108,19 +108,21 @@ export default function ItemBuildSummary({
               return (
                 <div key={group.id || group.name}>
                   <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <p className="font-heading text-sm text-obsidian-roast">{groupLabel(group.name)}</p>
+                    <p className="font-heading text-sm text-obsidian-roast">
+                      {isSideChoiceGroup(group) ? groupHeading(group) : groupLabel(group.name)}
+                    </p>
                     <span className="text-[11px] uppercase tracking-wider text-muted-foreground flex-shrink-0">
                       {rule}
                     </span>
                   </div>
                   <PlainOptionPills
                     options={group.modifiers}
-                    groupName={group.name}
+                    group={group}
                     isSelected={(mod) => selected.has(mod.id)}
                     onToggle={(mod) => onToggle?.(group.name, mod)}
                   />
                   <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-                    {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
+                    {group.modifiers.filter((mod) => !isPillOption(mod.name, group)).map((mod) => {
                       const isSelected = selected.has(mod.id);
 
                       if (iceContext && group.name === iceContext.sizeGroup.name) {

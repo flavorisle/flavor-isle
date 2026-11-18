@@ -59,14 +59,14 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
           {/* Follow-up choices are tiles too, one size down to fit the indent. */}
           <PlainOptionPills
             options={list.modifiers || []}
-            groupName={list.name}
+            group={list}
             isSelected={(mod) => (list.selection_type === 'MULTIPLE'
               ? (nestedSelections?.[list.name] || []).some((m) => m.id === mod.id)
               : nestedSelections?.[list.name]?.id === mod.id)}
             onToggle={(mod) => (list.selection_type === 'MULTIPLE' ? toggleMultiple(list, mod) : toggleSingle(list.name, mod))}
           />
           <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-            {(list.modifiers || []).filter((mod) => !isPillOption(mod.name, list.name)).map(mod => (
+            {(list.modifiers || []).filter((mod) => !isPillOption(mod.name, list)).map(mod => (
               <NestedModifierOption
                 key={mod.id}
                 mod={mod}

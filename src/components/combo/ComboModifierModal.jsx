@@ -7,7 +7,7 @@ import { modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/
 import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
-import { isPillOption } from '@/lib/plainOption';
+import { isPillOption, groupHeading } from '@/lib/plainOption';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // A combo component keeps the same Square modifier choices and prices it has
@@ -83,7 +83,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
           {groups.map((group) => (
             <div key={group.name}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
+                <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{groupHeading(group)}</h4>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                   {ruleBadge(group)}
                 </span>
@@ -92,14 +92,14 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                   every other ordering surface uses. */}
               <PlainOptionPills
                 options={group.modifiers}
-                groupName={group.name}
+                group={group}
                 isSelected={(mod) => (group.selection_type === 'MULTIPLE'
                   ? (selections[group.name] || []).some((m) => m.id === mod.id)
                   : selections[group.name]?.id === mod.id)}
                 onToggle={(mod) => (group.selection_type === 'MULTIPLE' ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod))}
               />
               <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-                {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
+                {group.modifiers.filter((mod) => !isPillOption(mod.name, group)).map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple
                     ? (selections[group.name] || []).some((m) => m.id === mod.id)

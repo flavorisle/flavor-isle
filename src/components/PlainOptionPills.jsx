@@ -12,8 +12,8 @@ import { isPillOption } from '@/lib/plainOption';
 // Controlled component: isSelected(mod) and onToggle(mod) are the caller's.
 const FONT = 'Arial, Helvetica, sans-serif';
 
-export default function PlainOptionPills({ options = [], groupName, isSelected, onToggle }) {
-  const pills = (options || []).filter((mod) => isPillOption(mod.name, groupName));
+export default function PlainOptionPills({ options = [], group, groupName, isSelected, onToggle }) {
+  const pills = (options || []).filter((mod) => isPillOption(mod.name, group || groupName));
   if (pills.length === 0) return null;
 
   return (

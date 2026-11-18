@@ -10,7 +10,7 @@ import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import ModifierTile from './ModifierTile';
 import PlainOptionPills from './PlainOptionPills';
-import { isPillOption } from '@/lib/plainOption';
+import { isPillOption, groupHeading } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
@@ -364,7 +364,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
             groups.map(group => (
               <div key={group.name}>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{group.name}</h4>
+                  <h4 className="font-heading text-sm uppercase tracking-widest text-obsidian-roast">{groupHeading(group)}</h4>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                     {ruleBadge(group)}
                   </span>
@@ -375,7 +375,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     modifier amount. */}
                 <PlainOptionPills
                   options={group.modifiers}
-                  groupName={group.name}
+                  group={group}
                   isSelected={(mod) => (group.selection_type === 'MULTIPLE'
                     ? (selections[group.name] || []).some((m) => m.id === mod.id)
                     : selections[group.name]?.id === mod.id)}
@@ -384,7 +384,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     : toggleSingle(group.name, mod))}
                 />
                 <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-                  {group.modifiers.filter((mod) => !isPillOption(mod.name, group.name)).map((mod) => {
+                  {group.modifiers.filter((mod) => !isPillOption(mod.name, group)).map((mod) => {
                     if (iceContext && group.name === iceContext.sizeGroup.name) {
                       return (
                         <ClassicDrinkIceSize
