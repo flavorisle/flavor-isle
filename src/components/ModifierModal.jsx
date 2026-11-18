@@ -10,6 +10,8 @@ import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { isFlavorGroup } from './FlavorPillButton';
 import ModifierTile from './ModifierTile';
+import PlainOptionPills from './PlainOptionPills';
+import { isPlainOption } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
@@ -360,10 +362,21 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     {ruleBadge(group)}
                   </span>
                 </div>
-                {/* Every option is a tile. A drink size picker keeps its own
-                    control, since picking a size is not a modifier amount. */}
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
-                  {group.modifiers.map((mod) => {
+                {/* Removal options — "No cheese", "No sauce", "Plain" — are
+                    compact pills; everything you add is a tile. A drink size
+                    picker keeps its own control, since picking a size is not a
+                    modifier amount. */}
+                <PlainOptionPills
+                  options={group.modifiers}
+                  isSelected={(mod) => (group.selection_type === 'MULTIPLE'
+                    ? (selections[group.name] || []).some((m) => m.id === mod.id)
+                    : selections[group.name]?.id === mod.id)}
+                  onToggle={(mod) => (group.selection_type === 'MULTIPLE'
+                    ? toggleMultiple(group.name, mod)
+                    : toggleSingle(group.name, mod))}
+                />
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
+                  {group.modifiers.filter((mod) => !isPlainOption(mod.name)).map((mod) => {
                     if (iceContext && group.name === iceContext.sizeGroup.name) {
                       return (
                         <ClassicDrinkIceSize

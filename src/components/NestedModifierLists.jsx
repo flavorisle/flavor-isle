@@ -1,6 +1,8 @@
 import React from 'react';
 import { ruleBadge, atMax } from '@/lib/modifierRules';
 import ModifierTile from '@/components/ModifierTile';
+import PlainOptionPills from '@/components/PlainOptionPills';
+import { isPlainOption } from '@/lib/plainOption';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
@@ -56,8 +58,15 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
             </span>
           </div>
           {/* Follow-up choices are tiles too, one size down to fit the indent. */}
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
-            {(list.modifiers || []).map(mod => {
+          <PlainOptionPills
+            options={list.modifiers || []}
+            isSelected={(mod) => (list.selection_type === 'MULTIPLE'
+              ? (nestedSelections?.[list.name] || []).some((m) => m.id === mod.id)
+              : nestedSelections?.[list.name]?.id === mod.id)}
+            onToggle={(mod) => (list.selection_type === 'MULTIPLE' ? toggleMultiple(list, mod) : toggleSingle(list.name, mod))}
+          />
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
+            {(list.modifiers || []).filter((mod) => !isPlainOption(mod.name)).map(mod => {
               const isMultiple = list.selection_type === 'MULTIPLE';
               const sel = nestedSelections?.[list.name];
               const isSelected = isMultiple

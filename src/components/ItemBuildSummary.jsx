@@ -6,6 +6,8 @@ import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
 import ModifierTile from '@/components/ModifierTile';
+import PlainOptionPills from '@/components/PlainOptionPills';
+import { isPlainOption } from '@/lib/plainOption';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
@@ -112,8 +114,13 @@ export default function ItemBuildSummary({
                       {rule}
                     </span>
                   </div>
-                  <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
-                    {group.modifiers.map((mod) => {
+                  <PlainOptionPills
+                    options={group.modifiers}
+                    isSelected={(mod) => selected.has(mod.id)}
+                    onToggle={(mod) => onToggle?.(group.name, mod)}
+                  />
+                  <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 120px))', gap: '8px', justifyContent: 'center' }}>
+                    {group.modifiers.filter((mod) => !isPlainOption(mod.name)).map((mod) => {
                       const isSelected = selected.has(mod.id);
 
                       if (iceContext && group.name === iceContext.sizeGroup.name) {

@@ -1,13 +1,15 @@
 import React from 'react';
 
-// Issue #324 (v9) — one modifier option as a tile: 148px wide, photo on top,
-// the name (with its price on the same line) under it, and a Lite / Reg / Ex
-// strip along the bottom.
+// Issue #324 — one modifier option as a tile: 120px wide, photo on top, the
+// name (with its price on the same line) under it, and a Lite / Reg / Ex strip
+// along the bottom. Smaller than the original 148px so a group's real toppings
+// fit without scrolling past them. Removal options ("No cheese", "Plain") are
+// pills instead, never tiles — see PlainOptionPills.
 //
-// Height never changes: the photo block is square, the name box is exactly 24px
-// (two lines at 12px, always reserved whether the name is long or short, with or
-// without a price), and the footer is exactly 22px. A long name or a price can
-// therefore never push a tile taller than its neighbour.
+// Height never changes: the photo block is square, the name box is exactly 21px
+// (two lines at 10.5px, always reserved whether the name is long or short, with
+// or without a price), and the footer is exactly 19px. A long name or a price
+// can therefore never push a tile taller than its neighbour.
 //
 // state is the option's current level ("lite" | "reg" | "extra"), or null when
 // it isn't on the order. Tapping the photo or the name means Reg; tapping a
@@ -21,9 +23,9 @@ const SEGMENTS = [
 ];
 
 const FONT = 'Arial, Helvetica, sans-serif';
-const TILE_WIDTH = 148;
-const NAME_BOX = 24;
-const FOOTER = 22;
+const TILE_WIDTH = 120;
+const NAME_BOX = 21;
+const FOOTER = 19;
 
 export default function ModifierTile({ name, price, state, photo, onSelect, disabled }) {
   const active = state != null;
@@ -43,8 +45,8 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
         boxSizing: 'border-box',
         background: '#ffffff',
         border: `2px solid ${active ? '#CC3300' : '#cfc9b8'}`,
-        borderRadius: 16,
-        padding: 6,
+        borderRadius: 15,
+        padding: 5,
         opacity: disabled ? 0.55 : 1,
         pointerEvents: disabled ? 'none' : 'auto',
       }}
@@ -75,7 +77,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
               width: '100%',
               aspectRatio: '1 / 1',
               objectFit: 'cover',
-              borderRadius: 11,
+              borderRadius: 10,
               border: '1px solid #e2d6c0',
               background: '#ffffff',
             }}
@@ -89,12 +91,12 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
               justifyContent: 'center',
               width: '100%',
               aspectRatio: '1 / 1',
-              borderRadius: 11,
+              borderRadius: 10,
               background: '#FBF4E4',
               border: '1px solid #ece1c9',
               fontFamily: 'Georgia, serif',
               fontWeight: 800,
-              fontSize: 22,
+              fontSize: 20,
               color: '#c9b795',
             }}
           >
@@ -102,20 +104,20 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
           </div>
         )}
 
-        {/* Name box: exactly 24px, two lines of 12px always reserved. The price
-            rides on the name line in the same span — no second line, no gap. */}
+        {/* Name box: exactly 21px, two lines of 10.5px always reserved. The
+            price rides on the name line in the same span — no second line. */}
         <span
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: NAME_BOX,
-            lineHeight: '12px',
+            lineHeight: '10.5px',
             overflow: 'hidden',
             textAlign: 'center',
             fontFamily: FONT,
             fontWeight: 700,
-            fontSize: 9,
+            fontSize: 8.5,
             color: '#003366',
           }}
         >
@@ -163,8 +165,8 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
                 color: on ? '#ffffff' : '#CC3300',
                 fontFamily: FONT,
                 fontWeight: 800,
-                fontSize: 6.5,
-                letterSpacing: '.04em',
+                fontSize: 6,
+                letterSpacing: '.03em',
                 textTransform: 'uppercase',
                 lineHeight: 1,
                 height: '100%',
