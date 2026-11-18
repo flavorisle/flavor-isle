@@ -107,11 +107,33 @@ export default function AdminAds() {
     }
   };
 
-  const print = () => window.print();
+  // The sheet is one letter page, so print asks for letter with no margins and
+  // puts the sheet at the top corner. Written into the head last, after the
+  // app's A3 print-menu page setup, so it wins; removed when the dialog closes.
+  const print = () => {
+    const style = document.createElement('style');
+    style.setAttribute('data-ad-print', 'true');
+    style.textContent = '@page { size: 8.5in 11in; margin: 0; }';
+    document.head.appendChild(style);
+    const done = () => {
+      style.remove();
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    window.print();
+    window.setTimeout(done, 120000);
+  };
 
   const downloadPdf = async () => {
     const el = document.getElementById('ad-sheet');
     if (!el) return;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // An iPhone has no Downloads folder, and Safari blocks a window opened after
+    // the wait for the photos. So the tab is opened here, on the tap itself, and
+    // pointed at the finished PDF: Safari shows it with a Share button, and
+    // Share > Save to Files keeps it.
+    const iosTab = isIOS ? window.open('', '_blank') : null;
     setBusy('pdf');
     try {
       const [{ default: html2canvas }, jsPDFmod] = await Promise.all([import('html2canvas'), import('jspdf')]);
@@ -148,19 +170,26 @@ export default function AdminAds() {
       const fileName = `${(draft?.name || 'flavor-isle-ad').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
       const blob = pdf.output('blob');
 
-      // iPhone and iPad have no download folder: Safari opens the file and the
-      // share sheet's "Save to Files" is the way to keep it. Sharing the file
-      // itself is the only route that offers that, so it is tried first.
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-      if (isIOS && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: fileName });
-          flash('Choose Save to Files to keep the PDF.');
-        } catch (err) {
-          if (err?.name !== 'AbortError') throw err;
+      if (isIOS) {
+        const url = pdf.output('bloburl');
+        if (iosTab && !iosTab.closed) {
+          iosTab.location.href = url;
+          flash('Tap Share, then Save to Files to keep the PDF.');
+          return;
         }
+        // No tab could be opened (it was blocked): hand the file to the share
+        // sheet instead, which offers Save to Files on its own.
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: fileName });
+            flash('Tap Save to Files to keep the PDF.');
+          } catch (err) {
+            if (err?.name !== 'AbortError') throw err;
+          }
+          return;
+        }
+        window.location.href = url;
         return;
       }
 
@@ -175,6 +204,7 @@ export default function AdminAds() {
       window.setTimeout(() => URL.revokeObjectURL(url), 10000);
       flash('PDF downloaded.');
     } catch (e) {
+      if (iosTab && !iosTab.closed) iosTab.close();
       flash('A photo did not load, so the PDF was not made. Try again in a moment.');
     } finally {
       setBusy('');
@@ -281,7 +311,7 @@ export default function AdminAds() {
                     </div>
                   </div>
                   <p className="mt-2 text-[11px] text-obsidian-roast/50">
-                    Print or Download PDF prints the sheet alone, at full size.
+                    Print or Download PDF prints the sheet alone, at full size. On an iPhone the PDF opens in a new tab &mdash; tap Share, then Save to Files.
                   </p>
                 </div>
               </div>

@@ -134,22 +134,35 @@ export const SEED_ADS = [CLASSIC_FLYER, WARREN_EAST];
 
 // Print rules. Everything on the page is hidden, then the sheet alone is revealed,
 // the same way the old /flyer page printed.
+// The sheet is exactly one letter page (816 x 1056 CSS px = 8.5 x 11in at
+// 96dpi), so print sets the paper to letter with no margins and puts the sheet
+// at 0,0. Everything else on the admin page is removed with display:none rather
+// than visibility:hidden, so the document is exactly one page tall and the
+// printer has nothing to scale or spill onto a second sheet.
+// @page descriptors reject !important, so none here: this rule is written after
+// the app's A3 print-menu rule and therefore wins.
 export const PRINT_CSS = `
 @media print {
-  @page { size: letter portrait !important; margin: 0 !important; }
-  html, body { background: #ffffff !important; }
-  body * { visibility: hidden !important; }
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body {
+    margin: 0 !important; padding: 0 !important;
+    background: #ffffff !important; height: auto !important; overflow: visible !important;
+  }
   .ad-no-print { display: none !important; }
   #ad-wrap {
     position: static !important; left: auto !important; top: auto !important;
-    min-height: 0 !important; padding: 0 !important; margin: 0 !important; background: #ffffff !important;
+    width: auto !important; height: auto !important; min-height: 0 !important;
+    padding: 0 !important; margin: 0 !important; background: #ffffff !important;
   }
-  #ad-sheet, #ad-sheet * { visibility: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #ad-sheet, #ad-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #ad-sheet {
-    position: absolute !important; left: 0 !important; top: 0 !important;
-    width: 8.5in !important; max-width: 8.5in !important; height: 11in !important;
-    min-height: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important;
+    position: relative !important; left: auto !important; top: auto !important;
+    width: 8.5in !important; max-width: 8.5in !important; height: 11in !important; max-height: 11in !important;
+    min-height: 0 !important; margin: 0 !important; overflow: hidden !important;
+    box-shadow: none !important; border: none !important; border-radius: 0 !important;
     transform: none !important;
+    page-break-after: avoid; break-after: avoid;
+    page-break-inside: avoid; break-inside: avoid;
   }
 }
 `;
