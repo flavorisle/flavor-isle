@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { X, Package } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { COMBO_ISLE_ANNOUNCEMENT as CFG } from '@/config/comboIsleAnnouncement';
@@ -30,15 +30,27 @@ export default function ComboIsleAnnouncement() {
   const [open, setOpen] = useState(false);
   const { cartItems, setIsCartOpen } = useCart();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
+  // The Menu page stays mounted across tab switches (keep-alive), so this
+  // component is alive on every route. Opening it off the menu page would lock
+  // page scrolling behind a pop-up nobody can see or dismiss, so it only ever
+  // runs while the menu tab is the one on screen.
   useEffect(() => {
+    if (pathname !== '/menu') return undefined;
     if (cartItems?.length) return undefined;
     const timer = setTimeout(() => {
-      if (shouldShow()) setOpen(true);
+      if (pathname === '/menu' && shouldShow()) setOpen(true);
     }, CFG.delayMs);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pathname]);
+
+  // Leaving the menu closes the pop-up (and releases the scroll lock).
+  useEffect(() => {
+    if (pathname !== '/menu' && open) setOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const remember = () => {
     try {
