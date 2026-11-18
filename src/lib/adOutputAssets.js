@@ -29,7 +29,19 @@ export async function embedAdPhotos(sheet) {
   await Promise.all(Array.from(sheet.querySelectorAll('img'), async (img) => {
     const src = img.src;
     if (!photos.has(src)) photos.set(src, photoDataUrl(src, img.alt));
-    img.src = await photos.get(src);
+    const data = await photos.get(src);
+    img.src = data;
+    // html2canvas stretches object-fit photos. Draw cropped photos as a
+    // background image instead, which it crops correctly.
+    if (img.style.objectFit === 'cover') {
+      const box = img.ownerDocument.createElement('div');
+      box.style.cssText = img.style.cssText;
+      box.style.backgroundImage = `url("${data}")`;
+      box.style.backgroundSize = 'cover';
+      box.style.backgroundRepeat = 'no-repeat';
+      box.style.backgroundPosition = img.style.objectPosition || '50% 50%';
+      img.replaceWith(box);
+    }
   }));
 }
 
