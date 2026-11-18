@@ -38,6 +38,11 @@
       ],
       "default": "sent",
       "description": "Outcome of the broadcast: all delivered, some failed, or none delivered."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Internal note about the send, e.g. 'order 1234 ready milestone' for an order push. Written by shared/sendPush.ts so a push can be traced back to the order milestone that triggered it."
     }
   },
   "required": [
