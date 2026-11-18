@@ -10,9 +10,13 @@
 //    dry side choices, not sizes. They read as pills under their own heading
 //    instead of a "SIZE" heading over photo-less tiles. A real size list
 //    ("14 oz", "4 Pc", "Black, S") keeps its tiles.
+// 4. The fries' "SIDE MODIFIERS" group — REGULAR, DOUBLE ORDER, SEASON WITH
+//    CAJUN. Preparation and quantity choices, nothing to photograph, so they
+//    are pills three to a row.
 const PLAIN_START = /^(no|none|nothing|without)\b/i;
 const PLAIN_WORD = /\bplain\b/i;
 const THICKNESS = /thick|thickness|thin\b|consistenc/i;
+const SIDE_MODIFIERS = /^side( ?dish)? modifiers?$/i;
 
 const SIZE_NAME = /^size$/i;
 const SIZE_TOKENS = new Set([
@@ -57,5 +61,6 @@ export function isPillOption(name, group) {
   const groupName = typeof group === 'string' ? group : group?.name;
   if (isPlainOption(name)) return true;
   if (THICKNESS.test(String(name || '')) || THICKNESS.test(String(groupName || ''))) return true;
+  if (SIDE_MODIFIERS.test(String(groupName || '').trim())) return true;
   return typeof group === 'object' && group !== null && isSideChoiceGroup(group);
 }
