@@ -6,6 +6,8 @@ import useBusinessHours from '@/hooks/useBusinessHours';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { hoursGroups } from '@/lib/businessHours';
 import { themeOf, qrUrl } from '@/lib/printAds';
+import PosterAdHero from '@/components/ads/PosterAdHero';
+import PosterAdPhotoStrip from '@/components/ads/PosterAdPhotoStrip';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 const STOREFRONT = galleryImage('The sign at 1st and Main');
@@ -41,22 +43,18 @@ function PosterSheet({ ad, sheetId }) {
   const lines = (ad.one_liners || []).slice(0, 3);
   const chips = ad.chips || [];
 
-  const sub = ad.subhead || '';
-  const hi = ad.subhead_highlight || '';
-  const hiAt = hi ? sub.indexOf(hi) : -1;
-
   return (
     <div
       id={sheetId}
       data-ad-artwork=""
       style={{
         width: '8.5in', height: '11in', overflow: 'hidden', background: t.paper, color: t.ink,
-        display: 'flex', flexDirection: 'column', position: 'relative',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', lineHeight: 1.4,
         WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact',
       }}
     >
       {/* top bar */}
-      <div style={{ background: t.ink, color: t.paper, padding: '10px 30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: t.ink, color: t.paper, padding: '12px 30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
           <span className="ad-bebas" style={{ fontSize: 30, letterSpacing: '.06em', lineHeight: 1 }}>FLAVOR ISLE</span>
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.22em', color: t.gold }}>BURGERS &middot; FRIES &middot; SHAKES</span>
@@ -64,54 +62,11 @@ function PosterSheet({ ad, sheetId }) {
         <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.24em', opacity: 0.82 }}>103 N MAIN ST &middot; SMITHS GROVE, KY &middot; EST. 1964</div>
       </div>
 
-      {/* hero */}
-      <div style={{ position: 'relative', padding: '6px 30px 0', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: t.accent, fontSize: 10.5, fontWeight: 900, letterSpacing: '.26em' }}>
-          <span style={{ height: 2, background: t.accent, flex: 1, opacity: 0.55 }} />
-          <span style={{ whiteSpace: 'nowrap' }}>{ad.kicker || ''}</span>
-          <span style={{ height: 2, background: t.accent, flex: 1, opacity: 0.55 }} />
-        </div>
-        <div style={{ marginTop: 0 }}>
-          <div className="ad-bebas" style={{ fontSize: 150, height: 112, lineHeight: '112px', color: t.ink, letterSpacing: '.005em', whiteSpace: 'nowrap' }}>{ad.title || ''}</div>
-          <div
-            className="ad-bebas"
-            style={{
-              fontSize: 150, height: 112, lineHeight: '112px', color: t.accent, letterSpacing: '.005em', whiteSpace: 'nowrap',
-              textShadow: `3px 3px 0 ${t.ink}`,
-            }}
-          >
-            {ad.title_accent || ''}
-          </div>
-        </div>
-        <p style={{ marginTop: 22, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
-          {hiAt >= 0 ? (
-            <>
-              {sub.slice(0, hiAt)}
-              <span style={{ background: t.gold, padding: '0 6px' }}>{hi}</span>
-              {sub.slice(hiAt + hi.length)}
-            </>
-          ) : sub}
-        </p>
-
-        {ad.badge_top || ad.badge_bottom ? (
-          <div
-            style={{
-              position: 'absolute', right: 24, top: 26, width: '1.55in', height: '1.55in', borderRadius: '50%',
-              border: `4px solid ${t.accent}`, color: t.accent, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', transform: 'rotate(-11deg)', background: t.paper,
-            }}
-          >
-            <div style={{ position: 'absolute', inset: 7, border: `1.5px solid ${t.accent}`, borderRadius: '50%' }} />
-            <div style={{ fontSize: 30, lineHeight: 1 }}>&#10052;</div>
-            <div className="ad-bebas" style={{ fontSize: 26, lineHeight: 0.9, letterSpacing: '.04em', marginTop: 2 }}>{ad.badge_top || ''}</div>
-            <div style={{ fontSize: 8, fontWeight: 900, letterSpacing: '.2em', marginTop: 3 }}>{ad.badge_bottom || ''}</div>
-          </div>
-        ) : null}
-      </div>
+      <PosterAdHero ad={ad} />
 
       {/* flavors + price */}
       {(chips.length > 0 || ad.price_line) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 30px 0', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 30px 0', flexShrink: 0 }}>
           {chips.map((c, i) => (
             <div
               key={`${c}-${i}`}
@@ -139,7 +94,7 @@ function PosterSheet({ ad, sheetId }) {
       )}
 
       {ad.body ? (
-        <p style={{ padding: '6px 30px 0', fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: t.ink }}>{ad.body}</p>
+        <p style={{ padding: '10px 30px 0', fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: t.ink, flexShrink: 0 }}>{ad.body}</p>
       ) : null}
 
       {/* three item cards */}
@@ -147,14 +102,14 @@ function PosterSheet({ ad, sheetId }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: 10, padding: '14px 30px 0', flexShrink: 0 }}>
           {items.map((m, i) => (
             <div key={`${m.name}-${i}`} style={{ borderRadius: 12, overflow: 'hidden', background: '#ffffff', border: `1.5px solid ${t.ink}28`, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: '1.15in', overflow: 'hidden' }}>
+              <div style={{ height: 104, flex: 'none', overflow: 'hidden' }}>
                 {m.photo ? (
                   <img src={m.photo} alt={m.name} width="600" height="600" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : null}
               </div>
-              <div style={{ padding: '7px 9px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
-                <div className="ad-bebas" style={{ fontSize: (m.name || '').length > 14 ? 15 : 17, lineHeight: 1, letterSpacing: '.02em' }}>{m.name}</div>
-                <div className="ad-bebas" style={{ fontSize: 17, lineHeight: 1, color: t.accent, whiteSpace: 'nowrap' }}>{m.price}</div>
+              <div style={{ padding: '10px 9px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6, flex: 'none' }}>
+                <div className="ad-bebas" style={{ fontSize: (m.name || '').length > 14 ? 15 : 17, lineHeight: 1.3, letterSpacing: '.02em' }}>{m.name}</div>
+                <div className="ad-bebas" style={{ fontSize: 17, lineHeight: 1.3, color: t.accent, whiteSpace: 'nowrap' }}>{m.price}</div>
               </div>
             </div>
           ))}
@@ -173,34 +128,17 @@ function PosterSheet({ ad, sheetId }) {
         </div>
       )}
 
-      {/* bottom band */}
-      {(ad.strip_headline || ad.strip_photo_wide) && (
-        <div style={{ position: 'relative', marginTop: 12, minHeight: '1.25in', flex: 'none', display: 'flex', background: t.ink, overflow: 'hidden' }}>
-          <div style={{ flex: '0 0 46%', padding: '0 16px 0 30px', alignSelf: 'center', color: t.paper }}>
-            <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '.26em', color: t.gold }}>{ad.strip_kicker || ''}</div>
-            <div className="ad-bebas" style={{ fontSize: 27, lineHeight: '27px', marginTop: 4 }}>{ad.strip_headline || ''}</div>
-            <div style={{ fontSize: 9.5, fontWeight: 800, marginTop: 8, paddingBottom: 6, opacity: 0.9, lineHeight: 1.4, whiteSpace: 'pre-line' }}>{ad.strip_note || ''}</div>
-          </div>
-          <div style={{ flex: '1 1 auto', display: 'flex', minWidth: 0 }}>
-            <div style={{ flex: '1 1 60%', minWidth: 0 }}>
-              {ad.strip_photo_wide ? <img src={ad.strip_photo_wide} alt="" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
-            </div>
-            <div style={{ flex: '0 0 150px', minWidth: 0 }}>
-              {ad.strip_photo_tall ? <img src={ad.strip_photo_tall} alt="" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 40%', display: 'block' }} /> : null}
-            </div>
-          </div>
-        </div>
-      )}
+      <PosterAdPhotoStrip ad={ad} />
 
       {/* footer */}
-      <div style={{ marginTop: 'auto', flex: 'none', background: t.accent, color: t.onAccent, padding: '14px 30px', display: 'flex', alignItems: 'center', gap: 18, overflow: 'hidden' }}>
+      <div style={{ flex: 'none', background: t.accent, color: t.onAccent, padding: '14px 30px', display: 'flex', alignItems: 'center', gap: 18 }}>
         {ad.show_qr ? (
           <div style={{ background: '#ffffff', padding: 6, borderRadius: 8, width: '1.12in', height: '1.12in', flex: 'none' }}>
             <img src={qrUrl(ad.qr_target || ad.cta_url)} alt="QR code to order online" width="600" height="600" style={{ width: '100%', height: '100%', display: 'block' }} />
           </div>
         ) : null}
         <div style={{ flex: 1 }}>
-          <div className="ad-bebas" style={{ fontSize: 40, lineHeight: 0.92, letterSpacing: '.02em' }}>
+          <div className="ad-bebas" style={{ fontSize: 40, lineHeight: 1.15, letterSpacing: '.02em' }}>
             {ad.footer_headline ? (
               <small style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, fontWeight: 900, letterSpacing: '.2em', display: 'block', marginBottom: 4, color: t.gold }}>
                 {ad.footer_headline}

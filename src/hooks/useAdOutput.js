@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createAdFrame, initializeAdDocument, mountAdSheet, snapshotAdSheet } from '@/lib/adOutputDocument';
 import { embedAdPhotos, offerAdPdf } from '@/lib/adOutputAssets';
 import { AD_PAPER, AD_PLACEMENT } from '@/lib/adPageGeometry';
+import renderAdCanvas from '@/lib/renderAdCanvas';
 
 function withinOutputLimit(operation) {
   let timer;
@@ -34,7 +35,7 @@ export default function useAdOutput(draft, onNote) {
     onNote('Preparing the ad for printing…');
     try {
       initializeAdDocument(tab.document, draft.name || 'Flavor Isle ad');
-      await withinOutputLimit(mountAdSheet(tab.document, snapshotAdSheet()));
+      await withinOutputLimit(snapshotAdSheet().then((sheet) => mountAdSheet(tab.document, sheet)));
       const controls = tab.document.createElement('div');
       controls.setAttribute('data-ad-controls', '');
       const button = tab.document.createElement('button');
@@ -72,19 +73,15 @@ export default function useAdOutput(draft, onNote) {
     setPdfDownload(null);
     onNote('Preparing the PDF…');
     try {
-      const sheet = snapshotAdSheet();
+      const sheet = await withinOutputLimit(snapshotAdSheet());
       if (iosTab) initializeAdDocument(iosTab.document, 'Preparing ad PDF');
       frame = createAdFrame();
       initializeAdDocument(frame.contentDocument, selectedAd.name || 'Flavor Isle ad');
-      const [{ default: html2canvas }, { jsPDF }] = await withinOutputLimit(Promise.all([
-        import('html2canvas'),
+      const [{ jsPDF }] = await withinOutputLimit(Promise.all([
         import('jspdf'),
         embedAdPhotos(sheet).then(() => mountAdSheet(frame.contentDocument, sheet, { printPage: false })),
       ]));
-      const canvas = await withinOutputLimit(html2canvas(sheet, {
-        scale: 2, width: 816, height: 1056, windowWidth: 816, windowHeight: 1056,
-        scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', logging: false,
-      }));
+      const canvas = await withinOutputLimit(renderAdCanvas(sheet));
       const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
       pdf.viewerPreferences({ PrintScaling: 'None', PickTrayByPDFSize: true });
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG',

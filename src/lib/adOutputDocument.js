@@ -26,7 +26,8 @@ const OUTPUT_CSS = `
       overflow: hidden; } }
 `;
 
-export function snapshotAdSheet() {
+export async function snapshotAdSheet() {
+  await document.fonts.ready;
   const source = document.getElementById('ad-sheet');
   if (!source) throw new Error('Select an ad before printing or downloading.');
   const sheet = source.cloneNode(true);
