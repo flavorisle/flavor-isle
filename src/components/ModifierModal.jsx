@@ -8,11 +8,10 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
-import PreferencePillButton, { getPreferenceList } from './PreferencePillButton';
-import PreferenceGroupPill, { getPreferenceTriplet } from './PreferenceGroupPill';
-import FlavorPillButton, { isFlavorGroup, getFlavorLevel, flavorNestedForLevel } from './FlavorPillButton';
+import { isFlavorGroup } from './FlavorPillButton';
 import ModifierTile from './ModifierTile';
-import { getModifierPhoto, isSauceModifierName, refreshModifierPhotos } from '@/lib/modifierPhotos';
+import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
+import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
@@ -207,20 +206,11 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // button shut and says how many picks are missing.
   const pendingRule = firstUnsatisfied(groups, selections);
 
-  // Issue #324 — a group renders photo tiles when at least one of its options
-  // has a real photo, unless it is a sauce group (a round dab of sauce reads
-  // better in a pill) or a flavor group (flavors keep their pills and carry the
-  // small round photo). A sauce group is any group whose name says SAUCE, or
-  // whose options are all sauces.
-  const isSauceGroup = (group) =>
-    /SAUCE/i.test(group.name || '') ||
-    (group.modifiers || []).length > 0 &&
-      (group.modifiers || []).every((mod) => isSauceModifierName(mod.name));
-  // Sauce and flavor groups are tiles too now: their Lite / Ex strip lands on
-  // the same selection the pill used, so the price and the ticket are unchanged.
-  const isTileGroup = (group) =>
-    !getPreferenceTriplet(group) &&
-    (group.modifiers || []).some((mod) => getModifierPhoto(mod.name));
+  // Issue #324 — every option in every food group is a tile, photo or not.
+  // The tile's Lite / Reg / Ex strip lands on the same selection the old pill
+  // used, so the price, the cart and the kitchen ticket are unchanged. Only a
+  // drink size picker keeps its own control.
+  const levelsApply = (group, mod) => supportsLevels(mod) || isFlavorGroup(group);
 
   // A tile's Lite / Reg / Ex lands on the very selection the pill used, so the
   // price, the cart and the kitchen ticket are untouched: Reg selects the
@@ -250,102 +240,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       if (isMultiple) toggleMultiple(group.name, mod);
       else toggleSingle(group.name, mod);
     }
-    const hasChildList = (mod.child_modifier_lists || []).length > 0;
-    // Sauces and flavors price a Lite / Extra exactly as their pill did.
-    const levelsApply = hasChildList || isSauceGroup(group) || isFlavorGroup(group);
     setNestedSelections((prev) => ({
       ...prev,
-      [mod.id]: next === 'reg' || !levelsApply ? {} : flavorNestedForLevel(mod, next),
+      [mod.id]: next === 'reg' || !levelsApply(group, mod) ? {} : nestedForLevel(mod, next),
     }));
-  };
-
-  // One option, rendered identically whether it sits in the tile grid or the
-  // pill list.
-  const renderOption = (group, mod) => {
-    const isMultiple = group.selection_type === 'MULTIPLE';
-    const isSelected = isMultiple
-      ? (selections[group.name] || []).some((m) => m.id === mod.id)
-      : selections[group.name]?.id === mod.id;
-
-    if (iceContext && group.name === iceContext.sizeGroup.name) {
-      return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={selectIceSize} />;
-    }
-
-    // Flavors get the same Lite / Extra pill the burgers use.
-    // Checked BEFORE the preference check
-    // so a flavor carrying Square's own "- / + Flavors" child list
-    // still renders (and prices) as the flavor pill — matching the
-    // product summary exactly.
-    if (!mod.sold_out && isFlavorGroup(group)) {
-      return (
-        <FlavorPillButton
-          key={mod.id}
-          mod={mod}
-          isSelected={isSelected}
-          onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-          nestedSelection={nestedSelections[mod.id] || {}}
-          onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-        />
-      );
-    }
-
-    if (!mod.sold_out && getPreferenceList(mod)) {
-      return (
-        <PreferencePillButton
-          key={mod.id}
-          mod={mod}
-          isSelected={isSelected}
-          onToggle={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-          nestedSelection={nestedSelections[mod.id] || {}}
-          onNestedChange={(newNested) => setNestedSelections(prev => ({ ...prev, [mod.id]: newNested }))}
-        />
-      );
-    }
-
-    // Issue #324 — an option with a real photo shows it here too, so a sauce
-    // rendered as a row carries the same small round photo a pill would.
-    const photo = getModifierPhoto(mod.name);
-    return (
-      <button
-        key={mod.id}
-        type="button"
-        disabled={mod.sold_out}
-        onClick={() => isMultiple ? toggleMultiple(group.name, mod) : toggleSingle(group.name, mod)}
-        className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
-          mod.sold_out
-            ? 'border-border bg-muted opacity-50 cursor-not-allowed'
-            : isSelected
-              ? 'border-midnight-cherry bg-red-50'
-              : 'border-border hover:border-gray-300 bg-white'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
-            isSelected ? 'bg-midnight-cherry border-midnight-cherry' : 'border-gray-300'
-          }`}>
-            {isSelected && <Check size={12} className="text-white" />}
-          </div>
-          {photo?.url && (
-            <img
-              src={photo.url}
-              alt=""
-              aria-hidden="true"
-              width={22}
-              height={22}
-              loading="lazy"
-              decoding="async"
-              style={{ width: 22, height: 22, borderRadius: 9999, objectFit: 'cover', border: '1px solid #e6d9c3', flexShrink: 0 }}
-            />
-          )}
-          <span className="font-body text-sm text-obsidian-roast">{mod.name}</span>
-        </div>
-        {mod.sold_out ? (
-          <span className="text-xs text-muted-foreground font-semibold uppercase">Sold Out</span>
-        ) : mod.price > 0 && (
-          <span className="text-sm text-patina-mint font-semibold">+${mod.price.toFixed(2)}</span>
-        )}
-      </button>
-    );
   };
 
   // A tile option's current level, so the strip reflects the live selection.
@@ -355,7 +253,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       ? (selections[group.name] || []).some((m) => m.id === mod.id)
       : selections[group.name]?.id === mod.id;
     if (!isSelected) return null;
-    return getFlavorLevel(nestedSelections[mod.id]) || 'reg';
+    return levelFromNested(nestedSelections[mod.id]) || 'reg';
   };
 
   const handleConfirm = () => {
@@ -462,25 +360,27 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     {ruleBadge(group)}
                   </span>
                 </div>
-                {getPreferenceTriplet(group) ? (
-                  <PreferenceGroupPill
-                    group={group}
-                    selectedId={selections[group.name]?.id}
-                    onSelect={(mod) => toggleSingle(group.name, mod)}
-                  />
-                ) : isTileGroup(group) ? (
-                /* Toppings with a real photo become photo tiles; an option in
-                   the group without one keeps its word chip in the same grid. */
-                <div className="flex flex-wrap gap-2">
+                {/* Every option is a tile. A drink size picker keeps its own
+                    control, since picking a size is not a modifier amount. */}
+                <div className="grid grid-cols-2 gap-2">
                   {group.modifiers.map((mod) => {
-                    const photo = getModifierPhoto(mod.name);
-                    if (!photo) return renderOption(group, mod);
+                    if (iceContext && group.name === iceContext.sizeGroup.name) {
+                      return (
+                        <ClassicDrinkIceSize
+                          key={mod.id}
+                          mod={mod}
+                          selected={selections[group.name]?.id === mod.id}
+                          level={iceLevel}
+                          onSelect={selectIceSize}
+                        />
+                      );
+                    }
                     return (
                       <ModifierTile
                         key={mod.id}
                         name={mod.name}
                         price={mod.price}
-                        photo={photo}
+                        photo={getModifierPhoto(mod.name)}
                         state={tileState(group, mod)}
                         disabled={mod.sold_out}
                         onSelect={(next) => selectTileLevel(group, mod, next)}
@@ -488,13 +388,6 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     );
                   })}
                 </div>
-                ) : (
-                /* Lite/Extra pills sit two to a phone line; the wide name +
-                   price rows keep a full line of their own, as before. */
-                <div className="flex flex-wrap gap-2 sm:block sm:space-y-2">
-                  {group.modifiers.map((mod) => renderOption(group, mod))}
-                </div>
-                )}
                 {/* Nested modifier lists for selected modifiers with children */}
                 {group.modifiers.filter(mod => {
                   const isMultiple = group.selection_type === 'MULTIPLE';

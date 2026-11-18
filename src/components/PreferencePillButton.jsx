@@ -1,9 +1,11 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import ModifierTile from '@/components/ModifierTile';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
 
-// Issue #324 — the option's real photo (when it has one) rides as a 22px round
-// image inside the middle zone, just before its name.
+// Issue #324 — an option whose own child list offers Lite / Regular / Extra is
+// a tile like every other option: the photo (or its first letter) on top, the
+// option name, and the Lite / Reg / Ex strip underneath. The strip writes the
+// same nested selection the old pill wrote, so price and ticket are unchanged.
 
 const norm = (s) => (s || '').toString().toLowerCase().trim();
 const PREFERENCE_WORDS = new Set(['lite', 'light', 'regular', 'normal', 'extra']);
@@ -13,8 +15,8 @@ const PREFERENCE_WORDS = new Set(['lite', 'light', 'regular', 'normal', 'extra']
 export function getPreferenceList(mod) {
   const lists = mod?.child_modifier_lists || [];
   for (const list of lists) {
-    const names = (list.modifiers || []).map(m => norm(m.name));
-    if (names.length > 0 && names.every(n => PREFERENCE_WORDS.has(n))) {
+    const names = (list.modifiers || []).map((m) => norm(m.name));
+    if (names.length > 0 && names.every((n) => PREFERENCE_WORDS.has(n))) {
       return list;
     }
   }
@@ -32,16 +34,6 @@ function getPreferenceOptions(list) {
   return opts;
 }
 
-// A modifier pill with integrated Lite (left) / Regular (center) / Extra (right)
-// zones. Replaces the separate nested preference pills with a compact 3-zone
-// pill so the customer doesn't see a confusing standalone "Extra" entry below.
-//
-// Left zone = Lite (word, filled tint)
-// Center    = Regular (modifier name, tap toggles selection)
-// Right zone = Extra (word, filled tint)
-//
-// The side zones always show their word on a filled tint so they read as
-// buttons; the center keeps the pill's unfilled background.
 export default function PreferencePillButton({
   mod,
   isSelected,
@@ -52,110 +44,35 @@ export default function PreferencePillButton({
   const prefList = getPreferenceList(mod);
   if (!prefList) return null;
 
-  const { lite, regular, extra } = getPreferenceOptions(prefList);
+  const { lite, extra } = getPreferenceOptions(prefList);
   const currentPref = nestedSelection?.[prefList.name];
   const prefName = currentPref ? norm(currentPref.name) : null;
-  const isLite = prefName === 'lite' || prefName === 'light';
-  const isExtra = prefName === 'extra';
-  const isRegular = isSelected && !isLite && !isExtra;
+  const level = prefName === 'extra' ? 'extra' : prefName === 'lite' || prefName === 'light' ? 'lite' : null;
 
-  const label = mod.name;
-  const totalPrice = (mod.price || 0) + (currentPref?.price || 0);
-  const photo = getModifierPhoto(mod.name);
-
-  const handleLite = () => {
-    if (!lite) return;
+  const select = (next) => {
+    if (next == null) {
+      if (isSelected) {
+        onToggle();
+        onNestedChange({});
+      }
+      return;
+    }
     if (!isSelected) onToggle();
-    onNestedChange({ [prefList.name]: lite });
-  };
-
-  const handleExtra = () => {
-    if (!extra) return;
-    if (!isSelected) onToggle();
-    onNestedChange({ [prefList.name]: extra });
-  };
-
-  const handleCenter = () => {
-    // The name toggles the parent, even when a Lite/Extra child is selected.
-    onToggle();
-    onNestedChange({});
+    if (next === 'reg') {
+      onNestedChange({});
+      return;
+    }
+    const pick = next === 'lite' ? lite : extra;
+    onNestedChange(pick ? { [prefList.name]: pick } : {});
   };
 
   return (
-    <div className={`inline-flex max-w-full min-w-0 flex-1 basis-[47%] items-stretch rounded-full border-2 overflow-hidden transition-all font-body text-sm font-semibold sm:flex-none ${
-      isSelected
-        ? 'border-midnight-cherry bg-midnight-cherry/5'
-        : 'border-gray-300 bg-white hover:border-midnight-cherry/50'
-    }`}>
-      {lite && (
-        <button
-          type="button"
-          onClick={handleLite}
-          aria-label={`Lite ${mod.name}`}
-          className={`flex min-w-[36px] items-center justify-center px-1 transition-colors sm:min-w-0 sm:px-3 ${
-            isLite
-              ? 'bg-midnight-cherry text-white'
-              : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
-          }`}
-        >
-          <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Lite</span>
-        </button>
-      )}
-
-      <button
-        type="button"
-        onClick={handleCenter}
-        className={`flex min-w-0 flex-1 items-center justify-center gap-1 px-1.5 py-2.5 transition-colors sm:px-4 ${
-          isRegular ? 'text-midnight-cherry' : isSelected ? 'text-midnight-cherry' : 'text-obsidian-roast'
-        }`}
-      >
-        {isSelected && <Check size={13} className="inline flex-shrink-0" />}
-        <span className="min-w-0 break-words text-[13px] leading-tight sm:text-sm">
-          {photo?.url ? (
-            <img
-              src={photo.url}
-              alt=""
-              aria-hidden="true"
-              width={22}
-              height={22}
-              loading="lazy"
-              decoding="async"
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 9999,
-                objectFit: 'cover',
-                border: '1px solid #e6d9c3',
-                display: 'inline-block',
-                verticalAlign: 'middle',
-                marginRight: 7,
-                flexShrink: 0,
-              }}
-            />
-          ) : null}
-          {label}
-        </span>
-        {totalPrice > 0 && (
-          <span className={`whitespace-nowrap text-[11px] sm:text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
-            +${totalPrice.toFixed(2)}
-          </span>
-        )}
-      </button>
-
-      {extra && (
-        <button
-          type="button"
-          onClick={handleExtra}
-          aria-label={`Extra ${mod.name}`}
-          className={`flex min-w-[36px] items-center justify-center px-1 transition-colors sm:min-w-0 sm:px-3 ${
-            isExtra
-              ? 'bg-midnight-cherry text-white'
-              : 'bg-midnight-cherry/10 text-midnight-cherry hover:bg-midnight-cherry/20 active:bg-midnight-cherry/25'
-          }`}
-        >
-          <span className="text-[10px] font-heading uppercase tracking-wide sm:text-xs">Extra</span>
-        </button>
-      )}
-    </div>
+    <ModifierTile
+      name={mod.name}
+      price={mod.price}
+      photo={getModifierPhoto(mod.name)}
+      state={isSelected ? (level || 'reg') : null}
+      onSelect={select}
+    />
   );
 }

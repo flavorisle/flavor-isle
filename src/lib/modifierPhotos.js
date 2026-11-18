@@ -1,17 +1,16 @@
 import { getMenuSetting } from '@/lib/menuSettings';
 
-// Issue #324 — real photos in the modifier buttons.
+// Issue #324 — the built-in photo map for modifier tiles.
 //
-// Every modifier option that has a photo gets one: toppings render as photo
-// tiles (ModifierTile) and sauce / flavor pills carry a small round photo. The
-// names below without an entry keep their plain word chip — Chocolate, Hot
-// Fudge, Caramel, Butterscotch and Peanut Butter are left without a photo on
-// purpose.
+// Only real food photos live here: sauces and the toppings we actually shoot.
+// A finished milkshake is not a flavor, so no flavor, syrup or dessert entry is
+// in this map — an option without a photo is a letter tile, which is the
+// expected look until Wesley adds the real shot in Admin → Modifier photos.
 //
 // Lookups are forgiving because Square's option names vary by list: case is
 // ignored, surrounding and repeated whitespace is collapsed, a trailing
 // " SAUCE" / " SYRUP" is dropped (RANCH SAUCE = RANCH) and a trailing "S" is
-// optional (PICKLE = PICKLES).
+// optional (TOMATO = TOMATOES).
 //
 // An admin can add photos without a build: MenuSetting.modifier_photos holds
 // the same { "OPTION NAME": { url, alt } } map and is merged OVER the built-in
@@ -50,33 +49,7 @@ export const MODIFIER_PHOTOS = {
   'WHIP CREAM': photo('219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg', 'Whipped cream'),
   WHIPCREAM: photo('219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg', 'Whipped cream'),
   'ADD WHIPCREAM': photo('219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg', 'Whipped cream'),
-  CHERRY: photo('2c2cc7795b2814a048c93a7c92465451875fe554/original.jpeg', 'Cherry'),
-  STRAWBERRY: photo('f87fbe0fe3fedd2c7aad8a9f1049ad7d14ba5497/original.jpeg', 'Strawberry'),
-  VANILLA: photo('0b834f33dace90b18f9c27fc16b4b05e56f57ba0/original.jpeg', 'Vanilla'),
-  PINEAPPLE: photo('00de3ba98f315484d2d5484548911297145118a7/original.jpeg', 'Pineapple'),
-  ORANGE: photo('97d963a0c33e7238a804d8628181097b0ccd7e25/original.jpeg', 'Orange'),
-  'ORANGE CREAMSICLE': photo('97d963a0c33e7238a804d8628181097b0ccd7e25/original.jpeg', 'Orange creamsicle'),
-  BANANA: photo('1f2248c05452f96643d5a1d3cf44477a96627f7e/original.jpeg', 'Banana'),
-  'REAL BANANA': photo('1f2248c05452f96643d5a1d3cf44477a96627f7e/original.jpeg', 'Banana'),
-  'COOKIES AND CREAM': photo('db0c1deb7139a1fb27208de54a09e10618102c9b/original.jpeg', 'Cookies and cream'),
-  'COOKIES AND CREME': photo('db0c1deb7139a1fb27208de54a09e10618102c9b/original.jpeg', 'Cookies and cream'),
-  'REAL FRUIT STRAWBERRY': photo('d57866dc0fb3cd850b334fa289db91ac675e1eb5/original.jpeg', 'Real fruit strawberry'),
-  'REAL FRUIT CHERRY': photo('e9816d1246f4b78fdae7fdd491c37cb69fea8746/original.jpeg', 'Real fruit cherry'),
 };
-
-// A group whose options are sauces keeps its pills instead of becoming tiles —
-// a round dab of sauce reads better in a pill than a photo tile.
-const SAUCE_NAMES = new Set([
-  'RANCH',
-  'JALAPENO RANCH',
-  'JALAPEÑO RANCH',
-  'JALAPEANO RANCH',
-  'CHIPOTLE RANCH',
-  'BBQ',
-  'BAR B QUE',
-  'BOOM BOOM',
-  'MARINARA',
-]);
 
 // The one normalization every lookup and every saved key goes through.
 export function canonicalModifierName(raw) {
@@ -117,8 +90,8 @@ export function refreshModifierPhotos(menuSetting) {
 }
 
 // One load at module import keeps admin photos live on every surface that only
-// has a name to look up (flavor chips, cart-side pills). getMenuSetting is
-// cached and already fetched by the menu pages, so this costs no extra call.
+// has a name to look up. getMenuSetting is cached and already fetched by the
+// menu pages, so this costs no extra call.
 getMenuSetting()
   .then((setting) => setModifierPhotoOverrides(setting?.modifier_photos))
   .catch(() => {});
@@ -143,8 +116,4 @@ export function getModifierPhoto(name) {
     if (BUILT_IN[candidate]) return BUILT_IN[candidate];
   }
   return null;
-}
-
-export function isSauceModifierName(name) {
-  return SAUCE_NAMES.has(canonicalModifierName(name));
 }

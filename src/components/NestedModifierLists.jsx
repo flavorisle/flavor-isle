@@ -1,6 +1,7 @@
 import React from 'react';
-import { Check } from 'lucide-react';
 import { ruleBadge, atMax } from '@/lib/modifierRules';
+import ModifierTile from '@/components/ModifierTile';
+import { getModifierPhoto } from '@/lib/modifierPhotos';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
 // when a parent modifier is selected. For example, selecting a soda reveals
@@ -54,7 +55,8 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
               {ruleBadge(list)}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Follow-up choices are tiles too, one size down to fit the indent. */}
+          <div className="grid grid-cols-2 gap-2">
             {(list.modifiers || []).map(mod => {
               const isMultiple = list.selection_type === 'MULTIPLE';
               const sel = nestedSelections?.[list.name];
@@ -62,27 +64,21 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
                 ? (sel || []).some(m => m.id === mod.id)
                 : sel?.id === mod.id;
               return (
-                <button
+                <ModifierTile
                   key={mod.id}
-                  type="button"
+                  size="sm"
+                  name={mod.name}
+                  price={mod.price}
+                  photo={getModifierPhoto(mod.name)}
                   disabled={mod.sold_out}
-                  onClick={() => isMultiple ? toggleMultiple(list, mod) : toggleSingle(list.name, mod)}
-                  className={`px-3 py-2 rounded-full border transition-all font-body text-sm font-semibold ${
-                    mod.sold_out
-                      ? 'border-gray-200 bg-muted opacity-50 cursor-not-allowed text-muted-foreground'
-                      : isSelected
-                        ? 'border-midnight-cherry bg-midnight-cherry/5 text-midnight-cherry'
-                        : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                  }`}
-                >
-                  {mod.name}
-                  {mod.sold_out ? (
-                    <span className="ml-1.5 text-xs text-muted-foreground uppercase">Sold Out</span>
-                  ) : mod.price > 0 && (
-                    <span className={`ml-1.5 text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>+${mod.price.toFixed(2)}</span>
-                  )}
-                  {isSelected && <Check size={13} className="ml-1 inline" />}
-                </button>
+                  state={isSelected ? 'reg' : null}
+                  onSelect={(next) => {
+                    const on = next != null;
+                    if (on === isSelected) return;
+                    if (isMultiple) toggleMultiple(list, mod);
+                    else toggleSingle(list.name, mod);
+                  }}
+                />
               );
             })}
           </div>

@@ -1,28 +1,26 @@
 import React from 'react';
-import { Check, Plus } from 'lucide-react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import { ruleBadge } from '@/lib/modifierRules';
-import PreferencePillButton, { getPreferenceList } from '@/components/PreferencePillButton';
-import PreferenceGroupPill, { getPreferenceTriplet } from '@/components/PreferenceGroupPill';
-import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
+import { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
 import ModifierTile from '@/components/ModifierTile';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
+import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 
-// The product page's "What's on it" box: the item description followed by
-// selectable chips for every option the item offers.
+// The product page's "What's on it" box: the item description followed by a
+// tile for every option the item offers.
 //
-// Every chip comes from the item's own Square options (see MenuItem.modifiers +
+// Every tile comes from the item's own Square options (see MenuItem.modifiers +
 // the admin overrides in MenuSetting), so the choices here can never drift from
 // what the kitchen actually offers — nothing to maintain, no item left out.
 //
-// These chips don't hold their own state: tapping one toggles the selection the
-// ProductModifierPanel already owns, so the chips, the price, and the cart
-// always agree. Sauces and toppings keep their Lite / Extra zones (the
-// Lite / Extra pill), and priced options show their upcharge.
+// These tiles don't hold their own state: tapping one toggles the selection the
+// ProductModifierPanel already owns, so the tiles, the price, and the cart
+// always agree. Each tile carries the same Lite / Reg / Ex strip the customize
+// sheet uses, and priced options show their upcharge.
 //
 // Square group names are often long instructions shouted in all caps
 // ("WHICH TOPPINGS WOULD YOU LIKE ON YOUR BURGER? YOU CAN CHOOSE") — they're
@@ -49,7 +47,7 @@ export default function ItemBuildSummary({
   onIceSizeChange,
 }) {
   // Issue #324 — the same photo an option shows in the modifier modal rides on
-  // its chip here, so a topping reads the same everywhere on the page.
+  // its tile here, so a topping reads the same everywhere on the page.
   refreshModifierPhotos(menuSetting);
   const groups = applyModifierOverrides(item?.modifiers, getModifierOverrides(menuSetting))
     .map((group) => ({
@@ -66,14 +64,27 @@ export default function ItemBuildSummary({
   const soda = iceContext?.sodaGroup.modifiers.find(mod => selected.has(mod.id));
   const iceLevel = iceLevelFor(soda, nestedSelections);
 
-  // Only explain the − / + zones on items that actually show one of those
-  // pills — a plain topping list has no such control.
-  const hasAmountPills = groups.some(
-    (group) =>
-      isFlavorGroup(group) ||
-      getPreferenceTriplet(group) ||
-      group.modifiers.some((mod) => getPreferenceList(mod)),
+  // Only explain the Lite / Reg / Ex strip on items that actually show one.
+  const hasLevelTiles = groups.some(
+    (group) => isFlavorGroup(group) || group.modifiers.some((mod) => supportsLevels(mod)),
   );
+
+  // A tile's strip lands on the same selection the panel and the cart use:
+  // Reg selects the option, Lite/Extra record its own amount, and tapping the
+  // active segment again takes the option back off.
+  const setTileLevel = (group, mod, next) => {
+    const isSelected = selected.has(mod.id);
+    if (next == null) {
+      if (isSelected) {
+        onToggle?.(group.name, mod);
+        onNestedChange?.(mod.id, {});
+      }
+      return;
+    }
+    if (!isSelected) onToggle?.(group.name, mod);
+    const levelsHere = supportsLevels(mod) || isFlavorGroup(group);
+    onNestedChange?.(mod.id, next === 'reg' || !levelsHere ? {} : nestedForLevel(mod, next));
+  };
 
   return (
     <div className="card-diner p-4 sm:p-5">
@@ -87,11 +98,9 @@ export default function ItemBuildSummary({
         <>
           <h2 className="font-heading text-lg text-obsidian-roast mb-1">What's on it</h2>
           <p className="text-xs text-muted-foreground mb-2">
-            Tap a chip to add it, tap it again to take it off. Anything with a price adds that much.
+            Tap a tile to add it, tap it again to take it off. Anything with a price adds that much.
           </p>
-          {/* Same − / + legend the Shake Isle shows, so the zones on these chips
-              are spelled out here too. */}
-          {hasAmountPills && <FlavorAmountLegend align="left" className="mb-3" />}
+          {hasLevelTiles && <FlavorAmountLegend align="left" className="mb-3" />}
           <div className="space-y-4">
             {groups.map((group) => {
               const rule = ruleBadge(group);
@@ -103,107 +112,36 @@ export default function ItemBuildSummary({
                       {rule}
                     </span>
                   </div>
-                  {/* Plain option chips read as before; the wider Lite/Extra
-                      pills sit two to a line on phones. */}
-                  <div className="flex flex-wrap gap-2">
-                    {getPreferenceTriplet(group) ? (
-                      <PreferenceGroupPill
-                        group={group}
-                        selectedId={group.modifiers.find((m) => selected.has(m.id))?.id}
-                        onSelect={(mod) => onToggle?.(group.name, mod)}
-                      />
-                    ) : group.modifiers.map((mod) => {
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.modifiers.map((mod) => {
                       const isSelected = selected.has(mod.id);
 
-                      // Sauces and toppings carry Lite / Regular / Extra zones —
-                      // reuse the same pill the customization list uses so those
-                      // options stay available right on the chip.
                       if (iceContext && group.name === iceContext.sizeGroup.name) {
-                        return <ClassicDrinkIceSize key={mod.id} mod={mod} selected={isSelected} level={iceLevel} onSelect={onIceSizeChange} />;
-                      }
-                      // Shake flavors carry the same Lite / Extra pill as the
-                      // sauces. Checked BEFORE the preference
-                      // check so a flavor that carries Square's own "- / + Flavors"
-                      // child list still renders (and prices) as the flavor pill —
-                      // matching the customization modal exactly.
-                      if (isFlavorGroup(group)) {
                         return (
-                          <FlavorPillButton
+                          <ClassicDrinkIceSize
                             key={mod.id}
                             mod={mod}
-                            isSelected={isSelected}
-                            onToggle={() => onToggle?.(group.name, mod)}
-                            nestedSelection={nestedSelections[mod.id] || {}}
-                            onNestedChange={(nested) => onNestedChange?.(mod.id, nested)}
+                            selected={isSelected}
+                            level={iceLevel}
+                            onSelect={onIceSizeChange}
                           />
                         );
                       }
 
-                      if (getPreferenceList(mod)) {
-                        return (
-                          <PreferencePillButton
-                            key={mod.id}
-                            mod={mod}
-                            isSelected={isSelected}
-                            onToggle={() => onToggle?.(group.name, mod)}
-                            nestedSelection={nestedSelections[mod.id] || {}}
-                            onNestedChange={(nested) => onNestedChange?.(mod.id, nested)}
-                          />
-                        );
-                      }
-
-                      // An option with a real photo shows it as the same tile
-                      // the customize sheet uses, so it reads identically on
-                      // the page. The tile is a plain toggle here — no Lite /
-                      // Ex strip, because this chooser only adds or removes.
-                      const photo = getModifierPhoto(mod.name);
-                      if (photo?.url) {
-                        return (
-                          <ModifierTile
-                            key={mod.id}
-                            name={mod.name}
-                            price={mod.price}
-                            photo={photo}
-                            state={isSelected ? 'reg' : null}
-                            showSegments={false}
-                            onSelect={(next) => {
-                              const shouldBeOn = next != null;
-                              if (shouldBeOn !== isSelected) onToggle?.(group.name, mod);
-                            }}
-                          />
-                        );
-                      }
-
-                      const extra = Number(mod.price) > 0;
                       return (
-                        <button
+                        <ModifierTile
                           key={mod.id}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() => onToggle?.(group.name, mod)}
-                          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-2 font-body text-sm font-semibold transition-all ${
-                            isSelected
-                              ? 'border-midnight-cherry bg-midnight-cherry/10 text-midnight-cherry'
-                              : 'border-gray-300 bg-white text-obsidian-roast hover:border-midnight-cherry/50'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <Check size={13} className="flex-shrink-0" />
-                          ) : (
-                            <Plus size={13} className="text-midnight-cherry flex-shrink-0" />
-                          )}
-                          <span>{mod.name}</span>
-                          {extra && (
-                            <span className={`text-xs ${isSelected ? 'text-midnight-cherry' : 'text-muted-foreground'}`}>
-                              +${Number(mod.price).toFixed(2)}
-                            </span>
-                          )}
-                        </button>
+                          name={mod.name}
+                          price={mod.price}
+                          photo={getModifierPhoto(mod.name)}
+                          state={isSelected ? (levelFromNested(nestedSelections[mod.id]) || 'reg') : null}
+                          onSelect={(next) => setTileLevel(group, mod, next)}
+                        />
                       );
                     })}
                   </div>
                   {/* Follow-up choices for a picked option — a soda's ice level and
-                      flavor, for instance. Lite/Extra levels stay on the pill. */}
+                      flavor, for instance. */}
                   {group.modifiers
                     .filter((mod) => selected.has(mod.id) && mod.child_modifier_lists?.length > 0)
                     .map((mod) => (
