@@ -8,6 +8,7 @@ import FlavorPillButton, { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
+import ModifierTile from '@/components/ModifierTile';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 
@@ -151,8 +152,29 @@ export default function ItemBuildSummary({
                         );
                       }
 
-                      const extra = Number(mod.price) > 0;
+                      // An option with a real photo shows it as the same tile
+                      // the customize sheet uses, so it reads identically on
+                      // the page. The tile is a plain toggle here — no Lite /
+                      // Ex strip, because this chooser only adds or removes.
                       const photo = getModifierPhoto(mod.name);
+                      if (photo?.url) {
+                        return (
+                          <ModifierTile
+                            key={mod.id}
+                            name={mod.name}
+                            price={mod.price}
+                            photo={photo}
+                            state={isSelected ? 'reg' : null}
+                            showSegments={false}
+                            onSelect={(next) => {
+                              const shouldBeOn = next != null;
+                              if (shouldBeOn !== isSelected) onToggle?.(group.name, mod);
+                            }}
+                          />
+                        );
+                      }
+
+                      const extra = Number(mod.price) > 0;
                       return (
                         <button
                           key={mod.id}
@@ -169,18 +191,6 @@ export default function ItemBuildSummary({
                             <Check size={13} className="flex-shrink-0" />
                           ) : (
                             <Plus size={13} className="text-midnight-cherry flex-shrink-0" />
-                          )}
-                          {photo?.url && (
-                            <img
-                              src={photo.url}
-                              alt=""
-                              aria-hidden="true"
-                              width={22}
-                              height={22}
-                              loading="lazy"
-                              decoding="async"
-                              style={{ width: 22, height: 22, borderRadius: 9999, objectFit: 'cover', border: '1px solid #e6d9c3', flexShrink: 0 }}
-                            />
                           )}
                           <span>{mod.name}</span>
                           {extra && (

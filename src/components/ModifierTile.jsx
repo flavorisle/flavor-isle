@@ -15,7 +15,7 @@ const SEGMENTS = [
   { key: 'extra', label: 'Ex', spoken: 'Extra' },
 ];
 
-export default function ModifierTile({ name, price, state, photo, onSelect, disabled }) {
+export default function ModifierTile({ name, price, state, photo, onSelect, disabled, showSegments = true }) {
   const hasState = state != null;
   const extra = Number(price) > 0;
 
@@ -77,6 +77,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
         )}
       </button>
 
+      {showSegments && (
       <div
         style={{
           display: 'flex',
@@ -115,6 +116,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
           );
         })}
       </div>
+      )}
     </div>
   );
 }

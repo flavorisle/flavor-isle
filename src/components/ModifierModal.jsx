@@ -216,10 +216,10 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     /SAUCE/i.test(group.name || '') ||
     (group.modifiers || []).length > 0 &&
       (group.modifiers || []).every((mod) => isSauceModifierName(mod.name));
+  // Sauce and flavor groups are tiles too now: their Lite / Ex strip lands on
+  // the same selection the pill used, so the price and the ticket are unchanged.
   const isTileGroup = (group) =>
-    !isFlavorGroup(group) &&
     !getPreferenceTriplet(group) &&
-    !isSauceGroup(group) &&
     (group.modifiers || []).some((mod) => getModifierPhoto(mod.name));
 
   // A tile's Lite / Reg / Ex lands on the very selection the pill used, so the
@@ -251,9 +251,11 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
       else toggleSingle(group.name, mod);
     }
     const hasChildList = (mod.child_modifier_lists || []).length > 0;
+    // Sauces and flavors price a Lite / Extra exactly as their pill did.
+    const levelsApply = hasChildList || isSauceGroup(group) || isFlavorGroup(group);
     setNestedSelections((prev) => ({
       ...prev,
-      [mod.id]: next === 'reg' || !hasChildList ? {} : flavorNestedForLevel(mod, next),
+      [mod.id]: next === 'reg' || !levelsApply ? {} : flavorNestedForLevel(mod, next),
     }));
   };
 
