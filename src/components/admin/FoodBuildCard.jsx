@@ -82,9 +82,9 @@ export default function FoodBuildCard({ build }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             {groups.map((group) => (
               <div key={group.id || group.name} className="bg-muted/60 border border-border rounded-2xl p-3">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-baseline gap-2 mb-2 flex-wrap">
                   <p className="font-heading text-xs uppercase tracking-widest text-obsidian-roast">{group.name}</p>
-                  <span className="text-[11px] text-muted-foreground bg-white px-2 py-0.5 rounded-full border border-border">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {ruleBadge(group)}
                   </span>
                 </div>

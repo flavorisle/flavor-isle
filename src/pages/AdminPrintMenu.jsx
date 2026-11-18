@@ -11,6 +11,9 @@ import PrintableMenu from '@/components/admin/PrintableMenu';
 import PrintMenuEditor from '@/components/admin/PrintMenuEditor';
 import BuildCardEditor from '@/components/admin/BuildCardEditor';
 import PrintableBuildCards from '@/components/admin/PrintableBuildCards';
+import PrintableFoodBuilds from '@/components/admin/PrintableFoodBuilds';
+import { deriveFoodBuilds } from '@/lib/foodBuilds';
+import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import useSquareBuildCards from '@/hooks/useSquareBuildCards';
 import { deriveBuildCards, loadCardOverrides, saveCardOverrides, orderCards, paperSpec, sheetSettings, PAPER_OPTIONS } from '@/lib/buildCards';
 import { itemCategoryKey, categoryLabel, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
@@ -307,6 +310,16 @@ export default function AdminPrintMenu() {
     blurb: WEEKEND_PARTY_PACK.subtitle,
   } : null;
 
+  // Food builds (the loaded fries) print from this same live menu, with the
+  // store's modifier overrides applied so the ticked house defaults print the
+  // way the crew builds them.
+  const foodBuilds = useMemo(() => deriveFoodBuilds(items)
+    .filter(build => build.loaded)
+    .map(build => ({
+      ...build,
+      groups: applyModifierOverrides(build.groups, getModifierOverrides(settings || {})),
+    })), [items, settings]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-vanilla-malt">
@@ -326,11 +339,13 @@ export default function AdminPrintMenu() {
         <div className="flex items-center justify-between flex-wrap gap-3 mb-6 print:hidden">
           <div>
             <h1 className="font-heading text-3xl text-obsidian-roast">
-              {mode === 'cards' ? 'Build Cards' : 'In-Store Printable Menu'}
+              {mode === 'cards' ? 'Build Cards' : mode === 'builds' ? 'Food Builds' : 'In-Store Printable Menu'}
             </h1>
             <p className="text-sm text-muted-foreground">
               {mode === 'cards'
                 ? 'Direct from Square: every attached modifier group and option, with exact names and prices. Card content cannot be hidden or replaced locally.'
+                : mode === 'builds'
+                ? 'The loaded-fry cards as the crew builds them: every option a photo tile, the house defaults ticked, and one-of groups capped.'
                 : 'Edit the printed copy on the left or click any item text on the sheet to edit it in place, then print or save as PDF. Your online menu stays unchanged.'}
             </p>
           </div>
@@ -377,13 +392,19 @@ export default function AdminPrintMenu() {
               >
                 Build Cards
               </button>
+              <button
+                onClick={() => setMode('builds')}
+                className={`h-9 px-[18px] rounded-xl text-[13px] font-semibold tracking-[.02em] ${mode === 'builds' ? 'btn-cherry text-white' : 'bg-white border border-[#E5E7EB] text-obsidian-roast hover:bg-[#F7F3EE]'}`}
+              >
+                Food Builds
+              </button>
             </div>
             <button
               onClick={async () => { await document.fonts.ready; window.print(); }}
               disabled={mode === 'cards' && (refreshing || squareSource.isError || !squareSource.data)}
               className="btn-cherry chrome-hover px-6 py-3 text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Printer size={16} /> {mode === 'cards' ? 'Print Build Cards' : 'Print Menu'}
+              <Printer size={16} /> {mode === 'cards' ? 'Print Build Cards' : mode === 'builds' ? 'Print Food Builds' : 'Print Menu'}
             </button>
           </div>
         </div>
@@ -402,6 +423,17 @@ export default function AdminPrintMenu() {
                 sourceDate={squareSource.data?.fetched_at}
                 error={squareSource.error?.response?.data?.error || squareSource.error?.message}
               />
+            ) : mode === 'builds' ? (
+              <div className="card-diner p-5 space-y-3">
+                <p className="font-heading text-lg text-obsidian-roast">Fry station cards</p>
+                <p className="text-sm text-muted-foreground">
+                  One card per page, straight from Square. Every option prints as a photo tile and the
+                  house defaults print ticked, so the crew builds each fry the same way every time.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {foodBuilds.length} card{foodBuilds.length === 1 ? '' : 's'} ready · letter paper.
+                </p>
+              </div>
             ) : (
               <PrintMenuEditor
                 config={config}
@@ -430,6 +462,8 @@ export default function AdminPrintMenu() {
               refreshing ? <p role="status" className="py-16 text-center text-muted-foreground">Pulling every Bliss modifier from Square…</p> :
               squareSource.isError ? <p role="alert" className="py-16 text-center text-destructive">The Square pull failed. Refresh from Square before printing.</p> :
               <PrintableBuildCards cards={cards} order={sheet.order} paper={sheet.paper} perPage={sheet.perPage} />
+            ) : mode === 'builds' ? (
+              <PrintableFoodBuilds builds={foodBuilds} />
             ) : (
               <PrintableMenu
                 sections={printSections}
