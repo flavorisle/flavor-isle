@@ -43,7 +43,7 @@ export default function SocialPostCard({ post }) {
           decoding="async"
           className="w-full aspect-square object-cover rounded-xl"
         />
-        <p className="text-xs text-muted-foreground mt-2">{post.format} Straight from the gallery — no other image to use.</p>
+        <p className="text-xs text-muted-foreground mt-2">{post.format} A real Flavor Isle photo — menu item photos work too.</p>
       </div>
 
       <div className="bg-patina-mint/10 rounded-2xl p-5 border border-patina-mint/20">

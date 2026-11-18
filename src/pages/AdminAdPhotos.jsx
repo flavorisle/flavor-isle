@@ -8,10 +8,9 @@ import { GALLERY_PHOTOS } from '@/lib/galleryPhotos';
 import { optimizedImageUrl } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
-// Ad-photo kit: only real Flavor Isle photography — the gallery collection and
-// the live menu-item photos (Square catalog). Every row copies a public image
-// link so an ad can be built from these and nothing else (no stock, no
-// generated images).
+// Ad-photo kit: only real Flavor Isle photos — the gallery collection and the
+// live menu-item photos (Square catalog). Every row copies a public image link
+// so an ad can be built from either set. Nothing generated, nothing stock.
 
 const TABS = [
   { id: 'gallery', label: 'Gallery photos', Icon: Images },

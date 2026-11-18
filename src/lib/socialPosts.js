@@ -1,7 +1,7 @@
 // Ready-to-post social content for the Flavor Isle marketing toolkit.
 // Every word here is a real, verifiable Flavor Isle detail (address, phone,
-// hours from the store config, and the menu facts), and every photo is pulled
-// from GALLERY_PHOTOS through galleryImage — nothing generated, nothing stock.
+// hours from the store config, and the menu facts), and every photo is a real
+// Flavor Isle photo pulled from GALLERY_PHOTOS — nothing generated, nothing stock.
 import { galleryImage } from '@/lib/galleryPhotos';
 import { DEFAULT_BUSINESS_HOURS, hoursSummary } from '@/lib/businessHours';
 
