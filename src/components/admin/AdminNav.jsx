@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned, Images } from 'lucide-react';
+import { Package, LayoutDashboard, UtensilsCrossed, Receipt, Tag, MessagesSquare, MessageSquareQuote, Printer, Store, Mail, Activity, Flame, BarChart3, Users, CreditCard, Globe, MapPinned, Images, Megaphone } from 'lucide-react';
 import AdminPresenceTracker from '@/components/admin/AdminPresenceTracker';
 
 const LINKS = [
   { label: 'Dashboard', to: '/admin', Icon: LayoutDashboard },
   { label: 'Menu Manager', to: '/admin/menu', Icon: UtensilsCrossed },
   { label: 'Print Menu', to: '/admin/print-menu', Icon: Printer },
+  { label: 'Ads', to: '/admin/ads', Icon: Megaphone },
   { label: 'Combo Isle', to: '/admin/combo-isle', Icon: Package },
   { label: 'Explore Shops', to: '/admin/explore-shops', Icon: MapPinned },
   { label: 'Orders', to: '/admin/orders', Icon: Receipt },

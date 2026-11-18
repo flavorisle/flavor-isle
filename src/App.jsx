@@ -40,6 +40,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminMenu = lazy(() => import('./pages/AdminMenu'));
 const AdminPrintMenu = lazy(() => import('./pages/AdminPrintMenu'));
+const AdminAds = lazy(() => import('./pages/AdminAds'));
 const AdminComboIsle = lazy(() => import('./pages/AdminComboIsle'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const AdminCommunications = lazy(() => import('./pages/AdminCommunications'));
@@ -91,7 +92,6 @@ const PaySquare = lazy(() => import('./pages/PaySquare'));
 const PayCard = lazy(() => import('./pages/PayCard'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const About = lazy(() => import('./pages/About'));
-const Flyer = lazy(() => import('./pages/Flyer'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const ExploreSmithsGrove = lazy(() => import('./pages/ExploreSmithsGrove'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
@@ -226,7 +226,7 @@ const AuthenticatedApp = () => {
       <Route path="/order-status" element={<OrderStatus />} />
       <Route path="/order-alerts" element={<OrderAlerts />} />
       <Route path="/community-news" element={<CommunityNews />} />
-      <Route path="/flyer" element={<Flyer />} />
+      <Route path="/flyer" element={<Navigate to="/admin/ads" replace />} />
       <Route path="/i65-exit-38" element={<I65Exit38 />} />
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
@@ -267,6 +267,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/menu" element={<AdminMenu />} />
         <Route path="/admin/print-menu" element={<AdminPrintMenu />} />
+        <Route path="/admin/ads" element={<AdminAds />} />
         <Route path="/admin/combo-isle" element={<AdminComboIsle />} />
         <Route path="/admin/explore-shops" element={<AdminExploreShops />} />
         <Route path="/admin/ad-photos" element={<AdminAdPhotos />} />
