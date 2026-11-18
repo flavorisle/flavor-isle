@@ -29,7 +29,12 @@ export function levelChildList(mod) {
   }) || null;
 }
 
+// An ice cream base ("VANILLA ICE CREAM", "SWIRL ICE CREAM") is a choice of
+// base, never an amount, so it never carries the strip even if a list is there.
+const BASE_OPTION = /\bice cream\b/i;
+
 export function supportsLevels(mod) {
+  if (BASE_OPTION.test(String(mod?.name || ''))) return false;
   return !!levelChildList(mod);
 }
 
