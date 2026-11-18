@@ -82,7 +82,7 @@ function PosterSheet({ ad, sheetId }) {
             {ad.title_accent || ''}
           </div>
         </div>
-        <p style={{ marginTop: 14, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
+        <p style={{ marginTop: 12, fontSize: 25, fontWeight: 900, lineHeight: 1.15, color: t.ink, maxWidth: '5.2in' }}>
           {hiAt >= 0 ? (
             <>
               {sub.slice(0, hiAt)}
@@ -110,7 +110,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* flavors + price */}
       {(chips.length > 0 || ad.price_line) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 30px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 30px 0' }}>
           {chips.map((c, i) => (
             <div
               key={`${c}-${i}`}
@@ -138,12 +138,12 @@ function PosterSheet({ ad, sheetId }) {
       )}
 
       {ad.body ? (
-        <p style={{ padding: '8px 30px 0', fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: t.ink }}>{ad.body}</p>
+        <p style={{ padding: '6px 30px 0', fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: t.ink }}>{ad.body}</p>
       ) : null}
 
       {/* three item cards */}
       {items.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: 10, padding: '16px 30px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr 1fr', gap: 10, padding: '14px 30px 0' }}>
           {items.map((m, i) => (
             <div key={`${m.name}-${i}`} style={{ borderRadius: 12, overflow: 'hidden', background: '#ffffff', border: `1.5px solid ${t.ink}28`, display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '1.15in', overflow: 'hidden' }}>
@@ -162,7 +162,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* three one-liners */}
       {lines.length > 0 && (
-        <div style={{ margin: '14px 30px 0', background: t.ink, color: t.paper, borderRadius: 12, padding: '11px 18px', display: 'grid', gridTemplateColumns: `repeat(${lines.length}, 1fr)`, gap: 14 }}>
+        <div style={{ margin: '12px 30px 0', background: t.ink, color: t.paper, borderRadius: 12, padding: '11px 18px', display: 'grid', gridTemplateColumns: `repeat(${lines.length}, 1fr)`, gap: 14 }}>
           {lines.map((l, i) => (
             <div key={i} style={{ fontSize: 12.5, fontWeight: 800, lineHeight: 1.25 }}>
               <span style={{ display: 'block', fontSize: 9, fontWeight: 900, letterSpacing: '.2em', color: t.gold, marginBottom: 4 }}>{l.label}</span>
@@ -174,7 +174,7 @@ function PosterSheet({ ad, sheetId }) {
 
       {/* bottom band */}
       {(ad.strip_headline || ad.strip_photo_wide) && (
-        <div style={{ position: 'relative', marginTop: 14, minHeight: '1.25in', flex: 'none', display: 'flex', background: t.ink, overflow: 'hidden' }}>
+        <div style={{ position: 'relative', marginTop: 12, minHeight: '1.25in', flex: 'none', display: 'flex', background: t.ink, overflow: 'hidden' }}>
           <div style={{ flex: '0 0 46%', padding: '0 16px 0 30px', alignSelf: 'center', color: t.paper }}>
             <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '.26em', color: t.gold }}>{ad.strip_kicker || ''}</div>
             <div className="ad-bebas" style={{ fontSize: 27, lineHeight: '27px', marginTop: 4 }}>{ad.strip_headline || ''}</div>
@@ -192,7 +192,7 @@ function PosterSheet({ ad, sheetId }) {
       )}
 
       {/* footer */}
-      <div style={{ marginTop: 'auto', flex: 'none', background: t.accent, color: t.onAccent, padding: '16px 30px', display: 'flex', alignItems: 'center', gap: 18, overflow: 'hidden' }}>
+      <div style={{ marginTop: 'auto', flex: 'none', background: t.accent, color: t.onAccent, padding: '14px 30px', display: 'flex', alignItems: 'center', gap: 18, overflow: 'hidden' }}>
         {ad.show_qr ? (
           <div style={{ background: '#ffffff', padding: 6, borderRadius: 8, width: '1.12in', height: '1.12in', flex: 'none' }}>
             <img src={qrUrl(ad.qr_target || ad.cta_url)} alt="QR code to order online" width="600" height="600" style={{ width: '100%', height: '100%', display: 'block' }} />
@@ -235,7 +235,7 @@ function ClassicSheet({ ad, sheetId }) {
       className="bg-white overflow-hidden flex flex-col"
       style={{ width: '8.5in', minHeight: '11in', height: '11in' }}
     >
-      <div className="bg-patina-mint text-white px-8 py-6 flex items-center justify-between">
+      <div className="bg-patina-mint text-white px-8 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={optimizedImageUrl(LOGO, 200, 200, 'fit')} alt="Flavor Isle logo" width="200" height="200" className="w-14 h-14 object-contain rounded-xl bg-white/95 p-1" />
           <div>
@@ -249,23 +249,23 @@ function ClassicSheet({ ad, sheetId }) {
         </div>
       </div>
 
-      <div className="bg-patina-mint/5 px-8 pt-8 pb-2 flex justify-center">
+      <div className="bg-patina-mint/5 px-8 pt-5 pb-2 flex justify-center">
         <img
           src={optimizedImageUrl(STOREFRONT, 800, 600, 'fit')}
           alt="The Flavor Isle sign at 1st and Main in Smiths Grove"
           width="800" height="600"
-          className="w-full max-w-[5.5in] max-h-[3.2in] object-cover rounded-2xl"
+          className="w-full max-w-[5.5in] max-h-[2.6in] object-cover rounded-2xl"
         />
       </div>
 
-      <div className="px-8 pt-4 text-center">
+      <div className="px-8 pt-3 text-center">
         <h1 className="font-heading text-4xl text-obsidian-roast leading-tight">
           {headline} {accent ? <span className="text-midnight-cherry">{accent}</span> : null}
         </h1>
         {ad.subhead ? <p className="font-body text-base text-muted-foreground mt-2">{ad.subhead}</p> : null}
       </div>
 
-      <div className="px-8 py-6 grid grid-cols-3 gap-4">
+      <div className="px-8 py-4 grid grid-cols-3 gap-4">
         {[
           { icon: Flame, title: 'Fresh Hand-Patted Burgers', sub: 'Hand-patted, never frozen, made to order' },
           { icon: UtensilsCrossed, title: 'Hot Sides', sub: 'Crispy fries, tots & more' },
@@ -285,12 +285,12 @@ function ClassicSheet({ ad, sheetId }) {
         <div className="grid grid-cols-3 gap-4">
           {items.map((m, i) => (
             <div key={`${m.name}-${i}`} className="rounded-2xl overflow-hidden border border-patina-mint/15 bg-patina-mint/5">
-              <div className="h-28 overflow-hidden">
+              <div className="h-24 overflow-hidden">
                 {m.photo ? (
                   <img src={m.photo} alt={m.name} width="500" height="500" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : null}
               </div>
-              <div className="p-3">
+              <div className="p-2.5">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-heading text-base text-obsidian-roast leading-none">{m.name}</div>
                   <div className="font-heading text-base text-midnight-cherry leading-none">{m.price}</div>
@@ -311,7 +311,7 @@ function ClassicSheet({ ad, sheetId }) {
         </div>
       ) : null}
 
-      <div className="mx-8 bg-midnight-cherry text-white rounded-2xl px-6 py-5 flex items-center justify-between">
+      <div className="mx-8 bg-midnight-cherry text-white rounded-2xl px-6 py-4 flex items-center justify-between">
         <div>
           <div className="font-heading text-2xl leading-none">{ad.cta_headline || 'ORDER ONLINE'}</div>
           <div className="text-sm text-white/90 mt-1">Pickup &middot; {deliveryEnabled ? 'Delivery' : 'Curbside'} &middot; Dine-In</div>
@@ -322,7 +322,7 @@ function ClassicSheet({ ad, sheetId }) {
         </div>
       </div>
 
-      <div className="px-8 py-6 grid grid-cols-3 gap-4 text-obsidian-roast">
+      <div className="px-8 py-4 grid grid-cols-3 gap-4 text-obsidian-roast">
         <div className="flex items-start gap-2">
           <MapPin size={16} className="text-midnight-cherry flex-shrink-0 mt-0.5" />
           <div className="text-xs leading-snug">
@@ -350,7 +350,7 @@ function ClassicSheet({ ad, sheetId }) {
         </div>
       </div>
 
-      <div className="mt-auto bg-obsidian-roast text-white px-8 py-4 text-center">
+      <div className="mt-auto bg-obsidian-roast text-white px-8 py-3 text-center">
         <div className="font-heading text-lg tracking-wide text-smashie-yellow">{ad.footer_headline || 'SEE YOU AT THE ISLE!'}</div>
         <div className="text-[10px] tracking-widest text-white/70 mt-1 flex items-center justify-center gap-1">
           <Globe size={10} /> {ad.footer_note || 'flavor-isle.com \u00b7 @flavor_isle'}
