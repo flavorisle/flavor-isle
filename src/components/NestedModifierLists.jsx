@@ -76,7 +76,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
               return (
                 <ModifierTile
                   key={mod.id}
-                  size="sm"
+                  levels={false}
                   name={mod.name}
                   price={mod.price}
                   photo={getModifierPhoto(mod.name)}

@@ -8,12 +8,11 @@ import { isDeluxeEnabled, getDeluxePresetsForItem, isDeluxePresetActive, applyDe
 import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
-import { isFlavorGroup } from './FlavorPillButton';
 import ModifierTile from './ModifierTile';
 import PlainOptionPills from './PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
-import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
 import ShakeAllergyCheckbox from './ShakeAllergyCheckbox';
 import FlavorAmountLegend from './FlavorAmountLegend';
@@ -212,7 +211,11 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // The tile's Lite / Reg / Ex strip lands on the same selection the old pill
   // used, so the price, the cart and the kitchen ticket are unchanged. Only a
   // drink size picker keeps its own control.
-  const levelsApply = (group, mod) => supportsLevels(mod) || isFlavorGroup(group);
+  //
+  // Every option takes a level. Square carries a separate amount list for some
+  // (toppings on desserts, flavors, sauces) and charges for the Extra there;
+  // for the rest — burger toppings, most sauces — the level rides as a name
+  // prefix instead of being dropped, so the strip is never a dead control.
 
   // A tile's Lite / Reg / Ex lands on the very selection the pill used, so the
   // price, the cart and the kitchen ticket are untouched: Reg selects the
@@ -244,7 +247,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     }
     setNestedSelections((prev) => ({
       ...prev,
-      [mod.id]: next === 'reg' || !levelsApply(group, mod) ? {} : nestedForLevel(mod, next),
+      [mod.id]: next === 'reg' ? {} : nestedForLevel(mod, next),
     }));
   };
 
@@ -325,7 +328,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
           {shakeItem && <ShakeFlavorControl item={item} level={coreLevel} onChange={setCoreLevel} />}
           {/* Flavor pills show − / + zones — say what they do whenever any
               flavor group is on screen. */}
-          {groups.some(isFlavorGroup) && <FlavorAmountLegend align="left" />}
+          {hasModifiers && <FlavorAmountLegend align="left" />}
           {deluxePresets.length > 0 && deluxePresets.map((preset) => {
             const active = isDeluxePresetActive(selections, preset);
             return (

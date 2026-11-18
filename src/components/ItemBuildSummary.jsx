@@ -1,7 +1,6 @@
 import React from 'react';
 import { applyModifierOverrides, getModifierOverrides } from '@/lib/modifierOverrides';
 import { ruleBadge } from '@/lib/modifierRules';
-import { isFlavorGroup } from '@/components/FlavorPillButton';
 import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
@@ -10,7 +9,7 @@ import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
-import { supportsLevels, levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
 
 // The product page's "What's on it" box: the item description followed by a
 // tile for every option the item offers.
@@ -66,10 +65,8 @@ export default function ItemBuildSummary({
   const soda = iceContext?.sodaGroup.modifiers.find(mod => selected.has(mod.id));
   const iceLevel = iceLevelFor(soda, nestedSelections);
 
-  // Only explain the Lite / Reg / Ex strip on items that actually show one.
-  const hasLevelTiles = groups.some(
-    (group) => isFlavorGroup(group) || group.modifiers.some((mod) => supportsLevels(mod)),
-  );
+  // Every tile carries the Lite / Reg / Ex strip, so the strip is always
+  // explained here — the second half of this component's own hint above.
 
   // A tile's strip lands on the same selection the panel and the cart use:
   // Reg selects the option, Lite/Extra record its own amount, and tapping the
@@ -84,8 +81,10 @@ export default function ItemBuildSummary({
       return;
     }
     if (!isSelected) onToggle?.(group.name, mod);
-    const levelsHere = supportsLevels(mod) || isFlavorGroup(group);
-    onNestedChange?.(mod.id, next === 'reg' || !levelsHere ? {} : nestedForLevel(mod, next));
+    // Every option takes a level. Where Square keeps a separate amount list the
+    // Extra price rides with it; everywhere else the level rides as a name
+    // prefix, so the strip never silently does nothing.
+    onNestedChange?.(mod.id, next === 'reg' ? {} : nestedForLevel(mod, next));
   };
 
   return (
@@ -102,7 +101,7 @@ export default function ItemBuildSummary({
           <p className="text-xs text-muted-foreground mb-2">
             Tap a tile to add it, tap it again to take it off. Anything with a price adds that much.
           </p>
-          {hasLevelTiles && <FlavorAmountLegend align="left" className="mb-3" />}
+          <FlavorAmountLegend align="left" className="mb-3" />
           <div className="space-y-4">
             {groups.map((group) => {
               const rule = ruleBadge(group);

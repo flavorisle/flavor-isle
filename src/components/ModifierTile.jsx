@@ -27,7 +27,7 @@ const TILE_WIDTH = 120;
 const NAME_BOX = 21;
 const FOOTER = 19;
 
-export default function ModifierTile({ name, price, state, photo, onSelect, disabled }) {
+export default function ModifierTile({ name, price, state, photo, onSelect, disabled, levels = true }) {
   const active = state != null;
   const initial = String(name || '').trim().charAt(0).toUpperCase();
   const hasPrice = Number(price) > 0;
@@ -133,6 +133,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
         </span>
       </button>
 
+      {levels && (
       <div
         role="group"
         aria-label={`${name} amount`}
@@ -178,6 +179,7 @@ export default function ModifierTile({ name, price, state, photo, onSelect, disa
           );
         })}
       </div>
+      )}
     </div>
   );
 }

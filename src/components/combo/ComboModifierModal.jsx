@@ -3,6 +3,8 @@ import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
 import { atMax, ruleBadge } from '@/lib/modifierRules';
+import { levelFromNested, nestedForLevel } from '@/lib/modifierLevels';
+import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import ModifierTile from '@/components/ModifierTile';
 import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption } from '@/lib/plainOption';
@@ -24,6 +26,9 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
   };
 
   const [selections, setSelections] = useState(initSelections);
+  // Lite / Reg / Ex per chosen option — the same level every other ordering
+  // surface records, so a combo box prices and prints a build the same way.
+  const [nested, setNested] = useState({});
 
   const toggleSingle = (groupName, mod) =>
     setSelections((prev) => ({
@@ -44,21 +49,22 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
       return { ...prev, [groupName]: [...current, mod] };
     });
 
-  const extraCost = Object.values(selections).reduce((sum, sel) => {
-    if (!sel) return sum;
-    if (Array.isArray(sel)) return sum + sel.reduce((s, m) => s + (m.price || 0), 0);
-    return sum + (sel.price || 0);
-  }, 0);
+  // Each chosen option folded with its Lite/Extra level: the level merges into
+  // the name ("Extra Pickles") and its price, exactly as the bag lists it.
+  const selectedEntries = Object.entries(selections)
+    .filter(([, sel]) => sel)
+    .flatMap(([groupName, sel]) =>
+      (Array.isArray(sel) ? sel : [sel]).filter(Boolean).flatMap((m) => {
+        const merged = mergeNestedIntoParent({ id: m.id, name: m.name, price: m.price }, nested[m.id] || {});
+        return [
+          { id: m.id, group: groupName, name: merged.mergedName, price: merged.mergedPrice },
+          ...merged.silentEntries,
+        ];
+      }));
 
-  const handleConfirm = () => {
-    const selectedMods = [];
-    for (const [groupName, sel] of Object.entries(selections)) {
-      if (!sel) continue;
-      if (Array.isArray(sel)) sel.forEach((m) => selectedMods.push({ id: m.id, group: groupName, name: m.name, price: m.price }));
-      else selectedMods.push({ id: sel.id, group: groupName, name: sel.name, price: sel.price });
-    }
-    onConfirm(selectedMods, extraCost);
-  };
+  const extraCost = selectedEntries.reduce((sum, m) => sum + (m.price || 0), 0);
+
+  const handleConfirm = () => onConfirm(selectedEntries, extraCost);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -105,12 +111,22 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
                       price={mod.price}
                       photo={getModifierPhoto(mod.name)}
                       disabled={mod.sold_out}
-                      state={isSelected ? 'reg' : null}
+                      state={isSelected ? (levelFromNested(nested[mod.id]) || 'reg') : null}
                       onSelect={(next) => {
-                        const on = next != null;
-                        if (on === isSelected) return;
-                        if (isMultiple) toggleMultiple(group.name, mod);
-                        else toggleSingle(group.name, mod);
+                        // Tapping the active option's photo or name takes it off;
+                        // tapping a level on it only changes the amount.
+                        if (next == null) {
+                          if (!isSelected) return;
+                          if (isMultiple) toggleMultiple(group.name, mod);
+                          else toggleSingle(group.name, mod);
+                          setNested((prev) => { const copy = { ...prev }; delete copy[mod.id]; return copy; });
+                          return;
+                        }
+                        if (!isSelected) {
+                          if (isMultiple) toggleMultiple(group.name, mod);
+                          else toggleSingle(group.name, mod);
+                        }
+                        setNested((prev) => ({ ...prev, [mod.id]: next === 'reg' ? {} : nestedForLevel(mod, next) }));
                       }}
                     />
                   );
