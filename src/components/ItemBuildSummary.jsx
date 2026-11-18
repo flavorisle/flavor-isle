@@ -112,7 +112,7 @@ export default function ItemBuildSummary({
                       {rule}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
                     {group.modifiers.map((mod) => {
                       const isSelected = selected.has(mod.id);
 

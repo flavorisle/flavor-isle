@@ -362,7 +362,7 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                 </div>
                 {/* Every option is a tile. A drink size picker keeps its own
                     control, since picking a size is not a modifier amount. */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
                   {group.modifiers.map((mod) => {
                     if (iceContext && group.name === iceContext.sizeGroup.name) {
                       return (

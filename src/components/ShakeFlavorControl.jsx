@@ -16,7 +16,7 @@ export default function ShakeFlavorControl({ item, level, onChange }) {
     <div>
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Your Shake Flavor</p>
       <FlavorAmountLegend align="left" className="mb-2.5" />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
         <FlavorPillButton
           mod={{ id: item.id, name, price: 0 }}
           isSelected

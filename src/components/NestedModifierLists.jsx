@@ -56,7 +56,7 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
             </span>
           </div>
           {/* Follow-up choices are tiles too, one size down to fit the indent. */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
             {(list.modifiers || []).map(mod => {
               const isMultiple = list.selection_type === 'MULTIPLE';
               const sel = nestedSelections?.[list.name];

@@ -78,7 +78,7 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
               </div>
               {/* Combo components pick their Square options with the same tile
                   every other ordering surface uses. */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 148px))', gap: '8px', justifyContent: 'center' }}>
                 {group.modifiers.map((mod) => {
                   const isMultiple = group.selection_type === 'MULTIPLE';
                   const isSelected = isMultiple
