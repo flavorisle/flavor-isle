@@ -38,6 +38,11 @@ export const MODIFIER_PHOTOS = {
   "ADD STRAWBERRY": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/4af17afd9_generated_image.png",
   "ADD VANILLA": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/36eaf4cf2_generated_image.png",
   "ADD WHIPCREAM": "https://items-images-production.s3.us-west-2.amazonaws.com/files/219b8f328f8b44d61ef3f4cbbd1ba3c19ee785e8/original.jpeg",
+  // Soft serve as it comes off the machine — the swirl on top of a cone, no cone.
+  // The milkshake "SELECT THE BASE" choices in Square.
+  "CHOCOLATE ICE CREAM": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d0e04c7aa_generated_image.png",
+  "SWIRL ICE CREAM": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/46a6c02a8_generated_image.png",
+  "VANILLA ICE CREAM": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9051dcd81_generated_image.png",
   "AMERICAN": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f1cc08734_generated_image.png",
   "AMERICAN CHEESE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/f1cc08734_generated_image.png",
   "BACON": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/789c51ce1_generated_image.png",
