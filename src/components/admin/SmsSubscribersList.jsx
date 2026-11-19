@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Users, Search, CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { cachedRead } from '@/lib/adminReadCache';
 
 // Badge for a subscriber's consent category (split transactional vs marketing).
 function ConsentBadge({ sub }) {
@@ -22,11 +23,11 @@ export default function SmsSubscribersList() {
   const [query, setQuery] = useState('');
   const [error, setError] = useState(null);
 
-  const load = async () => {
+  const load = async (force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const list = await base44.entities.SMSSubscriber.list('-created_date', 500);
+      const list = await cachedRead('admin:sms-subscribers', () => base44.entities.SMSSubscriber.list('-created_date', 500), { force });
       setSubs(list);
     } catch (err) {
       setError(err.message || 'Failed to load subscribers');
@@ -82,7 +83,7 @@ export default function SmsSubscribersList() {
               />
             </div>
             <button
-              onClick={load}
+              onClick={() => load(true)}
               disabled={loading}
               className="p-2.5 rounded-full bg-muted hover:bg-midnight-cherry hover:text-white transition-colors tap-44"
               aria-label="Refresh subscribers"

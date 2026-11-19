@@ -3,6 +3,7 @@ import { Search, RefreshCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import AdminNav from '@/components/admin/AdminNav';
 import VisitorActivityRow from '@/components/admin/VisitorActivityRow';
+import { cachedRead } from '@/lib/adminReadCache';
 
 const VIEW_LIMIT = 500;
 
@@ -15,6 +16,29 @@ const isStaffEmail = (email, adminEmails) => {
   if (!e) return false;
   return STAFF_EMAILS.includes(e) || STAFF_DOMAINS.some((d) => e.endsWith(d)) || adminEmails.includes(e);
 };
+
+// The admin list changes rarely, so it is read once per browser session instead
+// of on every refresh of this screen.
+const ADMIN_EMAILS_KEY = 'flavor-isle-admin-emails';
+function adminEmailsOnce() {
+  try {
+    const stored = sessionStorage.getItem(ADMIN_EMAILS_KEY);
+    if (stored) return Promise.resolve(JSON.parse(stored));
+  } catch {
+    // no stored list — read it below
+  }
+  return base44.entities.User.list()
+    .catch(() => [])
+    .then((users) => {
+      const emails = (users || [])
+        .filter((u) => u?.role === 'admin' && u?.email)
+        .map((u) => u.email.toLowerCase().trim());
+      if (emails.length) {
+        try { sessionStorage.setItem(ADMIN_EMAILS_KEY, JSON.stringify(emails)); } catch { /* ignore */ }
+      }
+      return emails;
+    });
+}
 
 // Every row falls into exactly one bucket. Rows written before the classifier
 // existed carry no flag, so they are legacy — never human, never bot.
@@ -81,17 +105,18 @@ export default function AdminVisitors() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('humans');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     setLoading(true);
     try {
-      const [page, users] = await Promise.all([
-        base44.entities.VisitorPageView.filter({}, { sort: '-created_date', limit: VIEW_LIMIT }),
-        base44.entities.User.list().catch(() => []),
+      const [rows, adminEmails] = await Promise.all([
+        cachedRead('admin-visitors:views', async () => {
+          const page = await base44.entities.VisitorPageView.filter({}, { sort: '-created_date', limit: VIEW_LIMIT });
+          return page?.items || [];
+        }, { force }),
+        adminEmailsOnce(),
       ]);
-      setViews(page?.items || []);
-      setAdminEmails((users || [])
-        .filter((u) => u?.role === 'admin' && u?.email)
-        .map((u) => u.email.toLowerCase().trim()));
+      setViews(rows);
+      setAdminEmails(adminEmails);
     } catch (err) {
       console.error('Failed to load visitor page views:', err);
     } finally {
@@ -138,7 +163,7 @@ export default function AdminVisitors() {
               Showing the most recent {VIEW_LIMIT} page views.
             </p>
           </div>
-          <button onClick={load} disabled={loading} className="btn-mint px-4 py-2 text-xs flex items-center gap-2 flex-shrink-0">
+          <button onClick={() => load(true)} disabled={loading} className="btn-mint px-4 py-2 text-xs flex items-center gap-2 flex-shrink-0">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
         </div>

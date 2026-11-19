@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import BlockedContactForm from '@/components/admin/BlockedContactForm';
 import BlockedContactRow from '@/components/admin/BlockedContactRow';
+import { cachedRead } from '@/lib/adminReadCache';
 import { Loader2, ShieldOff } from 'lucide-react';
 
 // Blocklist manager. A blocked number or customer can't place an order on the
@@ -12,7 +13,7 @@ export default function BlockedContactsPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = () => base44.entities.BlockedContact.list('-created_date', 200);
+    const load = () => cachedRead('admin:blocked-contacts', () => base44.entities.BlockedContact.list('-created_date', 200));
     load().then((rows) => { setBlocks(rows || []); setLoading(false); });
     const unsubscribe = base44.entities.BlockedContact.subscribe((event) => {
       setBlocks((current) => {

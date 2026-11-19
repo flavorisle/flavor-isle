@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Phone, MessageSquare, ChevronDown, RefreshCw, User, Bot, Clock, PhoneIncoming, UserCheck } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { cachedRead, peekRead } from '@/lib/adminReadCache';
+
+const CONVERSATIONS_KEY = 'admin:conversations';
 
 const STATUS_STYLE = {
   'completed': 'bg-gray-100 text-gray-600',
@@ -34,10 +37,11 @@ export default function ConversationLog({ channel }) {
   const [loadingMsgs, setLoadingMsgs] = useState({});
   const [resolving, setResolving] = useState({});
 
-  const load = async () => {
+  const load = async (force = false) => {
     setLoading(true);
     try {
-      const all = await base44.entities.SmsConversation.list('-last_message_at', 100);
+      const held = force ? undefined : peekRead(CONVERSATIONS_KEY);
+      const all = held || await cachedRead(CONVERSATIONS_KEY, () => base44.entities.SmsConversation.list('-last_message_at', 100), { force });
       // Existing records created before the `channel` field default to "sms".
       const filtered = (all || []).filter(c => (c.channel || 'sms') === channel);
       setConversations(filtered);
@@ -50,7 +54,7 @@ export default function ConversationLog({ channel }) {
         return next;
       });
       setLoading(false);
-      if (channel === 'voice') {
+      if (channel === 'voice' && !held) {
         const missing = filtered.filter(c => !c.square_customer_id && /\d{10}/.test((c.phone_number || '').replace(/\D/g, '')));
         for (let i = 0; i < missing.length; i += 20) {
           const res = await base44.functions.invoke('lookupCaller', { conversation_ids: missing.slice(i, i + 20).map(c => c.id) });
@@ -119,7 +123,7 @@ export default function ConversationLog({ channel }) {
         <p className="text-sm text-muted-foreground">
           {conversations.length} {channel === 'voice' ? 'call' : 'SMS'}{conversations.length !== 1 ? 's' : ''}
         </p>
-        <button onClick={load} className="flex items-center gap-1.5 text-xs font-heading text-patina-mint hover:text-midnight-cherry transition-colors">
+        <button onClick={() => load(true)} className="flex items-center gap-1.5 text-xs font-heading text-patina-mint hover:text-midnight-cherry transition-colors">
           <RefreshCw size={12} /> Refresh
         </button>
       </div>

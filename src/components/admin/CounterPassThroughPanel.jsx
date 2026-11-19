@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import CounterPassThroughForm from '@/components/admin/CounterPassThroughForm';
 import CounterPassThroughRow from '@/components/admin/CounterPassThroughRow';
+import { cachedRead } from '@/lib/adminReadCache';
 import { Loader2, PhoneForwarded } from 'lucide-react';
 
 // Pass-through manager. A number on this list skips Smashie completely and
@@ -12,7 +13,7 @@ export default function CounterPassThroughPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = () => base44.entities.CounterPassThrough.list('-created_date', 200);
+    const load = () => cachedRead('admin:counter-pass-through', () => base44.entities.CounterPassThrough.list('-created_date', 200));
     load().then((rows) => { setEntries(rows || []); setLoading(false); });
     const unsubscribe = base44.entities.CounterPassThrough.subscribe((event) => {
       setEntries((current) => {

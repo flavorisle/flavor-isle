@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { RefreshCw } from 'lucide-react';
+import { cachedRead } from '@/lib/adminReadCache';
 
 export default function OrderSmsLog() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const load = async () => {
+  const load = async (force = false) => {
     setLoading(true); setError('');
-    try { setLogs(await base44.entities.SmsDeliveryLog.list('-status_at', 50)); }
+    try { setLogs(await cachedRead('admin:order-sms-log', () => base44.entities.SmsDeliveryLog.list('-status_at', 50), { force })); }
     catch { setError('Could not load order texts. Try Refresh.'); }
     finally { setLoading(false); }
   };
@@ -22,7 +23,7 @@ export default function OrderSmsLog() {
   return <section className="mb-8" aria-label="Order status text delivery log">
     <div className="flex items-center justify-between gap-3 mb-3">
       <h2 className="font-heading text-xl text-foreground">Order Status Texts</h2>
-      <button onClick={load} disabled={loading} className="min-h-11 px-3 inline-flex items-center gap-2 text-sm text-foreground"><RefreshCw size={16} /> Refresh</button>
+      <button onClick={() => load(true)} disabled={loading} className="min-h-11 px-3 inline-flex items-center gap-2 text-sm text-foreground"><RefreshCw size={16} /> Refresh</button>
     </div>
     <p className="text-sm text-muted-foreground mb-4">Latest 50 order texts. Queued means accepted by Twilio, not yet confirmed delivered.</p>
     {error && <p role="alert" className="text-destructive">{error}</p>}
