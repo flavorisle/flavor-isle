@@ -203,6 +203,9 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── STAR REWARDS (compact band, sitting between the top 10 and Find Us) ── */}
+      <RewardsBand />
+
       {/* ── LOCATION ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
         <div className="max-w-7xl mx-auto">
@@ -211,15 +214,6 @@ export default function Home() {
               <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Find Us</p>
               <h2 className="font-heading text-4xl text-obsidian-roast mb-6">Right in the Heart<br />of Smiths Grove</h2>
               <div className="space-y-4 text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <MapPin size={18} className="text-midnight-cherry" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                    <p className="text-sm">Smiths Grove, KY 42171</p>
-                  </div>
-                </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
                     <Clock size={18} className="text-midnight-cherry" />
@@ -260,6 +254,43 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* FAQ + address card, inside the Find Us box */}
+          <div className="max-w-3xl mx-auto mt-12">
+            <div className="card-diner p-6 sm:p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <HelpCircle size={26} className="text-midnight-cherry" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup {deliveryEnabled ? '& delivery' : '& dine-in'} — answers to the things folks ask us most.</p>
+                </div>
+                <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
+                  View FAQs <ArrowRight size={16} />
+                </Link>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-5 pt-5 border-t border-border">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MapPin size={18} className="text-midnight-cherry" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
+                    <p className="text-sm text-muted-foreground">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
+                  </div>
+                </div>
+                <a
+                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0"
+                >
+                  Get Directions <ArrowRight size={16} />
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -267,9 +298,6 @@ export default function Home() {
 
       {/* ── REVIEWS (one block: three outside reviews + link to the wall) ── */}
       <HomeReviews />
-
-      {/* ── STAR REWARDS (compact band, replacing the tall Why Flavor Isle grid) ── */}
-      <RewardsBand />
 
       <HeritageBadges />
 
@@ -308,45 +336,6 @@ export default function Home() {
               <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
                 Plan Your Stop <ArrowRight size={16} />
               </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ + LOCATION ── */}
-      <section className="py-12 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="card-diner p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <HelpCircle size={26} className="text-midnight-cherry" />
-              </div>
-              <div className="flex-1">
-                <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
-                <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup {deliveryEnabled ? '& delivery' : '& dine-in'} — answers to the things folks ask us most.</p>
-              </div>
-              <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
-                View FAQs <ArrowRight size={16} />
-              </Link>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-5 pt-5 border-t border-border">
-              <div className="flex items-start gap-3 flex-1">
-                <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin size={18} className="text-midnight-cherry" />
-                </div>
-                <div>
-                  <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                  <p className="text-sm text-muted-foreground">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
-                </div>
-              </div>
-              <a
-                href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0"
-              >
-                Get Directions <ArrowRight size={16} />
-              </a>
             </div>
           </div>
         </div>
