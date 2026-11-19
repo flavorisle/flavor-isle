@@ -206,15 +206,44 @@ export default function Home() {
       {/* ── STAR REWARDS (compact band, sitting between the top 10 and Find Us) ── */}
       <RewardsBand />
 
-      {/* ── LOCATION ── */}
+      {/* ── FIND US — one box: photo, address, hours and the FAQ ask, woven together ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
+        <div className="max-w-5xl mx-auto">
+          <div className="card-diner overflow-hidden grid grid-cols-1 md:grid-cols-2 items-stretch">
+            {/* Storefront photo */}
+            <div className="relative min-h-[260px] md:min-h-full">
+              <img
+                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
+                alt="Flavor Isle storefront in Smiths Grove, KY"
+                width="800"
+                height="600"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white">
+                <p className="font-heading text-xl drop-shadow-lg">FLAVOR ISLE</p>
+                <p className="text-sm opacity-90 drop-shadow">Smiths Grove, KY</p>
+              </div>
+            </div>
+
+            {/* Address, hours, directions and the FAQ ask, all in one column */}
+            <div className="p-6 sm:p-8 flex flex-col justify-center">
               <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Find Us</p>
-              <h2 className="font-heading text-4xl text-obsidian-roast mb-6">Right in the Heart<br />of Smiths Grove</h2>
+              <h2 className="font-heading text-3xl text-obsidian-roast mb-5 leading-tight">Right in the Heart<br />of Smiths Grove</h2>
+
               <div className="space-y-4 text-muted-foreground">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MapPin size={18} className="text-midnight-cherry" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
+                    <p className="text-sm">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
                     <Clock size={18} className="text-midnight-cherry" />
                   </div>
@@ -224,70 +253,32 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-7 py-3.5 text-sm mt-8">
-                Order for Pickup <ArrowRight size={16} />
-              </Link>
-            </div>
 
-            {/* Storefront photo */}
-            <div className="relative rounded-3xl overflow-hidden shadow-float-lg h-80 group">
-              <img
-                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
-                alt="Flavor Isle storefront in Smiths Grove, KY"
-                width="800"
-                height="600"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 text-center text-white">
-                <p className="font-heading text-xl drop-shadow-lg">FLAVOR ISLE</p>
-                <p className="text-sm opacity-90 drop-shadow">Smiths Grove, KY</p>
+              <div className="flex flex-wrap gap-3 mt-6">
                 <a
                   href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 bg-white text-patina-mint px-4 py-2 rounded-full text-sm font-heading hover:bg-vanilla-malt transition-colors shadow-float">
-                  Get Directions <ArrowRight size={14} />
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* FAQ + address card, inside the Find Us box */}
-          <div className="max-w-3xl mx-auto mt-12">
-            <div className="card-diner p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="w-14 h-14 bg-midnight-cherry/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <HelpCircle size={26} className="text-midnight-cherry" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="font-heading text-xl text-obsidian-roast">Frequently Asked Questions</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Hours, allergens, ordering, pickup {deliveryEnabled ? '& delivery' : '& dine-in'} — answers to the things folks ask us most.</p>
-                </div>
-                <Link to="/faq" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0">
-                  View FAQs <ArrowRight size={16} />
-                </Link>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-5 pt-5 border-t border-border">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <MapPin size={18} className="text-midnight-cherry" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
-                    <p className="text-sm text-muted-foreground">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
-                  </div>
-                </div>
-                <a
-                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading flex-shrink-0"
+                  className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading"
                 >
                   Get Directions <ArrowRight size={16} />
                 </a>
+                <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
+                  Order for Pickup <ArrowRight size={16} />
+                </Link>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-border flex items-center gap-3">
+                <div className="w-10 h-10 bg-midnight-cherry/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <HelpCircle size={20} className="text-midnight-cherry" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading text-obsidian-roast">Frequently asked questions</p>
+                  <p className="text-xs text-muted-foreground">Hours, allergens, ordering, pickup {deliveryEnabled ? '& delivery' : '& dine-in'}.</p>
+                </div>
+                <Link to="/faq" className="inline-flex items-center gap-1 text-sm font-heading text-midnight-cherry hover:underline flex-shrink-0">
+                  View FAQs <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
           </div>
