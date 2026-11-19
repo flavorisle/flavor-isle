@@ -48,11 +48,15 @@ function groupViews(views, adminEmails) {
           : (view.user_name || view.user_email || view.ip || 'Unknown visitor'),
         botReason: kind === 'bot' ? (view.bot_reason || '') : '',
         ip: view.ip || 'unknown',
+        city: view.city || '',
+        region: view.region || '',
         views: [],
       });
     }
     const visitor = grouped.get(key);
     if (view.ip) visitor.ip = view.ip;
+    if (view.city) visitor.city = view.city;
+    if (view.region) visitor.region = view.region;
     visitor.views.push(view);
   });
 
@@ -115,7 +119,7 @@ export default function AdminVisitors() {
   const term = search.trim().toLowerCase();
   const shown = term
     ? tabRows.filter((visitor) =>
-        [visitor.label, visitor.ip, visitor.lastPath, visitor.botReason, ...visitor.views.map((v) => v.path)]
+        [visitor.label, visitor.ip, visitor.city, visitor.region, visitor.lastPath, visitor.botReason, ...visitor.views.map((v) => v.path)]
           .join(' ')
           .toLowerCase()
           .includes(term)

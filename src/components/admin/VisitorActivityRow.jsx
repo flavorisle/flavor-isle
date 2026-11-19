@@ -46,7 +46,9 @@ export default function VisitorActivityRow({ visitor }) {
                 {visitor.botReason}
               </span>
             )}
-            <span className="text-[11px] text-muted-foreground">{visitor.ip}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {[visitor.city, visitor.region].filter(Boolean).join(', ') || visitor.ip}
+            </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 truncate">
             Last page: <span className="font-mono text-obsidian-roast">{visitor.lastPath}</span> · {moment(visitor.lastAt).fromNow()}

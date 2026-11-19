@@ -49,6 +49,9 @@ export default async function(req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
+    const IP_RE = /^[0-9a-fA-F:.]{3,45}$/;
+    const payloadIp = typeof body.ip === 'string' && IP_RE.test(body.ip.trim()) ? body.ip.trim() : '';
+    const ip = payloadIp || clientIp(req);
     const path = cleanPath(body?.path);
 
     // Prerender probes are plumbing, not visitors: no row at all.
@@ -73,7 +76,10 @@ export default async function(req: Request) {
     const verdict = classify(visitorUa, body?.webdriver, viewportW, viewportH, path);
 
     await base44.asServiceRole.entities.VisitorPageView.create({
-      ip: clientIp(req),
+      ip,
+      city: String(body.city || '').slice(0, 80),
+      region: String(body.region || '').slice(0, 80),
+      country: String(body.country || '').slice(0, 80),
       path,
       user_email: user?.email || '',
       user_id: user?.id || '',

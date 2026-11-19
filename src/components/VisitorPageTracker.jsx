@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { visitorGeo } from '@/lib/visitorGeo';
 
 // A random id created once per visit and kept for the tab's lifetime, so the
 // visitors page can group a guest's page views into one visit (issue #161).
@@ -33,20 +34,28 @@ export default function VisitorPageTracker() {
     if (lastView.current.path === pathname && now - lastView.current.at < 2000) return;
     lastView.current = { path: pathname, at: now };
 
-    base44.functions
-      .invoke('logPageView', {
-        path: pathname,
-        referrer: document.referrer || '',
-        ua: navigator.userAgent,
-        webdriver: navigator.webdriver === true,
-        vw: window.innerWidth,
-        vh: window.innerHeight,
-        sw: screen.width,
-        sh: screen.height,
-        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        sid: visitId(),
-      })
-      .catch(() => {});
+    const record = async () => {
+      const geo = await visitorGeo();
+      base44.functions
+        .invoke('logPageView', {
+          path: pathname,
+          referrer: document.referrer || '',
+          ua: navigator.userAgent,
+          webdriver: navigator.webdriver === true,
+          vw: window.innerWidth,
+          vh: window.innerHeight,
+          sw: screen.width,
+          sh: screen.height,
+          tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          sid: visitId(),
+          ip: geo.ip || '',
+          city: geo.city || '',
+          region: geo.region || '',
+          country: geo.country || '',
+        })
+        .catch(() => {});
+    };
+    record();
   }, [pathname]);
 
   return null;

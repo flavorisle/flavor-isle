@@ -11,6 +11,18 @@
       "type": "string",
       "description": "The visitor's IP address as reported by the network edge on the request that recorded this page view."
     },
+    "city": {
+      "type": "string",
+      "description": "City the visitor's own IP resolves to, when the browser reported it and consent was granted. Empty when unknown."
+    },
+    "region": {
+      "type": "string",
+      "description": "State or region the visitor's own IP resolves to, when the browser reported it and consent was granted. Empty when unknown."
+    },
+    "country": {
+      "type": "string",
+      "description": "Country the visitor's own IP resolves to, when the browser reported it and consent was granted. Empty when unknown."
+    },
     "path": {
       "type": "string",
       "description": "Page path the visitor opened, e.g. /menu. Query strings are dropped so links carrying order numbers stay out of the trail."
