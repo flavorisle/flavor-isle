@@ -206,12 +206,12 @@ export default function Home() {
       {/* ── STAR REWARDS (compact band, sitting between the top 10 and Find Us) ── */}
       <RewardsBand />
 
-      {/* ── FIND US — one box: photo, address, hours and the FAQ ask, woven together ── */}
+      {/* ── FIND US — one box: photo, the I-65 approach, address, hours and the FAQ ask ── */}
       <section className="py-20 bg-patina-mint/10 px-4 sm:px-6 fall26-section">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="card-diner overflow-hidden grid grid-cols-1 md:grid-cols-2 items-stretch">
             {/* Storefront photo */}
-            <div className="relative min-h-[260px] md:min-h-full">
+            <div className="relative min-h-[300px] md:min-h-full">
               <img
                 src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/efc9b941c_flavorislebuilding.png', 800, 600)}
                 alt="Flavor Isle storefront in Smiths Grove, KY"
@@ -221,19 +221,27 @@ export default function Home() {
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-                <p className="font-heading text-xl drop-shadow-lg">FLAVOR ISLE</p>
-                <p className="text-sm opacity-90 drop-shadow">Smiths Grove, KY</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6">
+                <p className="font-heading text-xl text-white drop-shadow-lg">FLAVOR ISLE</p>
+                <p className="text-sm text-white/90 drop-shadow">Smiths Grove, KY · Est. 1964</p>
+                <div className="mt-4">
+                  <KentuckyTourismBadge />
+                </div>
               </div>
             </div>
 
-            {/* Address, hours, directions and the FAQ ask, all in one column */}
+            {/* How to get here, when we're open, and the FAQ ask — one column */}
             <div className="p-6 sm:p-8 flex flex-col justify-center">
-              <p className="text-patina-mint text-sm font-heading uppercase tracking-widest mb-2">Find Us</p>
-              <h2 className="font-heading text-3xl text-obsidian-roast mb-5 leading-tight">Right in the Heart<br />of Smiths Grove</h2>
+              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
+                <Car size={14} /> I-65 Exit 38 · Smiths Grove, KY
+              </div>
+              <h2 className="font-heading text-3xl text-obsidian-roast leading-tight">You're Closer Than You Think</h2>
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.
+              </p>
 
-              <div className="space-y-4 text-muted-foreground">
+              <div className="space-y-4 mt-5 text-muted-foreground">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-midnight-cherry/10 rounded-full flex items-center justify-center flex-shrink-0">
                     <MapPin size={18} className="text-midnight-cherry" />
@@ -241,6 +249,14 @@ export default function Home() {
                   <div>
                     <p className="font-semibold text-obsidian-roast">103 N Main St, Smiths Grove</p>
                     <p className="text-sm">Smiths Grove, KY 42171 · 0.7 mi / ~2 min from I-65</p>
+                    <a
+                      href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-heading text-midnight-cherry mt-1 hover:underline"
+                    >
+                      Get Directions <ArrowRight size={12} />
+                    </a>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -255,14 +271,9 @@ export default function Home() {
               </div>
 
               <div className="flex flex-wrap gap-3 mt-6">
-                <a
-                  href="https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading"
-                >
-                  Get Directions <ArrowRight size={16} />
-                </a>
+                <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
+                  Plan Your Stop <ArrowRight size={16} />
+                </Link>
                 <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading">
                   Order for Pickup <ArrowRight size={16} />
                 </Link>
@@ -297,40 +308,6 @@ export default function Home() {
 
       {/* ── DAILY SPECIALS ── */}
       <DailySpecialsSection />
-
-      {/* ── I-65 EXIT 38 WAYFINDING ── */}
-      <section className="py-14 px-4 sm:px-6 bg-vanilla-malt">
-        <div className="max-w-4xl mx-auto">
-          <div className="card-diner overflow-hidden grid grid-cols-1 sm:grid-cols-5 items-stretch">
-            <div className="sm:col-span-2 relative min-h-[180px]">
-              <img
-                src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png', 800, 600)}
-                alt="Flavor Isle roadside stand off I-65 Exit 38"
-                width="800"
-                height="600"
-                loading="lazy"
-                decoding="async"
-                className="w-full object-cover"
-              />
-              <div className="p-6">
-                <KentuckyTourismBadge />
-              </div>
-            </div>
-            <div className="sm:col-span-3 p-6 sm:p-8 flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-xs tracking-widest uppercase mb-2">
-                <Car size={14} /> I-65 Exit 38 · Smiths Grove, KY
-              </div>
-              <h2 className="font-heading text-2xl sm:text-3xl text-obsidian-roast leading-tight">You're Closer Than You Think</h2>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.
-              </p>
-              <Link to="/i65-exit-38" className="btn-mint chrome-hover inline-flex items-center gap-2 px-6 py-3 text-sm font-heading mt-5 self-start">
-                Plan Your Stop <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <StickyOrderBar />
 
