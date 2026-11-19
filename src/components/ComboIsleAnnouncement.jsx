@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { X, Package } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { COMBO_ISLE_ANNOUNCEMENT as CFG } from '@/config/comboIsleAnnouncement';
+import { optimizedImageUrl } from '@/lib/utils';
+import { issue23Photos } from '@/lib/issue23Photos';
 
 // Combo Isle announcement pop-up (Wesley, Nov 15 2026, issue #315).
 // Real Flavor Isle photos only: the cheeseburger-and-tots shot and the crinkle
@@ -11,8 +13,12 @@ import { COMBO_ISLE_ANNOUNCEMENT as CFG } from '@/config/comboIsleAnnouncement';
 const SEEN_KEY = 'fi.comboIsleAnnouncement.seen';
 const SESSION_KEY = 'fi.comboIsleAnnouncement.session';
 
-const BURGER_PHOTO =
-  'https://base44.app/api/apps/6a95fe085a23d5fd44d8cc53/files/mp/public/6a95fe085a23d5fd44d8cc53/da1c384f6_b9bf38b7d_IMG_0099_Original.jpg';
+// Issue #333: the pop-up photo was the /menu LCP at 7.1s because it was a 467 KB
+// cross-app storage file and a 1.1 MB full-size PNG. Both now come from this
+// app's own media library — the burger is the issue #23 import of the same
+// IMG_0099 shot — and each is requested as a 500x500 WebP, the way
+// MenuItemCard requests a menu photo.
+const BURGER_PHOTO = issue23Photos.diner0099;
 const FRIES_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c5a5ce796_IMG_0407.png';
 
 const shouldShow = () => {
@@ -110,8 +116,24 @@ export default function ComboIsleAnnouncement() {
           <span className="absolute top-3 left-3 z-10 bg-smashie-yellow text-obsidian-roast font-heading text-xs tracking-[0.16em] px-3 py-1.5 rounded-full">
             NEW
           </span>
-          <img src={BURGER_PHOTO} alt="Cheeseburger with tater tots" className="w-full h-full object-cover" loading="lazy" />
-          <img src={FRIES_PHOTO} alt="Golden crinkle-cut fries" className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={optimizedImageUrl(BURGER_PHOTO, 500, 500)}
+            alt="Cheeseburger with tater tots"
+            width="500"
+            height="500"
+            decoding="async"
+            loading="eager"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src={optimizedImageUrl(FRIES_PHOTO, 500, 500)}
+            alt="Golden crinkle-cut fries"
+            width="500"
+            height="500"
+            decoding="async"
+            loading="eager"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         <div className="relative p-5 sm:p-8 flex flex-col gap-2.5">
