@@ -189,8 +189,9 @@ export default function Home() {
 
       {/* One photo chapter, not three: the story below reads as one beat before
           the ordering options instead of three full-screen pauses. */}
-      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove." />
-      <HomeOrderOptions />
+      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove.">
+        <HomeOrderOptions embedded />
+      </PhotoChapter>
 
       <ExpressPickupStrip />
 
