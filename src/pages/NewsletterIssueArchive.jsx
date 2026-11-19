@@ -9,7 +9,7 @@ import { NEWSLETTER_ISSUES } from '@/lib/newsletterIssues';
 
 // Every past Isle News issue, newest first. The newest opens by default; tapping
 // a card's header expands that issue inline so customers can read it here.
-export default function NewsletterArchive() {
+export default function NewsletterIssueArchive() {
   const [openSlug, setOpenSlug] = useState(NEWSLETTER_ISSUES[0]?.slug || null);
 
   return (

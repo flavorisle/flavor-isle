@@ -96,8 +96,8 @@ const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const ExploreSmithsGrove = lazy(() => import('./pages/ExploreSmithsGrove'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
-const NewsletterSignup = lazy(() => import('./pages/NewsletterSignup'));
-const NewsletterArchive = lazy(() => import('./pages/NewsletterArchive'));
+const EmailNewsletterSignup = lazy(() => import('./pages/EmailNewsletterSignup'));
+const NewsletterIssueArchive = lazy(() => import('./pages/NewsletterIssueArchive'));
 const MenuCategories = lazy(() => import('./pages/MenuCategories'));
 const ConfirmSubscription = lazy(() => import('./pages/ConfirmSubscription'));
 const UnsubscribeEmail = lazy(() => import('./pages/UnsubscribeEmail'));
@@ -234,8 +234,8 @@ const AuthenticatedApp = () => {
       <Route path="/date-night" element={<DateNight />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
-      <Route path="/newsletter" element={<NewsletterSignup />} />
-      <Route path="/newsletter-archive" element={<NewsletterArchive />} />
+      <Route path="/newsletter" element={<EmailNewsletterSignup />} />
+      <Route path="/newsletter-archive" element={<NewsletterIssueArchive />} />
       <Route path="/menu-categories" element={<MenuCategories />} />
       <Route path="/confirm-subscription" element={<ConfirmSubscription />} />
       <Route path="/unsubscribe" element={<UnsubscribeEmail />} />

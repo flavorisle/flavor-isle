@@ -2,6 +2,10 @@
   "name": "ComboIsleSetting",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "is_active": {
       "type": "boolean",
       "description": "When false the Combo Isle builder shows its off state instead of the columns."

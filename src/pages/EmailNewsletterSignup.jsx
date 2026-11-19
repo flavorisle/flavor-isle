@@ -9,10 +9,11 @@ import IssueProductUpdate from '@/components/newsletter/IssueProductUpdate';
 import IssueWinterBliss from '@/components/newsletter/IssueWinterBliss';
 import NewsletterIssue from '@/components/newsletter/NewsletterIssue';
 
-// Newsletter signup page (plus the issue archive). Uses the same double opt-in
-// flow as the footer "Get Updates from the Isle" signup: creates a pending
-// subscriber and sends a confirmation email. Nothing is active until confirmed.
-export default function NewsletterSignup() {
+// Email newsletter signup page (plus the newest issues below the form). Uses the
+// same double opt-in flow as the footer "Get Updates from the Isle" signup:
+// creates a pending subscriber and sends a confirmation email. Nothing is active
+// until confirmed.
+export default function EmailNewsletterSignup() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle | submitting | done | active | error
   const [error, setError] = useState('');
