@@ -150,13 +150,12 @@ export default function Checkout() {
   // Advanced scheduling — ASAP (ready ≈ 20 min) or a chosen future time slot
   const [schedule, setSchedule] = useState({ mode: 'asap', scheduledFor: '', estimatedTime: 20, label: 'ASAP (≈ 20 min)' });
 
-  // Tip state — "smart tipping": when the order is small enough that even the
-  // largest percentage tip stays under $1.00, show flat-dollar ($1/$2/$3)
+  // Tip state — "smart tipping": on small orders, show flat-dollar ($1/$2/$3)
   // options instead of percentages so the crew still gets a worthwhile tip.
-  const [tipPreset, setTipPreset] = useState('18');
+  const [tipPreset, setTipPreset] = useState('25');
   const [customTip, setCustomTip] = useState('');
 
-  const smartFlat = subtotal * 0.20 < 1; // max % preset < $1 → use flat tips
+  const smartFlat = subtotal * 0.20 < 1; // small order → use flat tips
   const tipPresets = smartFlat
     ? [
         { key: '1', label: '$1', amount: 1 },
@@ -164,14 +163,14 @@ export default function Checkout() {
         { key: '3', label: '$3', amount: 3 },
       ]
     : [
-        { key: '15', label: '15%', amount: +(subtotal * 0.15).toFixed(2) },
-        { key: '18', label: '18%', amount: +(subtotal * 0.18).toFixed(2) },
         { key: '20', label: '20%', amount: +(subtotal * 0.20).toFixed(2) },
+        { key: '25', label: '25%', amount: +(subtotal * 0.25).toFixed(2) },
+        { key: '30', label: '30%', amount: +(subtotal * 0.30).toFixed(2) },
       ];
 
   // Reset to a valid default whenever the mode flips between % and flat $
   useEffect(() => {
-    setTipPreset(smartFlat ? '2' : '18');
+    setTipPreset(smartFlat ? '2' : '25');
   }, [smartFlat]);
 
   // Clear stale field errors (e.g. delivery address) when the order type changes.

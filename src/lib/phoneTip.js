@@ -1,8 +1,7 @@
 // Tip presets for the phone-order payment page — the same "smart tipping" the
-// web checkout uses: percentage presets normally, flat dollars on tiny orders
-// (where even the biggest percentage tip stays under $1). These numbers are for
-// display only; the charged amount is always priced server-side from the saved
-// order.
+// web checkout uses: percentage presets normally, flat dollars on small orders.
+// These numbers are for display only; the charged amount is always priced
+// server-side from the saved order.
 
 export function tipPresetsFor(subtotal) {
   const amount = Number(subtotal) || 0;
@@ -14,14 +13,14 @@ export function tipPresetsFor(subtotal) {
     ];
   }
   return [
-    { key: '15', label: '15%', amount: +(amount * 0.15).toFixed(2) },
-    { key: '18', label: '18%', amount: +(amount * 0.18).toFixed(2) },
     { key: '20', label: '20%', amount: +(amount * 0.20).toFixed(2) },
+    { key: '25', label: '25%', amount: +(amount * 0.25).toFixed(2) },
+    { key: '30', label: '30%', amount: +(amount * 0.30).toFixed(2) },
   ];
 }
 
 export function defaultTipPreset(subtotal) {
-  return (Number(subtotal) || 0) * 0.20 < 1 ? '2' : '18';
+  return (Number(subtotal) || 0) * 0.20 < 1 ? '2' : '25';
 }
 
 export function tipAmountFor(presetKey, presets, customTip) {
