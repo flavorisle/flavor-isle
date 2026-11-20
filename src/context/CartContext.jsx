@@ -14,22 +14,53 @@ const CartContext = createContext(null);
 
 const SESSION_KEY = 'flavor-isle-cart';
 
-const readSession = (key, fallback) => {
+// Guests' carts live in localStorage under the same key with a 7-day expiry
+// (issue #337) — sessionStorage lost the order the moment the tab closed. The
+// stored shape is unchanged apart from expiresAt.
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+const readSessionStore = () => {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed[key] ?? fallback;
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // An expired cart is dropped on sight.
+      if (typeof parsed?.expiresAt === 'number' && parsed.expiresAt < Date.now()) {
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      return parsed;
+    }
+  } catch { /* storage unavailable */ }
+  // One-time migration of a cart saved under the old sessionStorage key.
+  try {
+    const legacy = sessionStorage.getItem(SESSION_KEY);
+    if (!legacy) return null;
+    const parsed = JSON.parse(legacy);
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...parsed, expiresAt: Date.now() + SESSION_TTL_MS }));
+    sessionStorage.removeItem(SESSION_KEY);
+    return parsed;
   } catch {
-    return fallback;
+    return null;
   }
+};
+
+const readSession = (key, fallback) => {
+  const parsed = readSessionStore();
+  return parsed?.[key] ?? fallback;
+};
+
+const writeSession = (data) => {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...data, expiresAt: Date.now() + SESSION_TTL_MS }));
+  } catch { /* storage unavailable */ }
 };
 
 // A cart line carrying combo data (comboConfigId / comboComponents) was priced
 // with the combo discount baked into its price. Combos are switched OFF, so the
 // server can no longer reprice such a line and checkout rejects the stale total
 // ("Price verification failed: server X vs client Y"). Drop those lines when the
-// cart loads — from sessionStorage and from the saved profile cart — so a stale
+// cart loads — from the local cart and from the saved profile cart — so a stale
 // combo line can never be carried into checkout. Every other line is untouched.
 const dropComboLines = (items) =>
   (items || []).filter(i => !i?.comboConfigId && !i?.comboComponents);
@@ -75,18 +106,81 @@ export function CartProvider({ children }) {
   // it overrides the flat delivery_fee for delivery orders.
   const [deliveryQuote, setDeliveryQuote] = useState(null);
 
-  // Persist the cart for the current browser session so a refresh or a trip
-  // through login doesn't lose the order.
+  // ── Cross-tab cart sync (issue #337) ──
+  // Two tabs used to hold two separate carts and both wrote the same
+  // CustomerProfile, so the last tab to type won. One cart now follows the
+  // customer across tabs: every change is posted on a BroadcastChannel and
+  // applied here, with a storage-event fallback for browsers without one.
+  const tabIdRef = useRef(Math.random().toString(36).slice(2));
+  const channelRef = useRef(null);
+  const lastSyncRef = useRef(0);
+  const broadcastFirstRef = useRef(true);
+  // Set while a cart that arrived from another tab is being applied: that cart
+  // is already stored, so this tab must neither write it back nor post it again
+  // or the two tabs would bounce the same cart between them forever.
+  const skipPersistRef = useRef(false);
+  const skipPostRef = useRef(false);
+
+  const applyRemoteCart = (items, type) => {
+    skipPersistRef.current = true;
+    skipPostRef.current = true;
+    setCartItems(dropComboLines(items || []));
+    setOrderType(type || 'pickup');
+  };
+
+  // Persist the cart locally so a refresh, a trip through login, or a closed tab
+  // doesn't lose the order (guests keep it 7 days — see writeSession).
   useEffect(() => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cartItems, orderType, pickupMethod }));
-    } catch { /* storage unavailable */ }
+    if (skipPersistRef.current) { skipPersistRef.current = false; return; }
+    writeSession({ cartItems, orderType, pickupMethod });
   }, [cartItems, orderType, pickupMethod]);
+
+  // Open the channel once and clean it up.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const ch = new BroadcastChannel('flavor-isle-cart');
+    channelRef.current = ch;
+    ch.onmessage = (e) => {
+      const m = e.data;
+      if (!m || m.type !== 'cart' || m.tabId === tabIdRef.current) return;
+      if ((m.at || 0) <= lastSyncRef.current) return;
+      lastSyncRef.current = m.at;
+      applyRemoteCart(m.items, m.orderType);
+    };
+    return () => { try { ch.close(); } catch { /* already closed */ } channelRef.current = null; };
+  }, []);
+
+  // Post every cart change, skipping the first render so hydration does not
+  // look like an edit.
+  useEffect(() => {
+    if (broadcastFirstRef.current) { broadcastFirstRef.current = false; return; }
+    if (skipPostRef.current) { skipPostRef.current = false; return; }
+    const at = Date.now();
+    lastSyncRef.current = at;
+    try {
+      channelRef.current?.postMessage({ type: 'cart', tabId: tabIdRef.current, items: cartItems, orderType, at });
+    } catch { /* channel gone */ }
+  }, [cartItems, orderType]);
+
+  // Fallback where BroadcastChannel does not exist: another tab's write to the
+  // shared cart key fires a storage event here, and this tab adopts it.
+  useEffect(() => {
+    if (typeof BroadcastChannel !== 'undefined') return;
+    const onStorage = (e) => {
+      if (e.key !== SESSION_KEY || e.newValue == null) return;
+      const at = Date.now();
+      if (at <= lastSyncRef.current) return;
+      lastSyncRef.current = at;
+      applyRemoteCart(readSession('cartItems', []), readSession('orderType', 'pickup'));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   // Cross-device cart sync for signed-in customers. On mount we load the cart
   // saved to their CustomerProfile; on every change we debounce-save it back so
   // the same cart follows them across phones, tablets, and desktops. Guests
-  // keep the sessionStorage behavior above.
+  // keep the local cart behavior above.
   const profileRef = useRef(null); // { email, id } once the profile is loaded
   const hydratedRef = useRef(false);
   // Snapshot of the cart already saved to the profile — a load that changes
@@ -128,14 +222,18 @@ export function CartProvider({ children }) {
   }, []);
 
   // Debounced save back to the profile so other devices pick up the latest cart.
+  // A save that fails is retried once, and if that fails too the same write is
+  // attempted one last time as the page goes away (issue #337) — otherwise the
+  // cart silently stopped following the customer to another device.
   useEffect(() => {
     if (!hydratedRef.current || !profileRef.current) return;
     const snapshot = cartSnapshot(cartItems, orderType);
     // Nothing actually changed (e.g. just hydration) — leave savedAt alone.
     if (snapshot === persistedSnapshotRef.current) return;
+    let flushOnHide = null;
     const timer = setTimeout(async () => {
-      try {
-        const payload = { cartItems, orderType, savedAt: Date.now() };
+      const payload = { cartItems, orderType, savedAt: Date.now() };
+      const write = async () => {
         const { email, id } = profileRef.current;
         if (id) {
           await base44.entities.CustomerProfile.update(id, { cart: payload });
@@ -144,10 +242,25 @@ export function CartProvider({ children }) {
           const created = await base44.entities.CustomerProfile.create({ email, name: me?.full_name || email, cart: payload });
           if (created?.id) profileRef.current.id = created.id;
         }
-        persistedSnapshotRef.current = snapshot;
-      } catch { /* offline or quota — sessionStorage still has it */ }
+      };
+      const attempt = async () => {
+        try { await write(); return true; } catch { return false; }
+      };
+      if (await attempt()) { persistedSnapshotRef.current = snapshot; return; }
+      // One retry, two seconds later.
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (await attempt()) { persistedSnapshotRef.current = snapshot; return; }
+      // Both attempts failed: try the same write once more as the page goes away.
+      flushOnHide = async () => {
+        window.removeEventListener('pagehide', flushOnHide);
+        if (await attempt()) persistedSnapshotRef.current = snapshot;
+      };
+      window.addEventListener('pagehide', flushOnHide);
     }, 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (flushOnHide) window.removeEventListener('pagehide', flushOnHide);
+    };
   }, [cartItems, orderType]);
 
   useEffect(() => {
