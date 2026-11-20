@@ -5,6 +5,7 @@ import NestedModifierLists from '@/components/NestedModifierLists';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import ClassicDrinkIceSize from '@/components/ClassicDrinkIceSize';
 import ModifierTile from '@/components/ModifierTile';
+import TicketCard from '@/components/ui/TicketCard';
 import PlainOptionPills from '@/components/PlainOptionPills';
 import { isPillOption, groupHeading, isSideChoiceGroup } from '@/lib/plainOption';
 import { getIceContext, iceLevelFor, ICE_LIST_ID } from '@/components/classicDrinkIce';
@@ -106,15 +107,12 @@ export default function ItemBuildSummary({
             {groups.map((group) => {
               const rule = ruleBadge(group);
               return (
-                <div key={group.id || group.name}>
-                  <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <p className="font-heading text-sm text-obsidian-roast">
-                      {isSideChoiceGroup(group) ? groupHeading(group) : groupLabel(group.name)}
-                    </p>
-                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground flex-shrink-0">
-                      {rule}
-                    </span>
-                  </div>
+                <TicketCard
+                  key={group.id || group.name}
+                  title={isSideChoiceGroup(group) ? groupHeading(group) : groupLabel(group.name)}
+                  meta={<span className="text-[11px] uppercase tracking-wider text-muted-foreground">{rule}</span>}
+                  className="bg-white/70"
+                >
                   <PlainOptionPills
                     options={group.modifiers}
                     group={group}
@@ -163,7 +161,7 @@ export default function ItemBuildSummary({
                         onChange={(nested) => onNestedChange?.(mod.id, nested)}
                       />
                     ))}
-                </div>
+                </TicketCard>
               );
             })}
           </div>

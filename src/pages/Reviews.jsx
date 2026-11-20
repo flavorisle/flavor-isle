@@ -14,6 +14,7 @@ import LazyEmbed from '@/components/LazyEmbed';
 import ReviewsCarousel from '@/components/ReviewsCarousel';
 import ReviewPlatformLinks from '@/components/ReviewPlatformLinks';
 import { EXTERNAL_REVIEWS } from '@/lib/externalReviews';
+import ReviewWall from '@/components/reviews/ReviewWall';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 const TIKTOK_VIDEOS = [
@@ -142,7 +143,16 @@ export default function Reviews() {
               />
             </div>
           ) : allReviews.length > 0 ? (
-            <ReviewsCarousel reviews={allReviews} />
+            <>
+              {/* The verified external reviews become the photo-forward wall;
+                  customer-submitted reviews keep their carousel below it. */}
+              <ReviewWall reviews={EXTERNAL_REVIEWS} />
+              {reviews.length > 0 && (
+                <div className="mt-10">
+                  <ReviewsCarousel reviews={reviews} />
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-center text-muted-foreground py-8">Reviews coming soon.</p>
           )}

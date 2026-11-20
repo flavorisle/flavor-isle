@@ -1,6 +1,7 @@
 import React from 'react';
 import { Receipt, CheckCircle2, Flame, ShoppingBag, PartyPopper } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import TicketCard from '@/components/ui/TicketCard';
 
 // Explains what happens at each stage of an order's lifecycle so customers
 // watching the order tracker know what each status means and what to do next.
@@ -75,14 +76,14 @@ export default function OrderStatusStages() {
               <span className={`absolute -left-[31px] w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-vanilla-malt ${stage.bg}`}>
                 <Icon size={12} className={stage.color} />
               </span>
-              <div className="card-diner p-4">
+              <TicketCard className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-heading text-muted-foreground">STEP {idx + 1}</span>
                   <h3 className="font-heading text-base text-obsidian-roast">{stage.label}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">{desc}</p>
                 <p className="text-sm text-patina-mint font-semibold mt-1.5">What to expect: {expect}</p>
-              </div>
+              </TicketCard>
             </li>
           );
         })}

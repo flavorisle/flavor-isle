@@ -11,6 +11,7 @@ import OrderLoyaltySection from '@/components/order/OrderLoyaltySection';
 import Seo from '@/components/Seo';
 import OnDutyNow from '@/components/OnDutyNow';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
+import TicketCard from '@/components/ui/TicketCard';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -90,23 +91,21 @@ export default function Order() {
         {/* Order type cards */}
         <div className="grid gap-4">
           {OPTIONS.map(({ id, label, time, art, blurb }) => (
-            <button
+            <TicketCard
               key={id}
               onClick={() => start(id)}
-              className="card-diner p-5 flex items-center gap-4 text-left tap-44 group"
-            >
-              <div className="w-14 h-14 flex items-center justify-center flex-shrink-0">
-                <img src={art} alt={`Smashie ${label}`} width={52} height={52} className="w-[52px] h-[52px] object-contain" loading="lazy" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-2">
-                  <h2 className="font-heading text-xl text-obsidian-roast">{label}</h2>
-                  <span className="text-sm font-semibold text-patina-mint flex-shrink-0">{time}</span>
+              title={label}
+              price={time}
+              subtitle={blurb}
+              className="tap-44 group"
+              leading={
+                <div className="w-14 h-14 flex items-center justify-center flex-shrink-0">
+                  <img src={art} alt={`Smashie ${label}`} width={52} height={52} className="w-[52px] h-[52px] object-contain" loading="lazy" />
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">{blurb}</p>
-              </div>
-              <ArrowRight size={20} className="text-muted-foreground group-hover:text-midnight-cherry group-hover:translate-x-1 transition-all flex-shrink-0" />
-            </button>
+              }
+            >
+              <ArrowRight size={20} className="text-muted-foreground group-hover:text-midnight-cherry group-hover:translate-x-1 transition-all" />
+            </TicketCard>
           ))}
         </div>
         {/* Star Rewards — live balance + stars earned on recent orders */}

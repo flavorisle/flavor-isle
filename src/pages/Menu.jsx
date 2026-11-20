@@ -393,12 +393,12 @@ export default function Menu() {
                     Our sides aren’t salted — add salt packets at checkout if you’d like them.
                   </p>
                 )}
-                <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x">
+                <div className="space-y-3">
                   {rowItems.map((item) =>
-              <div key={item.id} id={`menu-item-${item.id}`} className="snap-start flex-shrink-0 w-72">
+              <div key={item.id} id={`menu-item-${item.id}`}>
                       {itemCategoryKey(item) === SHAKE_KEY
                         ? <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
-                        : <MenuItemCard item={item} autoOpen={item.id === focusItemId} />}
+                        : <MenuItemCard item={item} autoOpen={item.id === focusItemId} variant="ticket" />}
                     </div>
               )}
                 </div>

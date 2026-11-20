@@ -12,6 +12,7 @@ import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
 import { withViewTransition } from '@/lib/viewTransition';
+import MenuTicketRow from '@/components/menu/MenuTicketRow';
 import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { optimizedImageUrl } from '@/lib/utils';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
@@ -43,7 +44,7 @@ function categoryGlyph(item) {
   return '⭐';
 }
 
-export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
+export default function MenuItemCard({ item, onFavoriteChange, autoOpen, variant }) {
   const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
@@ -327,6 +328,45 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
   );
 
   // ── Layouts ──
+
+  // Ticket row — the /menu presentation (issue #339). This card keeps every
+  // action it already had (photo → product page, add/customize, favorite,
+  // share, badges, description, tags, calories, customization count); only the
+  // layout changes. Asked for explicitly, so every other surface that renders
+  // this card keeps its own layout.
+  if (variant === 'ticket') {
+    const rowBadges = [];
+    if (showMarketingBadge && item.is_fan_favorite && !soldOut) rowBadges.push({ label: 'Fan Favorite', tone: 'yellow' });
+    if (showMarketingBadge && !item.is_fan_favorite && item.is_featured && !soldOut) rowBadges.push({ label: 'Special', tone: 'cherry' });
+    if (soldOut) rowBadges.push({ label: 'Sold Out', tone: 'navy' });
+    if (isHappyHour && !soldOut) rowBadges.push({ label: 'Happy Hour · Online', tone: 'cherry' });
+
+    return (
+      <>
+        {modal}
+        <MenuTicketRow
+          item={item}
+          imageUrl={showPhoto ? imageUrl : null}
+          soldOut={soldOut}
+          price={isHappyHour && happyHourPrice !== null ? happyHourPrice : item.price}
+          wasPrice={isHappyHour && happyHourPrice !== null ? item.price : null}
+          badges={rowBadges}
+          trendingLabel={item.is_trending ? (item.trending_label || 'Trending') : null}
+          onOpen={handlePhotoClick}
+          onAdd={handleAdd}
+          addLabel={soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Bag!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
+          addDisabled={soldOut || !orderingEnabled}
+          added={added}
+          modifierCount={hasModifiers ? item.modifiers.length : 0}
+          showFavorite={!!user}
+          isFavorite={isFavorite}
+          onFavorite={toggleFavorite}
+          savingFavorite={savingFavorite}
+          shareNode={<ShareItemButton itemId={item.id} variant="icon" ariaLabel={`Share ${item.name}`} />}
+        />
+      </>
+    );
+  }
 
   if (position === 'none') {
     return (

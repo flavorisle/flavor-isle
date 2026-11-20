@@ -18,7 +18,8 @@ import ItemSelectionSummary from '@/components/ItemSelectionSummary';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import { optimizedImageUrl } from '@/lib/utils';
+import PhotoTile from '@/components/ui/PhotoTile';
+import PriceChip from '@/components/ui/PriceChip';
 import ProductStructuredData from '@/components/schema/ProductStructuredData';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 import SideSaltChoice from '@/components/SideSaltChoice';
@@ -297,7 +298,13 @@ export default function ProductDetail() {
               {/* Large product image */}
               <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-float">
                 {imageUrl ? (
-                  <img src={optimizedImageUrl(imageUrl, 800, 800)} alt={item.name} width="800" height="800" loading="lazy" decoding="async" className={`w-full h-full object-cover ${soldOut ? 'grayscale opacity-60' : ''}`} style={{ viewTransitionName: 'product-photo' }} />
+                  <PhotoTile
+                    imageUrl={imageUrl}
+                    alt={item.name}
+                    size="lg"
+                    className={`rounded-none ${soldOut ? 'grayscale opacity-60' : ''}`}
+                    imgStyle={{ viewTransitionName: 'product-photo' }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-8xl bg-gradient-to-br from-amber-50 to-orange-100">
                     {PLACEHOLDER_EMOJI[item.category] || '⭐'}
@@ -408,7 +415,7 @@ export default function ProductDetail() {
                 <Plus size={18} />
                 {addLabel}
                 {!soldOut && orderingEnabled && !added && (
-                  <span className="ml-1 opacity-70 font-body">· ${liveTotal.toFixed(2)}</span>
+                  <PriceChip amount={liveTotal} className="ml-1" />
                 )}
               </button>
               {!orderingEnabled && orderingClosedMessage && (
