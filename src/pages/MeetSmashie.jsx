@@ -12,7 +12,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
 import CartDrawer from '@/components/CartDrawer';
-import SmashieChat from '@/components/SmashieChat';
 import Seo from '@/components/Seo';
 
 const SMASHIE_TRAITS = [
@@ -220,7 +219,6 @@ export default function MeetSmashie() {
 
       <FindSmashieClueChip />
       <Footer />
-      <SmashieChat />
     </div>
   );
 }

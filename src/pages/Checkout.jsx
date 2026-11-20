@@ -23,6 +23,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 import { trackBeginCheckout, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSENT_VERSION } from '@/lib/smsConsent';
 import { getActiveReferralCode } from '@/lib/referral';
+import { takeTravelerNote } from '@/lib/travelerNote';
 import { analyzeEmail } from '@/lib/emailValidation';
 import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
 import { normalizeWait } from '@/lib/waitQuote';
@@ -62,7 +63,9 @@ export default function Checkout() {
   })();
   const openFromLabel = beforeStoreOpen ? `from ${formatTime12(orderTodayHours.open)}` : null;
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: '', allergy: '', heardAboutUs: '' });
+  // A traveler's "driving in" note (issue #341) rides in as their own note, which
+  // they can still edit or clear here.
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', table: '', instructions: takeTravelerNote(), allergy: '', heardAboutUs: '' });
   const [smsConsent, setSmsConsent] = useState(false);
   const [loyaltyOptIn, setLoyaltyOptIn] = useState(false);
   // Referral code from a friend's ?ref= link (issue #83). Read once on mount and

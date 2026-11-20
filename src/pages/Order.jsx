@@ -12,6 +12,8 @@ import Seo from '@/components/Seo';
 import OnDutyNow from '@/components/OnDutyNow';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import TicketCard from '@/components/ui/TicketCard';
+import KitchenNow from '@/components/KitchenNow';
+import HappyHourCountdown from '@/components/HappyHourCountdown';
 
 // Dedicated order-start landing page — the destination URL to list on the
 // Google Business Profile "Food ordering" / "Order online" link so customers
@@ -62,6 +64,12 @@ export default function Order() {
         description="Order Flavor Isle online in seconds: hand-patted burgers, real-fruit milkshakes and hot sides. Pickup, curbside, delivery or dine-in in Smiths Grove, KY."
       />
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-16">
+        {/* Issue #340 — what the grill is doing right now, and the Happy Hour clock */}
+        <KitchenNow />
+        <div className="mb-8 text-center empty:hidden">
+          <HappyHourCountdown />
+        </div>
+
         <div className="text-center mb-8">
           <p className="font-heading text-midnight-cherry text-sm tracking-[0.3em] mb-2">FLAVOR ISLE</p>
           <h1 className="font-heading text-4xl sm:text-5xl text-obsidian-roast leading-tight">Order Online</h1>

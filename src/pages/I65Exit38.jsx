@@ -21,6 +21,7 @@ import { hoursSummary } from '@/lib/businessHours';
 import { pickupQuote } from '@/lib/waitQuote';
 import { getAvailableItems } from '@/lib/menuCache';
 import { priceLine } from '@/lib/menuPriceSamples';
+import TravelerMode from '@/components/travel/TravelerMode';
 
 const LOGO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png';
 
@@ -95,6 +96,9 @@ export default function I65Exit38() {
         heading="Visit us at Exit 38."
         subtitle="Flavor Isle isn’t built for crowds — it’s built for moments. Fresh burgers, thick shakes, and a warm welcome just off the interstate."
       />
+
+      {/* Issue #341 — Traveler Mode: one tap sets pickup and notes the customer is driving in */}
+      <TravelerMode />
 
       {/* Quick order band */}
       <section className="bg-patina-mint text-white">

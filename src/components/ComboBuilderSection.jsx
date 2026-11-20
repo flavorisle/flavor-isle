@@ -5,7 +5,8 @@ import { getAvailableItems } from '@/lib/menuCache';
 import { useCart } from '@/context/CartContext';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import ComboTypeTabs from '@/components/combo/ComboTypeTabs';
-import ComboStepColumn from '@/components/combo/ComboStepColumn';
+import ComboSlot from '@/components/combo/ComboSlot';
+import ComboPickerDrawer from '@/components/combo/ComboPickerDrawer';
 import ComboSummaryBar from '@/components/combo/ComboSummaryBar';
 import ComboModifierModal from '@/components/combo/ComboModifierModal';
 import {
@@ -40,6 +41,8 @@ export default function ComboBuilderSection() {
   const [picks, setPicks] = useState({ main: null, side: null, drink: null, shake: null });
   const [shakeInstead, setShakeInstead] = useState(false);
   const [search, setSearch] = useState({ main: '', side: '', drink: '' });
+  // Which slot's tap-to-fill drawer is open (issue #341 E2).
+  const [openSlot, setOpenSlot] = useState(null);
   const [added, setAdded] = useState(false);
   const [modifierModal, setModifierModal] = useState(null);
   const { addItem, cartItems, setIsCartOpen, menuSetting } = useCart();
@@ -106,10 +109,12 @@ export default function ComboBuilderSection() {
     setPicks({ main: null, side: null, drink: null, shake: null });
     setSearch({ main: '', side: '', drink: '' });
     setShakeInstead(false);
+    setOpenSlot(null);
   };
 
   const handleSelectItem = (item, slot) => {
     const quantity = quantityOf(item);
+    setOpenSlot(null);
     if (applyModifierOverrides(item.modifiers, overrides).length > 0) {
       setModifierModal({ item, slot, quantity });
     } else {
@@ -202,36 +207,75 @@ export default function ComboBuilderSection() {
             <div className="bg-white rounded-3xl p-6 md:p-8">
               <ComboTypeTabs types={types} activeId={type?.id} onSelect={selectType} />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <ComboStepColumn
+              {/* Issue #341 (E2) — three large photo slots that fill as they are
+                  tapped. Each one opens its own drawer below; the lists, the
+                  quantities, the rules and the box price are all unchanged. */}
+              <div className="grid grid-cols-3 gap-3 sm:gap-5">
+                <ComboSlot
                   step={1}
-                  label={`${type?.name || 'Combo Isle'} Main`}
+                  label="Main"
                   hint="Pick the main"
+                  item={picks.main}
+                  quantity={picks.main?.quantity || 1}
+                  open={openSlot === 'main'}
+                  onOpen={() => setOpenSlot(openSlot === 'main' ? null : 'main')}
+                />
+                <ComboSlot
+                  step={2}
+                  label="Side"
+                  hint="Fries, tots, rings"
+                  item={picks.side}
+                  quantity={picks.side?.quantity || 1}
+                  open={openSlot === 'side'}
+                  onOpen={() => setOpenSlot(openSlot === 'side' ? null : 'side')}
+                />
+                <ComboSlot
+                  step={3}
+                  label={shakeInstead ? 'Shake' : 'Drink'}
+                  hint={shakeInstead ? 'A large milkshake' : 'Sodas, teas, floats'}
+                  item={drinkPick}
+                  quantity={drinkPick?.quantity || 1}
+                  open={openSlot === 'drink'}
+                  onOpen={() => setOpenSlot(openSlot === 'drink' ? null : 'drink')}
+                />
+              </div>
+
+              {openSlot === 'main' && (
+                <ComboPickerDrawer
+                  label="main"
+                  hint={type?.name ? `From ${type.name}` : 'Pick the main'}
                   items={mains}
-                  selected={picks.main}
+                  selectedId={picks.main?.id}
                   onSelect={(item) => handleSelectItem(item, 'main')}
+                  onClose={() => setOpenSlot(null)}
                   quantityOf={quantityOf}
                   search={search.main}
                   onSearch={(v) => setSearch((s) => ({ ...s, main: v }))}
                 />
-                <ComboStepColumn
-                  step={2}
-                  label="Side"
+              )}
+
+              {openSlot === 'side' && (
+                <ComboPickerDrawer
+                  label="side"
                   hint="Fries, tots, rings and munchies"
                   items={sides}
-                  selected={picks.side}
+                  selectedId={picks.side?.id}
                   onSelect={(item) => handleSelectItem(item, 'side')}
+                  onClose={() => setOpenSlot(null)}
                   quantityOf={quantityOf}
                   search={search.side}
                   onSearch={(v) => setSearch((s) => ({ ...s, side: v }))}
                 />
-                <ComboStepColumn
-                  step={3}
-                  label="Drink"
+              )}
+
+              {openSlot === 'drink' && (
+                <ComboPickerDrawer
+                  label={shakeInstead ? 'milkshake' : 'drink'}
                   hint={shakeInstead ? 'A large milkshake, same box' : 'Sodas, teas and floats — or a large milkshake'}
                   items={drinkChoices}
-                  selected={drinkPick}
+                  selectedId={drinkPick?.id}
                   onSelect={(item) => handleSelectItem(item, shakeInstead ? 'shake' : 'drink')}
+                  onClose={() => setOpenSlot(null)}
                   quantityOf={quantityOf}
                   search={search.drink}
                   onSearch={(v) => setSearch((s) => ({ ...s, drink: v }))}
@@ -248,7 +292,7 @@ export default function ComboBuilderSection() {
                     </button>
                   ) : null}
                 />
-              </div>
+              )}
 
               <ComboSummaryBar
                 typeName={type?.name || 'Combo Isle'}

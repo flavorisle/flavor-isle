@@ -42,8 +42,11 @@ const SHAKE_KEYWORDS = /shake|milkshake|malt|\/milkshakes/i;
 
 const SMASHIE_HEAD = optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png', 160, 160);
 
-export default function SmashieChat() {
-  const [open, setOpen] = useState(false);
+// `embedded` renders the conversation as panel content for the site-wide dock
+// (issue #340 D2): no launcher of its own, the dock owns the box it sits in.
+// `ask` drops a quick-chip question into the input; `onClose` lets the dock close.
+export default function SmashieChat({ embedded = false, onClose = null, ask = null }) {
+  const [open, setOpen] = useState(embedded);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -65,6 +68,18 @@ export default function SmashieChat() {
     window.addEventListener('flavorisle:open-smashie', handler);
     return () => window.removeEventListener('flavorisle:open-smashie', handler);
   }, []);
+
+  // Docked panel: the conversation starts as soon as the dock opens it.
+  useEffect(() => {
+    if (embedded) openChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A dock quick chip drops its question into the input, ready to send.
+  useEffect(() => {
+    if (ask?.text) setInput(ask.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ask?.n]);
 
   const openChat = async () => {
     setOpen(true);
@@ -100,9 +115,9 @@ export default function SmashieChat() {
   const isThinking = sending || messages[messages.length - 1]?.role === 'user';
 
   return (
-    <div className="smashie-chat-root">
+    <div className={embedded ? 'flex-1 min-h-0 flex' : 'smashie-chat-root'}>
       {/* Floating Button */}
-      {!open &&
+      {!open && !embedded &&
       <button
         onClick={openChat}
         className={`hidden md:flex fixed ${side === 'left' ? 'left-6' : 'right-6'} bottom-6 z-[80] w-16 h-16 rounded-full shadow-float-lg hover:scale-110 transition-all items-center justify-center ring-4 ring-white/90`}
@@ -116,7 +131,9 @@ export default function SmashieChat() {
 
       {/* Chat Panel */}
       {open &&
-      <div className={`fixed ${side === 'left' ? 'left-4 md:left-6' : 'right-4 md:right-6'} bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up`}>
+      <div className={embedded
+        ? 'w-full h-full bg-white flex flex-col overflow-hidden'
+        : `fixed ${side === 'left' ? 'left-4 md:left-6' : 'right-4 md:right-6'} bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom))] md:bottom-6 z-[60] w-full sm:w-96 h-[560px] bg-white rounded-3xl shadow-float-lg flex flex-col overflow-hidden border border-border animate-float-up`}>
           {/* Header */}
           <div className="bg-midnight-cherry px-5 py-4 flex items-center gap-3 flex-shrink-0">
             <img src={SMASHIE_HEAD} alt="Smashie" className="w-10 h-10 object-cover rounded-full flex-shrink-0" />
@@ -124,7 +141,7 @@ export default function SmashieChat() {
               <p className="font-heading text-white text-base leading-none">Smashie AI</p>
               <p className="text-red-200 text-xs mt-0.5">Flavor Isle's Burgers &amp; Shakes Assistant</p>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors">
+            <button onClick={() => (embedded && onClose ? onClose() : setOpen(false))} aria-label="Close chat" className="text-white/70 hover:text-white transition-colors">
               <X size={20} />
             </button>
           </div>

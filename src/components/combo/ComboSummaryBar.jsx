@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import PriceChip from '@/components/ui/PriceChip';
 
 // The bar pinned to the bottom of the builder: what is in the box on the left,
 // the one total and the Add box button on the right. No savings, no percentage,
@@ -21,7 +22,7 @@ export default function ComboSummaryBar({ typeName, picks, price, onAdd, added, 
         </div>
         <div className="flex items-center gap-4 sm:justify-end">
           {names.length === 3 && (
-            <p className="font-heading text-3xl text-midnight-cherry">${price.toFixed(2)}</p>
+            <PriceChip amount={price} className="px-4 py-1 text-2xl text-midnight-cherry" />
           )}
           <button
             onClick={onAdd}

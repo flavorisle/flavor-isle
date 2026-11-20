@@ -4,7 +4,6 @@ import { Apple, Play, ArrowRight, Bell, Star, Truck, MessageCircle, Zap, Calenda
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
-import SmashieChat from '@/components/SmashieChat';
 import AppPhoneMockup from '@/components/AppPhoneMockup';
 import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
@@ -231,7 +230,6 @@ export default function DownloadApp() {
       </section>
 
       <Footer />
-      <SmashieChat />
     </div>
   );
 }

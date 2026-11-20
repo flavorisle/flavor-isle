@@ -15,7 +15,7 @@ import { ThemeProvider } from 'next-themes';
 import BottomTabBar from './components/BottomTabBar';
 import ConsentBanner from './components/ConsentBanner';
 import MobileHeader from './components/MobileHeader';
-import SmashieChat from './components/SmashieChat';
+import SmashieDock from './components/SmashieDock';
 import SmashieHunt from './components/findSmashie/SmashieHunt';
 import FindSmashieBanner from './components/findSmashie/FindSmashieBanner';
 import HalloweenTheme from '@/components/halloween/HalloweenTheme';
@@ -317,7 +317,7 @@ function AppShell() {
               <ConsentBanner />
               <HalloweenTheme />
               <SmashieHunt />
-              <SmashieChat />
+              <SmashieDock />
               <Suspense fallback={null}><MerchCartDrawer /></Suspense>
             </Router>
             <Toaster />
