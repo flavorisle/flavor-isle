@@ -470,3 +470,40 @@
     outline-offset: 2px;
   }
 }
+
+/* ── Menu section containment (issue #338) ──
+   A phone shows two menu categories at once, but every category section was
+   being laid out and painted on load. content-visibility lets the browser skip
+   the off-screen ones until they approach the viewport; contain-intrinsic-size
+   keeps a 720px placeholder so the page length, the scroll position and the
+   category rail's in-page jumps stay stable. */
+.cv-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+/* ── Scroll-driven reveals (issue #338) ──
+   Pure CSS: no JavaScript, no scroll listeners, no framer-motion. A category
+   heading and the product page's two content columns rise 8px and fade in as
+   they enter the viewport. Browsers without scroll-driven animations skip the
+   whole block, so nothing is ever left hidden from them, and a visitor who
+   asked for reduced motion never sees the movement.
+
+   A section's heading sits inside its heading row rather than directly under
+   the section, so the h2 is matched as a descendant; the h3 clause stays a
+   direct child so no card's own title is animated. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .cv-section h2,
+    .cv-section > h3,
+    .cv-rise {
+      animation: cv-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+@keyframes cv-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}

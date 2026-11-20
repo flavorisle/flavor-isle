@@ -11,6 +11,7 @@ import { withShakeFlavorLevel } from './ShakeFlavorControl';
 import ShareItemButton from './ShareItemButton';
 import { trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { productPath } from '@/lib/productSlug';
+import { withViewTransition } from '@/lib/viewTransition';
 import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
 import { optimizedImageUrl } from '@/lib/utils';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
@@ -122,7 +123,16 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen }) {
     e?.stopPropagation();
     trackTrendingClick();
     trackSelectItem(foodItemToGa4(item));
-    navigate(productPath(item));
+    // Shared-element transition into the product page: this card's photo takes
+    // the transition name for the length of the navigation, then gives it up so
+    // two cards never carry the same name. A background card puts its photo
+    // behind the click layer, so the parent is checked when the layer itself
+    // holds no image.
+    const target = e?.currentTarget;
+    const img = target?.querySelector?.('img') || target?.parentElement?.querySelector?.('img');
+    if (img) img.style.viewTransitionName = 'product-photo';
+    withViewTransition(() => navigate(productPath(item)));
+    setTimeout(() => { if (img) img.style.viewTransitionName = ''; }, 600);
   };
 
   const handleAdd = (e) => {

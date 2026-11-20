@@ -47,6 +47,7 @@ export function restaurantSchema(hours) {
       { '@type': 'ContactPoint', 'telephone': '+12705634618', 'contactType': 'customer service' },
       { '@type': 'ContactPoint', 'telephone': '+12705637230', 'contactType': 'reservations', 'name': 'Smashie AI phone ordering' },
     ],
+    hasMenu: 'https://flavor-isle.com/menu',
     priceRange: '$$',
     servesCuisine: ['Hamburgers', 'American', 'Burgers and Shakes Restaurant'],
     address: {
@@ -84,8 +85,18 @@ export function menuSchema(rows, renames = {}) {
         ...(item.image_url_opt || item.image_url ? { image: item.image_url_opt || item.image_url } : {}),
         // Real prices in the markup (Nov 9 2026, AI visibility). Nothing here
         // invents a price: no price, no offer block.
+        // Availability comes from the item's own synced flag — never assumed.
         ...(Number(item.price) > 0
-          ? { offers: { '@type': 'Offer', price: Number(item.price).toFixed(2), priceCurrency: 'USD' } }
+          ? {
+              offers: {
+                '@type': 'Offer',
+                price: Number(item.price).toFixed(2),
+                priceCurrency: 'USD',
+                availability: item.is_available === false
+                  ? 'https://schema.org/SoldOut'
+                  : 'https://schema.org/InStock',
+              },
+            }
           : {}),
       })),
     }));

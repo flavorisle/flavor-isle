@@ -278,6 +278,14 @@
   ]
 }
     </script>
+    <!-- Speculation rules (issue #338) — PREFETCH only, never prerender. The
+         product pages linked from /menu are fetched before the tap so the page
+         opens without the network wait. Prefetch does not run the page's
+         JavaScript, so no visitor page view or GA4 page view is logged for a
+         page the customer never opened. -->
+    <script type="speculationrules">
+    {"prefetch":[{"source":"list","where":{"href_matches":"/product/*"},"eagerness":"moderate"}]}
+    </script>
   </head>
   <body>
     <!-- Meta Pixel noscript fallback -->

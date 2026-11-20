@@ -346,7 +346,7 @@ export default function Menu() {
         <div className="space-y-12">
             {rows.map(({ key, items: rowItems, isShakeBanner }) =>
           isShakeBanner ? (
-            <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
+            <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`} className="cv-section">
               <div className="flex items-center gap-4 mb-5">
                 <div>
                   <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">Whirl &amp; Twirl</h2>
@@ -368,7 +368,7 @@ export default function Menu() {
               </div>
             </div>
           ) : (
-          <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`}>
+          <div key={key} id={`menu-cat-${key.replace(/[^a-zA-Z0-9]/g, '')}`} className="cv-section">
                 <div className="flex items-center gap-4 mb-5">
                   <div>
                     <h2 className="font-heading text-2xl text-obsidian-roast whitespace-nowrap">
