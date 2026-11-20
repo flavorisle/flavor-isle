@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { getMenuItems } from '@/lib/menuCache';
-import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Bike, Utensils, Search, Car, ArrowLeft, AlertCircle, Heart, Flame } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FindSmashieClueChip from '@/components/findSmashie/FindSmashieClueChip';
@@ -11,7 +11,17 @@ import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import CartDrawer from '@/components/CartDrawer';
 import ComboIsleAnnouncement from '@/components/ComboIsleAnnouncement';
 import { optimizedImageUrl } from '@/lib/utils';
-import MenuItemCard from '@/components/MenuItemCard';
+import TicketCard from '@/components/ui/TicketCard';
+import PhotoTile from '@/components/ui/PhotoTile';
+import PriceChip from '@/components/ui/PriceChip';
+import ModifierModal from '@/components/ModifierModal';
+import ShareItemButton from '@/components/ShareItemButton';
+import { useAuth } from '@/lib/AuthContext';
+import { isHappyHourItem, getHappyHourItemPrice } from '@/lib/happyHour';
+import { withShakeFlavorLevel } from '@/components/ShakeFlavorControl';
+import { productPath } from '@/lib/productSlug';
+import { isDiscontinuedMenuItem, isExcludedFromMarketing } from '@/lib/menuMarketing';
+import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 import MenuShakeCard from '@/components/MenuShakeCard';
 import ShakeCustomizer from '@/components/ShakeCustomizer';
 import CravingsBox from '@/components/CravingsBox';
@@ -36,7 +46,7 @@ import WeekendPartyPackCard from '@/components/packs/WeekendPartyPackCard';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
-import { trackViewItemList, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { trackViewItemList, trackSelectItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 
 // Pickup / delivery estimates scale with the live kitchen load so the menu
 // matches the hero, status bar, and checkout everywhere times are shown.
@@ -46,6 +56,217 @@ const ORDER_TYPE_CONFIG = (waitMin, deliveryEnabled) => ({
   delivery: { icon: Bike, label: 'Delivery', time: deliveryEnabled ? deliveryQuote(waitMin) : 'Paused' },
   dine_in: { icon: Utensils, label: 'Dine-In', time: 'Seat yourself' }
 });
+
+// ── One menu item as a kitchen-ticket row (issue #339) ──
+// A small square photo beside the name, the price on a chip, then the
+// description and the row's actions. The page owns this presentation; the
+// ordering behaviour is the one the menu has always had — add, customize,
+// favorite, share, sold-out and Happy Hour pricing all still come from the
+// same cart and the same ModifierModal.
+const ROW_TONES = {
+  yellow: 'bg-smashie-yellow text-[#003366]',
+  cherry: 'bg-midnight-cherry text-white',
+  navy: 'bg-obsidian-roast text-white',
+};
+
+function MenuRow({ item, autoOpen }) {
+  const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [added, setAdded] = useState(false);
+  const [showModal, setShowModal] = useState(!!autoOpen);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [savingFavorite, setSavingFavorite] = useState(false);
+
+  const hasModifiers = (item.modifiers || []).length > 0;
+  const soldOut = item.is_available === false;
+  const imageUrl = item.image_url_opt || item.image_url;
+  const showPhoto = imageUrl && !isDiscontinuedMenuItem(item);
+  const showMarketingBadge = !isExcludedFromMarketing(item);
+  const isHappyHour = isHappyHourItem(item, menuSetting);
+  const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
+
+  // Share-link focus: /menu?item=<id> opens this row's customization view.
+  useEffect(() => { setShowModal(!!autoOpen); }, [autoOpen]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    base44.entities.Favorite.filter({ user_id: user.id, menu_item_id: item.id })
+      .then((favs) => setIsFavorite((favs || []).length > 0))
+      .catch(() => {});
+  }, [item.id, user?.id]);
+
+  const toggleFavorite = async (e) => {
+    e?.stopPropagation();
+    if (!user?.id) return;
+    const wasFavorite = isFavorite;
+    setIsFavorite(!wasFavorite);
+    setSavingFavorite(true);
+    try {
+      if (wasFavorite) {
+        const favs = await base44.entities.Favorite.filter({ user_id: user.id, menu_item_id: item.id });
+        if (favs?.length > 0) await base44.entities.Favorite.delete(favs[0].id);
+      } else {
+        await base44.entities.Favorite.create({
+          user_id: user.id,
+          menu_item_id: item.id,
+          menu_item_name: item.name,
+          menu_item_price: item.price,
+          menu_item_image: imageUrl,
+          menu_item_category: item.category,
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      setIsFavorite(wasFavorite);
+    } finally {
+      setSavingFavorite(false);
+    }
+  };
+
+  // The photo opens the item's own page — the same destination and the same
+  // select-item event the menu has always used.
+  const handleOpen = (e) => {
+    e?.stopPropagation();
+    trackSelectItem(foodItemToGa4(item));
+    navigate(productPath(item));
+  };
+
+  const handleAdd = (e) => {
+    e?.stopPropagation();
+    if (!orderingEnabled) return;
+    if (hasModifiers || isSaltQuestionItem(item)) {
+      trackSelectItem(foodItemToGa4(item));
+      setShowModal(true);
+    } else {
+      addItem(item);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1200);
+    }
+  };
+
+  const handleConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel, saltNote) => {
+    addItem({
+      ...item,
+      name: withShakeFlavorLevel(item.name, coreLevel),
+      flavorLevel: coreLevel || undefined,
+      price: item.price + extraCost,
+      selectedModifiers: selectedMods,
+      deluxeLabel: deluxeLabel || undefined,
+      deluxeToppings: deluxeToppings || [],
+      allergyNote: allergyNote || undefined,
+      saltNote: saltNoteText(saltNote) || undefined,
+    });
+    if (comboItems && comboItems.length > 0) comboItems.forEach((ci) => addItem(ci));
+    setShowModal(false);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1200);
+  };
+
+  const badges = [];
+  if (showMarketingBadge && item.is_fan_favorite && !soldOut) badges.push({ label: 'Fan Favorite', tone: 'yellow' });
+  if (showMarketingBadge && !item.is_fan_favorite && item.is_featured && !soldOut) badges.push({ label: 'Special', tone: 'cherry' });
+  if (soldOut) badges.push({ label: 'Sold Out', tone: 'navy' });
+  if (isHappyHour && !soldOut) badges.push({ label: 'Happy Hour · Online', tone: 'cherry' });
+
+  const shownPrice = isHappyHour && happyHourPrice !== null ? happyHourPrice : item.price;
+  const wasPrice = isHappyHour && happyHourPrice !== null ? item.price : null;
+
+  return (
+    <>
+      {showModal && (
+        <ModifierModal item={item} autoCombo={false} onClose={() => setShowModal(false)} onConfirm={handleConfirm} />
+      )}
+      <TicketCard
+        title={item.name}
+        price={
+          <span className="flex items-center gap-1.5">
+            {wasPrice != null && (
+              <span className="text-xs tabular-nums text-muted-foreground line-through">${Number(wasPrice).toFixed(2)}</span>
+            )}
+            <PriceChip amount={shownPrice} />
+          </span>
+        }
+        leading={
+          <button
+            type="button"
+            onClick={handleOpen}
+            aria-label={`View ${item.name}`}
+            className="block tap-44 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-midnight-cherry focus-visible:ring-offset-2"
+          >
+            <PhotoTile
+              imageUrl={showPhoto ? imageUrl : null}
+              alt={item.name}
+              size="sm"
+              className={soldOut ? 'grayscale opacity-60' : ''}
+            />
+          </button>
+        }
+        meta={badges.length > 0 ? badges.map((b) => (
+          <span key={b.label} className={`rounded-full px-2.5 py-0.5 font-heading text-[10px] uppercase tracking-wider ${ROW_TONES[b.tone] || ROW_TONES.cherry}`}>
+            {b.label}
+          </span>
+        )) : null}
+      >
+        {item.is_trending && (
+          <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-midnight-cherry px-2.5 py-0.5 font-heading text-[10px] uppercase tracking-wider text-white">
+            <Flame size={10} className="text-smashie-yellow" /> {item.trending_label || 'Trending'}
+          </div>
+        )}
+
+        {item.description && (
+          <p className="text-sm leading-relaxed line-clamp-2 text-muted-foreground">{item.description}</p>
+        )}
+
+        {item.tags && item.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {item.tags.slice(0, 3).map((tag) => (
+              <span key={tag} className="rounded-full bg-patina-mint/10 px-2 py-0.5 text-xs font-semibold text-patina-mint">{tag}</span>
+            ))}
+          </div>
+        )}
+
+        {item.calories && <p className="mt-1 text-xs text-muted-foreground">{item.calories} cal</p>}
+
+        {hasModifiers && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {item.modifiers.length} customization{item.modifiers.length !== 1 ? 's' : ''} available
+          </p>
+        )}
+
+        <div className="mt-3 flex items-center gap-2">
+          {user && (
+            <button
+              type="button"
+              onClick={toggleFavorite}
+              disabled={savingFavorite}
+              aria-label="Save to favorites"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-muted transition-colors hover:bg-white disabled:opacity-60"
+            >
+              <Heart size={18} className={isFavorite ? 'fill-midnight-cherry text-midnight-cherry' : 'text-gray-400'} />
+            </button>
+          )}
+          <ShareItemButton itemId={item.id} variant="icon" ariaLabel={`Share ${item.name}`} />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={soldOut || !orderingEnabled}
+            title={!orderingEnabled ? orderingClosedMessage : ''}
+            className={`ml-auto inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-heading text-sm transition-colors tap-44 ${
+              soldOut || !orderingEnabled
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : added
+                  ? 'bg-patina-mint text-white'
+                  : 'bg-midnight-cherry text-white hover:bg-red-800'
+            }`}
+          >
+            {soldOut ? 'Sold Out' : !orderingEnabled ? 'Ordering Closed' : added ? 'Added to Bag!' : hasModifiers ? 'Customize & Add' : 'Add to Order'}
+          </button>
+        </div>
+      </TicketCard>
+    </>
+  );
+}
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -398,7 +619,7 @@ export default function Menu() {
               <div key={item.id} id={`menu-item-${item.id}`}>
                       {itemCategoryKey(item) === SHAKE_KEY
                         ? <MenuShakeCard item={item} onSelect={setActiveShake} orderingEnabled={orderingEnabled} overrides={menuSetting?.modifier_overrides} />
-                        : <MenuItemCard item={item} autoOpen={item.id === focusItemId} variant="ticket" />}
+                        : <MenuRow item={item} autoOpen={item.id === focusItemId} />}
                     </div>
               )}
                 </div>

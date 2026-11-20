@@ -4,7 +4,16 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import ComboBuilderSection from '@/components/ComboBuilderSection';
+import PhotoTile from '@/components/ui/PhotoTile';
+import { CATEGORY_PHOTOS } from '@/lib/categoryPhotos';
 import Seo from '@/components/Seo';
+
+// The three slots the picker asks for, shown as photos in the hero.
+const SLOT_PREVIEW = [
+  { label: 'Main', photo: CATEGORY_PHOTOS['Old-Fashioned Burgers'] },
+  { label: 'Side', photo: CATEGORY_PHOTOS['Crunch & Munch'] },
+  { label: 'Drink', photo: CATEGORY_PHOTOS['Whirl & Twirl'] },
+];
 
 // Combo Isle is a picker: pick a main, a side and a drink off the live Square
 // menu. It runs on the public website and in the app now — no "Coming Soon",
@@ -32,7 +41,15 @@ export default function Combos() {
           </div>
           <h1 className="font-heading text-7xl sm:text-9xl text-white leading-none mb-4">COMBO ISLE</h1>
           <p className="text-gray-300 text-lg mb-2">Pick a main, a side, and a drink.</p>
-          <p className="text-gray-400 text-base mb-12">Three picks, one order.</p>
+          <p className="text-gray-400 text-base mb-8">Three picks, one order.</p>
+          <div className="mb-10 flex items-start justify-center gap-3 sm:gap-5">
+            {SLOT_PREVIEW.map((slot) => (
+              <div key={slot.label} className="w-20 sm:w-28">
+                <PhotoTile imageUrl={slot.photo.url} alt={slot.photo.alt} size="lg" className="ring-2 ring-white/20" />
+                <p className="mt-2 font-heading text-[11px] uppercase tracking-widest text-smashie-yellow">{slot.label}</p>
+              </div>
+            ))}
+          </div>
           <button onClick={scrollToBuilder} className="btn-cherry chrome-hover inline-flex items-center gap-3 px-10 py-5 font-heading text-base">
             Start Building <ArrowDown size={18} />
           </button>
