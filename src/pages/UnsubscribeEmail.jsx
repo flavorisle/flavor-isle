@@ -30,7 +30,7 @@ export default function UnsubscribeEmail() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
       <Navbar />
       <CartDrawer />
-      <main className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-16">
+      <div className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-16">
         <div className="card-diner p-8 text-center">
           {status === 'loading' && (
             <>
@@ -71,7 +71,7 @@ export default function UnsubscribeEmail() {
             </>
           )}
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   );

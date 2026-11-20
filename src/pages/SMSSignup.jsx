@@ -68,7 +68,7 @@ export default function SMSSignup() {
         description="Sign up for Flavor Isle text alerts. Get order status updates (confirmed, preparing, ready) and optional promotional offers. Reply STOP to cancel anytime."
       />
       <Navbar />
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-20">
+      <div className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-midnight-cherry/10 text-midnight-cherry flex items-center justify-center mx-auto mb-4">
             <MessageSquare size={28} />
@@ -154,7 +154,7 @@ export default function SMSSignup() {
             </p>
           </form>
         )}
-      </main>
+      </div>
       <Footer />
     </div>
   );

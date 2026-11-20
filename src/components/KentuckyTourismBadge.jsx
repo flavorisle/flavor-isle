@@ -16,7 +16,7 @@ export default function KentuckyTourismBadge() {
       </span>
       <span className="flex flex-col leading-none">
         <span className="font-heading text-sm font-bold text-[#2B1F1A]">KENTUCKY TOURISM</span>
-        <span className="text-xs text-[#0082B4] mt-1">Listed on KentuckyTourism.com</span>
+        <span className="text-xs text-[#00668C] mt-1">Listed on KentuckyTourism.com</span>
       </span>
     </a>
   );

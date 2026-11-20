@@ -94,7 +94,7 @@ export default function LiveStatusBar() {
   // ── Closed (after hours or admin closure) ──
   if (isClosed) {
     return (
-      <div className="w-full bg-gray-100 border-b border-gray-200 text-gray-500">
+      <div className="w-full bg-gray-100 border-b border-gray-200 text-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
           <div className="flex items-start gap-2.5 min-w-0">
             <Lock size={16} className="flex-shrink-0 mt-0.5" />
@@ -106,7 +106,7 @@ export default function LiveStatusBar() {
           </div>
           <Link
             to="/contact"
-            className="text-xs font-heading uppercase tracking-wide text-gray-500 hover:text-obsidian-roast transition-colors tap-44 inline-flex items-center"
+            className="text-xs font-heading uppercase tracking-wide text-gray-700 hover:text-obsidian-roast transition-colors tap-44 inline-flex items-center"
           >
             See hours
           </Link>

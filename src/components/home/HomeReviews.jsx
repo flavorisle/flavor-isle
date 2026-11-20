@@ -32,7 +32,7 @@ export default function HomeReviews() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {FEATURED.map((review) => (
             <figure key={review.name} className="card-diner p-6 flex flex-col gap-4">
-              <div className="flex gap-0.5" aria-label="5 out of 5 stars">
+              <div className="flex gap-0.5" role="img" aria-label="5 out of 5 stars">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={15} className="text-smashie-yellow fill-smashie-yellow" aria-hidden="true" />
                 ))}

@@ -68,7 +68,7 @@ export default function BottomTabBar() {
                 ) : tab.smashie ? (
                   <img
                     src={optimizedImageUrl('https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b05945903_smashiehead.png', 160, 160)}
-                    alt="Smashie"
+                    alt=""
                     width="160"
                     height="160"
                     className={`w-8 h-8 object-cover rounded-full ${active ? 'ring-2 ring-midnight-cherry' : ''}`}

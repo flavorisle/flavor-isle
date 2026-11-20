@@ -242,7 +242,7 @@ export default function Menu() {
           ].map((review) => (
             <figure key={review.label} className="rounded-xl border border-border bg-white/80 p-4">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-yellow-400 text-sm leading-none tracking-widest" aria-label="5 out of 5 stars">★★★★★</span>
+                <span className="text-yellow-400 text-sm leading-none tracking-widest" role="img" aria-label="5 out of 5 stars">★★★★★</span>
                 <span className="text-xs font-semibold text-obsidian-roast">{review.label}</span>
               </div>
               <blockquote className="mt-2 text-sm text-obsidian-roast leading-relaxed">{`“${review.quote}”`}</blockquote>

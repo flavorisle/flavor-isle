@@ -223,7 +223,7 @@ export default function ProductDetail() {
       <Navbar />
       <CartDrawer />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-sm font-heading text-patina-mint hover:text-midnight-cherry transition-colors mb-4 tap-44"
@@ -444,7 +444,7 @@ export default function ProductDetail() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       <Footer />
     </div>

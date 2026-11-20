@@ -6,6 +6,28 @@
     <link rel="apple-touch-icon" href="https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/acd2f8a2e_FlavorIsleLogosmaller.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#CC3300" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://media.base44.com" />
+    <link rel="preconnect" href="https://base44.app" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap" />
+    <script>
+      // Home hero preload, home page only: this HTML is shared by every route,
+      // so a static preload would fetch the hero on /menu and /order too.
+      (function () {
+        var p = window.location.pathname;
+        if (p !== '/' && p !== '') return;
+        var base = 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/7e7111048_hero_sign.png/v1/fill/';
+        var l = document.createElement('link');
+        l.rel = 'preload';
+        l.as = 'image';
+        l.setAttribute('fetchpriority', 'high');
+        l.href = base + 'w_1600,h_900/file.webp';
+        l.setAttribute('imagesrcset', base + 'w_800,h_450/file.webp 800w, ' + base + 'w_1600,h_900/file.webp 1600w');
+        l.setAttribute('imagesizes', '100vw');
+        document.head.appendChild(l);
+      })();
+    </script>
 
     <title>Flavor Isle | Burgers & Shakes off I-65 Exit 38, Smiths Grove KY</title>
     <meta name="description" content="Family-owned burgers & shakes spot since 1964, 0.7 miles off I-65 Exit 38 in Smiths Grove, KY. Hand-patted burgers, thick shakes, and online ordering." />

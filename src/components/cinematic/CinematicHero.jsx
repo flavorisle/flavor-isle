@@ -28,9 +28,13 @@ export default function CinematicHero({
     window.addEventListener('scroll', drift, { passive: true });
     return () => { window.removeEventListener('scroll', drift); cancelAnimationFrame(frame); };
   }, []);
+
+  const heroSrc = optimizedImageUrl(photo.url, 1600, 900);
+  const heroSmall = optimizedImageUrl(photo.url, 800, 450);
+
   return (
     <section className="relative isolate min-h-[78svh] flex items-end overflow-hidden bg-patina-mint text-white">
-      <img ref={image} src={optimizedImageUrl(photo.url, 1600, 900)} alt={photo.alt} width="1600" height="900" loading="eager" fetchPriority="high" decoding="async"
+      <img ref={image} src={heroSrc} srcSet={heroSmall !== heroSrc ? `${heroSmall} 800w, ${heroSrc} 1600w` : undefined} sizes="100vw" alt={photo.alt} width="1600" height="900" loading="eager" fetchPriority="high" decoding="async"
         className="absolute inset-0 w-full h-full object-cover motion-safe:scale-[1.08]" />
       <div className="absolute inset-0 bg-patina-mint/60" aria-hidden="true" />
       <div className="relative max-w-6xl mx-auto w-full px-5 sm:px-10 pb-16 pt-32">

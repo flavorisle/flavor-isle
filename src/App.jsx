@@ -170,7 +170,8 @@ const AuthenticatedApp = () => {
   const isTabPath = isKeepAliveTab(location.pathname);
 
   return (
-    <>
+    <main id="main">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-heading focus:text-obsidian-roast focus:shadow-lg">Skip to content</a>
       <FindSmashieBanner />
 
       {/* Keep-alive bottom-tab routes: stay mounted, toggled with `hidden` so
@@ -294,7 +295,7 @@ const AuthenticatedApp = () => {
         </AnimatePresence>
         </Suspense>
       )}
-    </>
+    </main>
   );
 };
 

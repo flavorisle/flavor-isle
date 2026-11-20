@@ -13,13 +13,15 @@ export function cn(...inputs) {
 // and the gallery lightbox, where the whole photo must stay visible).
 export function optimizedImageUrl(url, w, h, mode = 'fill') {
   if (!url) return url;
-  // Already optimized copies (always served as WebP) and URLs that already
-  // carry a transform are returned as-is, so nothing is transformed twice.
-  if (/\.webp(\?|$)/i.test(url)) return url;
+  // URLs that already carry a transform are returned as-is, so nothing is
+  // transformed twice. A .webp ORIGINAL (the menu's image_url_opt files) still
+  // needs the transform: serving it untouched sent 800 px files into 56 px
+  // boxes, about 1.3 MB of the home page.
+  if (url.includes('/v1/')) return url;
   const base44Hosted = url.includes('media.base44.com') || url.includes('/files/mp/public/');
-  if (!base44Hosted || url.includes('/v1/')) return url;
+  if (!base44Hosted) return url;
   return `${url}/v1/${mode}/w_${w},h_${h}/file.webp`;
-} 
+}
 
 
 export const isIframe = window.self !== window.top;

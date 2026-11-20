@@ -62,7 +62,7 @@ export default function PopularTimesCard({ embedded = false }) {
           <div className="flex items-center justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
               <Activity size={18} className="text-midnight-cherry" />
-              <h3 className="font-heading text-xl text-obsidian-roast">How busy are we?</h3>
+              <h2 className="font-heading text-xl text-obsidian-roast">How busy are we?</h2>
             </div>
             {hasData && (
               <span className="inline-flex items-center gap-1.5 bg-midnight-cherry/10 text-midnight-cherry text-[11px] font-heading px-2.5 py-1 rounded-full whitespace-nowrap">

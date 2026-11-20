@@ -29,7 +29,7 @@ export default function HappyHourBanner({ variant = 'full' }) {
   if (variant === 'compact') {
     return (
       <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-heading ${
-        active ? 'bg-midnight-cherry text-white' : 'bg-midnight-cherry/10 text-midnight-cherry'
+        active ? 'bg-midnight-cherry text-white' : 'bg-midnight-cherry/10 text-[#B82600]'
       }`}>
         <Tag size={14} className="flex-shrink-0" />
         <span>Happy Hour · Unbeatable value on drinks · {window} daily · Online</span>
