@@ -15,7 +15,6 @@ import ReviewsCarousel from '@/components/ReviewsCarousel';
 import ReviewPlatformLinks from '@/components/ReviewPlatformLinks';
 import { EXTERNAL_REVIEWS } from '@/lib/externalReviews';
 import PhotoTile from '@/components/ui/PhotoTile';
-import { CATEGORY_PHOTOS } from '@/lib/categoryPhotos';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 
 const TIKTOK_VIDEOS = [
@@ -75,26 +74,49 @@ const INSTAGRAM_REEL = {
 // the site's real photograph for that dish. When a review names a dish we have
 // no photograph of, the card falls back to the house burger photo. No review
 // is added, removed, shortened or reworded.
+// Photos are the real Square catalog photo of that exact item, so a review
+// about the tenderloin shows the tenderloin. Ordered most specific first: a
+// named flavor wins over the generic word it contains, and `family` keeps a
+// review from being tagged twice for the same kind of item.
+const ITEM_PHOTO = (file) => `https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/${file}`;
+
 const REVIEW_DISHES = [
-  { test: /milkshake|shake/i, tag: 'Milkshake', photo: CATEGORY_PHOTOS['Whirl & Twirl'] },
-  { test: /cheeseburger|burger/i, tag: 'Burger', photo: CATEGORY_PHOTOS['Old-Fashioned Burgers'] },
-  { test: /onion rings/i, tag: 'Onion rings', photo: CATEGORY_PHOTOS['Snack & Munch'] },
-  { test: /fries/i, tag: 'Fries', photo: CATEGORY_PHOTOS['Crunch & Munch'] },
-  { test: /ice cream/i, tag: 'Ice cream', photo: CATEGORY_PHOTOS['Blend & Bliss'] },
-  { test: /chili dog|hot dog|chuck wagon/i, tag: 'Chili dog', photo: null },
-  { test: /pork tenderloin/i, tag: 'Pork tenderloin', photo: null },
-  { test: /fried mushrooms/i, tag: 'Fried mushrooms', photo: null },
-  { test: /mozzarella sticks/i, tag: 'Mozzarella sticks', photo: null },
+  { test: /butterscotch/i, tag: 'Butterscotch shake', family: 'shake', photo: { url: ITEM_PHOTO('080c07b1d_menu-item-oxdtpymose2fjfrmup57v47n-800x800.webp'), alt: 'Butterscotch milkshake' } },
+  { test: /peanut butter/i, tag: 'Peanut butter shake', family: 'shake', photo: { url: ITEM_PHOTO('892c440b4_menu-item-iey7za552tbuv57coyvcpfdz-800x800.webp'), alt: 'Peanut butter milkshake' } },
+  { test: /\bmalt\b/i, tag: 'Malt', family: 'shake', photo: { url: ITEM_PHOTO('62ce4d5ba_menu-item-gr6tuvc2ym6r3j6rtisoygic-671x800.webp'), alt: 'Chocolate malt' } },
+  { test: /milkshake|shake/i, tag: 'Milkshake', family: 'shake', photo: { url: 'https://items-images-production.s3.us-west-2.amazonaws.com/files/c59e1956e7aafd8972d0793828ed15ade1d4f3fa/original.jpeg', alt: 'Chocolate milkshake' } },
+  { test: /bacon double|double bacon/i, tag: 'Bacon double cheeseburger', family: 'burger', photo: { url: ITEM_PHOTO('a4b17ed7c_menu-item-7rj7gyarxj5xjce6uh6i6qeq-800x685.webp'), alt: 'Double bacon cheeseburger' } },
+  { test: /double cheese ?burger/i, tag: 'Double cheeseburger', family: 'burger', photo: { url: ITEM_PHOTO('edaa9b42b_menu-item-7qesu7ujarv5oatv2ubjhiqu-800x800.webp'), alt: 'Double cheeseburger' } },
+  { test: /mini (cheese)?burger/i, tag: 'Mini burgers', family: 'burger', photo: { url: ITEM_PHOTO('e441aa23c_menu-item-wgmpcvo2kvnthu32wkmyhqv4-762x800.webp'), alt: 'Mini burger' } },
+  { test: /cheese ?burger|burger/i, tag: 'Burger', family: 'burger', photo: { url: ITEM_PHOTO('761e396cc_menu-item-db5azxgfodq4mxddhh2gn34f-800x800.webp'), alt: 'Cheeseburger' } },
+  { test: /chuck ?wagon/i, tag: 'Chuckwagon', photo: { url: ITEM_PHOTO('c092af2e3_menu-item-sab3ljnxbv4zr7b2hezfnaqn-800x800.webp'), alt: 'Chuckwagon sandwich' } },
+  { test: /tenderloin/i, tag: 'Pork tenderloin', photo: { url: ITEM_PHOTO('19f9ba495_menu-item-74griojmx77l6rj5w3ysi7pm-600x800.webp'), alt: 'Pork tenderloin sandwich' } },
+  { test: /fried mushrooms/i, tag: 'Fried mushrooms', photo: { url: ITEM_PHOTO('cb09af83c_menu-item-kj3lclbtbys57kn7ghsv5l4s-800x715.webp'), alt: 'Basket of fried mushrooms' } },
+  { test: /mozzarella sticks/i, tag: 'Mozzarella sticks', photo: { url: ITEM_PHOTO('b5e041291_menu-item-bbfdv4ktdqaumhgfjbm3awo2-800x800.webp'), alt: 'Mozzarella sticks' } },
+  { test: /onion rings/i, tag: 'Onion rings', photo: { url: ITEM_PHOTO('6a64bf3ce_menu-item-l5zuo4dh3sbt5hc677ys43qs-800x645.webp'), alt: 'Plate of onion rings' } },
+  { test: /curly fries/i, tag: 'Curly fries', family: 'fries', photo: { url: ITEM_PHOTO('f7f79026e_menu-item-aojvtfwpkdb6ebvqfitqvp2r-800x600.webp'), alt: 'Curly fries' } },
+  { test: /cajun fries/i, tag: 'Cajun fries', family: 'fries', photo: { url: ITEM_PHOTO('ec58d4e5c_menu-item-yvfjwpqed67s3us323arglu6-800x800.webp'), alt: 'Cajun waffle fries' } },
+  { test: /fries/i, tag: 'Fries', family: 'fries', photo: { url: ITEM_PHOTO('d0ff22ee1_menu-item-lgehvsumwm27xyzx23lrxcqy-800x533.webp'), alt: 'French fries' } },
+  { test: /chili dog|hot dog/i, tag: 'Chili dog', photo: { url: ITEM_PHOTO('aa4ca4f9a_menu-item-4yqekvfxucwm67cougvief5w-370x800.webp'), alt: 'Chili dog' } },
+  { test: /ice cream|sundae/i, tag: 'Ice cream', photo: { url: ITEM_PHOTO('881a366c8_menu-item-emfbychxt7fynvxernm4ynld-533x800.webp'), alt: 'Soft serve ice cream cone' } },
 ];
 
-const REVIEW_FALLBACK_PHOTO = CATEGORY_PHOTOS['Old-Fashioned Burgers'];
+const REVIEW_FALLBACK_PHOTO = { url: ITEM_PHOTO('761e396cc_menu-item-db5azxgfodq4mxddhh2gn34f-800x800.webp'), alt: 'Cheeseburger' };
 
 function dishFor(review) {
   const text = review.text || '';
-  const hits = REVIEW_DISHES.filter((dish) => dish.test.test(text));
+  const hits = [];
+  for (const dish of REVIEW_DISHES) {
+    const at = text.search(dish.test);
+    if (at === -1) continue;
+    if (dish.family && hits.some((hit) => hit.family === dish.family)) continue;
+    hits.push({ ...dish, at });
+  }
+  // The picture is the first dish the reviewer actually named.
+  hits.sort((a, b) => a.at - b.at);
   return {
     tags: hits.slice(0, 2).map((dish) => dish.tag),
-    photo: (hits.find((dish) => dish.photo) || {}).photo || REVIEW_FALLBACK_PHOTO,
+    photo: (hits[0] && hits[0].photo) || REVIEW_FALLBACK_PHOTO,
   };
 }
 
