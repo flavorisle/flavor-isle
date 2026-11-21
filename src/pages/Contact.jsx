@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MapPin, Phone, Clock, Mail, CheckCircle, Navigation, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import Navbar from '@/components/Navbar';
@@ -106,6 +107,12 @@ export default function Contact() {
               >
                 <Navigation size={16} /> Get Directions
               </a>
+              <Link
+                to="/smiths-grove"
+                className="block text-center text-sm font-heading text-midnight-cherry hover:text-patina-mint transition-colors"
+              >
+                Flavor Isle in Smiths Grove
+              </Link>
             </div>
 
             <div className="card-diner p-8">

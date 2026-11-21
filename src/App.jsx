@@ -94,6 +94,7 @@ const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const About = lazy(() => import('./pages/About'));
 const I65Exit38 = lazy(() => import('./pages/I65Exit38'));
 const ExploreSmithsGrove = lazy(() => import('./pages/ExploreSmithsGrove'));
+const SmithsGrove = lazy(() => import('./pages/SmithsGrove'));
 const MammothCaveDining = lazy(() => import('./pages/MammothCaveDining'));
 const CorvetteCarClubs = lazy(() => import('./pages/CorvetteCarClubs'));
 const EmailNewsletterSignup = lazy(() => import('./pages/EmailNewsletterSignup'));
@@ -232,6 +233,7 @@ const AuthenticatedApp = () => {
       <Route path="/mammoth-cave-dining" element={<MammothCaveDining />} />
       <Route path="/corvette-car-clubs" element={<CorvetteCarClubs />} />
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
+      <Route path="/smiths-grove" element={<SmithsGrove />} />
       <Route path="/date-night" element={<DateNight />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />

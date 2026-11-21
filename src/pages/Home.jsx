@@ -246,7 +246,10 @@ export default function Home() {
               </div>
               <h2 className="font-heading text-3xl text-obsidian-roast leading-tight">You're Closer Than You Think</h2>
               <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.
+                Whether you're a local craving a hand-patted burger or an I-65 traveler heading to Mammoth Cave or the Corvette Museum, we're right off the interstate — 0.7 mi, about 2 minutes from Exit 38.{' '}
+                <Link to="/smiths-grove" className="text-midnight-cherry font-semibold hover:underline underline-offset-4">
+                  More about Flavor Isle in Smiths Grove
+                </Link>
               </p>
 
               <div className="space-y-4 mt-5 text-muted-foreground">

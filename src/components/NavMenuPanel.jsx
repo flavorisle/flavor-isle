@@ -40,6 +40,7 @@ const GROUPS = [
       { label: 'Reviews', to: '/reviews' },
       { label: 'I-65 Exit 38 Guide', to: '/i65-exit-38' },
       { label: 'Explore Smiths Grove', to: '/explore-smiths-grove' },
+      { label: 'Smiths Grove', to: '/smiths-grove' },
       { label: 'Feedback', to: '/feedback' },
     ],
   },
