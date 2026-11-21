@@ -1,0 +1,45 @@
+{
+  "name": "Loyalty Signup Invites",
+  "description": "Every 30 minutes, while the store is open, sends one create-account email to each new in-store Star Rewards signup who has an email and no site account (issue #325 Part 4).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/30 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "loyalty_signup_invites",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_invites": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendLoyaltySignupInvites",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send new-signup invites",
+            "description": "One email per new loyalty signup, only while open"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "PromoCode",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "code": {
+      "type": "string",
+      "description": "The code a customer types at online checkout, stored uppercase (e.g. WEMISSYOU30). Matched case-insensitively."
+    },
+    "percent_off": {
+      "type": "number",
+      "description": "Percentage taken off the order subtotal (10 = 10% off). The dollar amount is always computed on the server from this percentage, never sent by the browser."
+    },
+    "min_subtotal": {
+      "type": "number",
+      "default": 0,
+      "description": "Minimum order subtotal in USD required for the code to apply. 0 means no minimum."
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last moment the code may be used. Empty means it does not expire."
+    },
+    "max_redemptions": {
+      "type": "number",
+      "default": 0,
+      "description": "Total times the code may be redeemed across all customers. 0 means no cap."
+    },
+    "per_customer_limit": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times one customer may use the code, counted from their own paid or pending orders carrying it. 0 means no per-customer cap."
+    },
+    "segment": {
+      "type": "string",
+      "description": "Which win-back group this code was made for: d30 (30-59 days), d60 (60-179 days) or d180 (180+ days). Informational, for the dashboard."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": false,
+      "description": "An inactive code is refused at checkout with a clear message. Codes are seeded inactive and switched on when the win-back send goes out."
+    },
+    "times_redeemed": {
+      "type": "number",
+      "default": 0,
+      "description": "How many online orders have been placed with this code. Incremented when the order is saved at checkout."
+    }
+  },
+  "required": [
+    "code",
+    "percent_off"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

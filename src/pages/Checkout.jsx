@@ -80,6 +80,12 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  // Issue #325 Part 3 — a win-back promo code. The browser sends the code only;
+  // the amount shown here is what the server worked out for it.
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState('');
   // Issue #159 — email typo guard: a domain typo is offered as a one-tap fix, and
   // an ending that cannot receive mail blocks the order.
   const emailCheck = useMemo(() => analyzeEmail(form.email), [form.email]);
@@ -183,7 +189,7 @@ export default function Checkout() {
   // being ordered changes — the bag, the time, or the tip. The next tap then creates
   // a fresh verified order instead of charging a stale amount.
   useEffect(() => { setPendingOrder(null); },
-    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length]);
+    [orderType, pickupMethod, subtotal, total, tipPreset, customTip, schedule.mode, schedule.scheduledFor, schedule.estimatedTime, cartItems.length, appliedPromo?.code]);
 
   // Distance-based delivery pricing — quote the fee from the typed address
   // (debounced). Clears the quote when not delivering or the address is empty.
@@ -244,13 +250,18 @@ export default function Checkout() {
       .reduce((max, i) => Math.max(max, Number(i.price) || 0), 0);
   }, [shakePrizeActive, shakeIds, cartItems]);
   const adjustedCents = toCents(subtotal - happyHourDiscount - bundleDiscount);
-  const freeShakeCents = Math.min(toCents(shakeUnitPrice), Math.max(0, adjustedCents - toCents(rewardDiscount)));
+  // The promo code's amount as the server priced it, capped exactly where the
+  // server caps it (after the reward discount, never below zero) so the two
+  // totals agree to the cent. It comes off after the reward and before the free
+  // shake — the same order the server applies.
+  const promoDiscount = fromCents(Math.min(toCents(appliedPromo?.discount || 0), Math.max(0, adjustedCents - toCents(rewardDiscount))));
+  const freeShakeCents = Math.min(toCents(shakeUnitPrice), Math.max(0, adjustedCents - toCents(rewardDiscount) - toCents(promoDiscount)));
   const freeShakeDiscount = fromCents(freeShakeCents);
 
   // Composed in whole cents with the shared half-up rule, exactly like the
   // cart total and the server's verification — never a float sum re-rounded by
   // toFixed (which is what produced the $3.44 / $3.45 mismatch).
-  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount - freeShakeDiscount)) + toCents(tipAmount));
+  const totalWithTip = fromCents(toCents(Math.max(0, total - rewardDiscount - promoDiscount - freeShakeDiscount)) + toCents(tipAmount));
 
   // Single combined ready-by label: "~N min · clock time". For ASAP the clock
   // time is order time + prep minutes; for a scheduled order it's the chosen slot.
@@ -266,6 +277,44 @@ export default function Checkout() {
     setForm(prev => ({ ...prev, [field]: val }));
     setFieldErrors(prev => { if (!prev[field]) return prev; const n = { ...prev }; delete n[field]; return n; });
   };
+
+  // Applies a promo code by asking the server what it is worth. Nothing about
+  // the amount is decided here — an invalid, expired or already-used code comes
+  // back with the server's own message.
+  const applyPromo = async (codeValue) => {
+    const code = String(codeValue || '').trim();
+    if (!code) { setPromoError('Enter a promo code.'); return; }
+    setPromoBusy(true);
+    setPromoError('');
+    try {
+      const res = await base44.functions.invoke('validatePromoCode', {
+        code,
+        subtotal: Number(subtotal) || 0,
+        email: form.email,
+        phone: form.phone,
+      });
+      const data = res?.data || res;
+      if (!data?.ok) {
+        setAppliedPromo(null);
+        setPromoError(data?.error || 'That promo code is not valid.');
+        return;
+      }
+      setAppliedPromo({ code: data.code, percent_off: data.percent_off, discount: Number(data.discount) || 0 });
+    } catch (err) {
+      setAppliedPromo(null);
+      setPromoError(err?.response?.data?.error || 'That promo code could not be checked. Please try again.');
+    } finally {
+      setPromoBusy(false);
+    }
+  };
+
+  // A cart edit changes the subtotal, so an applied code is priced again by the
+  // server for the new amount rather than leaving a stale discount on screen.
+  useEffect(() => {
+    if (!appliedPromo?.code) return;
+    applyPromo(appliedPromo.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal]);
 
   const handleContinue = async () => {
     setError('');
@@ -336,6 +385,8 @@ export default function Checkout() {
         instructions: instructionsWithExtras,
         subtotal, deliveryFee, tax, total: totalWithTip, tip: tipAmount,
         discount: rewardDiscount, redemptionId: appliedReward?.tierId || null, happyHourDiscount, bundleDiscount,
+        // The code only — the server prices it and refuses anything invalid.
+        promoCode: appliedPromo?.code || undefined,
         // Tells the server a free shake is in play; it re-checks the prize and
         // prices the shake itself, so this only ever reports the claim.
         freeShakePrize: freeShakeCents > 0,
@@ -710,6 +761,44 @@ export default function Checkout() {
                 onApply={setAppliedReward}
               />}
 
+              {/* Promo code (issue #325 Part 3). The discount is worked out by the
+                  server from the code record and only displayed here. */}
+              <div className="border-t border-border pt-3 mb-3">
+                <h3 className="font-heading text-base text-obsidian-roast mb-2">Promo Code</h3>
+                {appliedPromo ? (
+                  <div className="flex items-center justify-between gap-2 rounded-xl bg-patina-mint/10 px-3 py-2">
+                    <span className="text-sm text-patina-mint font-semibold">
+                      {appliedPromo.code} applied — −${promoDiscount.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => { setAppliedPromo(null); setPromoInput(''); setPromoError(''); }}
+                      className="text-xs underline text-muted-foreground hover:text-midnight-cherry transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoInput}
+                      onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
+                      placeholder="Enter code"
+                      autoComplete="off"
+                      className="flex-1 px-3 py-2.5 bg-muted border border-border rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
+                    />
+                    <button
+                      onClick={() => applyPromo(promoInput)}
+                      disabled={promoBusy}
+                      className="btn-mint px-4 py-2.5 text-sm font-heading disabled:opacity-60"
+                    >
+                      {promoBusy ? 'Checking…' : 'Apply'}
+                    </button>
+                  </div>
+                )}
+                {promoError && <p className="text-xs text-destructive mt-1.5">{promoError}</p>}
+              </div>
+
               {/* Add a Tip — lives in the summary so the running total reflects it live. */}
               <div className="border-t border-border pt-3 mb-3">
                 <div className="flex items-center justify-between mb-1">
@@ -794,6 +883,11 @@ export default function Checkout() {
                 {rewardDiscount > 0 && (
                   <div className="flex justify-between text-patina-mint">
                     <span>Reward{appliedReward?.description ? ` (${appliedReward.description})` : ''}</span><span>−${rewardDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-patina-mint">
+                    <span>Promo {appliedPromo?.code}</span><span>−${promoDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {freeShakeDiscount > 0 && (

@@ -74,6 +74,15 @@
       "type": "number",
       "default": 0
     },
+    "promo_code": {
+      "type": "string",
+      "description": "Win-back promo code used at online checkout (issue #325 Part 3), stored uppercase. Recorded so the per-customer limit can be counted; never printed on a kitchen ticket."
+    },
+    "promo_discount": {
+      "type": "number",
+      "default": 0,
+      "description": "Dollar amount the win-back promo code took off this order, computed on the server from the PromoCode record. Kept apart from discount (Star Rewards) so a kitchen ticket never shows it."
+    },
     "happy_hour_discount": {
       "type": "number",
       "default": 0,

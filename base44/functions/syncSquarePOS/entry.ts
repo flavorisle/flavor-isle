@@ -14,6 +14,19 @@ import {
 import { acquireSyncLock, releaseSyncLock, SYNC_LEASE_MINUTES } from '../../shared/squareSyncLock.ts';
 
 const SQUARE_VERSION = '2026-09-16';
+
+// Issue #325 Part 1: the phone on the Square order itself. A fulfillment's
+// recipient carries the number the customer gave when the ticket was rung up,
+// which is what a walk-in leaves behind when Square has no customer record.
+function squareOrderPhone(so: any): string {
+  for (const fulfillment of (so?.fulfillments || [])) {
+    const phone = fulfillment?.pickup_details?.recipient?.phone_number
+      || fulfillment?.delivery_details?.recipient?.phone_number
+      || '';
+    if (phone) return String(phone);
+  }
+  return '';
+}
 // Star Rewards lookups are one Square call each, so a run checks at most this
 // many orders (newest first — Square returns them newest first).
 const LOYALTY_LOOKUP_CAP = 50;
@@ -65,11 +78,12 @@ Deno.serve(async (req) => {
     // sync new POS orders and relink recently-synced ones whose customer had
     // no resolvable email on the first pass.
     //
-    // Issue #123 C4: a manual run may pass { days } to widen that window (the
-    // one-time backfill uses 30 so the rest of the month can be relinked).
-    // Scheduled runs send no body and keep the 7-day default.
+    // Issue #123 C4: a manual run may pass { days } to narrow that window.
+    // Issue #325 Part 1: the scheduled default is 30 days, so an order whose
+    // customer only became resolvable later still gets relinked instead of
+    // falling out of a 7-day window. The cap stays 30.
     const body = await req.json().catch(() => ({}));
-    const syncDays = Math.min(Math.max(Number(body?.days) || 7, 1), 30);
+    const syncDays = Math.min(Math.max(Number(body?.days) || 30, 1), 30);
     const since = new Date(Date.now() - syncDays * 24 * 60 * 60 * 1000).toISOString();
     const squareOrders = [];
     let cursor = undefined;
@@ -225,13 +239,48 @@ Deno.serve(async (req) => {
     // loyalty program keys on phone, so this is the reliable join between a
     // Square POS customer and the customer's web account — even when their
     // Square email differs from (or is absent on) their online account.
-    const profiles = await base44.asServiceRole.entities.CustomerProfile.list();
+    //
+    // Issue #325 Part 1: the directory is read in full pages. A single
+    // unpaginated list() returned only the first page, so any customer whose
+    // profile sat past it never matched by phone and their in-store order never
+    // reached their account.
+    const profiles: any[] = [];
+    for (let page = 0; page < 40; page++) {
+      const rows = await base44.asServiceRole.entities.CustomerProfile
+        .filter({}, '-created_date', 500, page * 500)
+        .catch(() => []);
+      const items = Array.isArray(rows) ? rows : [];
+      profiles.push(...items);
+      if (items.length < 500) break;
+    }
     const phoneToEmail = new Map();
-    (profiles || []).forEach(p => {
+    profiles.forEach(p => {
       if (p.phone && p.email) {
         phoneToEmail.set(normalizePhone(p.phone), p.email);
       }
     });
+
+    // Issue #325 Part 1: the addresses that belong to a real site account. A
+    // relink never replaces one of these.
+    const registeredEmails = new Set<string>();
+    const addRegistered = (rows: any[]) => rows.forEach((u: any) => {
+      const email = String(u?.email || '').trim().toLowerCase();
+      if (email) registeredEmails.add(email);
+    });
+    try {
+      for (let page = 0; page < 20; page++) {
+        const rows = await base44.asServiceRole.entities.User.list('-created_date', 500, page * 500);
+        const items = Array.isArray(rows) ? rows : [];
+        addRegistered(items);
+        if (items.length < 500) break;
+      }
+    } catch (userError) {
+      // A paged read that fails falls back to the plain list rather than an
+      // empty set, so a registered address is never treated as unregistered.
+      console.warn('Square sync: paged user read failed, using the plain list:', (userError as Error).message);
+      const all = await base44.asServiceRole.entities.User.list().catch(() => []);
+      addRegistered(Array.isArray(all) ? all : []);
+    }
 
     const newOrders = [];
     const updates = [];
@@ -319,7 +368,13 @@ Deno.serve(async (req) => {
       // lands in the customer's web history (RLS keys on customer_email =
       // user.email). Fall back to the Square email, then leave it empty — an
       // unknown email is never filled with an invented address.
-      const linkedEmail = (sqPhone && phoneToEmail.get(normalizePhone(sqPhone))) || sqEmail || '';
+      //
+      // Issue #325 Part 1: when Square's customer has no phone, or no Square
+      // customer resolves at all, the phone on the Square order itself is used
+      // to find the profile — so a counter ticket still reaches the account.
+      const orderPhone = sqPhone || squareOrderPhone(so);
+      const orderMappedEmail = orderPhone ? (phoneToEmail.get(normalizePhone(orderPhone)) || '') : '';
+      const linkedEmail = orderMappedEmail || sqEmail || '';
       const items = (so.line_items || []).map(item => ({
         name: item.name || 'Item',
         quantity: item.quantity ? parseInt(item.quantity) : 1,
@@ -355,10 +410,19 @@ Deno.serve(async (req) => {
       }
 
       const existing = existingBySquareId.get(so.id);
+      // Issue #325 Part 1: the email this order's own phone resolves to. The
+      // stored normalized phone wins, then Square's phone, then the order's.
+      const orderNormalizedPhone = existing?.normalized_phone
+        || normalizePhone(orderPhone)
+        || orderFields?.normalized_phone
+        || '';
+      const mappedEmail = orderNormalizedPhone
+        ? (phoneToEmail.get(orderNormalizedPhone) || '')
+        : '';
       // Issue #135 D2: Order.customer_id is a CustomerProfile id on every other
       // path, so Square's own customer id now rides in square_customer_id and the
       // profile is resolved (or created) here.
-      const needsRelink = orderNeedsRelink(existing);
+      const needsRelink = orderNeedsRelink(existing, { mappedEmail, registeredEmails });
       let profileId = '';
       let profile: any = null;
       if (!existing || needsRelink) {
@@ -386,6 +450,8 @@ Deno.serve(async (req) => {
         profileId,
         orderFields,
         loyalty,
+        mappedEmail,
+        registeredEmails,
       });
 
       if (plan.action === 'create') {

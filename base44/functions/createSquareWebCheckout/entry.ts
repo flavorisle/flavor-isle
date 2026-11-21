@@ -7,6 +7,7 @@ import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { analyzeEmail } from '../../shared/emailValidation.ts';
 import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
+import { normalizePromoCode, recordPromoRedemption, validatePromoCode } from '../../shared/promoCode.ts';
 
 // The website checkout's order creation.
 //
@@ -23,7 +24,7 @@ export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, promoCode } = body;
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'No items provided' }, { status: 400 });
@@ -79,6 +80,25 @@ export default async function (req: Request) {
       authoritativeDiscount = reward.exactDiscount || 0;
     }
 
+    // ── Win-back promo code (issue #325 Part 3) ── checked right beside the
+    // Star Rewards discount, before any pricing runs. The amount is computed
+    // here from the code record; the browser only ever sends the code itself.
+    let promo: any = null;
+    let promoDiscount = 0;
+    if (String(promoCode || '').trim()) {
+      const promoResult = await validatePromoCode(base44, {
+        code: promoCode,
+        subtotal: Number(subtotal) || 0,
+        email: customer?.email,
+        phone: customer?.phone,
+      });
+      if (!promoResult.ok) {
+        return Response.json({ error: promoResult.error || 'That promo code could not be applied.' }, { status: 400 });
+      }
+      promo = promoResult.promo;
+      promoDiscount = promoResult.discount || 0;
+    }
+
     // ── Trusted pricing: recompute from authoritative MenuItem/MenuSetting ──
     const pricing = await verifyOrderPricing(base44, {
       items,
@@ -92,6 +112,7 @@ export default async function (req: Request) {
       clientDiscount: authoritativeDiscount,
       clientHappyHourDiscount: happyHourDiscount,
       clientBundleDiscount: bundleDiscount,
+      promoDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -135,6 +156,8 @@ export default async function (req: Request) {
         delivery_fee: pricing.deliveryFee,
         tip: pricing.tip || 0,
         discount: pricing.discount,
+        promo_code: promoDiscount > 0 ? normalizePromoCode(promoCode) : '',
+        promo_discount: promoDiscount,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? (orderBundleId || 'school-night-lifesaver') : '',
@@ -161,6 +184,11 @@ export default async function (req: Request) {
     // No processor page is involved: this URL is our own page, with Square's card
     // form embedded in it. `tip=included` tells the page the tip is already inside
     // the saved total, so it does not offer a second one.
+    // One redemption is counted against the code now that the order exists.
+    if (promoDiscount > 0 && promo) {
+      await recordPromoRedemption(base44, promo);
+    }
+
     const payUrl = `${PAY_PAGE_ORIGIN}/pay-square?order_number=${orderNumber}&tip=included`;
     try {
       await base44.asServiceRole.entities.Order.update(order.id, {

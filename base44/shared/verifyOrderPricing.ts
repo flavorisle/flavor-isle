@@ -96,6 +96,9 @@ export interface PricingResult {
   tax?: number;
   deliveryFee?: number;
   discount?: number;
+  // The win-back promo code's own amount (issue #325 Part 3), kept apart from
+  // the Star Rewards discount.
+  promoDiscount?: number;
   // The Find Smashie free-shake prize, priced from the catalog (issue #108).
   freeShakeDiscount?: number;
   tip?: number;
@@ -122,12 +125,16 @@ export async function verifyOrderPricing(base44: any, opts: {
   // unused free-shake win. The amount is never taken from the client: it is the
   // authoritative price of the most expensive shake line below.
   freeShakePrize?: boolean;
+  // Issue #325 Part 3: the win-back promo code's amount, already validated and
+  // priced by shared/promoCode.ts from the code record. Server-derived, never a
+  // client number.
+  promoDiscount?: number;
 }): Promise<PricingResult> {
   const {
     items, orderType, deliveryAddress,
     clientSubtotal, clientDeliveryFee, clientTax, clientTotal,
     clientTip = 0, clientDiscount = 0, clientHappyHourDiscount = 0, clientBundleDiscount = 0,
-    freeShakePrize = false,
+    freeShakePrize = false, promoDiscount = 0,
   } = opts;
 
   if (!items || items.length === 0) return { ok: false, error: 'No items provided' };
@@ -327,17 +334,25 @@ export async function verifyOrderPricing(base44: any, opts: {
 
   // ── Reward discount (capped, trusted) + tip (trusted) ──
   const serverDiscount = round2(Math.min(Math.max(0, clientDiscount), adjustedSubtotal));
+  // Issue #325 Part 3: the promo code comes off after the reward and before the
+  // free shake, so no combination can take the total below zero.
+  const serverPromo = round2(
+    Math.min(
+      Math.max(0, Number(promoDiscount) || 0),
+      Math.max(0, round2(adjustedSubtotal - serverDiscount)),
+    ),
+  );
   // The free shake comes off whatever is left after the reward discount, so the
   // two can never take the total below zero.
   const serverFreeShake = freeShakePrize
-    ? round2(Math.min(freeShakeUnitPrice, Math.max(0, adjustedSubtotal - serverDiscount)))
+    ? round2(Math.min(freeShakeUnitPrice, Math.max(0, adjustedSubtotal - serverDiscount - serverPromo)))
     : 0;
   const serverTip = Math.max(0, Number(clientTip) || 0);
   // Total assembled in whole cents so it is exactly the sum the client shows.
   const serverTotal = fromCents(
     Math.max(
       0,
-      adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount) - toCents(serverFreeShake),
+      adjustedCents + toCents(serverDeliveryFee) + taxCents - toCents(serverDiscount) - toCents(serverPromo) - toCents(serverFreeShake),
     ) + toCents(serverTip),
   );
 
@@ -372,6 +387,7 @@ export async function verifyOrderPricing(base44: any, opts: {
     tax: serverTax,
     deliveryFee: serverDeliveryFee,
     discount: serverDiscount,
+    promoDiscount: serverPromo,
     freeShakeDiscount: serverFreeShake,
     tip: serverTip,
     total: round2(clientTotal), // validated — charge what the customer saw

@@ -6,6 +6,7 @@ import AdminNav from '@/components/admin/AdminNav';
 import CustomerDirectorySearch from '@/components/admin/CustomerDirectorySearch';
 import CustomerProfilePanel from '@/components/admin/CustomerProfilePanel';
 import UnlinkedOrdersCounter from '@/components/admin/UnlinkedOrdersCounter';
+import CustomerInsights from '@/components/admin/CustomerInsights';
 
 // Admin → Customers (issue #96, section B).
 //
@@ -58,6 +59,10 @@ export default function AdminCustomers() {
 
         <div className="mb-4">
           <UnlinkedOrdersCounter />
+        </div>
+
+        <div className="mb-6">
+          <CustomerInsights />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

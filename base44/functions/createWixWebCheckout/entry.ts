@@ -10,6 +10,7 @@ import { todaysMilkshakePrize } from '../../shared/findSmashiePrize.ts';
 import { openWixCheckoutSession, resolveAppUrl, wixCheckoutConfigured } from '../../shared/wixCheckout.ts';
 import { openSquareFallbackForOrder } from '../../shared/checkoutFallback.ts';
 import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
+import { normalizePromoCode, recordPromoRedemption, validatePromoCode } from '../../shared/promoCode.ts';
 
 // The website's secure card checkout on Base44 Payments (Wix) — the primary path
 // (issue #116, Part A step 2). This is createSquareWebCheckout's twin and keeps the
@@ -39,7 +40,7 @@ export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize, heardAboutUs } = body;
+    const { items, orderType, pickupMethod, customer, instructions, subtotal, deliveryFee, tax, total, tip, discount, redemptionId, scheduledFor, estimatedTime, vehicle, happyHourDiscount, bundleDiscount, smsTransactionalConsent, smsConsentDisclosure, smsConsentVersion, loyaltyOptIn, referralCode, freeShakePrize, heardAboutUs, promoCode } = body;
 
     // Issue #330 — a pickup time outside our open hours (or on a closed day) is
     // refused before anything is created, so no order and no charge can carry a
@@ -106,6 +107,25 @@ export default async function (req: Request) {
       console.warn('createWixWebCheckout: free-shake prize claimed but not held by this signed-in customer — ignored');
     }
 
+    // ── Win-back promo code (issue #325 Part 3) ── checked right beside the
+    // Star Rewards discount, before any pricing runs. The amount is computed
+    // here from the code record; the browser only ever sends the code itself.
+    let promo: any = null;
+    let promoDiscount = 0;
+    if (String(promoCode || '').trim()) {
+      const promoResult = await validatePromoCode(base44, {
+        code: promoCode,
+        subtotal: Number(subtotal) || 0,
+        email: customer?.email,
+        phone: customer?.phone,
+      });
+      if (!promoResult.ok) {
+        return Response.json({ error: promoResult.error || 'That promo code could not be applied.' }, { status: 400 });
+      }
+      promo = promoResult.promo;
+      promoDiscount = promoResult.discount || 0;
+    }
+
     const pricing = await verifyOrderPricing(base44, {
       items,
       orderType,
@@ -119,6 +139,7 @@ export default async function (req: Request) {
       clientHappyHourDiscount: happyHourDiscount,
       clientBundleDiscount: bundleDiscount,
       freeShakePrize: freeShakePrizeGranted,
+      promoDiscount,
     });
     if (!pricing.ok) {
       return Response.json({ error: pricing.error || 'Price verification failed' }, { status: 400 });
@@ -226,6 +247,8 @@ export default async function (req: Request) {
         delivery_fee: pricing.deliveryFee,
         tip: round2(pricing.tip || 0),
         discount: round2((pricing.discount || 0) + (pricing.freeShakeDiscount || 0)),
+        promo_code: promoDiscount > 0 ? normalizePromoCode(promoCode) : '',
+        promo_discount: promoDiscount,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? (orderBundleId || 'school-night-lifesaver') : '',
@@ -251,6 +274,11 @@ export default async function (req: Request) {
 
     // ── Open the secure payment page for exactly the saved total ──
     const name = splitName(customer?.name);
+    // One redemption is counted against the code now that the order exists.
+    if (promoDiscount > 0 && promo) {
+      await recordPromoRedemption(base44, promo);
+    }
+
     let checkoutUrl = '';
     let provider = 'wix';
     let sessionId = '';

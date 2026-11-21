@@ -81,6 +81,11 @@
     "cart_reminder_cart_key": {
       "type": "string",
       "description": "Fingerprint of the exact cart a reminder was last sent for (sorted itemId|quantity|modifier ids). A later run only sends when the saved cart's fingerprint differs, so one abandoned cart gets one reminder (issue #160)."
+    },
+    "invite_email_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the one-time create-account email for a new in-store loyalty signup was sent to this customer (issue #325 Part 4). Stamped by sendLoyaltySignupInvites after the send is claimed."
     }
   },
   "required": [

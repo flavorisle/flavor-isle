@@ -196,7 +196,11 @@ function LoggedInAccount({ user, logout }) {
     try {
       const results = await Promise.all([
         withRateLimitRetry(() => base44.entities.CustomerProfile.filter({ email: user.email })),
-        withRateLimitRetry(() => base44.entities.Order.filter({ customer_email: user.email })),
+        // Issue #325: the server resolves the customer's orders by account
+        // email AND by the phone on their own profile, so an in-store order
+        // that was linked by phone shows up here too.
+        withRateLimitRetry(() => base44.functions.invoke('getMyOrders', {})
+          .then((res) => res?.data?.orders || res?.orders || [])),
         withRateLimitRetry(() => base44.entities.Favorite.filter({ user_id: user.id })),
       ]);
       const [profiles, ords, favs] = results;
