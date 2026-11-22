@@ -10,9 +10,7 @@ import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import FullBleedHero from '@/components/cinematic/FullBleedHero';
-import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { optimizedImageUrl } from '@/lib/utils';
-import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
 import FanFavoritesSection from '@/components/FanFavoritesSection';
 import { base44 } from '@/api/base44Client';
 import { getFanFavorites, getMenuItems } from '@/lib/menuCache';
@@ -38,12 +36,6 @@ import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import TravelerMode from '@/components/travel/TravelerMode';
-
-const HOME_DINING_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png',
-  alt: 'The Flavor Isle building and its sign on Main Street in Smiths Grove, KY',
-  caption: 'The Isle, on Main Street since 1964',
-};
 
 // Issue #345, item 1 — the hero photo, stored in this app's own public storage.
 const HERO_PHOTO = 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/2a5022ac2_hero-345.jpg';
@@ -180,12 +172,6 @@ export default function Home() {
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
       <FindSmashiePromo />
-
-      {/* One photo chapter, not three: the story below reads as one beat before
-          the ordering options instead of three full-screen pauses. */}
-      <PhotoChapter photo={HOME_DINING_PHOTO} heading="Come on in." text="Pull up a seat in Smiths Grove.">
-        <HomeOrderOptions embedded />
-      </PhotoChapter>
 
       {/* Issue #341 — traveler strip, shown only to a visitor plausibly out of town */}
       <TravelerMode compact requireOutOfTown />
