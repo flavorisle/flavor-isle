@@ -40,9 +40,9 @@ import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
 import TravelerMode from '@/components/travel/TravelerMode';
 
 const HOME_DINING_PHOTO = {
-  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/48f62e309_IMG_8855.jpeg',
-  alt: 'Flavor Isle dining room looking toward the entrance, with tables and a view into the kitchen',
-  caption: 'Pull up a seat. Stay a while.',
+  url: 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png',
+  alt: 'The Flavor Isle building and its sign on Main Street in Smiths Grove, KY',
+  caption: 'The Isle, on Main Street since 1964',
 };
 
 // Issue #345, item 1 — the hero photo, stored in this app's own public storage.
