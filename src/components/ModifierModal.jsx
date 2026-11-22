@@ -23,8 +23,9 @@ import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
 import SideSaltChoice from '@/components/SideSaltChoice';
+import { restorePanelSelection } from '@/lib/restorePanelSelection';
 
-export default function ModifierModal({ item, onClose, onConfirm, autoCombo, optionFilter, preset, confirmLabel }) {
+export default function ModifierModal({ item, onClose, onConfirm, autoCombo, optionFilter, preset, confirmLabel, initialCartItem }) {
   const { menuSetting } = useCart();
   // Issue #324 — admin-added modifier photos live on this record, so they apply
   // on the next render without a rebuild.
@@ -92,8 +93,12 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     return out;
   };
 
-  const [selections, setSelections] = useState(initSelections);
-  const [nestedSelections, setNestedSelections] = useState(initNested);
+  // A bag line opened from the cart reopens with its own choices in place, so
+  // a wrong topping is unselected there instead of the line being deleted.
+  const restored = initialCartItem ? restorePanelSelection(groups, initialCartItem) : null;
+
+  const [selections, setSelections] = useState(() => restored ? restored.selections : initSelections());
+  const [nestedSelections, setNestedSelections] = useState(() => restored?.nested || initNested());
   const iceContext = getIceContext(groups);
   const soda = iceContext && selections[iceContext.sodaGroup.name];
   const iceLevel = iceLevelFor(soda, nestedSelections);
@@ -110,11 +115,18 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
   // say what it is. The note rides on the shake's own cart line so the kitchen
   // ticket names the shake that's allergic rather than the whole order.
   const shakeItem = isShakeItem(item);
-  const [coreLevel, setCoreLevel] = useState(null);
-  const [allergy, setAllergy] = useState({ flag: false, note: '' });
+  const [coreLevel, setCoreLevel] = useState(initialCartItem?.flavorLevel || null);
+  const [allergy, setAllergy] = useState(() => ({
+    flag: !!initialCartItem?.allergyNote,
+    note: initialCartItem?.allergyNote || '',
+  }));
   const [allergyError, setAllergyError] = useState('');
 
-  const [sideSalt, setSideSalt] = useState(null);
+  const [sideSalt, setSideSalt] = useState(() => {
+    const note = initialCartItem?.saltNote || '';
+    if (!note) return null;
+    return /no salt/i.test(note) ? 'no' : 'yes';
+  });
   const needsSalt = isSaltQuestionItem(item);
 
   // Happy Hour pricing — eligible items show a struck-through base price and

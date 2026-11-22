@@ -355,6 +355,28 @@ export function CartProvider({ children }) {
     setCartItems(prev => prev.filter(i => i.id !== itemId));
   }, []);
 
+  // Swaps an existing line for an edited version of itself, in place: the line
+  // keeps its position and its count, so the bag can be adjusted without
+  // leaving it. When the edit makes it identical to another line, the two
+  // merge into the one that was already there.
+  const replaceItem = useCallback((itemId, item) => {
+    setCartItems(prev => {
+      const index = prev.findIndex(i => i.id === itemId);
+      if (index === -1) return prev;
+      const old = prev[index];
+      const id = lineId(item);
+      const mergeIndex = prev.findIndex((i, n) => n !== index && i.id === id);
+      if (mergeIndex !== -1) {
+        return prev
+          .map((i, n) => (n === mergeIndex ? { ...i, quantity: i.quantity + old.quantity } : i))
+          .filter((_, n) => n !== index);
+      }
+      const next = prev.slice();
+      next[index] = { ...old, ...item, id, quantity: old.quantity };
+      return next;
+    });
+  }, []);
+
   const updateQuantity = useCallback((itemId, quantity) => {
     if (quantity <= 0) {
       setCartItems(prev => prev.filter(i => i.id !== itemId));
@@ -400,7 +422,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider value={{
-      cartItems, addItem, removeItem, updateQuantity, clearCart,
+      cartItems, addItem, removeItem, replaceItem, updateQuantity, clearCart,
       orderType, setOrderType,
       pickupMethod, setPickupMethod,
       isCartOpen, setIsCartOpen,

@@ -9,6 +9,10 @@ import CartFallingLeaves from './CartFallingLeaves';
 import { optimizedImageUrl } from '@/lib/utils';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import ModifierModal from './ModifierModal';
+import { withShakeFlavorLevel } from './ShakeFlavorControl';
+import { saltNoteText } from '@/lib/sideSalt';
+import { base44 } from '@/api/base44Client';
 
 // Curbside is a pickup method — it maps to orderType 'pickup' with
 // pickupMethod 'curbside' so cutoffs and fees behave exactly like pickup.
@@ -22,7 +26,7 @@ const ORDER_OPTIONS = [
 export default function CartDrawer() {
   const {
     cartItems, isCartOpen, setIsCartOpen,
-    updateQuantity, removeItem,
+    updateQuantity, removeItem, replaceItem,
     orderType, setOrderType,
     pickupMethod, setPickupMethod,
     subtotal, deliveryFee, tax, total, totalItems,
@@ -33,6 +37,57 @@ export default function CartDrawer() {
   } = useCart();
   const { deliveryEnabled } = useLiveStatus();
   const navigate = useNavigate();
+
+  // Editing happens right here in the bag: the item's own customizer opens over
+  // the drawer with that line's choices already in place, so nothing sends the
+  // customer back to the product page to change a topping.
+  const [editLine, setEditLine] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [loadingEditId, setLoadingEditId] = useState(null);
+
+  const startEdit = async (line) => {
+    const productId = line.productId || String(line.id || '').split('__')[0];
+    // A combo or a box is edited as a whole on its own page, not line by line.
+    if (line.comboParentId || line.comboGroup || !productId || productId.startsWith('combo-')) {
+      const target = line.comboParentId || productId;
+      if (target && !target.startsWith('combo-')) {
+        setIsCartOpen(false);
+        navigate(`/product/${target}`, { state: { editCartLineId: line.id } });
+      }
+      return;
+    }
+    setLoadingEditId(line.id);
+    try {
+      const record = await base44.entities.MenuItem.get(productId);
+      if (record) {
+        setEditLine(line);
+        setEditItem(record);
+      }
+    } finally {
+      setLoadingEditId(null);
+    }
+  };
+
+  const handleEditConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel, saltNote) => {
+    if (!editLine || !editItem) return;
+    // The line's own name is kept (a shake's "+ Cherry" stays put); only its
+    // Lite / Extra amount is re-applied from the picker.
+    const baseName = String(editLine.name || editItem.name).replace(/^(Lite|Extra)\s+/i, '');
+    replaceItem(editLine.id, {
+      ...editLine,
+      id: editItem.id,
+      name: withShakeFlavorLevel(baseName, coreLevel),
+      flavorLevel: coreLevel || undefined,
+      price: editItem.price + extraCost,
+      selectedModifiers: selectedMods,
+      deluxeLabel: deluxeLabel || undefined,
+      deluxeToppings: deluxeToppings || [],
+      allergyNote: allergyNote || undefined,
+      saltNote: saltNoteText(saltNote) || undefined,
+    });
+    setEditLine(null);
+    setEditItem(null);
+  };
 
   useEffect(() => {
     if (isCartOpen && cartItems.length > 0) {
@@ -162,21 +217,13 @@ export default function CartDrawer() {
                       <Plus size={12} />
                     </button>
                     <button
-                      onClick={() => {
-                        const pid = item.comboParentId || item.productId || (item.id || '').split('__')[0];
-                        if (pid && !pid.startsWith('combo-')) {
-                          setIsCartOpen(false);
-                          // Every line opens for editing with its own choices in
-                          // place, so a wrong topping is unselected here instead
-                          // of the whole line being deleted and redone.
-                          navigate(`/product/${pid}`, { state: { editCartLineId: item.id } });
-                        }
-                      }}
-                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-heading bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20 transition-colors"
+                      onClick={() => startEdit(item)}
+                      disabled={loadingEditId === item.id}
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-heading bg-patina-mint/10 text-patina-mint hover:bg-patina-mint/20 transition-colors disabled:opacity-60"
                       aria-label={`Edit ${item.name}`}
                       title={`Edit ${item.name}`}
                     >
-                      <Pencil size={12} /> Edit
+                      <Pencil size={12} /> {loadingEditId === item.id ? 'Opening…' : 'Edit'}
                     </button>
                     <button
                       onClick={() => removeItem(item.id)}
@@ -237,6 +284,18 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      {/* The line being edited opens here, over the bag, with its own choices
+          already selected. */}
+      {editItem && editLine && (
+        <ModifierModal
+          item={editItem}
+          initialCartItem={editLine}
+          confirmLabel="Update bag"
+          onClose={() => { setEditLine(null); setEditItem(null); }}
+          onConfirm={handleEditConfirm}
+        />
+      )}
 
     </>
   );
