@@ -283,7 +283,8 @@ export default function Checkout() {
   // back with the server's own message.
   const applyPromo = async (codeValue) => {
     const code = String(codeValue || '').trim();
-    if (!code) { setPromoError('Enter a promo code.'); return; }
+    // Optional field: an empty box never blocks the order or shouts at anyone.
+    if (!code) { setPromoError(''); return; }
     setPromoBusy(true);
     setPromoError('');
     try {
@@ -764,7 +765,9 @@ export default function Checkout() {
               {/* Promo code (issue #325 Part 3). The discount is worked out by the
                   server from the code record and only displayed here. */}
               <div className="border-t border-border pt-3 mb-3">
-                <h3 className="font-heading text-base text-obsidian-roast mb-2">Promo Code</h3>
+                <h3 className="font-heading text-base text-obsidian-roast mb-2">
+                  Promo Code <span className="text-xs font-body font-normal text-muted-foreground">(optional)</span>
+                </h3>
                 {appliedPromo ? (
                   <div className="flex items-center justify-between gap-2 rounded-xl bg-patina-mint/10 px-3 py-2">
                     <span className="text-sm text-patina-mint font-semibold">
@@ -783,13 +786,13 @@ export default function Checkout() {
                       type="text"
                       value={promoInput}
                       onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
-                      placeholder="Enter code"
+                      placeholder="Enter code (optional)"
                       autoComplete="off"
                       className="flex-1 px-3 py-2.5 bg-muted border border-border rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-midnight-cherry/30 focus:border-midnight-cherry"
                     />
                     <button
                       onClick={() => applyPromo(promoInput)}
-                      disabled={promoBusy}
+                      disabled={promoBusy || !promoInput.trim()}
                       className="btn-mint px-4 py-2.5 text-sm font-heading disabled:opacity-60"
                     >
                       {promoBusy ? 'Checking…' : 'Apply'}
