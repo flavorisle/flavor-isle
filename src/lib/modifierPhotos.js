@@ -190,6 +190,53 @@ export const MODIFIER_PHOTOS = {
   "20 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
   "L 20 OZ": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
   "LARGE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/df0979d40_generated_image.png",
+
+  // ── Round 2 (Nov 22 2026) — every food option that still showed a letter
+  // instead of a photo, shot to match the rest of the map: square, centered,
+  // pure white background. Drinks and ice are a clear cup over ice.
+  "GINGERBREAD SYRUP": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e666ee7c5_generated_image.png",
+  "1 PUMP PUMPKIN PIE SYRUP": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/153818c91_generated_image.png",
+  "APPLE PIE SYRUP": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/5d3031d4d_generated_image.png",
+  "GREEN APPLE SYRUP": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/54cd32143_generated_image.png",
+  "WATERMELON": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/5918a50c9_generated_image.png",
+  "BLACKBERRY": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/224a01320_generated_image.png",
+  "ROCKET POP VANILLA": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/997f6b53f_generated_image.png",
+  "RAINBOW SPRINKLES": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/db626acde_generated_image.png",
+  "CRUMBLED CIRCUS ANIMAL COOKIES": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/4e17795a1_generated_image.png",
+  "BUTTERFINGER COOKIES": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/eac7b4ba7_generated_image.png",
+  "MELTED CHEESE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/e1199af71_generated_image.png",
+  "SOFT WHITE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d8b585997_generated_image.png",
+  "TOASTED": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/32d719e7d_generated_image.png",
+  "SEASON WITH CAJUN": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/4b7e7bd27_generated_image.png",
+  "SEASONED": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b83ca41a9_generated_image.png",
+  "CRISPY": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/f9eb723db_generated_image.png",
+  "FRENCH FRIES": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d15a2223a_generated_image.png",
+  "TATOR TOTS": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/8d19cbcb6_generated_image.png",
+  // The soda choices — one clear cup each, so a drink tile reads at a glance.
+  "COKE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/2ba1dc15e_generated_image.png",
+  "COKE ZERO": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/d2500ab60_generated_image.png",
+  "DR. PEPPER": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/5c460b7bc_generated_image.png",
+  "SPRITE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/9adc219fd_generated_image.png",
+  "ROOT BEER": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/5987e4261_generated_image.png",
+  "SWEET TEA": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/c1617df35_generated_image.png",
+  // Ice amounts — a cup holding a little, half, and a full load of ice.
+  "LIGHT ICE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/360613922_generated_image.png",
+  "REGULAR ICE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/b0a77ad3b_generated_image.png",
+  "EXTRA ICE": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/3eb8949bc_generated_image.png",
+  // Names Square spells its own way — same food, same photo, no new shot.
+  "OPTIONAL: DRIZZLE OF CARAMEL": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/6ad6a1a0c_generated_image.png",
+  "OPTIONAL: CRUSHED PEPPERMINTS": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/3522203e9_generated_image.png",
+  "OPTIONAL: DRIZZLE OF MARSHMALLOW FLUFF": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/602ddd525_generated_image.png",
+  "PEPPERMENT FLAVOR": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/3522203e9_generated_image.png",
+  "1 SCOOP GRAHAM CRACKER CRUMBLE": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/176c50c6d_generated_image.png",
+  "COOKIES AND CREAM": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c8448491a_generated_image.png",
+  "CHOPPED NUTS": "https://items-images-production.s3.us-west-2.amazonaws.com/files/367001aa7075189291284923c5c621b35ece7980/original.jpeg",
+  "TOMATOES": "https://items-images-production.s3.us-west-2.amazonaws.com/files/46aee2953bcbb5fb619ee9e0ea73e59555155951/original.jpeg",
+  "EXTRA BUTTERFINGER": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c83d8594b_generated_image.png",
+  "EXTRA OREO": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/c8448491a_generated_image.png",
+  "ADD JALAPENOS": "https://media.base44.com/images/public/6a95fe085a23d5fd44d8cc53/ef967dbb7_generated_image.png",
+  "ADD DICED ONIONS": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/ab1e47f19_generated_image.png",
+  "ICED ANIMAL C00KIES": "https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/4e17795a1_generated_image.png",
 };
 
 // Uppercase, trimmed, whitespace collapsed. The suffix is NOT dropped here so

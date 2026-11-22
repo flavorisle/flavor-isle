@@ -17,6 +17,10 @@ const PLAIN_START = /^(no|none|nothing|without)\b/i;
 const PLAIN_WORD = /\bplain\b/i;
 const THICKNESS = /thick|thickness|thin\b|consistenc/i;
 const SIDE_MODIFIERS = /^side( ?dish)? modifiers?$/i;
+// 5. Amount-only choices — "LITE", "REGULAR", "EXTRA" — are how much of the
+// topping above them, not a food of their own, so they are chips rather than
+// photo-less tiles.
+const AMOUNT_ONLY = /^(lite|light|reg|regular|normal|extra)$/i;
 
 const SIZE_NAME = /^size$/i;
 const SIZE_TOKENS = new Set([
@@ -60,6 +64,7 @@ export function groupHeading(group) {
 export function isPillOption(name, group) {
   const groupName = typeof group === 'string' ? group : group?.name;
   if (isPlainOption(name)) return true;
+  if (AMOUNT_ONLY.test(String(name || '').trim())) return true;
   if (THICKNESS.test(String(name || '')) || THICKNESS.test(String(groupName || ''))) return true;
   if (SIDE_MODIFIERS.test(String(groupName || '').trim())) return true;
   return typeof group === 'object' && group !== null && isSideChoiceGroup(group);
