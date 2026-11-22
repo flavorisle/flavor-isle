@@ -37,7 +37,6 @@ import HeritageBadges from '@/components/HeritageBadges';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
-import KitchenNow from '@/components/KitchenNow';
 import TravelerMode from '@/components/travel/TravelerMode';
 
 const HOME_DINING_PHOTO = {
@@ -178,9 +177,6 @@ export default function Home() {
         tagline="Best Burgers and Milkshakes in Smiths Grove"
         metaLine={heroMetaLine}
       />
-
-      {/* Issue #340 — compact "on the grill now" strip */}
-      <KitchenNow compact />
 
       {/* ── FIND SMASHIE (Halloween hide & seek promo) ── */}
       <FindSmashiePromo />

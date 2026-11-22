@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Lock, Clock, ArrowRight, ShoppingBag } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
 import useCrewOnDuty from '@/hooks/useCrewOnDuty';
+import KitchenStatusDetails from '@/components/KitchenStatusDetails';
 
 // Issue #345, item 4 — the crew clocked in right now, as the bar's first line.
 // Renders nothing when nobody is clocked in, the answer is stale, or the doors
@@ -55,6 +56,7 @@ export default function LiveStatusBar() {
     level,
     wait,
     waitMin,
+    activeCount,
     orderingEnabled,
     minutesUntilClose,
     closeTime,
@@ -119,9 +121,12 @@ export default function LiveStatusBar() {
             <Lock size={16} className="flex-shrink-0 mt-0.5" />
             {/* No truncation here: the closed message is admin-authored and can
                 run long, so it wraps to as many lines as it needs. */}
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide">
-              Closed{closureMessage ? ` · ${closureMessage}` : ''}
-            </p>
+            <div aria-live="polite">
+              <p className="text-sm font-heading uppercase tracking-wide">
+                Closed{closureMessage ? ` · ${closureMessage}` : ''}
+              </p>
+              <p className="text-xs sm:text-sm">Online ordering opens back up before we open for pickup.</p>
+            </div>
           </div>
           <Link
             to="/contact"
@@ -139,16 +144,21 @@ export default function LiveStatusBar() {
     return (
       <div className="w-full bg-smashie-yellow text-obsidian-roast border-b border-obsidian-roast/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Clock size={16} className="flex-shrink-0" />
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
-              Closing soon{closeTime ? ` · closes ${closeTime}` : ''}{minutesUntilClose != null ? ` · ${minutesUntilClose} min` : ''}
-            </p>
+          <div className="min-w-0 flex-1" aria-live="polite">
+            <CrewLine names={crew} />
+            <div className="flex items-center gap-2.5">
+              <Clock size={16} className="flex-shrink-0" />
+              <p className="text-sm font-heading uppercase tracking-wide">
+                Closing soon{closeTime ? ` · closes ${closeTime}` : ''}{minutesUntilClose != null ? ` · ${minutesUntilClose} min` : ''}
+                {level?.level ? ` · ${level.level}` : ''}
+              </p>
+            </div>
+            <KitchenStatusDetails activeCount={activeCount} level={level} wait={wait} loading={loading} />
           </div>
           {orderingEnabled ? (
             <Link
               to="/menu"
-              className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+              className="tap-44 flex-shrink-0 inline-flex items-center justify-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
             >
               Order Now <ArrowRight size={13} />
             </Link>
@@ -160,9 +170,8 @@ export default function LiveStatusBar() {
     );
   }
 
-  // ── Before opening (ordering is live from 8 AM, doors open later) ──
-  // Who is on the floor, then one row: the doors-open time on the left with the
-  // Order Now pill back on the right.
+  // Door hours, kitchen details and the order action share this header bar.
+  // There is no separate kitchen strip below the home hero.
   if (preOpen) {
     return (
       <div className="w-full bg-patina-mint/10 border-b border-patina-mint/20 text-obsidian-roast">
@@ -171,10 +180,13 @@ export default function LiveStatusBar() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <Clock size={16} className="flex-shrink-0" />
-              <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
-                Doors open {openTime || 'soon'}
-                {minutesUntilOpen != null ? ` · in ${minutesUntilOpen} min` : ''}
-              </p>
+              <div aria-live="polite">
+                <p className="text-sm font-heading uppercase tracking-wide">
+                  Doors open {openTime || 'soon'}
+                  {minutesUntilOpen != null ? ` · in ${minutesUntilOpen} min` : ''}
+                </p>
+                {orderingEnabled && <p className="text-xs sm:text-sm text-muted-foreground">Order ahead now</p>}
+              </div>
             </div>
             {orderingEnabled ? (
               <Link
@@ -218,23 +230,24 @@ export default function LiveStatusBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
         <CrewLine names={crew} />
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse ${dot}`} />
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
-              {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
-            </p>
-            <Link
-              to="/what-to-expect"
-              className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
-              title="What each level means & ordering tips"
-            >
-              What to expect?
-            </Link>
+          <div className="min-w-0 flex-1" aria-live="polite">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse ${dot}`} />
+              <p className="text-sm font-heading uppercase tracking-wide">{level.level}</p>
+              <Link
+                to="/what-to-expect"
+                className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
+                title="What each level means & ordering tips"
+              >
+                What to expect?
+              </Link>
+            </div>
+            <KitchenStatusDetails activeCount={activeCount} level={level} wait={wait} loading={loading} />
           </div>
           {orderingEnabled ? (
             <Link
               to="/menu"
-              className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+              className="tap-44 flex-shrink-0 inline-flex items-center justify-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
             >
               {cta} <ArrowRight size={13} />
             </Link>
