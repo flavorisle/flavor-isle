@@ -44,6 +44,8 @@ const ORDER_PATH_KEYS = new Set([
   'order_missing_square',
   'card_failures',
   'checkout_stalled',
+  'checkout_blocked',
+  'checkout_abandoned',
   'receipt_missing',
   'customer_unnotified',
   'menu_unavailable',
@@ -60,6 +62,7 @@ const CHECK_IDS = [
   'unalertedPaid',
   'cardFailures',
   'syncErrors',
+  'checkoutAttempts',
   'customerTexts',
   'missingReceipts',
   'customerUnnotified',
@@ -342,11 +345,14 @@ export default async function (req) {
     const since60 = new Date(now - HOUR).toISOString();
     const since90 = new Date(now - 90 * MIN).toISOString();
     const since6h = new Date(now - ORDER_LOOKBACK).toISOString();
+    // Checkout attempts are watched for three hours: long enough to catch a customer
+    // who left, short enough that yesterday's browsing is never a finding.
+    const since3h = new Date(now - 3 * HOUR).toISOString();
     // A queued text only counts as stuck while it could still be delivered today:
     // the 200 rows left queued by the October outage are history, not a live incident.
     const since24h = new Date(now - DAY).toISOString();
 
-    const [hourlyRes, lastOrderRes, orders6hRes, cardRes, syncRes, smsRes, queuedRes, orders90Res, newsletterRes, pushRes, subRes, prevRunRes] =
+    const [hourlyRes, lastOrderRes, orders6hRes, cardRes, syncRes, smsRes, queuedRes, orders90Res, newsletterRes, pushRes, subRes, prevRunRes, attemptsRes] =
       await Promise.all([
         db.HourlyCount.filter({}, { sort: '-created_date', limit: 1 }),
         db.Order.filter({}, { sort: '-created_date', limit: 1 }),
@@ -360,6 +366,7 @@ export default async function (req) {
         db.PushLog.filter({ created_date: { $gte: since60 } }, { sort: '-created_date', limit: 100 }),
         db.PushSubscription.filter({}, { limit: 200 }),
         db.WatchdogRun.filter({}, { sort: '-ran_at', limit: 1 }),
+        db.CheckoutAttempt.filter({ created_date: { $gte: since3h } }, { sort: '-last_seen_at', limit: 200 }),
       ]);
 
     const candidates = [];
@@ -580,6 +587,78 @@ export default async function (req) {
           .map((o) => `#${o.order_number || o.id} ${o.customer_name || 'guest'} $${Number(o.total || 0).toFixed(2)} — payment ${o.payment_status}, created ${ageLabel(o.created_date, now)} ago`)
           .join('\n'),
         'checkoutStalled',
+      );
+    }
+
+    // Customers who opened checkout and never reached the payment page (issue #352).
+    // No order exists for them, so nothing above can see them: the page writes its
+    // own attempt row, and one that has gone quiet on step 1 is a customer who left
+    // without paying. A row carrying a block reason is the one to act on — the site
+    // itself stopped them (a modifier rule, a field, a delivery quote).
+    const quietAttempts = rows(attemptsRes).filter((a) => {
+      if (!a || !a.session_id || a.stage !== 'details') return false;
+      const created = Date.parse(a.created_date || '') || 0;
+      const lastSeen = Date.parse(a.last_seen_at || a.created_date || '') || created;
+      if (!created || now - lastSeen < 8 * MIN) return false; // still on the page
+      if (now - created > 3 * HOUR) return false; // history
+      // The saved order exists even when the payment-page ping was lost, so a
+      // customer who did get through is never reported as stuck.
+      const email = String(a.customer_email || '').trim().toLowerCase();
+      if (email && orders6h.some((o) => String(o.customer_email || '').trim().toLowerCase() === email)) return false;
+      return true;
+    });
+    // A server refusal (a modifier rule, a price check) is the site's own fault and
+    // worth a page on its own. "Form — ..." is a customer's own missing field, and
+    // a plain quiet row is someone who changed their mind: those need a pattern.
+    const isFormBlock = (a) => String(a.blocked_reason || '').startsWith('Form —');
+    const blockedAttempts = quietAttempts.filter((a) => String(a.blocked_reason || '').trim() && !isFormBlock(a));
+    const silentAttempts = quietAttempts.filter((a) => !String(a.blocked_reason || '').trim() || isFormBlock(a));
+
+    if (blockedAttempts.length) {
+      const byReason = new Map();
+      for (const a of blockedAttempts) {
+        const reason = String(a.blocked_reason).slice(0, 300);
+        const entry = byReason.get(reason) || { count: 0, rows: [] };
+        entry.count += 1;
+        entry.rows.push(a);
+        byReason.set(reason, entry);
+      }
+      const lines = [...byReason.entries()]
+        .slice(0, 5)
+        .map(([reason, entry]) =>
+          `${entry.count}× ${reason}\n   ${entry.rows
+            .slice(0, 3)
+            .map(
+              (a) =>
+                `${a.order_type || 'order'} · ${a.items_summary || 'no items listed'} · $${Number(a.subtotal || 0).toFixed(2)} · left ${ageLabel(a.last_seen_at || a.created_date, now)} ago`,
+            )
+            .join('\n   ')}`,
+        )
+        .join('\n');
+      addCandidate(
+        'checkout_blocked',
+        'TIER_1',
+        `${blockedAttempts.length} customer${blockedAttempts.length === 1 ? '' : 's'} stopped at checkout and left without paying`,
+        `Checkout refused the order, so no order was created and no payment page opened:\n${lines}`,
+        'checkoutAttempts',
+      );
+    }
+
+    // One person changing their mind (or mistyping their email and leaving) is not
+    // an incident; three in three hours is.
+    if (silentAttempts.length >= 3) {
+      addCandidate(
+        'checkout_abandoned',
+        'TIER_2',
+        `${silentAttempts.length} customers left checkout without reaching the payment page`,
+        silentAttempts
+          .slice(0, 6)
+          .map(
+            (a) =>
+              `${a.order_type || 'order'} · ${a.items_summary || 'no items listed'} · $${Number(a.subtotal || 0).toFixed(2)} · ${a.customer_email || 'guest'} · left ${ageLabel(a.last_seen_at || a.created_date, now)} ago${a.blocked_reason ? `\n   stopped by: ${String(a.blocked_reason).slice(0, 200)}` : ''}`,
+          )
+          .join('\n'),
+        'checkoutAttempts',
       );
     }
 
@@ -989,6 +1068,8 @@ export default async function (req) {
         text_failures: perRecordFails.length,
         twilio_umbrella_texts: twilioUmbrella.length,
         text_stuck_queued: stuckQueued.length,
+        checkout_blocked: blockedAttempts.length,
+        checkout_abandoned: silentAttempts.length,
         orders_in_receipt_window: receiptWindow.length,
         receipts_missing: receiptMissing.length,
         newsletter_failures: bulkFails.length,

@@ -25,6 +25,7 @@ import { SMS_POLICY_URL, SMS_TERMS_URL, TRANSACTIONAL_DISCLOSURE_TEXT, SMS_CONSE
 import { getActiveReferralCode } from '@/lib/referral';
 import { takeTravelerNote } from '@/lib/travelerNote';
 import { analyzeEmail } from '@/lib/emailValidation';
+import { checkoutSessionId, logCheckoutAttempt } from '@/lib/checkoutAttempt';
 import OrderAlertsOptIn from '@/components/OrderAlertsOptIn';
 import { normalizeWait } from '@/lib/waitQuote';
 
@@ -317,10 +318,41 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotal]);
 
+  // ── Checkout progress (watchdog, issue #352) ─────────────────────────────
+  // A customer stopped on this page — a modifier rule the server refuses, a form
+  // field, a delivery quote — never creates an order, so nothing order-based can
+  // see them. This records the visit, the exact block, and whether they reached
+  // the payment page, so the watchdog can tell Wesley when people cannot order.
+  const checkoutSession = useRef('');
+  if (!checkoutSession.current) checkoutSession.current = checkoutSessionId();
+  const noteCheckout = (extra = {}) => logCheckoutAttempt({
+    session_id: checkoutSession.current,
+    stage: 'details',
+    order_type: orderTypeLabel(orderType, pickupMethod),
+    item_count: cartItems.reduce((n, i) => n + (Number(i.quantity) || 1), 0),
+    subtotal,
+    items_summary: cartItems.slice(0, 6).map(i => `${Number(i.quantity) || 1}x ${i.name}`).join(', ').slice(0, 600),
+    customer_name: fullName,
+    customer_email: form.email,
+    ...extra,
+  });
+
+  // One ping on arrival, then a quiet two-minute heartbeat: a row whose last ping
+  // is minutes old is a customer who left, while one still on the page keeps
+  // itself alive and is never reported as stuck.
+  useEffect(() => {
+    if (!orderingEnabled || storeClosed || cartItems.length === 0) return;
+    noteCheckout();
+    const beat = setInterval(() => noteCheckout(), 120000);
+    return () => clearInterval(beat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems.length, subtotal, orderType, pickupMethod, orderingEnabled, storeClosed]);
+
   const handleContinue = async () => {
     setError('');
     const errors = {};
     if (cutoffStatus[orderType]) {
+      // The store's own closing rule, not a broken checkout: nothing to report.
       setError(`${ORDER_TYPE_LABELS[orderType]} orders are closed for tonight — we stop taking them shortly before closing.`);
       return;
     }
@@ -351,6 +383,7 @@ export default function Checkout() {
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
       setError('Please complete the highlighted fields to continue.');
+      noteCheckout({ blocked_reason: `Form — ${Object.values(errors).join(' ')}`.slice(0, 500) });
       return;
     }
 
@@ -421,16 +454,27 @@ export default function Checkout() {
         if (freeShakeCents > 0) {
           base44.functions.invoke('fulfillSmashiePrize', {}).catch(() => {});
         }
+        // Tell the watchdog they got through before the browser leaves for the
+        // payment page, capped so the redirect is never held up by the ping.
+        await Promise.race([
+          logCheckoutAttempt({ session_id: checkoutSession.current, stage: 'payment', order_number: data.orderNumber }),
+          new Promise(r => setTimeout(r, 800)),
+        ]);
         window.location.href = data.checkoutUrl;
         return;
       }
-      setError(data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap the pay button again.');
+      const refusal = data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap the pay button again.';
+      setError(refusal);
+      noteCheckout({ blocked_reason: refusal });
       return;
     } catch (err) {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.
       const apiError = err?.response?.data?.error || err?.data?.error || '';
       setError(apiError || 'Could not initialize payment. Please try again.');
+      // A refused modifier rule or price check lands here: this is the block the
+      // watchdog has to see, because the customer never gets an order.
+      noteCheckout({ blocked_reason: apiError || 'Could not initialize payment.' });
     } finally {
       setLoading(false);
     }

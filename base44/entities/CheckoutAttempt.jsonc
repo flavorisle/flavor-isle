@@ -1,0 +1,113 @@
+{
+  "name": "CheckoutAttempt",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional note about this attempt, e.g. what the customer did next."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Random id the checkout page creates once per visit (kept in the tab's sessionStorage, so a reload continues the same attempt). Every ping from that visit updates this one row instead of adding another."
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "details",
+        "payment",
+        "paid"
+      ],
+      "enumColors": [
+        "yellow",
+        "blue",
+        "green"
+      ],
+      "default": "details",
+      "description": "How far this customer got. details = on checkout page 1; payment = the payment page opened; paid = the order came back paid. A row left on details is a customer who never reached payment."
+    },
+    "order_type": {
+      "type": "string",
+      "description": "What they were ordering: Pickup, Curbside Pickup, Delivery or Dine-In."
+    },
+    "item_count": {
+      "type": "number",
+      "description": "How many items were in the bag."
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Bag subtotal in dollars at the time of the ping, so a stuck cart can be recognised by what it was worth."
+    },
+    "items_summary": {
+      "type": "string",
+      "maxLength": 600,
+      "description": "First few line items, e.g. '1x Cheeseburger, 2x Fries', so the watchdog alert names what the customer was trying to order."
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string",
+      "description": "Email typed on checkout page 1. The watchdog uses it to recognise a customer whose order does exist, so someone who did get through is never reported as stuck."
+    },
+    "blocked_reason": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The exact message that stopped them: the server's own refusal (e.g. 'Choose 1 more for Sauce', a price or modifier rule) or 'Form \u2014 ...' for a missing field. Empty when the customer simply left without trying."
+    },
+    "blocked_count": {
+      "type": "number",
+      "default": 0,
+      "description": "How many times they were stopped on this visit."
+    },
+    "blocked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last block happened."
+    },
+    "order_number": {
+      "type": "string",
+      "description": "The saved order created when the payment page opened, when the page's ping reached the server before the redirect."
+    },
+    "reached_payment_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the customer reached the payment page. Empty means they never got off checkout page 1."
+    },
+    "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last heartbeat from the checkout page (every two minutes while it stays open). A row whose last_seen_at is minutes old is a customer who left, not one still typing."
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser user-agent that opened checkout."
+    }
+  },
+  "required": [
+    "session_id",
+    "stage"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
