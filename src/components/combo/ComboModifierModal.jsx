@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
-import { atMax, ruleBadge } from '@/lib/modifierRules';
+import { atMax, ruleBadge, firstUnsatisfied } from '@/lib/modifierRules';
 import { modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import ModifierTile from '@/components/ModifierTile';
@@ -64,7 +64,14 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
 
   const extraCost = selectedEntries.reduce((sum, m) => sum + (m.price || 0), 0);
 
-  const handleConfirm = () => onConfirm(selectedEntries, extraCost);
+  // Square's minimum carries into the Combo Isle too: a required group left
+  // unpicked keeps the box's item from being confirmed.
+  const pendingRule = firstUnsatisfied(groups, selections);
+
+  const handleConfirm = () => {
+    if (pendingRule) return;
+    onConfirm(selectedEntries, extraCost);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -138,8 +145,17 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
         </div>
 
         <div className="p-6 border-t border-border">
-          <button onClick={handleConfirm} className="btn-cherry chrome-hover w-full py-4 font-heading text-sm flex items-center justify-center gap-2">
-            <Plus size={16} /> Confirm — ${round2(item.price + extraCost).toFixed(2)}
+          <button
+            onClick={handleConfirm}
+            disabled={!!pendingRule}
+            className={`w-full py-4 font-heading text-sm flex items-center justify-center gap-2 ${
+              pendingRule ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'btn-cherry chrome-hover'
+            }`}
+          >
+            <Plus size={16} />
+            {pendingRule
+              ? `Choose ${pendingRule.missing} more to continue`
+              : `Confirm — $${round2(item.price + extraCost).toFixed(2)}`}
           </button>
         </div>
       </div>

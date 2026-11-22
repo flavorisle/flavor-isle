@@ -11,6 +11,7 @@ import ShakeAllergyCheckbox from '@/components/ShakeAllergyCheckbox';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import { supportsLevels } from '@/lib/modifierLevels';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
+import { seedSelections, firstUnsatisfied } from '@/lib/modifierRules';
 import { findShakeFlavorOption } from '@/lib/shakeFlavor';
 
 // Legacy: the old single "Milkshake" item. Kept for backwards compatibility
@@ -58,8 +59,10 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const effectiveItem = { ...shakeItem, modifiers: groups };
   const includedFlavor = findShakeFlavorOption(effectiveItem);
   const findGroup = (kw) => groups.find((g) => (g.name || '').toLowerCase().includes(kw));
-  const sizeOpts = (findGroup('size')?.modifiers || []).filter((m) => !m.sold_out);
-  const baseOpts = (findGroup('base')?.modifiers || []).filter((m) => !m.sold_out);
+  const sizeGroup = findGroup('size');
+  const baseGroup = findGroup('base');
+  const sizeOpts = (sizeGroup?.modifiers || []).filter((m) => !m.sold_out);
+  const baseOpts = (baseGroup?.modifiers || []).filter((m) => !m.sold_out);
   const flavorGroup = findGroup('flavor');
   const flavorOpts = (flavorGroup?.modifiers || []).filter((m) => !m.sold_out);
   // Square's cap on the flavor list, when it sets one, counts the extras taken
@@ -72,6 +75,16 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   // The included flavor is matched to its real Square option, even when the
   // item says Banana and Square calls its flavor REAL FRUIT BANANA.
   const allExtraOpts = flavorOpts.filter((option) => option.id !== includedFlavor?.id);
+
+  // Square's rules carry into this customizer: a group asked for here (size,
+  // base, flavors) counts only once the customer actually picks it, so a
+  // required base or flavor can never be skipped. Anything this customizer does
+  // not ask about keeps whatever Square preselects, as everywhere else.
+  const ruleSelections = seedSelections(groups);
+  if (sizeGroup) ruleSelections[sizeGroup.name] = size;
+  if (baseGroup) ruleSelections[baseGroup.name] = base;
+  if (flavorGroup) ruleSelections[flavorGroup.name] = [includedFlavor, ...extraFlavors].filter(Boolean);
+  const pendingRule = firstUnsatisfied(groups, ruleSelections);
 
   const basePrice = shakeItem.price ?? 5;
 
@@ -111,6 +124,8 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
   const cartName = `${allFlavorNames.join(' + ')} Milkshake`;
 
   const handleAddToCart = () => {
+    // A required choice left unpicked (size, base, flavor) never reaches the bag.
+    if (!size || pendingRule) return;
     // Flagged allergy with no explanation — ask for the details first, otherwise
     // the kitchen gets an alert with nothing to act on.
     if (allergy.flag && !allergy.note.trim()) {
@@ -298,9 +313,9 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
           </AllergyNote>
           <button
             onClick={handleAddToCart}
-            disabled={!size}
+            disabled={!size || !!pendingRule}
             className={`btn-cherry chrome-hover w-full py-4 text-sm font-heading flex items-center justify-center gap-2 ${
-              !size ? 'opacity-40 cursor-not-allowed' : ''
+              !size || pendingRule ? 'opacity-40 cursor-not-allowed' : ''
             }`}
           >
             {added ? (
@@ -309,7 +324,11 @@ export default function ShakeCustomizer({ open, onClose, shakeItem, config }) {
               </>
             ) : (
               <>
-                <ShoppingBag size={16} /> {!size ? 'Pick a size' : `Add to Order — $${totalPrice.toFixed(2)}`}
+                <ShoppingBag size={16} /> {!size
+                  ? 'Pick a size'
+                  : pendingRule
+                    ? `Choose ${pendingRule.missing} more to continue`
+                    : `Add to Order — $${totalPrice.toFixed(2)}`}
               </>
             )}
           </button>

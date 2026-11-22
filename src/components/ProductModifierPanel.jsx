@@ -208,6 +208,9 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
   };
 
   const handleConfirm = () => {
+    // A group still short of Square's minimum never leaves this panel, even if
+    // the CTA is triggered some other way.
+    if (pendingRule) return;
     const { selectedMods, label, allToppings } = buildSelection();
     onConfirm(selectedMods, extraCost, label, allToppings, coreLevel, needsSalt ? saltChoice : null);
   };
