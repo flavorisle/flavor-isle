@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Users, Store, Globe, UserPlus } from 'lucide-react';
 import LapsedCustomerList from '@/components/admin/LapsedCustomerList';
+import WinbackCodes from '@/components/admin/WinbackCodes';
 
 // Issue #325 Part 2: the customer dashboard's headline numbers and the three
 // lapse segments, read from CustomerProfile + Order (never Pulse). Clicking a
@@ -107,6 +108,8 @@ export default function CustomerInsights() {
           Tap a group to see who is in it, with their last purchase, channel and lifetime total.
         </p>
       )}
+
+      <WinbackCodes />
     </div>
   );
 }
