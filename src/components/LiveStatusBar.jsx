@@ -161,29 +161,30 @@ export default function LiveStatusBar() {
   }
 
   // ── Before opening (ordering is live from 8 AM, doors open later) ──
-  // Issue #345, item 4: three stacked lines — who is on the floor, the countdown
-  // to opening, and the Order Now pill directly under it.
+  // Who is on the floor, then one row: the doors-open time on the left with the
+  // Order Now pill back on the right.
   if (preOpen) {
     return (
       <div className="w-full bg-patina-mint/10 border-b border-patina-mint/20 text-obsidian-roast">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
           <CrewLine names={crew} />
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Clock size={16} className="flex-shrink-0" />
-            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
-              Opening in {minutesUntilOpen} min{openTime ? ` · opens ${openTime}` : ''}
-            </p>
-          </div>
-          <div className="mt-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Clock size={16} className="flex-shrink-0" />
+              <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
+                Doors open {openTime || 'soon'}
+                {minutesUntilOpen != null ? ` · in ${minutesUntilOpen} min` : ''}
+              </p>
+            </div>
             {orderingEnabled ? (
               <Link
                 to="/menu"
-                className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+                className="tap-44 flex-shrink-0 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
               >
                 Order Now <ArrowRight size={13} />
               </Link>
             ) : (
-              <span className="text-xs font-heading uppercase tracking-wide opacity-70">Ordering paused</span>
+              <span className="flex-shrink-0 text-xs font-heading uppercase tracking-wide opacity-70">Ordering paused</span>
             )}
           </div>
         </div>
