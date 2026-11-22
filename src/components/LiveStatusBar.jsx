@@ -2,6 +2,23 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Lock, Clock, ArrowRight, ShoppingBag } from 'lucide-react';
 import useLiveStatus from '@/hooks/useLiveStatus';
+import useCrewOnDuty from '@/hooks/useCrewOnDuty';
+
+// Issue #345, item 4 — the crew clocked in right now, as the bar's first line.
+// Renders nothing when nobody is clocked in, the answer is stale, or the doors
+// are shut, so the line simply disappears.
+function CrewLine({ names }) {
+  if (!names || names.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+      <span className="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0" aria-hidden="true" />
+      <p className="font-heading text-[13px] uppercase tracking-widest text-midnight-cherry m-0">
+        On the floor right now
+      </p>
+      <p className="text-sm font-semibold m-0">{names.join(' · ')}</p>
+    </div>
+  );
+}
 
 // Colored status dot per live busyness level.
 const DOT = {
@@ -42,7 +59,9 @@ export default function LiveStatusBar() {
     minutesUntilClose,
     closeTime,
     closureMessage,
+    door,
   } = useLiveStatus();
+  const crew = useCrewOnDuty(!!door?.open);
   const location = useLocation();
 
   // Tasty Threads (Printful) ships on demand 24/7 — the kitchen hours/closure
@@ -142,26 +161,31 @@ export default function LiveStatusBar() {
   }
 
   // ── Before opening (ordering is live from 8 AM, doors open later) ──
+  // Issue #345, item 4: three stacked lines — who is on the floor, the countdown
+  // to opening, and the Order Now pill directly under it.
   if (preOpen) {
     return (
       <div className="w-full bg-patina-mint/10 border-b border-patina-mint/20 text-obsidian-roast">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
+          <CrewLine names={crew} />
           <div className="flex items-center gap-2.5 min-w-0">
             <Clock size={16} className="flex-shrink-0" />
             <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
               Opening in {minutesUntilOpen} min{openTime ? ` · opens ${openTime}` : ''}
             </p>
           </div>
-          {orderingEnabled ? (
-            <Link
-              to="/menu"
-              className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
-            >
-              Order ahead <ArrowRight size={13} />
-            </Link>
-          ) : (
-            <span className="text-xs font-heading uppercase tracking-wide opacity-70">Ordering paused</span>
-          )}
+          <div className="mt-1.5">
+            {orderingEnabled ? (
+              <Link
+                to="/menu"
+                className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+              >
+                Order Now <ArrowRight size={13} />
+              </Link>
+            ) : (
+              <span className="text-xs font-heading uppercase tracking-wide opacity-70">Ordering paused</span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -190,30 +214,33 @@ export default function LiveStatusBar() {
 
   return (
     <div className="w-full bg-vanilla-malt border-b border-border text-obsidian-roast">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse ${dot}`} />
-          <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
-            {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
-          </p>
-          <Link
-            to="/what-to-expect"
-            className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
-            title="What each level means & ordering tips"
-          >
-            What to expect?
-          </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
+        <CrewLine names={crew} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse ${dot}`} />
+            <p aria-live="polite" className="text-sm font-heading uppercase tracking-wide truncate">
+              {level.level}<span className="hidden sm:inline text-muted-foreground font-body normal-case tracking-normal"> · {wait}</span>
+            </p>
+            <Link
+              to="/what-to-expect"
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-body normal-case tracking-normal text-patina-mint hover:text-midnight-cherry transition-colors tap-44"
+              title="What each level means & ordering tips"
+            >
+              What to expect?
+            </Link>
+          </div>
+          {orderingEnabled ? (
+            <Link
+              to="/menu"
+              className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
+            >
+              {cta} <ArrowRight size={13} />
+            </Link>
+          ) : (
+            <span className="text-xs font-heading uppercase tracking-wide text-muted-foreground">Ordering paused</span>
+          )}
         </div>
-        {orderingEnabled ? (
-          <Link
-            to="/menu"
-            className="tap-44 inline-flex items-center gap-1.5 bg-midnight-cherry text-white px-4 rounded-full text-xs font-heading uppercase tracking-wide chrome-hover"
-          >
-            {cta} <ArrowRight size={13} />
-          </Link>
-        ) : (
-          <span className="text-xs font-heading uppercase tracking-wide text-muted-foreground">Ordering paused</span>
-        )}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import { getBusynessStage, BUSYNESS_STAGES } from '@/lib/busynessStages';
 import { chicagoNow } from '@/lib/chicagoNow';
 import { formatTime12 } from '@/lib/businessHours';
 import { isOpenAllDay } from '@/lib/openAllDay';
-import { computeUnifiedStoreState } from '@/lib/storeState';
+import { computeUnifiedStoreState, computeDoorState } from '@/lib/storeState';
 import { useAuth } from '@/lib/AuthContext';
 
 // Minutes before today's close where the bar switches to the
@@ -25,6 +25,7 @@ export default function useLiveStatus() {
   const [data, setData] = useState(null);
   const [orderingEnabled, setOrderingEnabled] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(true);
+  const [setting, setSetting] = useState(null);
   const [effectiveClose, setEffectiveClose] = useState(null);
   const [openAllDayDate, setOpenAllDayDate] = useState('');
   const [openAllDayUntil, setOpenAllDayUntil] = useState('');
@@ -58,6 +59,7 @@ export default function useLiveStatus() {
     let active = true;
     getMenuSetting().then((s) => {
       if (!active) return;
+      setSetting(s || null);
       // Unified store state: ordering on/off and today's effective closing time
       // (a one-day early close moves it for today only).
       const unified = computeUnifiedStoreState(s);
@@ -82,6 +84,10 @@ export default function useLiveStatus() {
     todayKey,
     now.totalMinutes,
   );
+
+  // Issue #345, item 5 — the real door hours, which is what every open/closed
+  // string and the crew line read. Never the 8 AM order-ahead flag.
+  const door = computeDoorState(setting, now, todayKey);
 
   const todayHours = businessHours?.[now.dayKey] || {};
   const closeMins = (() => {
@@ -137,6 +143,7 @@ export default function useLiveStatus() {
 
   return {
     loading: !data,
+    door,
     isClosed,
     // Shut to customers, but this viewer is an admin who may still order.
     adminOverride: closedForCustomers && adminOrdering,

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { fetchBusyness } from '@/lib/busynessCache';
 import { Activity, Clock } from 'lucide-react';
 
-const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 function liveLabel(pct) {
   if (pct < 70) return 'Live · quieter than usual';
   if (pct <= 125) return 'Live · about as busy as usual';
@@ -46,10 +44,9 @@ export default function PopularTimesCard({ embedded = false }) {
   const peak = Math.max(1, ...chart.map(c => c.avg));
   const hasData = !!(data && (data.peakAvg > 1 || data.liveCount > 0 || chart.some(c => c.avg > 0)));
   const busyPct = data?.busyPercent ?? 0;
-  const weekday = data?.weekday ?? new Date().getDay();
 
   const Wrapper = embedded
-    ? ({ children }) => <div className="w-full max-w-md mx-auto">{children}</div>
+    ? ({ children }) => <div className="w-full max-w-[22rem] mx-auto">{children}</div>
     : ({ children }) => (
         <section className="px-4 sm:px-6 py-8" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
           <div className="max-w-3xl mx-auto">{children}</div>
@@ -58,7 +55,7 @@ export default function PopularTimesCard({ embedded = false }) {
 
   return (
     <Wrapper>
-      <div className="card-diner p-5 sm:p-6">
+      <div className="card-diner p-3">
           <div className="flex items-center justify-between gap-3 mb-1">
             <div className="flex items-center gap-2">
               <Activity size={18} className="text-midnight-cherry" />
@@ -71,14 +68,6 @@ export default function PopularTimesCard({ embedded = false }) {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <p className="text-xs text-muted-foreground">
-              {hasData
-                ? `Typical ${WEEKDAY_LABELS[weekday] || ''} traffic — the current hour is highlighted.`
-                : 'We learn our busy times from every order, in-store and online.'}
-            </p>
-          </div>
-
           {loading && !data ? (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-10">
               <div className="w-4 h-4 border-2 border-gray-200 rounded-full animate-spin" style={{ borderTopColor: 'var(--midnight-cherry)' }} />
@@ -90,7 +79,7 @@ export default function PopularTimesCard({ embedded = false }) {
             </div>
           ) : (
             <>
-              <div className="flex items-end gap-[3px] sm:gap-1 h-28 mb-2">
+              <div className="flex items-end gap-[3px] sm:gap-1 h-14 mb-2">
                 {chart.map((c) => {
                   const pctH = Math.max(4, Math.round((c.avg / peak) * 100));
                   const isNow = c.hour === hour;
@@ -119,9 +108,6 @@ export default function PopularTimesCard({ embedded = false }) {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-muted-foreground mt-4 text-center">
-                Bars show our typical orders by hour. Live status compares this hour to the usual.
-              </p>
             </>
           )}
       </div>

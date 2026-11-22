@@ -127,6 +127,76 @@ export function computeUnifiedStoreState(setting) {
   };
 }
 
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// "19:00" → "7 PM", "10:30" → "10:30 AM" — read as a sentence, not a schedule.
+function spokenClock(time) {
+  const mins = toMins(time);
+  if (mins == null) return '';
+  const hour = Math.floor(mins / 60);
+  const minute = mins % 60;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return minute ? `${hour12}:${String(minute).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
+}
+
+// Issue #345, item 5 — door hours, and only door hours.
+//
+// The unified state above answers "may this order be placed?" and opens online
+// ordering at 8 AM. That is a different question from "are the doors open?", and
+// the site used to answer the second one with the first. Everything a customer
+// reads as open or closed comes from here instead: the real open and close in
+// MenuSetting.business_hours for today, moved by a one-day early close, an
+// all-day override, or a closure.
+export function computeDoorState(setting, now = chicagoNow(), todayKey = chicagoTodayKey()) {
+  const hours = setting?.business_hours || {};
+  const dayHours = hours[now.dayKey] || {};
+  const closure = evaluateClosure(setting);
+  const allDay = isOpenAllDay(setting, todayKey, now.totalMinutes);
+  const early = earlyCloseToday(setting, todayKey);
+
+  const openMins = toMins(dayHours.open);
+  const closeTime = early?.closeTime || dayHours.close;
+  const closeMins = toMins(closeTime);
+  const closedToday = dayHours.closed === true;
+
+  const beforeOpen =
+    !closure.closed && !closedToday && openMins != null && now.totalMinutes < openMins;
+  const afterClose = !closedToday && closeMins != null && now.totalMinutes >= closeMins;
+  const open = closure.closed
+    ? false
+    : allDay
+      ? true
+      : !closedToday && openMins != null && closeMins != null
+        && now.totalMinutes >= openMins && now.totalMinutes < closeMins;
+
+  // The next day the doors open, for the after-close line.
+  let nextOpen = '';
+  let nextOpenWhen = '';
+  if (!open) {
+    const today = WEEKDAYS.indexOf(now.dayKey);
+    for (let step = 1; step <= 7; step += 1) {
+      const key = WEEKDAYS[(today + step) % 7];
+      const day = hours[key] || {};
+      if (day.closed || toMins(day.open) == null) continue;
+      nextOpen = spokenClock(day.open);
+      nextOpenWhen = step === 1 ? 'tomorrow' : key;
+      break;
+    }
+  }
+
+  return {
+    open,
+    allDay,
+    beforeOpen: open ? false : beforeOpen,
+    afterClose,
+    opensToday: closedToday ? '' : spokenClock(dayHours.open),
+    closesToday: spokenClock(closeTime),
+    nextOpen,
+    nextOpenWhen,
+  };
+}
+
 // Reads the single settings record, then builds the unified state.
 export async function getUnifiedStoreState() {
   const setting = await getMenuSetting();

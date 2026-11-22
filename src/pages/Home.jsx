@@ -9,7 +9,7 @@ import CartDrawer from '@/components/CartDrawer';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/PullRefreshIndicator';
 import useLiveStatus from '@/hooks/useLiveStatus';
-import CinematicHero from '@/components/cinematic/CinematicHero';
+import FullBleedHero from '@/components/cinematic/FullBleedHero';
 import PhotoChapter from '@/components/cinematic/PhotoChapter';
 import { optimizedImageUrl } from '@/lib/utils';
 import HomeOrderOptions from '@/components/cinematic/HomeOrderOptions';
@@ -21,7 +21,7 @@ import HomeStructuredData from '@/components/schema/HomeStructuredData';
 import MenuStructuredData from '@/components/schema/MenuStructuredData';
 import { getMenuSetting } from '@/lib/menuSettings';
 import { itemCategoryKey, sortCategories, sortItemsInCategory } from '@/lib/menuCategory';
-import { computeUnifiedStoreState } from '@/lib/storeState';
+import { computeDoorState } from '@/lib/storeState';
 
 
 import DailySpecialsSection from '@/components/DailySpecialsSection';
@@ -37,7 +37,6 @@ import HeritageBadges from '@/components/HeritageBadges';
 import KentuckyTourismBadge from '@/components/KentuckyTourismBadge';
 import StickyOrderBar from '@/components/StickyOrderBar';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
-import OnDutyNow from '@/components/OnDutyNow';
 import KitchenNow from '@/components/KitchenNow';
 import TravelerMode from '@/components/travel/TravelerMode';
 
@@ -47,15 +46,8 @@ const HOME_DINING_PHOTO = {
   caption: 'Pull up a seat. Stay a while.',
 };
 
-// "19:00" → "7 PM", "18:30" → "6:30 PM". The hero's status line is read as a
-// sentence, so it uses plain speech rather than the schedule's clock format.
-function spokenClock(time) {
-  const [h, m] = String(time || '').split(':').map(Number);
-  if (!Number.isFinite(h)) return '';
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = ((h + 11) % 12) + 1;
-  return m ? `${hour12}:${String(m).padStart(2, '0')} ${period}` : `${hour12} ${period}`;
-}
+// Issue #345, item 1 — the hero photo, stored in this app's own public storage.
+const HERO_PHOTO = 'https://base44.app/api/apps/6a3d84f2fe4ae4efe7f629bf/files/mp/public/6a3d84f2fe4ae4efe7f629bf/2a5022ac2_hero-345.jpg';
 
 export default function Home() {
   const { setOrderType } = useCart();
@@ -130,12 +122,16 @@ export default function Home() {
     navigate('/menu');
   };
 
-  // The hero's address line answers "are you open right now?" — today's live
-  // close time while the store is open, the weekly hours summary otherwise.
-  const storeState = storeSetting ? computeUnifiedStoreState(storeSetting) : null;
-  const heroMetaLine = storeState?.open
-    ? `103 N Main St, Smiths Grove, KY 42171 · 0.7 mi off I-65 Exit 38 · Open today until ${spokenClock(storeState.effectiveCloseToday)}`
-    : `103 N Main St, Smiths Grove, KY 42171 · ${hoursSummary(businessHours)}`;
+  // Issue #345, item 5 — the hero's status line answers "are you open right now?"
+  // from the real door hours in MenuSetting, never from the 8 AM order-ahead flag.
+  const door = storeSetting ? computeDoorState(storeSetting) : null;
+  const heroMetaLine = !door
+    ? ''
+    : door.open
+      ? (door.allDay || !door.closesToday ? 'Open now' : `Open until ${door.closesToday}`)
+      : door.beforeOpen
+        ? `Opens ${door.opensToday} today · closes ${door.closesToday}`
+        : `Closed${door.nextOpen ? ` · opens ${door.nextOpen} ${door.nextOpenWhen}` : ''}`;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--vanilla-malt)' }}>
@@ -171,20 +167,16 @@ export default function Home() {
 
       <EarlyCloseNotice />
 
-      {/* ── EXIT 38 PHOTO STORY ── */}
-      <CinematicHero
-        cityLine
-        heading="Burgers & shakes in Smiths Grove since 1964."
-        subtitle="Two minutes off I-65. Zero regrets."
-        actions={[
-          { label: 'Order for Pickup', to: '/menu', variant: 'primary' },
-          { label: 'See Menu', to: '/menu' },
-          { label: 'Get Directions', href: 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171' },
-        ]}
+      {/* ── HERO — one full-bleed photo, copy over the fade (issue #345) ── */}
+      <FullBleedHero
+        imageUrl={HERO_PHOTO}
+        heading="Best Burgers and Milkshakes in Kentucky"
+        subheading="Hand-Patted Burgers and Hand-Spun Milkshakes"
+        ctaLabel="Order online"
+        ctaTo="/menu"
+        tagline="Best Burgers and Milkshakes in Smiths Grove"
         metaLine={heroMetaLine}
       />
-
-      <OnDutyNow open={!!storeState?.open} />
 
       {/* Issue #340 — compact "on the grill now" strip */}
       <KitchenNow compact />

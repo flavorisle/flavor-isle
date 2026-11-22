@@ -13,7 +13,7 @@ import useLiveStatus from '@/hooks/useLiveStatus';
 const CLOSED_COPY = "We're closed right now. Online ordering opens back up before we open for pickup.";
 
 export default function KitchenNow({ compact = false }) {
-  const { level, isClosed, activeCount, loading, wait, closureMessage } = useLiveStatus();
+  const { level, isClosed, activeCount, loading, wait, closureMessage, door } = useLiveStatus();
 
   const orders = Math.max(0, Number(activeCount) || 0);
   const ordersLabel = orders === 0
@@ -30,11 +30,15 @@ export default function KitchenNow({ compact = false }) {
           <Flame size={14} className="text-smashie-yellow flex-shrink-0" aria-hidden="true" />
           {loading ? (
             <span className="text-white/80">Checking the grill…</span>
+          ) : door?.beforeOpen ? (
+            /* Issue #345, item 5 — before the doors open there is no kitchen
+               load to report, so the strip says when they open instead. */
+            <span className="text-white/85">Doors open {door.opensToday} · order ahead now</span>
           ) : isClosed ? (
             <span className="text-white/85">{closedLabel}</span>
           ) : (
             <>
-              <span className="font-heading uppercase tracking-wider">{level?.level || 'Open'}</span>
+              <span className="font-heading uppercase tracking-wider">{level?.level || 'Checking the grill…'}</span>
               <span className="text-white/40" aria-hidden="true">·</span>
               <span className="text-white/85">{ordersLabel}</span>
               {waitLabel && (
@@ -65,7 +69,7 @@ export default function KitchenNow({ compact = false }) {
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Right now</p>
-            <p className="font-heading text-base text-obsidian-roast leading-tight">{level?.level || 'Open'}</p>
+            <p className="font-heading text-base text-obsidian-roast leading-tight">{level?.level || 'Checking the grill…'}</p>
           </div>
           <div>
             <p className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">In progress</p>

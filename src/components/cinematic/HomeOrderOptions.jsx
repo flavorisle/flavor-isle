@@ -1,53 +1,26 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Phone, ShoppingBag, Bike, Utensils } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useCart } from '@/context/CartContext';
-import useLiveStatus from '@/hooks/useLiveStatus';
-import { pickupQuote, deliveryQuote } from '@/lib/waitQuote';
 import PopularTimesCard from '@/components/PopularTimesCard';
 
+// Issue #345, item 2 — the order-type pill row above the busyness chart is gone;
+// the chart is all this block shows now. Item 3 tightened the navy panel around
+// it.
 export default function HomeOrderOptions({ embedded = false }) {
-  const navigate = useNavigate();
-  const { setOrderType } = useCart();
-  const { waitMin, deliveryEnabled } = useLiveStatus();
-  const options = [
-    { type: 'pickup', label: 'Pickup', time: pickupQuote(waitMin), Icon: ShoppingBag },
-    ...(deliveryEnabled ? [{ type: 'delivery', label: 'Delivery', time: deliveryQuote(waitMin), Icon: Bike }] : []),
-    { type: 'dine_in', label: 'Dine-In', time: 'Seat yourself', Icon: Utensils },
-  ];
-  const start = type => {
-    base44.analytics.track({ eventName: 'start_order_clicked', properties: { order_type: type, source: 'hero' } });
-    setOrderType(type);
-    navigate('/menu');
-  };
   const controls = (
-    <>
-      <div className="flex flex-wrap justify-center gap-3">
-        {options.map(({ type, label, time, Icon }) => (
-          <button key={type} type="button" onClick={() => start(type)}
-            className="min-h-12 flex items-center gap-2 bg-card text-card-foreground font-heading px-5 py-3 rounded-full shadow-float focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-            <Icon size={16} aria-hidden="true" />{label}<span className="text-sm font-body hidden sm:inline">{time}</span>
-          </button>
-        ))}
-        <a href="tel:+12705634618" className="min-h-12 inline-flex items-center gap-2 bg-white text-patina-mint px-5 py-3 rounded-full font-heading shadow-float"><Phone size={16} aria-hidden="true" />Call Us</a>
+    <div className="rounded-2xl bg-[#1A3A5C] px-2.5 py-2.5 text-white">
+      <div className="max-w-[22rem] mx-auto">
+        <PopularTimesCard embedded />
       </div>
-      <div className="mt-4 rounded-2xl bg-[#1A3A5C] px-4 py-5 text-white">
-        <div className="max-w-md mx-auto">
-          <PopularTimesCard embedded />
-        </div>
-      </div>
-    </>
+    </div>
   );
 
   // Embedded: the controls sit inside the dining-room photo chapter on the home
   // page instead of a navy band of their own.
   if (embedded) {
-    return <div aria-label="Choose how to order">{controls}</div>;
+    return <div aria-label="How busy are we?">{controls}</div>;
   }
 
   return (
-    <section className="bg-patina-mint text-white px-4 py-10 sm:py-14" aria-label="Choose how to order">
+    <section className="bg-patina-mint text-white px-4 py-10 sm:py-14" aria-label="How busy are we?">
       <div className="max-w-6xl mx-auto">
         {controls}
       </div>
