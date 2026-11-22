@@ -31,9 +31,10 @@ export default function KitchenNow({ compact = false }) {
           {loading ? (
             <span className="text-white/80">Checking the grill…</span>
           ) : door?.beforeOpen ? (
-            /* Issue #345, item 5 — before the doors open there is no kitchen
-               load to report, so the strip says when they open instead. */
-            <span className="text-white/85">Doors open {door.opensToday} · order ahead now</span>
+            /* Before the doors open there is no kitchen load to report. When they
+               open is said in the top status bar, so the strip only offers the
+               order-ahead. */
+            <span className="text-white/85">Order ahead now</span>
           ) : isClosed ? (
             <span className="text-white/85">{closedLabel}</span>
           ) : (

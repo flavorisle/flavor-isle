@@ -130,7 +130,8 @@ export default function Home() {
     : door.open
       ? (door.allDay || !door.closesToday ? 'Open now' : `Open until ${door.closesToday}`)
       : door.beforeOpen
-        ? `Opens ${door.opensToday} today · closes ${door.closesToday}`
+        /* The doors-open time lives in the top status bar, not here. */
+        ? `Closes ${door.closesToday}`
         : `Closed${door.nextOpen ? ` · opens ${door.nextOpen} ${door.nextOpenWhen}` : ''}`;
 
   return (
