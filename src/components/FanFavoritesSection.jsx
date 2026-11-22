@@ -47,14 +47,15 @@ export default function FanFavoritesSection({ items, shakeRank }) {
 
   return (
     <div className="mb-2">
-      <div className="flex items-center gap-4 mb-4">
-        <h2 className="font-heading text-2xl text-obsidian-roast flex items-center gap-2 whitespace-nowrap">
-          <Star size={22} className="text-smashie-yellow fill-smashie-yellow" />
-          Fan Favorites
-        </h2>
-        <div className="flex-1 h-px bg-border" />
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Top 10 best-sellers</span>
-        <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap">View Menu <ArrowRight size={13} /></Link>
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h2 className="font-heading text-2xl text-obsidian-roast flex items-center gap-2 whitespace-nowrap">
+            <Star size={22} className="text-smashie-yellow fill-smashie-yellow" />
+            Fan Favorites
+          </h2>
+          <span className="block text-sm text-muted-foreground mt-1">Top 10 best-sellers</span>
+        </div>
+        <Link to="/menu" className="btn-cherry chrome-hover inline-flex items-center gap-1.5 px-4 py-2 text-xs font-heading whitespace-nowrap flex-shrink-0">View Menu <ArrowRight size={13} /></Link>
       </div>
       <ul className="border-t border-border">
         {favorites.map((item) => {
