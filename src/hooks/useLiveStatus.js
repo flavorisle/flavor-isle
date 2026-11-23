@@ -152,10 +152,12 @@ export default function useLiveStatus() {
     minutesUntilOpen,
     openTime: !todayHours.closed && todayHours.open ? formatTime12(todayHours.open) : null,
     level,
-    wait: data?.estimated_wait || level?.waitRange,
-    waitMin: data?.estimated_wait_min ?? level?.waitMin ?? 24,
+    // One wait number everywhere: the live estimate, never a stage range.
+    wait: data?.estimated_wait || '',
+    waitMin: data?.estimated_wait_min ?? 24,
     recovering: data?.recovering ?? false,
-    activeCount: data?.activeCount ?? 0,
+    // Orders in progress = orders in the last 10 minutes.
+    activeCount: data?.last10 ?? 0,
     orderingEnabled: orderingEnabled || adminOrdering,
     deliveryEnabled,
     minutesUntilClose,

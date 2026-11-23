@@ -153,7 +153,7 @@ export default function LiveStatusBar() {
                 {level?.level ? ` · ${level.level}` : ''}
               </p>
             </div>
-            <KitchenStatusDetails activeCount={activeCount} level={level} wait={wait} loading={loading} />
+            <KitchenStatusDetails activeCount={activeCount} wait={wait} loading={loading} />
           </div>
           {orderingEnabled ? (
             <Link
@@ -242,7 +242,7 @@ export default function LiveStatusBar() {
                 What to expect?
               </Link>
             </div>
-            <KitchenStatusDetails activeCount={activeCount} level={level} wait={wait} loading={loading} />
+            <KitchenStatusDetails activeCount={activeCount} wait={wait} loading={loading} />
           </div>
           {orderingEnabled ? (
             <Link

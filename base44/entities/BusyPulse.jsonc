@@ -1,0 +1,41 @@
+{
+  "name": "BusyPulse",
+  "type": "object",
+  "properties": {
+    "sq_order_id": {
+      "type": "string",
+      "description": "Square order id. One row per Square order, so the live busyness level never counts the same order twice."
+    },
+    "order_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the order was created in Square (UTC ISO). The live level counts these inside the last 60 minutes; rows older than 8 hours are pruned by the sync."
+    }
+  },
+  "required": [
+    "sq_order_id",
+    "order_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

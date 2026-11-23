@@ -1,9 +1,11 @@
 import React from 'react';
 import { Flame } from 'lucide-react';
 
-export default function KitchenStatusDetails({ activeCount, level, wait, loading }) {
+export default function KitchenStatusDetails({ activeCount, wait, loading }) {
   const orders = Math.max(0, Number(activeCount) || 0);
-  const waitLabel = level?.waitRange || wait || '';
+  // Only the live estimate is shown — never a stage range — so the bar carries
+  // one wait number that matches the order button.
+  const waitLabel = wait || '';
 
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-muted-foreground">

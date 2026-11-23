@@ -5,6 +5,12 @@ import { maintenanceGate } from '../../shared/maintenanceGate.ts';
 const SQUARE_VERSION = '2026-09-16';
 const FULL_LOOKBACK_DAYS = 90;
 const MAX_ORDERS = 20000;
+// Live pull covers the full 8-hour pulse window, so the count for every hour it
+// touches is a real count and not a partial one.
+const LIVE_LOOKBACK_HOURS = 8;
+// BusyPulse only needs to outlive the live level's 60-minute lookback with room
+// for the level hold; rows past this are pruned on every run.
+const PULSE_KEEP_HOURS = 8;
 
 export default async function(req) {
   try {
@@ -42,10 +48,12 @@ export default async function(req) {
     }
     if (!locationId) return Response.json({ error: 'Could not resolve Square location' }, { status: 500 });
 
-    const pullStart = new Date(Date.now() - (mode === 'live' ? 3 * 3600000 : FULL_LOOKBACK_DAYS * 86400000)).toISOString();
+    const nowMs = Date.now();
+    const pullStart = new Date(nowMs - (mode === 'live' ? LIVE_LOOKBACK_HOURS * 3600000 : FULL_LOOKBACK_DAYS * 86400000)).toISOString();
     const today = todayChicago();
     const todayCounts = {};          // hour -> order count today
     const profileBuckets = {};       // `${weekday}-${hour}` -> { total, perDay{ dateKey -> count } }
+    const pulses = [];               // every pulled order: { sq_order_id, order_at }
     let ordersPulled = 0;
     let cursor = null;
 
@@ -63,13 +71,23 @@ export default async function(req) {
       const res = await fetch('https://connect.squareup.com/v2/orders/search', {
         method: 'POST', headers, body: JSON.stringify(sqBody),
       });
-      const data = await res.json();
-      if (!res.ok) { console.error('Square search failed', JSON.stringify(data)); break; }
+      const data = await res.json().catch(() => null);
 
-      const orders = data.orders || [];
+      // A failed or malformed page makes the whole pull incomplete: writing what
+      // we have would under-count the hour and drop real orders from the pulses,
+      // so nothing is written and the run reports the failure instead.
+      if (!res.ok || !data || !Array.isArray(data.orders)) {
+        const detail = JSON.stringify((data && (data.errors || data)) || {}).slice(0, 300);
+        const message = `Square order search failed (${res.status}): ${detail}`;
+        console.error('syncSquareBusyness:', message);
+        return Response.json({ error: message }, { status: 502 });
+      }
+
+      const orders = data.orders;
       for (let i = 0; i < orders.length; i++) {
         const o = orders[i];
         if (!o.created_at) continue;
+        if (o.id) pulses.push({ sq_order_id: o.id, order_at: o.created_at });
         const p = chicagoParts(o.created_at);
         if (p.dateKey === today.dateKey) todayCounts[p.hour] = (todayCounts[p.hour] || 0) + 1;
         if (mode === 'full') {
@@ -84,19 +102,33 @@ export default async function(req) {
     } while (cursor && ordersPulled < MAX_ORDERS);
 
     // ---- Upsert today's HourlyCount rows ----
-    // 'full' mode refreshes all 24 hours of today; 'live' mode only touches
-    // the hours that actually had orders in the last 3 hours (so earlier
-    // counts are preserved instead of being zeroed out).
+    // 'full' mode refreshes all 24 hours of today. 'live' mode only writes an hour
+    // the pull saw from its first minute; the hour the pull started in is partial,
+    // so its stored count may only be raised, never lowered. No live write ever
+    // puts an hour below what is already stored.
     const existingHC = await base44.asServiceRole.entities.HourlyCount.filter({ date: today.dateKey });
     const hcIds = {};
-    (existingHC || []).forEach(h => { hcIds[h.hour] = h.id; });
+    const hcStored = {};
+    (existingHC || []).forEach(h => {
+      hcIds[h.hour] = h.id;
+      hcStored[h.hour] = Number(h.order_count) || 0;
+    });
+
+    const pullStartParts = chicagoParts(pullStart);
+    const partialHour = pullStartParts.dateKey === today.dateKey ? pullStartParts.hour : null;
+    const coversWholeHour = (h) => pullStartParts.dateKey < today.dateKey || h > pullStartParts.hour;
+    const pulledHours = Object.keys(todayCounts).map(Number);
+
     const hoursToWrite = mode === 'full'
       ? Array.from({ length: 24 }, (_, i) => i)
-      : Object.keys(todayCounts).map(Number);
+      : pulledHours.filter(h => coversWholeHour(h) || h === partialHour);
+
     const hcUp = [];
     const hcCr = [];
     hoursToWrite.forEach(h => {
-      const rec = { date: today.dateKey, hour: h, weekday: today.weekday, order_count: todayCounts[h] || 0 };
+      const pulled = todayCounts[h] || 0;
+      const orderCount = mode === 'full' ? pulled : Math.max(hcStored[h] || 0, pulled);
+      const rec = { date: today.dateKey, hour: h, weekday: today.weekday, order_count: orderCount };
       const id = hcIds[h];
       if (id) hcUp.push({ id, ...rec }); else hcCr.push(rec);
     });
@@ -129,12 +161,41 @@ export default async function(req) {
       profileWritten = pUp.length + pCr.length;
     }
 
+    // ---- One BusyPulse row per Square order (the live level's only input) ----
+    // Only orders inside the 8-hour window are kept, so a 90-day full pull never
+    // writes rows that the prune would remove a moment later.
+    const pulseCutoffMs = nowMs - PULSE_KEEP_HOURS * 3600000;
+    const existingPulses = await base44.asServiceRole.entities.BusyPulse.filter({}, '-order_at', 2000);
+    const knownIds = new Set((existingPulses || []).map(p => p.sq_order_id));
+    const newPulses = [];
+    const queued = new Set();
+    for (const p of pulses) {
+      const at = Date.parse(p.order_at || '');
+      if (!p.sq_order_id || !Number.isFinite(at) || at < pulseCutoffMs) continue;
+      if (knownIds.has(p.sq_order_id) || queued.has(p.sq_order_id)) continue;
+      queued.add(p.sq_order_id);
+      newPulses.push(p);
+    }
+    if (newPulses.length) await base44.asServiceRole.entities.BusyPulse.bulkCreate(newPulses);
+
+    const stalePulses = (existingPulses || []).filter(p => {
+      const at = Date.parse(p.order_at || '');
+      return !Number.isFinite(at) || at < pulseCutoffMs;
+    });
+    if (stalePulses.length) {
+      await base44.asServiceRole.entities.BusyPulse.deleteMany({
+        id: { $in: stalePulses.map(p => p.id) },
+      } as any);
+    }
+
     return Response.json({
       success: true,
       mode,
       ordersPulled,
       todayHoursWritten: hoursToWrite.length,
       profileWritten,
+      pulsesWritten: newPulses.length,
+      pulsesPruned: stalePulses.length,
     });
   } catch (error) {
     console.error('syncSquareBusyness error:', error);
