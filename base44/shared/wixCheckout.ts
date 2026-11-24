@@ -62,6 +62,10 @@ export function wixPayPageUrl(payPageOrigin: string, orderNumber: string, fromCh
 export async function openWixCheckoutSession(base44: any, opts: {
   orderNumber: string;
   itemName?: string;
+  // The key the settlement reads back off the pending purchase. Defaults to the
+  // order's own number ("order:<number>"); a group ticket passes "group:<code>"
+  // because its Order row is only created after the payment succeeds.
+  productId?: string;
   amount: number;
   appUrl: string;
   thankYouPath: string;
@@ -129,7 +133,7 @@ export async function openWixCheckoutSession(base44: any, opts: {
     status: 'pending',
     appUserId: opts.appUserId ?? null,
     buyerEmail: buyer.email ?? null,
-    productId: `order:${opts.orderNumber}`,
+    productId: opts.productId || `order:${opts.orderNumber}`,
     productName: itemName,
     quantity: 1,
     amount: (amountCents / 100).toFixed(2),

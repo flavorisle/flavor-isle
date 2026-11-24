@@ -1,0 +1,94 @@
+{
+  "name": "GroupOrderLine",
+  "type": "object",
+  "properties": {
+    "group_order_id": {
+      "type": "string",
+      "description": "The GroupOrder this line belongs to."
+    },
+    "participant_name": {
+      "type": "string",
+      "description": "First name of the person whose item this is. Printed on the kitchen ticket beside the item."
+    },
+    "item_id": {
+      "type": "string",
+      "description": "MenuItem id this line was added from."
+    },
+    "item_name": {
+      "type": "string",
+      "description": "The menu item's name at the time it was added."
+    },
+    "unit_price": {
+      "type": "number",
+      "description": "The menu item's own catalog price, recomputed server side when the line was saved."
+    },
+    "selected_mods": {
+      "type": "array",
+      "description": "Exactly what the modifier sheet returns for this item: the chosen options with their group, name, price and id, including nested choices.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "extra_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "What the chosen options add, priced from the catalog server side."
+    },
+    "core_level": {
+      "type": "string",
+      "description": "Milkshake flavour level chosen on the shake (Lite / Regular / Extra), when the sheet returned one."
+    },
+    "salt_answer": {
+      "type": "string",
+      "description": "The salt answer given for a side that asks for one, as the sheet returned it."
+    },
+    "allergy_note": {
+      "type": "string",
+      "description": "The allergy note the customer flagged on this shake, when they flagged one."
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1,
+      "description": "How many of this item the participant added."
+    },
+    "line_total": {
+      "type": "number",
+      "description": "unit_price plus extra_cost, times quantity \u2014 recomputed server side, never taken from the browser."
+    },
+    "paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set with the rest of the group's lines when the one ticket is paid in full."
+    }
+  },
+  "required": [
+    "group_order_id",
+    "participant_name",
+    "item_id",
+    "item_name",
+    "unit_price",
+    "line_total"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

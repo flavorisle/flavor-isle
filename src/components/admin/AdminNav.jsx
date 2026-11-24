@@ -11,6 +11,7 @@ const LINKS = [
   { label: 'Combo Isle', to: '/admin/combo-isle', Icon: Package },
   { label: 'Explore Shops', to: '/admin/explore-shops', Icon: MapPinned },
   { label: 'Orders', to: '/admin/orders', Icon: Receipt },
+  { label: 'Group Orders', to: '/admin/group-orders', Icon: Users },
   { label: 'Customers', to: '/admin/customers', Icon: Users },
   { label: 'Store Settings', to: '/admin/store-settings', Icon: Store },
   { label: 'Reviews', to: '/admin/reviews', Icon: MessageSquareQuote },

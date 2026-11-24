@@ -9,8 +9,7 @@ import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import ShareItemButton from './ShareItemButton';
 import NestedModifierLists, { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import ModifierTile from './ModifierTile';
-import PlainOptionPills from './PlainOptionPills';
-import { isPillOption, groupHeading } from '@/lib/plainOption';
+import { groupHeading } from '@/lib/plainOption';
 import { getModifierPhoto, refreshModifierPhotos } from '@/lib/modifierPhotos';
 import { supportsLevels, modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import AllergyNote, { isShakeItem } from './AllergyNote';
@@ -381,22 +380,13 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
                     {ruleBadge(group)}
                   </span>
                 </div>
-                {/* Removal options — "No cheese", "No sauce", "Plain" — are
-                    compact pills; everything you add is a tile. A drink size
-                    picker keeps its own control, since picking a size is not a
+                {/* Every option is a tile — removals like "No sauce" and "No
+                    toppings" included (issue #356): one tap selects, a second
+                    tap clears, exactly as the pills behaved. A drink size picker
+                    keeps its own control, since picking a size is not a
                     modifier amount. */}
-                <PlainOptionPills
-                  options={group.modifiers}
-                  group={group}
-                  isSelected={(mod) => (group.selection_type === 'MULTIPLE'
-                    ? (selections[group.name] || []).some((m) => m.id === mod.id)
-                    : selections[group.name]?.id === mod.id)}
-                  onToggle={(mod) => (group.selection_type === 'MULTIPLE'
-                    ? toggleMultiple(group.name, mod)
-                    : toggleSingle(group.name, mod))}
-                />
                 <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-                  {group.modifiers.filter((mod) => !isPillOption(mod.name, group)).map((mod) => {
+                  {group.modifiers.map((mod) => {
                     if (iceContext && group.name === iceContext.sizeGroup.name) {
                       return (
                         <ClassicDrinkIceSize

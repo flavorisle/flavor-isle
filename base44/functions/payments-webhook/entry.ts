@@ -13,6 +13,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk";
 import { importSPKI, jwtVerify } from "npm:jose@5.9.6";
 import { settleWixWebOrder } from "../../shared/wixWebSettlement.ts";
+import { settleGroupTicket } from "../../shared/groupOrderTicket.ts";
 
 // Wix event types (verbatim from Wix docs).
 const ORDER_APPROVED = "wix.ecom.v1.order_approved";
@@ -177,20 +178,49 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   // It is idempotent (an order already marked paid returns untouched, and the
   // fulfillment path has its own per-action dedupe) and it only settles when the
   // amount the provider reports equals the total this app saved, to the cent.
-  const settledOrderNumber = String(purchase.productId ?? "").replace(/^order:/, "");
+  // A group ticket (issue #356) carries "group:<code>": its Order row is created
+  // here, only now that the whole ticket is paid, from the group's own lines.
+  const productKey = String(purchase.productId ?? "");
   const paidAmount = order?.priceSummary?.total?.amount;
-  const settlement = await settleWixWebOrder(db, {
-    orderNumber: settledOrderNumber,
-    checkoutSessionId: checkoutId,
-    wixOrderId: orderId ?? "",
-    amount: paidAmount != null ? Number(paidAmount) : null,
-  });
-  if (!settlement.ok) {
-    // Throw so the handler returns 500 and Wix retries: the purchase stays
-    // "pending", so the retry re-runs this block instead of short-circuiting on
-    // a status that was never earned.
-    console.error("payments-webhook: order settlement failed", { orderNumber: settledOrderNumber, checkoutId, error: settlement.error });
-    throw new Error(settlement.error || "Settlement failed");
+
+  if (productKey.startsWith("group:")) {
+    const groupCode = productKey.slice("group:".length).trim().toLowerCase();
+    const groups = await db.entities.GroupOrder.filter({ code: groupCode });
+    const group = groups?.[0];
+    if (!group) {
+      console.error("payments-webhook: no group for a paid group ticket", { groupCode, checkoutId });
+      throw new Error(`No group ${groupCode}`);
+    }
+    const lines = await db.entities.GroupOrderLine.filter({ group_order_id: group.id }, "created_date", 200);
+    const groupSettlement = await settleGroupTicket(db, {
+      group,
+      lines,
+      amount: paidAmount != null ? Number(paidAmount) : null,
+      checkoutSessionId: checkoutId,
+      wixOrderId: orderId ?? "",
+      buyerEmail: buyerEmail ?? "",
+    });
+    if (!groupSettlement.ok) {
+      // Same retry contract as an ordinary order: the purchase stays pending, so
+      // Wix's retry re-runs this block instead of skipping a paid ticket.
+      console.error("payments-webhook: group settlement failed", { groupCode, checkoutId, error: groupSettlement.error });
+      throw new Error(groupSettlement.error || "Group settlement failed");
+    }
+  } else {
+    const settledOrderNumber = productKey.replace(/^order:/, "");
+    const settlement = await settleWixWebOrder(db, {
+      orderNumber: settledOrderNumber,
+      checkoutSessionId: checkoutId,
+      wixOrderId: orderId ?? "",
+      amount: paidAmount != null ? Number(paidAmount) : null,
+    });
+    if (!settlement.ok) {
+      // Throw so the handler returns 500 and Wix retries: the purchase stays
+      // "pending", so the retry re-runs this block instead of short-circuiting on
+      // a status that was never earned.
+      console.error("payments-webhook: order settlement failed", { orderNumber: settledOrderNumber, checkoutId, error: settlement.error });
+      throw new Error(settlement.error || "Settlement failed");
+    }
   }
   // ===== END APP-SPECIFIC =====
 

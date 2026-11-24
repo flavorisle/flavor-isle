@@ -59,6 +59,9 @@ const Feedback = lazy(() => import('./pages/Feedback'));
 const Reviews = lazy(() => import('./pages/Reviews'));
 const Combos = lazy(() => import('./pages/Combos'));
 const DateNight = lazy(() => import('./pages/DateNight'));
+const GroupOrderStart = lazy(() => import('./pages/GroupOrderStart'));
+const GroupOrderRoom = lazy(() => import('./pages/GroupOrderRoom'));
+const AdminGroupOrders = lazy(() => import('./pages/AdminGroupOrders'));
 const DownloadApp = lazy(() => import('./pages/DownloadApp'));
 const SMSSignup = lazy(() => import('./pages/SMSSignup'));
 const BusynessGuide = lazy(() => import('./pages/BusynessGuide'));
@@ -235,6 +238,8 @@ const AuthenticatedApp = () => {
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
       <Route path="/smiths-grove" element={<SmithsGrove />} />
       <Route path="/date-night" element={<DateNight />} />
+      <Route path="/group-order" element={<GroupOrderStart />} />
+      <Route path="/group-order/:code" element={<GroupOrderRoom />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/local-attractions" element={<Navigate to="/i65-exit-38" replace />} />
       <Route path="/newsletter" element={<EmailNewsletterSignup />} />
@@ -277,6 +282,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/modifier-photos" element={<AdminModifierPhotos />} />
 
         <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/group-orders" element={<AdminGroupOrders />} />
         <Route path="/admin/merch-categories" element={<AdminMerchCategories />} />
         <Route path="/admin/communications" element={<AdminCommunications />} />
         <Route path="/admin/reviews" element={<AdminReviews />} />

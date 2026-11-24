@@ -1,0 +1,81 @@
+{
+  "name": "GroupOrder",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Random, unguessable code that is the group's share link. Created once by createGroupOrder and never reused."
+    },
+    "host_name": {
+      "type": "string",
+      "description": "First name of the person who started the group."
+    },
+    "title": {
+      "type": "string",
+      "description": "What the group is called, e.g. 'Friday lunch crew'."
+    },
+    "closes_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the group stops taking items. After this moment the lines lock and an unpaid group is not placed."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "paid",
+        "cancelled"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "blue",
+        "red"
+      ],
+      "default": "open",
+      "description": "open = taking items; closed = the close time passed and the lines are locked; paid = the whole ticket was paid in full; cancelled = dropped by the store."
+    },
+    "order_id": {
+      "type": "string",
+      "description": "The single pickup Order this group produced. Written only when the payment succeeds, never before."
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the whole ticket was paid."
+    },
+    "paid_by_name": {
+      "type": "string",
+      "description": "First name of the person who paid for the group. Shown to the group once the ticket is paid."
+    }
+  },
+  "required": [
+    "code",
+    "host_name",
+    "closes_at",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
