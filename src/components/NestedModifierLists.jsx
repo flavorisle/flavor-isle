@@ -1,8 +1,6 @@
 import React from 'react';
-import { ruleBadge, atMax } from '@/lib/modifierRules';
+import { ruleBadge } from '@/lib/modifierRules';
 import NestedModifierOption from '@/components/NestedModifierOption';
-import PlainOptionPills from '@/components/PlainOptionPills';
-import { isPillOption } from '@/lib/plainOption';
 
 // Renders Square nested modifier lists — the follow-up choices that appear
 // when a parent modifier is selected. For example, selecting a soda reveals
@@ -10,8 +8,8 @@ import { isPillOption } from '@/lib/plainOption';
 // "Preferences on Sauce" (Lite/Regular/Extra).
 //
 // The parent modifier's child_modifier_lists are stored on the MenuItem by
-// syncSquareCatalog. This component renders those child lists as pill-button
-// groups, styled as a subtle indented sub-section beneath the parent.
+// syncSquareCatalog. This component renders those child lists as tile groups,
+// styled as a subtle indented sub-section beneath the parent.
 //
 // Selection state is owned by the parent component and passed in/out via
 // nestedSelections + onChange so it can be flattened into the cart item's
@@ -25,27 +23,6 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
   const childLists = parentMod?.child_modifier_lists;
   if (!childLists || childLists.length === 0) return null;
 
-  const toggleSingle = (listName, mod) => {
-    const cur = nestedSelections || {};
-    onChange({
-      ...cur,
-      [listName]: cur?.[listName]?.id === mod.id ? null : mod,
-    });
-  };
-
-  const toggleMultiple = (list, mod) => {
-    const cur = nestedSelections || {};
-    const arr = cur[list.name] || [];
-    if (arr.find(m => m.id === mod.id)) {
-      onChange({ ...cur, [list.name]: arr.filter(m => m.id !== mod.id) });
-      return;
-    }
-    // Square's maximum for this list: once it holds that many picks, one more
-    // tap cannot add another.
-    if (atMax(list, arr)) return;
-    onChange({ ...cur, [list.name]: [...arr, mod] });
-  };
-
   return (
     <div className="mt-3 ml-3 pl-3 border-l-2 border-midnight-cherry/20 space-y-4">
       {childLists.filter(list => !isPreferenceList(list) && list.id !== hiddenListId).map(list => (
@@ -56,17 +33,11 @@ export default function NestedModifierLists({ parentMod, nestedSelections, onCha
               {ruleBadge(list)}
             </span>
           </div>
-          {/* Follow-up choices are tiles too, one size down to fit the indent. */}
-          <PlainOptionPills
-            options={list.modifiers || []}
-            group={list}
-            isSelected={(mod) => (list.selection_type === 'MULTIPLE'
-              ? (nestedSelections?.[list.name] || []).some((m) => m.id === mod.id)
-              : nestedSelections?.[list.name]?.id === mod.id)}
-            onToggle={(mod) => (list.selection_type === 'MULTIPLE' ? toggleMultiple(list, mod) : toggleSingle(list.name, mod))}
-          />
+          {/* Follow-up choices are tiles too, one size down to fit the indent —
+              every option, removals included: one tap selects, a second tap
+              clears (issue #357, tiles only). */}
           <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 120px))', gap: '6px', justifyContent: 'center' }}>
-            {(list.modifiers || []).filter((mod) => !isPillOption(mod.name, list)).map(mod => (
+            {(list.modifiers || []).map(mod => (
               <NestedModifierOption
                 key={mod.id}
                 mod={mod}

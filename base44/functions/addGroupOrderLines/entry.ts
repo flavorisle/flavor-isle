@@ -4,6 +4,7 @@ import { optionPriceMap } from '../../shared/groupOrderTicket.ts';
 import { getOptionPriceOverrides } from '../../shared/modifierOverrides.ts';
 import { getMenuSettingRecord } from '../../shared/storeState.ts';
 import { cleanCode, cleanName, findGroup, round2 } from '../../shared/groupOrderAccess.ts';
+import { dateNightSlot, dateNightShapeError } from '../../shared/dateNightSlots.ts';
 
 // A participant's items land on the group's one ticket (issue #356). Everything
 // that costs money is rebuilt here from the live menu: the browser sends which
@@ -29,12 +30,24 @@ export default async function (req: Request) {
     if (group.status === 'paid') return Response.json({ error: 'This group has already been paid, so its items are locked.' }, { status: 409 });
     if (group.status !== 'open') return Response.json({ error: 'This group has closed and its items are locked.' }, { status: 409 });
 
+    // Date Night for Two (issue #357): the second person fills in their picks
+    // once, and only in the date-night shape. A second send cannot stack a
+    // duplicate set on the same ticket.
+    const isDateNight = group.kind === 'date_night';
+    if (isDateNight) {
+      const existingLines = await base44.asServiceRole.entities.GroupOrderLine.filter({ group_order_id: group.id }, 'created_date', 200);
+      if ((existingLines || []).some((line: any) => String(line.participant_name || '').trim() === participant)) {
+        return Response.json({ error: 'Your picks are already on this ticket.' }, { status: 409 });
+      }
+    }
+
     const menuItems = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 500);
     const byId = new Map<string, any>((menuItems || []).map((m: any) => [m.id, m]));
     const setting = await getMenuSettingRecord(base44);
     const overrides = getOptionPriceOverrides(setting);
 
     const rows: any[] = [];
+    const slots: any[] = [];
     for (const raw of incoming) {
       const menuItem = byId.get(String(raw?.item_id || ''));
       if (!menuItem) {
@@ -43,6 +56,7 @@ export default async function (req: Request) {
       if (menuItem.is_hidden || menuItem.is_available === false) {
         return Response.json({ error: `"${menuItem.name}" is not available right now. Please take it out of your bag.` }, { status: 400 });
       }
+      slots.push(dateNightSlot(menuItem));
       const priceMap = optionPriceMap(menuItem, overrides);
       const mods = Array.isArray(raw?.selected_mods) ? raw.selected_mods : [];
       let extra = 0;
@@ -69,6 +83,11 @@ export default async function (req: Request) {
         line_total: round2((unitPrice + extra) * quantity),
         paid: false,
       });
+    }
+
+    if (isDateNight) {
+      const shapeError = dateNightShapeError(slots);
+      if (shapeError) return Response.json({ error: shapeError }, { status: 400 });
     }
 
     await base44.asServiceRole.entities.GroupOrderLine.bulkCreate(rows);

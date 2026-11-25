@@ -42,8 +42,10 @@ export async function groupView(base44: any, group: any) {
   return {
     group: {
       code: group.code,
+      kind: group.kind || 'group',
       title: group.title,
       host_name: group.host_name,
+      partner_name: group.partner_name || '',
       closes_at: group.closes_at,
       status: group.status,
       paid_by_name: group.paid_by_name || '',
@@ -53,7 +55,9 @@ export async function groupView(base44: any, group: any) {
     lines: (lines || []).map((line: any) => ({
       id: line.id,
       participant_name: line.participant_name,
+      item_id: line.item_id,
       item_name: line.item_name,
+      selected_mods: line.selected_mods || [],
       quantity: Number(line.quantity) || 1,
       line_total: round2(line.line_total),
       mods: (line.selected_mods || []).map((m: any) => m?.name).filter(Boolean),

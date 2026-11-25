@@ -49,8 +49,10 @@ export interface GroupTicketResult {
   total?: number;
 }
 
-// Rebuild and price a group's lines from the live catalog.
-export async function groupTicket(base44: any, lines: any[]): Promise<GroupTicketResult> {
+// Rebuild and price a group's lines from the live catalog. A Date Night for Two
+// (issue #357) passes happyHour: false — its flow is one price per item, never a
+// discount — and everything else about the pricing is identical.
+export async function groupTicket(base44: any, lines: any[], opts: { happyHour?: boolean } = {}): Promise<GroupTicketResult> {
   if (!lines || lines.length === 0) return { ok: false, error: 'This group has no items yet.' };
 
   const menuItems = await base44.asServiceRole.entities.MenuItem.list('-updated_date', 500);
@@ -59,7 +61,7 @@ export async function groupTicket(base44: any, lines: any[]): Promise<GroupTicke
   const setting = await getMenuSettingRecord(base44);
   const overrides = getOptionPriceOverrides(setting);
   const hh = getHappyHourConfig(setting);
-  const hhActive = isHappyHourActive(setting);
+  const hhActive = opts.happyHour === false ? false : isHappyHourActive(setting);
   const pct = (hh.discount_percent || 0) / 100;
   const hhIds = new Set<string>(hh.square_item_ids || []);
 
@@ -165,7 +167,10 @@ export async function settleGroupTicket(client: any, opts: {
     return { ok: true, already_paid: true, order_id: group.order_id };
   }
 
-  const ticket = await groupTicket(base44, lines);
+  // Date Night for Two (issue #357) is the same ticket with two named people,
+  // pickup only, arriving separately — and no discount of any kind.
+  const isDateNight = group?.kind === 'date_night';
+  const ticket = await groupTicket(base44, lines, { happyHour: !isDateNight });
   if (!ticket.ok) {
     console.error(`group order ${group?.code}: ticket could not be priced at settlement —`, ticket.error);
     return { ok: false, error: ticket.error };
@@ -213,12 +218,14 @@ export async function settleGroupTicket(client: any, opts: {
       tip: 0,
       discount: 0,
       promo_discount: 0,
-      happy_hour_discount: ticket.happyHourDiscount || 0,
+      happy_hour_discount: isDateNight ? 0 : (ticket.happyHourDiscount || 0),
       bundle_discount: 0,
       total: ticket.total,
       customer_name: String(group?.paid_by_name || group?.host_name || '').trim() || 'Group order',
       customer_email: String(opts.buyerEmail || '').trim(),
-      special_instructions: `Group order: ${String(group?.title || '').trim() || 'Group order'} — ${participants.join(', ')} (arriving together, one pickup)`,
+      special_instructions: isDateNight
+        ? `Date Night for Two: ${String(group?.host_name || '').trim()} and ${String(group?.partner_name || '').trim()} (arriving separately)`
+        : `Group order: ${String(group?.title || '').trim() || 'Group order'} — ${participants.join(', ')} (arriving together, one pickup)`,
       estimated_time: 20,
     });
   } catch (error) {

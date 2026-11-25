@@ -25,6 +25,9 @@ export default async function (req: Request) {
     const body = await req.json().catch(() => ({}));
     const code = cleanCode(body?.code);
     const payerName = cleanName(body?.payer_name, 40);
+    // Date Night for Two (issue #357) pays on its own screen and comes back to it.
+    // Only one of this app's own date-night routes for this exact code is accepted.
+    const returnPath = String(body?.return_path || '').trim();
 
     if (!code) return Response.json({ error: 'That group link is missing its code.' }, { status: 400 });
     if (!payerName) return Response.json({ error: 'Add the name of the person paying.' }, { status: 400 });
@@ -80,16 +83,22 @@ export default async function (req: Request) {
     }
 
     const appUrl = resolveAppUrl(req);
+    const backTo = new RegExp(`^/date-night/(invite|pay)/${group.code}$`).test(returnPath)
+      ? returnPath
+      : `/group-order/${group.code}`;
+    const itemName = group.kind === 'date_night'
+      ? `Date Night for Two — ${String(group.host_name || '').trim()} and ${String(group.partner_name || '').trim()}`
+      : `${String(group.title || 'Group order').slice(0, 120)} — group order`;
     let session;
     try {
       session = await openWixCheckoutSession(base44, {
         orderNumber: group.code,
-        itemName: `${String(group.title || 'Group order').slice(0, 120)} — group order`,
+        itemName,
         productId: `group:${group.code}`,
         amount: round2(Number(ticket.total)),
         appUrl,
-        thankYouPath: `/group-order/${group.code}?paid=1`,
-        postFlowPath: `/group-order/${group.code}?paid=1`,
+        thankYouPath: `${backTo}?paid=1`,
+        postFlowPath: `${backTo}?paid=1`,
       });
     } catch (sessionError) {
       console.error('payGroupOrder: the secure payment page could not be opened —', (sessionError as Error).message);

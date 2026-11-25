@@ -59,6 +59,8 @@ const Feedback = lazy(() => import('./pages/Feedback'));
 const Reviews = lazy(() => import('./pages/Reviews'));
 const Combos = lazy(() => import('./pages/Combos'));
 const DateNight = lazy(() => import('./pages/DateNight'));
+const DateNightInvite = lazy(() => import('./pages/DateNightInvite'));
+const DateNightPay = lazy(() => import('./pages/DateNightPay'));
 const GroupOrderStart = lazy(() => import('./pages/GroupOrderStart'));
 const GroupOrderRoom = lazy(() => import('./pages/GroupOrderRoom'));
 const AdminGroupOrders = lazy(() => import('./pages/AdminGroupOrders'));
@@ -238,6 +240,8 @@ const AuthenticatedApp = () => {
       <Route path="/explore-smiths-grove" element={<ExploreSmithsGrove />} />
       <Route path="/smiths-grove" element={<SmithsGrove />} />
       <Route path="/date-night" element={<DateNight />} />
+      <Route path="/date-night/invite/:code" element={<DateNightInvite />} />
+      <Route path="/date-night/pay/:code" element={<DateNightPay />} />
       <Route path="/group-order" element={<GroupOrderStart />} />
       <Route path="/group-order/:code" element={<GroupOrderRoom />} />
       <Route path="/visit-us" element={<Navigate to="/i65-exit-38" replace />} />

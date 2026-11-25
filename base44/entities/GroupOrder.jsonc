@@ -6,18 +6,35 @@
       "type": "string",
       "description": "Random, unguessable code that is the group's share link. Created once by createGroupOrder and never reused."
     },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "group",
+        "date_night"
+      ],
+      "enumColors": [
+        "blue",
+        "pink"
+      ],
+      "default": "group",
+      "description": "group = a shared group order (issue #356); date_night = the Date Night for Two flow (issue #357), which is the same one-ticket, one-payment group with two named people, a 24-hour invite and 'arriving separately' on the kitchen ticket."
+    },
     "host_name": {
       "type": "string",
       "description": "First name of the person who started the group."
     },
+    "partner_name": {
+      "type": "string",
+      "description": "Date Night only: the second person's first name, the one who fills in their picks from the invite. Both first names print on the kitchen ticket."
+    },
     "title": {
       "type": "string",
-      "description": "What the group is called, e.g. 'Friday lunch crew'."
+      "description": "What the group is called, e.g. 'Friday lunch crew'. A date night carries both first names here too."
     },
     "closes_at": {
       "type": "string",
       "format": "date-time",
-      "description": "When the group stops taking items. After this moment the lines lock and an unpaid group is not placed."
+      "description": "When the group stops taking items. After this moment the lines lock and an unpaid group is not placed. A date night is created 24 hours out, so its invite dies a day after it is sent."
     },
     "status": {
       "type": "string",

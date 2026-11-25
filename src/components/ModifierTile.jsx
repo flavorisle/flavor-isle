@@ -3,8 +3,8 @@ import React from 'react';
 // Issue #324 — one modifier option as a tile: 120px wide, photo on top, the
 // name (with its price on the same line) under it, and a Lite / Reg / Ex strip
 // along the bottom. Smaller than the original 148px so a group's real toppings
-// fit without scrolling past them. Removal options ("No cheese", "Plain") are
-// pills instead, never tiles — see PlainOptionPills.
+// fit without scrolling past them. Every option is a tile, removals included
+// (issue #357, tiles only).
 //
 // Height never changes: the photo block is square, the name box is exactly 21px
 // (two lines at 10.5px, always reserved whether the name is long or short, with

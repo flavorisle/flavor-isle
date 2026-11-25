@@ -44,7 +44,7 @@ function categoryGlyph(item) {
   return '⭐';
 }
 
-export default function MenuItemCard({ item, onFavoriteChange, autoOpen, variant }) {
+export default function MenuItemCard({ item, onFavoriteChange, autoOpen, variant, onPicked }) {
   const { addItem, orderingEnabled, orderingClosedMessage, menuSetting } = useCart();
   const isHappyHour = isHappyHourItem(item, menuSetting);
   const happyHourPrice = isHappyHour ? getHappyHourItemPrice(item, menuSetting) : null;
@@ -136,6 +136,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen, variant
     setTimeout(() => { if (img) img.style.viewTransitionName = ''; }, 600);
   };
 
+  // A caller that passes onPicked takes the finished line itself — Date Night for
+  // Two files each pick into its own slot instead of the bag. Every other surface
+  // passes nothing, so the line goes to the bag exactly as it always has.
+  const deliver = (line) => {
+    if (onPicked) onPicked(line);
+    else addItem(line);
+  };
+
   const handleAdd = (e) => {
     e?.stopPropagation();
     trackTrendingClick();
@@ -145,14 +153,14 @@ export default function MenuItemCard({ item, onFavoriteChange, autoOpen, variant
       trackSelectItem(foodItemToGa4(item));
       setShowModal(true);
     } else {
-      addItem(item);
+      deliver({ ...item });
       setAdded(true);
       setTimeout(() => setAdded(false), 1200);
     }
   };
 
   const handleModalConfirm = (selectedMods, extraCost, deluxeLabel, deluxeToppings, comboItems, allergyNote, coreLevel, saltNote) => {
-    addItem({
+    deliver({
       ...item,
       name: withShakeFlavorLevel(item.name, coreLevel),
       flavorLevel: coreLevel || undefined,

@@ -8,6 +8,7 @@ import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
+import DateNightSection from '@/components/dateNight/DateNightSection';
 
 const PATIO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/75533f8d0_IMG_8839.png';
 const MAPS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
@@ -86,6 +87,14 @@ export default function DateNight() {
               className="w-full aspect-[4/3] object-cover rounded-3xl shadow-float"
             />
           </div>
+        </div>
+      </section>
+
+      {/* Date Night for Two (issue #357) — the four-beat flow, built on the group
+          order layer. Above the footer, existing copy untouched. */}
+      <section id="date-night-for-two" className="px-4 sm:px-6 pb-16">
+        <div className="max-w-3xl mx-auto">
+          <DateNightSection />
         </div>
       </section>
 

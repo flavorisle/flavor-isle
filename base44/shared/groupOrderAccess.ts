@@ -14,6 +14,15 @@ export function cleanCode(value: any): string {
   return String(value || '').trim().toLowerCase();
 }
 
+// The share code, random and unguessable — the group's only credential.
+const CODE_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+
+export function newGroupCode(len = 10): string {
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
+}
+
 // The code is the group's only credential.
 export async function findGroup(base44: any, code: string) {
   if (!code) return null;
