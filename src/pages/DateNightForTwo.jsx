@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import Seo from '@/components/Seo';
 import DateNightFrame from '@/components/dateNight/DateNightFrame';
-import DateNightRows from '@/components/dateNight/DateNightRows';
+import DateNightCarousel from '@/components/dateNight/DateNightCarousel';
 import DateNightSummary from '@/components/dateNight/DateNightSummary';
 import DateNightReviews from '@/components/dateNight/DateNightReviews';
 import DateNightInvitePanel from '@/components/dateNight/DateNightInvitePanel';
@@ -190,7 +190,7 @@ export default function DateNightForTwo() {
             />
           </section>
 
-          <DateNightRows
+          <DateNightCarousel
             id="dn2-burger"
             heading="Your burger"
             items={bySlot.burger}
@@ -199,7 +199,7 @@ export default function DateNightForTwo() {
             onClear={() => clearPick('burger')}
           />
 
-          <DateNightRows
+          <DateNightCarousel
             id="dn2-side"
             heading="Share a side"
             note={side ? `We suggest ${side.name}.` : null}
@@ -210,7 +210,7 @@ export default function DateNightForTwo() {
             onClear={() => clearPick('side')}
           />
 
-          <DateNightRows
+          <DateNightCarousel
             id="dn2-shake"
             heading="Your shake"
             items={bySlot.shake}
@@ -219,7 +219,7 @@ export default function DateNightForTwo() {
             onClear={() => clearPick('shake')}
           />
 
-          <DateNightRows
+          <DateNightCarousel
             id="dn2-cake"
             heading="Sweet finish"
             optional

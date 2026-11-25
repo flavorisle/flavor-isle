@@ -299,9 +299,149 @@
   cursor: pointer;
 }
 
-.dn2-rows { display: flex; flex-direction: column; gap: 16px; }
+.dn2-head-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 
-.dn2-row { display: flex; flex-direction: column; gap: 8px; }
+/* Carousel — a flex row that snaps. No autoplay, no auto-scroll, no looping:
+   the arrows stop at each end and the only movement is the user's own. */
+.dn2-scroller {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 6px 14px;
+  scrollbar-width: none;
+}
+
+.dn2-scroller::-webkit-scrollbar { display: none; }
+
+/* One card plus a clear peek of the next on a phone; fixed width everywhere so
+   the row reads as a row, and equal heights so nothing jumps. */
+.dn2-slide {
+  flex: 0 0 auto;
+  display: flex;
+  width: 78%;
+  min-width: 200px;
+  max-width: 268px;
+  scroll-snap-align: start;
+}
+
+.dn2-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 5px 5px 0 var(--dn-ink);
+  color: var(--dn-ink);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dn2-item-photo {
+  display: block;
+  width: 100%;
+  height: 132px;
+  border-bottom: 3px solid var(--dn-ink);
+  background: var(--dn-cream);
+  object-fit: cover;
+}
+
+.dn2-item-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--dn-ink);
+}
+
+.dn2-item-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+
+.dn2-item-name {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--dn-ink);
+}
+
+.dn2-item-price {
+  margin-top: auto;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-red);
+}
+
+.dn2-item.is-picked { box-shadow: 5px 5px 0 var(--dn-red); }
+
+.dn2-arrows { display: none; gap: 8px; }
+
+@media (min-width: 768px) {
+  .dn2-arrows { display: inline-flex; }
+}
+
+.dn2-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--dn-ink);
+  box-shadow: 3px 3px 0 var(--dn-ink);
+  cursor: pointer;
+}
+
+.dn2-arrow:hover { background: var(--dn-mustard); }
+
+.dn2-arrow:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.dn2-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.dn2-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.dn2-dot::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--dn-ink);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.dn2-dot.is-on::before { background: var(--dn-red); }
 
 .dn2-state {
   align-self: flex-start;
@@ -317,8 +457,8 @@
   text-transform: uppercase;
 }
 
-.dn2-row.is-picked .dn2-state { background: var(--dn-mustard); }
-.dn2-row.is-suggested .dn2-state { background: var(--dn-teal); }
+.dn2-item.is-picked .dn2-state { background: var(--dn-mustard); }
+.dn2-item.is-suggested .dn2-state { background: var(--dn-teal); }
 
 /* The suggested side, agreed or swapped */
 .dn2-agree {
