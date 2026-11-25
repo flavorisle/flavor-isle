@@ -8,7 +8,6 @@ import Seo from '@/components/Seo';
 import { optimizedImageUrl } from '@/lib/utils';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary } from '@/lib/businessHours';
-import DateNightSection from '@/components/dateNight/DateNightSection';
 
 const PATIO_PHOTO = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/75533f8d0_IMG_8839.png';
 const MAPS_URL = 'https://maps.google.com/?q=103+N+Main+St+Smiths+Grove+KY+42171';
@@ -27,13 +26,16 @@ export default function DateNight() {
       <Navbar />
       <CartDrawer />
 
-      <section className="bg-obsidian-roast text-white">
+      <div className="dn-frame dn-frame--page force-light">
+      <section className="dn-page-hero text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 text-center">
           <p className="font-heading uppercase tracking-widest text-sm text-smashie-yellow mb-4">Smiths Grove · I-65 Exit 38</p>
           <h1 className="font-heading uppercase text-4xl sm:text-5xl leading-tight">Date Night in Smiths Grove</h1>
           <p className="text-white/85 text-lg mt-4 max-w-2xl mx-auto">Milkshakes, burgers and a patio worth the drive from Bowling Green.</p>
         </div>
       </section>
+
+      <div className="dn-checker" aria-hidden="true" />
 
       <section id="date-night" className="py-14 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
@@ -90,13 +92,21 @@ export default function DateNight() {
         </div>
       </section>
 
-      {/* Date Night for Two (issue #357) — the four-beat flow, built on the group
-          order layer. Above the footer, existing copy untouched. */}
-      <section id="date-night-for-two" className="px-4 sm:px-6 pb-16">
+      {/* The one card into the standalone Date Night for Two page (issue #358).
+          Every word of this page's own copy is untouched. */}
+      <section className="px-4 sm:px-6 pb-14">
         <div className="max-w-3xl mx-auto">
-          <DateNightSection />
+          <Link to="/date-night/for-two" className="dn2-card">
+            <p className="dn2-card-label">Date night</p>
+            <h2 className="dn2-card-title">Date Night for Two</h2>
+            <p className="dn2-card-copy">
+              Two burgers, one basket of fries, two hand-spun shakes. Pick yours, send it to your date, and pay once.
+            </p>
+            <span className="dn2-card-cta">Start a date night</span>
+          </Link>
         </div>
       </section>
+      </div>
 
       <Footer />
     </div>

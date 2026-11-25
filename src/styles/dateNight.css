@@ -1,260 +1,506 @@
-/* Date Night for Two (issue #357) — the 1964 diner frame.
-   Every rule in this file is scoped to .dn-frame, so the section on /date-night
-   and the invite and payment screens carry this styling and nothing else on the
-   site is touched. Colors are the app's own brand tokens, hard-coded here because
-   the frame is deliberately light paper even when the site is in dark mode. */
+/* ── Date Night surfaces (issue #358) ─────────────────────────────────────────
+   The v5 diner frame: cream paper #FBF3E4, dark ink #1A2233, red #C1121F,
+   mustard #F2B705, teal #7FE3D4. Every rule is scoped to .dn-frame (the frame
+   that wraps each date-night surface) or to .dn2-* (the Date Night for Two page,
+   its sticky bar and the /date-night card), so nothing global is touched.
+
+   Readability is part of the design, not a preference:
+   - body copy 17px on phones, 16px on desktop, line-height 1.6, ink on cream
+   - nothing anywhere under 12px
+   - the script face is the "Date Night" title ONLY, on a solid dark backing
+   - headings, prices, labels and body are plain bold sans
+   - state labels are 12px, bold, letter-spaced, full contrast
+   - all caps only for labels of three words or fewer
+   - every text block sits on solid cream or solid dark, never on a photo. */
 
 .dn-frame {
+  --dn-cream: #FBF3E4;
+  --dn-ink: #1A2233;
+  --dn-red: #C1121F;
+  --dn-mustard: #F2B705;
+  --dn-teal: #7FE3D4;
+
   position: relative;
-  background-color: #fdf6e3;
-  background-image: repeating-linear-gradient(0deg, rgba(0, 51, 102, 0.035) 0 1px, transparent 1px 26px);
-  border: 3px solid #003366;
-  border-radius: 26px;
-  box-shadow: 0 18px 50px rgba(0, 51, 102, 0.18);
-  color: #003366;
+  background: var(--dn-cream);
+  border: 3px solid var(--dn-ink);
+  border-radius: 20px;
+  box-shadow: 10px 10px 0 var(--dn-ink);
   font-family: var(--font-body);
-  padding-bottom: 1.5rem;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
+/* Beats .force-light's own color declaration, whatever order the sheets load. */
+.dn-frame.force-light { color: var(--dn-ink); }
+
+@media (min-width: 768px) {
+  .dn-frame { font-size: 16px; }
+}
+
+/* ── Neon header band ──────────────────────────────────────────────────────── */
+
 .dn-neon-wrap {
+  position: relative;
   text-align: center;
-  padding: 2rem 1.15rem 1.35rem;
+  padding: 26px 18px 24px;
+  background: var(--dn-ink);
+  background-image: radial-gradient(circle at 50% 0%, rgba(193, 18, 31, 0.55), transparent 72%);
+  border-radius: 17px 17px 0 0;
 }
 
 .dn-badge {
   display: inline-block;
-  transform: rotate(-4deg);
-  background: #003366;
-  color: #fdf6e3;
-  font-family: var(--font-heading);
+  transform: rotate(-5deg);
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border: 2px solid var(--dn-ink);
+  border-radius: 999px;
+  background: var(--dn-mustard);
+  color: var(--dn-ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--dn-red);
+}
+
+.dn-eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  padding: 0.32rem 0.75rem;
-  border-radius: 999px;
-  border: 2px solid #f5a623;
-  margin-bottom: 0.7rem;
+  color: var(--dn-teal);
 }
 
 .dn-neon {
+  display: inline-block;
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: clamp(2.6rem, 9vw, 4.75rem);
-  line-height: 0.92;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #fff6ea;
+  padding: 4px 22px 12px;
+  border: 2px solid rgba(127, 227, 212, 0.35);
+  border-radius: 14px;
+  background: #0E141C;
+  /* No generic cursive in the stack: if none of the script faces exist the
+     title lands on the body's bold sans at the same size, as required. */
+  font-family: 'Brush Script MT', 'Segoe Script', 'Snell Roundhand', var(--font-body);
+  font-weight: 700;
+  font-size: clamp(46px, 13vw, 86px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: #FFF1E2;
   text-shadow:
-    0 0 4px #fff,
-    0 0 10px #ff7a4d,
-    0 0 22px #cc3300,
-    0 0 44px rgba(204, 51, 0, 0.75);
+    0 0 6px #FFFFFF,
+    0 0 16px var(--dn-red),
+    0 0 34px rgba(193, 18, 31, 0.85);
+}
+
+.dn-fortwo {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--dn-mustard);
 }
 
 .dn-frame-tag {
-  margin: 0.6rem 0 0;
-  font-size: 0.95rem;
-  color: #3e5974;
+  margin: 12px auto 0;
+  max-width: 34rem;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dn-cream);
+}
+
+@media (min-width: 768px) {
+  .dn-frame-tag { font-size: 16px; }
 }
 
 .dn-checker {
   height: 18px;
-  border-top: 3px solid #003366;
-  border-bottom: 3px solid #003366;
-  background-image: repeating-conic-gradient(#cc3300 0% 25%, #fdf6e3 0% 50%);
-  background-size: 26px 26px;
+  border-top: 3px solid var(--dn-ink);
+  border-bottom: 3px solid var(--dn-ink);
+  background-image: repeating-conic-gradient(var(--dn-red) 0% 25%, var(--dn-cream) 0% 50%);
+  background-size: 24px 24px;
 }
 
 .dn-inner {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem 1.15rem 0;
+  gap: 22px;
+  padding: 22px 16px 26px;
 }
 
 @media (min-width: 640px) {
-  .dn-inner { padding: 2rem 2rem 0; }
+  .dn-inner { padding: 28px 26px 30px; gap: 26px; }
 }
 
-.dn-h {
-  margin: 0 0 0.35rem;
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #003366;
+/* ── Type ──────────────────────────────────────────────────────────────────── */
+
+.dn-h,
+.dn-slot-title,
+.dn2-h {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dn-ink);
 }
 
-.dn-sub {
-  margin: 0 0 0.9rem;
-  font-size: 0.95rem;
-  color: #3e5974;
+.dn-sub,
+.dn2-note,
+.dn-hint {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dn-ink);
 }
 
-/* Names */
-.dn-names { display: grid; gap: 0.9rem; }
-@media (min-width: 640px) { .dn-names { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 768px) {
+  .dn-sub,
+  .dn2-note,
+  .dn-hint { font-size: 16px; }
+}
+
+.dn-error {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-red);
+  text-align: center;
+}
+
+.dn-foot {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dn-ink);
+}
+
+/* ── Names ─────────────────────────────────────────────────────────────────── */
+
+.dn-names { display: grid; gap: 14px; }
+
+@media (min-width: 640px) {
+  .dn-names { grid-template-columns: 1fr 1fr; }
+}
 
 .dn-field label {
   display: block;
-  margin-bottom: 0.35rem;
-  font-family: var(--font-heading);
-  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: 0.78rem;
-  color: #003366;
+  color: var(--dn-ink);
 }
 
 .dn-field input {
   width: 100%;
-  background: #fff;
-  border: 2px solid rgba(0, 51, 102, 0.2);
-  border-radius: 14px;
-  padding: 0.75rem 0.9rem;
-  font-size: 1rem;
-  color: #003366;
+  padding: 12px 14px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--dn-ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.4;
 }
 
 .dn-field input:focus {
   outline: none;
-  border-color: #cc3300;
-  box-shadow: 0 0 0 3px rgba(204, 51, 0, 0.18);
+  border-color: var(--dn-red);
+  box-shadow: 0 0 0 3px rgba(193, 18, 31, 0.2);
 }
 
-/* Slots */
-.dn-slots { display: flex; flex-direction: column; gap: 1.4rem; }
+/* ── The two of you, summarised ────────────────────────────────────────────── */
 
-.dn-slot { border-top: 2px dashed rgba(0, 51, 102, 0.22); padding-top: 1.15rem; }
+.dn2-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 5px 5px 0 var(--dn-ink);
+}
+
+.dn2-summary-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dn2-summary-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
+}
+
+.dn2-summary-dot { color: var(--dn-red); font-weight: 800; }
+
+.dn2-summary-item {
+  font-size: 16px;
+  color: var(--dn-ink);
+}
+
+.dn2-heart {
+  flex: 0 0 auto;
+  color: var(--dn-red);
+}
+
+/* ── Sections and rows ─────────────────────────────────────────────────────── */
+
+.dn2-block {
+  border-top: 3px dashed rgba(26, 34, 51, 0.28);
+  padding-top: 20px;
+}
+
+.dn2-block:first-child { border-top: 0; padding-top: 0; }
+
+.dn2-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dn2-optional {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dn-red);
+}
+
+.dn2-clear {
+  flex: 0 0 auto;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--dn-red);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dn2-rows { display: flex; flex-direction: column; gap: 16px; }
+
+.dn2-row { display: flex; flex-direction: column; gap: 8px; }
+
+.dn2-state {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 3px 9px;
+  border: 2px solid var(--dn-ink);
+  border-radius: 6px;
+  background: #EFE4CE;
+  color: var(--dn-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dn2-row.is-picked .dn2-state { background: var(--dn-mustard); }
+.dn2-row.is-suggested .dn2-state { background: var(--dn-teal); }
+
+/* The suggested side, agreed or swapped */
+.dn2-agree {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 5px 5px 0 var(--dn-ink);
+}
+
+.dn2-agree-copy {
+  margin: 0 0 10px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dn-ink);
+}
+
+@media (min-width: 768px) {
+  .dn2-agree-copy { font-size: 16px; }
+}
+
+.dn2-agree-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+
+.dn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 10px;
+  background: var(--dn-red);
+  color: #FFFFFF;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--dn-ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.dn-btn:hover {
+  background: #A00E1A;
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--dn-ink);
+}
+
+.dn-btn:disabled {
+  background: #6B655B;
+  border-color: #6B655B;
+  color: #FFFFFF;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dn-btn-small { min-height: 44px; padding: 8px 14px; font-size: 14px; }
+.dn-btn-wide { width: 100%; padding: 14px 20px; font-size: 17px; }
+
+.dn-btn-ghost {
+  background: var(--dn-cream);
+  color: var(--dn-ink);
+}
+
+.dn-btn-ghost:hover {
+  background: var(--dn-mustard);
+  color: var(--dn-ink);
+}
+
+.dn-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dn-ink);
+  cursor: pointer;
+}
+
+.dn-icon-btn:hover { background: rgba(193, 18, 31, 0.12); color: var(--dn-red); }
+
+/* ── The old collapsible slots (the invite link sent before #358 still opens) ─ */
+
+.dn-slots { display: flex; flex-direction: column; gap: 20px; }
+
+.dn-slot { border-top: 3px dashed rgba(26, 34, 51, 0.28); padding-top: 18px; }
 .dn-slot:first-child { border-top: 0; padding-top: 0; }
 
 .dn-slot-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.dn-slot-title {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 1.35rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #003366;
-}
+.dn-slot-note { margin: 8px 0 12px; font-size: 16px; color: var(--dn-ink); }
 
-.dn-slot-note { margin: 0.4rem 0 0.8rem; font-size: 0.875rem; color: #3e5974; }
-.dn-cards { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.9rem; }
+.dn-cards { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
 
 .dn-chev { transition: transform 0.2s ease; }
 .dn-chev.is-open { transform: rotate(180deg); }
 
-/* Buttons */
-.dn-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  padding: 0.7rem 1.15rem;
-  border: 2px solid #cc3300;
-  border-radius: 999px;
-  background: #cc3300;
-  color: #fff;
-  font-family: var(--font-heading);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dn-btn:hover { background: #a82a00; box-shadow: 0 6px 18px rgba(204, 51, 0, 0.35); }
-.dn-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
-
-.dn-btn-small { min-height: 38px; padding: 0.45rem 0.9rem; font-size: 0.8rem; }
-.dn-btn-wide { width: 100%; padding: 0.95rem 1.25rem; font-size: 1rem; }
-
-.dn-btn-ghost { background: transparent; color: #003366; border-color: #003366; }
-.dn-btn-ghost:hover { background: #003366; color: #fdf6e3; box-shadow: none; }
-
-.dn-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 38px;
-  min-height: 38px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: #3e5974;
-  cursor: pointer;
-}
-
-.dn-icon-btn:hover { background: rgba(204, 51, 0, 0.1); color: #cc3300; }
-
-/* A pick */
 .dn-pick {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
-  padding: 0.7rem 0.9rem;
-  background: #fff;
-  border: 2px solid rgba(0, 51, 102, 0.15);
-  border-radius: 16px;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
 }
 
 .dn-pick-name {
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-  color: #003366;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
 }
 
-.dn-pick-mods { margin: 0.15rem 0 0; font-size: 0.8rem; color: #3e5974; }
-.dn-pick-price { margin-left: auto; font-family: var(--font-heading); font-size: 1rem; color: #cc3300; }
+.dn-pick-mods { margin: 2px 0 0; font-size: 14px; color: var(--dn-ink); }
 
-/* The suggested side, agreed or swapped */
+.dn-pick-price {
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-red);
+}
+
 .dn-agree {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 0.7rem;
-  padding: 0.85rem 0.95rem;
-  background: #fff;
-  border: 2px dashed rgba(0, 51, 102, 0.25);
-  border-radius: 16px;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 5px 5px 0 var(--dn-ink);
 }
 
 .dn-agree-label {
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #3e5974;
+  color: var(--dn-ink);
 }
 
 .dn-agree-name {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  color: #003366;
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
 }
 
-.dn-agree-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.dn-agree-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
-/* Receipt with a torn bottom edge */
+/* ── Diner receipt with a torn bottom edge ─────────────────────────────────── */
+
 .dn-receipt {
   position: relative;
-  margin-bottom: 0.9rem;
-  padding: 1.1rem 1.15rem 1.4rem;
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 8px 22px rgba(0, 51, 102, 0.12);
-  color: #003366;
+  margin-bottom: 14px;
+  padding: 16px 16px 24px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 8px;
+  background: #FFFFFF;
+  box-shadow: 6px 6px 0 var(--dn-ink);
+  color: var(--dn-ink);
 }
 
 .dn-receipt::after {
@@ -265,8 +511,8 @@
   bottom: -11px;
   height: 12px;
   background-image:
-    linear-gradient(135deg, #fff 50%, transparent 50%),
-    linear-gradient(225deg, #fff 50%, transparent 50%);
+    linear-gradient(135deg, #FFFFFF 50%, transparent 50%),
+    linear-gradient(225deg, #FFFFFF 50%, transparent 50%);
   background-size: 14px 14px;
   background-repeat: repeat-x;
 }
@@ -274,153 +520,377 @@
 .dn-receipt-kicker {
   margin: 0;
   text-align: center;
-  font-family: var(--font-heading);
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #3e5974;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: none;
+  color: var(--dn-ink);
 }
 
 .dn-receipt-name {
-  margin: 0.15rem 0 0.85rem;
+  margin: 4px 0 12px;
   text-align: center;
-  font-family: var(--font-heading);
-  font-size: 1.3rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #003366;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--dn-ink);
 }
 
 .dn-receipt-line {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.3rem 0;
-  font-size: 0.9rem;
-  border-bottom: 1px dotted rgba(0, 51, 102, 0.22);
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 16px;
+  border-bottom: 1px dotted rgba(26, 34, 51, 0.3);
 }
 
 .dn-receipt-line span:first-child { min-width: 0; }
-.dn-receipt-mods { display: block; font-size: 0.78rem; color: #3e5974; }
-.dn-receipt-empty { margin: 0.4rem 0; font-size: 0.9rem; color: #3e5974; text-align: center; }
+
+.dn-receipt-mods {
+  display: block;
+  font-size: 14px;
+  color: var(--dn-ink);
+}
+
+.dn-receipt-empty {
+  margin: 8px 0;
+  font-size: 16px;
+  color: var(--dn-ink);
+  text-align: center;
+}
 
 .dn-receipt-total {
   display: flex;
   justify-content: space-between;
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 2px solid #003366;
-  font-family: var(--font-heading);
-  font-size: 1.1rem;
-  letter-spacing: 0.05em;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 3px solid var(--dn-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
 }
 
-/* Send block */
-.dn-send { display: flex; flex-direction: column; gap: 0.75rem; }
+/* ── Send block and the invite, once it exists ─────────────────────────────── */
 
-.dn-hint { margin: 0; font-size: 0.85rem; color: #3e5974; text-align: center; }
-.dn-error { margin: 0; font-size: 0.85rem; color: #cc3300; text-align: center; }
+.dn-send { display: flex; flex-direction: column; gap: 12px; }
 
-/* The invite, once it exists */
 .dn-invite {
-  border-radius: 18px;
-  padding: 1.15rem;
-  background: #003366;
-  color: #fdf6e3;
+  padding: 18px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 14px;
+  background: var(--dn-ink);
+  color: var(--dn-cream);
+  box-shadow: 6px 6px 0 var(--dn-red);
 }
 
-.dn-invite .dn-h { color: #fdf6e3; }
-.dn-invite-copy { margin: 0 0 0.7rem; font-size: 0.9rem; color: rgba(253, 246, 227, 0.85); }
+.dn-invite .dn-h { color: var(--dn-cream); }
+
+.dn-invite-copy {
+  margin: 6px 0 12px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--dn-cream);
+}
 
 .dn-invite-link {
-  margin: 0 0 0.8rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 2px solid rgba(251, 243, 228, 0.5);
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.12);
-  font-size: 0.82rem;
-  color: #fff;
+  font-size: 14px;
+  color: #FFFFFF;
   word-break: break-all;
 }
 
-.dn-invite-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.dn-invite .dn-btn-ghost { color: #fdf6e3; border-color: #fdf6e3; }
-.dn-invite .dn-btn-ghost:hover { background: #fdf6e3; color: #003366; }
+.dn-invite-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.dn-invite .dn-btn-ghost {
+  background: transparent;
+  border-color: var(--dn-cream);
+  color: var(--dn-cream);
+}
+
+.dn-invite .dn-btn-ghost:hover { background: var(--dn-cream); color: var(--dn-ink); }
 
 .dn-invite-reset {
-  margin-top: 0.8rem;
-  background: none;
+  margin-top: 12px;
+  padding: 6px 0;
   border: 0;
-  padding: 0;
-  color: rgba(253, 246, 227, 0.75);
-  font-size: 0.8rem;
+  background: none;
+  color: var(--dn-cream);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
 }
 
-/* The whole ticket on the payment screen */
-.dn-ticket { display: flex; flex-direction: column; gap: 0.85rem; }
+/* ── The whole ticket on the payment screen ────────────────────────────────── */
+
+.dn-ticket { display: flex; flex-direction: column; gap: 14px; }
 
 .dn-person {
-  padding: 0.9rem 1rem;
-  background: #fff;
-  border: 2px solid rgba(0, 51, 102, 0.15);
-  border-radius: 16px;
+  padding: 14px 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
 }
 
 .dn-person-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.35rem;
+  gap: 12px;
+  margin-bottom: 6px;
 }
 
 .dn-person-name {
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: 1.2rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #003366;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
 }
 
-.dn-person-sub { font-family: var(--font-heading); color: #cc3300; }
+.dn-person-sub {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-red);
+}
 
-.dn-who { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.9rem; }
+.dn-who { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 
 .dn-who-btn {
-  min-height: 44px;
-  padding: 0.55rem 1.1rem;
-  border: 2px solid #003366;
-  border-radius: 999px;
-  background: transparent;
-  color: #003366;
-  font-family: var(--font-heading);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--dn-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
   cursor: pointer;
 }
 
-.dn-who-btn.is-on { background: #003366; color: #fdf6e3; }
+.dn-who-btn.is-on { background: var(--dn-ink); color: var(--dn-cream); }
 
 .dn-status {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem 0.9rem;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  font-size: 16px;
+  color: var(--dn-ink);
+}
+
+.dn-status.is-paid { background: var(--dn-teal); }
+.dn-status.is-closed { background: #F7D9D9; }
+
+/* ── The for-two page shell and its sticky footer ──────────────────────────── */
+
+.dn2-page {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 20px 16px 8px;
+}
+
+@media (min-width: 640px) {
+  .dn2-page { padding: 28px 24px 8px; }
+}
+
+.dn2-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 3px solid var(--dn-ink);
   border-radius: 14px;
-  background: rgba(0, 51, 102, 0.07);
-  font-size: 0.9rem;
-  color: #003366;
+  background: var(--dn-ink);
+  color: var(--dn-cream);
+  box-shadow: 0 -8px 0 rgba(26, 34, 51, 0.12);
 }
 
-.dn-status.is-paid { background: rgba(0, 51, 102, 0.12); }
-.dn-status.is-closed { background: rgba(204, 51, 0, 0.1); color: #8a2200; }
+/* Clear of the mobile tab bar. */
+@media (max-width: 767px) {
+  .dn2-sticky { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+}
 
-.dn-foot {
+.dn2-sticky-label {
   margin: 0;
-  text-align: center;
-  font-size: 0.8rem;
-  color: #3e5974;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dn-teal);
 }
+
+.dn2-sticky-total {
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-cream);
+}
+
+.dn2-sticky .dn-btn { flex: 1 1 240px; }
+
+/* ── Reviews ───────────────────────────────────────────────────────────────── */
+
+.dn2-reviews {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+@media (min-width: 720px) {
+  .dn2-reviews { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.dn2-review {
+  padding: 16px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 5px 5px 0 var(--dn-ink);
+}
+
+.dn2-review-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-ink);
+}
+
+.dn2-review-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dn-ink);
+}
+
+.dn2-review-quote {
+  margin: 10px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dn-ink);
+}
+
+@media (min-width: 768px) {
+  .dn2-review-quote { font-size: 16px; }
+}
+
+.dn2-review-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--dn-red);
+  text-decoration: underline;
+}
+
+/* ── The one card on /date-night ───────────────────────────────────────────── */
+
+.dn2-card {
+  display: block;
+  padding: 22px;
+  border: 3px solid var(--dn-ink);
+  border-radius: 14px;
+  background: #FFFFFF;
+  box-shadow: 8px 8px 0 var(--dn-ink);
+  color: var(--dn-ink);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dn2-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 var(--dn-ink);
+}
+
+.dn2-card-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dn-red);
+}
+
+.dn2-card-title {
+  margin: 6px 0 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.25;
+  color: var(--dn-ink);
+}
+
+.dn2-card-copy {
+  margin: 8px 0 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--dn-ink);
+}
+
+@media (min-width: 768px) {
+  .dn2-card-copy { font-size: 16px; }
+}
+
+.dn2-card-cta {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dn-red);
+}
+
+/* ── /date-night itself: the same frame, existing copy untouched ───────────── */
+
+.dn-frame--page {
+  max-width: 72rem;
+  margin: 24px auto;
+}
+
+@media (max-width: 640px) {
+  .dn-frame--page { margin: 12px; }
+}
+
+.dn-page-hero {
+  background: var(--dn-ink);
+  color: var(--dn-cream);
+  border-radius: 17px 17px 0 0;
+}
+
+/* Headings are plain bold sans at the required size — no condensed face, no
+   glow, no outline — and body copy is ink, never faded. */
+.dn-frame--page h1,
+.dn-frame--page h2,
+.dn-frame--page h3 {
+  font-family: var(--font-body);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dn-ink);
+}
+
+.dn-frame--page .dn-page-hero h1 { color: var(--dn-cream); }
+
+.dn-frame--page .text-muted-foreground { color: #2A3444; }

@@ -104,7 +104,7 @@ export default async function (req: Request) {
       rows.map((row) => ({ ...row, group_order_id: group.id })),
     );
 
-    const url = `${resolveAppUrl(req)}/date-night/invite/${group.code}`;
+    const url = `${resolveAppUrl(req)}/date-night/for-two/${group.code}`;
     return Response.json({ ok: true, code: group.code, url, closes_at: group.closes_at });
   } catch (error) {
     console.error('createDateNightInvite error:', (error as Error).message);
