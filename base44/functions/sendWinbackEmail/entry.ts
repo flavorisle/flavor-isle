@@ -7,7 +7,7 @@ import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 import { armWinbackCodeForSegment, winbackSegmentFor } from '../../shared/promoCode.ts';
-import { loadWinbackCustomers } from '../../shared/winbackAudience.ts';
+import { loadWinbackCustomers, loadSubscriberConsent } from '../../shared/winbackAudience.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -192,29 +192,50 @@ export default async function (req: Request) {
     }
     const armedSegments = new Set<string>();
 
+    // Email consent: an address whose EmailSubscriber row is unsubscribed,
+    // bounced or pending never receives a win-back. A lookup that cannot run
+    // proves nothing, so it holds every send instead of mailing on a guess.
+    const subscriberConsent = isTest ? null : await loadSubscriberConsent(base44).catch((e) => {
+      console.error('Subscriber consent lookup failed — holding every win-back send:', e.message);
+      return null;
+    });
+
     // Process each target
     let processed = 0;
     let skipped = 0;
+    const skippedByReason: Record<string, number> = {};
+    const holdBack = (reason: string) => {
+      skipped++;
+      skippedByReason[reason] = (skippedByReason[reason] || 0) + 1;
+    };
     for (const target of targets) {
+      // Consent first: a recorded opt-out outranks every other reason.
+      const consentHold = isTest ? null : (subscriberConsent ? subscriberConsent.holdReason(target.email) : 'subscriber_lookup_failed');
+      if (consentHold) {
+        console.log(`Win-back email skipped for ${target.email}: ${consentHold}.`);
+        holdBack(consentHold);
+        continue;
+      }
+
       // Issue #93 (A11): a blocked customer is skipped, and no LoyaltyEmail
       // claim is written, so lifting the block later makes them eligible again.
       if (!isTest && blockFilter && (blockFilter.hasEmail(target.email) || blockFilter.hasPhone(target.order?.customer_phone))) {
         console.log(`Win-back email skipped for ${target.email}: contact is on the block list.`);
-        skipped++;
+        holdBack('blocked');
         continue;
       }
 
       // Message consolidation cap: no marketing email within 24 hours of an
       // order, and only one automated marketing email per 7 days.
       const policy = await canSendMarketingEmail(base44, target.email);
-      if (!policy.ok) { console.log(`Marketing skip for ${target.email}: ${policy.reason}`); skipped++; continue; }
+      if (!policy.ok) { console.log(`Marketing skip for ${target.email}: ${policy.reason}`); holdBack('marketing_cap'); continue; }
 
       // The recipient's own segment decides which code the email carries.
       const segment = winbackSegmentFor(target.created);
       const code = codeBySegment.get(segment);
       if (!code?.code) {
         console.error(`Win-back email skipped for ${target.email}: no code found for segment ${segment}.`);
-        skipped++;
+        holdBack('no_code');
         continue;
       }
       const codePercent = Math.round(Number(code.percent_off) || 0);
@@ -245,7 +266,7 @@ export default async function (req: Request) {
       });
       if (error) {
         console.error('Win-back email send error:', error);
-        skipped++;
+        holdBack('send_failed');
         continue;
       }
 
@@ -275,7 +296,7 @@ export default async function (req: Request) {
       console.log(`Win-back email sent to ${recipient}${isTest ? ' [TEST]' : ''}`);
     }
 
-    return Response.json({ ok: true, found: targets.length, processed, skipped, test: isTest });
+    return Response.json({ ok: true, found: targets.length, processed, skipped, skipped_by_reason: skippedByReason, test: isTest });
   } catch (error) {
     console.error('sendWinbackEmail error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

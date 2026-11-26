@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { loadWinbackCustomers } from './winbackAudience.ts';
-import { validatePromoCode, normalizePromoCode } from './promoCode.ts';
+import { loadWinbackCustomers, loadSubscriberConsent, subscriberHoldReason } from './winbackAudience.ts';
+import { validatePromoCode, normalizePromoCode, winbackSegmentFor } from './promoCode.ts';
+import { normalizeEmail, isEmailableCustomer } from './emailSafety.ts';
 import { verifyOrderPricing } from './verifyOrderPricing.ts';
 import { settleCashPickupPayment } from './settleCashPickupPayment.ts';
 
@@ -169,6 +170,99 @@ for (const recordCash of [false, true]) {
     assert.deepEqual(counts, [1]);
   });
 }
+
+test('consent holds exactly the recorded non-active subscriber statuses', async () => {
+  assert.equal(subscriberHoldReason({ status: 'active' }), null);
+  assert.equal(subscriberHoldReason({ status: 'unsubscribed' }), 'subscriber_unsubscribed');
+  assert.equal(subscriberHoldReason({ status: 'bounced' }), 'subscriber_bounced');
+  assert.equal(subscriberHoldReason({ status: 'pending' }), 'subscriber_pending');
+  assert.equal(subscriberHoldReason({ status: '' }), null);
+
+  const consent = await loadSubscriberConsent({ asServiceRole: { entities: { EmailSubscriber: { list: async () => page([
+    { email: 'UNSUB@example.net', status: 'unsubscribed' },
+    { email: 'bounced@example.net', status: 'bounced' },
+    { email: 'pending@example.net', status: 'pending' },
+    { email: 'active@example.net', status: 'active' },
+  ]) } } } });
+  assert.equal(consent.holdReason('unsub@example.net'), 'subscriber_unsubscribed');
+  assert.equal(consent.holdReason('bounced@example.net'), 'subscriber_bounced');
+  assert.equal(consent.holdReason('pending@example.net'), 'subscriber_pending');
+  assert.equal(consent.holdReason('active@example.net'), null);
+  assert.equal(consent.holdReason('never-subscribed@example.net'), null);
+});
+
+// Runs the real sendWinbackEmail handler with isolated dependencies: no email
+// leaves the process, no claim or code is written.
+function winbackRun(subscribers) {
+  const sent = [];
+  const claims = [];
+  const client = { asServiceRole: { entities: {
+    CustomerProfile: { list: async () => page([{ id: 'p1', name: 'Lapsed Guest', email: 'lapsed@example.net' }]) },
+    Order: { filter: async () => page([{
+      id: 'o1', customer_email: 'lapsed@example.net', customer_name: 'Lapsed Guest',
+      status: 'completed', payment_status: 'paid', created_date: daysAgo(72),
+    }]) },
+    EmailSubscriber: { list: async () => page(subscribers) },
+    LoyaltyEmail: { filter: async () => [], create: async data => { claims.push(data); return data; } },
+    PromoCode: { list: async () => [{ id: 'c60', code: codes[1], segment: 'd60', percent_off: 15, expires_at: '2099-01-01T00:00:00Z' }], update: async () => ({}) },
+    MenuItem: { list: async () => [] },
+  } } };
+  const source = readFileSync(new URL('../functions/sendWinbackEmail/entry.ts', import.meta.url), 'utf8');
+  const prepared = source
+    .replace(/^import .*;\r?\n/gm, '')
+    .replace(/export default async function \(req(?:: Request)?\) \{/, 'const handler = async function (req) {');
+  const js = stripTypeScriptTypes(prepared, { mode: 'transform' });
+  const handler = vm.runInNewContext(
+    `(() => { ${js}\nreturn handler; })()`,
+    {
+      Response, console,
+      createClientFromRequest: () => client,
+      requireAdmin: async () => ({ error: null }),
+      Resend: class { constructor() { this.emails = { send: async message => { sent.push(message); return { error: null }; } }; } },
+      brandedEmailHtml: body => body, trackedLink: path => path,
+      excludeMaltSundae: list => list, fanFavoriteSort: () => 0, dailyRotate: list => list,
+      loadBlockFilter: async () => null,
+      canSendMarketingEmail: async () => ({ ok: true }),
+      normalizeEmail, isEmailableCustomer,
+      armWinbackCodeForSegment: async () => null,
+      winbackSegmentFor, loadWinbackCustomers, loadSubscriberConsent,
+      Deno: { env: { get: () => 'test-key' } },
+    },
+  );
+  return { handler, sent, claims };
+}
+
+test('an unsubscribed customer is held back and counted under its own skip reason', async () => {
+  const { handler, sent, claims } = winbackRun([{ email: 'lapsed@example.net', status: 'unsubscribed' }]);
+  const body = await (await handler(new Request('https://flavor-isle.com', { method: 'POST', body: '{}' }))).json();
+  assert.equal(body.processed, 0);
+  assert.equal(body.skipped, 1);
+  assert.deepEqual(body.skipped_by_reason, { subscriber_unsubscribed: 1 });
+  assert.equal(sent.length, 0);
+  assert.equal(claims.length, 0);
+});
+
+test('bounced and pending addresses are held the same way', async () => {
+  for (const status of ['bounced', 'pending']) {
+    const { handler, sent } = winbackRun([{ email: 'lapsed@example.net', status }]);
+    const body = await (await handler(new Request('https://flavor-isle.com', { method: 'POST', body: '{}' }))).json();
+    assert.equal(body.processed, 0);
+    assert.deepEqual(body.skipped_by_reason, { [`subscriber_${status}`]: 1 });
+    assert.equal(sent.length, 0);
+  }
+});
+
+test('an active subscriber still receives the win-back, as does a customer with no opt-out on file', async () => {
+  for (const subscribers of [[{ email: 'lapsed@example.net', status: 'active' }], []]) {
+    const { handler, sent, claims } = winbackRun(subscribers);
+    const body = await (await handler(new Request('https://flavor-isle.com', { method: 'POST', body: '{}' }))).json();
+    assert.equal(body.processed, 1);
+    assert.deepEqual(body.skipped_by_reason, {});
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].to, 'lapsed@example.net');
+    assert.equal(claims.length, 1);
+  }
+});
 
 test('an unpaid cash order never records a redemption', async () => {
   const order = { pay_cash_on_pickup: true, payment_status: 'pending', square_order_id: 'sq', total: 15 };
