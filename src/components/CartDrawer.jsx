@@ -6,6 +6,7 @@ import CartItemModifiers from './CartItemModifiers';
 import AdBannerStrip from './AdBannerStrip';
 import CartDessertUpsell from './CartDessertUpsell';
 import CartFallingLeaves from './CartFallingLeaves';
+import CartPriceNotice from '@/components/CartPriceNotice';
 import { optimizedImageUrl } from '@/lib/utils';
 import { trackViewCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import useLiveStatus from '@/hooks/useLiveStatus';
@@ -173,6 +174,7 @@ export default function CartDrawer() {
         {/* Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 relative">
           <CartFallingLeaves />
+          <CartPriceNotice className="mb-1" />
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
               <img

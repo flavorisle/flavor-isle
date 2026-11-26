@@ -16,6 +16,7 @@ import CurbsideVehicleFields from '@/components/checkout/CurbsideVehicleFields';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import CartItemModifiers from '@/components/CartItemModifiers';
+import CartPriceNotice from '@/components/CartPriceNotice';
 import { ORDER_TYPE_IMAGES } from '@/lib/orderTypeImages';
 import useBusinessHours from '@/hooks/useBusinessHours';
 import { hoursSummary, DAY_KEYS, formatTime12 } from '@/lib/businessHours';
@@ -34,7 +35,7 @@ const orderTypeLabel = (orderType, pickupMethod) =>
   orderType === 'pickup' && pickupMethod === 'curbside' ? 'Curbside Pickup' : ORDER_TYPE_LABELS[orderType];
 
 export default function Checkout() {
-  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount } = useCart();
+  const { cartItems, orderType, setOrderType, pickupMethod, subtotal, deliveryFee, tax, total, orderingEnabled, orderingClosedMessage, cutoffStatus, appliedReward, setAppliedReward, deliveryQuote, setDeliveryQuote, happyHourDiscount, bundleDiscount, refreshPrices } = useCart();
   const navigate = useNavigate();
 
   const businessHours = useBusinessHours();
@@ -348,6 +349,10 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems.length, subtotal, orderType, pickupMethod, orderingEnabled, storeClosed]);
 
+  // Issue #360: the cart is checked against the live menu as checkout opens, so a
+  // price that moved since the bag was built is shown here and not at the pay button.
+  useEffect(() => { refreshPrices(); }, [refreshPrices]);
+
   const handleContinue = async () => {
     setError('');
     const errors = {};
@@ -464,6 +469,14 @@ export default function Checkout() {
         return;
       }
       const refusal = data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap the pay button again.';
+      if (/price verification failed/i.test(refusal)) {
+        const repriced = await refreshPrices();
+        if (repriced?.ok) {
+          setError('');
+          noteCheckout();
+          return;
+        }
+      }
       setError(refusal);
       noteCheckout({ blocked_reason: refusal });
       return;
@@ -471,6 +484,14 @@ export default function Checkout() {
       // Surface the server's own explanation (price check, order save) — those
       // are written for customers — instead of a generic message.
       const apiError = err?.response?.data?.error || err?.data?.error || '';
+      if (/price verification failed/i.test(apiError)) {
+        const repriced = await refreshPrices();
+        if (repriced?.ok) {
+          setError('');
+          noteCheckout();
+          return;
+        }
+      }
       setError(apiError || 'Could not initialize payment. Please try again.');
       // A refused modifier rule or price check lands here: this is the block the
       // watchdog has to see, because the customer never gets an order.
@@ -946,6 +967,8 @@ export default function Checkout() {
                   <span>Total</span><span>${totalWithTip.toFixed(2)}</span>
                 </div>
               </div>
+
+              <CartPriceNotice className="mb-3" />
 
               {error && (
                 <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-2xl p-3 text-sm mb-4">

@@ -104,6 +104,10 @@ export interface PricingResult {
   tip?: number;
   total?: number;
   warnings?: string[];
+  // Per-line authoritative unit prices, in cart order (issue #360). Present on a
+  // successful check and on a subtotal/total mismatch, so a cart can be re-priced
+  // from the same numbers the guard just verified.
+  lineUnitPrices?: Array<{ index: number; unitPrice: number }>;
 }
 
 // Recompute and validate an order's pricing. `clientTotal` is the amount the
@@ -140,6 +144,7 @@ export async function verifyOrderPricing(base44: any, opts: {
   if (!items || items.length === 0) return { ok: false, error: 'No items provided' };
 
   const warnings: string[] = [];
+  const lineUnitPrices: Array<{ index: number; unitPrice: number }> = [];
 
   // ── Load MenuSetting + MenuItems ──
   // The single pinned settings record — the same one the website and Smashie read.
@@ -182,7 +187,8 @@ export async function verifyOrderPricing(base44: any, opts: {
   const bundleLines: Array<{ bundleId?: string; bundleGroup?: string; includedUnitPrice: number; quantity: number }> = [];
   // Catalog money in each complete Combo Isle box, so the 9% is recomputed here.
   const comboLines: Array<{ comboGroup: string; fullUnitPrice: number; quantity: number }> = [];
-  for (const item of items) {
+  for (let lineIndex = 0; lineIndex < items.length; lineIndex += 1) {
+    const item = items[lineIndex];
     const qty = Number(item.quantity) || 1;
     const inCompleteCombo = !!(item.comboGroup && completeComboIds.has(item.comboGroup));
     const sqId = item.square_item_id || item.catalog_object_id;
@@ -270,6 +276,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       freeShakeUnitPrice = lineUnitPrice;
     }
 
+    lineUnitPrices.push({ index: lineIndex, unitPrice: round2(lineUnitPrice) });
     const lineTotal = lineUnitPrice * qty;
     serverSubtotal += lineTotal;
     if (inCompleteCombo) comboLines.push({ comboGroup: item.comboGroup, fullUnitPrice: lineUnitPrice, quantity: qty });
@@ -370,6 +377,7 @@ export async function verifyOrderPricing(base44: any, opts: {
       return {
         ok: false,
         error: `Price verification failed: ${label} mismatch (server ${round2(serverVal)} vs client ${round2(clientVal)}). Please refresh the menu and try again.`,
+        lineUnitPrices,
       };
     }
   }
@@ -392,5 +400,6 @@ export async function verifyOrderPricing(base44: any, opts: {
     tip: serverTip,
     total: round2(clientTotal), // validated — charge what the customer saw
     warnings,
+    lineUnitPrices,
   };
 }

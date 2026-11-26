@@ -9,6 +9,7 @@ import { getFamilyBundleDiscount } from '@/lib/familyBundle';
 import { comboGroupStatus, dissolveLine } from '@/lib/comboIsle';
 import { toCents, fromCents, salesTaxCents } from '@/lib/tax';
 import { trackAddToCart, foodItemToGa4 } from '@/lib/ga4Ecommerce';
+import { fetchAuthoritativePrices } from '@/lib/cartReprice';
 
 const CartContext = createContext(null);
 
@@ -398,6 +399,48 @@ export function CartProvider({ children }) {
 
   const clearCart = useCallback(() => { setCartItems([]); setAppliedReward(null); }, []);
 
+  // ── Price refresh (issue #360) ──
+  // The total on screen must be the total that will be charged, so the cart is
+  // re-priced from the live menu when it arrives and whenever the bag is opened.
+  // Only prices ever change here: nothing is removed, ever.
+  const cartItemsRef = useRef(cartItems);
+  useEffect(() => { cartItemsRef.current = cartItems; }, [cartItems]);
+  const [priceNotice, setPriceNotice] = useState(null);
+  const clearPriceNotice = useCallback(() => setPriceNotice(null), []);
+  const refreshPrices = useCallback(async () => {
+    const current = cartItemsRef.current || [];
+    if (current.length === 0) return null;
+    const res = await fetchAuthoritativePrices(current);
+    if (!res) return null;
+    if (!res.ok) {
+      setPriceNotice({ kind: 'fix', message: res.error || '' });
+      return res;
+    }
+    const prices = new Map((res.lines || []).map(l => [Number(l.index), Number(l.unitPrice)]));
+    const next = current.map((line, i) => {
+      const p = prices.get(i);
+      return p != null && Math.abs(p - Number(line.price)) >= 0.005 ? { ...line, price: p } : line;
+    });
+    const changed = current.filter((line, i) => next[i] !== line);
+    if (changed.length === 0) return res;
+    const sum = (rows) => fromCents(rows.reduce((n, i) => n + toCents(Number(i.price) || 0) * (Number(i.quantity) || 1), 0));
+    setCartItems(next);
+    setPriceNotice({
+      kind: 'changed',
+      names: Array.from(new Set(changed.map(l => l.name))),
+      from: sum(current),
+      to: sum(next),
+    });
+    return res;
+  }, []);
+  // Once on arrival with a saved cart, then every time the bag is opened.
+  useEffect(() => {
+    if ((cartItemsRef.current || []).length > 0) refreshPrices();
+  }, [refreshPrices]);
+  useEffect(() => {
+    if (isCartOpen) refreshPrices();
+  }, [isCartOpen, refreshPrices]);
+
   const totalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const happyHourDiscount = getHappyHourDiscount(cartItems, menuSetting);
@@ -434,6 +477,7 @@ export function CartProvider({ children }) {
       happyHourDiscount,
       bundleDiscount,
       appliedReward, setAppliedReward,
+      refreshPrices, priceNotice, clearPriceNotice,
       deliveryQuote, setDeliveryQuote,
     }}>
       {children}
