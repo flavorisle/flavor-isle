@@ -414,24 +414,30 @@ export function CartProvider({ children }) {
     if (!res) return null;
     if (!res.ok) {
       setPriceNotice({ kind: 'fix', message: res.error || '' });
-      return res;
+      return { ...res, changed: 0 };
     }
     const prices = new Map((res.lines || []).map(l => [Number(l.index), Number(l.unitPrice)]));
+    const changedNames = [];
     const next = current.map((line, i) => {
+      // A Combo Isle box carries its discount inside its line prices, so the
+      // catalog price is not this line's price. Boxes are left exactly as they
+      // are: the guard re-prices the box as a whole.
+      if (line.comboGroup) return line;
       const p = prices.get(i);
-      return p != null && Math.abs(p - Number(line.price)) >= 0.005 ? { ...line, price: p } : line;
+      if (p == null || Math.abs(p - Number(line.price)) < 0.005) return line;
+      changedNames.push(line.name);
+      return { ...line, price: p };
     });
-    const changed = current.filter((line, i) => next[i] !== line);
-    if (changed.length === 0) return res;
+    if (changedNames.length === 0) return { ...res, changed: 0 };
     const sum = (rows) => fromCents(rows.reduce((n, i) => n + toCents(Number(i.price) || 0) * (Number(i.quantity) || 1), 0));
     setCartItems(next);
     setPriceNotice({
       kind: 'changed',
-      names: Array.from(new Set(changed.map(l => l.name))),
+      names: Array.from(new Set(changedNames)),
       from: sum(current),
       to: sum(next),
     });
-    return res;
+    return { ...res, changed: changedNames.length };
   }, []);
   // Once on arrival with a saved cart, then every time the bag is opened.
   useEffect(() => {

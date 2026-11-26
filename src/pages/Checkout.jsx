@@ -471,7 +471,7 @@ export default function Checkout() {
       const refusal = data?.error || 'We could not open the secure payment page, so nothing was charged. Please tap the pay button again.';
       if (/price verification failed/i.test(refusal)) {
         const repriced = await refreshPrices();
-        if (repriced?.ok) {
+        if (repriced?.ok && repriced.changed > 0) {
           setError('');
           noteCheckout();
           return;
@@ -486,7 +486,7 @@ export default function Checkout() {
       const apiError = err?.response?.data?.error || err?.data?.error || '';
       if (/price verification failed/i.test(apiError)) {
         const repriced = await refreshPrices();
-        if (repriced?.ok) {
+        if (repriced?.ok && repriced.changed > 0) {
           setError('');
           noteCheckout();
           return;
