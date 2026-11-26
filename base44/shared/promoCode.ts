@@ -119,6 +119,46 @@ export async function validatePromoCode(
   return { ok: true, code: normalized, promo, percent_off: percent, discount };
 }
 
+// ── Win-back code window (issue #325) ──
+// The approved wording is "21 days from send", so the clock starts when a code
+// is actually sent to a customer, never when the record was created. A code is
+// armed for its segment in the same step that sends the email, before it goes
+// out; until then the record carries no live window of its own.
+export const WINBACK_CODE_DAYS = 21;
+
+// Which win-back segment a customer falls in, from the age of their last order:
+// d30 (30-59 days), d60 (60-179) or d180 (180+).
+export function winbackSegmentFor(lastOrderAt: any, now: Date = new Date()): 'd30' | 'd60' | 'd180' {
+  const at = new Date(lastOrderAt).getTime();
+  if (!Number.isFinite(at)) return 'd30';
+  const days = Math.floor((now.getTime() - at) / (24 * 60 * 60 * 1000));
+  if (days < 60) return 'd30';
+  if (days < 180) return 'd60';
+  return 'd180';
+}
+
+// Sets the segment's code to expire 21 days from this moment. Returns the armed
+// record, or null when the code could not be found or written — the caller must
+// then send nothing, so no customer ever receives a code whose clock did not
+// start.
+export async function armWinbackCodeForSegment(
+  base44: any,
+  segment: string,
+  now: Date = new Date(),
+): Promise<any | null> {
+  try {
+    const rows = await base44.asServiceRole.entities.PromoCode.filter({ segment }).catch(() => []);
+    const promo = (Array.isArray(rows) ? rows : []).find((row: any) => row?.segment === segment) || null;
+    if (!promo?.id) return null;
+    const expires_at = new Date(now.getTime() + WINBACK_CODE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    await base44.asServiceRole.entities.PromoCode.update(promo.id, { expires_at });
+    return { ...promo, expires_at };
+  } catch (error) {
+    console.error('Win-back code arming failed:', (error as Error).message);
+    return null;
+  }
+}
+
 // One redemption is counted when the order is saved. The record is re-read first
 // so two checkouts in the same minute do not both write the same number.
 export async function recordPromoRedemption(base44: any, promo: any): Promise<void> {

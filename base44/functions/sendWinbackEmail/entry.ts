@@ -6,6 +6,7 @@ import { excludeMaltSundae, fanFavoriteSort, dailyRotate } from '../../shared/de
 import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
+import { armWinbackCodeForSegment, winbackSegmentFor } from '../../shared/promoCode.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -192,6 +193,26 @@ export default async function (req: Request) {
       console.error('Block-list lookup failed, sending unfiltered:', e.message);
       return null;
     });
+
+    // Issue #325: the 21-day code window starts when the code is actually sent,
+    // not when it was seeded. Each segment's code is armed for this run before
+    // any email carrying it goes out; if a code cannot be armed the run stops,
+    // so no customer is ever sent a code whose clock did not start. A test send
+    // never arms anything, so previewing the email cannot start a real clock.
+    if (!isTest) {
+      const segments = Array.from(new Set(targets.map(t => winbackSegmentFor(t.created))));
+      for (const segment of segments) {
+        const armed = await armWinbackCodeForSegment(base44, segment);
+        if (!armed) {
+          console.error(`Win-back run stopped: the ${segment} code could not be armed.`);
+          return Response.json(
+            { error: `The ${segment} win-back code could not be armed, so no win-back emails were sent.` },
+            { status: 500 },
+          );
+        }
+        console.log(`Win-back code ${armed.code} armed until ${armed.expires_at}.`);
+      }
+    }
 
     // Process each target
     let processed = 0;
