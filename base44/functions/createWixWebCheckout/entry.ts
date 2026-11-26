@@ -10,7 +10,7 @@ import { todaysMilkshakePrize } from '../../shared/findSmashiePrize.ts';
 import { openWixCheckoutSession, resolveAppUrl, wixCheckoutConfigured } from '../../shared/wixCheckout.ts';
 import { openSquareFallbackForOrder } from '../../shared/checkoutFallback.ts';
 import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
-import { normalizePromoCode, recordPromoRedemption, validatePromoCode } from '../../shared/promoCode.ts';
+import { normalizePromoCode, validatePromoCode } from '../../shared/promoCode.ts';
 
 // The website's secure card checkout on Base44 Payments (Wix) — the primary path
 // (issue #116, Part A step 2). This is createSquareWebCheckout's twin and keeps the
@@ -274,11 +274,6 @@ export default async function (req: Request) {
 
     // ── Open the secure payment page for exactly the saved total ──
     const name = splitName(customer?.name);
-    // One redemption is counted against the code now that the order exists.
-    if (promoDiscount > 0 && promo) {
-      await recordPromoRedemption(base44, promo);
-    }
-
     let checkoutUrl = '';
     let provider = 'wix';
     let sessionId = '';

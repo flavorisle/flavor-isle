@@ -159,14 +159,24 @@ export async function armWinbackCodeForSegment(
   }
 }
 
-// One redemption is counted when the order is saved. The record is re-read first
-// so two checkouts in the same minute do not both write the same number.
-export async function recordPromoRedemption(base44: any, promo: any): Promise<void> {
-  if (!promo?.id) return;
+// A redemption is counted only once the order is actually paid, and the count is
+// recomputed from the paid orders themselves rather than incremented: a re-run
+// cannot double-count, and an abandoned, cancelled or failed order never holds a
+// customer's one use. Call this from the paid fulfillment path, never at order
+// creation.
+export async function recordPromoRedemption(base44: any, order: any): Promise<void> {
+  const code = normalizePromoCode(order?.promo_code);
+  if (!code) return;
+  if (order?.status === 'cancelled') return;
+  if (order?.payment_status !== 'paid') return;
   try {
-    const fresh = await base44.asServiceRole.entities.PromoCode.get(promo.id).catch(() => null);
-    const current = Number(fresh?.times_redeemed ?? promo.times_redeemed) || 0;
-    await base44.asServiceRole.entities.PromoCode.update(promo.id, { times_redeemed: current + 1 });
+    const promo = await findPromoCode(base44, code);
+    if (!promo?.id) return;
+    const rows = await base44.asServiceRole.entities.Order.filter({ promo_code: code }).catch(() => []);
+    const paid = (Array.isArray(rows) ? rows : []).filter((o: any) =>
+      o?.id && o.payment_status === 'paid' && o.status !== 'cancelled',
+    ).length;
+    await base44.asServiceRole.entities.PromoCode.update(promo.id, { times_redeemed: paid });
   } catch (error) {
     console.error('Promo redemption count failed:', (error as Error).message);
   }

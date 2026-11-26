@@ -7,7 +7,7 @@ import { normalizeReferralCode } from '../../shared/referral.ts';
 import { customerLinkFields } from '../../shared/customerLink.ts';
 import { analyzeEmail } from '../../shared/emailValidation.ts';
 import { pickupTimeAllowed, PICKUP_HOURS_ERROR } from '../../shared/pickupHours.ts';
-import { normalizePromoCode, recordPromoRedemption, validatePromoCode } from '../../shared/promoCode.ts';
+import { normalizePromoCode, validatePromoCode } from '../../shared/promoCode.ts';
 
 // The website checkout's order creation.
 //
@@ -184,11 +184,6 @@ export default async function (req: Request) {
     // No processor page is involved: this URL is our own page, with Square's card
     // form embedded in it. `tip=included` tells the page the tip is already inside
     // the saved total, so it does not offer a second one.
-    // One redemption is counted against the code now that the order exists.
-    if (promoDiscount > 0 && promo) {
-      await recordPromoRedemption(base44, promo);
-    }
-
     const payUrl = `${PAY_PAGE_ORIGIN}/pay-square?order_number=${orderNumber}&tip=included`;
     try {
       await base44.asServiceRole.entities.Order.update(order.id, {

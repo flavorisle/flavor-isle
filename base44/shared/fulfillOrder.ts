@@ -9,6 +9,7 @@ import { getSmashieSettings } from './smashieSettings.ts';
 import { formatItemModifiers } from './ticketFormat.ts';
 import { relayKeyValue } from './internalRelay.ts';
 import { isEmailableCustomer } from './emailSafety.ts';
+import { recordPromoRedemption } from './promoCode.ts';
 
 // Log every attempt to push an order to Square POS so admins can see exactly
 // why an order might fail to sync. Best-effort — never blocks fulfillment.
@@ -472,6 +473,9 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
         discount: order.discount || 0,
         happyHourDiscount: order.happy_hour_discount || 0,
         bundleDiscount: order.bundle_discount || 0,
+        // Issue #325: the win-back promo rides to Square as its own order-level
+        // discount, exactly like the other two, so Square totals what was paid.
+        promoDiscount: order.promo_discount || 0,
         // Which bundle the discount belongs to, so Square labels it correctly.
         bundleId: order.bundle_id || '',
       });
@@ -547,6 +551,13 @@ export async function pushOrderToSquareAndKitchen(base44, order) {
     } catch (pushErr) {
       console.warn('Confirmed push failed:', pushErr.message);
     }
+  }
+
+  // A promo code's one use is recorded only once the order is actually paid, and
+  // the count is recomputed from paid orders, so a cancelled or failed order
+  // never holds it (issue #325).
+  if (order.payment_status === 'paid') {
+    await recordPromoRedemption(base44, order);
   }
 
   // Loyalty — only for new pushes (tied to the Square push)

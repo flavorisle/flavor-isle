@@ -22,7 +22,7 @@ export default async function(req) {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, bundleId, pickupMethod, vehicle } = body;
+    const { items, orderType, orderNumber, orderId, customer, instructions, total, tax, deliveryFee, tip, discount, happyHourDiscount, bundleDiscount, promoDiscount, bundleId, pickupMethod, vehicle } = body;
 
     // Issue #159 — same typo guard as the web checkout. Nothing is created or
     // pushed to Square with an address whose ending cannot receive mail.
@@ -422,9 +422,21 @@ export default async function(req) {
         scope: 'ORDER',
       });
     }
+    // Win-back promo code as its own order-level fixed discount, so the Square
+    // copy of a promo order totals exactly what the customer paid. Square only:
+    // the kitchen ticket never prints a code, a discount or a saving.
+    if (promoDiscount > 0) {
+      orderDiscounts.push({
+        uid: 'win-back-promo',
+        name: 'Win-back promo',
+        type: 'FIXED_AMOUNT',
+        amount_money: { amount: Math.round(promoDiscount * 100), currency: 'USD' },
+        scope: 'ORDER',
+      });
+    }
     // Square applies the ADDITIVE tax to the post-discount amount, so base the
     // percentage on the discounted subtotal to keep the applied tax equal to ours.
-    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0) - (bundleDiscount || 0);
+    const taxBase = itemsSubtotal - (discount || 0) - (happyHourDiscount || 0) - (bundleDiscount || 0) - (promoDiscount || 0);
     const orderTaxes = [];
     if (tax > 0 && taxBase > 0) {
       const pct = ((tax / taxBase) * 100).toFixed(2);

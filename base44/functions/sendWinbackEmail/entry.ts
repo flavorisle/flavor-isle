@@ -118,10 +118,11 @@ export default async function (req: Request) {
     }
 
     const now = Date.now();
+    // Issue #325: every lapsed customer is a win-back audience, split by how long
+    // they have been away — 30-59 days (d30), 60-179 (d60), 180+ (d180).
     const lowerBound = new Date(now - 30 * 24 * 60 * 60 * 1000);  // 30 days ago
-    const upperBound = new Date(now - 35 * 24 * 60 * 60 * 1000);  // 35 days ago
 
-    // Load recent orders (last 60 days covers the 30-35 day window)
+    // Load recent orders (the last 500 cover every lapsed customer)
     const orders = await base44.asServiceRole.entities.Order.list('-created_date', 500);
     const completedStatuses = ['completed', 'delivered'];
 
@@ -161,9 +162,9 @@ export default async function (req: Request) {
         }
       }
     } else {
-      // Production: customers whose last completed order was 30-35 days ago
+      // Production: customers whose last completed order was 30 or more days ago
       for (const [email, { order, created }] of customerLastOrder) {
-        if (created <= lowerBound && created >= upperBound) {
+        if (created <= lowerBound) {
           if (!isSkipEmail(email)) {
             targets.push({ email, order, created });
           }
@@ -194,25 +195,17 @@ export default async function (req: Request) {
       return null;
     });
 
-    // Issue #325: the 21-day code window starts when the code is actually sent,
-    // not when it was seeded. Each segment's code is armed for this run before
-    // any email carrying it goes out; if a code cannot be armed the run stops,
-    // so no customer is ever sent a code whose clock did not start. A test send
-    // never arms anything, so previewing the email cannot start a real clock.
-    if (!isTest) {
-      const segments = Array.from(new Set(targets.map(t => winbackSegmentFor(t.created))));
-      for (const segment of segments) {
-        const armed = await armWinbackCodeForSegment(base44, segment);
-        if (!armed) {
-          console.error(`Win-back run stopped: the ${segment} code could not be armed.`);
-          return Response.json(
-            { error: `The ${segment} win-back code could not be armed, so no win-back emails were sent.` },
-            { status: 500 },
-          );
-        }
-        console.log(`Win-back code ${armed.code} armed until ${armed.expires_at}.`);
-      }
+    // Issue #325: each segment's code and percentage come from its own PromoCode
+    // record, so an email can only ever quote the values checkout enforces. A
+    // code is armed only after an email for that segment is actually accepted by
+    // the sender in this run, from that send moment: a run that emails nobody
+    // leaves every expires_at untouched, and a test send arms nothing.
+    const codeRows = await base44.asServiceRole.entities.PromoCode.list('-created_date', 20).catch(() => []);
+    const codeBySegment = new Map<string, any>();
+    for (const row of (Array.isArray(codeRows) ? codeRows : [])) {
+      if (row?.segment && !codeBySegment.has(row.segment)) codeBySegment.set(row.segment, row);
     }
+    const armedSegments = new Set<string>();
 
     // Process each target
     let processed = 0;
@@ -231,6 +224,16 @@ export default async function (req: Request) {
       const policy = await canSendMarketingEmail(base44, target.email);
       if (!policy.ok) { console.log(`Marketing skip for ${target.email}: ${policy.reason}`); skipped++; continue; }
 
+      // The recipient's own segment decides which code the email carries.
+      const segment = winbackSegmentFor(target.created);
+      const code = codeBySegment.get(segment);
+      if (!code?.code) {
+        console.error(`Win-back email skipped for ${target.email}: no code found for segment ${segment}.`);
+        skipped++;
+        continue;
+      }
+      const codePercent = Math.round(Number(code.percent_off) || 0);
+
       // Build email
       const firstName = (target.order.customer_name || 'friend').split(' ')[0] || 'friend';
       const subject = `We miss you, ${firstName} 🍦`;
@@ -238,6 +241,7 @@ export default async function (req: Request) {
       const bodyHtml = `
         <p style="color:#666;margin:0 0 10px;font-size:16px;">Hey ${firstName},</p>
         <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">It's been a minute. The grill's still hot, the desserts are still decadent, and the family's still here. Place your next order on flavor-isle.com after 30 days away and <strong>100 Stars</strong> will land in your Star Rewards account. We would love to see you again.</p>
+        <p style="color:#141414;font-size:16px;margin:0 0 24px;line-height:1.6;">Online only: use code <strong>${code.code}</strong> for ${codePercent}% off your next order of $10 or more. One use per customer, valid 21 days from today.</p>
         ${await winbackPhotosHtml(base44)}
         <div style="text-align:center;margin:24px 0 8px;">
           <a href="${ctaLink}" style="display:inline-block;background:#C0392B;color:#fff;font-family:'Oswald',Arial,sans-serif;letter-spacing:2px;text-decoration:none;padding:18px 44px;border-radius:999px;font-size:18px;">Order online →</a>
@@ -268,6 +272,18 @@ export default async function (req: Request) {
           points_granted: 0,
           sent_at: new Date().toISOString(),
         });
+
+        // The window starts at the send that actually carried the code: arm this
+        // segment's code once, right after its first accepted email in this run.
+        if (!armedSegments.has(segment)) {
+          const armed = await armWinbackCodeForSegment(base44, segment);
+          if (armed) {
+            armedSegments.add(segment);
+            console.log(`Win-back code ${armed.code} armed until ${armed.expires_at}.`);
+          } else {
+            console.error(`Win-back code ${segment} could not be armed after a successful send.`);
+          }
+        }
       }
 
       processed++;
