@@ -29,6 +29,8 @@ const DEFAULTS = {
   googleReviewSmsEnabled: true,
   day14ShowcaseEmailEnabled: false,
   day45NudgeEmailEnabled: false,
+  // Win-back email safety gate: only an explicit true lets sendWinbackEmail run.
+  winback_send_approved: false,
 };
 
 // Returns the active settings merged over defaults. Always resolves (never

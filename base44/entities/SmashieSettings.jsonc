@@ -152,6 +152,11 @@
       "default": false,
       "description": "Issue #37 step 6 \u2014 Day 45 'we'd love to see you again' loyalty nudge for customers with no repeat order. DEFAULT FALSE: not switched on until the owner approves the final copy."
     },
+    "winback_send_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Safety gate for the win-back email. sendWinbackEmail refuses to read the audience or send anything unless this is explicitly true, so no scheduled run or other caller can mail customers before Wesley approves the copy and names a send date. Default false; set true only on his approval."
+    },
     "facebook_access_token": {
       "type": "string",
       "default": "",

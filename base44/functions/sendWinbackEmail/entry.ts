@@ -8,6 +8,7 @@ import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 import { armWinbackCodeForSegment, winbackSegmentFor } from '../../shared/promoCode.ts';
 import { loadWinbackCustomers, loadSubscriberConsent } from '../../shared/winbackAudience.ts';
+import { getSmashieSettings } from '../../shared/smashieSettings.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -106,6 +107,18 @@ function isSkipEmail(email) {
 export default async function (req: Request) {
   try {
     const base44 = createClientFromRequest(req);
+
+    // SAFETY GATE — the win-back copy is not approved and no send date is named,
+    // so nothing here may read the audience or send anything: not the daily
+    // trigger, not a test send, not any other caller. Only an explicit
+    // SmashieSettings.winback_send_approved === true opens it; a missing or
+    // unreadable setting counts as not approved.
+    const settings = await getSmashieSettings(base44);
+    if (settings?.winback_send_approved !== true) {
+      console.log('sendWinbackEmail: blocked — win-back send is not approved.');
+      return Response.json({ ok: true, skipped: true, reason: 'winback send not approved' });
+    }
+
     const { test_mode, test_recipient_email, customer_email } = await req.json();
     const isTest = !!test_mode;
     if (isTest && !test_recipient_email) {

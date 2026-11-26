@@ -193,11 +193,12 @@ test('consent holds exactly the recorded non-active subscriber statuses', async 
 
 // Runs the real sendWinbackEmail handler with isolated dependencies: no email
 // leaves the process, no claim or code is written.
-function winbackRun(subscribers) {
+function winbackRun(subscribers, settings = { winback_send_approved: true }) {
   const sent = [];
   const claims = [];
+  const reads = { audience: 0 };
   const client = { asServiceRole: { entities: {
-    CustomerProfile: { list: async () => page([{ id: 'p1', name: 'Lapsed Guest', email: 'lapsed@example.net' }]) },
+    CustomerProfile: { list: async () => { reads.audience += 1; return page([{ id: 'p1', name: 'Lapsed Guest', email: 'lapsed@example.net' }]); } },
     Order: { filter: async () => page([{
       id: 'o1', customer_email: 'lapsed@example.net', customer_name: 'Lapsed Guest',
       status: 'completed', payment_status: 'paid', created_date: daysAgo(72),
@@ -226,11 +227,26 @@ function winbackRun(subscribers) {
       normalizeEmail, isEmailableCustomer,
       armWinbackCodeForSegment: async () => null,
       winbackSegmentFor, loadWinbackCustomers, loadSubscriberConsent,
+      getSmashieSettings: async () => settings,
       Deno: { env: { get: () => 'test-key' } },
     },
   );
-  return { handler, sent, claims };
+  return { handler, sent, claims, reads };
 }
+
+test('an unapproved win-back setting blocks every caller before the audience is read', async () => {
+  for (const settings of [{}, { winback_send_approved: false }]) {
+    const { handler, sent, claims, reads } = winbackRun([], settings);
+    const response = await handler(new Request('https://flavor-isle.com', {
+      method: 'POST', body: '{"test_mode":true,"test_recipient_email":"ops@flavor-isle.com"}',
+    }));
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, skipped: true, reason: 'winback send not approved' });
+    assert.equal(reads.audience, 0);
+    assert.equal(sent.length, 0);
+    assert.equal(claims.length, 0);
+  }
+});
 
 test('an unsubscribed customer is held back and counted under its own skip reason', async () => {
   const { handler, sent, claims } = winbackRun([{ email: 'lapsed@example.net', status: 'unsubscribed' }]);
