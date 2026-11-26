@@ -157,7 +157,7 @@ export default async function (req: Request) {
         tip: pricing.tip || 0,
         discount: pricing.discount,
         promo_code: promoDiscount > 0 ? normalizePromoCode(promoCode) : '',
-        promo_discount: promoDiscount,
+        promo_discount: pricing.promoDiscount || 0,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? (orderBundleId || 'school-night-lifesaver') : '',

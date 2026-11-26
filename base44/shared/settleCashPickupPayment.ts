@@ -1,4 +1,5 @@
 import { squarePhoneApi } from './squarePhoneApi.ts';
+import { recordPromoRedemption } from './promoCode.ts';
 
 export async function settleCashPickupPayment(base44, order, recordCash = false, suppliedSquareOrder = null) {
   if (!order.pay_cash_on_pickup || order.payment_status === 'paid' || !order.square_order_id) return order;
@@ -25,6 +26,7 @@ export async function settleCashPickupPayment(base44, order, recordCash = false,
   const cash = payments.find(p => verified(p) && p.source_type === 'CASH');
   const updates = { payment_status: 'paid', manual_pay_required: false, ...(cash ? { cash_payment_id: cash.id } : {}) };
   await base44.asServiceRole.entities.Order.update(order.id, updates);
+  await recordPromoRedemption(base44, { ...order, ...updates });
   // A cash order often completes before the crew collects the money, and the
   // profile-stats sync only counts paid orders — so re-run it once cash lands
   // or the customer's order history would silently miss this visit.

@@ -248,7 +248,7 @@ export default async function (req: Request) {
         tip: round2(pricing.tip || 0),
         discount: round2((pricing.discount || 0) + (pricing.freeShakeDiscount || 0)),
         promo_code: promoDiscount > 0 ? normalizePromoCode(promoCode) : '',
-        promo_discount: promoDiscount,
+        promo_discount: pricing.promoDiscount || 0,
         happy_hour_discount: pricing.happyHourDiscount,
         bundle_discount: pricing.bundleDiscount || 0,
         bundle_id: (pricing.bundleDiscount || 0) > 0 ? (orderBundleId || 'school-night-lifesaver') : '',

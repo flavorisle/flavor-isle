@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { requireAdmin } from '../../shared/requireAdmin.ts';
 import { Resend } from 'npm:resend@3.2.0';
 import { brandedEmailHtml, trackedLink } from '../../shared/sendOrderEmails.ts';
@@ -7,6 +7,7 @@ import { loadBlockFilter } from '../../shared/blockedContacts.ts';
 import { canSendMarketingEmail } from '../../shared/messagePolicy.ts';
 import { normalizeEmail, isEmailableCustomer } from '../../shared/emailSafety.ts';
 import { armWinbackCodeForSegment, winbackSegmentFor } from '../../shared/promoCode.ts';
+import { loadWinbackCustomers } from '../../shared/winbackAudience.ts';
 
 const FROM = 'Flavor Isle <smashie@flavor-isle.com>';
 
@@ -122,35 +123,19 @@ export default async function (req: Request) {
     // they have been away — 30-59 days (d30), 60-179 (d60), 180+ (d180).
     const lowerBound = new Date(now - 30 * 24 * 60 * 60 * 1000);  // 30 days ago
 
-    // Load recent orders (the last 500 cover every lapsed customer)
-    const orders = await base44.asServiceRole.entities.Order.list('-created_date', 500);
-    const completedStatuses = ['completed', 'delivered'];
-
-    // Group completed online orders by customer email, tracking most recent
-    const customerLastOrder = new Map();
-    for (const o of (orders || [])) {
-      if (!o.customer_email || o.order_source === 'in_store') continue;
-      if (!completedStatuses.includes(o.status)) continue;
-      if (o.payment_status === 'failed' || o.payment_status === 'refunded') continue;
-      const created = new Date(o.created_date);
-      const existing = customerLastOrder.get(o.customer_email);
-      if (!existing || created > existing.created) {
-        customerLastOrder.set(o.customer_email, { order: o, created });
-      }
-    }
+    // Full purchase history, joined to the same customer directory as Admin.
+    const customerLastOrder = await loadWinbackCustomers(base44);
 
     let targets = [];
 
     if (isTest) {
       // Test mode: pick a real customer for the email content
       if (customer_email) {
-        const customerOrders = (orders || [])
-          .filter(o => o.customer_email === customer_email && completedStatuses.includes(o.status))
-          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+        const customer = customerLastOrder.get(normalizeEmail(customer_email));
         targets = [{
           email: customer_email,
-          order: customerOrders[0] || { customer_name: 'friend', id: null },
-          created: customerOrders[0] ? new Date(customerOrders[0].created_date) : new Date(),
+          order: customer?.order || { customer_name: 'friend', id: null },
+          created: customer?.created || new Date(),
         }];
       } else {
         // Pick the first customer with a completed order

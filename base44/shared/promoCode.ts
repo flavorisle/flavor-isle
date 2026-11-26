@@ -83,6 +83,7 @@ export async function validatePromoCode(
   const promo = await findPromoCode(base44, normalized);
   if (!promo) return { ok: false, error: 'That promo code is not valid.' };
   if (promo.is_active !== true) return { ok: false, error: 'That promo code is not active right now.' };
+  if (!promo.expires_at) return { ok: false, error: 'That promo code is not active yet.' };
 
   if (promo.expires_at) {
     const expires = new Date(promo.expires_at).getTime();
