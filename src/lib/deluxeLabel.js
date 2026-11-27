@@ -4,6 +4,8 @@
 // preset we show its name ("Deluxe") or "{name}, no <topping>" as toppings are
 // removed. Silent toppings are selected by the button but never called out.
 
+import { isNoneOption } from './noneOption';
+
 const norm = (s) => (s || '').toString().toLowerCase();
 // Tolerant stem so "Onion"/"Onions" and "Tomato"/"Tomatoes" match — the config
 // uses plural display names but the Square catalog often uses singular.
@@ -58,9 +60,11 @@ export function buildDeluxeLabelFull(selectedModifiers, presets) {
 
   // If the customer selected Plain or No Sauce, the Deluxe preset is no longer
   // active — drop the preset label entirely and just list the selected items.
+  // Any none option (Plain, No Sauce, No Toppings …) means the preset is no
+  // longer active — one shared rule, see lib/noneOption (issue #364).
   const hasPlainOrNoSauce = selectedModifiers.some((m) => {
     const name = norm(typeof m === 'string' ? m : m?.name || '');
-    return /plain/i.test(name) || /no\s*sauce/i.test(name);
+    return isNoneOption(name);
   });
   if (hasPlainOrNoSauce) return { label: null, allToppings: [] };
 
@@ -147,7 +151,7 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   // Detect Plain / No Sauce so we can prefix remaining items with "Only".
   const hasPlainOrNoSauce = selectedModifiers.some((m) => {
     const name = norm(m?.name || '');
-    return /plain/i.test(name) || /no\s*sauce/i.test(name);
+    return isNoneOption(name);
   });
 
   const cheeseLabel = (m) => {
@@ -177,10 +181,7 @@ export function buildFullDeluxeLabel(selectedModifiers, presets, item) {
   if (hasPlainOrNoSauce) {
     // Plain / No Sauce selected — Deluxe dropped; list remaining items with
     // "Only" prefix (e.g. "Only Mustard, Only Onion").
-    const items = selectedModifiers.filter(m => {
-      const name = norm(m.name || '');
-      return !/plain/i.test(name) && !/no\s*sauce/i.test(name);
-    });
+    const items = selectedModifiers.filter(m => !isNoneOption(m.name));
     const itemLabels = items.map(m => cheeseLabel(m) || `Only ${m.name}`);
     return { label: itemLabels.join(', ') || null, allToppings: [] };
   }

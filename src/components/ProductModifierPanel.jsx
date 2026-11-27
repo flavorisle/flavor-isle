@@ -8,6 +8,7 @@ import { trackViewItem, foodItemToGa4 } from '@/lib/ga4Ecommerce';
 import { flattenModifierWithNested, nestedSelectionsExtra } from './NestedModifierLists';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { seedValue, atMax, firstUnsatisfied } from '@/lib/modifierRules';
+import { isNoneOption } from '@/lib/noneOption';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection } from './classicDrinkIce';
 import { restorePanelSelection } from '@/lib/restorePanelSelection';
 
@@ -94,26 +95,36 @@ const ProductModifierPanel = forwardRef(function ProductModifierPanel(
     }));
   };
 
+  // Multi-select groups (issue #364): NO TOPPINGS / NO SAUCE / PLAIN clear the
+  // whole group in one tap, and a real topping knocks any none option off. The
+  // product page's "What's on it" tiles reach this through toggleModifier, so
+  // the rule is identical to the quick-add modal's.
   const toggleMultiple = (groupName, mod) => {
-    setSelections(prev => {
-      const current = prev[groupName] || [];
-      const exists = current.find(m => m.id === mod.id);
-      const isExclusive = /plain/i.test(mod.name) || /no\s*sauce/i.test(mod.name);
-      if (exists) {
-        return { ...prev, [groupName]: current.filter(m => m.id !== mod.id) };
-      }
-      // Square's maximum: once the group holds as many picks as Square allows,
-      // one more tap cannot add another.
+    const current = selections[groupName] || [];
+    if (current.some(m => m.id === mod.id)) {
+      setSelections(prev => ({
+        ...prev,
+        [groupName]: (prev[groupName] || []).filter(m => m.id !== mod.id),
+      }));
+      return;
+    }
+    const none = isNoneOption(mod.name);
+    // Square's maximum: a none option replaces the group instead of adding to
+    // it, so the cap never blocks it.
+    if (!none) {
       const group = groups.find(g => g.name === groupName);
-      if (group && atMax(group, current)) return prev;
-      if (isExclusive) {
-        // Plain / No Sauce clears everything else in the group
-        return { ...prev, [groupName]: [mod] };
-      }
-      // Selecting a regular topping/sauce removes any Plain/No Sauce
-      const filtered = current.filter(m => !/plain/i.test(m.name) && !/no\s*sauce/i.test(m.name));
-      return { ...prev, [groupName]: [...filtered, mod] };
-    });
+      if (group && atMax(group, current)) return;
+    }
+    const next = none ? [mod] : [...current.filter(m => !isNoneOption(m.name)), mod];
+    const droppedIds = current.filter(m => !next.some(n => n.id === m.id)).map(m => m.id);
+    setSelections(prev => ({ ...prev, [groupName]: next }));
+    if (droppedIds.length) {
+      setNestedSelections(prev => {
+        const out = { ...prev };
+        for (const id of droppedIds) delete out[id];
+        return out;
+      });
+    }
   };
 
   // Flatten selections for live deluxe label

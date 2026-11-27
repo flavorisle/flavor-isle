@@ -18,6 +18,7 @@ import FlavorAmountLegend from './FlavorAmountLegend';
 import ShakeFlavorControl from './ShakeFlavorControl';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { seedValue, ruleBadge, atMax, firstUnsatisfied } from '@/lib/modifierRules';
+import { isNoneOption } from '@/lib/noneOption';
 import ClassicDrinkIceSize from './ClassicDrinkIceSize';
 import { getIceContext, iceLevelFor, iceOption, withIceSelection, ICE_LIST_ID } from './classicDrinkIce';
 import { isSaltQuestionItem, saltNoteText } from '@/lib/sideSalt';
@@ -157,24 +158,39 @@ export default function ModifierModal({ item, onClose, onConfirm, autoCombo, opt
     }));
   };
 
+  // Multi-select groups (issue #364): NO TOPPINGS / NO SAUCE / PLAIN clear the
+  // whole group in one tap, and a real topping knocks any none option off. The
+  // shared isNoneOption list is the only place that rule lives.
   const toggleMultiple = (groupName, mod) => {
-    setSelections(prev => {
-      const current = prev[groupName] || [];
-      const exists = current.find(m => m.id === mod.id);
-      const isExclusive = /plain/i.test(mod.name) || /no\s*sauce/i.test(mod.name);
-      if (exists) {
-        return { ...prev, [groupName]: current.filter(m => m.id !== mod.id) };
-      }
-      // Square's maximum: once the group holds as many picks as Square allows,
-      // one more tap cannot add another.
+    const current = selections[groupName] || [];
+    // Taking an option off is always allowed; a selected none option just clears.
+    if (current.some(m => m.id === mod.id)) {
+      setSelections(prev => ({
+        ...prev,
+        [groupName]: (prev[groupName] || []).filter(m => m.id !== mod.id),
+      }));
+      return;
+    }
+    const none = isNoneOption(mod.name);
+    // Square's maximum: once the group holds as many picks as Square allows,
+    // one more tap cannot add another. A none option replaces instead of adding,
+    // so it is never blocked by the cap.
+    if (!none) {
       const group = groups.find(g => g.name === groupName);
-      if (group && atMax(group, current)) return prev;
-      if (isExclusive) {
-        return { ...prev, [groupName]: [mod] };
-      }
-      const filtered = current.filter(m => !/plain/i.test(m.name) && !/no\s*sauce/i.test(m.name));
-      return { ...prev, [groupName]: [...filtered, mod] };
-    });
+      if (group && atMax(group, current)) return;
+    }
+    const next = none ? [mod] : [...current.filter(m => !isNoneOption(m.name)), mod];
+    // Whatever this tap cleared loses its Lite/Regular/Extra state too, so no
+    // orphaned nested choice lingers under an option that is no longer picked.
+    const droppedIds = current.filter(m => !next.some(n => n.id === m.id)).map(m => m.id);
+    setSelections(prev => ({ ...prev, [groupName]: next }));
+    if (droppedIds.length) {
+      setNestedSelections(prev => {
+        const out = { ...prev };
+        for (const id of droppedIds) delete out[id];
+        return out;
+      });
+    }
   };
 
   // Flatten the current selections into the same shape used by the cart so the

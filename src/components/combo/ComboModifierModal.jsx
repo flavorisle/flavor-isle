@@ -3,6 +3,7 @@ import { X, Plus } from 'lucide-react';
 import { applyModifierOverrides } from '@/lib/modifierOverrides';
 import { round2 } from '@/lib/comboIsle';
 import { atMax, ruleBadge, firstUnsatisfied } from '@/lib/modifierRules';
+import { isNoneOption } from '@/lib/noneOption';
 import { modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import { mergeNestedIntoParent } from '@/components/NestedModifierLists';
 import ModifierTile from '@/components/ModifierTile';
@@ -39,15 +40,34 @@ export default function ComboModifierModal({ item, overrides, onClose, onConfirm
   // Square's maximum carries into the Combo Isle exactly as it does everywhere
   // else: once the group holds as many picks as Square allows, one more tap
   // cannot add another. Taking an option off is always allowed.
-  const toggleMultiple = (groupName, mod) =>
-    setSelections((prev) => {
-      const current = prev[groupName] || [];
-      const exists = current.find((m) => m.id === mod.id);
-      if (exists) return { ...prev, [groupName]: current.filter((m) => m.id !== mod.id) };
+  // A combo box obeys the same rule as every other multi-select group (issue
+  // #364): a none option clears the group in one tap, a real option knocks it
+  // off, and anything cleared loses its Lite/Extra state with it.
+  const toggleMultiple = (groupName, mod) => {
+    const current = selections[groupName] || [];
+    if (current.some((m) => m.id === mod.id)) {
+      setSelections((prev) => ({
+        ...prev,
+        [groupName]: (prev[groupName] || []).filter((m) => m.id !== mod.id),
+      }));
+      return;
+    }
+    const none = isNoneOption(mod.name);
+    if (!none) {
       const group = groups.find((g) => g.name === groupName);
-      if (group && atMax(group, current)) return prev;
-      return { ...prev, [groupName]: [...current, mod] };
-    });
+      if (group && atMax(group, current)) return;
+    }
+    const next = none ? [mod] : [...current.filter((m) => !isNoneOption(m.name)), mod];
+    const droppedIds = current.filter((m) => !next.some((n) => n.id === m.id)).map((m) => m.id);
+    setSelections((prev) => ({ ...prev, [groupName]: next }));
+    if (droppedIds.length) {
+      setNested((prev) => {
+        const out = { ...prev };
+        for (const id of droppedIds) delete out[id];
+        return out;
+      });
+    }
+  };
 
   // Each chosen option folded with its Lite/Extra level: the level merges into
   // the name ("Extra Pickles") and its price, exactly as the bag lists it.

@@ -3,6 +3,7 @@ import ModifierTile from '@/components/ModifierTile';
 import { getModifierPhoto } from '@/lib/modifierPhotos';
 import { modifierLevelOptions, levelFromNested, withModifierLevel } from '@/lib/modifierLevels';
 import { atMax } from '@/lib/modifierRules';
+import { isNoneOption } from '@/lib/noneOption';
 
 export default function NestedModifierOption({ mod, list, selections = {}, onChange }) {
   const multiple = list.selection_type === 'MULTIPLE';
@@ -14,9 +15,14 @@ export default function NestedModifierOption({ mod, list, selections = {}, onCha
     const next = level == null ? null : {
       ...mod, nestedSelections: withModifierLevel(mod, chosen?.nestedSelections, level),
     };
+    // A follow-up list obeys the same rule as the parent groups (issue #364):
+    // "No Added Flavors" / "No Extra Candy" clears the list in one tap, and a
+    // real choice knocks it back off.
     const updated = multiple
       ? chosen ? picks.flatMap((option) => option.id === mod.id ? next ? [next] : [] : [option])
-        : next ? [...picks, next] : picks
+        : next
+          ? (isNoneOption(next.name) ? [next] : [...picks.filter((option) => !isNoneOption(option.name)), next])
+          : picks
       : next;
     onChange({ ...selections, [list.name]: updated });
   };

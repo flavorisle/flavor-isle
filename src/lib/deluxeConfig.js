@@ -8,6 +8,8 @@
 // selects but never calls out as missing (e.g. Mayo is part of a Deluxe but
 // shouldn't show "no Mayo").
 //
+import { isNoneOption } from './noneOption';
+
 // The configuration is an admin setting stored on the MenuSetting record
 // (`deluxe: { enabled, presets }`) so it applies to every visitor, not just the
 // admin's browser. It's hydrated into a module-level cache once the setting
@@ -203,8 +205,9 @@ export function applyDeluxePreset(selections, preset, active) {
     const current = next[group];
     if (Array.isArray(current)) {
       if (active) {
-        // Remove Plain/No Sauce when adding preset toppings
-        const filtered = current.filter((s) => !/plain/i.test(s.name) && !/no\s*sauce/i.test(s.name));
+        // Remove any none option (Plain, No Sauce, No Toppings …) when adding
+        // preset toppings — one shared rule, see lib/noneOption (issue #364).
+        const filtered = current.filter((s) => !isNoneOption(s.name));
         if (!filtered.some((s) => s.id === m.id)) filtered.push({ id: m.id, name: m.name, price: m.price });
         next[group] = filtered;
       } else {
