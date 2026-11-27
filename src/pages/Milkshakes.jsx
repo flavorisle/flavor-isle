@@ -9,6 +9,7 @@ import ShakeCustomizer from '@/components/ShakeCustomizer';
 import PremiumShakesSection from '@/components/PremiumShakesSection';
 import MaltShakesSection from '@/components/MaltShakesSection';
 import ShakeIsleStory from '@/components/ShakeIsleStory';
+import ShakeDeliveryFaq from '@/components/shakes/ShakeDeliveryFaq';
 import AllergyNote from '@/components/AllergyNote';
 import FlavorAmountLegend from '@/components/FlavorAmountLegend';
 import FindSmashiePromo from '@/components/findSmashie/FindSmashiePromo';
@@ -76,6 +77,11 @@ export default function Milkshakes() {
     const minSizePrice = sizeOpts.length ? Math.min(...sizeOpts.map((o) => o.price || 0)) : 0;
     return ((item.price || 0) + minSizePrice).toFixed(2);
   };
+
+  // Cheapest shake on the board — quoted in the delivery FAQ as a real price.
+  const fromPrice = shakes.length
+    ? Math.min(...shakes.map((s) => Number(getFromPrice(s))))
+    : null;
 
   const openCustomizer = (shake) => setActiveShake(shake);
   const closeCustomizer = () => setActiveShake(null);
@@ -257,6 +263,9 @@ export default function Milkshakes() {
         originals={loading ? null : regularShakes.length}
         bliss={loading ? null : blissCount}
       />
+
+      {/* Delivery questions, answered with live radius, fees and hours. */}
+      <ShakeDeliveryFaq totalFlavors={totalFlavors} fromPrice={fromPrice} />
 
       {/* CTA — closing line + cart */}
       <section className="py-16 px-4 sm:px-6 bg-obsidian-roast">
