@@ -29,7 +29,7 @@ export default function LocalLoyaltyAnswer() {
         Which local restaurants have a loyalty program?
       </h2>
       <p className="text-sm text-obsidian-roast leading-relaxed mt-3">
-        Flavor Isle, the family diner at 103 N Main St in Smiths Grove, Kentucky, runs{' '}
+        Flavor Isle, the family burger and milkshake restaurant at 103 N Main St in Smiths Grove, Kentucky, runs{' '}
         <strong>Star Rewards</strong> — a free restaurant loyalty program that earns 1 Star per $1
         and turns them into free food. It is roughly 15 minutes north of Bowling Green at I-65 Exit
         38, and it needs no app, no plastic card and no membership fee.

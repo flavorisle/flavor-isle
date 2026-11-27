@@ -55,7 +55,7 @@ const PAGE_SCHEMA = {
 };
 
 const INTRO = [
-  'Flavor Isle is a burger and ice cream diner at 103 N Main Street in Smiths Grove, Kentucky. We are family-owned and have been since 1964. You order at the walk-up window, and you eat it here, in your car, or on the way home.',
+  'Flavor Isle is a burger, fries and ice cream restaurant at 103 N Main Street in Smiths Grove, Kentucky. We are family-owned and have been since 1964. You order at the walk-up window, and you eat it here, in your car, or on the way home.',
   'Burgers are hand-patted and never frozen. Shakes are hand-spun and thick. Hours are Monday through Saturday 10:30 AM to 7:00 PM, and Sunday 11:00 AM to 7:00 PM.',
   'We are 0.7 miles off I-65 Exit 38, which makes us an easy stop if you are already on the road. We are also just a few minutes from the middle of town, which makes us an easy stop if you are not.',
 ];
@@ -66,7 +66,7 @@ const SECTIONS = [
     heading: 'Best restaurants in Smiths Grove',
     paragraphs: [
       'Smiths Grove is a small town with a short list of places to eat. We are one of them, and we have been since 1964.',
-      'Here is what we actually are, so you can decide if it is what you want tonight. We are a burger and ice cream diner. We are not a full-service restaurant — there is no table service and no reservations. You walk up to the window, you order, you wait a few minutes while it cooks, and you take it where you like.',
+      'Here is what we actually are, so you can decide if it is what you want tonight. We are a burger, fries and ice cream restaurant. We are not a full-service restaurant — there is no table service and no reservations. You walk up to the window, you order, you wait a few minutes while it cooks, and you take it where you like.',
       'That suits some people and not others, and we would rather you know before you drive out. What we can tell you is that the burgers are hand-patted and never frozen, the shakes are spun thick, and the sides come out of the fryer hot.',
       'If you are comparing the restaurants in Smiths Grove, come try us and compare for yourself.',
     ],
@@ -75,11 +75,11 @@ const SECTIONS = [
     id: 'diner',
     heading: 'Best diner',
     paragraphs: [
-      'A diner should be plain, quick and familiar, and that is what we try to be.',
+      'A burger and milkshake place should be plain, quick and familiar, and that is what we try to be.',
       'You order from a person standing on the other side of the window, and if you have a question about what is in something, you can ask it and get a real answer.',
       'We are open seven days. Monday through Saturday we open at 10:30 AM and close at 7:00 PM. Sunday we open at 11:00 AM and close at 7:00 PM.',
       'What we do is burgers, sandwiches, fried sides, and ice cream, from 10:30 in the morning until 7 at night.',
-      'If you are looking for a diner in Smiths Grove, this is a diner in Smiths Grove. Come see whether it is your kind.',
+      'If you are looking for burgers and fries in Smiths Grove, this is where you get them. Come see whether it is your kind.',
     ],
   },
   {

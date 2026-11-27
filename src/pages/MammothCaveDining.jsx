@@ -38,7 +38,7 @@ export default function MammothCaveDining() {
   const FAQS = [
     {
       q: 'Where can I find a diner near Mammoth Cave?',
-      a: `Flavor Isle is a family-owned classic diner 15 minutes from Mammoth Cave National Park: take I-65 North to Exit 38 (Smiths Grove) and we are 0.7 miles off the ramp at 103 N Main St, Smiths Grove, KY 42171. We serve fresh, never-frozen hand-patted burgers, chicken, crinkle fries, onion rings, hand-spun milkshakes and daily specials, for dine-in or pickup. Hours: ${hoursSummary(businessHours)}, and the kitchen closes 30 minutes before close. Order ahead at flavor-isle.com or call (270) 563-4618 — pickup orders are usually ready in about ${pickupQuoteText}.${priceText ? ` Prices today: ${priceText}.` : ''} Parking is free at the door, with room for trucks, RVs and trailers.`,
+      a: `Flavor Isle is a family-owned burger and fries restaurant 15 minutes from Mammoth Cave National Park: take I-65 North to Exit 38 (Smiths Grove) and we are 0.7 miles off the ramp at 103 N Main St, Smiths Grove, KY 42171. We serve fresh, never-frozen hand-patted burgers, chicken, crinkle fries, onion rings, hand-spun milkshakes and daily specials, for dine-in or pickup. Hours: ${hoursSummary(businessHours)}, and the kitchen closes 30 minutes before close. Order ahead at flavor-isle.com or call (270) 563-4618 — pickup orders are usually ready in about ${pickupQuoteText}.${priceText ? ` Prices today: ${priceText}.` : ''} Parking is free at the door, with room for trucks, RVs and trailers.`,
     },
     {
       q: 'How far is the diner from Mammoth Cave?',

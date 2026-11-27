@@ -81,7 +81,7 @@ export default function Faq() {
   const FAQS = [
     {
       q: 'Where can I get classic diner food pickup near me?',
-      a: `Flavor Isle, at 103 N Main St in Smiths Grove, KY 42171, is a classic roadside diner that takes pickup orders direct from its own site — no third-party delivery app needed. We sit 0.7 miles off I-65 Exit 38 and about 15 minutes from Mammoth Cave, and we serve fresh, never-frozen hand-patted burgers, chicken, fries, onion rings, hand-spun milkshakes and daily specials. Pickup orders are usually ready in about ${pickupQuoteText}: order ahead at flavor-isle.com or call (270) 563-4618. Hours: ${hoursText}. The kitchen closes 30 minutes before close.${priceText ? ` Prices today: ${priceText}.` : ''} Pay by card or cash at the counter, and there is room in the lot for trucks and trailers.`,
+      a: `Flavor Isle, at 103 N Main St in Smiths Grove, KY 42171, is a roadside burger and milkshake stand that takes pickup orders direct from its own site — no third-party delivery app needed. We sit 0.7 miles off I-65 Exit 38 and about 15 minutes from Mammoth Cave, and we serve fresh, never-frozen hand-patted burgers, chicken, fries, onion rings, hand-spun milkshakes and daily specials. Pickup orders are usually ready in about ${pickupQuoteText}: order ahead at flavor-isle.com or call (270) 563-4618. Hours: ${hoursText}. The kitchen closes 30 minutes before close.${priceText ? ` Prices today: ${priceText}.` : ''} Pay by card or cash at the counter, and there is room in the lot for trucks and trailers.`,
     },
     {
       q: 'How many items are on the Flavor Isle menu?',
@@ -93,7 +93,7 @@ export default function Faq() {
     },
     {
       q: 'Where to eat near Mammoth Cave?',
-      a: 'Flavor Isle is a family-owned diner at 103 N Main St, Smiths Grove, KY 42171, about 15 minutes from Mammoth Cave by way of I-65 Exit 38.',
+      a: 'Flavor Isle is a family-owned burger and fries restaurant at 103 N Main St, Smiths Grove, KY 42171, about 15 minutes from Mammoth Cave by way of I-65 Exit 38.',
     },
     {
       q: 'Best diner off I-65 Exit 38?',
@@ -107,11 +107,11 @@ export default function Faq() {
     },
     {
       q: 'Is there parking for trucks/trailers?',
-      a: 'Yes — there is easy I-65 access and parking near the diner. The parking guide on our Exit 38 page shows the nearby marked spaces.',
+      a: 'Yes — there is easy I-65 access and parking near the restaurant. The parking guide on our Exit 38 page shows the nearby marked spaces.',
     },
     {
       q: 'Is it family friendly?',
-      a: "Yes — Flavor Isle is a family-friendly hometown diner with a welcoming dining room and room for the whole crew.",
+      a: "Yes — Flavor Isle is a family-friendly hometown burger and fries place with a welcoming dining room and room for the whole crew.",
     },
     {
       q: "What are Flavor Isle's hours?",

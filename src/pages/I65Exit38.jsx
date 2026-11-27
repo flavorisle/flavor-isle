@@ -61,7 +61,7 @@ export default function I65Exit38() {
     },
     {
       q: 'How far is Flavor Isle from Bowling Green?',
-      a: 'About 15 minutes. Head north on I-65 and take Exit 38 for Smiths Grove, then turn left off the ramp — the diner is 0.7 miles ahead on the left at 103 N Main St. Parking is free at the door, behind us, and across the street.',
+      a: 'About 15 minutes. Head north on I-65 and take Exit 38 for Smiths Grove, then turn left off the ramp — the restaurant is 0.7 miles ahead on the left at 103 N Main St. Parking is free at the door, behind us, and across the street.',
     },
     {
       q: 'Is it worth the drive from Bowling Green for a burger?',
