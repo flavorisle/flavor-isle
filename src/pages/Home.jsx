@@ -226,6 +226,13 @@ export default function Home() {
                   More about Flavor Isle in Smiths Grove
                 </Link>
               </p>
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                Heading to the caves? Here is the{' '}
+                <Link to="/mammoth-cave-dining" className="text-midnight-cherry font-semibold hover:underline underline-offset-4">
+                  diner near Mammoth Cave
+                </Link>
+                .
+              </p>
 
               <div className="space-y-4 mt-5 text-muted-foreground">
                 <div className="flex items-start gap-3">

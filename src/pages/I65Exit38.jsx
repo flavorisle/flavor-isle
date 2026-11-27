@@ -172,6 +172,9 @@ export default function I65Exit38() {
         <p className="text-muted-foreground mt-4 leading-relaxed">
           Two minutes off Exit 38 in Smiths Grove, 15 minutes north of Bowling Green. Order ahead and the food is ready when you park.
         </p>
+        <Link to="/mammoth-cave-dining" className="inline-flex items-center gap-1.5 text-sm font-heading text-midnight-cherry hover:text-patina-mint transition-colors mt-4">
+          diner near Mammoth Cave <ArrowRight size={14} />
+        </Link>
       </section>
 
       {/* Bowling Green questions — plain headings and answers, so the text sits

@@ -169,6 +169,13 @@ export default function SmithsGrove() {
             </Link>
             , and you are welcome to add one.
           </p>
+          <p className="text-muted-foreground leading-relaxed mt-4">
+            Driving up for the caves? Read about the{' '}
+            <Link to="/mammoth-cave-dining" className="text-midnight-cherry hover:underline underline-offset-4">
+              diner near Mammoth Cave
+            </Link>
+            .
+          </p>
 
           {/* At a glance */}
           <div className="card-diner p-6 mt-8 space-y-4">

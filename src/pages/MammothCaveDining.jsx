@@ -17,6 +17,20 @@ import { islePhotos } from '@/components/cinematic/photos';
 
 const BUILDING = 'https://media.base44.com/images/public/6a3d84f2fe4ae4efe7f629bf/7b759012a_FlavorIsleBuilding.png';
 
+// Drive times measured from the door at 103 N Main St (issue #363).
+const DRIVE_TIMES = [
+  { destination: 'Mammoth Cave National Park Visitor Center', miles: '18.9', minutes: 28 },
+  { destination: 'Mammoth Cave north entrance, KY-255 at Park City', miles: '11.3', minutes: 14 },
+  { destination: 'Park City', miles: '11.3', minutes: 14 },
+  { destination: 'Cave City', miles: '17.2', minutes: 21 },
+  { destination: 'Brownsville', miles: '12.9', minutes: 21 },
+  { destination: 'Horse Cave', miles: '21.5', minutes: 27 },
+  { destination: 'Glasgow', miles: '19.7', minutes: 24 },
+  { destination: 'Bowling Green', miles: '15.9', minutes: 21 },
+  { destination: 'National Corvette Museum', miles: '11.0', minutes: 15 },
+  { destination: 'Nolin Lake State Park', miles: '29.8', minutes: 49 },
+];
+
 export default function MammothCaveDining() {
   const businessHours = useBusinessHours();
   const { waitMin } = useLiveStatus();
@@ -48,6 +62,22 @@ export default function MammothCaveDining() {
       q: 'Can we eat there on the way to or from the caves?',
       a: `Yes — it is a straight shot up I-65 from the park, built for a quick stop. Order at flavor-isle.com before you leave, choose pickup, and it is usually ready in about ${pickupQuoteText}; the dining room is open too. We are open ${hoursSummary(businessHours)}, and the kitchen closes 30 minutes before close.`,
     },
+    {
+      q: 'How far is Flavor Isle from the Mammoth Cave visitor center?',
+      a: '18.9 miles, about 28 minutes by car. Take the Mammoth Cave Parkway north to I-65 North, get off at Exit 38 in Smiths Grove, and we are 0.7 miles off the ramp at 103 N Main St. Free parking at the door, with room for trucks, RVs and trailers.',
+    },
+    {
+      q: 'Do you have a diner near Cave City?',
+      a: 'Cave City is 17.2 miles, about 21 minutes south of us on I-65. We are the diner on the north side of the park, at Exit 38 in Smiths Grove, which puts us on your way back toward Bowling Green, Glasgow or Louisville.',
+    },
+    {
+      q: 'Can we get breakfast at Flavor Isle before the caves?',
+      a: 'We do not serve breakfast. We open at 10:30 AM Monday through Saturday and 11:00 AM Sunday, and we close at 7:00 PM every day. If you want breakfast before an early cave tour, Park City and Cave City have places that open earlier.',
+    },
+    {
+      q: 'What is open near Mammoth Cave after a late cave tour?',
+      a: 'Our kitchen closes 30 minutes before our 7:00 PM close, so plan to order by 6:30 PM. Order ahead at flavor-isle.com before you leave the park and pickup is usually ready in a few minutes, or eat in the dining room.',
+    },
   ];
 
   const faqSchema = {
@@ -58,6 +88,21 @@ export default function MammothCaveDining() {
       name: q,
       acceptedAnswer: { '@type': 'Answer', text: a },
     })),
+  };
+
+  // Same @id as the /smiths-grove restaurant block, so Google reads one restaurant.
+  const restaurantSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Restaurant',
+    '@id': 'https://flavor-isle.com/#restaurant',
+    name: 'Flavor Isle',
+    servesCuisine: ['Burgers', 'American', 'Diner', 'Ice cream'],
+    priceRange: '$',
+    telephone: '+1-270-563-4618',
+    hasMenu: 'https://flavor-isle.com/menu',
+    geo: { '@type': 'GeoCoordinates', latitude: 37.0526542, longitude: -86.2082906 },
+    areaServed: ['Smiths Grove KY', 'Mammoth Cave National Park', 'Cave City KY', 'Park City KY', 'Brownsville KY', 'Glasgow KY', 'Bowling Green KY'],
+    sameAs: ['https://www.facebook.com/flavorisle/', 'https://www.instagram.com/flavor_isle/', 'https://www.yelp.com/biz/flavor-isle-smiths-grove', 'https://www.tripadvisor.com/Restaurant_Review-g39867-d942916'],
   };
 
   return (
@@ -71,6 +116,7 @@ export default function MammothCaveDining() {
         ogImageAlt="Flavor Isle Mammoth Cave dining share card"
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantSchema) }} />
       <Navbar />
 
       {/* Hero */}
@@ -134,6 +180,28 @@ export default function MammothCaveDining() {
               <MapPin size={16} /> 1-Tap Google Maps Directions <ArrowRight size={16} />
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Drive times from our door */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-6">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 text-midnight-cherry font-heading text-sm tracking-widest mb-2">
+            <MapPin size={16} /> DISTANCES
+          </div>
+          <h2 className="font-heading text-3xl sm:text-4xl text-obsidian-roast">How Far Is Flavor Isle?</h2>
+          <p className="text-muted-foreground mt-2">Every distance below is driven from our door at 103 N Main St.</p>
+        </div>
+        <div className="card-diner p-6">
+          <div className="space-y-2 text-sm">
+            {DRIVE_TIMES.map((row) => (
+              <div key={row.destination} className="flex justify-between gap-4 border-b border-border pb-2 last:border-0 last:pb-0">
+                <span className="text-muted-foreground">{row.destination}</span>
+                <span className="font-heading text-obsidian-roast whitespace-nowrap">{row.miles} mi / {row.minutes} min</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">Free-flow driving times, no traffic. Measured November 26, 2026.</p>
         </div>
       </section>
 

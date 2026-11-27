@@ -30,6 +30,7 @@ const VISIT_LINKS = [
   { label: 'Smiths Grove', to: '/smiths-grove' },
   { label: 'Date Night', to: '/date-night' },
   { label: 'Mammoth Cave Dining', to: '/mammoth-cave-dining' },
+  { label: 'diner near Mammoth Cave', to: '/mammoth-cave-dining' },
   { label: 'Corvette Car Clubs', to: '/corvette-car-clubs' },
   { label: 'FAQ', to: '/faq' },
   { label: 'Contact Us', to: '/contact' },

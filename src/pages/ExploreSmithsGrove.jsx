@@ -699,6 +699,12 @@ export default function ExploreSmithsGrove() {
         <p className="mt-2 mx-auto max-w-[660px] text-[15px] font-semibold text-[#5b6b7a] text-center">
           Buc-ee’s sits right here at Exit 38. The Corvette Museum and Mammoth Cave are a straight shot down or up I-65 — each one has its own page here.
         </p>
+        <Link
+          to="/mammoth-cave-dining"
+          className="mt-3 mx-auto block w-max text-[11.5px] font-black tracking-[.08em] uppercase text-midnight-cherry hover:text-obsidian-roast"
+        >
+          diner near Mammoth Cave
+        </Link>
         <div className="grid gap-[26px] grid-cols-[repeat(auto-fit,minmax(292px,1fr))] mt-8 max-w-[1180px] mx-auto px-5">
           {stops.surrounding.map((stop) => (
             <SurroundCard key={stop.id || stop.name} stop={stop} onOpen={setActiveStop} now={now} flavorIsleStatus={flavorIsleStatus} />
